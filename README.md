@@ -1,4 +1,4 @@
-# <a name="README"> Terraforming Mars Open-source
+# <a name="README"> Terraforming Mars: Expedition Ares Open-source
 
 This is an open-source online implementation of the board game Terraforming Mars: Expedition Ares. **It is not affiliated
 with FryxGames, Asmodee Digital or Steam in any way.**
