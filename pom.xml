@@ -8,11 +8,11 @@
         <version>2.6.7</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>com.alex.nikitin</groupId>
-    <artifactId>terraforming-m</artifactId>
+    <groupId>com.terraforming.ares</groupId>
+    <artifactId>ares-expedition</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>terraforming-m</name>
-    <description>Terraforming M</description>
+    <name>ares-expedition</name>
+    <description>Terraforming Mars</description>
     <properties>
         <java.version>11</java.version>
     </properties>
