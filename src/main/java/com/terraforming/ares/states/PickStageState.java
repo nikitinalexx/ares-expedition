@@ -29,8 +29,11 @@ public class PickStageState extends AbstractState {
     @Override
     public void updateState() {
         if (marsGame.allStagesSelected()) {
-            //TODO if stage 1 selected
-            marsGame.setStateType(StateType.BUILD_GREEN_PROJECTS);
+            if (marsGame.getPlayerContexts().values().stream()
+                    .anyMatch(p -> p.getCurrentStage() == 1)) {
+                marsGame.setStateType(StateType.BUILD_GREEN_PROJECTS);
+            }
+            //TODO other stages
         }
     }
 

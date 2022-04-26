@@ -5,5 +5,5 @@ package com.terraforming.ares.states;
  * Creation date 25.04.2022
  */
 public enum Action {
-    MAKE_TURN, WAIT, GAME_END
+    TURN, WAIT, GAME_END
 }

@@ -30,6 +30,10 @@ public class GameService {
         return game;
     }
 
+    public MarsGame getGame(String playerUuid) {
+        return gameRepository.getGameByPlayerUuid(playerUuid);
+    }
+
     public String getNextAction(String playerUuid) {
         MarsGame game = gameRepository.getGameByPlayerUuid(playerUuid);
 

@@ -18,7 +18,7 @@ public abstract class AbstractState implements State{
         if (marsGame.getPlayerByUuid(playerUuid).getNextTurn() != null) {
             return Action.WAIT;
         } else {
-            return Action.MAKE_TURN;
+            return Action.TURN;
         }
     }
 }

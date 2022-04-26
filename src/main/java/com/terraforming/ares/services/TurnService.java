@@ -30,6 +30,9 @@ public class TurnService {
                     if (!stateFactory.getCurrentState(game).getPossibleTurns(playerUuid).contains(TurnType.PICK_CORPORATION)) {
                         return "Incorrent game state for corporation pick";
                     }
+                    if (!game.getPlayerByUuid(playerUuid).getCorporations().containsCard(corporationCardId)) {
+                        return "Can't pick corporation that is not in your choice deck";
+                    }
                     return null;
                 },
                 game -> game.getPlayerByUuid(playerUuid).setNextTurn(

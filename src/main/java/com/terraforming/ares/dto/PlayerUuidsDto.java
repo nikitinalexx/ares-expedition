@@ -11,6 +11,6 @@ import java.util.List;
  */
 @Data
 @Builder
-public class NewGameDto {
+public class PlayerUuidsDto {
     private List<String> players;
 }

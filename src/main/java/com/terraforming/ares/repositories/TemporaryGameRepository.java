@@ -13,10 +13,11 @@ import java.util.function.Function;
  * Created by oleksii.nikitin
  * Creation date 25.04.2022
  */
+//TODO replace
 @Service
 @RequiredArgsConstructor
 public class TemporaryGameRepository implements GameRepository {
-    private final GameRepository realStorage;
+    private final InMemoryGameRepository realStorage;
 
     private Map<Long, MarsGame> cache = new ConcurrentHashMap<>();
 
@@ -50,12 +51,11 @@ public class TemporaryGameRepository implements GameRepository {
                 value = getGameById(key);
             }
 
-            String errorMessage = stateChecker.apply(value);
+            resultHolder.errorMessage = stateChecker.apply(value);
 
-            if (errorMessage == null) {
+            if (resultHolder.errorMessage == null) {
                 updater.accept(value);
                 realStorage.save(value);
-                resultHolder.errorMessage = errorMessage;
             }
 
             return value;

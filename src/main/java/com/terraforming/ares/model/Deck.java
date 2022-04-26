@@ -17,7 +17,7 @@ public class Deck {
     public Deck dealCards(int count) {
         LinkedList<Integer> result = new LinkedList<>();
         for (int i = 0; i < count; i++) {
-            result.add(cards.remove(i));
+            result.add(cards.remove(0));
         }
         return Deck.builder().cards(result).build();
     }

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -24,7 +25,7 @@ public class GameProcessorService {
     private final GameRepository gameRepository;
     private final StateFactory stateFactory;
     private final Map<TurnType, TurnProcessor<?>> turnProcessors;
-    private final Queue<Long> gamesToProcess = new SynchronousQueue<>();
+    private final Queue<Long> gamesToProcess = new ArrayBlockingQueue<>(100);
 
     public GameProcessorService(List<TurnProcessor<?>> turnProcessor,
                                 GameRepository gameRepository,
