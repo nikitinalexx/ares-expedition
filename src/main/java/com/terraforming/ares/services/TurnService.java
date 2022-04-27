@@ -47,6 +47,10 @@ public class TurnService {
     }
 
     public void chooseStageTurn(String playerUuid, int stageId) {
+        if (stageId < 1 || stageId > 5) {
+            throw new IllegalArgumentException("Stage is not within [1..5] range");
+        }
+
         MarsGame marsGame = gameRepository.getGameByPlayerUuid(playerUuid);
 
         String errorMessage = gameRepository.updateMarsGame(
@@ -57,7 +61,7 @@ public class TurnService {
                         return "Incorrect game state for picking stage";
                     }
 
-                    if (player.getPreviousStage() == stageId) {
+                    if (player.getPreviousStage() != null && player.getPreviousStage() == stageId) {
                         return "This stage already picked in previous round";
                     }
 

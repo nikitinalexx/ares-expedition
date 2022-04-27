@@ -22,4 +22,17 @@ public class PlayerContext {
 
     private Turn nextTurn;
 
+    private int mc;
+    private int mcIncome;
+
+    private int cardIncome;
+
+    private int heat;
+    private int heatIncome;
+
+    private int plants;
+    private int plantsIncome;
+
+    private int steelIncome;
+    private int titaniumIncome;
 }

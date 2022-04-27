@@ -54,6 +54,8 @@ public class GameController {
                                 .cards(corporations.getCards())
                                 .build()
                 )
+                .corporationId(playerContext.getSelectedCorporationCard())
+                .stage(playerContext.getCurrentStage())
                 .build();
     }
 

@@ -33,4 +33,8 @@ public class PlayController {
         turnService.chooseCorporationTurn(playerUuid, corporationCardId);
     }
 
+    public void chooseStage(String playerUuid, int stage) {
+        turnService.chooseStageTurn(playerUuid, stage);
+    }
+
 }

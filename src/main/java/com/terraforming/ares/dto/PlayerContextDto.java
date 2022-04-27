@@ -12,4 +12,6 @@ import lombok.Getter;
 @Getter
 public class PlayerContextDto {
     private Deck corporationsChoice;
+    private Integer corporationId;
+    private Integer stage;
 }
