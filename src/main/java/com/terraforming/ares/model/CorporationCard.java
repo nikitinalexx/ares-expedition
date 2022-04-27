@@ -1,6 +1,5 @@
 package com.terraforming.ares.model;
 
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -11,7 +10,10 @@ public interface CorporationCard {
 
     void buildProject(PlayerContext playerContext);
 
+    //TODO find a better way to transfer card description and parameters
     String description();
 
     Set<Tag> getTags();
+
+    Expansion getExpansion();
 }

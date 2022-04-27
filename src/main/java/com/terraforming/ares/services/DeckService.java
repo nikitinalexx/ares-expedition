@@ -3,9 +3,11 @@ package com.terraforming.ares.services;
 import com.terraforming.ares.cards.corporations.HelionCorporation;
 import com.terraforming.ares.model.CorporationCard;
 import com.terraforming.ares.model.Deck;
+import com.terraforming.ares.model.Expansion;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -15,12 +17,13 @@ import java.util.stream.IntStream;
  * Creation date 25.04.2022
  */
 @Service
-public class MarsDeckService {
+public class DeckService {
     private final Map<Integer, CorporationCard> inmemoryCorporationsStorage = Map.of(
             1, new HelionCorporation()
     );
 
-    public Deck createProjectsDeck() {
+    public Deck createProjectsDeck(List<Expansion> expansions) {
+        //TODO logic that builds a deck based on list of selected expansions
         return Deck.builder()
                 .cards(new LinkedList<>(
                         IntStream.range(1, 21).boxed().collect(Collectors.toList())
@@ -28,7 +31,8 @@ public class MarsDeckService {
                 .build();
     }
 
-    public Deck createCorporationsDeck() {
+    public Deck createCorporationsDeck(List<Expansion> expansions) {
+        //TODO logic that builds a deck based on list of selected expansions
         return Deck.builder()
                 .cards(new LinkedList<>(
                         IntStream.range(1, 11).boxed().collect(Collectors.toList())

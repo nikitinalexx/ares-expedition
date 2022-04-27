@@ -2,11 +2,10 @@ package com.terraforming.ares.logic;
 
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.CorporationCard;
-import com.terraforming.ares.model.Deck;
 import com.terraforming.ares.model.PlayerContext;
 import com.terraforming.ares.model.turn.CorporationChoiceTurn;
 import com.terraforming.ares.model.turn.TurnType;
-import com.terraforming.ares.services.MarsDeckService;
+import com.terraforming.ares.services.DeckService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,7 +16,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class PickCorporationProcessor implements TurnProcessor<CorporationChoiceTurn> {
-    private final MarsDeckService marsDeckService;
+    private final DeckService marsDeckService;
 
     @Override
     public void processTurn(CorporationChoiceTurn turn, MarsGame game) {
