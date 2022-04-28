@@ -1,4 +1,4 @@
-package com.terraforming.ares.logic;
+package com.terraforming.ares.turnProcessors;
 
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.turn.TurnType;

@@ -1,6 +1,9 @@
 package com.terraforming.ares.services;
 
+import com.terraforming.ares.cards.corporations.CelestiorCorporation;
+import com.terraforming.ares.cards.corporations.DevTechs;
 import com.terraforming.ares.cards.corporations.HelionCorporation;
+import com.terraforming.ares.cards.corporations.LaunchStarIncorporated;
 import com.terraforming.ares.model.CorporationCard;
 import com.terraforming.ares.model.Deck;
 import com.terraforming.ares.model.Expansion;
@@ -19,7 +22,10 @@ import java.util.stream.IntStream;
 @Service
 public class DeckService {
     private final Map<Integer, CorporationCard> inmemoryCorporationsStorage = Map.of(
-            1, new HelionCorporation()
+            1, new HelionCorporation(),
+            2, new CelestiorCorporation(),
+            3, new DevTechs(),
+            4, new LaunchStarIncorporated()
     );
 
     public Deck createProjectsDeck(List<Expansion> expansions) {
@@ -35,7 +41,7 @@ public class DeckService {
         //TODO logic that builds a deck based on list of selected expansions
         return Deck.builder()
                 .cards(new LinkedList<>(
-                        IntStream.range(1, 11).boxed().collect(Collectors.toList())
+                        IntStream.range(1, 5).boxed().collect(Collectors.toList())
                 ))
                 .build();
     }

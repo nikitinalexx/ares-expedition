@@ -37,4 +37,12 @@ public class PlayController {
         turnService.chooseStageTurn(playerUuid, stage);
     }
 
+    public void skipTurn(String playerUuid) {
+        turnService.skipTurn(playerUuid);
+    }
+
+    public void sellCards(String playerUuid, List<Integer> cards) {
+        turnService.sellCards(playerUuid, cards);
+    }
+
 }

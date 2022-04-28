@@ -24,7 +24,7 @@ public class BuildGreenProjectsState extends AbstractState {
         } else {
             return Arrays.asList(
                     TurnType.BUILD_GREEN_PROJECT,
-                    TurnType.SELL_CARD,
+                    TurnType.SELL_CARDS,
                     TurnType.SKIP_TURN
             );
         }

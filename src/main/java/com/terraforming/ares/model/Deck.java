@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Created by oleksii.nikitin
@@ -20,6 +21,10 @@ public class Deck {
             result.add(cards.remove(0));
         }
         return Deck.builder().cards(result).build();
+    }
+
+    public void removeCards(List<Integer> cards) {
+        this.cards.removeAll(cards);
     }
 
     public boolean containsCard(int cardId) {

@@ -2,8 +2,6 @@ package com.terraforming.ares;
 
 import com.terraforming.ares.controllers.GameController;
 import com.terraforming.ares.controllers.PlayController;
-import com.terraforming.ares.dto.GameDto;
-import com.terraforming.ares.dto.PlayerContextDto;
 import com.terraforming.ares.dto.PlayerUuidsDto;
 import com.terraforming.ares.model.GameParameters;
 import com.terraforming.ares.model.turn.TurnType;
@@ -16,6 +14,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -33,7 +32,7 @@ public class TerraformingMarsFlowTest {
 
     @Autowired
     private GameProcessorService gameProcessorService;
-    
+
     String firstPlayer;
     String secondPlayer;
 
@@ -42,7 +41,7 @@ public class TerraformingMarsFlowTest {
     @BeforeEach
     public void setUp() {
         gameDto = gameController.startNewGame(GameParameters.builder().playersCount(2).build());
-        
+
         firstPlayer = gameDto.getPlayers().get(0);
         secondPlayer = gameDto.getPlayers().get(1);
     }
@@ -63,7 +62,7 @@ public class TerraformingMarsFlowTest {
         }
 
         Exception exception = assertThrows(IllegalStateException.class, () -> {
-            playController.chooseCorporation(firstPlayer, 1);
+            playController.chooseCorporation(firstPlayer, -5);
         });
 
         assertEquals("Can't pick corporation that is not in your choice deck", exception.getMessage());
@@ -113,6 +112,30 @@ public class TerraformingMarsFlowTest {
         gameProcessorService.process();
 
         assertEquals(1, gameController.getGameByPlayerUuid(firstPlayer).getPlayer().getStage());
+
+        for (String player : players) {
+            assertEquals("TURN", playController.getNextAction(player));
+            assertEquals(Arrays.asList(TurnType.BUILD_GREEN_PROJECT, TurnType.SELL_CARDS, TurnType.SKIP_TURN), playController.getPossibleTurns(player));
+        }
+
+        playController.skipTurn(firstPlayer);
+        assertEquals("WAIT", playController.getNextAction(firstPlayer));
+
+        playController.sellCards(
+                secondPlayer,
+                gameController.getGameByPlayerUuid(secondPlayer)
+                        .getPlayer()
+                        .getHand()
+                        .getCards()
+                        .stream()
+                        .limit(1)
+                        .collect(Collectors.toList()
+                        )
+        );
+
+        assertEquals("WAIT", playController.getNextAction(firstPlayer));
+        assertEquals("TURN", playController.getNextAction(secondPlayer));
+        assertEquals(9, gameController.getGameByPlayerUuid(secondPlayer).getPlayer().getHand().getCards().size());
     }
 
 }

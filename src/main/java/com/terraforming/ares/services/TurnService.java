@@ -3,12 +3,12 @@ package com.terraforming.ares.services;
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.PlayerContext;
-import com.terraforming.ares.model.turn.CorporationChoiceTurn;
-import com.terraforming.ares.model.turn.StageChoiceTurn;
-import com.terraforming.ares.model.turn.TurnType;
+import com.terraforming.ares.model.turn.*;
 import com.terraforming.ares.repositories.GameRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 /**
  * Created by oleksii.nikitin
@@ -77,4 +77,55 @@ public class TurnService {
         gameProcessorService.registerGameUpdate(marsGame.getId());
     }
 
+    public void skipTurn(String playerUuid) {
+        MarsGame marsGame = gameRepository.getGameByPlayerUuid(playerUuid);
+
+        String errorMessage = gameRepository.updateMarsGame(
+                marsGame.getId(),
+                game -> {
+                    if (!stateFactory.getCurrentState(game).getPossibleTurns(playerUuid).contains(TurnType.SKIP_TURN)) {
+                        return "Incorrect game state for turn skip";
+                    }
+
+                    return null;
+                },
+                game -> game.getPlayerByUuid(playerUuid).setNextTurn(new SkipTurn(playerUuid))
+        );
+
+        if (errorMessage != null) {
+            throw new IllegalStateException(errorMessage);
+        }
+
+        gameProcessorService.registerGameUpdate(marsGame.getId());
+    }
+
+    public void sellCards(String playerUuid, List<Integer> cards) {
+        MarsGame marsGame = gameRepository.getGameByPlayerUuid(playerUuid);
+
+        PlayerContext player = marsGame.getPlayerByUuid(playerUuid);
+
+        if (!player.getHand().getCards().containsAll(cards)) {
+            throw new IllegalArgumentException("Can't sell cards that you don't have");
+        }
+
+        String errorMessage = gameRepository.updateMarsGame(
+                marsGame.getId(),
+                game -> {
+                    if (!stateFactory.getCurrentState(game).getPossibleTurns(playerUuid).contains(TurnType.SELL_CARDS)) {
+                        return "Incorrect game state for selling cards";
+                    }
+
+                    return null;
+                },
+                game -> game.getPlayerByUuid(playerUuid).setNextTurn(new SellCardsTurn(playerUuid, cards))
+        );
+
+        if (errorMessage != null) {
+            throw new IllegalStateException(errorMessage);
+        }
+
+        gameProcessorService.registerGameUpdate(marsGame.getId());
+        //need a synchronous update
+        gameProcessorService.process();
+    }
 }
