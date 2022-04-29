@@ -1,33 +1,31 @@
-package com.terraforming.ares.cards.corporations;
+package com.terraforming.ares.cards.green;
 
-import com.terraforming.ares.model.CorporationCard;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.PlayerContext;
 import com.terraforming.ares.model.Tag;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * Created by oleksii.nikitin
- * Creation date 27.04.2022
+ * Creation date 29.04.2022
  */
-public class HelionCorporation implements CorporationCard {
+public class GeothermalPower implements GreenCard {
 
     @Override
     public void buildProject(PlayerContext playerContext) {
-        playerContext.setMc(28);
-        playerContext.setHeatIncome(3);
+        playerContext.setHeatIncome(playerContext.getHeatIncome() + 2);
     }
 
     @Override
     public String description() {
-        return "MegaCredits: 28. HeatIncome: 3. You may use heat as MC. You may not use MC as heat.";
+        return "During the production phase, this produces 2 heat.";
     }
 
     @Override
     public List<Tag> getTags() {
-        return Collections.singletonList(Tag.SPACE);
+        return Arrays.asList(Tag.BUILDING, Tag.ENERGY);
     }
 
     @Override
@@ -35,4 +33,8 @@ public class HelionCorporation implements CorporationCard {
         return Expansion.BASE;
     }
 
+    @Override
+    public int getPrice() {
+        return 8;
+    }
 }

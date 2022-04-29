@@ -67,7 +67,7 @@ public class TerraformingMarsFlowTest {
 
         assertEquals("Can't pick corporation that is not in your choice deck", exception.getMessage());
 
-        gameProcessorService.process();
+        gameProcessorService.asyncUpdate();
 
         playController.chooseCorporation(
                 firstPlayer,
@@ -86,7 +86,7 @@ public class TerraformingMarsFlowTest {
         assertEquals("Incorrent game state for corporation pick", exception.getMessage());
 
         //second player hasn't chosen corporation yet, the process does nothing
-        gameProcessorService.process();
+        gameProcessorService.asyncUpdate();
 
         assertNull(gameController.getGameByPlayerUuid(firstPlayer).getPlayer().getCorporationId());
 
@@ -95,7 +95,7 @@ public class TerraformingMarsFlowTest {
                 gameController.getGameByPlayerUuid(secondPlayer).getPlayer().getCorporationsChoice().getCards().get(0)
         );
 
-        gameProcessorService.process();
+        gameProcessorService.asyncUpdate();
 
         assertNotNull(gameController.getGameByPlayerUuid(firstPlayer).getPlayer().getCorporationId());
         assertNotNull(gameController.getGameByPlayerUuid(secondPlayer).getPlayer().getCorporationId());
@@ -109,7 +109,7 @@ public class TerraformingMarsFlowTest {
             assertEquals("WAIT", playController.getNextAction(player));
         }
 
-        gameProcessorService.process();
+        gameProcessorService.asyncUpdate();
 
         assertEquals(1, gameController.getGameByPlayerUuid(firstPlayer).getPlayer().getStage());
 

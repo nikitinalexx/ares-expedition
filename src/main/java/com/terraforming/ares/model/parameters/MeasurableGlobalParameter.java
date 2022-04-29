@@ -14,4 +14,12 @@ public class MeasurableGlobalParameter {
     @Singular
     private final List<ParameterGradation> levels;
     private final int currentLevel;
+
+    public int getCurrentValue() {
+        return levels.get(currentLevel).getValue();
+    }
+
+    public ParameterColor getCurrentColor() {
+        return levels.get(currentLevel).getColor();
+    }
 }

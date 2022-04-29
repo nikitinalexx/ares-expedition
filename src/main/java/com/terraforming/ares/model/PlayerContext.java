@@ -4,6 +4,7 @@ import com.terraforming.ares.model.turn.Turn;
 import lombok.Builder;
 import lombok.Data;
 
+
 /**
  * Created by oleksii.nikitin
  * Creation date 25.04.2022

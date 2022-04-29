@@ -1,13 +1,15 @@
 package com.terraforming.ares.turnProcessors;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.CorporationCard;
 import com.terraforming.ares.model.PlayerContext;
-import com.terraforming.ares.model.turn.CorporationChoiceTurn;
+import com.terraforming.ares.model.ProjectCard;
+import com.terraforming.ares.model.turn.BuildGreenProjectTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.DeckService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.Collections;
 
 /**
  * Created by oleksii.nikitin
@@ -15,20 +17,23 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @RequiredArgsConstructor
-public class PickCorporationProcessor implements TurnProcessor<CorporationChoiceTurn> {
+public class BuildGreenProjectProcessor implements TurnProcessor<BuildGreenProjectTurn> {
     private final DeckService marsDeckService;
 
     @Override
-    public void processTurn(CorporationChoiceTurn turn, MarsGame game) {
+    public void processTurn(BuildGreenProjectTurn turn, MarsGame game) {
         PlayerContext playerContext = game.getPlayerContexts().get(turn.getPlayerUuid());
-        playerContext.setSelectedCorporationCard(turn.getCorporationCardId());
 
-        CorporationCard card = marsDeckService.getCorporationCard(turn.getCorporationCardId());
+        playerContext.getHand().removeCards(Collections.singletonList(turn.getProjectId()));
+        playerContext.getPlayed().addCard(turn.getProjectId());
+
+        ProjectCard card = marsDeckService.getProjectCard(turn.getProjectId());
         card.buildProject(playerContext);
     }
 
     @Override
     public TurnType getType() {
-        return TurnType.PICK_CORPORATION;
+        return TurnType.BUILD_GREEN_PROJECT;
     }
+
 }

@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * Created by oleksii.nikitin
@@ -20,112 +21,98 @@ public class TurnService {
     private final StateFactory stateFactory;
     private final GameRepository gameRepository;
     private final GameProcessorService gameProcessorService;
+    private final CardValidationService cardValidationService;
 
     public void chooseCorporationTurn(String playerUuid, int corporationCardId) {
-        MarsGame marsGame = gameRepository.getGameByPlayerUuid(playerUuid);
-
-        String errorMessage = gameRepository.updateMarsGame(
-                marsGame.getId(),
+        performAsyncTurn(
+                new CorporationChoiceTurn(playerUuid, corporationCardId),
+                playerUuid,
                 game -> {
-                    if (!stateFactory.getCurrentState(game).getPossibleTurns(playerUuid).contains(TurnType.PICK_CORPORATION)) {
-                        return "Incorrent game state for corporation pick";
-                    }
                     if (!game.getPlayerByUuid(playerUuid).getCorporations().containsCard(corporationCardId)) {
                         return "Can't pick corporation that is not in your choice deck";
                     }
                     return null;
-                },
-                game -> game.getPlayerByUuid(playerUuid).setNextTurn(
-                        new CorporationChoiceTurn(playerUuid, corporationCardId)
-                ));
-
-        if (errorMessage != null) {
-            throw new IllegalStateException(errorMessage);
-        }
-
-        gameProcessorService.registerGameUpdate(marsGame.getId());
+                }
+        );
     }
 
     public void chooseStageTurn(String playerUuid, int stageId) {
-        if (stageId < 1 || stageId > 5) {
-            throw new IllegalArgumentException("Stage is not within [1..5] range");
-        }
+        performAsyncTurn(new StageChoiceTurn(playerUuid, stageId), playerUuid, game -> {
+            if (stageId < 1 || stageId > 5) {
+                return "Stage is not within [1..5] range";
+            }
 
-        MarsGame marsGame = gameRepository.getGameByPlayerUuid(playerUuid);
+            PlayerContext player = game.getPlayerByUuid(playerUuid);
+            if (player.getPreviousStage() != null && player.getPreviousStage() == stageId) {
+                return "This stage already picked in previous round";
+            }
 
-        String errorMessage = gameRepository.updateMarsGame(
-                marsGame.getId(),
-                game -> {
-                    PlayerContext player = game.getPlayerByUuid(playerUuid);
-                    if (!stateFactory.getCurrentState(game).getPossibleTurns(playerUuid).contains(TurnType.PICK_STAGE)) {
-                        return "Incorrect game state for picking stage";
-                    }
-
-                    if (player.getPreviousStage() != null && player.getPreviousStage() == stageId) {
-                        return "This stage already picked in previous round";
-                    }
-
-                    return null;
-                },
-                game -> game.getPlayerByUuid(playerUuid).setNextTurn(new StageChoiceTurn(playerUuid, stageId))
-        );
-
-        if (errorMessage != null) {
-            throw new IllegalStateException(errorMessage);
-        }
-
-        gameProcessorService.registerGameUpdate(marsGame.getId());
+            return null;
+        });
     }
 
     public void skipTurn(String playerUuid) {
-        MarsGame marsGame = gameRepository.getGameByPlayerUuid(playerUuid);
-
-        String errorMessage = gameRepository.updateMarsGame(
-                marsGame.getId(),
-                game -> {
-                    if (!stateFactory.getCurrentState(game).getPossibleTurns(playerUuid).contains(TurnType.SKIP_TURN)) {
-                        return "Incorrect game state for turn skip";
-                    }
-
-                    return null;
-                },
-                game -> game.getPlayerByUuid(playerUuid).setNextTurn(new SkipTurn(playerUuid))
-        );
-
-        if (errorMessage != null) {
-            throw new IllegalStateException(errorMessage);
-        }
-
-        gameProcessorService.registerGameUpdate(marsGame.getId());
+        performAsyncTurn(new SkipTurn(playerUuid), playerUuid, game -> null);
     }
 
     public void sellCards(String playerUuid, List<Integer> cards) {
-        MarsGame marsGame = gameRepository.getGameByPlayerUuid(playerUuid);
-
-        PlayerContext player = marsGame.getPlayerByUuid(playerUuid);
-
-        if (!player.getHand().getCards().containsAll(cards)) {
-            throw new IllegalArgumentException("Can't sell cards that you don't have");
-        }
-
-        String errorMessage = gameRepository.updateMarsGame(
-                marsGame.getId(),
+        performSyncTurn(
+                new SellCardsTurn(playerUuid, cards),
+                playerUuid,
                 game -> {
-                    if (!stateFactory.getCurrentState(game).getPossibleTurns(playerUuid).contains(TurnType.SELL_CARDS)) {
-                        return "Incorrect game state for selling cards";
+                    if (!game.getPlayerByUuid(playerUuid).getHand().getCards().containsAll(cards)) {
+                        return "Can't sell cards that you don't have";
                     }
 
                     return null;
+                }
+        );
+    }
+
+    public void buildGreenProjectCard(String playerUuid, int projectId) {
+        performAsyncTurn(
+                new BuildGreenProjectTurn(playerUuid, projectId),
+                playerUuid,
+                game -> {
+                    PlayerContext player = game.getPlayerByUuid(playerUuid);
+
+                    return cardValidationService.validateCard(player, game.getPlanet(), projectId);
+                });
+    }
+
+    private void performAsyncTurn(Turn turn, String playerUuid, Function<MarsGame, String> turnSpecificValidations) {
+        performTurn(turn, playerUuid, turnSpecificValidations, false);
+    }
+
+    private void performSyncTurn(Turn turn, String playerUuid, Function<MarsGame, String> turnSpecificValidations) {
+        performTurn(turn, playerUuid, turnSpecificValidations, true);
+    }
+
+    private void performTurn(Turn turn, String playerUuid, Function<MarsGame, String> turnSpecificValidations, boolean sync) {
+        long gameId = gameRepository.getGameIdByPlayerUuid(playerUuid);
+
+        String errorMessage = gameRepository.updateMarsGame(
+                gameId,
+                game -> {
+                    if (!stateFactory.getCurrentState(game).getPossibleTurns(playerUuid).contains(turn.getType())) {
+                        return "Incorrect game state for a turn " + turn.getType();
+                    }
+
+                    return turnSpecificValidations.apply(game);
                 },
-                game -> game.getPlayerByUuid(playerUuid).setNextTurn(new SellCardsTurn(playerUuid, cards))
+                game -> game.getPlayerByUuid(playerUuid).setNextTurn(turn)
         );
 
         if (errorMessage != null) {
             throw new IllegalStateException(errorMessage);
         }
 
-        gameProcessorService.registerGameUpdate(marsGame.getId());
-        //need a synchronous update
-        gameProcessorService.process();
+        if (sync) {
+            gameProcessorService.syncGameUpdate(gameId);
+        } else {
+            gameProcessorService.registerAsyncGameUpdate(gameId);
+        }
     }
+
+
 }

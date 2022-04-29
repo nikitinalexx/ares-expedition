@@ -6,7 +6,7 @@ import com.terraforming.ares.model.PlayerContext;
 import com.terraforming.ares.model.Tag;
 
 import java.util.Collections;
-import java.util.Set;
+import java.util.List;
 
 /**
  * Created by oleksii.nikitin
@@ -24,8 +24,8 @@ public class DevTechs implements CorporationCard {
     }
 
     @Override
-    public Set<Tag> getTags() {
-        return Collections.singleton(Tag.BUILDING);
+    public List<Tag> getTags() {
+        return Collections.singletonList(Tag.BUILDING);
     }
 
     @Override

@@ -45,4 +45,8 @@ public class PlayController {
         turnService.sellCards(playerUuid, cards);
     }
 
+    public void buildGreenProject(String playerUuid, int cardId) {
+        turnService.buildGreenProjectCard(playerUuid, cardId);
+    }
+
 }

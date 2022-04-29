@@ -31,4 +31,8 @@ public class Deck {
         return cards.contains(cardId);
     }
 
+    public void addCard(Integer card) {
+        cards.add(card);
+    }
+
 }

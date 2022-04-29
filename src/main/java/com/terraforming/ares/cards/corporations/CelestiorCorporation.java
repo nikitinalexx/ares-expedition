@@ -6,7 +6,7 @@ import com.terraforming.ares.model.PlayerContext;
 import com.terraforming.ares.model.Tag;
 
 import java.util.Collections;
-import java.util.Set;
+import java.util.List;
 
 /**
  * Created by oleksii.nikitin
@@ -25,8 +25,8 @@ public class CelestiorCorporation implements CorporationCard {
     }
 
     @Override
-    public Set<Tag> getTags() {
-        return Collections.singleton(Tag.SPACE);
+    public List<Tag> getTags() {
+        return Collections.singletonList(Tag.SPACE);
     }
 
     @Override

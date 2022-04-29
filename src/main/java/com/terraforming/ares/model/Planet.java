@@ -2,10 +2,12 @@ package com.terraforming.ares.model;
 
 import com.terraforming.ares.model.parameters.MeasurableGlobalParameter;
 import com.terraforming.ares.model.parameters.Ocean;
+import com.terraforming.ares.model.parameters.ParameterColor;
 import lombok.Builder;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.LongPredicate;
 
 /**
  * Created by oleksii.nikitin
@@ -15,4 +17,25 @@ import java.util.Map;
 public class Planet {
     private final Map<GlobalParameter, MeasurableGlobalParameter> measurableGlobalParameters;
     private final List<Ocean> oceans;
+
+    public boolean isValidTemperatute(List<ParameterColor> validParameters) {
+        return isValidParameter(validParameters, GlobalParameter.TEMPERATURE);
+    }
+
+    public boolean isValidOxygen(List<ParameterColor> validParameters) {
+        return isValidParameter(validParameters, GlobalParameter.OXYGEN);
+    }
+
+    public boolean isValidNumberOfOceans(LongPredicate oceanRequirement) {
+        return oceanRequirement.test(oceans.stream().filter(Ocean::isRevealed).count());
+    }
+
+    private boolean isValidParameter(List<ParameterColor> validColors, GlobalParameter globalParameter) {
+        if (validColors.isEmpty()) {
+            return true;
+        }
+
+        return validColors.contains(measurableGlobalParameters.get(globalParameter).getCurrentColor());
+
+    }
 }
