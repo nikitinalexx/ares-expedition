@@ -4,6 +4,7 @@ import com.terraforming.ares.controllers.GameController;
 import com.terraforming.ares.controllers.PlayController;
 import com.terraforming.ares.dto.PlayerUuidsDto;
 import com.terraforming.ares.model.GameParameters;
+import com.terraforming.ares.model.payments.MegacreditsPayment;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.GameProcessorService;
 import org.junit.jupiter.api.BeforeEach;
@@ -83,7 +84,7 @@ public class TerraformingMarsFlowTest {
             playController.chooseCorporation(firstPlayer, 1);
         });
 
-        assertEquals("Incorrent game state for corporation pick", exception.getMessage());
+        assertEquals("Incorrect game state for a turn PICK_CORPORATION", exception.getMessage());
 
         //second player hasn't chosen corporation yet, the process does nothing
         gameProcessorService.asyncUpdate();
@@ -136,6 +137,22 @@ public class TerraformingMarsFlowTest {
         assertEquals("WAIT", playController.getNextAction(firstPlayer));
         assertEquals("TURN", playController.getNextAction(secondPlayer));
         assertEquals(9, gameController.getGameByPlayerUuid(secondPlayer).getPlayer().getHand().getCards().size());
+
+        exception = assertThrows(IllegalStateException.class, () -> {
+            playController.buildGreenProject(
+                    secondPlayer,
+                    gameController.getGameByPlayerUuid(secondPlayer).getPlayer().getHand().getCards().get(0),
+                    Collections.singletonList(new MegacreditsPayment(10))
+            );
+        });
+
+        assertEquals("Total payment provided is more than needed", exception.getMessage());
+
+        playController.buildGreenProject(
+                secondPlayer,
+                gameController.getGameByPlayerUuid(secondPlayer).getPlayer().getHand().getCards().get(0),
+                Collections.singletonList(new MegacreditsPayment(8))
+        );
     }
 
 }

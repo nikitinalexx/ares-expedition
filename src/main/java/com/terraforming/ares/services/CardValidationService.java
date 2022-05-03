@@ -4,6 +4,7 @@ import com.terraforming.ares.model.Planet;
 import com.terraforming.ares.model.PlayerContext;
 import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.model.payments.Payment;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,8 +20,9 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class CardValidationService {
     private final DeckService deckService;
+    private final PaymentValidationService paymentValidationService;
 
-    public String validateCard(PlayerContext player, Planet planet, int cardId) {
+    public String validateCard(PlayerContext player, Planet planet, int cardId, List<Payment> payments) {
         ProjectCard projectCard = deckService.getProjectCard(cardId);
         if (projectCard == null) {
             return "Card doesn't exist " + cardId;
@@ -34,8 +36,8 @@ public class CardValidationService {
                 .or(() -> validateTemperature(planet, projectCard))
                 .or(() -> validateOceans(planet, projectCard))
                 .or(() -> validateTags(player, projectCard))
+                .or(() -> validatePayments(projectCard, player, payments))
                 .orElse(null);
-        //validate payment
     }
 
     private Optional<String> validateOxygen(Planet planet, ProjectCard card) {
@@ -60,6 +62,10 @@ public class CardValidationService {
         } else {
             return Optional.of("Ocean requirement not met");
         }
+    }
+
+    private Optional<String> validatePayments(ProjectCard card, PlayerContext playerContext, List<Payment> payments) {
+        return Optional.ofNullable(paymentValidationService.validate(card, playerContext, payments));
     }
 
     private Optional<String> validateTags(PlayerContext playerContext, ProjectCard projectCard) {

@@ -3,6 +3,7 @@ package com.terraforming.ares.services;
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.turn.*;
 import com.terraforming.ares.repositories.GameRepository;
 import lombok.RequiredArgsConstructor;
@@ -69,14 +70,14 @@ public class TurnService {
         );
     }
 
-    public void buildGreenProjectCard(String playerUuid, int projectId) {
+    public void buildGreenProjectCard(String playerUuid, int projectId, List<Payment> payments) {
         performAsyncTurn(
-                new BuildGreenProjectTurn(playerUuid, projectId),
+                new BuildGreenProjectTurn(playerUuid, projectId, payments),
                 playerUuid,
                 game -> {
                     PlayerContext player = game.getPlayerByUuid(playerUuid);
 
-                    return cardValidationService.validateCard(player, game.getPlanet(), projectId);
+                    return cardValidationService.validateCard(player, game.getPlanet(), projectId, payments);
                 });
     }
 

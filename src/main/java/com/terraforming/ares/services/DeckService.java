@@ -11,6 +11,7 @@ import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.ProjectCard;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -30,9 +31,16 @@ public class DeckService {
             4, new LaunchStarIncorporated()
     );
 
-    private final Map<Integer, ProjectCard> inmemoryProjectCards = Map.of(
-            1, new GeothermalPower()
-    );
+    private final Map<Integer, ProjectCard> inmemoryProjectCards;
+
+    public DeckService() {
+        Map<Integer, ProjectCard> tempMap = new HashMap<>();
+        for (int i = 0; i <= 20; i++) {
+            tempMap.put(i, new GeothermalPower());
+        }
+
+        inmemoryProjectCards = Map.copyOf(tempMap);
+    }
 
     public Deck createProjectsDeck(List<Expansion> expansions) {
         //TODO logic that builds a deck based on list of selected expansions
