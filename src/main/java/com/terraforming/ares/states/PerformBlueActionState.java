@@ -1,20 +1,19 @@
 package com.terraforming.ares.states;
 
-
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.model.turn.TurnType;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 /**
  * Created by oleksii.nikitin
- * Creation date 25.04.2022
+ * Creation date 26.04.2022
  */
-public class PickCorporationsState extends AbstractState {
+public class PerformBlueActionState extends AbstractState {
 
-    public PickCorporationsState(MarsGame marsGame) {
+    public PerformBlueActionState(MarsGame marsGame) {
         super(marsGame);
     }
 
@@ -23,13 +22,16 @@ public class PickCorporationsState extends AbstractState {
         if (marsGame.getPlayerByUuid(playerUuid).getNextTurn() != null) {
             return Collections.emptyList();
         } else {
-            return Collections.singletonList(TurnType.PICK_CORPORATION);
+            return Arrays.asList(
+                    TurnType.PERFORM_BLUE_ACTION,
+                    TurnType.SELL_CARDS,
+                    TurnType.SKIP_TURN
+            );
         }
     }
 
     @Override
     public void updateState() {
-        marsGame.setStateType(StateType.PICK_STAGE);
+        performStateTransferFromStage(4);
     }
-
 }

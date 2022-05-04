@@ -50,4 +50,8 @@ public class PlayController {
         turnService.buildGreenProjectCard(playerUuid, cardId, payments);
     }
 
+    public void buildBlueRedProject(String playerUuid, int cardId, List<Payment> payments) {
+        turnService.buildBlueRedProjectCard(playerUuid, cardId, payments);
+    }
+
 }

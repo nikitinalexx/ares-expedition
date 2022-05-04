@@ -1,7 +1,6 @@
 package com.terraforming.ares.services;
 
-import com.terraforming.ares.model.PlayerContext;
-import com.terraforming.ares.model.ProjectCard;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.payments.PaymentType;
 import com.terraforming.ares.validation.PaymentValidator;
@@ -20,8 +19,10 @@ import java.util.stream.Collectors;
 @Service
 public class PaymentValidationService {
     private final Map<PaymentType, PaymentValidator> validators;
+    private final SpecialEffectsService specialEffectsService;
 
-    public PaymentValidationService(List<PaymentValidator> paymentValidators) {
+    public PaymentValidationService(SpecialEffectsService specialEffectsService, List<PaymentValidator> paymentValidators) {
+        this.specialEffectsService = specialEffectsService;
         validators = paymentValidators.stream().collect(Collectors.toMap(
                 PaymentValidator::getType, Function.identity()
         ));
@@ -39,7 +40,7 @@ public class PaymentValidationService {
             }
         }
 
-        int discount = 0;//TODO somehow calculate the discount
+        int discount = getDiscount(projectCard, playerContext);
         int discountedPrice = projectCard.getPrice() - discount;
 
         int totalPayment = payments.stream().mapToInt(Payment::getValue).sum();
@@ -51,5 +52,29 @@ public class PaymentValidationService {
         } else {
             return null;
         }
+    }
+
+    private int getDiscount(ProjectCard projectCard, PlayerContext player) {
+        int discount = 0;
+
+        List<Tag> tags = projectCard.getTags();
+
+        boolean playerOwnsAdvancedAlloys = specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ADVANCED_ALLOYS);
+
+        if (tags.contains(Tag.BUILDING) && player.getSteelIncome() != 0) {
+            discount += player.getSteelIncome() * (2 + (playerOwnsAdvancedAlloys ? 1 : 0));
+        }
+
+        if (tags.contains(Tag.SPACE) && player.getTitaniumIncome() != 0) {
+            discount += player.getTitaniumIncome() * (3 + (playerOwnsAdvancedAlloys ? 1 : 0));
+        }
+
+        if (projectCard.getColor() == CardColor.GREEN && player.getChosenStage() == 1) {
+            discount += 3;
+        }
+
+        //TODO add other types of discount
+
+        return discount;
     }
 }

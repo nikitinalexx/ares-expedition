@@ -1,10 +1,7 @@
 package com.terraforming.ares.factories;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.states.BuildGreenProjectsState;
-import com.terraforming.ares.states.PickCorporationsState;
-import com.terraforming.ares.states.PickStageState;
-import com.terraforming.ares.states.State;
+import com.terraforming.ares.states.*;
 import org.springframework.stereotype.Service;
 
 /**
@@ -22,6 +19,17 @@ public class StateFactory {
                 return new PickStageState(marsGame);
             case BUILD_GREEN_PROJECTS:
                 return new BuildGreenProjectsState(marsGame);
+            case BUILD_FIRST_BLUE_RED_PROJECTS:
+            case BUILD_SECOND_BLUE_RED_PROJECTS:
+                return new BuildBlueRedProjectsState(marsGame);
+            case PERFORM_BLUE_ACTION:
+                return new PerformBlueActionState(marsGame);
+            case COLLECT_INCOME:
+                return new CollectIncomeState(marsGame);
+            case DRAFT_CARDS:
+                return new DraftCardsState(marsGame);
+            case SELL_EXTRA_CARDS:
+                return new SellExtraCardsState(marsGame);
             default:
                 throw new IllegalArgumentException(String.format("State %s is not supported", marsGame.getStateType()));
         }

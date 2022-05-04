@@ -1,7 +1,6 @@
 package com.terraforming.ares.states;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.model.turn.TurnType;
 
 import java.util.Collections;
@@ -28,13 +27,7 @@ public class PickStageState extends AbstractState {
 
     @Override
     public void updateState() {
-        if (marsGame.allStagesSelected()) {
-            if (marsGame.getPlayerContexts().values().stream()
-                    .anyMatch(p -> p.getCurrentStage() == 1)) {
-                marsGame.setStateType(StateType.BUILD_GREEN_PROJECTS);
-            }
-            //TODO other stages
-        }
+        performStateTransferFromStage(1);
     }
 
 }

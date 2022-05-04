@@ -151,7 +151,7 @@ public class TerraformingMarsFlowTest {
         playController.buildGreenProject(
                 secondPlayer,
                 gameController.getGameByPlayerUuid(secondPlayer).getPlayer().getHand().getCards().get(0),
-                Collections.singletonList(new MegacreditsPayment(8))
+                Collections.singletonList(new MegacreditsPayment(5))
         );
     }
 

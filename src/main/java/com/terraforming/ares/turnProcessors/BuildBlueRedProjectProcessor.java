@@ -1,6 +1,6 @@
 package com.terraforming.ares.turnProcessors;
 
-import com.terraforming.ares.model.turn.BuildGreenProjectTurn;
+import com.terraforming.ares.model.turn.BuildBlueRedProjectTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.DeckService;
 import org.springframework.stereotype.Service;
@@ -10,14 +10,14 @@ import org.springframework.stereotype.Service;
  * Creation date 25.04.2022
  */
 @Service
-public class BuildGreenProjectProcessor extends GenericBuildProjectProcessor<BuildGreenProjectTurn> {
+public class BuildBlueRedProjectProcessor extends GenericBuildProjectProcessor<BuildBlueRedProjectTurn> {
 
-    public BuildGreenProjectProcessor(DeckService marsDeckService) {
+    public BuildBlueRedProjectProcessor(DeckService marsDeckService) {
         super(marsDeckService);
     }
 
     @Override
     public TurnType getType() {
-        return TurnType.BUILD_GREEN_PROJECT;
+        return TurnType.BUILD_BLUE_RED_PROJECT;
     }
 }

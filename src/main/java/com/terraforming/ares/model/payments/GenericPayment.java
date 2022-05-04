@@ -15,4 +15,5 @@ public abstract class GenericPayment implements Payment{
         return value;
     }
 
+
 }

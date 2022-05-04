@@ -4,6 +4,7 @@ import com.terraforming.ares.model.parameters.ParameterColor;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.function.LongPredicate;
 
 /**
@@ -29,6 +30,13 @@ public interface ProjectCard extends GenericCard {
         return currentNumberOfOceans -> (currentNumberOfOceans >= 0 && currentNumberOfOceans <= 9);
     }
 
+    default int getWinningPoints() {
+        return 0;
+    }
+
     int getPrice();
 
+    default Set<SpecialEffect> getSpecialEffects() {
+        return Collections.emptySet();
+    }
 }

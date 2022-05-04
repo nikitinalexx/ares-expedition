@@ -13,7 +13,8 @@ import java.util.List;
 @Builder
 @Getter
 public class Deck {
-    private final LinkedList<Integer> cards;
+    @Builder.Default
+    private final LinkedList<Integer> cards = new LinkedList<>();
 
     public Deck dealCards(int count) {
         LinkedList<Integer> result = new LinkedList<>();
@@ -33,6 +34,10 @@ public class Deck {
 
     public void addCard(Integer card) {
         cards.add(card);
+    }
+
+    public int size() {
+        return cards.size();
     }
 
 }

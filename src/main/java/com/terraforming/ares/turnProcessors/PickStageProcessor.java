@@ -1,6 +1,7 @@
 package com.terraforming.ares.turnProcessors;
 
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Deck;
 import com.terraforming.ares.model.PlayerContext;
 import com.terraforming.ares.model.turn.StageChoiceTurn;
 import com.terraforming.ares.model.turn.TurnType;
@@ -16,7 +17,9 @@ public class PickStageProcessor implements TurnProcessor<StageChoiceTurn> {
     @Override
     public void processTurn(StageChoiceTurn turn, MarsGame game) {
         PlayerContext playerContext = game.getPlayerContexts().get(turn.getPlayerUuid());
-        playerContext.setCurrentStage(turn.getStageId());
+        playerContext.setPreviousChosenStage(playerContext.getChosenStage());
+        playerContext.setChosenStage(turn.getStageId());
+        playerContext.setActivatedBlueCards(Deck.builder().build());
     }
 
     @Override

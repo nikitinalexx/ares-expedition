@@ -70,22 +70,6 @@ public class MarsGame {
         }
     }
 
-    public boolean allCorporationsPicked() {
-        return playerContexts.values()
-                .stream()
-                .allMatch(
-                        playerContext -> playerContext.getSelectedCorporationCard() != null
-                );
-    }
-
-    public boolean allStagesSelected() {
-        return playerContexts.values()
-                .stream()
-                .allMatch(
-                        playerContext -> playerContext.getCurrentStage() != null
-                );
-    }
-
     private PlayerContext getPlayerContext(String playerUuid) {
         PlayerContext playerContext = playerContexts.get(playerUuid);
 

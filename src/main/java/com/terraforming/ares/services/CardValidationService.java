@@ -1,13 +1,12 @@
 package com.terraforming.ares.services;
 
-import com.terraforming.ares.model.Planet;
-import com.terraforming.ares.model.PlayerContext;
-import com.terraforming.ares.model.ProjectCard;
-import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.parameters.ParameterColor;
 import com.terraforming.ares.model.payments.Payment;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -21,6 +20,7 @@ import java.util.Optional;
 public class CardValidationService {
     private final DeckService deckService;
     private final PaymentValidationService paymentValidationService;
+    private final SpecialEffectsService specialEffectsService;
 
     public String validateCard(PlayerContext player, Planet planet, int cardId, List<Payment> payments) {
         ProjectCard projectCard = deckService.getProjectCard(cardId);
@@ -32,28 +32,51 @@ public class CardValidationService {
             return "Can't build a project that you don't have";
         }
 
-        return validateOxygen(planet, projectCard)
-                .or(() -> validateTemperature(planet, projectCard))
+
+        boolean playerMayAmplifyGlobalRequirement = specialEffectsService.ownsSpecialEffect(player, SpecialEffect.AMPLIFY_GLOBAL_REQUIREMENT);
+
+        //TODO requirements should be set at the beginning of stage
+        return validateOxygen(planet, projectCard, playerMayAmplifyGlobalRequirement)
+                .or(() -> validateTemperature(planet, projectCard, playerMayAmplifyGlobalRequirement))
                 .or(() -> validateOceans(planet, projectCard))
                 .or(() -> validateTags(player, projectCard))
                 .or(() -> validatePayments(projectCard, player, payments))
                 .orElse(null);
     }
 
-    private Optional<String> validateOxygen(Planet planet, ProjectCard card) {
-        if (planet.isValidOxygen(card.getOxygenRequirement())) {
+    private Optional<String> validateOxygen(Planet planet, ProjectCard card, boolean playerMayAmplifyGlobalRequirement) {
+        if (planet.isValidOxygen(
+                playerMayAmplifyGlobalRequirement ? amplifyRequirement(card.getOxygenRequirement()) : card.getOxygenRequirement()
+        )) {
             return Optional.empty();
         } else {
             return Optional.of("Oxygen requirement not met");
         }
     }
 
-    private Optional<String> validateTemperature(Planet planet, ProjectCard card) {
-        if (planet.isValidTemperatute(card.getTemperatureRequirement())) {
+    private Optional<String> validateTemperature(Planet planet, ProjectCard card, boolean playerMayAmplifyGlobalRequirement) {
+        if (planet.isValidTemperatute(
+                playerMayAmplifyGlobalRequirement ? amplifyRequirement(card.getTemperatureRequirement()) : card.getTemperatureRequirement()
+        )) {
             return Optional.empty();
         } else {
             return Optional.of("Temperature requirement not met");
         }
+    }
+
+    private List<ParameterColor> amplifyRequirement(List<ParameterColor> initialRequirement) {
+        List<ParameterColor> resultRequirement = new ArrayList<>(initialRequirement);
+        int minRequirement = initialRequirement.stream().mapToInt(Enum::ordinal).min().orElse(0);
+        int maxRequirement = initialRequirement.stream().mapToInt(Enum::ordinal).min().orElse(ParameterColor.WHITE.ordinal());
+
+        if (minRequirement > 0) {
+            resultRequirement.add(ParameterColor.values()[minRequirement - 1]);
+        }
+        if (maxRequirement < ParameterColor.WHITE.ordinal()) {
+            resultRequirement.add(ParameterColor.values()[maxRequirement + 1]);
+        }
+
+        return resultRequirement;
     }
 
     private Optional<String> validateOceans(Planet planet, ProjectCard card) {

@@ -44,7 +44,7 @@ public class TurnService {
             }
 
             PlayerContext player = game.getPlayerByUuid(playerUuid);
-            if (player.getPreviousStage() != null && player.getPreviousStage() == stageId) {
+            if (player.getPreviousChosenStage() != null && player.getPreviousChosenStage() == stageId) {
                 return "This stage already picked in previous round";
             }
 
@@ -73,6 +73,17 @@ public class TurnService {
     public void buildGreenProjectCard(String playerUuid, int projectId, List<Payment> payments) {
         performAsyncTurn(
                 new BuildGreenProjectTurn(playerUuid, projectId, payments),
+                playerUuid,
+                game -> {
+                    PlayerContext player = game.getPlayerByUuid(playerUuid);
+
+                    return cardValidationService.validateCard(player, game.getPlanet(), projectId, payments);
+                });
+    }
+
+    public void buildBlueRedProjectCard(String playerUuid, int projectId, List<Payment> payments) {
+        performAsyncTurn(
+                new BuildBlueRedProjectTurn(playerUuid, projectId, payments),
                 playerUuid,
                 game -> {
                     PlayerContext player = game.getPlayerByUuid(playerUuid);

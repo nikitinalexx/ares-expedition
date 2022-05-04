@@ -32,6 +32,6 @@ public class BuildGreenProjectsState extends AbstractState {
 
     @Override
     public void updateState() {
-        //TODO if stage 2 selected move to stage 2 etc
+        performStateTransferFromStage(2);
     }
 }

@@ -16,10 +16,11 @@ public class PlayerContext {
     private Deck hand;
     private Deck played;
     private Deck corporations;
+    private Deck activatedBlueCards;
     private Integer selectedCorporationCard;
 
-    private Integer previousStage;
-    private Integer currentStage;
+    private Integer previousChosenStage;
+    private Integer chosenStage;
 
     private Turn nextTurn;
 
@@ -36,4 +37,5 @@ public class PlayerContext {
 
     private int steelIncome;
     private int titaniumIncome;
+
 }

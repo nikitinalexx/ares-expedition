@@ -55,7 +55,7 @@ public class GameController {
                                 .build()
                 )
                 .corporationId(playerContext.getSelectedCorporationCard())
-                .stage(playerContext.getCurrentStage())
+                .stage(playerContext.getChosenStage())
                 .hand(playerContext.getHand())
                 .build();
     }
