@@ -15,5 +15,10 @@ public abstract class GenericPayment implements Payment{
         return value;
     }
 
+    @Override
+    public int getTotalValue() {
+        return value;
+    }
+
 
 }

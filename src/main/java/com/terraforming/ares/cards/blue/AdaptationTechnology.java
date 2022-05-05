@@ -3,6 +3,8 @@ package com.terraforming.ares.cards.blue;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.SpecialEffect;
 import com.terraforming.ares.model.Tag;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Collections;
 import java.util.List;
@@ -12,7 +14,10 @@ import java.util.Set;
  * Created by oleksii.nikitin
  * Creation date 05.05.2022
  */
+@RequiredArgsConstructor
+@Getter
 public class AdaptationTechnology implements BlueCard {
+    private final int id;
 
     @Override
     public String description() {

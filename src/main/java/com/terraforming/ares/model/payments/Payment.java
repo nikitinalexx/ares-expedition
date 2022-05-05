@@ -1,6 +1,7 @@
 package com.terraforming.ares.model.payments;
 
 import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.services.DeckService;
 
 /**
  * Created by oleksii.nikitin
@@ -8,6 +9,9 @@ import com.terraforming.ares.model.PlayerContext;
  */
 public interface Payment {
     PaymentType getType();
+
     int getValue();
-    void pay(PlayerContext player);
+    int getTotalValue();
+
+    void pay(DeckService deckService, PlayerContext player);
 }

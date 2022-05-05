@@ -2,6 +2,8 @@ package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Collections;
 import java.util.List;
@@ -10,7 +12,10 @@ import java.util.List;
  * Created by oleksii.nikitin
  * Creation date 05.05.2022
  */
+@RequiredArgsConstructor
+@Getter
 public class AdvancedScreeningTechnology implements BlueCard{
+    private final int id;
 
     @Override
     public String description() {

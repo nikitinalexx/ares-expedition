@@ -17,20 +17,25 @@ import java.util.Collections;
  */
 @RequiredArgsConstructor
 public abstract class GenericBuildProjectProcessor<T extends GenericBuildProjectTurn> implements TurnProcessor<T> {
-    private final DeckService marsDeckService;
+    private final DeckService deckService;
 
     @Override
     public TurnResponse processTurn(T turn, MarsGame game) {
         PlayerContext playerContext = game.getPlayerContexts().get(turn.getPlayerUuid());
+        ProjectCard card = deckService.getProjectCard(turn.getProjectId());
 
         for (Payment payment : turn.getPayments()) {
-            payment.pay(playerContext);
+            payment.pay(deckService, playerContext);
+        }
+
+        for (Integer previouslyPlayedCardId : playerContext.getPlayed().getCards()) {
+            ProjectCard previouslyPlayedCard = deckService.getProjectCard(previouslyPlayedCardId);
+            previouslyPlayedCard.onProjectBuiltEffect(playerContext, card);
         }
 
         playerContext.getHand().removeCards(Collections.singletonList(turn.getProjectId()));
         playerContext.getPlayed().addCard(turn.getProjectId());
 
-        ProjectCard card = marsDeckService.getProjectCard(turn.getProjectId());
         card.buildProject(playerContext);
 
         return null;

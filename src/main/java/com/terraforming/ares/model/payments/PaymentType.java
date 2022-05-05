@@ -5,5 +5,5 @@ package com.terraforming.ares.model.payments;
  * Creation date 03.05.2022
  */
 public enum PaymentType {
-    MEGACREDITS, HEAT
+    MEGACREDITS, HEAT, ANAEROBIC_MICROORGANISMS
 }

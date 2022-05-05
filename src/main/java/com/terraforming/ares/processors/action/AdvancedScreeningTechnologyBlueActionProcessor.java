@@ -32,6 +32,7 @@ public class AdvancedScreeningTechnologyBlueActionProcessor implements BlueActio
         for (Integer card : deck.getCards()) {
             ProjectCard projectCard = deckService.getProjectCard(card);
             if (projectCard.getTags().contains(Tag.SCIENCE) || projectCard.getTags().contains(Tag.PLANT)) {
+                player.getHand().addCard(card);
                 resultBuilder.takenCard(CardDto.from(projectCard));
             } else {
                 resultBuilder.discardedCard(CardDto.from(projectCard));

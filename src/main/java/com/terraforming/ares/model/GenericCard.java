@@ -8,6 +8,8 @@ import java.util.List;
  */
 public interface GenericCard {
 
+    int getId();
+
     default void buildProject(PlayerContext playerContext) {}
 
     //TODO find a better way to transfer card description and parameters
@@ -16,5 +18,7 @@ public interface GenericCard {
     List<Tag> getTags();
 
     Expansion getExpansion();
+
+    default void onProjectBuiltEffect(PlayerContext player, ProjectCard project) {}
 
 }

@@ -1,14 +1,14 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.model.Expansion;
-import com.terraforming.ares.model.SpecialEffect;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Created by oleksii.nikitin
@@ -16,17 +16,17 @@ import java.util.Set;
  */
 @RequiredArgsConstructor
 @Getter
-public class AdvancedAlloys implements BlueCard {
+public class AiCentral implements BlueCard {
     private final int id;
 
     @Override
     public String description() {
-        return "Each steel and titanium you have is valued 1 MC more.";
+        return "Action: Draw 2 cards.";
     }
 
     @Override
     public List<Tag> getTags() {
-        return Collections.singletonList(Tag.BUILDING);
+        return Arrays.asList(Tag.SCIENCE, Tag.BUILDING);
     }
 
     @Override
@@ -35,17 +35,22 @@ public class AdvancedAlloys implements BlueCard {
     }
 
     @Override
-    public Set<SpecialEffect> getSpecialEffects() {
-        return Collections.singleton(SpecialEffect.ADVANCED_ALLOYS);
+    public boolean isActiveCard() {
+        return true;
     }
 
     @Override
     public int getPrice() {
-        return 9;
+        return 22;
     }
 
     @Override
-    public boolean isActiveCard() {
-        return false;
+    public List<Tag> getTagRequirements() {
+        return IntStream.range(0, 5).mapToObj(i -> Tag.SCIENCE).collect(Collectors.toList());
+    }
+
+    @Override
+    public int getWinningPoints() {
+        return 2;
     }
 }

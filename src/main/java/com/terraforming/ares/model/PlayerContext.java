@@ -4,6 +4,9 @@ import com.terraforming.ares.model.turn.Turn;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.HashMap;
+import java.util.Map;
+
 
 /**
  * Created by oleksii.nikitin
@@ -14,11 +17,14 @@ import lombok.Data;
 public class PlayerContext {
     private String uuid;
     private Deck hand;
-    private Deck played;
+    @Builder.Default
+    private Deck played = Deck.builder().build();
     private Deck corporations;
     private Deck activatedBlueCards;
     private boolean activatedBlueActionTwice;
     private Integer selectedCorporationCard;
+    @Builder.Default
+    private Map<Integer, Integer> cardIdToResourcesCount = new HashMap<>();
 
     private Integer previousChosenStage;
     private Integer chosenStage;

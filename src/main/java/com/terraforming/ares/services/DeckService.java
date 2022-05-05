@@ -1,5 +1,7 @@
 package com.terraforming.ares.services;
 
+import com.terraforming.ares.cards.blue.AiCentral;
+import com.terraforming.ares.cards.blue.AnaerobicMicroorganisms;
 import com.terraforming.ares.cards.corporations.CelestiorCorporation;
 import com.terraforming.ares.cards.corporations.DevTechs;
 import com.terraforming.ares.cards.corporations.HelionCorporation;
@@ -24,11 +26,12 @@ import java.util.stream.IntStream;
  */
 @Service
 public class DeckService {
+    //TODO do something with these ids
     private final Map<Integer, CorporationCard> inmemoryCorporationsStorage = Map.of(
-            1, new HelionCorporation(),
-            2, new CelestiorCorporation(),
-            3, new DevTechs(),
-            4, new LaunchStarIncorporated()
+            1, new HelionCorporation(1),
+            2, new CelestiorCorporation(2),
+            3, new DevTechs(3),
+            4, new LaunchStarIncorporated(4)
     );
 
     private final Map<Integer, ProjectCard> inmemoryProjectCards;
@@ -36,8 +39,10 @@ public class DeckService {
     public DeckService() {
         Map<Integer, ProjectCard> tempMap = new HashMap<>();
         for (int i = 0; i <= 20; i++) {
-            tempMap.put(i, new GeothermalPower());
+            tempMap.put(i, new GeothermalPower(i));
         }
+        tempMap.put(21, new AnaerobicMicroorganisms(21));
+        tempMap.put(22, new AiCentral(22));
 
         inmemoryProjectCards = Map.copyOf(tempMap);
     }
