@@ -20,7 +20,7 @@ public abstract class AbstractState implements State {
 
     @Override
     public Action nextAction(String playerUuid) {
-        if (marsGame.getPlayerByUuid(playerUuid).getNextTurn() != null) {
+        if (getPossibleTurns(playerUuid).isEmpty()) {
             return Action.WAIT;
         } else {
             return Action.TURN;
