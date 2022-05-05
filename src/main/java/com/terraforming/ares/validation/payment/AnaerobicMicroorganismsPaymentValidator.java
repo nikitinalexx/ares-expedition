@@ -1,4 +1,4 @@
-package com.terraforming.ares.validation;
+package com.terraforming.ares.validation.payment;
 
 import com.terraforming.ares.cards.blue.AnaerobicMicroorganisms;
 import com.terraforming.ares.model.PlayerContext;

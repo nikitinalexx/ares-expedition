@@ -3,7 +3,7 @@ package com.terraforming.ares.services;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.payments.PaymentType;
-import com.terraforming.ares.validation.PaymentValidator;
+import com.terraforming.ares.validation.payment.PaymentValidator;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 

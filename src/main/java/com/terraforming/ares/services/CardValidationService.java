@@ -3,24 +3,41 @@ package com.terraforming.ares.services;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import com.terraforming.ares.model.payments.Payment;
+import com.terraforming.ares.processors.action.BlueActionCardProcessor;
+import com.terraforming.ares.validation.action.ActionValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Created by oleksii.nikitin
  * Creation date 29.04.2022
  */
 @Service
-@RequiredArgsConstructor
 public class CardValidationService {
     private final DeckService deckService;
     private final PaymentValidationService paymentValidationService;
     private final SpecialEffectsService specialEffectsService;
+    private final Map<Class<?>, ActionValidator<?>> blueActionValidators;
+
+    public CardValidationService(DeckService deckService,
+                                 PaymentValidationService paymentValidationService,
+                                 SpecialEffectsService specialEffectsService,
+                                 List<ActionValidator<?>> validators) {
+        this.deckService = deckService;
+        this.paymentValidationService = paymentValidationService;
+        this.specialEffectsService = specialEffectsService;
+
+        blueActionValidators = validators.stream().collect(
+                Collectors.toMap(
+                        ActionValidator::getType,
+                        Function.identity()
+                )
+        );
+    }
 
     public String validateCard(PlayerContext player, Planet planet, int cardId, List<Payment> payments) {
         ProjectCard projectCard = deckService.getProjectCard(cardId);
@@ -44,6 +61,7 @@ public class CardValidationService {
                 .orElse(null);
     }
 
+    @SuppressWarnings("unchecked")
     public String validateBlueAction(PlayerContext player, Planet planet, int cardId) {
         ProjectCard projectCard = deckService.getProjectCard(cardId);
         if (projectCard == null) {
@@ -67,7 +85,13 @@ public class CardValidationService {
             }
         }
 
-        return null;
+        ActionValidator<ProjectCard> validator = (ActionValidator<ProjectCard>) blueActionValidators.get(projectCard.getClass());
+
+        if (validator != null) {
+            return validator.validate(planet, player);
+        } else {
+            return null;
+        }
     }
 
     private Optional<String> validateOxygen(Planet planet, ProjectCard card, boolean playerMayAmplifyGlobalRequirement) {

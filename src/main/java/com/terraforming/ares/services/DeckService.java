@@ -2,6 +2,7 @@ package com.terraforming.ares.services;
 
 import com.terraforming.ares.cards.blue.AiCentral;
 import com.terraforming.ares.cards.blue.AnaerobicMicroorganisms;
+import com.terraforming.ares.cards.blue.BlueCard;
 import com.terraforming.ares.cards.corporations.CelestiorCorporation;
 import com.terraforming.ares.cards.corporations.DevTechs;
 import com.terraforming.ares.cards.corporations.HelionCorporation;

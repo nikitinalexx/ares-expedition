@@ -25,6 +25,8 @@ public class PlayerContext {
     private Integer selectedCorporationCard;
     @Builder.Default
     private Map<Integer, Integer> cardIdToResourcesCount = new HashMap<>();
+    @Builder.Default
+    private int terraformingRating = Constants.STARTING_RT;
 
     private Integer previousChosenStage;
     private Integer chosenStage;

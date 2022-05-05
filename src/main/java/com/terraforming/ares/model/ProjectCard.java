@@ -27,7 +27,7 @@ public interface ProjectCard extends GenericCard {
     }
 
     default LongPredicate getOceanRequirement() {
-        return currentNumberOfOceans -> (currentNumberOfOceans >= 0 && currentNumberOfOceans <= 9);
+        return currentNumberOfOceans -> (currentNumberOfOceans >= 0 && currentNumberOfOceans <= Constants.MAX_OCEANS);
     }
 
     boolean isActiveCard();
