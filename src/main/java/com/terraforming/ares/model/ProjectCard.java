@@ -30,6 +30,8 @@ public interface ProjectCard extends GenericCard {
         return currentNumberOfOceans -> (currentNumberOfOceans >= 0 && currentNumberOfOceans <= 9);
     }
 
+    boolean isActiveCard();
+
     default int getWinningPoints() {
         return 0;
     }

@@ -2,7 +2,9 @@ package com.terraforming.ares.services;
 
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.GameUpdateResult;
 import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.turn.*;
 import com.terraforming.ares.repositories.GameRepository;
@@ -92,6 +94,25 @@ public class TurnService {
                 });
     }
 
+    public TurnResponse performBlueAction(String playerUuid, int projectId) {
+        long gameId = gameRepository.getGameIdByPlayerUuid(playerUuid);
+
+        GameUpdateResult<TurnResponse> updateResult = gameProcessorService.syncPlayerUpdate(gameId,
+                new PerformBlueActionTurn(playerUuid, projectId),
+                game -> {
+                    PlayerContext player = game.getPlayerByUuid(playerUuid);
+
+                    return cardValidationService.validateBlueAction(player, game.getPlanet(), projectId);
+                }
+        );
+
+        if (updateResult.finishedWithError()) {
+            throw new IllegalStateException(updateResult.getError());
+        }
+
+        return updateResult.getResult();
+    }
+
     private void performAsyncTurn(Turn turn, String playerUuid, Function<MarsGame, String> turnSpecificValidations) {
         performTurn(turn, playerUuid, turnSpecificValidations, false);
     }
@@ -103,7 +124,7 @@ public class TurnService {
     private void performTurn(Turn turn, String playerUuid, Function<MarsGame, String> turnSpecificValidations, boolean sync) {
         long gameId = gameRepository.getGameIdByPlayerUuid(playerUuid);
 
-        String errorMessage = gameRepository.updateMarsGame(
+        GameUpdateResult<?> updateResult = gameRepository.updateMarsGame(
                 gameId,
                 game -> {
                     if (!stateFactory.getCurrentState(game).getPossibleTurns(playerUuid).contains(turn.getType())) {
@@ -112,11 +133,14 @@ public class TurnService {
 
                     return turnSpecificValidations.apply(game);
                 },
-                game -> game.getPlayerByUuid(playerUuid).setNextTurn(turn)
+                game -> {
+                    game.getPlayerByUuid(playerUuid).setNextTurn(turn);
+                    return null;
+                }
         );
 
-        if (errorMessage != null) {
-            throw new IllegalStateException(errorMessage);
+        if (updateResult.finishedWithError()) {
+            throw new IllegalStateException(updateResult.getError());
         }
 
         if (sync) {

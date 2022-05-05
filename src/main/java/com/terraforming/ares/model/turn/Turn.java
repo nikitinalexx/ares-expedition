@@ -6,6 +6,8 @@ package com.terraforming.ares.model.turn;
  */
 public interface Turn {
 
+    String getPlayerUuid();
+
     TurnType getType();
 
 }

@@ -8,7 +8,7 @@ import java.util.List;
  */
 public interface GenericCard {
 
-    void buildProject(PlayerContext playerContext);
+    default void buildProject(PlayerContext playerContext) {}
 
     //TODO find a better way to transfer card description and parameters
     String description();

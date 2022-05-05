@@ -1,8 +1,8 @@
 package com.terraforming.ares.repositories;
 
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.GameUpdateResult;
 
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -19,6 +19,6 @@ public interface GameRepository {
 
     MarsGame getGameByPlayerUuid(String playerUuid);
 
-    String updateMarsGame(long id, Function<MarsGame, String> stateChecker, Consumer<MarsGame> updater);
+    <T> GameUpdateResult<T> updateMarsGame(long id, Function<MarsGame, String> stateChecker, Function<MarsGame, T> updater);
 
 }

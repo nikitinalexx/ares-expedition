@@ -1,12 +1,12 @@
 package com.terraforming.ares.repositories;
 
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.GameUpdateResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -43,29 +43,28 @@ public class TemporaryGameRepository implements GameRepository {
     }
 
     @Override
-    public String updateMarsGame(long id, Function<MarsGame, String> stateChecker, Consumer<MarsGame> updater) {
-        ResultHolder resultHolder = new ResultHolder();
+    public <T> GameUpdateResult<T> updateMarsGame(long id, Function<MarsGame, String> stateChecker, Function<MarsGame, T> updater) {
+        GameUpdateResult.GameUpdateResultBuilder<T> resultBuilder = GameUpdateResult.<T>builder();
 
         cache.compute(id, (key, value) -> {
             if (value == null) {
                 value = getGameById(key);
             }
 
-            resultHolder.errorMessage = stateChecker.apply(value);
+            String validationError = stateChecker.apply(value);
 
-            if (resultHolder.errorMessage == null) {
-                updater.accept(value);
+            resultBuilder.error(stateChecker.apply(value));
+
+            if (validationError == null) {
+                T updateResult = updater.apply(value);
+                resultBuilder.result(updateResult);
                 realStorage.save(value);
             }
 
             return value;
         });
 
-        return resultHolder.errorMessage;
-    }
-
-    private static class ResultHolder {
-        String errorMessage;
+        return resultBuilder.build();
     }
 
 }

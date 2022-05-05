@@ -44,6 +44,32 @@ public class CardValidationService {
                 .orElse(null);
     }
 
+    public String validateBlueAction(PlayerContext player, Planet planet, int cardId) {
+        ProjectCard projectCard = deckService.getProjectCard(cardId);
+        if (projectCard == null) {
+            return "Card doesn't exist " + cardId;
+        }
+
+        if (projectCard.getColor() != CardColor.BLUE || !projectCard.isActiveCard()) {
+            return "Selected card doesn't contain an action";
+        }
+
+        if (!player.getPlayed().getCards().contains(cardId)) {
+            return "Can't play an action of a card that you haven't built";
+        }
+
+        if (player.getActivatedBlueCards().containsCard(cardId)) {
+            if (player.getChosenStage() != 3) {
+                return "Can't play an action twice if you didn't choose stage 3";
+            }
+            if (player.isActivatedBlueActionTwice()) {
+                return "Can't play an action that was already played and double action already performed";
+            }
+        }
+
+        return null;
+    }
+
     private Optional<String> validateOxygen(Planet planet, ProjectCard card, boolean playerMayAmplifyGlobalRequirement) {
         if (planet.isValidOxygen(
                 playerMayAmplifyGlobalRequirement ? amplifyRequirement(card.getOxygenRequirement()) : card.getOxygenRequirement()

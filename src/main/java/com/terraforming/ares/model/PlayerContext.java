@@ -17,6 +17,7 @@ public class PlayerContext {
     private Deck played;
     private Deck corporations;
     private Deck activatedBlueCards;
+    private boolean activatedBlueActionTwice;
     private Integer selectedCorporationCard;
 
     private Integer previousChosenStage;
@@ -37,5 +38,12 @@ public class PlayerContext {
 
     private int steelIncome;
     private int titaniumIncome;
+
+    public void clearRoundResults() {
+        previousChosenStage = chosenStage;
+        chosenStage = null;
+        activatedBlueCards = Deck.builder().build();
+        activatedBlueActionTwice = false;
+    }
 
 }

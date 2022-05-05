@@ -1,7 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.model.Expansion;
-import com.terraforming.ares.model.PlayerContext;
 import com.terraforming.ares.model.SpecialEffect;
 import com.terraforming.ares.model.Tag;
 
@@ -14,10 +13,6 @@ import java.util.Set;
  * Creation date 05.05.2022
  */
 public class AdaptationTechnology implements BlueCard {
-    @Override
-    public void buildProject(PlayerContext playerContext) {
-        //no effect
-    }
 
     @Override
     public String description() {
@@ -47,5 +42,10 @@ public class AdaptationTechnology implements BlueCard {
     @Override
     public Set<SpecialEffect> getSpecialEffects() {
         return Collections.singleton(SpecialEffect.AMPLIFY_GLOBAL_REQUIREMENT);
+    }
+
+    @Override
+    public boolean isActiveCard() {
+        return false;
     }
 }

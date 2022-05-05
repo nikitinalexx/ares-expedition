@@ -2,11 +2,13 @@ package com.terraforming.ares.services;
 
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.GameUpdateResult;
 import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.turn.Turn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.repositories.GameRepository;
-import com.terraforming.ares.turnProcessors.TurnProcessor;
+import com.terraforming.ares.processors.turn.TurnProcessor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -55,11 +57,17 @@ public class GameProcessorService {
 
             if (processFinalTurns(game)) {
                 stateFactory.getCurrentState(game).updateState();
-                return;
+                return null;
             }
 
             processIntermediateTurns(game);
+
+            return null;
         });
+    }
+
+    public GameUpdateResult<TurnResponse> syncPlayerUpdate(long gameId, Turn turn, Function<MarsGame, String> stateChecker) {
+        return gameRepository.updateMarsGame(gameId, stateChecker, game -> processTurn(turn, game));
     }
 
     private void processIntermediateTurns(MarsGame game) {
@@ -85,13 +93,16 @@ public class GameProcessorService {
         return true;
     }
 
-    @SuppressWarnings("unchecked")
     private void processNextTurn(PlayerContext playerContext, MarsGame game) {
-        TurnProcessor<Turn> turnProcessor = (TurnProcessor<Turn>) turnProcessors.get(playerContext.getNextTurn().getType());
-
-        turnProcessor.processTurn(playerContext.getNextTurn(), game);
-
+        processTurn(playerContext.getNextTurn(), game);
         playerContext.setNextTurn(null);
+    }
+
+    @SuppressWarnings("unchecked")
+    private TurnResponse processTurn(Turn turn, MarsGame game) {
+        TurnProcessor<Turn> turnProcessor = (TurnProcessor<Turn>) turnProcessors.get(turn.getType());
+
+        return turnProcessor.processTurn(turn, game);
     }
 
     public void registerAsyncGameUpdate(long gameId) {

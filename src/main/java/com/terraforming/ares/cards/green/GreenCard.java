@@ -14,4 +14,8 @@ public interface GreenCard extends ProjectCard {
         return CardColor.GREEN;
     }
 
+    @Override
+    default boolean isActiveCard() {
+        return false;
+    }
 }

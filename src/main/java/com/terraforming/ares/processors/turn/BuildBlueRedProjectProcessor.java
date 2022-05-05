@@ -1,4 +1,4 @@
-package com.terraforming.ares.turnProcessors;
+package com.terraforming.ares.processors.turn;
 
 import com.terraforming.ares.model.turn.BuildBlueRedProjectTurn;
 import com.terraforming.ares.model.turn.TurnType;

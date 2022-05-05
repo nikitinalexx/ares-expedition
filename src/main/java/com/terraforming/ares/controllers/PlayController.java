@@ -1,5 +1,6 @@
 package com.terraforming.ares.controllers;
 
+import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.GameService;
@@ -52,6 +53,10 @@ public class PlayController {
 
     public void buildBlueRedProject(String playerUuid, int cardId, List<Payment> payments) {
         turnService.buildBlueRedProjectCard(playerUuid, cardId, payments);
+    }
+
+    public TurnResponse performBlueAction(String playerUuid, int projectId) {
+        return turnService.performBlueAction(playerUuid, projectId);
     }
 
 }
