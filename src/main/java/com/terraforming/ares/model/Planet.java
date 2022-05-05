@@ -7,6 +7,7 @@ import lombok.Builder;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.LongPredicate;
 
 /**
@@ -30,12 +31,17 @@ public class Planet {
         return oceanRequirement.test(oceans.stream().filter(Ocean::isRevealed).count());
     }
 
+    public Optional<Ocean> revealOcean() {
+        Optional<Ocean> result = oceans.stream().filter(ocean -> !ocean.isRevealed()).findAny();
+        result.ifPresent(Ocean::reveal);
+        return result;
+    }
+
     private boolean isValidParameter(List<ParameterColor> validColors, GlobalParameter globalParameter) {
         if (validColors.isEmpty()) {
             return true;
         }
 
         return validColors.contains(measurableGlobalParameters.get(globalParameter).getCurrentColor());
-
     }
 }

@@ -6,12 +6,14 @@ import com.terraforming.ares.model.Planet;
 import com.terraforming.ares.model.parameters.MeasurableGlobalParameter;
 import com.terraforming.ares.model.parameters.Ocean;
 import com.terraforming.ares.model.parameters.ParameterGradation;
+import com.terraforming.ares.services.ShuffleService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.terraforming.ares.model.parameters.ParameterColor.*;
 
@@ -20,7 +22,9 @@ import static com.terraforming.ares.model.parameters.ParameterColor.*;
  * Creation date 25.04.2022
  */
 @Service
+@RequiredArgsConstructor
 public class PlanetFactory {
+    private final ShuffleService shuffleService;
 
     public Planet createMars(GameParameters gameParameters) {
         return Planet.builder()
@@ -74,7 +78,21 @@ public class PlanetFactory {
     }
 
     private List<Ocean> generateOceans() {
-        return Stream.generate(Ocean::new).limit(9).collect(Collectors.toList());
+        List<Ocean> oceans = new ArrayList<>(Arrays.asList(
+                new Ocean(0, 0, 2),
+                new Ocean(0, 4, 0),
+                new Ocean(1, 1, 0),
+                new Ocean(0, 2, 1),
+                new Ocean(1, 0, 1),
+                new Ocean(1, 0, 0),
+                new Ocean(0, 1, 1),
+                new Ocean(1, 0, 0),
+                new Ocean(0, 0, 2)
+        ));
+
+        shuffleService.shuffle(oceans);
+
+        return oceans;
     }
 
 }
