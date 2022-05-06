@@ -25,7 +25,7 @@ public class MarsGame {
     private long id;
     private int playersCount;
     private Map<String, PlayerContext> playerContexts;
-    private Deck projectsDeck;
+    private Deck projectsDeck;//TODO what if it gets empty
     private Deck corporationsDeck;
     private Planet planet;
     private StateType stateType;
