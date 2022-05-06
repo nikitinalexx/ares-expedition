@@ -2,7 +2,6 @@ package com.terraforming.ares.states;
 
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.PlayerContext;
-import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.model.turn.TurnType;
 
 import java.util.Arrays;
@@ -22,7 +21,7 @@ public class BuildBlueRedProjectsState extends AbstractState {
     @Override
     public List<TurnType> getPossibleTurns(String playerUuid) {
         PlayerContext player = marsGame.getPlayerByUuid(playerUuid);
-        if (player.getNextTurn() != null || marsGame.getStateType() == StateType.BUILD_SECOND_BLUE_RED_PROJECTS && player.getChosenStage() != 2) {
+        if (player.getNextTurn() != null || player.getCanBuildInSecondStage() == 0) {
             return Collections.emptyList();
         } else {
             return Arrays.asList(
@@ -35,9 +34,9 @@ public class BuildBlueRedProjectsState extends AbstractState {
 
     @Override
     public void updateState() {
-        if (marsGame.getStateType() == StateType.BUILD_FIRST_BLUE_RED_PROJECTS) {
-            marsGame.setStateType(StateType.BUILD_SECOND_BLUE_RED_PROJECTS);
-        } else {
+        if (marsGame.getPlayerContexts().values().stream().allMatch(
+                player -> player.getCanBuildInSecondStage() == 0
+        )) {
             performStateTransferFromStage(3);
         }
     }

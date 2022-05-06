@@ -20,5 +20,6 @@ public interface GenericCard {
     Expansion getExpansion();
 
     default void onProjectBuiltEffect(PlayerContext player, ProjectCard project) {}
+    default void onOceanFlippedEffect(PlayerContext player) {}
 
 }

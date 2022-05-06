@@ -27,6 +27,8 @@ public class PlayerContext {
     private Map<Integer, Integer> cardIdToResourcesCount = new HashMap<>();
     @Builder.Default
     private int terraformingRating = Constants.STARTING_RT;
+    @Builder.Default
+    private int canBuildInSecondStage = 0;
 
     private Integer previousChosenStage;
     private Integer chosenStage;
@@ -52,6 +54,7 @@ public class PlayerContext {
         chosenStage = null;
         activatedBlueCards = Deck.builder().build();
         activatedBlueActionTwice = false;
+        canBuildInSecondStage = 0;
     }
 
 }

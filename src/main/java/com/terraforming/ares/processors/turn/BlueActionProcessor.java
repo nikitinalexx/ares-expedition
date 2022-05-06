@@ -3,11 +3,13 @@ package com.terraforming.ares.processors.turn;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.PlayerContext;
 import com.terraforming.ares.model.ProjectCard;
+import com.terraforming.ares.model.SpecialEffect;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.turn.PerformBlueActionTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.processors.action.BlueActionCardProcessor;
 import com.terraforming.ares.services.DeckService;
+import com.terraforming.ares.services.SpecialEffectsService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,10 +24,12 @@ import java.util.stream.Collectors;
 @Service
 public class BlueActionProcessor implements TurnProcessor<PerformBlueActionTurn> {
     private final DeckService deckService;
+    private final SpecialEffectsService specialEffectsService;
     private final Map<Class<?>, BlueActionCardProcessor<?>> blueActionProcessors;
 
-    public BlueActionProcessor(DeckService deckService, List<BlueActionCardProcessor<?>> processors) {
+    public BlueActionProcessor(DeckService deckService, SpecialEffectsService specialEffectsService, List<BlueActionCardProcessor<?>> processors) {
         this.deckService = deckService;
+        this.specialEffectsService = specialEffectsService;
 
         blueActionProcessors = processors.stream().collect(
                 Collectors.toMap(
@@ -44,7 +48,13 @@ public class BlueActionProcessor implements TurnProcessor<PerformBlueActionTurn>
 
         BlueActionCardProcessor<ProjectCard> blueActionCardProcessor = (BlueActionCardProcessor<ProjectCard>) blueActionProcessors.get(projectCard.getClass());
 
-        return blueActionCardProcessor.process(game, player);
+        TurnResponse response = blueActionCardProcessor.process(game, player);
+
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ASSEMBLY_LINES)) {
+            player.setMc(player.getMc() + 1);
+        }
+
+        return response;
     }
 
     @Override

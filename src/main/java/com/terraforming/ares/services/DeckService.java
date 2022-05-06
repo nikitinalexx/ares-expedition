@@ -14,10 +14,7 @@ import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.ProjectCard;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -27,51 +24,34 @@ import java.util.stream.IntStream;
  */
 @Service
 public class DeckService {
-    //TODO do something with these ids
-    private final Map<Integer, CorporationCard> inmemoryCorporationsStorage = Map.of(
-            1, new HelionCorporation(1),
-            2, new CelestiorCorporation(2),
-            3, new DevTechs(3),
-            4, new LaunchStarIncorporated(4)
-    );
+    private final Map<Integer, ProjectCard> projects;
+    private final Map<Integer, CorporationCard> corporations;
 
-    private final Map<Integer, ProjectCard> inmemoryProjectCards;
-
-    public DeckService() {
-        Map<Integer, ProjectCard> tempMap = new HashMap<>();
-        for (int i = 0; i <= 20; i++) {
-            tempMap.put(i, new GeothermalPower(i));
-        }
-        tempMap.put(21, new AnaerobicMicroorganisms(21));
-        tempMap.put(22, new AiCentral(22));
-
-        inmemoryProjectCards = Map.copyOf(tempMap);
+    public DeckService(CardFactory cardFactory) {
+        projects = cardFactory.createProjects();
+        corporations = cardFactory.createCorporations();
     }
 
     public Deck createProjectsDeck(List<Expansion> expansions) {
         //TODO logic that builds a deck based on list of selected expansions
         return Deck.builder()
-                .cards(new LinkedList<>(
-                        IntStream.range(1, 21).boxed().collect(Collectors.toList())
-                ))
+                .cards(new LinkedList<>(projects.keySet()))
                 .build();
     }
 
     public Deck createCorporationsDeck(List<Expansion> expansions) {
         //TODO logic that builds a deck based on list of selected expansions
         return Deck.builder()
-                .cards(new LinkedList<>(
-                        IntStream.range(1, 5).boxed().collect(Collectors.toList())
-                ))
+                .cards(new LinkedList<>(corporations.keySet()))
                 .build();
     }
 
     public CorporationCard getCorporationCard(int id) {
-        return inmemoryCorporationsStorage.get(id);
+        return corporations.get(id);
     }
 
     public ProjectCard getProjectCard(int id) {
-        return inmemoryProjectCards.get(id);
+        return projects.get(id);
     }
 
 }

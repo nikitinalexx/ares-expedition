@@ -7,8 +7,8 @@ import com.terraforming.ares.model.PlayerContext;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.turn.Turn;
 import com.terraforming.ares.model.turn.TurnType;
-import com.terraforming.ares.repositories.GameRepository;
 import com.terraforming.ares.processors.turn.TurnProcessor;
+import com.terraforming.ares.repositories.GameRepository;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -82,7 +82,9 @@ public class GameProcessorService {
         boolean allTurnsReadyAndAllTerminal = game.getPlayerContexts()
                 .values()
                 .stream()
-                .allMatch(player -> player.getNextTurn() != null && player.getNextTurn().getType().isTerminal());
+                .allMatch(player -> player.getNextTurn() != null && player.getNextTurn().getType().isTerminal()
+                        || stateFactory.getCurrentState(game).getPossibleTurns(player.getUuid()).isEmpty()
+                );
 
         if (!allTurnsReadyAndAllTerminal) {
             return false;
@@ -100,6 +102,10 @@ public class GameProcessorService {
 
     @SuppressWarnings("unchecked")
     private TurnResponse processTurn(Turn turn, MarsGame game) {
+        if (turn == null) {
+            return null;
+        }
+
         TurnProcessor<Turn> turnProcessor = (TurnProcessor<Turn>) turnProcessors.get(turn.getType());
 
         return turnProcessor.processTurn(turn, game);

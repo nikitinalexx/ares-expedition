@@ -1,10 +1,7 @@
 package com.terraforming.ares.factories;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Deck;
-import com.terraforming.ares.model.Expansion;
-import com.terraforming.ares.model.GameParameters;
-import com.terraforming.ares.model.Planet;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.ShuffleService;
 import com.terraforming.ares.services.DeckService;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +30,13 @@ public class DefaultGameFactory implements GameFactory {
 
         Planet mars = planetFactory.createMars(gameParameters);
 
-        return new MarsGame(gameParameters.getPlayersCount(), projectsDeck, corporationsDeck, mars);
+        return new MarsGame(
+                gameParameters.getPlayersCount(),
+                Constants.DEFAULT_START_HAND_SIZE,
+                projectsDeck,
+                corporationsDeck,
+                mars
+        );
 
     }
 

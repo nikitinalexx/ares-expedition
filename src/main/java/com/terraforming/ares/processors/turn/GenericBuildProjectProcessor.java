@@ -38,7 +38,11 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
 
         card.buildProject(playerContext);
 
+        processTurnInternal(turn, game);
+
         return null;
     }
+
+    protected void processTurnInternal(T turn, MarsGame game) {}
 
 }

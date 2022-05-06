@@ -19,8 +19,7 @@ public class StateFactory {
                 return new PickStageState(marsGame);
             case BUILD_GREEN_PROJECTS:
                 return new BuildGreenProjectsState(marsGame);
-            case BUILD_FIRST_BLUE_RED_PROJECTS:
-            case BUILD_SECOND_BLUE_RED_PROJECTS:
+            case BUILD_BLUE_RED_PROJECTS:
                 return new BuildBlueRedProjectsState(marsGame);
             case PERFORM_BLUE_ACTION:
                 return new PerformBlueActionState(marsGame);

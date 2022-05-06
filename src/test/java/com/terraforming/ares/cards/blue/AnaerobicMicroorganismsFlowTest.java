@@ -13,6 +13,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.util.Arrays;
 import java.util.Collections;
 
+import static com.terraforming.ares.model.Constants.AI_CENTRAL_CARD_ID;
+import static com.terraforming.ares.model.Constants.ANAEROBIC_MICROORGANISMS_CARD_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -21,14 +23,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  * Creation date 05.05.2022
  */
 @SpringBootTest
-public class TestAnaerobicMicroorganismsFlowTest {
-    private static final int ANAEROBIC_MICROORGANISMS_CARD_ID = 21;
+public class AnaerobicMicroorganismsFlowTest {
 
     @Autowired
     private PaymentValidationService paymentValidationService;
-
-    @Autowired
-    private DeckService deckService;
 
     private PlayerContext player;
 
@@ -42,7 +40,7 @@ public class TestAnaerobicMicroorganismsFlowTest {
     void testNotEnoughResources() {
         player.getCardIdToResourcesCount().put(ANAEROBIC_MICROORGANISMS_CARD_ID, 1);
         String errorMessage = paymentValidationService.validate(
-                new AiCentral(100500),
+                new AiCentral(AI_CENTRAL_CARD_ID),
                 player,
                 Collections.singletonList(new AnaerobicMicroorganismsPayment(
                         2
@@ -56,7 +54,7 @@ public class TestAnaerobicMicroorganismsFlowTest {
         player.getCardIdToResourcesCount().put(ANAEROBIC_MICROORGANISMS_CARD_ID, 3);
 
         String errorMessage = paymentValidationService.validate(
-                new AiCentral(100500), player, Collections.singletonList(new AnaerobicMicroorganismsPayment(
+                new AiCentral(AI_CENTRAL_CARD_ID), player, Collections.singletonList(new AnaerobicMicroorganismsPayment(
                         2
                 ))
         );
@@ -69,7 +67,7 @@ public class TestAnaerobicMicroorganismsFlowTest {
         player.setMc(100);
 
         String errorMessage = paymentValidationService.validate(
-                new AiCentral(100500),
+                new AiCentral(AI_CENTRAL_CARD_ID),
                 player,
                 Arrays.asList(
                         new AnaerobicMicroorganismsPayment(2),

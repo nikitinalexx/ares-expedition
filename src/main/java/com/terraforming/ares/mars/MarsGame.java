@@ -20,7 +20,6 @@ import java.util.stream.Stream;
 @Getter
 @Setter
 public class MarsGame {
-    private static final int INITIAL_HAND_SIZE = 10;
     private static final int INITIAL_CORPORATIONS_SIZE = 2;
 
     private long id;
@@ -31,7 +30,7 @@ public class MarsGame {
     private Planet planet;
     private StateType stateType;
 
-    public MarsGame(int playersCount, Deck projectsDeck, Deck corporationsDeck, Planet planet) {
+    public MarsGame(int playersCount, int playerHandSize, Deck projectsDeck, Deck corporationsDeck, Planet planet) {
         this.playersCount = playersCount;
         this.projectsDeck = projectsDeck;
         this.corporationsDeck = corporationsDeck;
@@ -41,7 +40,7 @@ public class MarsGame {
         playerContexts = Stream.generate(
                 () -> PlayerContext.builder()
                         .uuid(UUID.randomUUID().toString())
-                        .hand(projectsDeck.dealCards(INITIAL_HAND_SIZE))
+                        .hand(projectsDeck.dealCards(playerHandSize))
                         .corporations(corporationsDeck.dealCards(INITIAL_CORPORATIONS_SIZE))
                         .played(Deck.builder().build())
                         .build()

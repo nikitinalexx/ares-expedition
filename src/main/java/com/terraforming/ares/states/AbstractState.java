@@ -37,7 +37,7 @@ public abstract class AbstractState implements State {
         if (stageNumber <= 1 && pickedStages.contains(1)) {
             marsGame.setStateType(StateType.BUILD_GREEN_PROJECTS);
         } else if (stageNumber <= 2 && pickedStages.contains(2)) {
-            marsGame.setStateType(StateType.BUILD_FIRST_BLUE_RED_PROJECTS);
+            marsGame.setStateType(StateType.BUILD_BLUE_RED_PROJECTS);
         } else if (stageNumber <= 3 && pickedStages.contains(3)) {
             marsGame.setStateType(StateType.PERFORM_BLUE_ACTION);
         } else if (stageNumber <= 4 && pickedStages.contains(4)) {

@@ -21,6 +21,8 @@ public class PickStageProcessor implements TurnProcessor<StageChoiceTurn> {
         playerContext.clearRoundResults();
         playerContext.setChosenStage(turn.getStageId());
 
+        playerContext.setCanBuildInSecondStage(turn.getStageId() == 2 ? 2 : 1);
+
         return null;
     }
 
