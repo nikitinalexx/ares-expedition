@@ -19,6 +19,18 @@ public class Planet {
     private final Map<GlobalParameter, MeasurableGlobalParameter> measurableGlobalParameters;
     private final List<Ocean> oceans;
 
+    public boolean allOceansRevealed() {
+        return oceans.stream().allMatch(Ocean::isRevealed);
+    }
+
+    public boolean isTemperatureMax() {
+        return measurableGlobalParameters.get(GlobalParameter.TEMPERATURE).isMax();
+    }
+
+    public boolean isOxygenMax() {
+        return measurableGlobalParameters.get(GlobalParameter.OXYGEN).isMax();
+    }
+
     public boolean isValidTemperatute(List<ParameterColor> validParameters) {
         return isValidParameter(validParameters, GlobalParameter.TEMPERATURE);
     }
@@ -35,6 +47,14 @@ public class Planet {
         Optional<Ocean> result = oceans.stream().filter(ocean -> !ocean.isRevealed()).findAny();
         result.ifPresent(Ocean::reveal);
         return result;
+    }
+
+    public void increaseTemperature() {
+        measurableGlobalParameters.get(GlobalParameter.TEMPERATURE).increase();
+    }
+
+    public void increaseOxygen() {
+        measurableGlobalParameters.get(GlobalParameter.OXYGEN).increase();
     }
 
     private boolean isValidParameter(List<ParameterColor> validColors, GlobalParameter globalParameter) {

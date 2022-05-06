@@ -13,7 +13,7 @@ import java.util.List;
 public class MeasurableGlobalParameter {
     @Singular
     private final List<ParameterGradation> levels;
-    private final int currentLevel;
+    private int currentLevel;
 
     public int getCurrentValue() {
         return levels.get(currentLevel).getValue();
@@ -21,5 +21,15 @@ public class MeasurableGlobalParameter {
 
     public ParameterColor getCurrentColor() {
         return levels.get(currentLevel).getColor();
+    }
+
+    public boolean isMax() {
+        return currentLevel == levels.size() - 1;
+    }
+
+    public void increase() {
+        if (!isMax()) {
+            currentLevel++;
+        }
     }
 }

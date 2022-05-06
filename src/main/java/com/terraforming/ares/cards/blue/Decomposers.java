@@ -31,6 +31,11 @@ public class Decomposers implements BlueCard {
     }
 
     @Override
+    public CardCollectableResource getCollectableResource() {
+        return CardCollectableResource.MICROBE;
+    }
+
+    @Override
     public String description() {
         return "When you play an Animal, Microbe, or Plant, including this, add a microbe here or remove a microbe from here to draw a card.";
     }

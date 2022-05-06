@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @RequiredArgsConstructor
-public class AiCentralBlueActionProcessor implements BlueActionCardProcessor<AiCentral> {
+public class AiCentralActionProcessor implements BlueActionCardProcessor<AiCentral> {
     private final CardService deckService;
 
     @Override
