@@ -4,7 +4,7 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.PlayerContext;
 import com.terraforming.ares.model.turn.BuildBlueRedProjectTurn;
 import com.terraforming.ares.model.turn.TurnType;
-import com.terraforming.ares.services.DeckService;
+import com.terraforming.ares.services.CardService;
 import org.springframework.stereotype.Service;
 
 /**
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class BuildBlueRedProjectProcessor extends GenericBuildProjectProcessor<BuildBlueRedProjectTurn> {
 
-    public BuildBlueRedProjectProcessor(DeckService marsDeckService) {
+    public BuildBlueRedProjectProcessor(CardService marsDeckService) {
         super(marsDeckService);
     }
 

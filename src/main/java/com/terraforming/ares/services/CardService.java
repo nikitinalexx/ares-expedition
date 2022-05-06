@@ -1,33 +1,25 @@
 package com.terraforming.ares.services;
 
-import com.terraforming.ares.cards.blue.AiCentral;
-import com.terraforming.ares.cards.blue.AnaerobicMicroorganisms;
-import com.terraforming.ares.cards.blue.BlueCard;
-import com.terraforming.ares.cards.corporations.CelestiorCorporation;
-import com.terraforming.ares.cards.corporations.DevTechs;
-import com.terraforming.ares.cards.corporations.HelionCorporation;
-import com.terraforming.ares.cards.corporations.LaunchStarIncorporated;
-import com.terraforming.ares.cards.green.GeothermalPower;
 import com.terraforming.ares.model.CorporationCard;
 import com.terraforming.ares.model.Deck;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.ProjectCard;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by oleksii.nikitin
  * Creation date 25.04.2022
  */
 @Service
-public class DeckService {
+public class CardService {
     private final Map<Integer, ProjectCard> projects;
     private final Map<Integer, CorporationCard> corporations;
 
-    public DeckService(CardFactory cardFactory) {
+    public CardService(CardFactory cardFactory) {
         projects = cardFactory.createProjects();
         corporations = cardFactory.createCorporations();
     }

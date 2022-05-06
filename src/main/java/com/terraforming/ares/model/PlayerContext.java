@@ -24,7 +24,7 @@ public class PlayerContext {
     private boolean activatedBlueActionTwice;
     private Integer selectedCorporationCard;
     @Builder.Default
-    private Map<Integer, Integer> cardIdToResourcesCount = new HashMap<>();
+    private Map<Class<?>, Integer> cardResourcesCount = new HashMap<>();
     @Builder.Default
     private int terraformingRating = Constants.STARTING_RT;
     @Builder.Default

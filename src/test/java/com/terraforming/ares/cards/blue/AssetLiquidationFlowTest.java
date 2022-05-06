@@ -104,8 +104,8 @@ class AssetLiquidationFlowTest {
                         )
         );
 
-        playController.buildBlueRedProject(firstPlayer.getUuid(), ASSET_LIQUIDATION_CARD_ID, Collections.emptyList());
-        playController.buildBlueRedProject(secondPlayer.getUuid(), ADAPTATION_TECHNOLOGY_CARD_ID, Collections.singletonList(new MegacreditsPayment(12)));
+        playController.buildBlueRedProject(firstPlayer.getUuid(), ASSET_LIQUIDATION_CARD_ID, Collections.emptyList(), Collections.emptyMap());
+        playController.buildBlueRedProject(secondPlayer.getUuid(), ADAPTATION_TECHNOLOGY_CARD_ID, Collections.singletonList(new MegacreditsPayment(12)), Collections.emptyMap());
 
         gameProcessorService.asyncUpdate();
 
@@ -115,13 +115,13 @@ class AssetLiquidationFlowTest {
         assertEquals(2, firstPlayer.getCanBuildInSecondStage());
         assertEquals(0, secondPlayer.getCanBuildInSecondStage());
 
-        playController.buildBlueRedProject(firstPlayer.getUuid(), ASSEMBLY_LINES_CARD_ID, Collections.singletonList(new MegacreditsPayment(13)));
+        playController.buildBlueRedProject(firstPlayer.getUuid(), ASSEMBLY_LINES_CARD_ID, Collections.singletonList(new MegacreditsPayment(13)), Collections.emptyMap());
 
         gameProcessorService.asyncUpdate();
 
         assertEquals(1, firstPlayer.getCanBuildInSecondStage());
 
-        playController.buildBlueRedProject(firstPlayer.getUuid(), ARTIFICIAL_JUNGLE_CARD_ID, Collections.singletonList(new MegacreditsPayment(5)));
+        playController.buildBlueRedProject(firstPlayer.getUuid(), ARTIFICIAL_JUNGLE_CARD_ID, Collections.singletonList(new MegacreditsPayment(5)), Collections.emptyMap());
 
         gameProcessorService.asyncUpdate();
 

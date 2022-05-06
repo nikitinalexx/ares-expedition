@@ -48,7 +48,7 @@ public class TerraformingMarsFlowTest {
     }
 
     @Test
-    public void testGame() {
+    void test() {
         List<String> players = gameDto.getPlayers();
 
         assertEquals(2, players.size());
@@ -142,7 +142,8 @@ public class TerraformingMarsFlowTest {
             playController.buildGreenProject(
                     secondPlayer,
                     gameController.getGameByPlayerUuid(secondPlayer).getPlayer().getHand().getCards().get(0),
-                    Collections.singletonList(new MegacreditsPayment(10))
+                    Collections.singletonList(new MegacreditsPayment(10)),
+                    Collections.emptyMap()
             );
         });
 
@@ -151,7 +152,8 @@ public class TerraformingMarsFlowTest {
         playController.buildGreenProject(
                 secondPlayer,
                 gameController.getGameByPlayerUuid(secondPlayer).getPlayer().getHand().getCards().get(0),
-                Collections.singletonList(new MegacreditsPayment(5))
+                Collections.singletonList(new MegacreditsPayment(5)),
+                Collections.emptyMap()
         );
     }
 

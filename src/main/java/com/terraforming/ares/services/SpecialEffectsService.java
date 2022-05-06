@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class SpecialEffectsService {
-    private final DeckService deckService;
+    private final CardService deckService;
 
     public boolean ownsSpecialEffect(PlayerContext playerContext, SpecialEffect specialEffect) {
         return playerContext

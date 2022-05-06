@@ -1,10 +1,12 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.model.Expansion;
-import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.model.parameters.ParameterColor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Created by oleksii.nikitin
@@ -12,12 +14,12 @@ import lombok.RequiredArgsConstructor;
  */
 @RequiredArgsConstructor
 @Getter
-public class ArtificialJungle implements BlueCard {
+public class CaretakerContract implements BlueCard {
     private final int id;
 
     @Override
     public String description() {
-        return "Action: Spend 1 plant to draw a card.";
+        return "Action: Spend 8 heat to raise your TR 1 step.";
     }
 
     @Override
@@ -31,7 +33,17 @@ public class ArtificialJungle implements BlueCard {
     }
 
     @Override
+    public List<ParameterColor> getTemperatureRequirement() {
+        return Arrays.asList(ParameterColor.YELLOW, ParameterColor.WHITE);
+    }
+
+    @Override
+    public int getWinningPoints() {
+        return 2;
+    }
+
+    @Override
     public int getPrice() {
-        return 5;
+        return 18;
     }
 }

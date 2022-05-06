@@ -1,14 +1,13 @@
 package com.terraforming.ares.cards.blue;
 
-import com.terraforming.ares.model.Expansion;
-import com.terraforming.ares.model.PlayerContext;
-import com.terraforming.ares.model.ProjectCard;
-import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by oleksii.nikitin
@@ -20,8 +19,13 @@ public class AnaerobicMicroorganisms implements BlueCard {
     private final int id;
 
     @Override
+    public CardCollectableResource getCollectableResource() {
+        return CardCollectableResource.MICROBE;
+    }
+
+    @Override
     public void buildProject(PlayerContext playerContext) {
-        playerContext.getCardIdToResourcesCount().put(id, 1);
+        playerContext.getCardResourcesCount().put(AnaerobicMicroorganisms.class, 1);
     }
 
     @Override
@@ -41,13 +45,13 @@ public class AnaerobicMicroorganisms implements BlueCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(PlayerContext player, ProjectCard project) {
+    public void onProjectBuiltEffect(MarsGame marsGame, PlayerContext player, ProjectCard project, Map<Integer, Integer> inputParams) {
         int affectedTagsCount = (int) project.getTags().stream().filter(tag ->
                 tag == Tag.ANIMAL || tag == Tag.MICROBE || tag == Tag.PLANT
         ).count();
 
-        player.getCardIdToResourcesCount().compute(
-                id, (key, value) -> {
+        player.getCardResourcesCount().compute(
+                AnaerobicMicroorganisms.class, (key, value) -> {
                     if (value == null) {
                         value = 0;
                     }

@@ -23,7 +23,11 @@ public class TemporaryGameRepository implements GameRepository {
 
     @Override
     public long save(MarsGame game) {
-        return realStorage.save(game);
+        cache.compute(game.getId(), (key, value) -> {
+            realStorage.save(game);
+            return game;
+        });
+        return game.getId();
     }
 
     @Override

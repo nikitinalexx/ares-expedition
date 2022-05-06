@@ -3,7 +3,6 @@ package com.terraforming.ares.cards.blue;
 import com.terraforming.ares.model.PlayerContext;
 import com.terraforming.ares.model.payments.AnaerobicMicroorganismsPayment;
 import com.terraforming.ares.model.payments.MegacreditsPayment;
-import com.terraforming.ares.services.DeckService;
 import com.terraforming.ares.services.PaymentValidationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  * Creation date 05.05.2022
  */
 @SpringBootTest
-public class AnaerobicMicroorganismsFlowTest {
+class AnaerobicMicroorganismsFlowTest {
 
     @Autowired
     private PaymentValidationService paymentValidationService;
@@ -38,7 +37,7 @@ public class AnaerobicMicroorganismsFlowTest {
 
     @Test
     void testNotEnoughResources() {
-        player.getCardIdToResourcesCount().put(ANAEROBIC_MICROORGANISMS_CARD_ID, 1);
+        player.getCardResourcesCount().put(AnaerobicMicroorganisms.class, 1);
         String errorMessage = paymentValidationService.validate(
                 new AiCentral(AI_CENTRAL_CARD_ID),
                 player,
@@ -51,7 +50,7 @@ public class AnaerobicMicroorganismsFlowTest {
 
     @Test
     void testNotEnoughTotalMcToPay() {
-        player.getCardIdToResourcesCount().put(ANAEROBIC_MICROORGANISMS_CARD_ID, 3);
+        player.getCardResourcesCount().put(AnaerobicMicroorganisms.class, 3);
 
         String errorMessage = paymentValidationService.validate(
                 new AiCentral(AI_CENTRAL_CARD_ID), player, Collections.singletonList(new AnaerobicMicroorganismsPayment(
@@ -63,7 +62,7 @@ public class AnaerobicMicroorganismsFlowTest {
 
     @Test
     void testEnoughResources() {
-        player.getCardIdToResourcesCount().put(ANAEROBIC_MICROORGANISMS_CARD_ID, 3);
+        player.getCardResourcesCount().put(AnaerobicMicroorganisms.class, 3);
         player.setMc(100);
 
         String errorMessage = paymentValidationService.validate(

@@ -10,8 +10,10 @@ import com.terraforming.ares.model.CorporationCard;
 import com.terraforming.ares.model.ProjectCard;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by oleksii.nikitin
@@ -30,21 +32,28 @@ public class CardFactory {
     private final Map<Integer, ProjectCard> inmemoryProjectCards;
 
     public CardFactory() {
-        Map<Integer, ProjectCard> tempMap = new HashMap<>();
-        tempMap.put(1, new AdaptationTechnology(1));
-        tempMap.put(2, new AdvancedAlloys(2));
-        tempMap.put(3, new AdvancedScreeningTechnology(3));
-        tempMap.put(4, new AiCentral(4));
-        tempMap.put(5, new AnaerobicMicroorganisms(5));
-        tempMap.put(6, new AntiGravityTechnology(6));
-        tempMap.put(7, new AquiferPumping(7));
-        tempMap.put(8, new ArcticAlgae(8));
-        tempMap.put(9, new ArtificialJungle(9));
-        tempMap.put(10, new AssemblyLines(10));
-        tempMap.put(11, new AssetLiquidation(11));
-        tempMap.put(140, new GeothermalPower(140));
-
-        inmemoryProjectCards = Map.copyOf(tempMap);
+        inmemoryProjectCards = Stream.of(
+                new AdaptationTechnology(1),
+                new AdvancedAlloys(2),
+                new AdvancedScreeningTechnology(3),
+                new AiCentral(4),
+                new AnaerobicMicroorganisms(5),
+                new AntiGravityTechnology(6),
+                new AquiferPumping(7),
+                new ArcticAlgae(8),
+                new ArtificialJungle(9),
+                new AssemblyLines(10),
+                new AssetLiquidation(11),
+                new Birds(12),
+                new BrainstormingSession(13),
+                new CaretakerContract(14),
+                new CircuitBoardFactory(15),
+                new CommunityGardens(16),
+                new CompostingFactory(17),
+                new ConservedBiome(18),
+                new Decomposers(19),
+                new GeothermalPower(140)
+        ).collect(Collectors.toMap(ProjectCard::getId, Function.identity()));
     }
 
     public Map<Integer, CorporationCard> createCorporations() {

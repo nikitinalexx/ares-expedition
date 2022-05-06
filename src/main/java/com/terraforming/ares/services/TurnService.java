@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 /**
@@ -72,37 +73,37 @@ public class TurnService {
         );
     }
 
-    public void buildGreenProjectCard(String playerUuid, int projectId, List<Payment> payments) {
+    public void buildGreenProjectCard(String playerUuid, int projectId, List<Payment> payments, Map<Integer, Integer> inputParams) {
         performAsyncTurn(
-                new BuildGreenProjectTurn(playerUuid, projectId, payments),
+                new BuildGreenProjectTurn(playerUuid, projectId, payments, inputParams),
                 playerUuid,
                 game -> {
                     PlayerContext player = game.getPlayerByUuid(playerUuid);
 
-                    return cardValidationService.validateCard(player, game.getPlanet(), projectId, payments);
+                    return cardValidationService.validateCard(player, game.getPlanet(), projectId, payments, inputParams);
                 });
     }
 
-    public void buildBlueRedProjectCard(String playerUuid, int projectId, List<Payment> payments) {
+    public void buildBlueRedProjectCard(String playerUuid, int projectId, List<Payment> payments, Map<Integer, Integer> inputParams) {
         performAsyncTurn(
-                new BuildBlueRedProjectTurn(playerUuid, projectId, payments),
+                new BuildBlueRedProjectTurn(playerUuid, projectId, payments, inputParams),
                 playerUuid,
                 game -> {
                     PlayerContext player = game.getPlayerByUuid(playerUuid);
 
-                    return cardValidationService.validateCard(player, game.getPlanet(), projectId, payments);
+                    return cardValidationService.validateCard(player, game.getPlanet(), projectId, payments, inputParams);
                 });
     }
 
-    public TurnResponse performBlueAction(String playerUuid, int projectId) {
+    public TurnResponse performBlueAction(String playerUuid, int projectId, List<Integer> inputParams) {
         long gameId = gameRepository.getGameIdByPlayerUuid(playerUuid);
 
         GameUpdateResult<TurnResponse> updateResult = gameProcessorService.syncPlayerUpdate(gameId,
-                new PerformBlueActionTurn(playerUuid, projectId),
+                new PerformBlueActionTurn(playerUuid, projectId, inputParams),
                 game -> {
                     PlayerContext player = game.getPlayerByUuid(playerUuid);
 
-                    return cardValidationService.validateBlueAction(player, game.getPlanet(), projectId);
+                    return cardValidationService.validateBlueAction(player, game.getPlanet(), projectId, inputParams);
                 }
         );
 

@@ -3,7 +3,7 @@ package com.terraforming.ares.factories;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.ShuffleService;
-import com.terraforming.ares.services.DeckService;
+import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,7 +16,7 @@ import java.util.Collections;
 @Service
 @RequiredArgsConstructor
 public class DefaultGameFactory implements GameFactory {
-    private final DeckService marsDeckService;
+    private final CardService marsDeckService;
     private final ShuffleService shuffleService;
     private final PlanetFactory planetFactory;
 

@@ -7,9 +7,12 @@ import com.terraforming.ares.services.GameService;
 import com.terraforming.ares.services.TurnService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by oleksii.nikitin
@@ -47,16 +50,26 @@ public class PlayController {
         turnService.sellCards(playerUuid, cards);
     }
 
-    public void buildGreenProject(String playerUuid, int cardId, List<Payment> payments) {
-        turnService.buildGreenProjectCard(playerUuid, cardId, payments);
+
+    @PostMapping("/turn/build/green")
+    public void buildGreenProject(String playerUuid,
+                                  int cardId,
+                                  List<Payment> payments,
+                                  @RequestParam(required = false) Map<Integer, Integer> inputParams) {
+        turnService.buildGreenProjectCard(playerUuid, cardId, payments, inputParams);
     }
 
-    public void buildBlueRedProject(String playerUuid, int cardId, List<Payment> payments) {
-        turnService.buildBlueRedProjectCard(playerUuid, cardId, payments);
+    public void buildBlueRedProject(String playerUuid,
+                                    int cardId,
+                                    List<Payment> payments,
+                                    @RequestParam(required = false) Map<Integer, Integer> inputParams) {
+        turnService.buildBlueRedProjectCard(playerUuid, cardId, payments, inputParams);
     }
 
-    public TurnResponse performBlueAction(String playerUuid, int projectId) {
-        return turnService.performBlueAction(playerUuid, projectId);
+    public TurnResponse performBlueAction(String playerUuid,
+                                          int projectId,
+                                          @RequestParam(required = false) List<Integer> inputParams) {
+        return turnService.performBlueAction(playerUuid, projectId, inputParams);
     }
 
 }

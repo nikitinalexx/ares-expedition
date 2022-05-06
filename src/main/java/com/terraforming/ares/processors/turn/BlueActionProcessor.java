@@ -8,7 +8,7 @@ import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.turn.PerformBlueActionTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.processors.action.BlueActionCardProcessor;
-import com.terraforming.ares.services.DeckService;
+import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.SpecialEffectsService;
 import org.springframework.stereotype.Service;
 
@@ -23,11 +23,11 @@ import java.util.stream.Collectors;
  */
 @Service
 public class BlueActionProcessor implements TurnProcessor<PerformBlueActionTurn> {
-    private final DeckService deckService;
+    private final CardService deckService;
     private final SpecialEffectsService specialEffectsService;
     private final Map<Class<?>, BlueActionCardProcessor<?>> blueActionProcessors;
 
-    public BlueActionProcessor(DeckService deckService, SpecialEffectsService specialEffectsService, List<BlueActionCardProcessor<?>> processors) {
+    public BlueActionProcessor(CardService deckService, SpecialEffectsService specialEffectsService, List<BlueActionCardProcessor<?>> processors) {
         this.deckService = deckService;
         this.specialEffectsService = specialEffectsService;
 
@@ -48,7 +48,7 @@ public class BlueActionProcessor implements TurnProcessor<PerformBlueActionTurn>
 
         BlueActionCardProcessor<ProjectCard> blueActionCardProcessor = (BlueActionCardProcessor<ProjectCard>) blueActionProcessors.get(projectCard.getClass());
 
-        TurnResponse response = blueActionCardProcessor.process(game, player);
+        TurnResponse response = blueActionCardProcessor.process(game, player, turn.getInputParams());
 
         if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ASSEMBLY_LINES)) {
             player.setMc(player.getMc() + 1);

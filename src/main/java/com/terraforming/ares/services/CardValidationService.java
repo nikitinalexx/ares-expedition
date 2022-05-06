@@ -3,9 +3,7 @@ package com.terraforming.ares.services;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import com.terraforming.ares.model.payments.Payment;
-import com.terraforming.ares.processors.action.BlueActionCardProcessor;
 import com.terraforming.ares.validation.action.ActionValidator;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -18,16 +16,16 @@ import java.util.stream.Collectors;
  */
 @Service
 public class CardValidationService {
-    private final DeckService deckService;
+    private final CardService cardService;
     private final PaymentValidationService paymentValidationService;
     private final SpecialEffectsService specialEffectsService;
     private final Map<Class<?>, ActionValidator<?>> blueActionValidators;
 
-    public CardValidationService(DeckService deckService,
+    public CardValidationService(CardService cardService,
                                  PaymentValidationService paymentValidationService,
                                  SpecialEffectsService specialEffectsService,
                                  List<ActionValidator<?>> validators) {
-        this.deckService = deckService;
+        this.cardService = cardService;
         this.paymentValidationService = paymentValidationService;
         this.specialEffectsService = specialEffectsService;
 
@@ -39,8 +37,8 @@ public class CardValidationService {
         );
     }
 
-    public String validateCard(PlayerContext player, Planet planet, int cardId, List<Payment> payments) {
-        ProjectCard projectCard = deckService.getProjectCard(cardId);
+    public String validateCard(PlayerContext player, Planet planet, int cardId, List<Payment> payments, Map<Integer, Integer> inputParameters) {
+        ProjectCard projectCard = cardService.getProjectCard(cardId);
         if (projectCard == null) {
             return "Card doesn't exist " + cardId;
         }
@@ -58,12 +56,13 @@ public class CardValidationService {
                 .or(() -> validateOceans(planet, projectCard))
                 .or(() -> validateTags(player, projectCard))
                 .or(() -> validatePayments(projectCard, player, payments))
+                .or(() -> validateInputParameters(projectCard, player, inputParameters))
                 .orElse(null);
     }
 
     @SuppressWarnings("unchecked")
-    public String validateBlueAction(PlayerContext player, Planet planet, int cardId) {
-        ProjectCard projectCard = deckService.getProjectCard(cardId);
+    public String validateBlueAction(PlayerContext player, Planet planet, int cardId, List<Integer> inputParameters) {
+        ProjectCard projectCard = cardService.getProjectCard(cardId);
         if (projectCard == null) {
             return "Card doesn't exist " + cardId;
         }
@@ -88,7 +87,7 @@ public class CardValidationService {
         ActionValidator<ProjectCard> validator = (ActionValidator<ProjectCard>) blueActionValidators.get(projectCard.getClass());
 
         if (validator != null) {
-            return validator.validate(planet, player);
+            return validator.validate(planet, player, inputParameters);
         } else {
             return null;
         }
@@ -141,6 +140,18 @@ public class CardValidationService {
         return Optional.ofNullable(paymentValidationService.validate(card, playerContext, payments));
     }
 
+    private Optional<String> validateInputParameters(ProjectCard card, PlayerContext playerContext, Map<Integer, Integer> inputParams) {
+        return playerContext.getPlayed()
+                .getCards()
+                .stream()
+                .map(cardService::getProjectCard)
+                .map(ProjectCard::getProjectInputValidator)
+                .filter(Objects::nonNull)
+                .map(validator -> validator.validate(card, playerContext, inputParams))
+                .filter(Objects::nonNull)
+                .findAny();
+    }
+
     private Optional<String> validateTags(PlayerContext playerContext, ProjectCard projectCard) {
         List<Integer> cards = playerContext.getPlayed().getCards();
 
@@ -151,7 +162,7 @@ public class CardValidationService {
         }
 
         for (Integer card : cards) {
-            ProjectCard builtProject = deckService.getProjectCard(card);
+            ProjectCard builtProject = cardService.getProjectCard(card);
 
             tagRequirements.removeAll(builtProject.getTags());
 
@@ -162,4 +173,5 @@ public class CardValidationService {
 
         return Optional.of("Project tag requirements not met");
     }
+
 }

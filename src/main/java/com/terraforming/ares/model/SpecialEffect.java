@@ -7,5 +7,6 @@ package com.terraforming.ares.model;
 public enum SpecialEffect {
     AMPLIFY_GLOBAL_REQUIREMENT,
     ADVANCED_ALLOYS,
-    ASSEMBLY_LINES
+    ASSEMBLY_LINES,
+    SOLD_CARDS_COST_1_MC_MORE
 }

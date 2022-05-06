@@ -8,7 +8,7 @@ import com.terraforming.ares.model.Deck;
 import com.terraforming.ares.model.PlayerContext;
 import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.model.TurnResponse;
-import com.terraforming.ares.services.DeckService;
+import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class AiCentralBlueActionProcessor implements BlueActionCardProcessor<AiCentral> {
-    private final DeckService deckService;
+    private final CardService deckService;
 
     @Override
     public Class<AiCentral> getType() {

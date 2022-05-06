@@ -3,6 +3,7 @@ package com.terraforming.ares.model.turn;
 import com.terraforming.ares.model.payments.Payment;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by oleksii.nikitin
@@ -10,8 +11,8 @@ import java.util.List;
  */
 public class BuildBlueRedProjectTurn extends GenericBuildProjectTurn {
 
-    public BuildBlueRedProjectTurn(String playerUuid, int projectId, List<Payment> payments) {
-        super(playerUuid, projectId, payments);
+    public BuildBlueRedProjectTurn(String playerUuid, int projectId, List<Payment> payments, Map<Integer, Integer> inputParams) {
+        super(playerUuid, projectId, payments, inputParams);
     }
 
     @Override

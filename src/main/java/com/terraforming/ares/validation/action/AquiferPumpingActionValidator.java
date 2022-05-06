@@ -1,7 +1,6 @@
 package com.terraforming.ares.validation.action;
 
 import com.terraforming.ares.cards.blue.AquiferPumping;
-import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Planet;
 import com.terraforming.ares.model.PlayerContext;

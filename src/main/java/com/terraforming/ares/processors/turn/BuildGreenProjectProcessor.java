@@ -2,7 +2,7 @@ package com.terraforming.ares.processors.turn;
 
 import com.terraforming.ares.model.turn.BuildGreenProjectTurn;
 import com.terraforming.ares.model.turn.TurnType;
-import com.terraforming.ares.services.DeckService;
+import com.terraforming.ares.services.CardService;
 import org.springframework.stereotype.Service;
 
 /**
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class BuildGreenProjectProcessor extends GenericBuildProjectProcessor<BuildGreenProjectTurn> {
 
-    public BuildGreenProjectProcessor(DeckService marsDeckService) {
+    public BuildGreenProjectProcessor(CardService marsDeckService) {
         super(marsDeckService);
     }
 

@@ -5,6 +5,8 @@ import com.terraforming.ares.model.Tag;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Created by oleksii.nikitin
@@ -12,12 +14,17 @@ import lombok.RequiredArgsConstructor;
  */
 @RequiredArgsConstructor
 @Getter
-public class ArtificialJungle implements BlueCard {
+public class BrainstormingSession implements BlueCard {
     private final int id;
 
     @Override
     public String description() {
-        return "Action: Spend 1 plant to draw a card.";
+        return "Reveal the top deck card. If it is green, discard it and gain 1 MC. Otherwise, draw it.";
+    }
+
+    @Override
+    public List<Tag> getTags() {
+        return Collections.singletonList(Tag.SPACE);
     }
 
     @Override
@@ -32,6 +39,6 @@ public class ArtificialJungle implements BlueCard {
 
     @Override
     public int getPrice() {
-        return 5;
+        return 8;
     }
 }

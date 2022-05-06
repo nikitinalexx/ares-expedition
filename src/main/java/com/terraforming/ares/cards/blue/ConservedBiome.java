@@ -5,6 +5,7 @@ import com.terraforming.ares.model.Tag;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.List;
 
 /**
  * Created by oleksii.nikitin
@@ -12,12 +13,13 @@ import lombok.RequiredArgsConstructor;
  */
 @RequiredArgsConstructor
 @Getter
-public class ArtificialJungle implements BlueCard {
+public class ConservedBiome implements BlueCard {
     private final int id;
 
     @Override
     public String description() {
-        return "Action: Spend 1 plant to draw a card.";
+        return "1 VP for 2 Forests you have. " +
+                "Action: Add a microbe to ANOTHER* card or add an animal to ANOTHER* card.";
     }
 
     @Override
@@ -31,7 +33,12 @@ public class ArtificialJungle implements BlueCard {
     }
 
     @Override
+    public List<Tag> getTags() {
+        return List.of(Tag.BUILDING, Tag.MICROBE, Tag.ANIMAL);
+    }
+
+    @Override
     public int getPrice() {
-        return 5;
+        return 25;
     }
 }

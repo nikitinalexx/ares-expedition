@@ -2,10 +2,9 @@ package com.terraforming.ares.validation.payment;
 
 import com.terraforming.ares.cards.blue.AnaerobicMicroorganisms;
 import com.terraforming.ares.model.PlayerContext;
-import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.payments.PaymentType;
-import com.terraforming.ares.services.DeckService;
+import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -16,7 +15,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class AnaerobicMicroorganismsPaymentValidator implements PaymentValidator {
-    private final DeckService deckService;
+    private final CardService deckService;
 
     @Override
     public PaymentType getType() {
@@ -29,15 +28,11 @@ public class AnaerobicMicroorganismsPaymentValidator implements PaymentValidator
             return "Invalid payment: Anaerobic Microorganisms can be paid only with a value of 2";
         }
 
-        for (Integer playerCardId : player.getPlayed().getCards()) {
-            ProjectCard projectCard = deckService.getProjectCard(playerCardId);
-            if (projectCard instanceof AnaerobicMicroorganisms) {
-                Integer resources = player.getCardIdToResourcesCount().get(playerCardId);
-                if (resources == null || resources < 2) {
-                    return "Invalid payment: Anaerobic Microorganisms < 2";
-                }
-            }
+        Integer resources = player.getCardResourcesCount().get(AnaerobicMicroorganisms.class);
+        if (resources == null || resources < 2) {
+            return "Invalid payment: Anaerobic Microorganisms < 2";
         }
+
         return null;
     }
 }

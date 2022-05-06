@@ -83,7 +83,7 @@ public class GameProcessorService {
                 .values()
                 .stream()
                 .allMatch(player -> player.getNextTurn() != null && player.getNextTurn().getType().isTerminal()
-                        || stateFactory.getCurrentState(game).getPossibleTurns(player.getUuid()).isEmpty()
+                        || player.getNextTurn() == null && stateFactory.getCurrentState(game).getPossibleTurns(player.getUuid()).isEmpty()
                 );
 
         if (!allTurnsReadyAndAllTerminal) {
