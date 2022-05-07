@@ -2,6 +2,7 @@ package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -45,7 +46,7 @@ public class AnaerobicMicroorganisms implements BlueCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(MarsGame marsGame, Player player, ProjectCard project, Map<Integer, Integer> inputParams) {
+    public void onOtherProjectBuiltEffect(CardService cardService, MarsGame marsGame, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
         int affectedTagsCount = (int) project.getTags().stream().filter(tag ->
                 tag == Tag.ANIMAL || tag == Tag.MICROBE || tag == Tag.PLANT
         ).count();

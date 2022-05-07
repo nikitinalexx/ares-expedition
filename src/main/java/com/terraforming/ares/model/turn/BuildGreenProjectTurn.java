@@ -11,7 +11,7 @@ import java.util.Map;
  */
 public class BuildGreenProjectTurn extends GenericBuildProjectTurn {
 
-    public BuildGreenProjectTurn(String playerUuid, int projectId, List<Payment> payments, Map<Integer, Integer> inputParams) {
+    public BuildGreenProjectTurn(String playerUuid, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
         super(playerUuid, projectId, payments, inputParams);
     }
 

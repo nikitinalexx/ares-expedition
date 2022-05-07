@@ -7,5 +7,6 @@ package com.terraforming.ares.model;
 public enum CardCollectableResource {
     NONE,
     MICROBE,
-    ANIMAL
+    ANIMAL,
+    SCIENCE
 }

@@ -4,6 +4,7 @@ import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.validation.action.ActionValidator;
+import com.terraforming.ares.validation.input.OnBuiltEffectValidator;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -20,11 +21,13 @@ public class CardValidationService {
     private final PaymentValidationService paymentValidationService;
     private final SpecialEffectsService specialEffectsService;
     private final Map<Class<?>, ActionValidator<?>> blueActionValidators;
+    private final Map<Class<?>, OnBuiltEffectValidator<?>> onBuiltEffectValidators;
 
     public CardValidationService(CardService cardService,
                                  PaymentValidationService paymentValidationService,
                                  SpecialEffectsService specialEffectsService,
-                                 List<ActionValidator<?>> validators) {
+                                 List<ActionValidator<?>> validators,
+                                 List<OnBuiltEffectValidator<?>> onBuiltEffectValidators) {
         this.cardService = cardService;
         this.paymentValidationService = paymentValidationService;
         this.specialEffectsService = specialEffectsService;
@@ -35,9 +38,16 @@ public class CardValidationService {
                         Function.identity()
                 )
         );
+
+        this.onBuiltEffectValidators = onBuiltEffectValidators.stream().collect(
+                Collectors.toMap(
+                        OnBuiltEffectValidator::getType,
+                        Function.identity()
+                )
+        );
     }
 
-    public String validateCard(Player player, Planet planet, int cardId, List<Payment> payments, Map<Integer, Integer> inputParameters) {
+    public String validateCard(Player player, Planet planet, int cardId, List<Payment> payments, Map<Integer, List<Integer>> inputParameters) {
         ProjectCard projectCard = cardService.getProjectCard(cardId);
         if (projectCard == null) {
             return "Card doesn't exist " + cardId;
@@ -140,16 +150,24 @@ public class CardValidationService {
         return Optional.ofNullable(paymentValidationService.validate(card, player, payments));
     }
 
-    private Optional<String> validateInputParameters(ProjectCard card, Player player, Map<Integer, Integer> inputParams) {
-        return player.getPlayed()
-                .getCards()
-                .stream()
-                .map(cardService::getProjectCard)
-                .map(ProjectCard::getProjectInputValidator)
-                .filter(Objects::nonNull)
-                .map(validator -> validator.validate(card, player, inputParams))
-                .filter(Objects::nonNull)
-                .findAny();
+    private Optional<String> validateInputParameters(ProjectCard card, Player player, Map<Integer, List<Integer>> inputParams) {
+        Optional<String> validationResult = Optional.empty();
+
+        if (card.onBuiltEffectApplicableToItself()) {
+            validationResult = validationResult.or(() -> Optional.ofNullable(onBuiltEffectValidators.get(card.getClass())).map(s -> s.validate(card, player, inputParams)));
+        }
+
+        return validationResult.or(() ->
+                player.getPlayed()
+                        .getCards()
+                        .stream()
+                        .map(cardService::getProjectCard)
+                        .map(c -> onBuiltEffectValidators.get(c.getClass()))
+                        .filter(Objects::nonNull)
+                        .map(validator -> validator.validate(card, player, inputParams))
+                        .filter(Objects::nonNull)
+                        .findAny()
+        );
     }
 
     private Optional<String> validateTags(Player player, ProjectCard projectCard) {

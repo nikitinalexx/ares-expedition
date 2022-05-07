@@ -73,7 +73,7 @@ public class TurnService {
         );
     }
 
-    public void buildGreenProjectCard(String playerUuid, int projectId, List<Payment> payments, Map<Integer, Integer> inputParams) {
+    public void buildGreenProjectCard(String playerUuid, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
         performAsyncTurn(
                 new BuildGreenProjectTurn(playerUuid, projectId, payments, inputParams),
                 playerUuid,
@@ -84,7 +84,7 @@ public class TurnService {
                 });
     }
 
-    public void buildBlueRedProjectCard(String playerUuid, int projectId, List<Payment> payments, Map<Integer, Integer> inputParams) {
+    public void buildBlueRedProjectCard(String playerUuid, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
         performAsyncTurn(
                 new BuildBlueRedProjectTurn(playerUuid, projectId, payments, inputParams),
                 playerUuid,

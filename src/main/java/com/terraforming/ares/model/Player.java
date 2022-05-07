@@ -27,8 +27,8 @@ public class Player {
     private Map<Class<?>, Integer> cardResourcesCount = new HashMap<>();
     @Builder.Default
     private int terraformingRating = Constants.STARTING_RT;
-    @Builder.Default
-    private int canBuildInSecondPhase = 0;
+    private int canBuildInSecondPhase;
+    private int forests;
 
     private Integer previousChosenPhase;
     private Integer chosenPhase;

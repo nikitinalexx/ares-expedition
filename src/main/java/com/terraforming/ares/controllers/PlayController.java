@@ -55,14 +55,14 @@ public class PlayController {
     public void buildGreenProject(String playerUuid,
                                   int cardId,
                                   List<Payment> payments,
-                                  @RequestParam(required = false) Map<Integer, Integer> inputParams) {
+                                  @RequestParam(required = false) Map<Integer, List<Integer>> inputParams) {
         turnService.buildGreenProjectCard(playerUuid, cardId, payments, inputParams);
     }
 
     public void buildBlueRedProject(String playerUuid,
                                     int cardId,
                                     List<Payment> payments,
-                                    @RequestParam(required = false) Map<Integer, Integer> inputParams) {
+                                    @RequestParam(required = false) Map<Integer, List<Integer>> inputParams) {
         turnService.buildBlueRedProjectCard(playerUuid, cardId, payments, inputParams);
     }
 

@@ -2,6 +2,7 @@ package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -34,7 +35,7 @@ public class EnergySubsidies implements BlueCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(MarsGame game, Player player, ProjectCard project, Map<Integer, Integer> inputParams) {
+    public void onOtherProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
         if (!project.getTags().contains(Tag.ENERGY)) {
             return;
         }

@@ -35,6 +35,7 @@ public class TestCardValidationService {
                 mockDeckService,
                 paymentValidationService,
                 specialEffectsService,
+                Collections.emptyList(),
                 Collections.emptyList()
         );
     }

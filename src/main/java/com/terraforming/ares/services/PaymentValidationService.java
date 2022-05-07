@@ -41,7 +41,7 @@ public class PaymentValidationService {
         }
 
         int discount = getDiscount(projectCard, player);
-        int discountedPrice = projectCard.getPrice() - discount;
+        int discountedPrice = Math.max(0, projectCard.getPrice() - discount);
 
         int totalPayment = payments.stream().mapToInt(Payment::getTotalValue).sum();
 
@@ -80,6 +80,24 @@ public class PaymentValidationService {
         if (projectCard.getTags().contains(Tag.ENERGY) &&
                 specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ENERGY_SUBSIDIES_DISCOUNT_4)) {
             discount += 4;
+        }
+
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.INTERPLANETARY_CONFERENCE)) {
+            if (projectCard.getTags().contains(Tag.EARTH)) {
+                discount += 3;
+            }
+            if (projectCard.getTags().contains(Tag.JUPITER)) {
+                discount += 3;
+            }
+        }
+
+        if (projectCard.getTags().contains(Tag.EVENT) &&
+                specialEffectsService.ownsSpecialEffect(player, SpecialEffect.MEDIA_GROUP)) {
+            discount += 5;
+        }
+
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.RESEARCH_OUTPOST_DISCOUNT_1)) {
+            discount += 1;
         }
 
 

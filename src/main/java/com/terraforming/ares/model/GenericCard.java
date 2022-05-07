@@ -1,6 +1,7 @@
 package com.terraforming.ares.model;
 
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.services.CardService;
 
 import java.util.Collections;
 import java.util.List;
@@ -24,14 +25,21 @@ public interface GenericCard {
         return Collections.emptyList();
     }
 
-    ;
-
     Expansion getExpansion();
 
-    default void onProjectBuiltEffect(MarsGame game, Player player, ProjectCard project, Map<Integer, Integer> inputParams) {
+    default void onOtherProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
     }
 
     default void onOceanFlippedEffect(Player player) {
+    }
+
+    default void onTemperatureChangedEffect(Player player) {
+    }
+
+    default void onOxygenChangedEffect(Player player) {
+    }
+
+    default void onForestBuiltEffect(Player player) {
     }
 
 }

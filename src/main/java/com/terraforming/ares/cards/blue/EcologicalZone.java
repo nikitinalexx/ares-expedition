@@ -2,6 +2,7 @@ package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -33,7 +34,7 @@ public class EcologicalZone implements BlueCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(MarsGame game, Player player, ProjectCard card, Map<Integer, Integer> inputParams) {
+    public void onOtherProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard card, Map<Integer, List<Integer>> inputParams) {
         long animalsToAddCount = card.getTags().stream().filter(tag -> tag == Tag.ANIMAL || tag == Tag.PLANT).count();
 
         if (animalsToAddCount == 0) {

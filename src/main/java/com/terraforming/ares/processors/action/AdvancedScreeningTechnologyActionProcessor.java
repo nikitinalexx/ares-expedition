@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @RequiredArgsConstructor
-public class AdvancedScreeningTechnologyBlueActionProcessor implements BlueActionCardProcessor<AdvancedScreeningTechnology> {
+public class AdvancedScreeningTechnologyActionProcessor implements BlueActionCardProcessor<AdvancedScreeningTechnology> {
     private final CardService deckService;
 
     @Override

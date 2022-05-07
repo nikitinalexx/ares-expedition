@@ -1,7 +1,6 @@
 package com.terraforming.ares.model;
 
 import com.terraforming.ares.model.parameters.ParameterColor;
-import com.terraforming.ares.validation.input.ProjectInputValidator;
 
 import java.util.Collections;
 import java.util.List;
@@ -47,7 +46,7 @@ public interface ProjectCard extends GenericCard {
         return CardCollectableResource.NONE;
     }
 
-    default ProjectInputValidator getProjectInputValidator() {
-        return null;
+    default boolean onBuiltEffectApplicableToItself() {
+        return false;
     }
 }

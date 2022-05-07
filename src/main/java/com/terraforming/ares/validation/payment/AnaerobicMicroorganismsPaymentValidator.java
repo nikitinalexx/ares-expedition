@@ -4,8 +4,6 @@ import com.terraforming.ares.cards.blue.AnaerobicMicroorganisms;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.payments.PaymentType;
-import com.terraforming.ares.services.CardService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -13,9 +11,7 @@ import org.springframework.stereotype.Component;
  * Creation date 03.05.2022
  */
 @Component
-@RequiredArgsConstructor
 public class AnaerobicMicroorganismsPaymentValidator implements PaymentValidator {
-    private final CardService deckService;
 
     @Override
     public PaymentType getType() {

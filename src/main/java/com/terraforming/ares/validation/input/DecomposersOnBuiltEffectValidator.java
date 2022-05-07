@@ -4,7 +4,9 @@ import com.terraforming.ares.cards.blue.Decomposers;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.model.Tag;
+import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Map;
 
 import static com.terraforming.ares.model.InputFlag.DECOMPOSERS_TAKE_CARD;
@@ -14,10 +16,16 @@ import static com.terraforming.ares.model.InputFlag.DECOMPOSERS_TAKE_MICROBE;
  * Created by oleksii.nikitin
  * Creation date 07.05.2022
  */
-public class DecomposersProjectInputValidator implements ProjectInputValidator {
+@Component
+public class DecomposersOnBuiltEffectValidator implements OnBuiltEffectValidator<Decomposers> {
 
     @Override
-    public String validate(ProjectCard card, Player player, Map<Integer, Integer> input) {
+    public Class<Decomposers> getType() {
+        return Decomposers.class;
+    }
+
+    @Override
+    public String validate(ProjectCard card, Player player, Map<Integer, List<Integer>> input) {
         long tagsCount = card.getTags()
                 .stream()
                 .filter(tag -> tag == Tag.ANIMAL || tag == Tag.MICROBE || tag == Tag.PLANT)
@@ -33,13 +41,16 @@ public class DecomposersProjectInputValidator implements ProjectInputValidator {
                     "you need to decide if you want to take a Microbe or spend a Microbe and get a card";
         }
 
-        if (input.get(DECOMPOSERS_TAKE_MICROBE.getId()) + input.get(DECOMPOSERS_TAKE_CARD.getId()) != tagsCount) {
+        int takeMicrobes = input.getOrDefault(DECOMPOSERS_TAKE_MICROBE.getId(), List.of(0)).get(0);
+        int takeCards = input.getOrDefault(DECOMPOSERS_TAKE_CARD.getId(), List.of(0)).get(0);
+
+        if (takeMicrobes + takeCards != tagsCount) {
             return "Decomposers Take Microbe/Card sum is not equal to played card Animal/Microbe/Plant tag count";
         }
 
-        int microbesTotal = player.getCardResourcesCount().get(Decomposers.class) + input.get(DECOMPOSERS_TAKE_MICROBE.getId());
+        int microbesTotal = player.getCardResourcesCount().get(Decomposers.class) + takeMicrobes;
 
-        if (microbesTotal < input.get(DECOMPOSERS_TAKE_CARD.getId())) {
+        if (microbesTotal < takeCards) {
             return "You can't pick Cards more than Microbes you have";
         }
 

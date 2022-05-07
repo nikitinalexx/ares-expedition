@@ -18,6 +18,7 @@ public class HeatPaymentValidator implements PaymentValidator {
 
     @Override
     public String validate(Player player, Payment payment) {
+        //TODO check that player is allowed to use this payment type
         if (player.getHeat() < payment.getValue()) {
             return "Not enough HEAT to build the project";
         }

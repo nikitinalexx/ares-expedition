@@ -17,5 +17,5 @@ public abstract class GenericBuildProjectTurn implements Turn {
     private final String playerUuid;
     private final int projectId;
     private final List<Payment> payments;
-    private final Map<Integer, Integer> inputParams;
+    private final Map<Integer, List<Integer>> inputParams;
 }

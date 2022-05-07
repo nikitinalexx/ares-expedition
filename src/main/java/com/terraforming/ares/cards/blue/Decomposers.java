@@ -3,10 +3,10 @@ package com.terraforming.ares.cards.blue;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.parameters.ParameterColor;
-import com.terraforming.ares.validation.input.DecomposersProjectInputValidator;
-import com.terraforming.ares.validation.input.ProjectInputValidator;
+import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.util.CollectionUtils;
 
 import java.util.Collections;
 import java.util.List;
@@ -23,7 +23,6 @@ import static com.terraforming.ares.model.InputFlag.DECOMPOSERS_TAKE_MICROBE;
 @Getter
 public class Decomposers implements BlueCard {
     private final int id;
-    private final ProjectInputValidator inputValidator = new DecomposersProjectInputValidator();
 
     @Override
     public void buildProject(Player player) {
@@ -71,27 +70,22 @@ public class Decomposers implements BlueCard {
     }
 
     @Override
-    public ProjectInputValidator getProjectInputValidator() {
-        return inputValidator;
-    }
-
-    @Override
-    public void onProjectBuiltEffect(MarsGame game, Player player, ProjectCard card, Map<Integer, Integer> inputParams) {
+    public void onOtherProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard card, Map<Integer, List<Integer>> inputParams) {
         if (!card.getTags().contains(Tag.ANIMAL) &&
                 !card.getTags().contains(Tag.MICROBE) &&
                 !card.getTags().contains(Tag.PLANT)) {
             return;
         }
 
-        if (inputParams.containsKey(DECOMPOSERS_TAKE_MICROBE.getId())) {
+        if (inputParams.containsKey(DECOMPOSERS_TAKE_MICROBE.getId()) && !CollectionUtils.isEmpty(inputParams.get(DECOMPOSERS_TAKE_MICROBE.getId()))) {
             player.getCardResourcesCount().put(
                     Decomposers.class,
-                    player.getCardResourcesCount().get(Decomposers.class) + inputParams.get(DECOMPOSERS_TAKE_MICROBE.getId())
+                    player.getCardResourcesCount().get(Decomposers.class) + inputParams.get(DECOMPOSERS_TAKE_MICROBE.getId()).get(0)
             );
         }
 
-        if (inputParams.containsKey(DECOMPOSERS_TAKE_CARD.getId())) {
-            Integer takeCardsCount = inputParams.get(DECOMPOSERS_TAKE_CARD.getId());
+        if (inputParams.containsKey(DECOMPOSERS_TAKE_CARD.getId()) && !CollectionUtils.isEmpty(inputParams.get(DECOMPOSERS_TAKE_CARD.getId()))) {
+            Integer takeCardsCount = inputParams.get(DECOMPOSERS_TAKE_CARD.getId()).get(0);
             player.getCardResourcesCount().put(
                     Decomposers.class,
                     player.getCardResourcesCount().get(Decomposers.class) - takeCardsCount
