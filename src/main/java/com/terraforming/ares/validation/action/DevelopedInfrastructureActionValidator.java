@@ -26,7 +26,7 @@ public class DevelopedInfrastructureActionValidator implements ActionValidator<D
     @Override
     public String validate(Planet planet, PlayerContext player) {
         if (planet.isTemperatureMax()) {
-            //TODO not applicable if the temperature maxed in current stage
+            //TODO not applicable if the temperature maxed in current phase
             return "Temperature is already maximum";
         }
 

@@ -69,9 +69,19 @@ public class PaymentValidationService {
             discount += player.getTitaniumIncome() * (3 + (playerOwnsAdvancedAlloys ? 1 : 0));
         }
 
-        if (projectCard.getColor() == CardColor.GREEN && player.getChosenStage() == 1) {
+        if (projectCard.getColor() == CardColor.GREEN && player.getChosenPhase() == 1) {
             discount += 3;
         }
+
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.EARTH_CATAPULT_DISCOUNT_2)) {
+            discount += 2;
+        }
+
+        if (projectCard.getTags().contains(Tag.ENERGY) &&
+                specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ENERGY_SUBSIDIES_DISCOUNT_4)) {
+            discount += 4;
+        }
+
 
         //TODO add other types of discount
 

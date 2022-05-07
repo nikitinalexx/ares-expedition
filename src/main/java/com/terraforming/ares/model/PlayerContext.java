@@ -28,10 +28,10 @@ public class PlayerContext {
     @Builder.Default
     private int terraformingRating = Constants.STARTING_RT;
     @Builder.Default
-    private int canBuildInSecondStage = 0;
+    private int canBuildInSecondPhase = 0;
 
-    private Integer previousChosenStage;
-    private Integer chosenStage;
+    private Integer previousChosenPhase;
+    private Integer chosenPhase;
 
     private Turn nextTurn;
 
@@ -50,11 +50,11 @@ public class PlayerContext {
     private int titaniumIncome;
 
     public void clearRoundResults() {
-        previousChosenStage = chosenStage;
-        chosenStage = null;
+        previousChosenPhase = chosenPhase;
+        chosenPhase = null;
         activatedBlueCards = Deck.builder().build();
         activatedBlueActionTwice = false;
-        canBuildInSecondStage = 0;
+        canBuildInSecondPhase = 0;
     }
 
 }

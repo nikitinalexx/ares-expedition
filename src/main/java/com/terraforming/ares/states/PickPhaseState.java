@@ -10,9 +10,9 @@ import java.util.List;
  * Created by oleksii.nikitin
  * Creation date 25.04.2022
  */
-public class PickStageState extends AbstractState {
+public class PickPhaseState extends AbstractState {
 
-    public PickStageState(MarsGame marsGame) {
+    public PickPhaseState(MarsGame marsGame) {
         super(marsGame);
     }
 
@@ -21,13 +21,13 @@ public class PickStageState extends AbstractState {
         if (marsGame.getPlayerByUuid(playerUuid).getNextTurn() != null) {
             return Collections.emptyList();
         } else {
-            return Collections.singletonList(TurnType.PICK_STAGE);
+            return Collections.singletonList(TurnType.PICK_PHASE);
         }
     }
 
     @Override
     public void updateState() {
-        performStateTransferFromStage(1);
+        performStateTransferFromPhase(1);
     }
 
 }

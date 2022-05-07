@@ -50,7 +50,7 @@ public class CardValidationService {
 
         boolean playerMayAmplifyGlobalRequirement = specialEffectsService.ownsSpecialEffect(player, SpecialEffect.AMPLIFY_GLOBAL_REQUIREMENT);
 
-        //TODO requirements should be set at the beginning of stage
+        //TODO requirements should be set at the beginning of phase
         return validateOxygen(planet, projectCard, playerMayAmplifyGlobalRequirement)
                 .or(() -> validateTemperature(planet, projectCard, playerMayAmplifyGlobalRequirement))
                 .or(() -> validateOceans(planet, projectCard))
@@ -76,8 +76,8 @@ public class CardValidationService {
         }
 
         if (player.getActivatedBlueCards().containsCard(cardId)) {
-            if (player.getChosenStage() != 3) {
-                return "Can't play an action twice if you didn't choose stage 3";
+            if (player.getChosenPhase() != 3) {
+                return "Can't play an action twice if you didn't choose phase 3";
             }
             if (player.isActivatedBlueActionTwice()) {
                 return "Can't play an action that was already played and double action already performed";

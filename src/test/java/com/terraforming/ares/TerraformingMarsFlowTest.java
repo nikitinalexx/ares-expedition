@@ -103,16 +103,16 @@ public class TerraformingMarsFlowTest {
 
         for (String player : players) {
             assertEquals("TURN", playController.getNextAction(player));
-            assertEquals(Collections.singletonList(TurnType.PICK_STAGE), playController.getPossibleTurns(player));
+            assertEquals(Collections.singletonList(TurnType.PICK_PHASE), playController.getPossibleTurns(player));
 
-            playController.chooseStage(player, 1);
+            playController.choosePhase(player, 1);
 
             assertEquals("WAIT", playController.getNextAction(player));
         }
 
         gameProcessorService.asyncUpdate();
 
-        assertEquals(1, gameController.getGameByPlayerUuid(firstPlayer).getPlayer().getStage());
+        assertEquals(1, gameController.getGameByPlayerUuid(firstPlayer).getPlayer().getPhase());
 
         for (String player : players) {
             assertEquals("TURN", playController.getNextAction(player));

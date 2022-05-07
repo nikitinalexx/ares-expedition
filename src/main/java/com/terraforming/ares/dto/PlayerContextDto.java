@@ -14,5 +14,5 @@ public class PlayerContextDto {
     private Deck corporationsChoice;
     private Deck hand;
     private Integer corporationId;
-    private Integer stage;
+    private Integer phase;
 }

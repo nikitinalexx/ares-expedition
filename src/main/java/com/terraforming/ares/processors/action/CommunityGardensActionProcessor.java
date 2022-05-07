@@ -20,7 +20,7 @@ public class CommunityGardensActionProcessor implements BlueActionCardProcessor<
     @Override
     public TurnResponse process(MarsGame game, PlayerContext player) {
         player.setMc(player.getMc() + 2);
-        if (player.getChosenStage() == 3) {
+        if (player.getChosenPhase() == 3) {
             player.setPlants(player.getPlants() + 1);
         }
         return null;

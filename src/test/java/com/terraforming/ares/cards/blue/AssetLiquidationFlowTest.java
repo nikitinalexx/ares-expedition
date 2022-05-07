@@ -52,7 +52,7 @@ class AssetLiquidationFlowTest {
                 buildCorporationsDeck(),
                 planetFactory.createMars(null)
         );
-        marsGame.setStateType(StateType.PICK_STAGE);
+        marsGame.setStateType(StateType.PICK_PHASE);
 
         players = new ArrayList<>(marsGame.getPlayerContexts().values());
         firstPlayer = players.get(0);
@@ -73,8 +73,8 @@ class AssetLiquidationFlowTest {
         firstPlayer.setMc(100);
         secondPlayer.setMc(100);
 
-        assertEquals(0, firstPlayer.getCanBuildInSecondStage());
-        assertEquals(0, secondPlayer.getCanBuildInSecondStage());
+        assertEquals(0, firstPlayer.getCanBuildInSecondPhase());
+        assertEquals(0, secondPlayer.getCanBuildInSecondPhase());
 
         assertTrue(
                 players.stream()
@@ -83,13 +83,13 @@ class AssetLiquidationFlowTest {
                         .allMatch("TURN"::equals)
         );
 
-        playController.chooseStage(firstPlayer.getUuid(), 2);
-        playController.chooseStage(secondPlayer.getUuid(), 3);
+        playController.choosePhase(firstPlayer.getUuid(), 2);
+        playController.choosePhase(secondPlayer.getUuid(), 3);
 
         gameProcessorService.asyncUpdate();
 
-        assertEquals(2, firstPlayer.getCanBuildInSecondStage());
-        assertEquals(1, secondPlayer.getCanBuildInSecondStage());
+        assertEquals(2, firstPlayer.getCanBuildInSecondPhase());
+        assertEquals(1, secondPlayer.getCanBuildInSecondPhase());
 
         assertTrue(
                 players.stream()
@@ -112,20 +112,20 @@ class AssetLiquidationFlowTest {
         assertFalse(playController.getPossibleTurns(firstPlayer.getUuid()).isEmpty());
         assertTrue(playController.getPossibleTurns(secondPlayer.getUuid()).isEmpty());
 
-        assertEquals(2, firstPlayer.getCanBuildInSecondStage());
-        assertEquals(0, secondPlayer.getCanBuildInSecondStage());
+        assertEquals(2, firstPlayer.getCanBuildInSecondPhase());
+        assertEquals(0, secondPlayer.getCanBuildInSecondPhase());
 
         playController.buildBlueRedProject(firstPlayer.getUuid(), ASSEMBLY_LINES_CARD_ID, Collections.singletonList(new MegacreditsPayment(13)), Collections.emptyMap());
 
         gameProcessorService.asyncUpdate();
 
-        assertEquals(1, firstPlayer.getCanBuildInSecondStage());
+        assertEquals(1, firstPlayer.getCanBuildInSecondPhase());
 
         playController.buildBlueRedProject(firstPlayer.getUuid(), ARTIFICIAL_JUNGLE_CARD_ID, Collections.singletonList(new MegacreditsPayment(5)), Collections.emptyMap());
 
         gameProcessorService.asyncUpdate();
 
-        assertEquals(0, firstPlayer.getCanBuildInSecondStage());
+        assertEquals(0, firstPlayer.getCanBuildInSecondPhase());
 
         assertTrue(
                 players.stream()

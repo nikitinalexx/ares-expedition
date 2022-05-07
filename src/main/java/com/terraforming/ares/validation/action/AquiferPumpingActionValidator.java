@@ -20,7 +20,7 @@ public class AquiferPumpingActionValidator implements ActionValidator<AquiferPum
     @Override
     public String validate(Planet planet, PlayerContext player) {
         if (planet.allOceansRevealed()) {
-            //TODO not applicable if the last ocean flipped in current stage
+            //TODO not applicable if the last ocean flipped in current phase
             return "Number of oceans is already maximum";
         }
 

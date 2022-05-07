@@ -9,7 +9,7 @@ import lombok.Getter;
 @Getter
 public enum TurnType {
     PICK_CORPORATION(true),
-    PICK_STAGE(true),
+    PICK_PHASE(true),
     BUILD_GREEN_PROJECT(true),
     SELL_CARDS(false),
     SKIP_TURN(true),

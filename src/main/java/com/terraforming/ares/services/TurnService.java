@@ -40,15 +40,15 @@ public class TurnService {
         );
     }
 
-    public void chooseStageTurn(String playerUuid, int stageId) {
-        performAsyncTurn(new StageChoiceTurn(playerUuid, stageId), playerUuid, game -> {
-            if (stageId < 1 || stageId > 5) {
-                return "Stage is not within [1..5] range";
+    public void choosePhaseTurn(String playerUuid, int phaseId) {
+        performAsyncTurn(new PhaseChoiceTurn(playerUuid, phaseId), playerUuid, game -> {
+            if (phaseId < 1 || phaseId > 5) {
+                return "Phase is not within [1..5] range";
             }
 
             PlayerContext player = game.getPlayerByUuid(playerUuid);
-            if (player.getPreviousChosenStage() != null && player.getPreviousChosenStage() == stageId) {
-                return "This stage already picked in previous round";
+            if (player.getPreviousChosenPhase() != null && player.getPreviousChosenPhase() == phaseId) {
+                return "This phase already picked in previous round";
             }
 
             return null;

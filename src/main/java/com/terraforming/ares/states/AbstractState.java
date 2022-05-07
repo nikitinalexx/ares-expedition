@@ -27,27 +27,27 @@ public abstract class AbstractState implements State {
         }
     }
 
-    protected void performStateTransferFromStage(int stageNumber) {
-        Set<Integer> pickedStages = marsGame.getPlayerContexts()
+    protected void performStateTransferFromPhase(int phaseNumber) {
+        Set<Integer> pickedPhases = marsGame.getPlayerContexts()
                 .values()
                 .stream()
-                .map(PlayerContext::getChosenStage)
+                .map(PlayerContext::getChosenPhase)
                 .collect(Collectors.toSet());
 
-        if (stageNumber <= 1 && pickedStages.contains(1)) {
+        if (phaseNumber <= 1 && pickedPhases.contains(1)) {
             marsGame.setStateType(StateType.BUILD_GREEN_PROJECTS);
-        } else if (stageNumber <= 2 && pickedStages.contains(2)) {
+        } else if (phaseNumber <= 2 && pickedPhases.contains(2)) {
             marsGame.setStateType(StateType.BUILD_BLUE_RED_PROJECTS);
-        } else if (stageNumber <= 3 && pickedStages.contains(3)) {
+        } else if (phaseNumber <= 3 && pickedPhases.contains(3)) {
             marsGame.setStateType(StateType.PERFORM_BLUE_ACTION);
-        } else if (stageNumber <= 4 && pickedStages.contains(4)) {
+        } else if (phaseNumber <= 4 && pickedPhases.contains(4)) {
             marsGame.setStateType(StateType.COLLECT_INCOME);
-        } else if (stageNumber <= 5 && pickedStages.contains(5)) {
+        } else if (phaseNumber <= 5 && pickedPhases.contains(5)) {
             marsGame.setStateType(StateType.DRAFT_CARDS);
         } else if (marsGame.getPlayerContexts().values().stream().anyMatch(player -> player.getHand().size() > 10)) {
             marsGame.setStateType(StateType.SELL_EXTRA_CARDS);
         } else {
-            marsGame.setStateType(StateType.PICK_STAGE);
+            marsGame.setStateType(StateType.PICK_PHASE);
         }
     }
 }

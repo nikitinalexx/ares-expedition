@@ -1,4 +1,4 @@
-package com.terraforming.ares.validation.project;
+package com.terraforming.ares.validation.input;
 
 import com.terraforming.ares.model.PlayerContext;
 import com.terraforming.ares.model.ProjectCard;

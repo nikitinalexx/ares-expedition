@@ -15,8 +15,8 @@ public class StateFactory {
         switch (marsGame.getStateType()) {
             case PICK_CORPORATIONS:
                 return new PickCorporationsState(marsGame);
-            case PICK_STAGE:
-                return new PickStageState(marsGame);
+            case PICK_PHASE:
+                return new PickPhaseState(marsGame);
             case BUILD_GREEN_PROJECTS:
                 return new BuildGreenProjectsState(marsGame);
             case BUILD_BLUE_RED_PROJECTS:

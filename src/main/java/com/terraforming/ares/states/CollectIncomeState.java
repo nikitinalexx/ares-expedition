@@ -27,6 +27,6 @@ public class CollectIncomeState extends AbstractState {
 
     @Override
     public void updateState() {
-        performStateTransferFromStage(5);
+        performStateTransferFromPhase(5);
     }
 }

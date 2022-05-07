@@ -3,8 +3,8 @@ package com.terraforming.ares.cards.blue;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.parameters.ParameterColor;
-import com.terraforming.ares.validation.project.DecomposersProjectInputValidator;
-import com.terraforming.ares.validation.project.ProjectInputValidator;
+import com.terraforming.ares.validation.input.DecomposersProjectInputValidator;
+import com.terraforming.ares.validation.input.ProjectInputValidator;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 

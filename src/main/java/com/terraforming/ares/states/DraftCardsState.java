@@ -27,6 +27,6 @@ public class DraftCardsState extends AbstractState {
 
     @Override
     public void updateState() {
-        performStateTransferFromStage(6);
+        performStateTransferFromPhase(6);
     }
 }

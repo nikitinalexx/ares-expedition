@@ -38,8 +38,8 @@ public class PlayController {
         turnService.chooseCorporationTurn(playerUuid, corporationCardId);
     }
 
-    public void chooseStage(String playerUuid, int stage) {
-        turnService.chooseStageTurn(playerUuid, stage);
+    public void choosePhase(String playerUuid, int phase) {
+        turnService.choosePhaseTurn(playerUuid, phase);
     }
 
     public void skipTurn(String playerUuid) {

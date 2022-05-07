@@ -22,11 +22,11 @@ public class BuildBlueRedProjectProcessor extends GenericBuildProjectProcessor<B
     protected void processTurnInternal(BuildBlueRedProjectTurn turn, MarsGame game) {
         PlayerContext playerContext = game.getPlayerContexts().get(turn.getPlayerUuid());
 
-        if (playerContext.getCanBuildInSecondStage() < 1) {
-            throw new IllegalStateException("Can't build a project while project limit for this stage is < 1");
+        if (playerContext.getCanBuildInSecondPhase() < 1) {
+            throw new IllegalStateException("Can't build a project while project limit for this phase is < 1");
         }
 
-        playerContext.setCanBuildInSecondStage(playerContext.getCanBuildInSecondStage() - 1);
+        playerContext.setCanBuildInSecondPhase(playerContext.getCanBuildInSecondPhase() - 1);
     }
 
     @Override

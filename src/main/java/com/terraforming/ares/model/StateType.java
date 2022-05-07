@@ -6,7 +6,7 @@ package com.terraforming.ares.model;
  */
 public enum StateType {
     PICK_CORPORATIONS,
-    PICK_STAGE,
+    PICK_PHASE,
     BUILD_GREEN_PROJECTS,
     BUILD_BLUE_RED_PROJECTS,
     PERFORM_BLUE_ACTION,

@@ -32,6 +32,6 @@ public class BuildGreenProjectsState extends AbstractState {
 
     @Override
     public void updateState() {
-        performStateTransferFromStage(2);
+        performStateTransferFromPhase(2);
     }
 }

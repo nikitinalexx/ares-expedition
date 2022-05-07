@@ -1,4 +1,4 @@
-package com.terraforming.ares.validation.project;
+package com.terraforming.ares.validation.input;
 
 import com.terraforming.ares.cards.blue.Decomposers;
 import com.terraforming.ares.model.PlayerContext;

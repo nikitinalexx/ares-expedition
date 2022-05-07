@@ -21,7 +21,7 @@ public class BuildBlueRedProjectsState extends AbstractState {
     @Override
     public List<TurnType> getPossibleTurns(String playerUuid) {
         PlayerContext player = marsGame.getPlayerByUuid(playerUuid);
-        if (player.getNextTurn() != null || player.getCanBuildInSecondStage() == 0) {
+        if (player.getNextTurn() != null || player.getCanBuildInSecondPhase() == 0) {
             return Collections.emptyList();
         } else {
             return Arrays.asList(
@@ -35,9 +35,9 @@ public class BuildBlueRedProjectsState extends AbstractState {
     @Override
     public void updateState() {
         if (marsGame.getPlayerContexts().values().stream().allMatch(
-                player -> player.getCanBuildInSecondStage() == 0
+                player -> player.getCanBuildInSecondPhase() == 0
         )) {
-            performStateTransferFromStage(3);
+            performStateTransferFromPhase(3);
         }
     }
 }

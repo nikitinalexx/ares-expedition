@@ -1,7 +1,7 @@
 package com.terraforming.ares.model;
 
 import com.terraforming.ares.model.parameters.ParameterColor;
-import com.terraforming.ares.validation.project.ProjectInputValidator;
+import com.terraforming.ares.validation.input.ProjectInputValidator;
 
 import java.util.Collections;
 import java.util.List;

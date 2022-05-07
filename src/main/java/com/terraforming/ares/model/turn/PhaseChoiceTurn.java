@@ -9,12 +9,12 @@ import lombok.Getter;
  */
 @AllArgsConstructor
 @Getter
-public class StageChoiceTurn implements Turn {
+public class PhaseChoiceTurn implements Turn {
     private final String playerUuid;
-    private final int stageId;
+    private final int phaseId;
 
     @Override
     public TurnType getType() {
-        return TurnType.PICK_STAGE;
+        return TurnType.PICK_PHASE;
     }
 }

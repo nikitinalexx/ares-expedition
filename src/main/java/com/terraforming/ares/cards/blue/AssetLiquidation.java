@@ -20,7 +20,7 @@ public class AssetLiquidation implements BlueCard{
 
     @Override
     public void buildProject(PlayerContext playerContext) {
-        playerContext.setCanBuildInSecondStage(playerContext.getCanBuildInSecondStage() + 1);
+        playerContext.setCanBuildInSecondPhase(playerContext.getCanBuildInSecondPhase() + 1);
     }
 
     @Override
