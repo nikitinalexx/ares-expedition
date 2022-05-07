@@ -3,7 +3,7 @@ package com.terraforming.ares.services;
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.GameUpdateResult;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.turn.*;
@@ -46,7 +46,7 @@ public class TurnService {
                 return "Phase is not within [1..5] range";
             }
 
-            PlayerContext player = game.getPlayerByUuid(playerUuid);
+            Player player = game.getPlayerByUuid(playerUuid);
             if (player.getPreviousChosenPhase() != null && player.getPreviousChosenPhase() == phaseId) {
                 return "This phase already picked in previous round";
             }
@@ -78,7 +78,7 @@ public class TurnService {
                 new BuildGreenProjectTurn(playerUuid, projectId, payments, inputParams),
                 playerUuid,
                 game -> {
-                    PlayerContext player = game.getPlayerByUuid(playerUuid);
+                    Player player = game.getPlayerByUuid(playerUuid);
 
                     return cardValidationService.validateCard(player, game.getPlanet(), projectId, payments, inputParams);
                 });
@@ -89,7 +89,7 @@ public class TurnService {
                 new BuildBlueRedProjectTurn(playerUuid, projectId, payments, inputParams),
                 playerUuid,
                 game -> {
-                    PlayerContext player = game.getPlayerByUuid(playerUuid);
+                    Player player = game.getPlayerByUuid(playerUuid);
 
                     return cardValidationService.validateCard(player, game.getPlanet(), projectId, payments, inputParams);
                 });
@@ -101,7 +101,7 @@ public class TurnService {
         GameUpdateResult<TurnResponse> updateResult = gameProcessorService.syncPlayerUpdate(gameId,
                 new PerformBlueActionTurn(playerUuid, projectId, inputParams),
                 game -> {
-                    PlayerContext player = game.getPlayerByUuid(playerUuid);
+                    Player player = game.getPlayerByUuid(playerUuid);
 
                     return cardValidationService.validateBlueAction(player, game.getPlanet(), projectId, inputParams);
                 }

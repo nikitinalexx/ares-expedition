@@ -1,6 +1,6 @@
 package com.terraforming.ares.validation.input;
 
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ProjectCard;
 
 import java.util.Map;
@@ -11,6 +11,6 @@ import java.util.Map;
  */
 public interface ProjectInputValidator {
 
-    String validate(ProjectCard card, PlayerContext player, Map<Integer, Integer> input);
+    String validate(ProjectCard card, Player player, Map<Integer, Integer> input);
 
 }

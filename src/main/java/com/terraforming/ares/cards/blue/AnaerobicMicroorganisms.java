@@ -24,8 +24,8 @@ public class AnaerobicMicroorganisms implements BlueCard {
     }
 
     @Override
-    public void buildProject(PlayerContext playerContext) {
-        playerContext.getCardResourcesCount().put(AnaerobicMicroorganisms.class, 1);
+    public void buildProject(Player player) {
+        player.getCardResourcesCount().put(AnaerobicMicroorganisms.class, 1);
     }
 
     @Override
@@ -45,7 +45,7 @@ public class AnaerobicMicroorganisms implements BlueCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(MarsGame marsGame, PlayerContext player, ProjectCard project, Map<Integer, Integer> inputParams) {
+    public void onProjectBuiltEffect(MarsGame marsGame, Player player, ProjectCard project, Map<Integer, Integer> inputParams) {
         int affectedTagsCount = (int) project.getTags().stream().filter(tag ->
                 tag == Tag.ANIMAL || tag == Tag.MICROBE || tag == Tag.PLANT
         ).count();

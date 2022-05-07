@@ -1,7 +1,7 @@
 package com.terraforming.ares.processors.turn;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.SpecialEffect;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.turn.SellCardsTurn;
@@ -21,16 +21,16 @@ public class SellCardsProcessor implements TurnProcessor<SellCardsTurn> {
 
     @Override
     public TurnResponse processTurn(SellCardsTurn turn, MarsGame game) {
-        PlayerContext playerContext = game.getPlayerContexts().get(turn.getPlayerUuid());
+        Player player = game.getPlayerUuidToPlayer().get(turn.getPlayerUuid());
 
-        playerContext.getHand().removeCards(turn.getCards());
+        player.getHand().removeCards(turn.getCards());
 
         int cardCost = 3 + (
-                specialEffectsService.ownsSpecialEffect(playerContext, SpecialEffect.SOLD_CARDS_COST_1_MC_MORE)
+                specialEffectsService.ownsSpecialEffect(player, SpecialEffect.SOLD_CARDS_COST_1_MC_MORE)
                         ? 1
                         : 0);
 
-        playerContext.setMc(playerContext.getMc() + turn.getCards().size() * cardCost);
+        player.setMc(player.getMc() + turn.getCards().size() * cardCost);
 
         return null;
     }

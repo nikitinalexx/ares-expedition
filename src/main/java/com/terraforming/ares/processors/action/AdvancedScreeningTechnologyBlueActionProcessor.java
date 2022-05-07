@@ -24,7 +24,7 @@ public class AdvancedScreeningTechnologyBlueActionProcessor implements BlueActio
     }
 
     @Override
-    public TurnResponse process(MarsGame game, PlayerContext player) {
+    public TurnResponse process(MarsGame game, Player player) {
         Deck deck = game.getProjectsDeck().dealCards(3);
 
         AutoPickDiscardCardsAction.AutoPickDiscardCardsActionBuilder resultBuilder = AutoPickDiscardCardsAction.builder();

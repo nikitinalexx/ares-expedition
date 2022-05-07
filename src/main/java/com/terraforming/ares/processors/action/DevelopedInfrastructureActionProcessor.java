@@ -3,7 +3,7 @@ package com.terraforming.ares.processors.action;
 import com.terraforming.ares.cards.blue.DevelopedInfrastructure;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.CardColor;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.services.CardService;
@@ -25,7 +25,7 @@ public class DevelopedInfrastructureActionProcessor implements BlueActionCardPro
     }
 
     @Override
-    public TurnResponse process(MarsGame game, PlayerContext player) {
+    public TurnResponse process(MarsGame game, Player player) {
         long minFiveBlueCards = player.getPlayed().getCards().stream()
                 .map(cardService::getProjectCard)
                 .map(ProjectCard::getColor)

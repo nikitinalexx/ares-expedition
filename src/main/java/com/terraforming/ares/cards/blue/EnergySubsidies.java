@@ -34,7 +34,7 @@ public class EnergySubsidies implements BlueCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(MarsGame game, PlayerContext player, ProjectCard project, Map<Integer, Integer> inputParams) {
+    public void onProjectBuiltEffect(MarsGame game, Player player, ProjectCard project, Map<Integer, Integer> inputParams) {
         if (!project.getTags().contains(Tag.ENERGY)) {
             return;
         }

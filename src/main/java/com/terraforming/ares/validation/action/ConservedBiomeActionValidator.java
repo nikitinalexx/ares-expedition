@@ -3,7 +3,7 @@ package com.terraforming.ares.validation.action;
 import com.terraforming.ares.cards.blue.ConservedBiome;
 import com.terraforming.ares.model.CardCollectableResource;
 import com.terraforming.ares.model.Planet;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +27,7 @@ public class ConservedBiomeActionValidator implements ActionValidator<ConservedB
     }
 
     @Override
-    public String validate(Planet planet, PlayerContext player, List<Integer> inputParameters) {
+    public String validate(Planet planet, Player player, List<Integer> inputParameters) {
         if (CollectionUtils.isEmpty(inputParameters) || inputParameters.size() != 1) {
             return "Conserved biome expects a card to add an Animal/Microbe to";
         }

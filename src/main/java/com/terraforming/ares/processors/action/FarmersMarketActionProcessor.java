@@ -1,6 +1,6 @@
 package com.terraforming.ares.processors.action;
 
-import com.terraforming.ares.cards.blue.CaretakerContract;
+import com.terraforming.ares.cards.blue.FarmersMarket;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
@@ -8,20 +8,20 @@ import org.springframework.stereotype.Component;
 
 /**
  * Created by oleksii.nikitin
- * Creation date 06.05.2022
+ * Creation date 07.05.2022
  */
 @Component
-public class CaretakerContractActionProcessor implements BlueActionCardProcessor<CaretakerContract> {
+public class FarmersMarketActionProcessor implements BlueActionCardProcessor<FarmersMarket> {
     @Override
-    public Class<CaretakerContract> getType() {
-        return CaretakerContract.class;
+    public Class<FarmersMarket> getType() {
+        return FarmersMarket.class;
     }
 
     @Override
     public TurnResponse process(MarsGame game, Player player) {
-        player.setHeat(player.getHeat() - 8);
-        player.setTerraformingRating(player.getTerraformingRating() + 1);
-
+        player.setMc(player.getMc() - 1);
+        player.setPlants(player.getPlants() + 2);
         return null;
     }
+
 }

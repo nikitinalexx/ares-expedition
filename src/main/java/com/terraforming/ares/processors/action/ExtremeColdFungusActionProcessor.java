@@ -2,9 +2,9 @@ package com.terraforming.ares.processors.action;
 
 import com.terraforming.ares.cards.blue.ExtremeColdFungus;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ProjectCard;
-import com.terraforming.ares.model.ProjectInputParam;
+import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
@@ -27,10 +27,10 @@ public class ExtremeColdFungusActionProcessor implements BlueActionCardProcessor
     }
 
     @Override
-    public TurnResponse process(MarsGame game, PlayerContext player, List<Integer> inputParameters) {
+    public TurnResponse process(MarsGame game, Player player, List<Integer> inputParameters) {
         Integer choiceType = inputParameters.get(0);
 
-        if (choiceType == ProjectInputParam.EXTEME_COLD_FUNGUS_PICK_PLANT.getId()) {
+        if (choiceType == InputFlag.EXTEME_COLD_FUNGUS_PICK_PLANT.getId()) {
             player.setPlants(player.getPlants() + 1);
         } else {
             Integer cardToAddTo = inputParameters.get(1);

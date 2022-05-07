@@ -5,7 +5,7 @@ import com.terraforming.ares.dto.CardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Deck;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.services.CardService;
@@ -27,7 +27,7 @@ public class CircuitBoardFactoryActionProcessor implements BlueActionCardProcess
     }
 
     @Override
-    public TurnResponse process(MarsGame game, PlayerContext player) {
+    public TurnResponse process(MarsGame game, Player player) {
         Deck deck = game.getProjectsDeck().dealCards(1);
 
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();

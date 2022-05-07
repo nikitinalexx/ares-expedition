@@ -14,7 +14,7 @@ public interface GenericCard {
 
     int getId();
 
-    default void buildProject(PlayerContext playerContext) {
+    default void buildProject(Player player) {
     }
 
     //TODO find a better way to transfer card description and parameters
@@ -28,10 +28,10 @@ public interface GenericCard {
 
     Expansion getExpansion();
 
-    default void onProjectBuiltEffect(MarsGame game, PlayerContext player, ProjectCard project, Map<Integer, Integer> inputParams) {
+    default void onProjectBuiltEffect(MarsGame game, Player player, ProjectCard project, Map<Integer, Integer> inputParams) {
     }
 
-    default void onOceanFlippedEffect(PlayerContext player) {
+    default void onOceanFlippedEffect(Player player) {
     }
 
 }

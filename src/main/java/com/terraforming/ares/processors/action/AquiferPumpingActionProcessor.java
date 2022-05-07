@@ -3,7 +3,7 @@ package com.terraforming.ares.processors.action;
 import com.terraforming.ares.cards.blue.AquiferPumping;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Deck;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.parameters.Ocean;
 import com.terraforming.ares.services.CardService;
@@ -25,7 +25,7 @@ public class AquiferPumpingActionProcessor implements BlueActionCardProcessor<Aq
     }
 
     @Override
-    public TurnResponse process(MarsGame game, PlayerContext player) {
+    public TurnResponse process(MarsGame game, Player player) {
         player.setMc(player.getMc() - (10 - player.getSteelIncome() * 2));
 
         Ocean ocean = game.getPlanet().revealOcean().orElseThrow(() -> new IllegalStateException("Trying to flip an ocean when no oceans left"));

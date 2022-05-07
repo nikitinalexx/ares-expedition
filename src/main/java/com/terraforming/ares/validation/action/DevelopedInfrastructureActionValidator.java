@@ -3,7 +3,7 @@ package com.terraforming.ares.validation.action;
 import com.terraforming.ares.cards.blue.DevelopedInfrastructure;
 import com.terraforming.ares.model.CardColor;
 import com.terraforming.ares.model.Planet;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +24,7 @@ public class DevelopedInfrastructureActionValidator implements ActionValidator<D
     }
 
     @Override
-    public String validate(Planet planet, PlayerContext player) {
+    public String validate(Planet planet, Player player) {
         if (planet.isTemperatureMax()) {
             //TODO not applicable if the temperature maxed in current phase
             return "Temperature is already maximum";

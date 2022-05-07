@@ -14,7 +14,7 @@ import java.util.Map;
  */
 @Builder
 @Data
-public class PlayerContext {
+public class Player {
     private String uuid;
     private Deck hand;
     @Builder.Default

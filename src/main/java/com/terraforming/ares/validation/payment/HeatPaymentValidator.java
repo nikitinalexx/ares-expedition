@@ -1,6 +1,6 @@
 package com.terraforming.ares.validation.payment;
 
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.payments.PaymentType;
 import org.springframework.stereotype.Component;
@@ -17,8 +17,8 @@ public class HeatPaymentValidator implements PaymentValidator {
     }
 
     @Override
-    public String validate(PlayerContext playerContext, Payment payment) {
-        if (playerContext.getHeat() < payment.getValue()) {
+    public String validate(Player player, Payment payment) {
+        if (player.getHeat() < payment.getValue()) {
             return "Not enough HEAT to build the project";
         }
         return null;

@@ -1,7 +1,7 @@
 package com.terraforming.ares.states;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.TurnType;
 
 import java.util.Arrays;
@@ -20,7 +20,7 @@ public class BuildBlueRedProjectsState extends AbstractState {
 
     @Override
     public List<TurnType> getPossibleTurns(String playerUuid) {
-        PlayerContext player = marsGame.getPlayerByUuid(playerUuid);
+        Player player = marsGame.getPlayerByUuid(playerUuid);
         if (player.getNextTurn() != null || player.getCanBuildInSecondPhase() == 0) {
             return Collections.emptyList();
         } else {
@@ -34,7 +34,7 @@ public class BuildBlueRedProjectsState extends AbstractState {
 
     @Override
     public void updateState() {
-        if (marsGame.getPlayerContexts().values().stream().allMatch(
+        if (marsGame.getPlayerUuidToPlayer().values().stream().allMatch(
                 player -> player.getCanBuildInSecondPhase() == 0
         )) {
             performStateTransferFromPhase(3);

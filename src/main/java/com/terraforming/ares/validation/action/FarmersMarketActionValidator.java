@@ -1,6 +1,6 @@
 package com.terraforming.ares.validation.action;
 
-import com.terraforming.ares.cards.blue.DevelopmentCenter;
+import com.terraforming.ares.cards.blue.FarmersMarket;
 import com.terraforming.ares.model.Planet;
 import com.terraforming.ares.model.Player;
 import org.springframework.stereotype.Component;
@@ -10,18 +10,17 @@ import org.springframework.stereotype.Component;
  * Creation date 07.05.2022
  */
 @Component
-public class DevelopmentCenterActionValidator implements ActionValidator<DevelopmentCenter> {
+public class FarmersMarketActionValidator implements ActionValidator<FarmersMarket> {
     @Override
-    public Class<DevelopmentCenter> getType() {
-        return DevelopmentCenter.class;
+    public Class<FarmersMarket> getType() {
+        return FarmersMarket.class;
     }
 
     @Override
     public String validate(Planet planet, Player player) {
-        if (player.getHeat() < 2) {
-            return "You need at least 2 HEAT to perform the action";
+        if (player.getMc() < 1) {
+            return "Not enough MC to perform action";
         }
-
         return null;
     }
 }

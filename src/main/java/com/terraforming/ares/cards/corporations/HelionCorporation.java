@@ -2,7 +2,7 @@ package com.terraforming.ares.cards.corporations;
 
 import com.terraforming.ares.model.CorporationCard;
 import com.terraforming.ares.model.Expansion;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -20,9 +20,9 @@ public class HelionCorporation implements CorporationCard {
     private final int id;
 
     @Override
-    public void buildProject(PlayerContext playerContext) {
-        playerContext.setMc(28);
-        playerContext.setHeatIncome(3);
+    public void buildProject(Player player) {
+        player.setMc(28);
+        player.setHeatIncome(3);
     }
 
     @Override

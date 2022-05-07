@@ -2,7 +2,7 @@ package com.terraforming.ares.processors.action;
 
 import com.terraforming.ares.cards.blue.Birds;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +18,7 @@ public class BurdsActionProcessor implements BlueActionCardProcessor<Birds> {
     }
 
     @Override
-    public TurnResponse process(MarsGame game, PlayerContext player) {
+    public TurnResponse process(MarsGame game, Player player) {
         Integer animalsCount = player.getCardResourcesCount().get(Birds.class);
         player.getCardResourcesCount().put(Birds.class, animalsCount + 1);
         return null;

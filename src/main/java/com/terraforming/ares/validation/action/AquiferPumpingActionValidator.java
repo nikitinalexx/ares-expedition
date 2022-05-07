@@ -1,9 +1,8 @@
 package com.terraforming.ares.validation.action;
 
 import com.terraforming.ares.cards.blue.AquiferPumping;
-import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Planet;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import org.springframework.stereotype.Component;
 
 /**
@@ -18,7 +17,7 @@ public class AquiferPumpingActionValidator implements ActionValidator<AquiferPum
     }
 
     @Override
-    public String validate(Planet planet, PlayerContext player) {
+    public String validate(Planet planet, Player player) {
         if (planet.allOceansRevealed()) {
             //TODO not applicable if the last ocean flipped in current phase
             return "Number of oceans is already maximum";

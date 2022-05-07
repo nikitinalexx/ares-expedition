@@ -18,8 +18,8 @@ public class EcologicalZone implements BlueCard {
     private final int id;
 
     @Override
-    public void buildProject(PlayerContext playerContext) {
-        playerContext.getCardResourcesCount().put(EcologicalZone.class, 2);
+    public void buildProject(Player player) {
+        player.getCardResourcesCount().put(EcologicalZone.class, 2);
     }
 
     @Override
@@ -33,7 +33,7 @@ public class EcologicalZone implements BlueCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(MarsGame game, PlayerContext player, ProjectCard card, Map<Integer, Integer> inputParams) {
+    public void onProjectBuiltEffect(MarsGame game, Player player, ProjectCard card, Map<Integer, Integer> inputParams) {
         long animalsToAddCount = card.getTags().stream().filter(tag -> tag == Tag.ANIMAL || tag == Tag.PLANT).count();
 
         if (animalsToAddCount == 0) {

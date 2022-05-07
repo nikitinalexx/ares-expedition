@@ -1,9 +1,8 @@
 package com.terraforming.ares.validation.action;
 
 import com.terraforming.ares.cards.blue.ArtificialJungle;
-import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Planet;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import org.springframework.stereotype.Component;
 
 /**
@@ -18,7 +17,7 @@ public class ArtificialJungleActionValidator implements ActionValidator<Artifici
     }
 
     @Override
-    public String validate(Planet planet, PlayerContext player) {
+    public String validate(Planet planet, Player player) {
         if (player.getPlants() < 1) {
             return "Not enough plants to get a card";
         }

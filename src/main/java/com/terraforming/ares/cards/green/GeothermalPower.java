@@ -1,7 +1,7 @@
 package com.terraforming.ares.cards.green;
 
 import com.terraforming.ares.model.Expansion;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -19,8 +19,8 @@ public class GeothermalPower implements GreenCard {
     private final int id;
 
     @Override
-    public void buildProject(PlayerContext playerContext) {
-        playerContext.setHeatIncome(playerContext.getHeatIncome() + 2);
+    public void buildProject(Player player) {
+        player.setHeatIncome(player.getHeatIncome() + 2);
     }
 
     @Override

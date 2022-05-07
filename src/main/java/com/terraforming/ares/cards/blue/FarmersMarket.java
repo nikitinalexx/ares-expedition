@@ -1,13 +1,10 @@
 package com.terraforming.ares.cards.blue;
 
-import com.terraforming.ares.model.CardCollectableResource;
 import com.terraforming.ares.model.Expansion;
-import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -16,22 +13,12 @@ import java.util.List;
  */
 @RequiredArgsConstructor
 @Getter
-public class DecomposingFungus implements BlueCard {
+public class FarmersMarket implements BlueCard {
     private final int id;
 
     @Override
-    public void buildProject(Player player) {
-        player.getCardResourcesCount().put(DecomposingFungus.class, 2);
-    }
-
-    @Override
     public String description() {
-        return "Action: Remove 1 animal or 1 microbe from one of your cards to gain 3 plants.";
-    }
-
-    @Override
-    public CardCollectableResource getCollectableResource() {
-        return CardCollectableResource.MICROBE;
+        return "Spend 1 MC to gain 2 plants.";
     }
 
     @Override
@@ -45,12 +32,17 @@ public class DecomposingFungus implements BlueCard {
     }
 
     @Override
+    public int getWinningPoints() {
+        return 1;
+    }
+
+    @Override
     public List<Tag> getTags() {
-        return Collections.singletonList(Tag.MICROBE);
+        return List.of(Tag.PLANT);
     }
 
     @Override
     public int getPrice() {
-        return 10;
+        return 12;
     }
 }

@@ -1,7 +1,7 @@
 package com.terraforming.ares.processors.turn;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.model.SpecialEffect;
 import com.terraforming.ares.model.TurnResponse;
@@ -42,7 +42,7 @@ public class BlueActionProcessor implements TurnProcessor<PerformBlueActionTurn>
     @Override
     @SuppressWarnings("unchecked")
     public TurnResponse processTurn(PerformBlueActionTurn turn, MarsGame game) {
-        PlayerContext player = game.getPlayerContexts().get(turn.getPlayerUuid());
+        Player player = game.getPlayerUuidToPlayer().get(turn.getPlayerUuid());
 
         ProjectCard projectCard = deckService.getProjectCard(turn.getProjectId());
 

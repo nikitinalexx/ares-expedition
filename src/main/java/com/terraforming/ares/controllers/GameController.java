@@ -1,12 +1,12 @@
 package com.terraforming.ares.controllers;
 
 import com.terraforming.ares.dto.GameDto;
-import com.terraforming.ares.dto.PlayerContextDto;
+import com.terraforming.ares.dto.PlayerDto;
 import com.terraforming.ares.dto.PlayerUuidsDto;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Deck;
 import com.terraforming.ares.model.GameParameters;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.GameService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,7 +31,7 @@ public class GameController {
         MarsGame marsGame = gameService.startNewGame(gameParameters);
 
         return PlayerUuidsDto.builder()
-                .players(new ArrayList<>(marsGame.getPlayerContexts().keySet()))
+                .players(new ArrayList<>(marsGame.getPlayerUuidToPlayer().keySet()))
                 .build();
     }
 
@@ -45,18 +45,18 @@ public class GameController {
                 .build();
     }
 
-    private PlayerContextDto buildCurrentPlayer(PlayerContext playerContext) {
-        Deck corporations = playerContext.getCorporations();
+    private PlayerDto buildCurrentPlayer(Player player) {
+        Deck corporations = player.getCorporations();
 
-        return PlayerContextDto.builder()
+        return PlayerDto.builder()
                 .corporationsChoice(
                         Deck.builder()
                                 .cards(corporations.getCards())
                                 .build()
                 )
-                .corporationId(playerContext.getSelectedCorporationCard())
-                .phase(playerContext.getChosenPhase())
-                .hand(playerContext.getHand())
+                .corporationId(player.getSelectedCorporationCard())
+                .phase(player.getChosenPhase())
+                .hand(player.getHand())
                 .build();
     }
 

@@ -1,7 +1,7 @@
 package com.terraforming.ares.model.payments;
 
 import com.terraforming.ares.cards.blue.AnaerobicMicroorganisms;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardService;
 
 /**
@@ -25,7 +25,7 @@ public class AnaerobicMicroorganismsPayment extends GenericPayment {
     }
 
     @Override
-    public void pay(CardService deckService, PlayerContext player) {
+    public void pay(CardService deckService, Player player) {
         Integer resources = player.getCardResourcesCount().get(AnaerobicMicroorganisms.class);
         if (resources == null || resources < 2) {
             throw new IllegalStateException("Invalid payment: Anaerobic Microorganisms < 2");

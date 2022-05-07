@@ -2,7 +2,7 @@ package com.terraforming.ares.validation.action;
 
 import com.terraforming.ares.cards.blue.CaretakerContract;
 import com.terraforming.ares.model.Planet;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import org.springframework.stereotype.Component;
 
 /**
@@ -17,7 +17,7 @@ public class CaretakerContractActionValidator implements ActionValidator<Caretak
     }
 
     @Override
-    public String validate(Planet planet, PlayerContext player) {
+    public String validate(Planet planet, Player player) {
         if (player.getHeat() < 8) {
             return "Not enough HEAT to get TR";
         }

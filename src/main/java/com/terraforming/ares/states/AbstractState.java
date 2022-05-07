@@ -1,7 +1,7 @@
 package com.terraforming.ares.states;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateType;
 
 import java.util.Set;
@@ -28,10 +28,10 @@ public abstract class AbstractState implements State {
     }
 
     protected void performStateTransferFromPhase(int phaseNumber) {
-        Set<Integer> pickedPhases = marsGame.getPlayerContexts()
+        Set<Integer> pickedPhases = marsGame.getPlayerUuidToPlayer()
                 .values()
                 .stream()
-                .map(PlayerContext::getChosenPhase)
+                .map(Player::getChosenPhase)
                 .collect(Collectors.toSet());
 
         if (phaseNumber <= 1 && pickedPhases.contains(1)) {
@@ -44,7 +44,7 @@ public abstract class AbstractState implements State {
             marsGame.setStateType(StateType.COLLECT_INCOME);
         } else if (phaseNumber <= 5 && pickedPhases.contains(5)) {
             marsGame.setStateType(StateType.DRAFT_CARDS);
-        } else if (marsGame.getPlayerContexts().values().stream().anyMatch(player -> player.getHand().size() > 10)) {
+        } else if (marsGame.getPlayerUuidToPlayer().values().stream().anyMatch(player -> player.getHand().size() > 10)) {
             marsGame.setStateType(StateType.SELL_EXTRA_CARDS);
         } else {
             marsGame.setStateType(StateType.PICK_PHASE);

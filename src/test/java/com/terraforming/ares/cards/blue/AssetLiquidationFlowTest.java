@@ -4,7 +4,7 @@ import com.terraforming.ares.controllers.PlayController;
 import com.terraforming.ares.factories.PlanetFactory;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Deck;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.model.payments.MegacreditsPayment;
 import com.terraforming.ares.model.turn.TurnType;
@@ -39,9 +39,9 @@ class AssetLiquidationFlowTest {
     @Autowired
     private PlanetFactory planetFactory;
 
-    private List<PlayerContext> players;
-    private PlayerContext firstPlayer;
-    private PlayerContext secondPlayer;
+    private List<Player> players;
+    private Player firstPlayer;
+    private Player secondPlayer;
 
     @BeforeEach
     public void setUp() {
@@ -54,12 +54,12 @@ class AssetLiquidationFlowTest {
         );
         marsGame.setStateType(StateType.PICK_PHASE);
 
-        players = new ArrayList<>(marsGame.getPlayerContexts().values());
+        players = new ArrayList<>(marsGame.getPlayerUuidToPlayer().values());
         firstPlayer = players.get(0);
         secondPlayer = players.get(1);
 
         if (!firstPlayer.getHand().containsCard(ASSET_LIQUIDATION_CARD_ID)) {
-            PlayerContext temp = firstPlayer;
+            Player temp = firstPlayer;
             firstPlayer = secondPlayer;
             secondPlayer = temp;
         }
@@ -78,7 +78,7 @@ class AssetLiquidationFlowTest {
 
         assertTrue(
                 players.stream()
-                        .map(PlayerContext::getUuid)
+                        .map(Player::getUuid)
                         .map(playController::getNextAction)
                         .allMatch("TURN"::equals)
         );
@@ -93,7 +93,7 @@ class AssetLiquidationFlowTest {
 
         assertTrue(
                 players.stream()
-                        .map(PlayerContext::getUuid)
+                        .map(Player::getUuid)
                         .map(playController::getPossibleTurns)
                         .allMatch(
                                 Arrays.asList(
@@ -129,7 +129,7 @@ class AssetLiquidationFlowTest {
 
         assertTrue(
                 players.stream()
-                        .map(PlayerContext::getUuid)
+                        .map(Player::getUuid)
                         .map(playController::getPossibleTurns)
                         .allMatch(
                                 Arrays.asList(

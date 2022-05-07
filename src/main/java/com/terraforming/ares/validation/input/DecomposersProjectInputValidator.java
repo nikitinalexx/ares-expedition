@@ -1,14 +1,14 @@
 package com.terraforming.ares.validation.input;
 
 import com.terraforming.ares.cards.blue.Decomposers;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.model.Tag;
 
 import java.util.Map;
 
-import static com.terraforming.ares.model.ProjectInputParam.DECOMPOSERS_TAKE_CARD;
-import static com.terraforming.ares.model.ProjectInputParam.DECOMPOSERS_TAKE_MICROBE;
+import static com.terraforming.ares.model.InputFlag.DECOMPOSERS_TAKE_CARD;
+import static com.terraforming.ares.model.InputFlag.DECOMPOSERS_TAKE_MICROBE;
 
 /**
  * Created by oleksii.nikitin
@@ -17,7 +17,7 @@ import static com.terraforming.ares.model.ProjectInputParam.DECOMPOSERS_TAKE_MIC
 public class DecomposersProjectInputValidator implements ProjectInputValidator {
 
     @Override
-    public String validate(ProjectCard card, PlayerContext player, Map<Integer, Integer> input) {
+    public String validate(ProjectCard card, Player player, Map<Integer, Integer> input) {
         long tagsCount = card.getTags()
                 .stream()
                 .filter(tag -> tag == Tag.ANIMAL || tag == Tag.MICROBE || tag == Tag.PLANT)

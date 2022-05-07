@@ -1,6 +1,6 @@
 package com.terraforming.ares.services;
 
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.SpecialEffect;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,8 +14,8 @@ import org.springframework.stereotype.Service;
 public class SpecialEffectsService {
     private final CardService deckService;
 
-    public boolean ownsSpecialEffect(PlayerContext playerContext, SpecialEffect specialEffect) {
-        return playerContext
+    public boolean ownsSpecialEffect(Player player, SpecialEffect specialEffect) {
+        return player
                 .getPlayed()
                 .getCards()
                 .stream()

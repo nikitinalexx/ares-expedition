@@ -24,23 +24,23 @@ public class ExtremeColdFungusActionValidator implements ActionValidator<Extreme
     }
 
     @Override
-    public String validate(Planet planet, PlayerContext player, List<Integer> inputParameters) {
+    public String validate(Planet planet, Player player, List<Integer> inputParameters) {
         if (CollectionUtils.isEmpty(inputParameters)) {
             return "Extreme cold fungus expects a choice to get a plant or put a microbe";
         }
 
         Integer choiceType = inputParameters.get(0);
 
-        if (choiceType != ProjectInputParam.EXTEME_COLD_FUNGUS_PICK_PLANT.getId()
-                && choiceType != ProjectInputParam.EXTREME_COLD_FUNGUS_PUT_MICROBE.getId()) {
+        if (choiceType != InputFlag.EXTEME_COLD_FUNGUS_PICK_PLANT.getId()
+                && choiceType != InputFlag.EXTREME_COLD_FUNGUS_PUT_MICROBE.getId()) {
             return "Invalid input for Extreme cold fungus, only PickPlant/PutMicrobe supported";
         }
 
-        if (choiceType == ProjectInputParam.EXTREME_COLD_FUNGUS_PUT_MICROBE.getId() && inputParameters.size() < 2) {
+        if (choiceType == InputFlag.EXTREME_COLD_FUNGUS_PUT_MICROBE.getId() && inputParameters.size() < 2) {
             return "Invalid input for Extreme cold fungus Put Microbe action, card to put on not provided";
         }
 
-        if (choiceType == ProjectInputParam.EXTREME_COLD_FUNGUS_PUT_MICROBE.getId()) {
+        if (choiceType == InputFlag.EXTREME_COLD_FUNGUS_PUT_MICROBE.getId()) {
             Integer cardToPutOn = inputParameters.get(1);
 
             if (!player.getPlayed().containsCard(cardToPutOn)) {

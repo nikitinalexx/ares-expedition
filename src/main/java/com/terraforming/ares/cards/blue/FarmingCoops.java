@@ -1,41 +1,49 @@
-package com.terraforming.ares.cards.corporations;
+package com.terraforming.ares.cards.blue;
 
-import com.terraforming.ares.model.CorporationCard;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
  * Created by oleksii.nikitin
- * Creation date 29.04.2022
+ * Creation date 07.05.2022
  */
 @RequiredArgsConstructor
 @Getter
-public class DevTechs implements CorporationCard {
+public class FarmingCoops implements BlueCard {
     private final int id;
 
     @Override
     public void buildProject(Player player) {
-        player.setMc(40);
+        player.setPlants(player.getPlants() + 3);
     }
 
     @Override
     public String description() {
-        return "MegaCredits: 40. Reveal 5 cards at the start of the game, take all green cards. Green cards cost for you 2 MC less.";
-    }
-
-    @Override
-    public List<Tag> getTags() {
-        return Collections.singletonList(Tag.BUILDING);
+        return "Gain 3 plants when built. Action: Discard a card in hand to gain 3 plants.";
     }
 
     @Override
     public Expansion getExpansion() {
         return Expansion.BASE;
+    }
+
+    @Override
+    public List<Tag> getTags() {
+        return List.of(Tag.PLANT);
+    }
+
+    @Override
+    public boolean isActiveCard() {
+        return true;
+    }
+
+    @Override
+    public int getPrice() {
+        return 15;
     }
 }

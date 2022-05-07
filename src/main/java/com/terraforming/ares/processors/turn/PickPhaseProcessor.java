@@ -1,7 +1,7 @@
 package com.terraforming.ares.processors.turn;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.turn.PhaseChoiceTurn;
 import com.terraforming.ares.model.turn.TurnType;
@@ -16,12 +16,12 @@ public class PickPhaseProcessor implements TurnProcessor<PhaseChoiceTurn> {
 
     @Override
     public TurnResponse processTurn(PhaseChoiceTurn turn, MarsGame game) {
-        PlayerContext playerContext = game.getPlayerContexts().get(turn.getPlayerUuid());
+        Player player = game.getPlayerUuidToPlayer().get(turn.getPlayerUuid());
 
-        playerContext.clearRoundResults();
-        playerContext.setChosenPhase(turn.getPhaseId());
+        player.clearRoundResults();
+        player.setChosenPhase(turn.getPhaseId());
 
-        playerContext.setCanBuildInSecondPhase(turn.getPhaseId() == 2 ? 2 : 1);
+        player.setCanBuildInSecondPhase(turn.getPhaseId() == 2 ? 2 : 1);
 
         return null;
     }

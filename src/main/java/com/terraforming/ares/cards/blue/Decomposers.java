@@ -12,8 +12,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static com.terraforming.ares.model.ProjectInputParam.DECOMPOSERS_TAKE_CARD;
-import static com.terraforming.ares.model.ProjectInputParam.DECOMPOSERS_TAKE_MICROBE;
+import static com.terraforming.ares.model.InputFlag.DECOMPOSERS_TAKE_CARD;
+import static com.terraforming.ares.model.InputFlag.DECOMPOSERS_TAKE_MICROBE;
 
 /**
  * Created by oleksii.nikitin
@@ -26,8 +26,8 @@ public class Decomposers implements BlueCard {
     private final ProjectInputValidator inputValidator = new DecomposersProjectInputValidator();
 
     @Override
-    public void buildProject(PlayerContext playerContext) {
-        playerContext.getCardResourcesCount().put(Decomposers.class, 1);
+    public void buildProject(Player player) {
+        player.getCardResourcesCount().put(Decomposers.class, 1);
     }
 
     @Override
@@ -76,7 +76,7 @@ public class Decomposers implements BlueCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(MarsGame game, PlayerContext player, ProjectCard card, Map<Integer, Integer> inputParams) {
+    public void onProjectBuiltEffect(MarsGame game, Player player, ProjectCard card, Map<Integer, Integer> inputParams) {
         if (!card.getTags().contains(Tag.ANIMAL) &&
                 !card.getTags().contains(Tag.MICROBE) &&
                 !card.getTags().contains(Tag.PLANT)) {

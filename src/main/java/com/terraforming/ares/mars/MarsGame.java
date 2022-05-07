@@ -2,7 +2,7 @@ package com.terraforming.ares.mars;
 
 import com.terraforming.ares.model.Deck;
 import com.terraforming.ares.model.Planet;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateType;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,7 +24,7 @@ public class MarsGame {
 
     private long id;
     private int playersCount;
-    private Map<String, PlayerContext> playerContexts;
+    private Map<String, Player> playerUuidToPlayer;
     private Deck projectsDeck;//TODO what if it gets empty
     private Deck corporationsDeck;
     private Planet planet;
@@ -37,8 +37,8 @@ public class MarsGame {
         this.planet = planet;
         this.stateType = StateType.PICK_CORPORATIONS;
 
-        playerContexts = Stream.generate(
-                () -> PlayerContext.builder()
+        playerUuidToPlayer = Stream.generate(
+                () -> Player.builder()
                         .uuid(UUID.randomUUID().toString())
                         .hand(projectsDeck.dealCards(playerHandSize))
                         .corporations(corporationsDeck.dealCards(INITIAL_CORPORATIONS_SIZE))
@@ -46,37 +46,37 @@ public class MarsGame {
                         .build()
         )
                 .limit(playersCount)
-                .collect(Collectors.toMap(PlayerContext::getUuid, Function.identity()));
+                .collect(Collectors.toMap(Player::getUuid, Function.identity()));
     }
 
-    public PlayerContext getPlayerByUuid(String playerUuid) {
-        return getPlayerContexts().get(playerUuid);
+    public Player getPlayerByUuid(String playerUuid) {
+        return getPlayerUuidToPlayer().get(playerUuid);
     }
 
     public Deck getCorporationsChoice(String playerUuid) {
-        return getPlayerContext(playerUuid).getCorporations();
+        return getPlayer(playerUuid).getCorporations();
     }
 
     public void pickCorporation(String playerUuid, int corporationCardId) {
-        PlayerContext playerContext = getPlayerContext(playerUuid);
+        Player player = getPlayer(playerUuid);
 
-        Deck corporations = playerContext.getCorporations();
+        Deck corporations = player.getCorporations();
 
         if (corporations.containsCard(corporationCardId)) {
-            playerContext.setSelectedCorporationCard(corporationCardId);
+            player.setSelectedCorporationCard(corporationCardId);
         } else {
             throw new IllegalArgumentException(String.format("Corporation card with id %s not found", corporationCardId));
         }
     }
 
-    private PlayerContext getPlayerContext(String playerUuid) {
-        PlayerContext playerContext = playerContexts.get(playerUuid);
+    private Player getPlayer(String playerUuid) {
+        Player player = playerUuidToPlayer.get(playerUuid);
 
-        if (playerContext == null) {
+        if (player == null) {
             throw new IllegalArgumentException(String.format("Player with uuid %s not found", playerUuid));
         }
 
-        return playerContext;
+        return player;
     }
 
 }

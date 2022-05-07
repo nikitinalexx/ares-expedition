@@ -24,7 +24,7 @@ public class BrainstormingSessionActionProcessor implements BlueActionCardProces
     }
 
     @Override
-    public TurnResponse process(MarsGame game, PlayerContext player) {
+    public TurnResponse process(MarsGame game, Player player) {
         Deck deck = game.getProjectsDeck().dealCards(1);
 
         AutoPickDiscardCardsAction.AutoPickDiscardCardsActionBuilder resultBuilder = AutoPickDiscardCardsAction.builder();

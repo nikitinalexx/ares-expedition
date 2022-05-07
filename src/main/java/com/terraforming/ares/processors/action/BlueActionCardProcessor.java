@@ -1,7 +1,7 @@
 package com.terraforming.ares.processors.action;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.model.TurnResponse;
 
@@ -15,11 +15,11 @@ public interface BlueActionCardProcessor<T extends ProjectCard> {
 
     Class<T> getType();
 
-    default TurnResponse process(MarsGame game, PlayerContext player) {
+    default TurnResponse process(MarsGame game, Player player) {
         return null;
     }
 
-    default TurnResponse process(MarsGame game, PlayerContext player, List<Integer> inputParameters) {
+    default TurnResponse process(MarsGame game, Player player, List<Integer> inputParameters) {
         return process(game, player);
     }
 

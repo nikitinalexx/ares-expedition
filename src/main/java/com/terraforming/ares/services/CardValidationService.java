@@ -37,7 +37,7 @@ public class CardValidationService {
         );
     }
 
-    public String validateCard(PlayerContext player, Planet planet, int cardId, List<Payment> payments, Map<Integer, Integer> inputParameters) {
+    public String validateCard(Player player, Planet planet, int cardId, List<Payment> payments, Map<Integer, Integer> inputParameters) {
         ProjectCard projectCard = cardService.getProjectCard(cardId);
         if (projectCard == null) {
             return "Card doesn't exist " + cardId;
@@ -61,7 +61,7 @@ public class CardValidationService {
     }
 
     @SuppressWarnings("unchecked")
-    public String validateBlueAction(PlayerContext player, Planet planet, int cardId, List<Integer> inputParameters) {
+    public String validateBlueAction(Player player, Planet planet, int cardId, List<Integer> inputParameters) {
         ProjectCard projectCard = cardService.getProjectCard(cardId);
         if (projectCard == null) {
             return "Card doesn't exist " + cardId;
@@ -136,24 +136,24 @@ public class CardValidationService {
         }
     }
 
-    private Optional<String> validatePayments(ProjectCard card, PlayerContext playerContext, List<Payment> payments) {
-        return Optional.ofNullable(paymentValidationService.validate(card, playerContext, payments));
+    private Optional<String> validatePayments(ProjectCard card, Player player, List<Payment> payments) {
+        return Optional.ofNullable(paymentValidationService.validate(card, player, payments));
     }
 
-    private Optional<String> validateInputParameters(ProjectCard card, PlayerContext playerContext, Map<Integer, Integer> inputParams) {
-        return playerContext.getPlayed()
+    private Optional<String> validateInputParameters(ProjectCard card, Player player, Map<Integer, Integer> inputParams) {
+        return player.getPlayed()
                 .getCards()
                 .stream()
                 .map(cardService::getProjectCard)
                 .map(ProjectCard::getProjectInputValidator)
                 .filter(Objects::nonNull)
-                .map(validator -> validator.validate(card, playerContext, inputParams))
+                .map(validator -> validator.validate(card, player, inputParams))
                 .filter(Objects::nonNull)
                 .findAny();
     }
 
-    private Optional<String> validateTags(PlayerContext playerContext, ProjectCard projectCard) {
-        List<Integer> cards = playerContext.getPlayed().getCards();
+    private Optional<String> validateTags(Player player, ProjectCard projectCard) {
+        List<Integer> cards = player.getPlayed().getCards();
 
         List<Tag> tagRequirements = new LinkedList<>(projectCard.getTagRequirements());
 

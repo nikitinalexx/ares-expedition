@@ -8,21 +8,20 @@ import com.terraforming.ares.model.parameters.ParameterColor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
  * Created by oleksii.nikitin
- * Creation date 06.05.2022
+ * Creation date 07.05.2022
  */
 @RequiredArgsConstructor
 @Getter
-public class Birds implements BlueCard{
+public class Fish implements BlueCard {
     private final int id;
 
     @Override
-    public String description() {
-        return "Action: Add an animal to this card.";
+    public void onOceanFlippedEffect(Player player) {
+        player.getCardResourcesCount().put(Fish.class, player.getCardResourcesCount().get(Fish.class) + 1);
     }
 
     @Override
@@ -32,12 +31,12 @@ public class Birds implements BlueCard{
 
     @Override
     public void buildProject(Player player) {
-        player.getCardResourcesCount().put(Birds.class, 0);
+        player.getCardResourcesCount().put(Fish.class, 0);
     }
 
     @Override
-    public List<Tag> getTags() {
-        return Collections.singletonList(Tag.ANIMAL);
+    public String description() {
+        return "1 VP per animal on this card. Get 1 animal when you flip an ocean";
     }
 
     @Override
@@ -47,16 +46,21 @@ public class Birds implements BlueCard{
 
     @Override
     public boolean isActiveCard() {
-        return true;
+        return false;
     }
 
     @Override
-    public List<ParameterColor> getOxygenRequirement() {
-        return Collections.singletonList(ParameterColor.WHITE);
+    public List<ParameterColor> getTemperatureRequirement() {
+        return List.of(ParameterColor.RED, ParameterColor.YELLOW, ParameterColor.WHITE);
+    }
+
+    @Override
+    public List<Tag> getTags() {
+        return List.of(Tag.ANIMAL);
     }
 
     @Override
     public int getPrice() {
-        return 15;
+        return 11;
     }
 }

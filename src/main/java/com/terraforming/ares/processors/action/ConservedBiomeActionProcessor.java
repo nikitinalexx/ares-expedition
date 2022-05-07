@@ -2,7 +2,7 @@ package com.terraforming.ares.processors.action;
 
 import com.terraforming.ares.cards.blue.ConservedBiome;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.services.CardService;
@@ -26,7 +26,7 @@ public class ConservedBiomeActionProcessor implements BlueActionCardProcessor<Co
     }
 
     @Override
-    public TurnResponse process(MarsGame game, PlayerContext player, List<Integer> inputParameters) {
+    public TurnResponse process(MarsGame game, Player player, List<Integer> inputParameters) {
         Integer cardIdToAddTo = inputParameters.get(0);
 
         ProjectCard project = cardService.getProjectCard(cardIdToAddTo);

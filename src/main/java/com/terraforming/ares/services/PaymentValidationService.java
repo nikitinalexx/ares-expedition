@@ -28,19 +28,19 @@ public class PaymentValidationService {
         ));
     }
 
-    public String validate(ProjectCard projectCard, PlayerContext playerContext, List<Payment> payments) {
+    public String validate(ProjectCard projectCard, Player player, List<Payment> payments) {
         for (Payment payment : payments) {
             PaymentValidator paymentValidator = validators.get(payment.getType());
             if (paymentValidator == null) {
                 throw new IllegalStateException("Payment validator not found for type " + payment.getType());
             }
-            String validationResult = paymentValidator.validate(playerContext, payment);
+            String validationResult = paymentValidator.validate(player, payment);
             if (StringUtils.hasLength(validationResult)) {
                 return validationResult;
             }
         }
 
-        int discount = getDiscount(projectCard, playerContext);
+        int discount = getDiscount(projectCard, player);
         int discountedPrice = projectCard.getPrice() - discount;
 
         int totalPayment = payments.stream().mapToInt(Payment::getTotalValue).sum();
@@ -54,7 +54,7 @@ public class PaymentValidationService {
         }
     }
 
-    private int getDiscount(ProjectCard projectCard, PlayerContext player) {
+    private int getDiscount(ProjectCard projectCard, Player player) {
         int discount = 0;
 
         List<Tag> tags = projectCard.getTags();

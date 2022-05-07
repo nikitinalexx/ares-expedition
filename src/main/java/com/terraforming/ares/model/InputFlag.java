@@ -7,7 +7,7 @@ import lombok.Getter;
  * Creation date 07.05.2022
  */
 @Getter
-public enum ProjectInputParam {
+public enum InputFlag {
     DECOMPOSERS_TAKE_MICROBE(1),
     DECOMPOSERS_TAKE_CARD(2),
     EXTEME_COLD_FUNGUS_PICK_PLANT(3),
@@ -15,7 +15,7 @@ public enum ProjectInputParam {
 
     private final int id;
 
-    ProjectInputParam(int id) {
+    InputFlag(int id) {
         this.id = id;
     }
 }

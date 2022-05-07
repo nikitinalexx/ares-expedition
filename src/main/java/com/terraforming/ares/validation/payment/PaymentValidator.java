@@ -1,6 +1,6 @@
 package com.terraforming.ares.validation.payment;
 
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.payments.PaymentType;
 
@@ -12,5 +12,5 @@ public interface PaymentValidator {
 
     PaymentType getType();
 
-    String validate(PlayerContext playerContext, Payment payment);
+    String validate(Player player, Payment payment);
 }

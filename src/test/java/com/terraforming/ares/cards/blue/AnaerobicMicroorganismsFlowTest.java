@@ -1,6 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.payments.AnaerobicMicroorganismsPayment;
 import com.terraforming.ares.model.payments.MegacreditsPayment;
 import com.terraforming.ares.services.PaymentValidationService;
@@ -27,11 +27,11 @@ class AnaerobicMicroorganismsFlowTest {
     @Autowired
     private PaymentValidationService paymentValidationService;
 
-    private PlayerContext player;
+    private Player player;
 
     @BeforeEach
     public void setUp() {
-        player = PlayerContext.builder().build();
+        player = Player.builder().build();
         player.getPlayed().addCard(ANAEROBIC_MICROORGANISMS_CARD_ID);
     }
 

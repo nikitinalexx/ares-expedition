@@ -3,7 +3,7 @@ package com.terraforming.ares.services;
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.GameUpdateResult;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.turn.Turn;
 import com.terraforming.ares.model.turn.TurnType;
@@ -71,15 +71,15 @@ public class GameProcessorService {
     }
 
     private void processIntermediateTurns(MarsGame game) {
-        game.getPlayerContexts()
+        game.getPlayerUuidToPlayer()
                 .values()
                 .stream()
                 .filter(player -> player.getNextTurn() != null && !player.getNextTurn().getType().isTerminal())
-                .forEach(playerContext -> processNextTurn(playerContext, game));
+                .forEach(player -> processNextTurn(player, game));
     }
 
     private boolean processFinalTurns(MarsGame game) {
-        boolean allTurnsReadyAndAllTerminal = game.getPlayerContexts()
+        boolean allTurnsReadyAndAllTerminal = game.getPlayerUuidToPlayer()
                 .values()
                 .stream()
                 .allMatch(player -> player.getNextTurn() != null && player.getNextTurn().getType().isTerminal()
@@ -90,14 +90,14 @@ public class GameProcessorService {
             return false;
         }
 
-        game.getPlayerContexts().values().forEach(playerContext -> processNextTurn(playerContext, game));
+        game.getPlayerUuidToPlayer().values().forEach(player -> processNextTurn(player, game));
 
         return true;
     }
 
-    private void processNextTurn(PlayerContext playerContext, MarsGame game) {
-        processTurn(playerContext.getNextTurn(), game);
-        playerContext.setNextTurn(null);
+    private void processNextTurn(Player player, MarsGame game) {
+        processTurn(player.getNextTurn(), game);
+        player.setNextTurn(null);
     }
 
     @SuppressWarnings("unchecked")

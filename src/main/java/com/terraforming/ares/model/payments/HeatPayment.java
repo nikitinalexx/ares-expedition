@@ -1,6 +1,6 @@
 package com.terraforming.ares.model.payments;
 
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardService;
 
 /**
@@ -19,7 +19,7 @@ public class HeatPayment extends GenericPayment {
     }
 
     @Override
-    public void pay(CardService deckService, PlayerContext player) {
+    public void pay(CardService deckService, Player player) {
         player.setHeat(player.getHeat() - getValue());
 
         if (player.getHeat() < 0) {

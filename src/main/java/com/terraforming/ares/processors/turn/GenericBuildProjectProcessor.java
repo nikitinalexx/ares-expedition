@@ -1,7 +1,7 @@
 package com.terraforming.ares.processors.turn;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.payments.Payment;
@@ -21,22 +21,22 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
 
     @Override
     public TurnResponse processTurn(T turn, MarsGame game) {
-        PlayerContext playerContext = game.getPlayerContexts().get(turn.getPlayerUuid());
+        Player player = game.getPlayerUuidToPlayer().get(turn.getPlayerUuid());
         ProjectCard card = cardService.getProjectCard(turn.getProjectId());
 
         for (Payment payment : turn.getPayments()) {
-            payment.pay(cardService, playerContext);
+            payment.pay(cardService, player);
         }
 
-        for (Integer previouslyPlayedCardId : playerContext.getPlayed().getCards()) {
+        for (Integer previouslyPlayedCardId : player.getPlayed().getCards()) {
             ProjectCard previouslyPlayedCard = cardService.getProjectCard(previouslyPlayedCardId);
-            previouslyPlayedCard.onProjectBuiltEffect(game, playerContext, card, turn.getInputParams());
+            previouslyPlayedCard.onProjectBuiltEffect(game, player, card, turn.getInputParams());
         }
 
-        playerContext.getHand().removeCards(Collections.singletonList(turn.getProjectId()));
-        playerContext.getPlayed().addCard(turn.getProjectId());
+        player.getHand().removeCards(Collections.singletonList(turn.getProjectId()));
+        player.getPlayed().addCard(turn.getProjectId());
 
-        card.buildProject(playerContext);
+        card.buildProject(player);
 
         processTurnInternal(turn, game);
 

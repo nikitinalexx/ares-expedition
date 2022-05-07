@@ -1,7 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.model.Expansion;
-import com.terraforming.ares.model.PlayerContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -19,8 +19,8 @@ public class AssetLiquidation implements BlueCard{
     private final int id;
 
     @Override
-    public void buildProject(PlayerContext playerContext) {
-        playerContext.setCanBuildInSecondPhase(playerContext.getCanBuildInSecondPhase() + 1);
+    public void buildProject(Player player) {
+        player.setCanBuildInSecondPhase(player.getCanBuildInSecondPhase() + 1);
     }
 
     @Override

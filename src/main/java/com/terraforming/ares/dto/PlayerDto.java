@@ -10,7 +10,7 @@ import lombok.Getter;
  */
 @Builder
 @Getter
-public class PlayerContextDto {
+public class PlayerDto {
     private Deck corporationsChoice;
     private Deck hand;
     private Integer corporationId;
