@@ -5,6 +5,7 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.BuildBlueRedProjectTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.TerraformingService;
 import org.springframework.stereotype.Service;
 
 /**
@@ -14,8 +15,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class BuildBlueRedProjectProcessor extends GenericBuildProjectProcessor<BuildBlueRedProjectTurn> {
 
-    public BuildBlueRedProjectProcessor(CardService marsDeckService) {
-        super(marsDeckService);
+    public BuildBlueRedProjectProcessor(CardService marsDeckService, TerraformingService terraformingService) {
+        super(marsDeckService, terraformingService);
     }
 
     @Override

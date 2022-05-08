@@ -50,7 +50,6 @@ public class PlayController {
         turnService.sellCards(playerUuid, cards);
     }
 
-
     @PostMapping("/turn/build/green")
     public void buildGreenProject(String playerUuid,
                                   int cardId,
@@ -70,6 +69,10 @@ public class PlayController {
                                           int projectId,
                                           @RequestParam(required = false) List<Integer> inputParams) {
         return turnService.performBlueAction(playerUuid, projectId, inputParams);
+    }
+
+    public TurnResponse discardCards(String playerUuid, List<Integer> cards) {
+        return turnService.discardCards(playerUuid, cards);
     }
 
 }

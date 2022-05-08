@@ -2,11 +2,13 @@ package com.terraforming.ares.processors.turn;
 
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.CorporationCard;
+import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.turn.CorporationChoiceTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.TerraformingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,17 +19,23 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class PickCorporationProcessor implements TurnProcessor<CorporationChoiceTurn> {
-    private final CardService marsDeckService;
+    private final CardService carsService;
+    private final TerraformingService terraformingService;
 
     @Override
     public TurnResponse processTurn(CorporationChoiceTurn turn, MarsGame game) {
         Player player = game.getPlayerUuidToPlayer().get(turn.getPlayerUuid());
         player.setSelectedCorporationCard(turn.getCorporationCardId());
 
-        CorporationCard card = marsDeckService.getCorporationCard(turn.getCorporationCardId());
-        card.buildProject(player);
-
-        return null;
+        CorporationCard card = carsService.getCorporationCard(turn.getCorporationCardId());
+        return card.buildProject(
+                MarsContext.builder()
+                        .game(game)
+                        .player(player)
+                        .terraformingService(terraformingService)
+                        .cardService(carsService)
+                        .build()
+        );
     }
 
     @Override

@@ -15,7 +15,8 @@ public interface GenericCard {
 
     int getId();
 
-    default void buildProject(Player player) {
+    default TurnResponse buildProject(MarsContext marsContext) {
+        return null;
     }
 
     //TODO find a better way to transfer card description and parameters

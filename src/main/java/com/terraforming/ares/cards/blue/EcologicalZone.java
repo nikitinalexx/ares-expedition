@@ -19,8 +19,9 @@ public class EcologicalZone implements BlueCard {
     private final int id;
 
     @Override
-    public void buildProject(Player player) {
-        player.getCardResourcesCount().put(EcologicalZone.class, 2);
+    public TurnResponse buildProject(MarsContext marsContext) {
+        marsContext.getPlayer().getCardResourcesCount().put(EcologicalZone.class, 2);
+        return null;
     }
 
     @Override

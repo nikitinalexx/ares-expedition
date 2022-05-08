@@ -4,8 +4,6 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.TurnType;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -21,10 +19,12 @@ public class BuildBlueRedProjectsState extends AbstractState {
     @Override
     public List<TurnType> getPossibleTurns(String playerUuid) {
         Player player = marsGame.getPlayerByUuid(playerUuid);
-        if (player.getNextTurn() != null || player.getCanBuildInSecondPhase() == 0) {
-            return Collections.emptyList();
+        if (player.getNextTurn() != null && player.getNextTurn().getType().isIntermediate()) {
+            return List.of(player.getNextTurn().getType());
+        } else if (player.getNextTurn() != null || player.getCanBuildInSecondPhase() == 0) {
+            return List.of();
         } else {
-            return Arrays.asList(
+            return List.of(
                     TurnType.BUILD_BLUE_RED_PROJECT,
                     TurnType.SELL_CARDS,
                     TurnType.SKIP_TURN

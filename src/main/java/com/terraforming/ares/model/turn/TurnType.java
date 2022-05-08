@@ -16,12 +16,20 @@ public enum TurnType {
     BUILD_BLUE_RED_PROJECT(true),
     PERFORM_BLUE_ACTION(false),
     COLLECT_INCOME(true),
-    DRAFT_CARDS(true)
-    ;
+    DRAFT_CARDS(true),
+    DISCARD_CARDS(false, true);
 
-    boolean isTerminal;
+    private final boolean isTerminal;
+    private final boolean isIntermediate;
 
     TurnType(boolean isTerminal) {
         this.isTerminal = isTerminal;
+        this.isIntermediate = false;
     }
+
+    TurnType(boolean isTerminal, boolean isIntermediate) {
+        this.isTerminal = isTerminal;
+        this.isIntermediate = isIntermediate;
+    }
+
 }

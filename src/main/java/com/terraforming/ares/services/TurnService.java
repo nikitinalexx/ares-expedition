@@ -59,9 +59,8 @@ public class TurnService {
         performAsyncTurn(new SkipTurn(playerUuid), playerUuid, game -> null);
     }
 
-    public void sellCards(String playerUuid, List<Integer> cards) {
-        performSyncTurn(
-                new SellCardsTurn(playerUuid, cards),
+    public TurnResponse sellCards(String playerUuid, List<Integer> cards) {
+        return performSyncTurn(new SellCardsTurn(playerUuid, cards),
                 playerUuid,
                 game -> {
                     if (!game.getPlayerByUuid(playerUuid).getHand().getCards().containsAll(cards)) {
@@ -69,8 +68,31 @@ public class TurnService {
                     }
 
                     return null;
-                }
-        );
+                });
+    }
+
+    public TurnResponse discardCards(String playerUuid, List<Integer> cards) {
+        return performSyncTurn(
+                new DiscardCardsTurn(playerUuid, cards, cards.size()),
+                playerUuid,
+                game -> {
+                    Player player = game.getPlayerByUuid(playerUuid);
+
+                    if (player.getNextTurn().getType() != TurnType.DISCARD_CARDS) {
+                        return "Invalid next turn. Expected " + player.getNextTurn().getType();
+                    }
+
+                    DiscardCardsTurn expectedTurn = (DiscardCardsTurn) player.getNextTurn();
+                    if (expectedTurn.getSize() != cards.size()) {
+                        return "Incorrect number of cards to discard, expected: " + expectedTurn.getSize();
+                    }
+
+                    if (!player.getHand().getCards().containsAll(cards)) {
+                        return "Can't discard cards that you don't have";
+                    }
+
+                    return null;
+                });
     }
 
     public void buildGreenProjectCard(String playerUuid, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
@@ -96,33 +118,18 @@ public class TurnService {
     }
 
     public TurnResponse performBlueAction(String playerUuid, int projectId, List<Integer> inputParams) {
-        long gameId = gameRepository.getGameIdByPlayerUuid(playerUuid);
-
-        GameUpdateResult<TurnResponse> updateResult = gameProcessorService.syncPlayerUpdate(gameId,
+        return performSyncTurn(
                 new PerformBlueActionTurn(playerUuid, projectId, inputParams),
+                playerUuid,
                 game -> {
                     Player player = game.getPlayerByUuid(playerUuid);
 
                     return cardValidationService.validateBlueAction(player, game.getPlanet(), projectId, inputParams);
                 }
         );
-
-        if (updateResult.finishedWithError()) {
-            throw new IllegalStateException(updateResult.getError());
-        }
-
-        return updateResult.getResult();
     }
 
     private void performAsyncTurn(Turn turn, String playerUuid, Function<MarsGame, String> turnSpecificValidations) {
-        performTurn(turn, playerUuid, turnSpecificValidations, false);
-    }
-
-    private void performSyncTurn(Turn turn, String playerUuid, Function<MarsGame, String> turnSpecificValidations) {
-        performTurn(turn, playerUuid, turnSpecificValidations, true);
-    }
-
-    private void performTurn(Turn turn, String playerUuid, Function<MarsGame, String> turnSpecificValidations, boolean sync) {
         long gameId = gameRepository.getGameIdByPlayerUuid(playerUuid);
 
         GameUpdateResult<?> updateResult = gameRepository.updateMarsGame(
@@ -144,12 +151,28 @@ public class TurnService {
             throw new IllegalStateException(updateResult.getError());
         }
 
-        if (sync) {
-            gameProcessorService.syncGameUpdate(gameId);
-        } else {
-            gameProcessorService.registerAsyncGameUpdate(gameId);
-        }
+        gameProcessorService.registerAsyncGameUpdate(gameId);
     }
 
+    private TurnResponse performSyncTurn(Turn turn, String playerUuid, Function<MarsGame, String> turnSpecificValidations) {
+        long gameId = gameRepository.getGameIdByPlayerUuid(playerUuid);
+
+        GameUpdateResult<TurnResponse> updateResult = gameProcessorService.syncPlayerUpdate(gameId,
+                turn,
+                game -> {
+                    if (!stateFactory.getCurrentState(game).getPossibleTurns(playerUuid).contains(turn.getType())) {
+                        return "Incorrect game state for a turn " + turn.getType();
+                    }
+
+                    return turnSpecificValidations.apply(game);
+                }
+        );
+
+        if (updateResult.finishedWithError()) {
+            throw new IllegalStateException(updateResult.getError());
+        }
+
+        return updateResult.getResult();
+    }
 
 }

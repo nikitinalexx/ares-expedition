@@ -1,9 +1,6 @@
 package com.terraforming.ares.cards.corporations;
 
-import com.terraforming.ares.model.CorporationCard;
-import com.terraforming.ares.model.Expansion;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.model.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -20,8 +17,9 @@ public class DevTechs implements CorporationCard {
     private final int id;
 
     @Override
-    public void buildProject(Player player) {
-        player.setMc(40);
+    public TurnResponse buildProject(MarsContext marsContext) {
+        marsContext.getPlayer().setMc(40);
+        return null;
     }
 
     @Override

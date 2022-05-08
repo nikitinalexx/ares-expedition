@@ -1,9 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
-import com.terraforming.ares.model.CardCollectableResource;
-import com.terraforming.ares.model.Expansion;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.model.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -40,8 +37,9 @@ public class Herbivores implements BlueCard {
     }
 
     @Override
-    public void buildProject(Player player) {
-        player.getCardResourcesCount().put(Herbivores.class, 0);
+    public TurnResponse buildProject(MarsContext marsContext) {
+        marsContext.getPlayer().getCardResourcesCount().put(Herbivores.class, 0);
+        return null;
     }
 
     @Override

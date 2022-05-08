@@ -25,8 +25,9 @@ public class Decomposers implements BlueCard {
     private final int id;
 
     @Override
-    public void buildProject(Player player) {
-        player.getCardResourcesCount().put(Decomposers.class, 1);
+    public TurnResponse buildProject(MarsContext marsContext) {
+        marsContext.getPlayer().getCardResourcesCount().put(Decomposers.class, 1);
+        return null;
     }
 
     @Override

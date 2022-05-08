@@ -1,12 +1,14 @@
 package com.terraforming.ares.processors.turn;
 
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.turn.GenericBuildProjectTurn;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.TerraformingService;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Collections;
@@ -18,6 +20,7 @@ import java.util.Collections;
 @RequiredArgsConstructor
 public abstract class GenericBuildProjectProcessor<T extends GenericBuildProjectTurn> implements TurnProcessor<T> {
     private final CardService cardService;
+    private final TerraformingService terraformingService;
 
     @Override
     public TurnResponse processTurn(T turn, MarsGame game) {
@@ -40,13 +43,19 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
         player.getHand().removeCards(Collections.singletonList(turn.getProjectId()));
         player.getPlayed().addCard(turn.getProjectId());
 
-        card.buildProject(player);
-
         processTurnInternal(turn, game);
 
-        return null;
+        return card.buildProject(
+                MarsContext.builder()
+                        .game(game)
+                        .player(player)
+                        .terraformingService(terraformingService)
+                        .cardService(cardService)
+                        .build()
+        );
     }
 
-    protected void processTurnInternal(T turn, MarsGame game) {}
+    protected void processTurnInternal(T turn, MarsGame game) {
+    }
 
 }

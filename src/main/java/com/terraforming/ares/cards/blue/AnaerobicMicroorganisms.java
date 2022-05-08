@@ -25,8 +25,9 @@ public class AnaerobicMicroorganisms implements BlueCard {
     }
 
     @Override
-    public void buildProject(Player player) {
-        player.getCardResourcesCount().put(AnaerobicMicroorganisms.class, 1);
+    public TurnResponse buildProject(MarsContext marsContext) {
+        marsContext.getPlayer().getCardResourcesCount().put(AnaerobicMicroorganisms.class, 1);
+        return null;
     }
 
     @Override

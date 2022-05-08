@@ -49,18 +49,10 @@ public class GameProcessorService {
 
         Long gameId = gamesToProcess.poll();
 
-        syncGameUpdate(gameId);
-    }
-
-    public void syncGameUpdate(long gameId) {
         gameRepository.updateMarsGame(gameId, game -> null, game -> {
-
             if (processFinalTurns(game)) {
                 stateFactory.getCurrentState(game).updateState();
-                return null;
             }
-
-            processIntermediateTurns(game);
 
             return null;
         });
@@ -68,14 +60,6 @@ public class GameProcessorService {
 
     public GameUpdateResult<TurnResponse> syncPlayerUpdate(long gameId, Turn turn, Function<MarsGame, String> stateChecker) {
         return gameRepository.updateMarsGame(gameId, stateChecker, game -> processTurn(turn, game));
-    }
-
-    private void processIntermediateTurns(MarsGame game) {
-        game.getPlayerUuidToPlayer()
-                .values()
-                .stream()
-                .filter(player -> player.getNextTurn() != null && !player.getNextTurn().getType().isTerminal())
-                .forEach(player -> processNextTurn(player, game));
     }
 
     private boolean processFinalTurns(MarsGame game) {
