@@ -1,6 +1,7 @@
 package com.terraforming.ares.states;
 
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.TurnType;
 
 import java.util.Arrays;
@@ -18,8 +19,15 @@ public class BuildGreenProjectsState extends AbstractState {
     }
 
     @Override
+    public int getCurrentPhase() {
+        return 1;
+    }
+
+    @Override
     public List<TurnType> getPossibleTurns(String playerUuid) {
-        if (marsGame.getPlayerByUuid(playerUuid).getNextTurn() != null) {
+        Player player = marsGame.getPlayerByUuid(playerUuid);
+
+        if (player.getNextTurn() != null || player.getCanBuildInFirstPhase() == 0) {
             return Collections.emptyList();
         } else {
             return Arrays.asList(
@@ -32,6 +40,11 @@ public class BuildGreenProjectsState extends AbstractState {
 
     @Override
     public void updateState() {
-        performStateTransferFromPhase(2);
+        if (marsGame.getPlayerUuidToPlayer().values().stream().allMatch(
+                player -> player.getCanBuildInFirstPhase() == 0
+        )) {
+            performStateTransferFromPhase(2);
+        }
     }
+
 }

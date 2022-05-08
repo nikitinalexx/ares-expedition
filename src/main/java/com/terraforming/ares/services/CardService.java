@@ -1,9 +1,8 @@
 package com.terraforming.ares.services;
 
-import com.terraforming.ares.model.CorporationCard;
-import com.terraforming.ares.model.Deck;
-import com.terraforming.ares.model.Expansion;
-import com.terraforming.ares.model.ProjectCard;
+import com.terraforming.ares.dto.CardDto;
+import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
+import com.terraforming.ares.model.*;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedList;
@@ -44,6 +43,17 @@ public class CardService {
 
     public ProjectCard getProjectCard(int id) {
         return projects.get(id);
+    }
+
+    public AutoPickCardsAction dealCards(Deck deck, Player player) {
+        AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
+
+        for (Integer card : deck.getCards()) {
+            player.getHand().addCard(card);
+            resultBuilder.takenCard(CardDto.from(getProjectCard(card)));
+        }
+
+        return resultBuilder.build();
     }
 
 }

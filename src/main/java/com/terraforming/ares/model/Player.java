@@ -28,9 +28,11 @@ public class Player {
     @Builder.Default
     private int terraformingRating = Constants.STARTING_RT;
     private int canBuildInSecondPhase;
+    private int canBuildInFirstPhase;
     private int forests;
     private boolean builtSpecialDesignLastTurn;
     private boolean builtWorkCrewsLastTurn;
+    private boolean builtAutomatedFactoriesLastTurn;
 
     private Integer previousChosenPhase;
     private Integer chosenPhase;
@@ -57,6 +59,7 @@ public class Player {
         activatedBlueCards = Deck.builder().build();
         activatedBlueActionTwice = false;
         canBuildInSecondPhase = 0;
+        canBuildInFirstPhase = 0;
     }
 
 }

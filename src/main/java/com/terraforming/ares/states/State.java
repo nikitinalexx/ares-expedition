@@ -15,4 +15,6 @@ public interface State {
     List<TurnType> getPossibleTurns(String playerUuid);
 
     void updateState();
+
+    int getCurrentPhase();
 }

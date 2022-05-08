@@ -40,4 +40,9 @@ public class BuildBlueRedProjectsState extends AbstractState {
             performStateTransferFromPhase(3);
         }
     }
+
+    @Override
+    public int getCurrentPhase() {
+        return 2;
+    }
 }

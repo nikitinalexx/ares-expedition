@@ -29,4 +29,9 @@ public class CollectIncomeState extends AbstractState {
     public void updateState() {
         performStateTransferFromPhase(5);
     }
+
+    @Override
+    public int getCurrentPhase() {
+        return 4;
+    }
 }

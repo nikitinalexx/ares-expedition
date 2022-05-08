@@ -34,4 +34,9 @@ public class PerformBlueActionState extends AbstractState {
     public void updateState() {
         performStateTransferFromPhase(4);
     }
+
+    @Override
+    public int getCurrentPhase() {
+        return 3;
+    }
 }

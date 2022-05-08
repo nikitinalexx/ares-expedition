@@ -1,8 +1,11 @@
 package com.terraforming.ares.processors.turn;
 
+import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.BuildGreenProjectTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.TerraformingService;
 import org.springframework.stereotype.Service;
 
 /**
@@ -12,8 +15,20 @@ import org.springframework.stereotype.Service;
 @Service
 public class BuildGreenProjectProcessor extends GenericBuildProjectProcessor<BuildGreenProjectTurn> {
 
-    public BuildGreenProjectProcessor(CardService marsDeckService) {
-        super(marsDeckService);
+    public BuildGreenProjectProcessor(CardService marsDeckService, TerraformingService terraformingService) {
+        super(marsDeckService, terraformingService);
+    }
+
+    @Override
+    protected void processTurnInternal(BuildGreenProjectTurn turn, MarsGame game) {
+        Player player = game.getPlayerUuidToPlayer().get(turn.getPlayerUuid());
+
+        if (player.getCanBuildInFirstPhase() < 1) {
+            throw new IllegalStateException("Can't build a project while project limit for this phase is < 1");
+        }
+
+        player.setCanBuildInFirstPhase(player.getCanBuildInFirstPhase() - 1);
+        player.setBuiltAutomatedFactoriesLastTurn(false);
     }
 
     @Override

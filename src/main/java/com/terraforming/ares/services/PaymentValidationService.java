@@ -104,6 +104,14 @@ public class PaymentValidationService {
             discount += 11;
         }
 
+        if (projectCard.getTags().contains(Tag.SPACE) &&
+                specialEffectsService.ownsSpecialEffect(player, SpecialEffect.SPACE_DISCOUNT_3)) {
+            discount += 3;
+        }
+
+        if (player.isBuiltAutomatedFactoriesLastTurn() && projectCard.getPrice() <= 9) {
+            discount += 9;
+        }
 
         //TODO add other types of discount
 
