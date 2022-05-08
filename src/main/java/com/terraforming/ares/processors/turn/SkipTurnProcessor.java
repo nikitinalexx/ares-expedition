@@ -2,6 +2,7 @@ package com.terraforming.ares.processors.turn;
 
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.turn.SkipTurn;
 import com.terraforming.ares.model.turn.TurnType;
@@ -25,11 +26,17 @@ public class SkipTurnProcessor implements TurnProcessor<SkipTurn> {
     @Override
     public TurnResponse processTurn(SkipTurn turn, MarsGame game) {
         int currentPhase = stateFactory.getCurrentState(game).getCurrentPhase();
+        Player player = game.getPlayerByUuid(turn.getPlayerUuid());
+
         if (currentPhase == 1) {
-            game.getPlayerByUuid(turn.getPlayerUuid()).setCanBuildInFirstPhase(0);
+            player.setCanBuildInFirstPhase(0);
         } else if (currentPhase == 2) {
-            game.getPlayerByUuid(turn.getPlayerUuid()).setCanBuildInSecondPhase(0);
+            player.setCanBuildInSecondPhase(0);
         }
+
+        player.setBuiltSpecialDesignLastTurn(false);
+        player.setBuiltWorkCrewsLastTurn(false);
+        player.setCanBuildAnotherGreenWith9Discount(false);
 
         return null;
     }

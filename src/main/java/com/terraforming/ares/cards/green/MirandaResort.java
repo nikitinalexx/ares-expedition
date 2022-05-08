@@ -15,14 +15,14 @@ import java.util.Map;
  */
 @RequiredArgsConstructor
 @Getter
-public class AtmosphericInsulators implements BaseExpansionGreenCard {
+public class MirandaResort implements BaseExpansionGreenCard {
     private final int id;
 
     @Override
     public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
         int earthTags = (int) project.getTags().stream().filter(Tag.EARTH::equals).count();
 
-        player.setHeatIncome(player.getHeatIncome() + earthTags);
+        player.setMcIncome(player.getMcIncome() + earthTags);
     }
 
     @Override
@@ -34,7 +34,7 @@ public class AtmosphericInsulators implements BaseExpansionGreenCard {
                 .flatMap(card -> card.getTags().stream())
                 .filter(Tag.EARTH::equals).count();
 
-        marsContext.getPlayer().setHeatIncome(marsContext.getPlayer().getHeatIncome() + earthTagCount + 1);
+        marsContext.getPlayer().setMcIncome(marsContext.getPlayer().getMcIncome() + earthTagCount + 1);
 
         return null;
     }
@@ -46,17 +46,21 @@ public class AtmosphericInsulators implements BaseExpansionGreenCard {
 
     @Override
     public String description() {
-        //TODO all tag effects should also include corporations
-        return "During the production phase, this produces 1 heat per Earth tag you have, including this.";
+        return "During the production phase, this produces 1 MC per Earth tag you have, including this.";
+    }
+
+    @Override
+    public int getWinningPoints() {
+        return 1;
     }
 
     @Override
     public List<Tag> getTags() {
-        return List.of(Tag.SPACE, Tag.EARTH);
+        return List.of(Tag.SPACE, Tag.EARTH, Tag.JUPITER);
     }
 
     @Override
     public int getPrice() {
-        return 10;
+        return 15;
     }
 }

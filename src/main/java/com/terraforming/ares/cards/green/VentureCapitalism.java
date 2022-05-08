@@ -15,26 +15,26 @@ import java.util.Map;
  */
 @RequiredArgsConstructor
 @Getter
-public class AtmosphericInsulators implements BaseExpansionGreenCard {
+public class VentureCapitalism implements BaseExpansionGreenCard {
     private final int id;
 
     @Override
     public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
-        int earthTags = (int) project.getTags().stream().filter(Tag.EARTH::equals).count();
+        int eventTagCount = (int) project.getTags().stream().filter(Tag.EVENT::equals).count();
 
-        player.setHeatIncome(player.getHeatIncome() + earthTags);
+        player.setMcIncome(player.getMcIncome() + eventTagCount);
     }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        int earthTagCount = (int) marsContext.getPlayer()
+        int eventTagCount = (int) marsContext.getPlayer()
                 .getPlayed()
                 .getCards().stream()
                 .map(marsContext.getCardService()::getProjectCard)
                 .flatMap(card -> card.getTags().stream())
-                .filter(Tag.EARTH::equals).count();
+                .filter(Tag.EVENT::equals).count();
 
-        marsContext.getPlayer().setHeatIncome(marsContext.getPlayer().getHeatIncome() + earthTagCount + 1);
+        marsContext.getPlayer().setMcIncome(marsContext.getPlayer().getMcIncome() + eventTagCount);
 
         return null;
     }
@@ -46,17 +46,11 @@ public class AtmosphericInsulators implements BaseExpansionGreenCard {
 
     @Override
     public String description() {
-        //TODO all tag effects should also include corporations
-        return "During the production phase, this produces 1 heat per Earth tag you have, including this.";
-    }
-
-    @Override
-    public List<Tag> getTags() {
-        return List.of(Tag.SPACE, Tag.EARTH);
+        return "During the production phase, this produces 1 МС per Event tag you have.";
     }
 
     @Override
     public int getPrice() {
-        return 10;
+        return 11;
     }
 }

@@ -4,6 +4,8 @@ import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.parameters.ParameterColor;
+import com.terraforming.ares.services.TerraformingService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -15,33 +17,33 @@ import java.util.List;
  */
 @RequiredArgsConstructor
 @Getter
-public class AutomatedFactories implements BaseExpansionGreenCard {
+public class TrappedHeat implements BaseExpansionGreenCard {
     private final int id;
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        Player player = marsContext.getPlayer();
+        TerraformingService terraformingService = marsContext.getTerraformingService();
 
-        player.setCardIncome(player.getCardIncome() + 1);
-        player.setCanBuildInFirstPhase(player.getCanBuildInFirstPhase() + 1);
-        player.setCanBuildAnotherGreenWith9Discount(true);
+        Player player = marsContext.getPlayer();
+        terraformingService.revealOcean(marsContext.getGame(), player);
+
+        player.setHeatIncome(player.getHeatIncome() + 2);
 
         return null;
     }
 
     @Override
     public String description() {
-        return "You may play a green card from your hand that has a printed cost of 9 MC or less without paying its MC cost." +
-                "During the production phase, draw a card.";
+        return "Flip an ocean tile. During the production phase, this produces 2 heat.";
     }
 
     @Override
-    public List<Tag> getTags() {
-        return List.of(Tag.BUILDING);
+    public List<ParameterColor> getTemperatureRequirement() {
+        return List.of(ParameterColor.RED, ParameterColor.YELLOW, ParameterColor.WHITE);
     }
 
     @Override
     public int getPrice() {
-        return 18;
+        return 20;
     }
 }

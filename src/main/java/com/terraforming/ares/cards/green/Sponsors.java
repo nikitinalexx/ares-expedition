@@ -15,33 +15,30 @@ import java.util.List;
  */
 @RequiredArgsConstructor
 @Getter
-public class AutomatedFactories implements BaseExpansionGreenCard {
+public class Sponsors implements BaseExpansionGreenCard {
     private final int id;
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
 
-        player.setCardIncome(player.getCardIncome() + 1);
-        player.setCanBuildInFirstPhase(player.getCanBuildInFirstPhase() + 1);
-        player.setCanBuildAnotherGreenWith9Discount(true);
+        player.setMcIncome(player.getMcIncome() + 2);
 
         return null;
     }
 
     @Override
     public String description() {
-        return "You may play a green card from your hand that has a printed cost of 9 MC or less without paying its MC cost." +
-                "During the production phase, draw a card.";
+        return "During the production phase, this produces 2 МС.";
     }
 
     @Override
     public List<Tag> getTags() {
-        return List.of(Tag.BUILDING);
+        return List.of(Tag.EARTH);
     }
 
     @Override
     public int getPrice() {
-        return 18;
+        return 5;
     }
 }

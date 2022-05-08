@@ -40,6 +40,11 @@ public class PaymentValidationService {
             }
         }
 
+        if (player.isCanBuildAnotherGreenWith9Discount() && projectCard.getPrice() > 9) {
+            return "Can only build a second building with print price of 9 or less";
+        }
+
+
         int discount = getDiscount(projectCard, player);
         int discountedPrice = Math.max(0, projectCard.getPrice() - discount);
 
@@ -109,7 +114,7 @@ public class PaymentValidationService {
             discount += 3;
         }
 
-        if (player.isBuiltAutomatedFactoriesLastTurn() && projectCard.getPrice() <= 9) {
+        if (player.isCanBuildAnotherGreenWith9Discount() && projectCard.getPrice() <= 9) {
             discount += 9;
         }
 

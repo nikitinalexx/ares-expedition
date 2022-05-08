@@ -28,7 +28,7 @@ public class BuildGreenProjectProcessor extends GenericBuildProjectProcessor<Bui
         }
 
         player.setCanBuildInFirstPhase(player.getCanBuildInFirstPhase() - 1);
-        player.setBuiltAutomatedFactoriesLastTurn(false);
+        player.setCanBuildAnotherGreenWith9Discount(false);
     }
 
     @Override

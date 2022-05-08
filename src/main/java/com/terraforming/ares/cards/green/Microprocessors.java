@@ -4,6 +4,7 @@ import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.turn.DiscardCardsTurn;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -15,33 +16,39 @@ import java.util.List;
  */
 @RequiredArgsConstructor
 @Getter
-public class AutomatedFactories implements BaseExpansionGreenCard {
+public class Microprocessors implements BaseExpansionGreenCard {
     private final int id;
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
 
-        player.setCardIncome(player.getCardIncome() + 1);
-        player.setCanBuildInFirstPhase(player.getCanBuildInFirstPhase() + 1);
-        player.setCanBuildAnotherGreenWith9Discount(true);
+        player.setHeatIncome(player.getHeatIncome() + 3);
 
-        return null;
+        player.setNextTurn(
+                new DiscardCardsTurn(
+                        player.getUuid(),
+                        List.of(),
+                        1,
+                        false
+                )
+        );
+
+        return marsContext.dealCards(2);
     }
 
     @Override
     public String description() {
-        return "You may play a green card from your hand that has a printed cost of 9 MC or less without paying its MC cost." +
-                "During the production phase, draw a card.";
+        return "Draw 2 cards. Then, discard a card. During the production phase, this produces 3 heat.";
     }
 
     @Override
     public List<Tag> getTags() {
-        return List.of(Tag.BUILDING);
+        return List.of(Tag.BUILDING, Tag.ENERGY);
     }
 
     @Override
     public int getPrice() {
-        return 18;
+        return 17;
     }
 }

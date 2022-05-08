@@ -15,28 +15,16 @@ import java.util.Map;
  */
 @RequiredArgsConstructor
 @Getter
-public class AtmosphericInsulators implements BaseExpansionGreenCard {
+public class PowerGrid implements BaseExpansionGreenCard {
     private final int id;
 
     @Override
     public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
-        int earthTags = (int) project.getTags().stream().filter(Tag.EARTH::equals).count();
+        int energyTagsCount = (int) project.getTags().stream()
+                .filter(Tag.ENERGY::equals)
+                .count();
 
-        player.setHeatIncome(player.getHeatIncome() + earthTags);
-    }
-
-    @Override
-    public TurnResponse buildProject(MarsContext marsContext) {
-        int earthTagCount = (int) marsContext.getPlayer()
-                .getPlayed()
-                .getCards().stream()
-                .map(marsContext.getCardService()::getProjectCard)
-                .flatMap(card -> card.getTags().stream())
-                .filter(Tag.EARTH::equals).count();
-
-        marsContext.getPlayer().setHeatIncome(marsContext.getPlayer().getHeatIncome() + earthTagCount + 1);
-
-        return null;
+        player.setMcIncome(player.getMcIncome() + energyTagsCount);
     }
 
     @Override
@@ -45,18 +33,31 @@ public class AtmosphericInsulators implements BaseExpansionGreenCard {
     }
 
     @Override
+    public TurnResponse buildProject(MarsContext marsContext) {
+        Player player = marsContext.getPlayer();
+
+        int energyTagsCount = (int) player.getPlayed().getCards().stream().map(marsContext.getCardService()::getProjectCard)
+                .flatMap(card -> card.getTags().stream())
+                .filter(Tag.ENERGY::equals)
+                .count();
+
+        player.setMcIncome(player.getMcIncome() + energyTagsCount + 1);
+
+        return null;
+    }
+
+    @Override
     public String description() {
-        //TODO all tag effects should also include corporations
-        return "During the production phase, this produces 1 heat per Earth tag you have, including this.";
+        return "During the production phase, this produces 1 МС per Energy you have, including this.";
     }
 
     @Override
     public List<Tag> getTags() {
-        return List.of(Tag.SPACE, Tag.EARTH);
+        return List.of(Tag.BUILDING, Tag.ENERGY);
     }
 
     @Override
     public int getPrice() {
-        return 10;
+        return 8;
     }
 }

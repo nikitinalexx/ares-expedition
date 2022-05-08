@@ -2,6 +2,7 @@ package com.terraforming.ares.cards.green;
 
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.parameters.ParameterColor;
 import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -15,26 +16,26 @@ import java.util.Map;
  */
 @RequiredArgsConstructor
 @Getter
-public class AtmosphericInsulators implements BaseExpansionGreenCard {
+public class Worms implements BaseExpansionGreenCard {
     private final int id;
 
     @Override
     public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
-        int earthTags = (int) project.getTags().stream().filter(Tag.EARTH::equals).count();
+        int microbeTagCount = (int) project.getTags().stream().filter(Tag.MICROBE::equals).count();
 
-        player.setHeatIncome(player.getHeatIncome() + earthTags);
+        player.setPlantsIncome(player.getPlantsIncome() + microbeTagCount);
     }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        int earthTagCount = (int) marsContext.getPlayer()
+        int microbeTagCount = (int) marsContext.getPlayer()
                 .getPlayed()
                 .getCards().stream()
                 .map(marsContext.getCardService()::getProjectCard)
                 .flatMap(card -> card.getTags().stream())
-                .filter(Tag.EARTH::equals).count();
+                .filter(Tag.MICROBE::equals).count();
 
-        marsContext.getPlayer().setHeatIncome(marsContext.getPlayer().getHeatIncome() + earthTagCount + 1);
+        marsContext.getPlayer().setPlantsIncome(marsContext.getPlayer().getPlantsIncome() + microbeTagCount + 1);
 
         return null;
     }
@@ -46,17 +47,21 @@ public class AtmosphericInsulators implements BaseExpansionGreenCard {
 
     @Override
     public String description() {
-        //TODO all tag effects should also include corporations
-        return "During the production phase, this produces 1 heat per Earth tag you have, including this.";
+        return "During the production phase, this produces 1 plant per Microbe tag you have, including this.";
+    }
+
+    @Override
+    public List<ParameterColor> getOxygenRequirement() {
+        return List.of(ParameterColor.RED, ParameterColor.YELLOW, ParameterColor.WHITE);
     }
 
     @Override
     public List<Tag> getTags() {
-        return List.of(Tag.SPACE, Tag.EARTH);
+        return List.of(Tag.MICROBE);
     }
 
     @Override
     public int getPrice() {
-        return 10;
+        return 11;
     }
 }

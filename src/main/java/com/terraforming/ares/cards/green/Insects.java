@@ -15,28 +15,14 @@ import java.util.Map;
  */
 @RequiredArgsConstructor
 @Getter
-public class Cartel implements BaseExpansionGreenCard {
+public class Insects implements BaseExpansionGreenCard {
     private final int id;
 
     @Override
     public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
-        int earthTags = (int) project.getTags().stream().filter(Tag.EARTH::equals).count();
+        int plantTagsCount = (int) project.getTags().stream().filter(Tag.PLANT::equals).count();
 
-        player.setMcIncome(player.getMcIncome() + earthTags);
-    }
-
-    @Override
-    public TurnResponse buildProject(MarsContext marsContext) {
-        int earthTagCount = (int) marsContext.getPlayer()
-                .getPlayed()
-                .getCards().stream()
-                .map(marsContext.getCardService()::getProjectCard)
-                .flatMap(card -> card.getTags().stream())
-                .filter(Tag.EARTH::equals).count();
-
-        marsContext.getPlayer().setMcIncome(marsContext.getPlayer().getMcIncome() + earthTagCount + 1);
-
-        return null;
+        player.setPlantsIncome(player.getPlantsIncome() + plantTagsCount);
     }
 
     @Override
@@ -45,17 +31,34 @@ public class Cartel implements BaseExpansionGreenCard {
     }
 
     @Override
+    public TurnResponse buildProject(MarsContext marsContext) {
+        Player player = marsContext.getPlayer();
+
+        //TODO consider corporations with PLANT tag
+
+        int plantTagsCount = (int) player.getPlayed().getCards().stream().map(marsContext.getCardService()::getProjectCard)
+                .flatMap(card -> card.getTags().stream())
+                .filter(Tag.PLANT::equals)
+                .count();
+
+        player.setPlantsIncome(player.getPlantsIncome() + plantTagsCount);
+
+
+        return null;
+    }
+
+    @Override
     public String description() {
-        return "During the production phase, this produces 1 MC per Earth you have, including this.";
+        return "During the production phase, this produces 1 plant per Plant tag you have.";
     }
 
     @Override
     public List<Tag> getTags() {
-        return List.of(Tag.EARTH);
+        return List.of(Tag.MICROBE);
     }
 
     @Override
     public int getPrice() {
-        return 6;
+        return 10;
     }
 }

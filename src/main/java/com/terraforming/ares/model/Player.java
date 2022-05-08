@@ -32,7 +32,7 @@ public class Player {
     private int forests;
     private boolean builtSpecialDesignLastTurn;
     private boolean builtWorkCrewsLastTurn;
-    private boolean builtAutomatedFactoriesLastTurn;
+    private boolean canBuildAnotherGreenWith9Discount;
 
     private Integer previousChosenPhase;
     private Integer chosenPhase;
