@@ -3,7 +3,7 @@ package com.terraforming.ares.cards.red;
 import com.terraforming.ares.dto.CardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
 import com.terraforming.ares.model.*;
-import com.terraforming.ares.model.turn.DiscardCardsTurn;
+import com.terraforming.ares.services.TerraformingService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -15,12 +15,16 @@ import java.util.List;
  */
 @RequiredArgsConstructor
 @Getter
-public class BusinessContracts implements BaseExpansionRedCard {
+public class TechnologyDemonstration implements BaseExpansionRedCard {
     private final int id;
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        Deck deck = marsContext.getGame().getProjectsDeck().dealCards(4);
+        TerraformingService terraformingService = marsContext.getTerraformingService();
+
+        terraformingService.revealOcean(marsContext.getGame(), marsContext.getPlayer());
+
+        Deck deck = marsContext.getGame().getProjectsDeck().dealCards(2);
 
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 
@@ -31,31 +35,22 @@ public class BusinessContracts implements BaseExpansionRedCard {
             resultBuilder.takenCard(CardDto.from(projectCard));
         }
 
-        marsContext.getPlayer().setNextTurn(
-                new DiscardCardsTurn(
-                        marsContext.getPlayer().getUuid(),
-                        List.of(),
-                        2,
-                        false
-                )
-        );
-
         return resultBuilder.build();
     }
 
     @Override
     public String description() {
-        return "Draw 4 cards. Then discard 2 cards.";
+        return "Flip an ocean tile. Draw 2 cards";
     }
 
     @Override
     public List<Tag> getTags() {
-        return List.of(Tag.EARTH, Tag.EVENT);
+        return List.of(Tag.SPACE, Tag.SCIENCE, Tag.EVENT);
     }
 
     @Override
     public int getPrice() {
-        return 5;
+        return 17;
     }
 
 }

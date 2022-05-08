@@ -47,7 +47,7 @@ public class AnaerobicMicroorganisms implements BlueCard {
     }
 
     @Override
-    public void onOtherProjectBuiltEffect(CardService cardService, MarsGame marsGame, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
+    public void onProjectBuiltEffect(CardService cardService, MarsGame marsGame, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
         int affectedTagsCount = (int) project.getTags().stream().filter(tag ->
                 tag == Tag.ANIMAL || tag == Tag.MICROBE || tag == Tag.PLANT
         ).count();

@@ -59,10 +59,11 @@ public class CardValidationService {
 
 
         boolean playerMayAmplifyGlobalRequirement = specialEffectsService.ownsSpecialEffect(player, SpecialEffect.AMPLIFY_GLOBAL_REQUIREMENT);
+        boolean builtSpecialDesignLastTurn = player.isBuiltSpecialDesignLastTurn();
 
         //TODO requirements should be set at the beginning of phase
-        return validateOxygen(planet, projectCard, playerMayAmplifyGlobalRequirement)
-                .or(() -> validateTemperature(planet, projectCard, playerMayAmplifyGlobalRequirement))
+        return validateOxygen(planet, projectCard, playerMayAmplifyGlobalRequirement || builtSpecialDesignLastTurn)
+                .or(() -> validateTemperature(planet, projectCard, playerMayAmplifyGlobalRequirement || builtSpecialDesignLastTurn))
                 .or(() -> validateOceans(planet, projectCard))
                 .or(() -> validateTags(player, projectCard))
                 .or(() -> validatePayments(projectCard, player, payments))
@@ -162,6 +163,7 @@ public class CardValidationService {
                         .getCards()
                         .stream()
                         .map(cardService::getProjectCard)
+                        .filter(ProjectCard::onBuiltEffectApplicableToOther)
                         .map(c -> onBuiltEffectValidators.get(c.getClass()))
                         .filter(Objects::nonNull)
                         .map(validator -> validator.validate(card, player, inputParams))

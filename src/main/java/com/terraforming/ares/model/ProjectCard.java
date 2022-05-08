@@ -49,4 +49,9 @@ public interface ProjectCard extends GenericCard {
     default boolean onBuiltEffectApplicableToItself() {
         return false;
     }
+
+    default boolean onBuiltEffectApplicableToOther() {
+        return false;
+    }
+
 }

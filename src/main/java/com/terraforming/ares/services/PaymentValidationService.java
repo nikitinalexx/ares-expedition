@@ -100,6 +100,10 @@ public class PaymentValidationService {
             discount += 1;
         }
 
+        if (player.isBuiltWorkCrewsLastTurn()) {
+            discount += 11;
+        }
+
 
         //TODO add other types of discount
 

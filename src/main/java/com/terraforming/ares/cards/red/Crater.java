@@ -1,43 +1,47 @@
-package com.terraforming.ares.cards.green;
+package com.terraforming.ares.cards.red;
 
 import com.terraforming.ares.model.MarsContext;
-import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
  * Created by oleksii.nikitin
- * Creation date 29.04.2022
+ * Creation date 08.05.2022
  */
 @RequiredArgsConstructor
 @Getter
-public class GeothermalPower implements BaseExpansionGreenCard {
+public class Crater implements BaseExpansionRedCard {
     private final int id;
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        Player player = marsContext.getPlayer();
-        player.setHeatIncome(player.getHeatIncome() + 2);
+        marsContext.getTerraformingService().revealOcean(marsContext.getGame(), marsContext.getPlayer());
+
         return null;
     }
 
     @Override
     public String description() {
-        return "During the production phase, this produces 2 heat.";
+        return "Flip an ocean tile.";
     }
 
     @Override
     public List<Tag> getTags() {
-        return Arrays.asList(Tag.BUILDING, Tag.ENERGY);
+        return List.of(Tag.EVENT);
+    }
+
+    @Override
+    public List<Tag> getTagRequirements() {
+        return List.of(Tag.EVENT, Tag.EVENT, Tag.EVENT);
     }
 
     @Override
     public int getPrice() {
-        return 8;
+        return 7;
     }
+
 }

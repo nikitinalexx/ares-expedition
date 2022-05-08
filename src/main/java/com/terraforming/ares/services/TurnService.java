@@ -73,7 +73,7 @@ public class TurnService {
 
     public TurnResponse discardCards(String playerUuid, List<Integer> cards) {
         return performSyncTurn(
-                new DiscardCardsTurn(playerUuid, cards, cards.size()),
+                new DiscardCardsTurn(playerUuid, cards, cards.size(), false),
                 playerUuid,
                 game -> {
                     Player player = game.getPlayerByUuid(playerUuid);
@@ -89,6 +89,15 @@ public class TurnService {
 
                     if (!player.getHand().getCards().containsAll(cards)) {
                         return "Can't discard cards that you don't have";
+                    }
+
+                    if (expectedTurn.isOnlyFromSelectedCards()) {
+                        List<Integer> expectedCardsToBeRemovedFrom = expectedTurn.getCards();
+                        for (Integer card : cards) {
+                            if (!expectedCardsToBeRemovedFrom.contains(card)) {
+                                return "You can't discard cards other than from those that you received";
+                            }
+                        }
                     }
 
                     return null;

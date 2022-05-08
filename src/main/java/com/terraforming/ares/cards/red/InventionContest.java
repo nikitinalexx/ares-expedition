@@ -7,6 +7,7 @@ import com.terraforming.ares.model.turn.DiscardCardsTurn;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -15,12 +16,12 @@ import java.util.List;
  */
 @RequiredArgsConstructor
 @Getter
-public class BusinessContracts implements BaseExpansionRedCard {
+public class InventionContest implements BaseExpansionRedCard {
     private final int id;
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        Deck deck = marsContext.getGame().getProjectsDeck().dealCards(4);
+        Deck deck = marsContext.getGame().getProjectsDeck().dealCards(3);
 
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 
@@ -34,9 +35,9 @@ public class BusinessContracts implements BaseExpansionRedCard {
         marsContext.getPlayer().setNextTurn(
                 new DiscardCardsTurn(
                         marsContext.getPlayer().getUuid(),
-                        List.of(),
+                        new ArrayList<>(deck.getCards()),
                         2,
-                        false
+                        true
                 )
         );
 
@@ -45,17 +46,18 @@ public class BusinessContracts implements BaseExpansionRedCard {
 
     @Override
     public String description() {
-        return "Draw 4 cards. Then discard 2 cards.";
+        //TODO write test
+        return "Draw 3 cards. Keep one of them and discard the other two.";
     }
 
     @Override
     public List<Tag> getTags() {
-        return List.of(Tag.EARTH, Tag.EVENT);
+        return List.of(Tag.SCIENCE, Tag.EVENT);
     }
 
     @Override
     public int getPrice() {
-        return 5;
+        return 1;
     }
 
 }

@@ -29,6 +29,8 @@ public class Player {
     private int terraformingRating = Constants.STARTING_RT;
     private int canBuildInSecondPhase;
     private int forests;
+    private boolean builtSpecialDesignLastTurn;
+    private boolean builtWorkCrewsLastTurn;
 
     private Integer previousChosenPhase;
     private Integer chosenPhase;

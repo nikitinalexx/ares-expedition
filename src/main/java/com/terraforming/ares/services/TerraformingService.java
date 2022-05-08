@@ -70,6 +70,22 @@ public class TerraformingService {
                 .forEach(project -> project.onOxygenChangedEffect(player));
     }
 
+    public void raiseTemperature(MarsGame game, Player player) {
+        if (!canRaiseTemperature()) {
+            return;
+        }
+
+        game.getPlanet().increaseTemperature();
+
+        player.setTerraformingRating(player.getTerraformingRating() + 1);
+
+        player.getPlayed()
+                .getCards()
+                .stream()
+                .map(cardService::getProjectCard)
+                .forEach(project -> project.onTemperatureChangedEffect(player));
+    }
+
     public void buildForest(MarsGame game, Player player) {
         if (canRaiseOxygen()) {
             game.getPlanet().increaseOxygen();

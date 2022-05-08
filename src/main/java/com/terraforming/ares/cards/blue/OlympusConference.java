@@ -22,7 +22,7 @@ public class OlympusConference implements BlueCard {
     private final int id;
 
     @Override
-    public void onOtherProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
+    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
         long scienceTags = project.getTags().stream().map(Tag.SCIENCE::equals).count();
 
         if (scienceTags == 0) {
@@ -33,6 +33,11 @@ public class OlympusConference implements BlueCard {
             player.getHand().addCard(card);
         }
 
+    }
+
+    @Override
+    public boolean onBuiltEffectApplicableToOther() {
+        return true;
     }
 
     @Override

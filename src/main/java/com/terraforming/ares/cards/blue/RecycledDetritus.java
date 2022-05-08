@@ -22,7 +22,7 @@ public class RecycledDetritus implements BlueCard {
     private final int id;
 
     @Override
-    public void onOtherProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
+    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
         if (project.getTags().contains(Tag.EVENT)) {
             for (Integer card : game.getProjectsDeck().dealCards(2).getCards()) {
                 player.getHand().addCard(card);

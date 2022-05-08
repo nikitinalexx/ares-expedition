@@ -28,6 +28,8 @@ public class BuildBlueRedProjectProcessor extends GenericBuildProjectProcessor<B
         }
 
         player.setCanBuildInSecondPhase(player.getCanBuildInSecondPhase() - 1);
+        player.setBuiltSpecialDesignLastTurn(false);
+        player.setBuiltWorkCrewsLastTurn(false);
     }
 
     @Override

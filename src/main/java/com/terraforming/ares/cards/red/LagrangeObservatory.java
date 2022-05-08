@@ -2,8 +2,10 @@ package com.terraforming.ares.cards.red;
 
 import com.terraforming.ares.dto.CardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
-import com.terraforming.ares.model.*;
-import com.terraforming.ares.model.turn.DiscardCardsTurn;
+import com.terraforming.ares.model.Deck;
+import com.terraforming.ares.model.MarsContext;
+import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.model.TurnResponse;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -15,47 +17,41 @@ import java.util.List;
  */
 @RequiredArgsConstructor
 @Getter
-public class BusinessContracts implements BaseExpansionRedCard {
+public class LagrangeObservatory implements BaseExpansionRedCard {
     private final int id;
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        Deck deck = marsContext.getGame().getProjectsDeck().dealCards(4);
+        Deck deck = marsContext.getGame().getProjectsDeck().dealCards(1);
 
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 
         for (Integer card : deck.getCards()) {
             marsContext.getPlayer().getHand().addCard(card);
-
-            ProjectCard projectCard = marsContext.getCardService().getProjectCard(card);
-            resultBuilder.takenCard(CardDto.from(projectCard));
+            resultBuilder.takenCard(CardDto.from(marsContext.getCardService().getProjectCard(card)));
         }
-
-        marsContext.getPlayer().setNextTurn(
-                new DiscardCardsTurn(
-                        marsContext.getPlayer().getUuid(),
-                        List.of(),
-                        2,
-                        false
-                )
-        );
 
         return resultBuilder.build();
     }
 
     @Override
     public String description() {
-        return "Draw 4 cards. Then discard 2 cards.";
+        return "Draw a card.";
+    }
+
+    @Override
+    public int getWinningPoints() {
+        return 1;
     }
 
     @Override
     public List<Tag> getTags() {
-        return List.of(Tag.EARTH, Tag.EVENT);
+        return List.of(Tag.SCIENCE, Tag.SPACE, Tag.EVENT);
     }
 
     @Override
     public int getPrice() {
-        return 5;
+        return 7;
     }
 
 }

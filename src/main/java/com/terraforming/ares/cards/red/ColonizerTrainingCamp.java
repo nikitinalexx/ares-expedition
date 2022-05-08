@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.red;
 
 import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.model.parameters.ParameterColor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -12,7 +13,7 @@ import java.util.List;
  */
 @RequiredArgsConstructor
 @Getter
-public class RedCardDummy implements BaseExpansionRedCard {
+public class ColonizerTrainingCamp implements BaseExpansionRedCard {
     private final int id;
 
     @Override
@@ -21,13 +22,23 @@ public class RedCardDummy implements BaseExpansionRedCard {
     }
 
     @Override
+    public List<ParameterColor> getOxygenRequirement() {
+        return List.of(ParameterColor.PURPLE, ParameterColor.RED);
+    }
+
+    @Override
+    public int getWinningPoints() {
+        return 2;
+    }
+
+    @Override
     public List<Tag> getTags() {
-        return List.of(Tag.EVENT);
+        return List.of(Tag.BUILDING, Tag.JUPITER, Tag.EVENT);
     }
 
     @Override
     public int getPrice() {
-        return 0;
+        return 10;
     }
 
 }

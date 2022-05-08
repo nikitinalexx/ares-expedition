@@ -28,7 +28,7 @@ public interface GenericCard {
 
     Expansion getExpansion();
 
-    default void onOtherProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
+    default void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
     }
 
     default void onOceanFlippedEffect(Player player) {
