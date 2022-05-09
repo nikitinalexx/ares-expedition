@@ -36,8 +36,6 @@ public interface ProjectCard extends GenericCard {
         return 0;
     }
 
-    int getPrice();
-
     default Set<SpecialEffect> getSpecialEffects() {
         return Collections.emptySet();
     }

@@ -7,4 +7,8 @@ package com.terraforming.ares.model;
  */
 public interface CorporationCard extends GenericCard{
 
+    @Override
+    default int getPrice() {
+        return 0;
+    }
 }

@@ -6,10 +6,7 @@ import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.GameService;
 import com.terraforming.ares.services.TurnService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
@@ -20,6 +17,7 @@ import java.util.Map;
  */
 @RestController
 @RequiredArgsConstructor
+@CrossOrigin
 public class PlayController {
     private final GameService gameService;
     private final TurnService turnService;

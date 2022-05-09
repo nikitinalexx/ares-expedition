@@ -1,0 +1,12 @@
+export enum Tag {
+  SPACE,
+  EARTH,
+  EVENT,
+  SCIENCE,
+  PLANT,
+  ENERGY,
+  BUILDING,
+  ANIMAL,
+  JUPITER,
+  MICROBE
+}

@@ -1,6 +1,7 @@
 package com.terraforming.ares.model;
 
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.income.Income;
 import com.terraforming.ares.services.CardService;
 
 import java.util.Collections;
@@ -26,7 +27,13 @@ public interface GenericCard {
         return Collections.emptyList();
     }
 
+    default List<Income> getIncomes() {
+        return List.of();
+    }
+
     Expansion getExpansion();
+
+    int getPrice();
 
     default void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
     }

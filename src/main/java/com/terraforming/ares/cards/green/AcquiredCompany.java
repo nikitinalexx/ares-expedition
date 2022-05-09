@@ -4,6 +4,8 @@ import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.income.Income;
+import com.terraforming.ares.model.income.IncomeType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -22,9 +24,17 @@ public class AcquiredCompany implements BaseExpansionGreenCard {
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
 
+        //todo use getIncomes
         player.setCardIncome(player.getCardIncome() + 1);
 
         return null;
+    }
+
+    @Override
+    public List<Income> getIncomes() {
+        return List.of(
+                Income.of(IncomeType.CARD, 1)
+        );
     }
 
     @Override
