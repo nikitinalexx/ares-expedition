@@ -1,7 +1,7 @@
 package com.terraforming.ares.validation.action;
 
 import com.terraforming.ares.cards.blue.VolcanicPools;
-import com.terraforming.ares.model.Planet;
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.services.CardService;
@@ -25,8 +25,8 @@ public class VolcanicPoolsActionValidator implements ActionValidator<VolcanicPoo
     }
 
     @Override
-    public String validate(Planet planet, Player player) {
-        if (!terraformingService.canRevealOcean()) {
+    public String validate(MarsGame game, Player player) {
+        if (!terraformingService.canRevealOcean(game)) {
             return "Can't flip an ocean anymore";
         }
 

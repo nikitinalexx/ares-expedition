@@ -1,5 +1,6 @@
 package com.terraforming.ares.services;
 
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import com.terraforming.ares.model.payments.Payment;
@@ -72,7 +73,7 @@ public class CardValidationService {
     }
 
     @SuppressWarnings("unchecked")
-    public String validateBlueAction(Player player, Planet planet, int cardId, List<Integer> inputParameters) {
+    public String validateBlueAction(Player player, MarsGame game, int cardId, List<Integer> inputParameters) {
         ProjectCard projectCard = cardService.getProjectCard(cardId);
         if (projectCard == null) {
             return "Card doesn't exist " + cardId;
@@ -98,7 +99,7 @@ public class CardValidationService {
         ActionValidator<ProjectCard> validator = (ActionValidator<ProjectCard>) blueActionValidators.get(projectCard.getClass());
 
         if (validator != null) {
-            return validator.validate(planet, player, inputParameters);
+            return validator.validate(game, player, inputParameters);
         } else {
             return null;
         }

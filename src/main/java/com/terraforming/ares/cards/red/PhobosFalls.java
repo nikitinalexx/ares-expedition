@@ -25,15 +25,12 @@ public class PhobosFalls implements BaseExpansionRedCard {
     public TurnResponse buildProject(MarsContext marsContext) {
         TerraformingService terraformingService = marsContext.getTerraformingService();
 
-        terraformingService.raiseTemperature(marsContext.getGame(), marsContext.getPlayer());
+        terraformingService.increaseTemperature(marsContext.getGame(), marsContext.getPlayer());
         terraformingService.revealOcean(marsContext.getGame(), marsContext.getPlayer());
-
-        //TODO remove code duplicates
-        Deck deck = marsContext.getGame().getProjectsDeck().dealCards(2);
 
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 
-        for (Integer card : deck.getCards()) {
+        for (Integer card : marsContext.getGame().dealCards(2)) {
             marsContext.getPlayer().getHand().addCard(card);
             resultBuilder.takenCard(CardDto.from(marsContext.getCardService().getProjectCard(card)));
         }

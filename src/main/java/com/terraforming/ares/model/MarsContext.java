@@ -21,11 +21,9 @@ public class MarsContext {
     CardService cardService;
 
     public AutoPickCardsAction dealCards(int count) {
-        Deck deck = game.getProjectsDeck().dealCards(count);
-
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 
-        for (Integer card : deck.getCards()) {
+        for (Integer card : game.dealCards(count)) {
             player.getHand().addCard(card);
             resultBuilder.takenCard(CardDto.from(cardService.getProjectCard(card)));
         }

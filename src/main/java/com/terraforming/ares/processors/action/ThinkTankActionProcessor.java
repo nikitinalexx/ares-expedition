@@ -30,11 +30,9 @@ public class ThinkTankActionProcessor implements BlueActionCardProcessor<ThinkTa
     public TurnResponse process(MarsGame game, Player player) {
         player.setMc(player.getMc() - 2);
 
-        Deck deck = game.getProjectsDeck().dealCards(1);
-
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 
-        for (Integer card : deck.getCards()) {
+        for (Integer card : game.dealCards(1)) {
             player.getHand().addCard(card);
 
             ProjectCard projectCard = cardService.getProjectCard(card);

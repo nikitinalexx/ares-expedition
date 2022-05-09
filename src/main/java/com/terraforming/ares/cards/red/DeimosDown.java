@@ -22,7 +22,7 @@ public class DeimosDown implements BaseExpansionRedCard {
     public TurnResponse buildProject(MarsContext marsContext) {
         TerraformingService terraformingService = marsContext.getTerraformingService();
         for (int i = 1; i <= 3; i++) {
-            terraformingService.raiseTemperature(marsContext.getGame(), marsContext.getPlayer());
+            terraformingService.increaseTemperature(marsContext.getGame(), marsContext.getPlayer());
         }
 
         marsContext.getPlayer().setMc(marsContext.getPlayer().getMc() + 7);

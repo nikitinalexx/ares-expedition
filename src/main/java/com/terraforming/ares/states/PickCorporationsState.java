@@ -32,9 +32,4 @@ public class PickCorporationsState extends AbstractState {
         marsGame.setStateType(StateType.PICK_PHASE);
     }
 
-    @Override
-    public int getCurrentPhase() {
-        return -1;
-    }
-
 }

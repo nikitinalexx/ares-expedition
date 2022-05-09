@@ -16,5 +16,4 @@ public interface State {
 
     void updateState();
 
-    int getCurrentPhase();
 }

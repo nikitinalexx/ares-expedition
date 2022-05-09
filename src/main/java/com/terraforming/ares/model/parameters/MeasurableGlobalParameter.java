@@ -1,8 +1,10 @@
 package com.terraforming.ares.model.parameters;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Singular;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -10,10 +12,16 @@ import java.util.List;
  * Creation date 25.04.2022
  */
 @Builder
+@AllArgsConstructor
 public class MeasurableGlobalParameter {
     @Singular
     private final List<ParameterGradation> levels;
     private int currentLevel;
+
+    public MeasurableGlobalParameter(MeasurableGlobalParameter copy) {
+        this.levels = new ArrayList<>(copy.levels);
+        this.currentLevel = copy.currentLevel;
+    }
 
     public int getCurrentValue() {
         return levels.get(currentLevel).getValue();

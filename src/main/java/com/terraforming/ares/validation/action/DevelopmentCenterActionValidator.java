@@ -1,6 +1,7 @@
 package com.terraforming.ares.validation.action;
 
 import com.terraforming.ares.cards.blue.DevelopmentCenter;
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Planet;
 import com.terraforming.ares.model.Player;
 import org.springframework.stereotype.Component;
@@ -17,7 +18,7 @@ public class DevelopmentCenterActionValidator implements ActionValidator<Develop
     }
 
     @Override
-    public String validate(Planet planet, Player player) {
+    public String validate(MarsGame game, Player player) {
         if (player.getHeat() < 2) {
             return "You need at least 2 HEAT to perform the action";
         }

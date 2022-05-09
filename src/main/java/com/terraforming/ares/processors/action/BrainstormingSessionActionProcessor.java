@@ -25,11 +25,9 @@ public class BrainstormingSessionActionProcessor implements BlueActionCardProces
 
     @Override
     public TurnResponse process(MarsGame game, Player player) {
-        Deck deck = game.getProjectsDeck().dealCards(1);
-
         AutoPickDiscardCardsAction.AutoPickDiscardCardsActionBuilder resultBuilder = AutoPickDiscardCardsAction.builder();
 
-        for (Integer card : deck.getCards()) {
+        for (Integer card : game.dealCards(1)) {
             ProjectCard projectCard = deckService.getProjectCard(card);
             if (projectCard.getColor() == CardColor.GREEN) {
                 player.setMc(player.getMc() + 1);

@@ -1,8 +1,10 @@
 package com.terraforming.ares.validation.action;
 
 import com.terraforming.ares.cards.blue.NitriteReductingBacteria;
-import com.terraforming.ares.model.Planet;
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.services.TerraformingService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -13,14 +15,17 @@ import java.util.List;
  * Creation date 07.05.2022
  */
 @Component
+@RequiredArgsConstructor
 public class NitriteReductingBacteriaActionValidator implements ActionValidator<NitriteReductingBacteria> {
+    private final TerraformingService terraformingService;
+
     @Override
     public Class<NitriteReductingBacteria> getType() {
         return NitriteReductingBacteria.class;
     }
 
     @Override
-    public String validate(Planet planet, Player player, List<Integer> inputParameters) {
+    public String validate(MarsGame game, Player player, List<Integer> inputParameters) {
         if (CollectionUtils.isEmpty(inputParameters)) {
             return "NitriteReductingBacteria expects input to add or remove microbes";
         }
@@ -34,9 +39,8 @@ public class NitriteReductingBacteriaActionValidator implements ActionValidator<
             return "Not enough microbes to flip an ocean";
         }
 
-        if (input == 3 && planet.allOceansRevealed()) {
-            //TODO not applicable if got max this phase
-            return "Can't flip an Ocean, all oceans already revealed";
+        if (input == 3 && !terraformingService.canRevealOcean(game)) {
+            return "Can not reveal oceans anymore";
         }
 
         return null;

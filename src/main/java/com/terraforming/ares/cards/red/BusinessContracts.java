@@ -2,7 +2,10 @@ package com.terraforming.ares.cards.red;
 
 import com.terraforming.ares.dto.CardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
-import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.MarsContext;
+import com.terraforming.ares.model.ProjectCard;
+import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -20,11 +23,9 @@ public class BusinessContracts implements BaseExpansionRedCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        Deck deck = marsContext.getGame().getProjectsDeck().dealCards(4);
-
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 
-        for (Integer card : deck.getCards()) {
+        for (Integer card : marsContext.getGame().dealCards(4)) {
             marsContext.getPlayer().getHand().addCard(card);
 
             ProjectCard projectCard = marsContext.getCardService().getProjectCard(card);

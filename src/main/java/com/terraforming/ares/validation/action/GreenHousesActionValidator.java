@@ -1,6 +1,7 @@
 package com.terraforming.ares.validation.action;
 
 import com.terraforming.ares.cards.blue.GreenHouses;
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Planet;
 import com.terraforming.ares.model.Player;
 import org.springframework.stereotype.Component;
@@ -20,7 +21,7 @@ public class GreenHousesActionValidator implements ActionValidator<GreenHouses> 
     }
 
     @Override
-    public String validate(Planet planet, Player player, List<Integer> inputParameters) {
+    public String validate(MarsGame game, Player player, List<Integer> inputParameters) {
         if (CollectionUtils.isEmpty(inputParameters)) {
             return "GreenHouses action expects an input parameter";
         }

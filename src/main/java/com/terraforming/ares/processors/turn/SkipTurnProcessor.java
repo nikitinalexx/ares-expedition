@@ -25,7 +25,7 @@ public class SkipTurnProcessor implements TurnProcessor<SkipTurn> {
 
     @Override
     public TurnResponse processTurn(SkipTurn turn, MarsGame game) {
-        int currentPhase = stateFactory.getCurrentState(game).getCurrentPhase();
+        int currentPhase = game.getCurrentPhase();
         Player player = game.getPlayerByUuid(turn.getPlayerUuid());
 
         if (currentPhase == 1) {

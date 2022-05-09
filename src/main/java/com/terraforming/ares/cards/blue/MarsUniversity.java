@@ -58,7 +58,9 @@ public class MarsUniversity implements BlueCard {
 
         int cardsToReceive = cardToDiscard.getTags().contains(Tag.PLANT) ? 2 : 1;
 
-        game.getProjectsDeck().dealCards(cardsToReceive).getCards().forEach(player.getHand()::addCard);
+        for (Integer dealedCard : game.dealCards(cardsToReceive)) {
+            player.getHand().addCard(dealedCard);
+        }
     }
 
     @Override

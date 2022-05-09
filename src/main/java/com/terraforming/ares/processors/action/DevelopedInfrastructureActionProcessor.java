@@ -7,6 +7,7 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.TerraformingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class DevelopedInfrastructureActionProcessor implements BlueActionCardProcessor<DevelopedInfrastructure> {
     private final CardService cardService;
+    private final TerraformingService terraformingService;
 
     @Override
     public Class<DevelopedInfrastructure> getType() {
@@ -37,7 +39,7 @@ public class DevelopedInfrastructureActionProcessor implements BlueActionCardPro
 
         player.setTerraformingRating(player.getTerraformingRating() + 1);
 
-        game.getPlanet().increaseTemperature();
+        terraformingService.increaseTemperature(game, player);
 
         return null;
     }

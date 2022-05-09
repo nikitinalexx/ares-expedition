@@ -9,9 +9,16 @@ import lombok.Getter;
 @Getter
 public class Ocean {
     private boolean revealed;
-    private int cards;
-    private int mc;
-    private int plants;
+    private final int cards;
+    private final int mc;
+    private final int plants;
+
+    public Ocean(Ocean copy) {
+        this.revealed = copy.revealed;
+        this.cards = copy.cards;
+        this.mc = copy.mc;
+        this.plants = copy.plants;
+    }
 
     public Ocean(int cards, int mc, int plants) {
         this.cards = cards;

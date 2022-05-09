@@ -30,9 +30,4 @@ public class PickPhaseState extends AbstractState {
         performStateTransferFromPhase(1);
     }
 
-    @Override
-    public int getCurrentPhase() {
-        return -1;
-    }
-
 }

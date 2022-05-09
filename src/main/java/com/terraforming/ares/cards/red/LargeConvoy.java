@@ -55,11 +55,9 @@ public class LargeConvoy implements BaseExpansionRedCard {
 
         terraformingService.revealOcean(marsContext.getGame(), marsContext.getPlayer());
 
-        Deck deck = marsContext.getGame().getProjectsDeck().dealCards(2);
-
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 
-        for (Integer card : deck.getCards()) {
+        for (Integer card : marsContext.getGame().dealCards(2)) {
             marsContext.getPlayer().getHand().addCard(card);
             resultBuilder.takenCard(CardDto.from(marsContext.getCardService().getProjectCard(card)));
         }

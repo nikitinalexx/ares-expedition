@@ -30,8 +30,4 @@ public class DraftCardsState extends AbstractState {
         performStateTransferFromPhase(6);
     }
 
-    @Override
-    public int getCurrentPhase() {
-        return 5;
-    }
 }

@@ -16,33 +16,30 @@ import org.springframework.stereotype.Service;
 public class TerraformingService {
     private final CardService cardService;
 
-    //TODO implement, true even if maxed in this phase, but not in the next
-    public boolean canRevealOcean() {
-        return true;
+    public boolean canRevealOcean(MarsGame game) {
+        return !game.getPlanetAtTheStartOfThePhase().allOceansRevealed();
     }
 
-    public boolean canRaiseTemperature() {
-        return true;
+    public boolean canIncreaseTemperature(MarsGame game) {
+        return !game.getPlanetAtTheStartOfThePhase().isTemperatureMax();
     }
 
-    public boolean canRaiseOxygen() {
-        return true;
+    public boolean canIncreaseOxygen(MarsGame game) {
+        return !game.getPlanetAtTheStartOfThePhase().isOxygenMax();
     }
 
     public void revealOcean(MarsGame game, Player player) {
-        if (!canRevealOcean()) {
+        if (!canRevealOcean(game)) {
             return;
         }
 
-        Ocean ocean = game.getPlanet().revealOcean().orElseThrow(() -> new IllegalStateException("Trying to flip an ocean when no oceans left"));
+        Ocean ocean = game.getPlanet().revealOcean();
 
         player.setMc(player.getMc() + ocean.getMc());
         player.setPlants(player.getPlants() + ocean.getPlants());
 
         if (ocean.getCards() != 0) {
-            Deck deck = game.getProjectsDeck().dealCards(ocean.getCards());
-
-            for (Integer card : deck.getCards()) {
+            for (Integer card : game.dealCards(ocean.getCards())) {
                 player.getHand().addCard(card);
             }
         }
@@ -55,7 +52,7 @@ public class TerraformingService {
     }
 
     public void raiseOxygen(MarsGame game, Player player) {
-        if (!canRaiseOxygen()) {
+        if (!canIncreaseOxygen(game)) {
             return;
         }
 
@@ -70,8 +67,8 @@ public class TerraformingService {
                 .forEach(project -> project.onOxygenChangedEffect(player));
     }
 
-    public void raiseTemperature(MarsGame game, Player player) {
-        if (!canRaiseTemperature()) {
+    public void increaseTemperature(MarsGame game, Player player) {
+        if (!canIncreaseTemperature(game)) {
             return;
         }
 
@@ -87,8 +84,9 @@ public class TerraformingService {
     }
 
     public void buildForest(MarsGame game, Player player) {
-        if (canRaiseOxygen()) {
+        if (canIncreaseOxygen(game)) {
             game.getPlanet().increaseOxygen();
+
             player.setTerraformingRating(player.getTerraformingRating() + 1);
 
             player.getPlayed()

@@ -29,11 +29,9 @@ public class AssetLiquidationActionProcessor implements BlueActionCardProcessor<
     public TurnResponse process(MarsGame game, Player player) {
         player.setTerraformingRating(player.getTerraformingRating() - 1);
 
-        Deck deck = game.getProjectsDeck().dealCards(3);
-
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 
-        for (Integer card : deck.getCards()) {
+        for (Integer card : game.dealCards(3)) {
             player.getHand().addCard(card);
             resultBuilder.takenCard(CardDto.from(deckService.getProjectCard(card)));
         }

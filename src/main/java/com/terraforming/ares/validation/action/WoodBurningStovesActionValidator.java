@@ -1,7 +1,7 @@
 package com.terraforming.ares.validation.action;
 
 import com.terraforming.ares.cards.blue.WoodBurningStoves;
-import com.terraforming.ares.model.Planet;
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.TerraformingService;
 import lombok.RequiredArgsConstructor;
@@ -22,8 +22,8 @@ public class WoodBurningStovesActionValidator implements ActionValidator<WoodBur
     }
 
     @Override
-    public String validate(Planet planet, Player player) {
-        if (!terraformingService.canRaiseTemperature()) {
+    public String validate(MarsGame game, Player player) {
+        if (!terraformingService.canIncreaseTemperature(game)) {
             return "Can't raise Temperature anymore";
         }
 

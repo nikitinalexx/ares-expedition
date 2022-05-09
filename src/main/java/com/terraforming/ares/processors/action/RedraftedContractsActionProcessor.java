@@ -4,7 +4,6 @@ import com.terraforming.ares.cards.blue.RedraftedContracts;
 import com.terraforming.ares.dto.CardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Deck;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.model.TurnResponse;
@@ -32,11 +31,9 @@ public class RedraftedContractsActionProcessor implements BlueActionCardProcesso
     public TurnResponse process(MarsGame game, Player player, List<Integer> inputParameters) {
         player.getHand().removeCards(inputParameters);
 
-        Deck deck = game.getProjectsDeck().dealCards(inputParameters.size());
-
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 
-        for (Integer card : deck.getCards()) {
+        for (Integer card : game.dealCards(inputParameters.size())) {
             player.getHand().addCard(card);
 
             ProjectCard projectCard = cardService.getProjectCard(card);

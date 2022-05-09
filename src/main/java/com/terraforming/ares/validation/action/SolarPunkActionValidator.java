@@ -1,6 +1,7 @@
 package com.terraforming.ares.validation.action;
 
 import com.terraforming.ares.cards.blue.SolarPunk;
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Planet;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardService;
@@ -12,9 +13,7 @@ import org.springframework.stereotype.Component;
  * Creation date 05.05.2022
  */
 @Component
-@RequiredArgsConstructor
 public class SolarPunkActionValidator implements ActionValidator<SolarPunk> {
-    private final CardService cardService;
 
     @Override
     public Class<SolarPunk> getType() {
@@ -22,7 +21,7 @@ public class SolarPunkActionValidator implements ActionValidator<SolarPunk> {
     }
 
     @Override
-    public String validate(Planet planet, Player player) {
+    public String validate(MarsGame game, Player player) {
         int forestPrice = Math.max(0, 15 - 2 * player.getTitaniumIncome());
 
         if (player.getMc() < forestPrice) {

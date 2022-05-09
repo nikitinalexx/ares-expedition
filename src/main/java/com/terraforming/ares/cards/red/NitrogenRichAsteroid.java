@@ -27,7 +27,7 @@ public class NitrogenRichAsteroid implements BaseExpansionRedCard {
         CardService cardService = marsContext.getCardService();
 
         player.setTerraformingRating(player.getTerraformingRating() + 2);
-        terraformingService.raiseTemperature(marsContext.getGame(), marsContext.getPlayer());
+        terraformingService.increaseTemperature(marsContext.getGame(), marsContext.getPlayer());
         player.setPlants(player.getPlants() + 2);
 
         long plantsMin3 = player.getPlayed().getCards().stream().map(cardService::getProjectCard)

@@ -1,11 +1,12 @@
 package com.terraforming.ares.validation.action;
 
 import com.terraforming.ares.cards.blue.DevelopedInfrastructure;
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.CardColor;
-import com.terraforming.ares.model.Planet;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.TerraformingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class DevelopedInfrastructureActionValidator implements ActionValidator<DevelopedInfrastructure> {
     private final CardService cardService;
+    private final TerraformingService terraformingService;
 
     @Override
     public Class<DevelopedInfrastructure> getType() {
@@ -24,10 +26,9 @@ public class DevelopedInfrastructureActionValidator implements ActionValidator<D
     }
 
     @Override
-    public String validate(Planet planet, Player player) {
-        if (planet.isTemperatureMax()) {
-            //TODO not applicable if the temperature maxed in current phase
-            return "Temperature is already maximum";
+    public String validate(MarsGame game, Player player) {
+        if (!terraformingService.canIncreaseTemperature(game)) {
+            return "Can not increase temperature anymore";
         }
 
         int temperaturePrice = 10;

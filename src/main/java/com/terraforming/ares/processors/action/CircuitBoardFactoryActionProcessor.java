@@ -28,11 +28,9 @@ public class CircuitBoardFactoryActionProcessor implements BlueActionCardProcess
 
     @Override
     public TurnResponse process(MarsGame game, Player player) {
-        Deck deck = game.getProjectsDeck().dealCards(1);
-
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 
-        for (Integer card : deck.getCards()) {
+        for (Integer card : game.dealCards(1)) {
             player.getHand().addCard(card);
 
             ProjectCard projectCard = deckService.getProjectCard(card);

@@ -1,6 +1,7 @@
 package com.terraforming.ares.validation.action;
 
 import com.terraforming.ares.cards.blue.FarmingCoops;
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Planet;
 import com.terraforming.ares.model.Player;
 import org.springframework.stereotype.Component;
@@ -21,7 +22,7 @@ public class FarmingCoopsActionValidator implements ActionValidator<FarmingCoops
     }
 
     @Override
-    public String validate(Planet planet, Player player, List<Integer> inputParameters) {
+    public String validate(MarsGame game, Player player, List<Integer> inputParameters) {
         if (CollectionUtils.isEmpty(inputParameters)) {
             return "Farming coops expects a card to sell for 3 plants";
         }

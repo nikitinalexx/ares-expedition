@@ -1,6 +1,7 @@
 package com.terraforming.ares.validation.action;
 
 import com.terraforming.ares.cards.blue.ExtremeColdFungus;
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,7 @@ public class ExtremeColdFungusActionValidator implements ActionValidator<Extreme
     }
 
     @Override
-    public String validate(Planet planet, Player player, List<Integer> inputParameters) {
+    public String validate(MarsGame game, Player player, List<Integer> inputParameters) {
         if (CollectionUtils.isEmpty(inputParameters)) {
             return "Extreme cold fungus expects a choice to get a plant or put a microbe";
         }

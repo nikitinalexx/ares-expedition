@@ -5,8 +5,8 @@ import com.terraforming.ares.model.Planet;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateType;
 import lombok.Getter;
-import lombok.Setter;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
@@ -18,17 +18,18 @@ import java.util.stream.Stream;
  * Creation date 25.04.2022
  */
 @Getter
-@Setter
 public class MarsGame {
     private static final int INITIAL_CORPORATIONS_SIZE = 2;
 
     private long id;
-    private int playersCount;
-    private Map<String, Player> playerUuidToPlayer;
+    private final int playersCount;
+    private final Map<String, Player> playerUuidToPlayer;
     private Deck projectsDeck;//TODO what if it gets empty
-    private Deck corporationsDeck;
-    private Planet planet;
+    private final Deck corporationsDeck;
+    private final Planet planet;
+    private Planet planetAtTheStartOfThePhase;
     private StateType stateType;
+    private int currentPhase = -1;
 
     public MarsGame(int playersCount, int playerHandSize, Deck projectsDeck, Deck corporationsDeck, Planet planet) {
         this.playersCount = playersCount;
@@ -40,8 +41,8 @@ public class MarsGame {
         playerUuidToPlayer = Stream.generate(
                 () -> Player.builder()
                         .uuid(UUID.randomUUID().toString())
-                        .hand(projectsDeck.dealCards(playerHandSize))
-                        .corporations(corporationsDeck.dealCards(INITIAL_CORPORATIONS_SIZE))
+                        .hand(projectsDeck.dealCardsDeck(playerHandSize))
+                        .corporations(corporationsDeck.dealCardsDeck(INITIAL_CORPORATIONS_SIZE))
                         .played(Deck.builder().build())
                         .build()
         )
@@ -53,30 +54,39 @@ public class MarsGame {
         return getPlayerUuidToPlayer().get(playerUuid);
     }
 
-    public Deck getCorporationsChoice(String playerUuid) {
-        return getPlayer(playerUuid).getCorporations();
+    public void setId(long id) {
+        this.id = id;
     }
 
-    public void pickCorporation(String playerUuid, int corporationCardId) {
-        Player player = getPlayer(playerUuid);
-
-        Deck corporations = player.getCorporations();
-
-        if (corporations.containsCard(corporationCardId)) {
-            player.setSelectedCorporationCard(corporationCardId);
-        } else {
-            throw new IllegalArgumentException(String.format("Corporation card with id %s not found", corporationCardId));
-        }
+    public List<Integer> dealCards(int count) {
+        return projectsDeck.dealCards(count);
     }
 
-    private Player getPlayer(String playerUuid) {
-        Player player = playerUuidToPlayer.get(playerUuid);
-
-        if (player == null) {
-            throw new IllegalArgumentException(String.format("Player with uuid %s not found", playerUuid));
+    public void setStateType(StateType stateType) {
+        this.stateType = stateType;
+        switch (stateType) {
+            case BUILD_GREEN_PROJECTS:
+                currentPhase = 1;
+                break;
+            case BUILD_BLUE_RED_PROJECTS:
+                currentPhase = 2;
+                break;
+            case PERFORM_BLUE_ACTION:
+                currentPhase = 3;
+                break;
+            case COLLECT_INCOME:
+                currentPhase = 4;
+                break;
+            case DRAFT_CARDS:
+                currentPhase = 5;
+                break;
+            default:
+                currentPhase = -1;
+        }
+        if (currentPhase != -1) {
+            planetAtTheStartOfThePhase = new Planet(planet);
         }
 
-        return player;
     }
 
 }

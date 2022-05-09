@@ -40,7 +40,7 @@ public class InterplanetaryConference implements BlueCard {
             return;
         }
 
-        for (Integer card : game.getProjectsDeck().dealCards(cardsToGiveCount).getCards()) {
+        for (Integer card : game.dealCards(cardsToGiveCount)) {
             player.getHand().addCard(card);
         }
     }

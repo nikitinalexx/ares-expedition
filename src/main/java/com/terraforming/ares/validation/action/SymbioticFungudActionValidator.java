@@ -1,6 +1,7 @@
 package com.terraforming.ares.validation.action;
 
 import com.terraforming.ares.cards.blue.SymbioticFungud;
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.CardCollectableResource;
 import com.terraforming.ares.model.Planet;
 import com.terraforming.ares.model.Player;
@@ -27,7 +28,7 @@ public class SymbioticFungudActionValidator implements ActionValidator<Symbiotic
     }
 
     @Override
-    public String validate(Planet planet, Player player, List<Integer> inputParameters) {
+    public String validate(MarsGame game, Player player, List<Integer> inputParameters) {
         if (CollectionUtils.isEmpty(inputParameters)) {
             return "SymbioticFungud requires a card to put a microbe on";
         }

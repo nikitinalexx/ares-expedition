@@ -19,12 +19,9 @@ public class Research implements BaseExpansionRedCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-
-        Deck deck = marsContext.getGame().getProjectsDeck().dealCards(2);
-
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 
-        for (Integer card : deck.getCards()) {
+        for (Integer card : marsContext.getGame().dealCards(2)) {
             marsContext.getPlayer().getHand().addCard(card);
 
             ProjectCard projectCard = marsContext.getCardService().getProjectCard(card);

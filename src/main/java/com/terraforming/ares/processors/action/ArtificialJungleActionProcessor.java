@@ -29,11 +29,9 @@ public class ArtificialJungleActionProcessor implements BlueActionCardProcessor<
     public TurnResponse process(MarsGame game, Player player) {
         player.setPlants(player.getPlants() - 1);
 
-        Deck deck = game.getProjectsDeck().dealCards(1);
-
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 
-        for (Integer card : deck.getCards()) {
+        for (Integer card : game.dealCards(1)) {
             player.getHand().addCard(card);
             resultBuilder.takenCard(CardDto.from(deckService.getProjectCard(card)));
         }

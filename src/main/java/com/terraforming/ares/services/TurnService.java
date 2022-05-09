@@ -133,7 +133,7 @@ public class TurnService {
                 game -> {
                     Player player = game.getPlayerByUuid(playerUuid);
 
-                    return cardValidationService.validateBlueAction(player, game.getPlanet(), projectId, inputParams);
+                    return cardValidationService.validateBlueAction(player, game, projectId, inputParams);
                 }
         );
     }

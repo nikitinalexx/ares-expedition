@@ -1,8 +1,10 @@
 package com.terraforming.ares.validation.action;
 
 import com.terraforming.ares.cards.blue.AquiferPumping;
-import com.terraforming.ares.model.Planet;
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.services.TerraformingService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -10,17 +12,19 @@ import org.springframework.stereotype.Component;
  * Creation date 05.05.2022
  */
 @Component
+@RequiredArgsConstructor
 public class AquiferPumpingActionValidator implements ActionValidator<AquiferPumping> {
+    private final TerraformingService terraformingService;
+
     @Override
     public Class<AquiferPumping> getType() {
         return AquiferPumping.class;
     }
 
     @Override
-    public String validate(Planet planet, Player player) {
-        if (planet.allOceansRevealed()) {
-            //TODO not applicable if the last ocean flipped in current phase
-            return "Number of oceans is already maximum";
+    public String validate(MarsGame game, Player player) {
+        if (!terraformingService.canRevealOcean(game)) {
+            return "Can not reveal oceans anymore";
         }
 
         int flipPrice = 10;

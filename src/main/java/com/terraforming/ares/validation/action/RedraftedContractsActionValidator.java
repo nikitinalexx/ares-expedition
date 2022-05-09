@@ -1,6 +1,7 @@
 package com.terraforming.ares.validation.action;
 
 import com.terraforming.ares.cards.blue.RedraftedContracts;
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Planet;
 import com.terraforming.ares.model.Player;
 import org.springframework.stereotype.Component;
@@ -20,7 +21,7 @@ public class RedraftedContractsActionValidator implements ActionValidator<Redraf
     }
 
     @Override
-    public String validate(Planet planet, Player player, List<Integer> inputParameters) {
+    public String validate(MarsGame game, Player player, List<Integer> inputParameters) {
         if (CollectionUtils.isEmpty(inputParameters) || inputParameters.size() > 3) {
             return "RedraftedContracts expects an input of 1-3 cards";
         }

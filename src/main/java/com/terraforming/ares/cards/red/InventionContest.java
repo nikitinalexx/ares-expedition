@@ -2,7 +2,10 @@ package com.terraforming.ares.cards.red;
 
 import com.terraforming.ares.dto.CardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
-import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.MarsContext;
+import com.terraforming.ares.model.ProjectCard;
+import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -21,11 +24,11 @@ public class InventionContest implements BaseExpansionRedCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        Deck deck = marsContext.getGame().getProjectsDeck().dealCards(3);
-
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 
-        for (Integer card : deck.getCards()) {
+        List<Integer> cards = marsContext.getGame().dealCards(3);
+
+        for (Integer card : cards) {
             marsContext.getPlayer().getHand().addCard(card);
 
             ProjectCard projectCard = marsContext.getCardService().getProjectCard(card);
@@ -35,7 +38,7 @@ public class InventionContest implements BaseExpansionRedCard {
         marsContext.getPlayer().setNextTurn(
                 new DiscardCardsTurn(
                         marsContext.getPlayer().getUuid(),
-                        new ArrayList<>(deck.getCards()),
+                        new ArrayList<>(cards),
                         2,
                         true
                 )

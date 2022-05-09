@@ -30,8 +30,4 @@ public class CollectIncomeState extends AbstractState {
         performStateTransferFromPhase(5);
     }
 
-    @Override
-    public int getCurrentPhase() {
-        return 4;
-    }
 }

@@ -5,6 +5,7 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.TerraformingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GhgProductionBacteriaActionProcessor implements BlueActionCardProcessor<GhgProductionBacteria> {
     private final CardService cardService;
+    private final TerraformingService terraformingService;
 
     @Override
     public Class<GhgProductionBacteria> getType() {
@@ -35,7 +37,7 @@ public class GhgProductionBacteriaActionProcessor implements BlueActionCardProce
         } else if (input == 2) {
             player.getCardResourcesCount().put(GhgProductionBacteria.class, currentMicrobeNumber - 2);
 
-            game.getPlanet().increaseTemperature();
+            terraformingService.increaseTemperature(game, player);
 
             player.setTerraformingRating(player.getTerraformingRating() + 1);
 

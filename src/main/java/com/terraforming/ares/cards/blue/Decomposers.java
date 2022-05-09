@@ -92,8 +92,7 @@ public class Decomposers implements BlueCard {
                     player.getCardResourcesCount().get(Decomposers.class) - takeCardsCount
             );
 
-            Deck cards = game.getProjectsDeck().dealCards(takeCardsCount);
-            for (Integer cardId : cards.getCards()) {
+            for (Integer cardId : game.dealCards(takeCardsCount)) {
                 player.getHand().addCard(cardId);
             }
         }

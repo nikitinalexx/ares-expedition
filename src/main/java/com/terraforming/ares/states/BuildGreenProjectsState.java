@@ -19,11 +19,6 @@ public class BuildGreenProjectsState extends AbstractState {
     }
 
     @Override
-    public int getCurrentPhase() {
-        return 1;
-    }
-
-    @Override
     public List<TurnType> getPossibleTurns(String playerUuid) {
         Player player = marsGame.getPlayerByUuid(playerUuid);
 

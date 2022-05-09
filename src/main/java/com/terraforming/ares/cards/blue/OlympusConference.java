@@ -23,13 +23,13 @@ public class OlympusConference implements BlueCard {
 
     @Override
     public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
-        long scienceTags = project.getTags().stream().map(Tag.SCIENCE::equals).count();
+        int scienceTags = (int) project.getTags().stream().map(Tag.SCIENCE::equals).count();
 
         if (scienceTags == 0) {
             return;
         }
 
-        for (Integer card : game.getProjectsDeck().dealCards((int) scienceTags).getCards()) {
+        for (Integer card : game.dealCards(scienceTags)) {
             player.getHand().addCard(card);
         }
 
