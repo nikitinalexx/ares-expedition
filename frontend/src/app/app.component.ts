@@ -1,6 +1,4 @@
-import { Component } from '@angular/core';
-import {Model} from './model/repository.model';
-import {ProjectCard} from './model/projectCard.model';
+import {Component} from '@angular/core';
 
 @Component({
   selector: 'app-root',
@@ -8,12 +6,5 @@ import {ProjectCard} from './model/projectCard.model';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {
-  title = 'frontend';
 
-  constructor(private model: Model) {
-  }
-
-  getProjectCards(): ProjectCard[] {
-    return this.model.getProjectCards();
-  }
 }

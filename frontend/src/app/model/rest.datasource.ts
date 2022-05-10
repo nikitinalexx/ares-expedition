@@ -1,15 +1,16 @@
-import { Injectable, Inject, InjectionToken } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
-import {ProjectCard} from './projectCard.model';
+import {Inject, Injectable, InjectionToken} from '@angular/core';
+import {HttpClient, HttpHeaders} from '@angular/common/http';
+import {Observable, throwError} from 'rxjs';
+import {catchError} from 'rxjs/operators';
+import {ProjectCard} from '../data/ProjectCard';
 
 export const REST_URL = new InjectionToken('rest_url');
 
 @Injectable()
 export class RestDataSource {
   constructor(private http: HttpClient,
-              @Inject(REST_URL) private url: string) { }
+              @Inject(REST_URL) private url: string) {
+  }
 
   getData(): Observable<ProjectCard[]> {
     return this.sendRequest<ProjectCard[]>('GET', this.url);

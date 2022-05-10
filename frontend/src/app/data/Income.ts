@@ -1,4 +1,4 @@
-import {IncomeType} from './incomeType.model';
+import {IncomeType} from './IncomeType';
 
 export class Income {
   constructor(type: IncomeType, value: number) {

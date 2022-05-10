@@ -1,9 +1,9 @@
 import {Injectable} from '@angular/core';
 import {RestDataSource} from './rest.datasource';
-import {ProjectCard} from './projectCard.model';
+import {ProjectCard} from '../data/ProjectCard';
 
 @Injectable()
-export class Model {
+export class CardRepository {
   private projects: ProjectCard[] = new Array<ProjectCard>();
 
   constructor(private dataSource: RestDataSource) {

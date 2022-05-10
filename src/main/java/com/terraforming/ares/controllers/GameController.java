@@ -1,6 +1,5 @@
 package com.terraforming.ares.controllers;
 
-import com.terraforming.ares.cards.green.AcquiredCompany;
 import com.terraforming.ares.dto.CardDto;
 import com.terraforming.ares.dto.GameDto;
 import com.terraforming.ares.dto.PlayerDto;
@@ -9,15 +8,16 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Deck;
 import com.terraforming.ares.model.GameParameters;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.services.CardFactory;
 import com.terraforming.ares.services.GameService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * Created by oleksii.nikitin
@@ -28,6 +28,7 @@ import java.util.stream.IntStream;
 @CrossOrigin
 public class GameController {
     private final GameService gameService;
+    private final CardFactory cardFactory;
 
     @PostMapping("/game/new")
     public PlayerUuidsDto startNewGame(GameParameters gameParameters) {
@@ -50,8 +51,8 @@ public class GameController {
 
     @GetMapping("/projects")
     public List<CardDto> getAllProjectCards() {
-        return IntStream.rangeClosed(1, 10)
-                .mapToObj(AcquiredCompany::new)
+        return cardFactory.getAllProjects()
+                .stream()
                 .map(CardDto::from)
                 .collect(Collectors.toList());
     }

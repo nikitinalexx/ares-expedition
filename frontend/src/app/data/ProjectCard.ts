@@ -1,5 +1,5 @@
-import {Income} from './income.model';
-import {Tag} from './tag.model';
+import {Income} from './income';
+import {Tag} from './tag';
 
 export class ProjectCard {
   constructor(name: string, price: number, description: string, incomes: Income[] = [], tags: Tag[] = []) {
