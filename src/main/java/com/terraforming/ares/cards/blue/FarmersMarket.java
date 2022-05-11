@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -15,10 +16,19 @@ import java.util.List;
 @Getter
 public class FarmersMarket implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public FarmersMarket(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Farmers Market")
+                .description("Action: Spend 1 MC to gain 2 plants.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        return "Spend 1 MC to gain 2 plants.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

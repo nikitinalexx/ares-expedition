@@ -1,7 +1,8 @@
 package com.terraforming.ares.model;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.income.Income;
+import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.services.CardService;
 
 import java.util.Collections;
@@ -20,16 +21,15 @@ public interface GenericCard {
         return null;
     }
 
-    //TODO find a better way to transfer card description and parameters
-    String description();
-
     default List<Tag> getTags() {
         return Collections.emptyList();
     }
 
-    default List<Income> getIncomes() {
+    default List<Gain> getIncomes() {
         return List.of();
     }
+
+    CardMetadata getCardMetadata();
 
     Expansion getExpansion();
 

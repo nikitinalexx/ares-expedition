@@ -1,9 +1,12 @@
 package com.terraforming.ares.cards.green;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +21,21 @@ import java.util.List;
 @Getter
 public class Microprocessors implements BaseExpansionGreenCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public Microprocessors(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Microprocessors")
+                .description("Draw 2 cards. Then, discard a card. During the production phase, this produces 3 heat.")
+                .incomes(List.of(Gain.of(GainType.HEAT, 3)))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -35,11 +53,6 @@ public class Microprocessors implements BaseExpansionGreenCard {
         );
 
         return marsContext.dealCards(2);
-    }
-
-    @Override
-    public String description() {
-        return "Draw 2 cards. Then, discard a card. During the production phase, this produces 3 heat.";
     }
 
     @Override

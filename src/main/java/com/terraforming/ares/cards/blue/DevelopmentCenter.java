@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -13,12 +14,21 @@ import java.util.List;
  */
 @RequiredArgsConstructor
 @Getter
-public class DevelopmentCenter implements BlueCard{
+public class DevelopmentCenter implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public DevelopmentCenter(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Development Center")
+                .description("Action: Spend 2 heat to draw a card.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        return "Action: Spend 2 heat to draw a card.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

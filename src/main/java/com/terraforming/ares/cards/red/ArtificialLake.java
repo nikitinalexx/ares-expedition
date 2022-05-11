@@ -1,8 +1,11 @@
 package com.terraforming.ares.cards.red;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -17,10 +20,20 @@ import java.util.List;
 @Getter
 public class ArtificialLake implements BaseExpansionRedCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public ArtificialLake(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Artificial Lake")
+                .description("Requires yellow temperature or warmer. Flip an ocean tile.")
+                .bonuses(List.of(Gain.of(GainType.OCEAN, 1)))
+                .build();
+    }
 
     @Override
-    public String description() {
-        return "Flip an ocean tile.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

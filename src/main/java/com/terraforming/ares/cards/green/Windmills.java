@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.green;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
@@ -17,6 +18,20 @@ import java.util.Map;
 @Getter
 public class Windmills implements BaseExpansionGreenCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public Windmills(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Windmills")
+                .description("During the production phase, this produces 1 heat per Energy tag you have.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
@@ -42,11 +57,6 @@ public class Windmills implements BaseExpansionGreenCard {
     @Override
     public boolean onBuiltEffectApplicableToOther() {
         return true;
-    }
-
-    @Override
-    public String description() {
-        return "During the production phase, this produces 1 heat per Energy tag you have, including this.";
     }
 
     @Override

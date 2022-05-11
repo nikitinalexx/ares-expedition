@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
@@ -20,6 +21,20 @@ import static com.terraforming.ares.model.InputFlag.VIRAL_ENHANCERS_TAKE_PLANT;
 @Getter
 public class ViralEnhancers implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public ViralEnhancers(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Viral Enchancers")
+                .description("When you play a Animal, Microbe, or Plant, including these, gain 1 plant or add  1 animal or microbe to ANOTHER* card.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
@@ -59,11 +74,6 @@ public class ViralEnhancers implements BlueCard {
     public boolean onBuiltEffectApplicableToItself() {
         //TODO test
         return true;
-    }
-
-    @Override
-    public String description() {
-        return "When you play an Animal, Microbe, or Plant, including these, gain 1 plant or add 1 animal or microbe to ANOTHER* card.";
     }
 
     @Override

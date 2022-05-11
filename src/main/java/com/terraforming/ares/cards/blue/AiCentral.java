@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -18,10 +19,19 @@ import java.util.stream.IntStream;
 @Getter
 public class AiCentral implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public AiCentral(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Ai Central")
+                .description("Requires 5 SCT. Action: Draw 2 cards.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        return "Action: Draw 2 cards.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

@@ -1,7 +1,7 @@
 package com.terraforming.ares.processors.action;
 
 import com.terraforming.ares.cards.blue.AdvancedScreeningTechnology;
-import com.terraforming.ares.dto.CardDto;
+import com.terraforming.ares.dto.ProjectCardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickDiscardCardsAction;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
@@ -31,9 +31,9 @@ public class AdvancedScreeningTechnologyActionProcessor implements BlueActionCar
             ProjectCard projectCard = deckService.getProjectCard(card);
             if (projectCard.getTags().contains(Tag.SCIENCE) || projectCard.getTags().contains(Tag.PLANT)) {
                 player.getHand().addCard(card);
-                resultBuilder.takenCard(CardDto.from(projectCard));
+                resultBuilder.takenCard(ProjectCardDto.from(projectCard));
             } else {
-                resultBuilder.discardedCard(CardDto.from(projectCard));
+                resultBuilder.discardedCard(ProjectCardDto.from(projectCard));
             }
         }
 

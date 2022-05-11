@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.SpecialEffect;
 import com.terraforming.ares.model.Tag;
@@ -16,12 +17,21 @@ import java.util.Set;
  */
 @RequiredArgsConstructor
 @Getter
-public class AssemblyLines implements BlueCard{
+public class AssemblyLines implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public AssemblyLines(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Assembly Lines")
+                .description("When you use an \"Action:\" effect on one of your cards, gain 1 MC.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        return "When you use an Action effect of one of your card then gain 1 MC.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

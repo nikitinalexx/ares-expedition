@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.red;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
@@ -18,6 +19,20 @@ import java.util.Map;
 @Getter
 public class ImportedHydrogen implements BaseExpansionRedCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public ImportedHydrogen(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Imported Hydrogen")
+                .description("Flip an ocean tile. Gain 3 plants, or add 3 microbes or 2 animals to ANOTHER card.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public boolean onBuiltEffectApplicableToItself() {
@@ -57,11 +72,6 @@ public class ImportedHydrogen implements BaseExpansionRedCard {
                 inputCard.getClass(),
                 player.getCardResourcesCount().get(inputCard.getClass()) + resourcedToAdd
         );
-    }
-
-    @Override
-    public String description() {
-        return "Flip an ocean tile. Gain 3 plants, or add 3 microbes or 2 animals to ANOTHER card.";
     }
 
     @Override

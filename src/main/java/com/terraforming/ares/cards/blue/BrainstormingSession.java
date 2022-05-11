@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -16,10 +17,19 @@ import java.util.List;
 @Getter
 public class BrainstormingSession implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public BrainstormingSession(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Brainstorming Session")
+                .description("Action: Reveal the top card of the deck. If it is green, discard it and gain 1 MC. Otherwise, draw it.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        return "Reveal the top deck card. If it is green, discard it and gain 1 MC. Otherwise, draw it.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

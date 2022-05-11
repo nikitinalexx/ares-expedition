@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Player;
@@ -20,6 +21,20 @@ import java.util.Map;
 @Getter
 public class OlympusConference implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public OlympusConference(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Olympus Conference")
+                .description("When you play a Science tag, including this, draw a card.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
@@ -44,11 +59,6 @@ public class OlympusConference implements BlueCard {
     public boolean onBuiltEffectApplicableToItself() {
         //TODO test self trigger
         return true;
-    }
-
-    @Override
-    public String description() {
-        return "When you play Science tag, including this, draw a card.";
     }
 
     @Override

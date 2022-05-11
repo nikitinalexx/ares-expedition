@@ -1,11 +1,13 @@
 package com.terraforming.ares.cards.green;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
@@ -13,10 +15,24 @@ import java.util.List;
  * Created by oleksii.nikitin
  * Creation date 08.05.2022
  */
-@RequiredArgsConstructor
 @Getter
 public class AdaptedLichen implements BaseExpansionGreenCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public AdaptedLichen(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Adapted Lichen")
+                .description("During the production phase this produces 1 plant.")
+                .incomes(List.of(Gain.of(GainType.PLANT, 1)))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -25,11 +41,6 @@ public class AdaptedLichen implements BaseExpansionGreenCard {
         player.setPlantsIncome(player.getPlantsIncome() + 1);
 
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "During the production phase this produces 1 plant.";
     }
 
     @Override

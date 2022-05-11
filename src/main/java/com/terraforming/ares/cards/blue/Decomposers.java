@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.parameters.ParameterColor;
@@ -23,6 +24,20 @@ import static com.terraforming.ares.model.InputFlag.DECOMPOSERS_TAKE_MICROBE;
 @Getter
 public class Decomposers implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public Decomposers(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Decomposers")
+                .description("Requires red oxygen or higher. When you play an Animal, Microbe, or Plant, including this, add a microbe here or remove a microbe from here to draw a card.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -33,11 +48,6 @@ public class Decomposers implements BlueCard {
     @Override
     public CardCollectableResource getCollectableResource() {
         return CardCollectableResource.MICROBE;
-    }
-
-    @Override
-    public String description() {
-        return "When you play an Animal, Microbe, or Plant, including this, add a microbe here or remove a microbe from here to draw a card.";
     }
 
     @Override

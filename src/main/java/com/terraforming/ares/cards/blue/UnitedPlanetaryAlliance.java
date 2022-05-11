@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -15,11 +16,20 @@ import java.util.List;
 @Getter
 public class UnitedPlanetaryAlliance implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public UnitedPlanetaryAlliance(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("United Planetary Alliance")
+                //TODO support 5 phase
+                .description("When you draw cards during the research phase, draw one additional card and keep one additional card.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        //TODO 5 phase
-        return "When you draw cards during the research phase, draw one additional card and keep one additional card.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

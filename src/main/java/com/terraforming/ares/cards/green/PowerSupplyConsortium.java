@@ -1,9 +1,12 @@
 package com.terraforming.ares.cards.green;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -17,6 +20,24 @@ import java.util.List;
 @Getter
 public class PowerSupplyConsortium implements BaseExpansionGreenCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public PowerSupplyConsortium(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Power Supply Consortium")
+                .description("During the production phase, this produces 2 MC and 1 heat.")
+                .incomes(List.of(
+                        Gain.of(GainType.MC, 2),
+                        Gain.of(GainType.HEAT, 1)
+                ))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -26,11 +47,6 @@ public class PowerSupplyConsortium implements BaseExpansionGreenCard {
         player.setHeatIncome(player.getHeatIncome() + 1);
 
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "During the production phase, this produces 2 MC and 1 heat.";
     }
 
     @Override

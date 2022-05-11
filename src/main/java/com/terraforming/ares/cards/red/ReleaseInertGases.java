@@ -1,9 +1,12 @@
 package com.terraforming.ares.cards.red;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -17,17 +20,27 @@ import java.util.List;
 @Getter
 public class ReleaseInertGases implements BaseExpansionRedCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public ReleaseInertGases(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Release of Inert Gases")
+                .description("Raise your TR 2 steps.")
+                .bonuses(List.of(Gain.of(GainType.TERRAFORMING_RATING, 2)))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
         player.setTerraformingRating(player.getTerraformingRating() + 2);
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "Raise your TR 2 steps.";
     }
 
     @Override

@@ -1,7 +1,10 @@
 package com.terraforming.ares.cards.red;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +20,21 @@ import java.util.Map;
 @Getter
 public class ImportedNitrogen implements BaseExpansionRedCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public ImportedNitrogen(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Imported Nitrogen")
+                .description("Raise your TR 1 step. Gain 4 plants. Add 2 animals to ANOTHER card. Add 3 microbes to ANOTHER card.")
+                .bonuses(List.of(Gain.of(GainType.TERRAFORMING_RATING, 1), Gain.of(GainType.PLANT, 4)))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> input) {
@@ -54,11 +72,6 @@ public class ImportedNitrogen implements BaseExpansionRedCard {
         player.setTerraformingRating(player.getTerraformingRating() + 1);
         player.setPlants(player.getPlants() + 4);
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "Raise your TR 1 step. Gain 4 plants. Add 2 animals to ANOTHER card.Add 3 microbes to ANOTHER card.";
     }
 
     @Override

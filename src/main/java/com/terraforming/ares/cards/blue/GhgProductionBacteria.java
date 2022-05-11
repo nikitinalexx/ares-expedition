@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import lombok.Getter;
@@ -15,6 +16,20 @@ import java.util.List;
 @Getter
 public class GhgProductionBacteria implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public GhgProductionBacteria(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("GHG Production Bacteria")
+                .description("Requires red oxygen or higher. Action: Add 1 microbe to this card, or remove 2 microbes to raise the temperature 1 step.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public CardCollectableResource getCollectableResource() {
@@ -25,11 +40,6 @@ public class GhgProductionBacteria implements BlueCard {
     public TurnResponse buildProject(MarsContext marsContext) {
         marsContext.getPlayer().getCardResourcesCount().put(GhgProductionBacteria.class, 0);
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "Add 1 microbe to this card, or remove 2 microbes to raise the temperature 1 step.";
     }
 
     @Override

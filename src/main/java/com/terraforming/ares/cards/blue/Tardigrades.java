@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,20 @@ import java.util.List;
 @Getter
 public class Tardigrades implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public Tardigrades(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Tardigrades")
+                .description("Action: Add 1 microbe to this card. 1 VP per 3 microbes on this card.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -24,11 +39,6 @@ public class Tardigrades implements BlueCard {
     @Override
     public CardCollectableResource getCollectableResource() {
         return CardCollectableResource.MICROBE;
-    }
-
-    @Override
-    public String description() {
-        return "1 VP per 3 microbes on this card.";
     }
 
     @Override

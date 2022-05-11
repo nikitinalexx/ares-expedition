@@ -1,10 +1,9 @@
 package com.terraforming.ares.processors.action;
 
 import com.terraforming.ares.cards.blue.AssetLiquidation;
-import com.terraforming.ares.dto.CardDto;
+import com.terraforming.ares.dto.ProjectCardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Deck;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.services.CardService;
@@ -33,7 +32,7 @@ public class AssetLiquidationActionProcessor implements BlueActionCardProcessor<
 
         for (Integer card : game.dealCards(3)) {
             player.getHand().addCard(card);
-            resultBuilder.takenCard(CardDto.from(deckService.getProjectCard(card)));
+            resultBuilder.takenCard(ProjectCardDto.from(deckService.getProjectCard(card)));
         }
 
         return resultBuilder.build();

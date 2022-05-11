@@ -1,13 +1,13 @@
 package com.terraforming.ares.cards.green;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
-import com.terraforming.ares.model.income.Income;
-import com.terraforming.ares.model.income.IncomeType;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
@@ -15,10 +15,24 @@ import java.util.List;
  * Created by oleksii.nikitin
  * Creation date 08.05.2022
  */
-@RequiredArgsConstructor
 @Getter
 public class AcquiredCompany implements BaseExpansionGreenCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public AcquiredCompany(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Acquired Company")
+                .description("During the production phase, draw a card.")
+                .incomes(List.of(Gain.of(GainType.CARD, 1)))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -28,18 +42,6 @@ public class AcquiredCompany implements BaseExpansionGreenCard {
         player.setCardIncome(player.getCardIncome() + 1);
 
         return null;
-    }
-
-    @Override
-    public List<Income> getIncomes() {
-        return List.of(
-                Income.of(IncomeType.CARD, 1)
-        );
-    }
-
-    @Override
-    public String description() {
-        return "During the production phase, draw a card.";
     }
 
     @Override

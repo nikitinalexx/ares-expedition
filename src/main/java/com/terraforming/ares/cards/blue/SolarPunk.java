@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -15,10 +16,19 @@ import java.util.List;
 @Getter
 public class SolarPunk implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public SolarPunk(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Solarpunk")
+                .description("Action: Spend 15 MC to build a Forest and raise oxygen 1 step. Reduce this by 2 MC per titanium you have.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        return "Action: Spend 15 MC to gain a forest VP and raise oxygen 1 step. Reduce this by 2 MC per titanium you have.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

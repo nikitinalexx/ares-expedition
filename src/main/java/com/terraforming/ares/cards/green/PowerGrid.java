@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.green;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
@@ -17,6 +18,20 @@ import java.util.Map;
 @Getter
 public class PowerGrid implements BaseExpansionGreenCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public PowerGrid(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Power Grid")
+                .description("During the production phase, this produces 1 МС per Energy you have, including this.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
@@ -44,11 +59,6 @@ public class PowerGrid implements BaseExpansionGreenCard {
         player.setMcIncome(player.getMcIncome() + energyTagsCount + 1);
 
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "During the production phase, this produces 1 МС per Energy you have, including this.";
     }
 
     @Override

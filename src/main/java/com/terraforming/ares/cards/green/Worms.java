@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.green;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.parameters.ParameterColor;
@@ -18,6 +19,20 @@ import java.util.Map;
 @Getter
 public class Worms implements BaseExpansionGreenCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public Worms(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Worms")
+                .description("Requires red oxygen or higher. During the production phase, this produces 1 plant per Microbe tag you have, including this.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
@@ -43,11 +58,6 @@ public class Worms implements BaseExpansionGreenCard {
     @Override
     public boolean onBuiltEffectApplicableToOther() {
         return true;
-    }
-
-    @Override
-    public String description() {
-        return "During the production phase, this produces 1 plant per Microbe tag you have, including this.";
     }
 
     @Override

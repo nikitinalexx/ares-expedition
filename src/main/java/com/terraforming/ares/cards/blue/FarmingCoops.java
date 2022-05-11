@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -14,17 +15,26 @@ import java.util.List;
 @Getter
 public class FarmingCoops implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public FarmingCoops(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Farming Co-ops")
+                .description("Gain 3 plants. Action: Discard a card in hand to gain 3 plants.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
         player.setPlants(player.getPlants() + 3);
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "Gain 3 plants when built. Action: Discard a card in hand to gain 3 plants.";
     }
 
     @Override

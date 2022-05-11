@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -15,10 +16,19 @@ import java.util.List;
 @Getter
 public class IronWorks implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public IronWorks(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Ironworks")
+                .description("Action: Spend 4 heat to raise oxygen 1 step.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        return "Spend 4 heat to raise oxygen 1 step.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

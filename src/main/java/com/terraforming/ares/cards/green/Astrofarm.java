@@ -1,7 +1,10 @@
 package com.terraforming.ares.cards.green;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +20,24 @@ import java.util.Map;
 @Getter
 public class Astrofarm implements BaseExpansionGreenCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public Astrofarm(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Astrofarm")
+                .description("Add 2 microbes to ANOTHER card. During the production phase, this produces 1 plant and 3 heat.")
+                .incomes(List.of(
+                        Gain.of(GainType.PLANT, 1),
+                        Gain.of(GainType.HEAT, 3)
+                ))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> input) {
@@ -54,11 +75,6 @@ public class Astrofarm implements BaseExpansionGreenCard {
         player.setHeatIncome(player.getHeatIncome() + 3);
 
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "Add 2 microbes to ANOTHER card. During the production phase, this produces 1 plant and 3 heat.";
     }
 
     @Override

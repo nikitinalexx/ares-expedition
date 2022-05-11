@@ -1,6 +1,6 @@
 package com.terraforming.ares.controllers;
 
-import com.terraforming.ares.dto.CardDto;
+import com.terraforming.ares.dto.ProjectCardDto;
 import com.terraforming.ares.dto.GameDto;
 import com.terraforming.ares.dto.PlayerDto;
 import com.terraforming.ares.dto.PlayerUuidsDto;
@@ -11,7 +11,6 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardFactory;
 import com.terraforming.ares.services.GameService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -50,10 +49,10 @@ public class GameController {
     }
 
     @GetMapping("/projects")
-    public List<CardDto> getAllProjectCards() {
+    public List<ProjectCardDto> getAllProjectCards() {
         return cardFactory.getAllProjects()
                 .stream()
-                .map(CardDto::from)
+                .map(ProjectCardDto::from)
                 .collect(Collectors.toList());
     }
 

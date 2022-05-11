@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
@@ -18,6 +19,20 @@ import java.util.Set;
 @Getter
 public class InterplanetaryConference implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public InterplanetaryConference(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Interplanetary Conference")
+                .description("When you play an Earth or Jupiter tag, excluding this, you pay 3 MC less and draw a card.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public Set<SpecialEffect> getSpecialEffects() {
@@ -43,11 +58,6 @@ public class InterplanetaryConference implements BlueCard {
         for (Integer card : game.dealCards(cardsToGiveCount)) {
             player.getHand().addCard(card);
         }
-    }
-
-    @Override
-    public String description() {
-        return "When you play an ERT or JPT, excluding this, you pay 3 MC less and draw a card.";
     }
 
     @Override

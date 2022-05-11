@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -15,11 +16,25 @@ import java.util.List;
 @Getter
 public class ConservedBiome implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public ConservedBiome(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Conserved Biome")
+                .description("Add a microbe to ANOTHER* card or add an animal to ANOTHER* card. 1 VP per 2 forests you have.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        return "1 VP for 2 Forests you have. " +
-                "Action: Add a microbe to ANOTHER* card or add an animal to ANOTHER* card.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
+
+    @Override
+    public int getWinningPoints() {
+        //TODO
+        return 0;
     }
 
     @Override

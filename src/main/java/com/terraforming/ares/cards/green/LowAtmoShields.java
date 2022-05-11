@@ -1,9 +1,12 @@
 package com.terraforming.ares.cards.green;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +21,24 @@ import java.util.List;
 @Getter
 public class LowAtmoShields implements BaseExpansionGreenCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public LowAtmoShields(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Low-Atmo Shields")
+                .description("Requires red oxygen or higher. During the production phase, this produces 1 MC and 2 heat.")
+                .incomes(List.of(
+                        Gain.of(GainType.MC, 1),
+                        Gain.of(GainType.HEAT, 2)
+                ))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -27,11 +48,6 @@ public class LowAtmoShields implements BaseExpansionGreenCard {
         player.setHeatIncome(player.getHeatIncome() + 2);
 
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "During the production phase, this produces 1 MC and 2 heat.";
     }
 
     @Override

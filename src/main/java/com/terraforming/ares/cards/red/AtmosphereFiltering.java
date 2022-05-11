@@ -1,8 +1,11 @@
 package com.terraforming.ares.cards.red;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -16,10 +19,20 @@ import java.util.List;
 @Getter
 public class AtmosphereFiltering implements BaseExpansionRedCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public AtmosphereFiltering(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Atmosphere Filtering")
+                .description("Requires 2 Science tags. Raise oxygen 1 step.")
+                .bonuses(List.of(Gain.of(GainType.OXYGEN, 1)))
+                .build();
+    }
 
     @Override
-    public String description() {
-        return "Raise oxygen 1 step.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

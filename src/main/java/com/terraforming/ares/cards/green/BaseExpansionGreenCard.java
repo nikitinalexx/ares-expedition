@@ -12,7 +12,7 @@ public interface BaseExpansionGreenCard extends RedCard {
 
     @Override
     default CardColor getColor() {
-        return CardColor.RED;
+        return CardColor.GREEN;
     }
 
     @Override

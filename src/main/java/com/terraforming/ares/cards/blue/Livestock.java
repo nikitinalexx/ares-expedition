@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import lombok.Getter;
@@ -15,6 +16,20 @@ import java.util.List;
 @Getter
 public class Livestock implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public Livestock(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Livestock")
+                .description("Requires yellow oxygen or higher. When you raise the temperature, add 1 animal to this card. 1 VP per animal on this card.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public void onTemperatureChangedEffect(Player player) {
@@ -41,8 +56,9 @@ public class Livestock implements BlueCard {
     }
 
     @Override
-    public String description() {
-        return "1 VP per animal";
+    public int getWinningPoints() {
+        //TODO
+        return 0;
     }
 
     @Override

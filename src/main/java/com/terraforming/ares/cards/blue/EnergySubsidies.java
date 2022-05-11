@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
@@ -18,15 +19,24 @@ import java.util.Set;
 @Getter
 public class EnergySubsidies implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public EnergySubsidies(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Energy Subsidies")
+                .description("When you play an Energy tag, you pay 4 МС less for it and you draw a card.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public Set<SpecialEffect> getSpecialEffects() {
         return Set.of(SpecialEffect.ENERGY_SUBSIDIES_DISCOUNT_4);
-    }
-
-    @Override
-    public String description() {
-        return "When you play an Energy tag, you pay 4 МС less for it and you draw a card.";
     }
 
     @Override

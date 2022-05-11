@@ -1,7 +1,7 @@
 package com.terraforming.ares.processors.action;
 
 import com.terraforming.ares.cards.blue.BrainstormingSession;
-import com.terraforming.ares.dto.CardDto;
+import com.terraforming.ares.dto.ProjectCardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickDiscardCardsAction;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
@@ -31,10 +31,10 @@ public class BrainstormingSessionActionProcessor implements BlueActionCardProces
             ProjectCard projectCard = deckService.getProjectCard(card);
             if (projectCard.getColor() == CardColor.GREEN) {
                 player.setMc(player.getMc() + 1);
-                resultBuilder.discardedCard(CardDto.from(projectCard));
+                resultBuilder.discardedCard(ProjectCardDto.from(projectCard));
             } else {
                 player.getHand().addCard(card);
-                resultBuilder.takenCard(CardDto.from(projectCard));
+                resultBuilder.takenCard(ProjectCardDto.from(projectCard));
             }
         }
 

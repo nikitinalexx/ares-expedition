@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.SpecialEffect;
 import com.terraforming.ares.model.Tag;
@@ -19,15 +20,24 @@ import static com.terraforming.ares.model.SpecialEffect.RESEARCH_OUTPOST_DISCOUN
 @Getter
 public class ResearchOutpost implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public ResearchOutpost(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Research Outpost")
+                .description("When you play a card, you pay 1 MC less for it.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public Set<SpecialEffect> getSpecialEffects() {
         return Set.of(SpecialEffect.RESEARCH_OUTPOST_DISCOUNT_1);
-    }
-
-    @Override
-    public String description() {
-        return "When you play a card, you pay 1 MC less for it.";
     }
 
     @Override

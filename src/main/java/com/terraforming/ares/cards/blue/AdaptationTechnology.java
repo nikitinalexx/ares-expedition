@@ -1,10 +1,10 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.SpecialEffect;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 import java.util.Collections;
 import java.util.List;
@@ -14,14 +14,22 @@ import java.util.Set;
  * Created by oleksii.nikitin
  * Creation date 05.05.2022
  */
-@RequiredArgsConstructor
 @Getter
 public class AdaptationTechnology implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public AdaptationTechnology(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Adaptation Technology")
+                .description("When playing a card with requirements, you may consider the oxygen or temperature one color higher or lower. This cannot be modified futher by other effects.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        return "You may consider the oxygen or temperature requirements one color higher or lower. This effect doesn't sum up with other similar effects.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

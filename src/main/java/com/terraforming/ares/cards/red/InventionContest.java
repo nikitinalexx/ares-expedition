@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.red;
 
-import com.terraforming.ares.dto.CardDto;
+import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.dto.ProjectCardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.ProjectCard;
@@ -21,6 +22,20 @@ import java.util.List;
 @Getter
 public class InventionContest implements BaseExpansionRedCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public InventionContest(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Invention Contest")
+                .description("Draw 3 cards. Keep one of them and discard the other two.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -32,7 +47,7 @@ public class InventionContest implements BaseExpansionRedCard {
             marsContext.getPlayer().getHand().addCard(card);
 
             ProjectCard projectCard = marsContext.getCardService().getProjectCard(card);
-            resultBuilder.takenCard(CardDto.from(projectCard));
+            resultBuilder.takenCard(ProjectCardDto.from(projectCard));
         }
 
         marsContext.getPlayer().setNextTurn(
@@ -45,12 +60,6 @@ public class InventionContest implements BaseExpansionRedCard {
         );
 
         return resultBuilder.build();
-    }
-
-    @Override
-    public String description() {
-        //TODO write test
-        return "Draw 3 cards. Keep one of them and discard the other two.";
     }
 
     @Override

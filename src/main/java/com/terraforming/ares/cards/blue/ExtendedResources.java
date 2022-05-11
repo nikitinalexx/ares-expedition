@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -15,11 +16,20 @@ import java.util.List;
 @Getter
 public class ExtendedResources implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public ExtendedResources(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Extended Resources")
+                //TODO during the 5 phase
+                .description("When you keep cards during the research phase, keep one additional card.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        //TODO during the 5 phase
-        return "When you keep cards during the research phase, keep one additional card.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

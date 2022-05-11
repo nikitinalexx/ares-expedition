@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.red;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
@@ -17,6 +18,20 @@ import java.util.List;
 @Getter
 public class SpecialDesign implements BaseExpansionRedCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public SpecialDesign(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Special Design")
+                .description("You may play an additional blue or red card this phase. For the next card you play this phase, you may consider the oxygen or temperature one color higher or lower.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -24,12 +39,6 @@ public class SpecialDesign implements BaseExpansionRedCard {
         player.setBuiltSpecialDesignLastTurn(true);
         player.setCanBuildInSecondPhase(player.getCanBuildInSecondPhase() + 1);
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "You may play an additional blue or red card this phase." +
-                "For the next card you play this phase, you may consider the oxygen or temperature one color higher or lower.";
     }
 
     @Override

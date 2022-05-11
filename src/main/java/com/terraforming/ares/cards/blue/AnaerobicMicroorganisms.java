@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
@@ -18,6 +19,20 @@ import java.util.Map;
 @Getter
 public class AnaerobicMicroorganisms implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public AnaerobicMicroorganisms(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Anaerobic Microorganisms")
+                .description("When you play a card, you may remove 2 microbes from this card to pay 10 MC less for that card. When you play an Animal, Microbe, or Plant, including this, add a microbe to this card.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public CardCollectableResource getCollectableResource() {
@@ -28,12 +43,6 @@ public class AnaerobicMicroorganisms implements BlueCard {
     public TurnResponse buildProject(MarsContext marsContext) {
         marsContext.getPlayer().getCardResourcesCount().put(AnaerobicMicroorganisms.class, 1);
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "When you play a card, you may remove 2 microbes from this card to pay 10 MC less for that card.\n"
-                + "When you play an Animal, Microbe, or Plant, including this, add a microbe to this card.\n";
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.red;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import lombok.Getter;
@@ -15,10 +16,19 @@ import java.util.List;
 @Getter
 public class BreathingFilters implements BaseExpansionRedCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public BreathingFilters(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Breathing Filters")
+                .description("Requires yellow oxygen or higher. ")
+                .build();
+    }
 
     @Override
-    public String description() {
-        return null;
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

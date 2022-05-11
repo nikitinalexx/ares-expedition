@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
@@ -19,6 +20,20 @@ import java.util.List;
 @Getter
 public class ArcticAlgae implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public ArcticAlgae(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Arctic Algae")
+                .description("Requires red temperature or warmer. When you flip an ocean tile, gain 4 plants.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public void onOceanFlippedEffect(Player player) {
@@ -28,11 +43,6 @@ public class ArcticAlgae implements BlueCard {
     @Override
     public int getWinningPoints() {
         return 2;
-    }
-
-    @Override
-    public String description() {
-        return "Requires red temperature or warmer. When you flip an ocean tile, gain 4 plants.";
     }
 
     @Override

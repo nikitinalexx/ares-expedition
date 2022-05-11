@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.green;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
@@ -17,6 +18,20 @@ import java.util.List;
 @Getter
 public class Zeppelins implements BaseExpansionGreenCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public Zeppelins(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Zeppelins")
+                .description("Requires red oxygen or higher. During the production phase, this produces 1 MC per Forest you have.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public void onForestBuiltEffect(Player player) {
@@ -30,11 +45,6 @@ public class Zeppelins implements BaseExpansionGreenCard {
         player.setMcIncome(player.getMcIncome() + player.getForests());
 
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "During the production phase, this produces 1 MC per forest VP you have.";
     }
 
     @Override

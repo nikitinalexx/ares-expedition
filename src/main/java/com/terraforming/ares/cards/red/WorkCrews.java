@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.red;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
@@ -16,19 +17,28 @@ import java.util.List;
 @RequiredArgsConstructor
 @Getter
 public class WorkCrews implements BaseExpansionRedCard {
+    private final int id;
+    private final CardMetadata cardMetadata;
+
+    public WorkCrews(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Work Crews")
+                .description("You may play an additional blue or red card this phase. You pay 11 MC less for the next card you play this phase.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
+
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
         player.setBuiltWorkCrewsLastTurn(true);
         player.setCanBuildInSecondPhase(player.getCanBuildInSecondPhase() + 1);
         return null;
-    }
-
-    private final int id;
-
-    @Override
-    public String description() {
-        return "You may play an additional blue or red card this phase. You pay 11 MC less for the next card you play this phase.";
     }
 
     @Override

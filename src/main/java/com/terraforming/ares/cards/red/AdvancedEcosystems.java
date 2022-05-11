@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.red;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -14,10 +15,19 @@ import java.util.List;
 @Getter
 public class AdvancedEcosystems implements BaseExpansionRedCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public AdvancedEcosystems(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Advanced Ecosystems")
+                .description("Requires an Animal, Microbe, and Plant tags.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        return null;
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override
@@ -39,5 +49,5 @@ public class AdvancedEcosystems implements BaseExpansionRedCard {
     public int getPrice() {
         return 10;
     }
-    
+
 }

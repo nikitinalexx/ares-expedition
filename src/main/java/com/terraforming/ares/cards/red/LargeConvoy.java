@@ -1,9 +1,12 @@
 package com.terraforming.ares.cards.red;
 
-import com.terraforming.ares.dto.CardDto;
+import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.dto.ProjectCardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.TerraformingService;
 import lombok.Getter;
@@ -20,6 +23,21 @@ import java.util.Map;
 @Getter
 public class LargeConvoy implements BaseExpansionRedCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public LargeConvoy(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Large Convoy")
+                .description("Flip an ocean tile. Draw 2 cards. Gain 5 plants or add 3 animals to ANY card.")
+                .bonuses(List.of(Gain.of(GainType.OCEAN, 1), Gain.of(GainType.CARD, 2)))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public boolean onBuiltEffectApplicableToItself() {
@@ -59,15 +77,10 @@ public class LargeConvoy implements BaseExpansionRedCard {
 
         for (Integer card : marsContext.getGame().dealCards(2)) {
             marsContext.getPlayer().getHand().addCard(card);
-            resultBuilder.takenCard(CardDto.from(marsContext.getCardService().getProjectCard(card)));
+            resultBuilder.takenCard(ProjectCardDto.from(marsContext.getCardService().getProjectCard(card)));
         }
 
         return resultBuilder.build();
-    }
-
-    @Override
-    public String description() {
-        return "Flip an ocean tile. Draw 2 cards. Gain 5 plants or add 3 animals to ANY card.";
     }
 
     @Override

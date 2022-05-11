@@ -1,9 +1,12 @@
 package com.terraforming.ares.cards.red;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -17,6 +20,21 @@ import java.util.List;
 @Getter
 public class InvestmentLoan implements BaseExpansionRedCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public InvestmentLoan(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Investment Loan")
+                .description("Requires you to spend 1 TR. Gain 10 MC.")
+                .bonuses(List.of(Gain.of(GainType.TERRAFORMING_RATING, -1), Gain.of(GainType.MC, -10)))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -26,11 +44,6 @@ public class InvestmentLoan implements BaseExpansionRedCard {
         player.setMc(player.getMc() + 10);
 
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "Lose 1 TR. Get 10 MC.";
     }
 
     @Override

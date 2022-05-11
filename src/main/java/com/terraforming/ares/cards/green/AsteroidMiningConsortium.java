@@ -1,10 +1,12 @@
 package com.terraforming.ares.cards.green;
 
-import com.terraforming.ares.model.SpecialEffect;
+import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import java.util.Set;
+import java.util.List;
 
 /**
  * Created by oleksii.nikitin
@@ -14,15 +16,20 @@ import java.util.Set;
 @Getter
 public class AsteroidMiningConsortium implements BaseExpansionGreenCard {
     private final int id;
+    private final CardMetadata cardMetadata;
 
-    @Override
-    public Set<SpecialEffect> getSpecialEffects() {
-        return Set.of(SpecialEffect.SPACE_DISCOUNT_3);
+    public AsteroidMiningConsortium(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Asteroid Mining Consortium")
+                .description("When you play a Space, you pay 3 MC less for it.")
+                .incomes(List.of(Gain.of(GainType.TITANIUM, 1)))
+                .build();
     }
 
     @Override
-    public String description() {
-        return "When you play a Space, you pay 3 MC less for it.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

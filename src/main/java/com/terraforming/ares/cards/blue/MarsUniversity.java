@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
@@ -17,6 +18,20 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class MarsUniversity implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public MarsUniversity(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Mars University")
+                .description("When you play a Science tag, including this, you may discard a card. If that card had a Plant tag, draw two cards. Otherwise, draw a card.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public boolean onBuiltEffectApplicableToItself() {
@@ -61,11 +76,6 @@ public class MarsUniversity implements BlueCard {
         for (Integer dealedCard : game.dealCards(cardsToReceive)) {
             player.getHand().addCard(dealedCard);
         }
-    }
-
-    @Override
-    public String description() {
-        return "When you play a SCT, including this, you may discard a card. If that card had a Plant, draw two cards. Otherwise, draw a card.";
     }
 
     @Override

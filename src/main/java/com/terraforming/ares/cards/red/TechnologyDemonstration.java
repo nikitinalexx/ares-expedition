@@ -1,8 +1,11 @@
 package com.terraforming.ares.cards.red;
 
-import com.terraforming.ares.dto.CardDto;
+import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.dto.ProjectCardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.services.TerraformingService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +20,21 @@ import java.util.List;
 @Getter
 public class TechnologyDemonstration implements BaseExpansionRedCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public TechnologyDemonstration(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Technology Demonstration")
+                .description("Flip an ocean tile. Draw 2 cards")
+                .bonuses(List.of(Gain.of(GainType.OCEAN, 1), Gain.of(GainType.CARD, 2)))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -30,15 +48,10 @@ public class TechnologyDemonstration implements BaseExpansionRedCard {
             marsContext.getPlayer().getHand().addCard(card);
 
             ProjectCard projectCard = marsContext.getCardService().getProjectCard(card);
-            resultBuilder.takenCard(CardDto.from(projectCard));
+            resultBuilder.takenCard(ProjectCardDto.from(projectCard));
         }
 
         return resultBuilder.build();
-    }
-
-    @Override
-    public String description() {
-        return "Flip an ocean tile. Draw 2 cards";
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -13,19 +14,28 @@ import java.util.List;
  */
 @RequiredArgsConstructor
 @Getter
-public class AssetLiquidation implements BlueCard{
+public class AssetLiquidation implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public AssetLiquidation(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Asset Liquidation")
+                .description("You may play an additional blue or red card this phase. Action: Spend 1 TR to draw 3 cards.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
         player.setCanBuildInSecondPhase(player.getCanBuildInSecondPhase() + 1);
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "You may play an additional blue or red card this turn. Action: Spend 1 TR to draw 3 cards";
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import lombok.Getter;
@@ -15,6 +16,20 @@ import java.util.List;
 @Getter
 public class Fish implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public Fish(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Fish")
+                .description("Requires red temperature or warmer. When you flip an ocean tile, add 1 animal to this card. 1 VP per animal on this card.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public void onOceanFlippedEffect(Player player) {
@@ -33,11 +48,6 @@ public class Fish implements BlueCard {
     }
 
     @Override
-    public String description() {
-        return "1 VP per animal on this card. Get 1 animal when you flip an ocean";
-    }
-
-    @Override
     public Expansion getExpansion() {
         return Expansion.BASE;
     }
@@ -45,6 +55,12 @@ public class Fish implements BlueCard {
     @Override
     public boolean isActiveCard() {
         return false;
+    }
+
+    @Override
+    public int getWinningPoints() {
+        //TODO
+        return 0;
     }
 
     @Override

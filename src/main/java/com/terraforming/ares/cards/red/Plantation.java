@@ -1,8 +1,11 @@
 package com.terraforming.ares.cards.red;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -16,6 +19,21 @@ import java.util.List;
 @Getter
 public class Plantation implements BaseExpansionRedCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public Plantation(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Plantation")
+                .description("Requires 4 science tags. Build 2 forests and raise oxygen 2 steps.")
+                .bonuses(List.of(Gain.of(GainType.FOREST, 2)))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -23,11 +41,6 @@ public class Plantation implements BaseExpansionRedCard {
             marsContext.getTerraformingService().buildForest(marsContext.getGame(), marsContext.getPlayer());
         }
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "Build 2 forests";
     }
 
     @Override

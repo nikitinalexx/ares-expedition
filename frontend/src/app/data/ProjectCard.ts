@@ -1,15 +1,27 @@
 import {Income} from './income';
 import {Tag} from './tag';
+import {CardColor} from './CardColor';
+import {SpecialEffect} from './SpecialEffect';
 
 export class ProjectCard {
-  constructor(name: string, price: number, description: string, incomes: Income[] = [], tags: Tag[] = []) {
-    this.name = name;
-    this.price = price;
-    this.tags = tags;
+  constructor(id: number,
+              name: string,
+              price: number,
+              winPoints: number,
+              description: string,
+              cardColor: CardColor,
+              incomes: Income[] = [],
+              tags: Tag[] = [],
+              specialEffects: SpecialEffect[] = []) {
   }
 
+  id: number;
   name: string;
   price: number;
-  tags: Tag[];
+  winPoints: number;
   description: string;
+  cardColor: CardColor;
+  incomes: Income[];
+  tags: Tag[];
+  specialEffects: SpecialEffect[];
 }

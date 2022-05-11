@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.SpecialEffect;
 import com.terraforming.ares.model.Tag;
@@ -17,10 +18,19 @@ import java.util.Set;
 @Getter
 public class EarthCatapult implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public EarthCatapult(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Earth Catapult")
+                .description("When you play a card, you pay 2 MC less for it.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        return "When you play a card, you pay 2 MC less for it.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

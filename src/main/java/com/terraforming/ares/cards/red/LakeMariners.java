@@ -1,8 +1,11 @@
 package com.terraforming.ares.cards.red;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import com.terraforming.ares.services.TerraformingService;
 import lombok.Getter;
@@ -18,6 +21,21 @@ import java.util.List;
 @Getter
 public class LakeMariners implements BaseExpansionRedCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public LakeMariners(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Lake Mariners")
+                .description("Requires yellow temperature or warmer. Flip 2 ocean tiles.")
+                .bonuses(List.of(Gain.of(GainType.OCEAN, 2)))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -28,11 +46,6 @@ public class LakeMariners implements BaseExpansionRedCard {
         }
 
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "Flip 2 ocean tiles.";
     }
 
     @Override

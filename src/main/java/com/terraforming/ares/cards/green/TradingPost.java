@@ -1,10 +1,15 @@
 package com.terraforming.ares.cards.green;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
 
 /**
  * Created by oleksii.nikitin
@@ -14,6 +19,22 @@ import lombok.RequiredArgsConstructor;
 @Getter
 public class TradingPost implements BaseExpansionGreenCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public TradingPost(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Trading Post")
+                .description("Gain 3 plants. During the production phase, this produces 2 МС.")
+                .incomes(List.of(Gain.of(GainType.MC, 2)))
+                .bonuses(List.of(Gain.of(GainType.PLANT, 3)))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -23,11 +44,6 @@ public class TradingPost implements BaseExpansionGreenCard {
         player.setMcIncome(player.getMcIncome() + 2);
 
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "Gain 3 plants. During the production phase, this produces 2 МС.";
     }
 
     @Override

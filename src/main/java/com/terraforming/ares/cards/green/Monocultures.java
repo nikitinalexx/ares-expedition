@@ -1,9 +1,11 @@
 package com.terraforming.ares.cards.green;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -17,6 +19,22 @@ import java.util.List;
 @Getter
 public class Monocultures implements BaseExpansionGreenCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public Monocultures(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Monocultures")
+                .description("Requires you to spend 1 TR. During the production phase, this produces 2 plants.")
+                .incomes(List.of(Gain.of(GainType.PLANT, 2)))
+                .bonuses(List.of(Gain.of(GainType.TERRAFORMING_RATING, -1)))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -26,12 +44,6 @@ public class Monocultures implements BaseExpansionGreenCard {
         player.setPlantsIncome(player.getPlantsIncome() + 2);
 
         return null;
-    }
-
-    @Override
-    public String description() {
-        //TODO validate 1 TR
-        return "Requires you to spend 1 TR. During the production phase, this produces 2 plants.";
     }
 
     @Override

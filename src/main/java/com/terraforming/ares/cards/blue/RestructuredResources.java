@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.SpecialEffect;
 import lombok.Getter;
@@ -15,10 +16,19 @@ import java.util.Set;
 @Getter
 public class RestructuredResources implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public RestructuredResources(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Restructured Resources")
+                .description("When you play a card, you may spend 1 plant to reduce that card's cost by 5 MC.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        return "When you play a card, you may spend 1 plant to reduce that card's cost by 5 MC.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

@@ -1,8 +1,11 @@
 package com.terraforming.ares.cards.green;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.services.TerraformingService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +20,22 @@ import java.util.List;
 @Getter
 public class DeepWellHeating implements BaseExpansionGreenCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public DeepWellHeating(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Deep Well Heating")
+                .description("Raise the temperature 1 step. During the production phase, this produces 1 heat.")
+                .incomes(List.of(Gain.of(GainType.HEAT, 1)))
+                .bonuses(List.of(Gain.of(GainType.TEMPERATURE, 1)))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -25,11 +44,6 @@ public class DeepWellHeating implements BaseExpansionGreenCard {
         terraformingService.increaseTemperature(marsContext.getGame(), marsContext.getPlayer());
 
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "Raise the temperature 1 step.";
     }
 
     @Override

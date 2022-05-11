@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.red;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
@@ -17,6 +18,20 @@ import java.util.List;
 @Getter
 public class TerraformingGanymede implements BaseExpansionRedCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public TerraformingGanymede(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Terraforming Ganymede")
+                .description("Raise your TR 1 step per Jupiter tag you have, including this.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -32,11 +47,6 @@ public class TerraformingGanymede implements BaseExpansionRedCard {
         player.setTerraformingRating(player.getTerraformingRating() + jupiterTags + 1);
 
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "Raise your TR 1 step per JPT you have, including this.";
     }
 
     @Override

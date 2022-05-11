@@ -1,8 +1,11 @@
 package com.terraforming.ares.cards.red;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -16,17 +19,27 @@ import java.util.List;
 @Getter
 public class Crater implements BaseExpansionRedCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public Crater(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Crater")
+                .description("Requires 3 EVT. Flip an ocean tile.")
+                .bonuses(List.of(Gain.of(GainType.OCEAN, 1)))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         marsContext.getTerraformingService().revealOcean(marsContext.getGame(), marsContext.getPlayer());
 
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "Flip an ocean tile.";
     }
 
     @Override

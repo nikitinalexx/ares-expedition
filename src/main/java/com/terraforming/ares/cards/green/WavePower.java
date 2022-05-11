@@ -1,9 +1,12 @@
 package com.terraforming.ares.cards.green;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -18,6 +21,21 @@ import java.util.function.LongPredicate;
 @Getter
 public class WavePower implements BaseExpansionGreenCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public WavePower(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Wave Power")
+                .description("Requires 3 ocean tiles to be flipped. During the production phase, this produces 3 heat.")
+                .incomes(List.of(Gain.of(GainType.HEAT, 3)))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -26,11 +44,6 @@ public class WavePower implements BaseExpansionGreenCard {
         player.setHeatIncome(player.getHeatIncome() + 3);
 
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "During the production phase, this produces 3 heat.";
     }
 
     @Override

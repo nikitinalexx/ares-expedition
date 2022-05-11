@@ -1,14 +1,16 @@
 package com.terraforming.ares.cards.green;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -18,6 +20,22 @@ import java.util.Set;
 @Getter
 public class BuildingIndustries implements BaseExpansionGreenCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public BuildingIndustries(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Building Industries")
+                .description("Requires you to spend 4 heat. When you play a Building, you pay 4 MC less for it.")
+                .incomes(List.of(Gain.of(GainType.STEEL, 2)))
+                .incomes(List.of(Gain.of(GainType.HEAT, -4)))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -36,11 +54,6 @@ public class BuildingIndustries implements BaseExpansionGreenCard {
     @Override
     public boolean onBuiltEffectApplicableToItself() {
         return true;
-    }
-
-    @Override
-    public String description() {
-        return "Requires you to spend 4 heat. When you play a Building, you pay 4 MC less for it.";
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.corporations;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -23,13 +24,13 @@ public class LaunchStarIncorporated implements CorporationCard {
     }
 
     @Override
-    public String description() {
-        return "MegaCredits: 36. At the start reveal deck cards until you find a blue one. Take it to your hand. Blue cards cost to you 3 less.";
+    public List<Tag> getTags() {
+        return Collections.singletonList(Tag.SCIENCE);
     }
 
     @Override
-    public List<Tag> getTags() {
-        return Collections.singletonList(Tag.SCIENCE);
+    public CardMetadata getCardMetadata() {
+        return null;
     }
 
     @Override

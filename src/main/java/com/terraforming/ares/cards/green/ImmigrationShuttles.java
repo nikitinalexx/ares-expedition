@@ -1,9 +1,12 @@
 package com.terraforming.ares.cards.green;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -17,6 +20,21 @@ import java.util.List;
 @Getter
 public class ImmigrationShuttles implements BaseExpansionGreenCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public ImmigrationShuttles(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Immigration Shuttles")
+                .description("During the production phase, this produces 3 MC. 1 VP per 2 Earth tags you have.")
+                .incomes(List.of(Gain.of(GainType.MC, 3)))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -28,9 +46,9 @@ public class ImmigrationShuttles implements BaseExpansionGreenCard {
     }
 
     @Override
-    public String description() {
-        //TODO VP
-        return "1 VP per 2 Earth you have. During the production phase, this produces 3 MC.";
+    public int getWinningPoints() {
+        //TODO
+        return 0;
     }
 
     @Override

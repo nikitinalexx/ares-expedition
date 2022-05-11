@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Player;
@@ -23,16 +24,25 @@ import java.util.stream.IntStream;
 @Getter
 public class AntiGravityTechnology implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public AntiGravityTechnology(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Anti-Gravity Technology")
+                .description("Requires 5 SCT. When you play a card, gain 2 heat and 2 plants.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public void onProjectBuiltEffect(CardService cardService, MarsGame marsGame, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
         player.setHeat(player.getHeat() + 2);
         player.setPlants(player.getPlants() + 2);
-    }
-
-    @Override
-    public String description() {
-        return "When you play a card, gain 2 heat and 2 plants.\n";
     }
 
     @Override

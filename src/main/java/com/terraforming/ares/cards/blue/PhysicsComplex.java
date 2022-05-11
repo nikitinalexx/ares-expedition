@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,20 @@ import java.util.List;
 @Getter
 public class PhysicsComplex implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public PhysicsComplex(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Physics Complex")
+                .description("Requires 4 Science tags. When you raise the temperature, add 1 science resource to this card. 1 VP per 2 science res on this card.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -34,11 +49,6 @@ public class PhysicsComplex implements BlueCard {
     @Override
     public void onTemperatureChangedEffect(Player player) {
         player.getCardResourcesCount().put(PhysicsComplex.class, player.getCardResourcesCount().get(PhysicsComplex.class) + 1);
-    }
-
-    @Override
-    public String description() {
-        return "1 VP per 2 science resources on this card. When you raise the temperature, add 1 science resource to this card.";
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.green;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
@@ -17,6 +18,21 @@ import java.util.Map;
 @Getter
 public class AtmosphericInsulators implements BaseExpansionGreenCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public AtmosphericInsulators(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Atmospheric Insulators")
+                //TODO all tag effects should also include corporations
+                .description("During the production phase, this produces 1 heat per Earth you have, including this.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
@@ -42,12 +58,6 @@ public class AtmosphericInsulators implements BaseExpansionGreenCard {
     @Override
     public boolean onBuiltEffectApplicableToOther() {
         return true;
-    }
-
-    @Override
-    public String description() {
-        //TODO all tag effects should also include corporations
-        return "During the production phase, this produces 1 heat per Earth tag you have, including this.";
     }
 
     @Override

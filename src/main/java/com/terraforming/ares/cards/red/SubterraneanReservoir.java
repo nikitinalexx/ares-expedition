@@ -1,8 +1,11 @@
 package com.terraforming.ares.cards.red;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.services.TerraformingService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +20,21 @@ import java.util.List;
 @Getter
 public class SubterraneanReservoir implements BaseExpansionRedCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public SubterraneanReservoir(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Subterranean Reservoir")
+                .description("Flip an ocean tile.")
+                .bonuses(List.of(Gain.of(GainType.OCEAN, 1)))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -25,11 +43,6 @@ public class SubterraneanReservoir implements BaseExpansionRedCard {
         terraformingService.revealOcean(marsContext.getGame(), marsContext.getPlayer());
 
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "Flip an ocean tile.";
     }
 
     @Override

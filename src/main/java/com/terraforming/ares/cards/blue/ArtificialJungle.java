@@ -1,7 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Expansion;
-import com.terraforming.ares.model.Tag;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -14,10 +14,19 @@ import lombok.RequiredArgsConstructor;
 @Getter
 public class ArtificialJungle implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public ArtificialJungle(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Artificial Jungle")
+                .description("Action: Spend 1 plant to draw a card.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        return "Action: Spend 1 plant to draw a card.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

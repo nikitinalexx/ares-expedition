@@ -1,9 +1,12 @@
 package com.terraforming.ares.cards.red;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.services.TerraformingService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +21,25 @@ import java.util.List;
 @Getter
 public class TowingAComet implements BaseExpansionRedCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public TowingAComet(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Towing a Comet")
+                .description("Raise oxygen 1 step. Flip an ocean tile. Gain 2 plants")
+                .bonuses(List.of(
+                        Gain.of(GainType.OXYGEN, 1),
+                        Gain.of(GainType.OCEAN, 1),
+                        Gain.of(GainType.PLANT, 2)
+                ))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -29,11 +51,6 @@ public class TowingAComet implements BaseExpansionRedCard {
         player.setPlants(player.getPlants() + 2);
 
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "Raise oxygen 1 step. Flip an ocean tile. Gain 2 plants";
     }
 
     @Override

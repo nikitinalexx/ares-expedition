@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.red;
 
-import com.terraforming.ares.dto.CardDto;
+import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.dto.ProjectCardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.ProjectCard;
@@ -20,6 +21,20 @@ import java.util.List;
 @Getter
 public class BusinessContracts implements BaseExpansionRedCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public BusinessContracts(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Business Contracts")
+                .description("Draw 4 cards. Then discard 2 cards.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -29,7 +44,7 @@ public class BusinessContracts implements BaseExpansionRedCard {
             marsContext.getPlayer().getHand().addCard(card);
 
             ProjectCard projectCard = marsContext.getCardService().getProjectCard(card);
-            resultBuilder.takenCard(CardDto.from(projectCard));
+            resultBuilder.takenCard(ProjectCardDto.from(projectCard));
         }
 
         marsContext.getPlayer().setNextTurn(
@@ -42,11 +57,6 @@ public class BusinessContracts implements BaseExpansionRedCard {
         );
 
         return resultBuilder.build();
-    }
-
-    @Override
-    public String description() {
-        return "Draw 4 cards. Then discard 2 cards.";
     }
 
     @Override

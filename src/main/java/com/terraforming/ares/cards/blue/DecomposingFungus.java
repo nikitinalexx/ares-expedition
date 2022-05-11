@@ -1,6 +1,9 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -15,16 +18,26 @@ import java.util.List;
 @Getter
 public class DecomposingFungus implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public DecomposingFungus(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Decomposing Fungus")
+                .description("Place 2 microbes on this card. Action: Remove 1 animal or 1 microbe from one of your cards to gain 3 plants.")
+                .bonuses(List.of(Gain.of(GainType.MICROBE, 2)))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         marsContext.getPlayer().getCardResourcesCount().put(DecomposingFungus.class, 2);
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "Action: Remove 1 animal or 1 microbe from one of your cards to gain 3 plants.";
     }
 
     @Override

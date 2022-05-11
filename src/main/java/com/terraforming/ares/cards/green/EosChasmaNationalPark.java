@@ -1,7 +1,10 @@
 package com.terraforming.ares.cards.green;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import com.terraforming.ares.services.CardService;
 import lombok.Getter;
@@ -18,6 +21,21 @@ import java.util.Map;
 @Getter
 public class EosChasmaNationalPark implements BaseExpansionGreenCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public EosChasmaNationalPark(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Eos Chasma National Park")
+                .description("Requires red temperature or warmer. Add 1 animal to ANOTHER card and gain 3 plants. During the production phase, this produces 2 MC.")
+                .incomes(List.of(Gain.of(GainType.MC, 2)))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> input) {
@@ -50,11 +68,6 @@ public class EosChasmaNationalPark implements BaseExpansionGreenCard {
         player.setPlants(player.getPlants() + 3);
 
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "Add 1 animal to ANOTHER card and gain 3 plants.";
     }
 
     @Override

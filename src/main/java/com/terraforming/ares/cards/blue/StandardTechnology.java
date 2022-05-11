@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.SpecialEffect;
 import com.terraforming.ares.model.Tag;
@@ -17,16 +18,25 @@ import java.util.Set;
 @Getter
 public class StandardTechnology implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
 
-    @Override
-    public Set<SpecialEffect> getSpecialEffects() {
-        //TODO support standard actions
-        return Set.of(SpecialEffect.STANDARD_TECHNOLOGY);
+    public StandardTechnology(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Standard Technology")
+                //TODO support standard actions
+                .description("You pay 4 MC less for standard actions that cost MC.")
+                .build();
     }
 
     @Override
-    public String description() {
-        return "You pay 4 MC less for standard actions that cost MC.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
+
+    @Override
+    public Set<SpecialEffect> getSpecialEffects() {
+        return Set.of(SpecialEffect.STANDARD_TECHNOLOGY);
     }
 
     @Override

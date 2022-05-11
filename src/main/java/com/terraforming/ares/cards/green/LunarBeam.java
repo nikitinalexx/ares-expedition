@@ -1,9 +1,12 @@
 package com.terraforming.ares.cards.green;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -17,6 +20,22 @@ import java.util.List;
 @Getter
 public class LunarBeam implements BaseExpansionGreenCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public LunarBeam(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Lunar Beam")
+                .description("Requires you to spend 1 TR. During the production phase, this produces 4 heat.")
+                .incomes(List.of(Gain.of(GainType.HEAT, 4)))
+                .bonuses(List.of(Gain.of(GainType.TERRAFORMING_RATING, -1)))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -26,12 +45,6 @@ public class LunarBeam implements BaseExpansionGreenCard {
         player.setHeatIncome(player.getHeatIncome() + 4);
 
         return null;
-    }
-
-    @Override
-    public String description() {
-        //TODO validation
-        return "Requires you to spend 1 TR. During the production phase, this produces 4 heat.";
     }
 
     @Override

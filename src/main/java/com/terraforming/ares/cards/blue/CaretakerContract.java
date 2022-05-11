@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import lombok.Getter;
@@ -16,10 +17,19 @@ import java.util.List;
 @Getter
 public class CaretakerContract implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public CaretakerContract(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Caretaker Contract")
+                .description("Requires yellow temperature or warmer. Action: Spend 8 heat to raise your TR 1 step.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        return "Action: Spend 8 heat to raise your TR 1 step.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

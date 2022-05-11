@@ -1,7 +1,7 @@
 package com.terraforming.ares.processors.action;
 
 import com.terraforming.ares.cards.blue.RedraftedContracts;
-import com.terraforming.ares.dto.CardDto;
+import com.terraforming.ares.dto.ProjectCardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
@@ -37,7 +37,7 @@ public class RedraftedContractsActionProcessor implements BlueActionCardProcesso
             player.getHand().addCard(card);
 
             ProjectCard projectCard = cardService.getProjectCard(card);
-            resultBuilder.takenCard(CardDto.from(projectCard));
+            resultBuilder.takenCard(ProjectCardDto.from(projectCard));
         }
 
         return resultBuilder.build();

@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import lombok.Getter;
@@ -15,6 +16,20 @@ import java.util.List;
 @Getter
 public class SmallAnimals implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public SmallAnimals(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Small Animals")
+                .description("Requires red temperature or warmer. When you build a forest, add 1 animal to this card. 1 VP per 2 animals on this card.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public List<ParameterColor> getTemperatureRequirement() {
@@ -24,11 +39,6 @@ public class SmallAnimals implements BlueCard {
     @Override
     public void onForestBuiltEffect(Player player) {
         player.getCardResourcesCount().put(SmallAnimals.class, player.getCardResourcesCount().get(SmallAnimals.class) + 1);
-    }
-
-    @Override
-    public String description() {
-        return "1 VP per 2 animals on this card. When you gain a forest VP, add 1 animal to this card.";
     }
 
     @Override

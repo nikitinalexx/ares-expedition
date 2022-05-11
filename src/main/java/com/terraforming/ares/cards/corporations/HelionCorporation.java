@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.corporations;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -25,13 +26,13 @@ public class HelionCorporation implements CorporationCard {
     }
 
     @Override
-    public String description() {
-        return "MegaCredits: 28. HeatIncome: 3. You may use heat as MC. You may not use MC as heat.";
+    public List<Tag> getTags() {
+        return Collections.singletonList(Tag.SPACE);
     }
 
     @Override
-    public List<Tag> getTags() {
-        return Collections.singletonList(Tag.SPACE);
+    public CardMetadata getCardMetadata() {
+        return null;
     }
 
     @Override

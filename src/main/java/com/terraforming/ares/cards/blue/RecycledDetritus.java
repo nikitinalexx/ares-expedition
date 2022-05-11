@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Player;
@@ -20,6 +21,20 @@ import java.util.Map;
 @Getter
 public class RecycledDetritus implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public RecycledDetritus(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Recycled Detritus")
+                .description("When you play an Event, draw 2 cards.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
@@ -28,11 +43,6 @@ public class RecycledDetritus implements BlueCard {
                 player.getHand().addCard(card);
             }
         }
-    }
-
-    @Override
-    public String description() {
-        return "When you play an Event, draw 2 cards.";
     }
 
     @Override

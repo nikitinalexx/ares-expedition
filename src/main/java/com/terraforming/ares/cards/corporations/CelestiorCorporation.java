@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.corporations;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -17,14 +18,14 @@ public class CelestiorCorporation implements CorporationCard {
     private final int id;
 
     @Override
-    public TurnResponse buildProject(MarsContext marsContext) {
-        marsContext.getPlayer().setMc(50);
+    public CardMetadata getCardMetadata() {
         return null;
     }
 
     @Override
-    public String description() {
-        return "MegaCredits: 50. Action: reveal top three cards of the deck and take all event cards.";
+    public TurnResponse buildProject(MarsContext marsContext) {
+        marsContext.getPlayer().setMc(50);
+        return null;
     }
 
     @Override

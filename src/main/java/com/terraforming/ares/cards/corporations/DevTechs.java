@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.corporations;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -23,8 +24,8 @@ public class DevTechs implements CorporationCard {
     }
 
     @Override
-    public String description() {
-        return "MegaCredits: 40. Reveal 5 cards at the start of the game, take all green cards. Green cards cost for you 2 MC less.";
+    public CardMetadata getCardMetadata() {
+        return null;
     }
 
     @Override

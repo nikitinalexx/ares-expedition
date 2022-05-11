@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Expansion;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -12,10 +13,19 @@ import lombok.RequiredArgsConstructor;
 @Getter
 public class RedraftedContracts implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public RedraftedContracts(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Redrafted Contracts")
+                .description("Action: Discard up to three cards in hand. Draw that many cards.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        return "Discard up to three cards in hand. Draw that many cards.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

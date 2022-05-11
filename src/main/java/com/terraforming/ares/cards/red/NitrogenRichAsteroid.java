@@ -1,9 +1,12 @@
 package com.terraforming.ares.cards.red;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.TerraformingService;
 import lombok.Getter;
@@ -19,6 +22,25 @@ import java.util.List;
 @Getter
 public class NitrogenRichAsteroid implements BaseExpansionRedCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public NitrogenRichAsteroid(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Nitrogen-Rich Asteroid")
+                .description("Raise your TR 2 steps. Raise the temperature 1 step. Gain 2 plants. If you have 3 or more Plant, gain 4 additional plants.")
+                .bonuses(List.of(
+                        Gain.of(GainType.TERRAFORMING_RATING, 2),
+                        Gain.of(GainType.TEMPERATURE, 1),
+                        Gain.of(GainType.PLANT, 2)
+                ))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -41,11 +63,6 @@ public class NitrogenRichAsteroid implements BaseExpansionRedCard {
         }
 
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "Raise your TR 2 steps. Raise the temperature 1 step. Gain 2 plants. If you have 3 or more Plant, gain 4 additional plants.";
     }
 
     @Override

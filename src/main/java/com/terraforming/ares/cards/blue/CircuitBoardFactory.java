@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -16,10 +17,19 @@ import java.util.List;
 @Getter
 public class CircuitBoardFactory implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public CircuitBoardFactory(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Circuit Board Factory")
+                .description("Action: Draw a card")
+                .build();
+    }
 
     @Override
-    public String description() {
-        return "Action: draw 1 card";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

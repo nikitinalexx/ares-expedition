@@ -1,9 +1,12 @@
 package com.terraforming.ares.cards.red;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -17,10 +20,20 @@ import java.util.List;
 @Getter
 public class BribedComittee implements BaseExpansionRedCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public BribedComittee(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Bribed Comittee")
+                .description("Raise your TR 2 steps.")
+                .bonuses(List.of(Gain.of(GainType.TERRAFORMING_RATING, 2)))
+                .build();
+    }
 
     @Override
-    public String description() {
-        return "Raise your TR 2 steps.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

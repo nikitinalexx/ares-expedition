@@ -1,9 +1,12 @@
 package com.terraforming.ares.cards.green;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.services.TerraformingService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +21,22 @@ import java.util.List;
 @Getter
 public class SoilWarming implements BaseExpansionGreenCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public SoilWarming(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Soil Warming")
+                .description("Raise the temperature 1 step. During the production phase, this produces 2 plants.")
+                .incomes(List.of(Gain.of(GainType.PLANT, 2)))
+                .bonuses(List.of(Gain.of(GainType.TEMPERATURE, 1)))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -30,11 +49,6 @@ public class SoilWarming implements BaseExpansionGreenCard {
         player.setPlantsIncome(player.getPlantsIncome() + 2);
 
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "Raise the temperature 1 step. During the production phase, this produces 2 plants.";
     }
 
     @Override

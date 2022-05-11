@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.green;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
@@ -17,6 +18,20 @@ import java.util.Map;
 @Getter
 public class MedicalLab implements BaseExpansionGreenCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public MedicalLab(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Medical Lab")
+                .description("During the production phase, this produces 1 MC per 2 Building you have, including this.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
@@ -54,12 +69,6 @@ public class MedicalLab implements BaseExpansionGreenCard {
         marsContext.getPlayer().setMcIncome(marsContext.getPlayer().getMcIncome() + mcIncomeExtra);
 
         return null;
-    }
-
-    @Override
-    public String description() {
-        //TODO consider corporations tags
-        return "During the production phase, this produces 1 MC per 2 Building you have, including this.";
     }
 
     @Override

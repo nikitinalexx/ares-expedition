@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -14,12 +15,21 @@ import java.util.List;
  */
 @RequiredArgsConstructor
 @Getter
-public class CommunityGardens implements BlueCard{
+public class CommunityGardens implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public CommunityGardens(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Community Gardens")
+                .description("Action: Gain 2 MC. *if you chose the action phase this round, also gain 1 plant.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        return "Action: Gain 2 MC. If you chose the action phase this round, also gain 1 plant.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

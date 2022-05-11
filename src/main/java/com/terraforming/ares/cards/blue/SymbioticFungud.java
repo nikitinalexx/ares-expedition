@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.parameters.ParameterColor;
@@ -16,10 +17,19 @@ import java.util.List;
 @Getter
 public class SymbioticFungud implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public SymbioticFungud(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Symbiotic Fungud")
+                .description("Requires red temperature or warmer. Add a microbe to ANOTHER* card.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        return "Action: Add a microbe to ANOTHER* card.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

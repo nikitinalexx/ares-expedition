@@ -1,9 +1,12 @@
 package com.terraforming.ares.cards.green;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -17,6 +20,24 @@ import java.util.List;
 @Getter
 public class IoMiningIndustries implements BaseExpansionGreenCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public IoMiningIndustries(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Io Mining Industries")
+                .description("During the production phase, this produces 2 МС. When you play Space, you pay 6 MC less for it. 1 VP per Jupiter tag you have.")
+                .incomes(List.of(
+                        Gain.of(GainType.MC, 2),
+                        Gain.of(GainType.TITANIUM, 2)
+                ))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -29,9 +50,9 @@ public class IoMiningIndustries implements BaseExpansionGreenCard {
     }
 
     @Override
-    public String description() {
-        //TODO
-        return "1 VP per JPT you have. During the production phase, this produces 2 МС. When you play Space, you pay 6 MC less for it.";
+    public int getWinningPoints() {
+        //TODO vp
+        return 0;
     }
 
     @Override

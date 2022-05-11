@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.SpecialEffect;
 import com.terraforming.ares.model.Tag;
@@ -16,12 +17,21 @@ import java.util.Set;
  */
 @RequiredArgsConstructor
 @Getter
-public class CompostingFactory implements BlueCard{
+public class CompostingFactory implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public CompostingFactory(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Composting Factory")
+                .description("Cards you discard for MC are worth an additional MC.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        return "Cards you discard for MC are worth an additional MC.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -15,11 +16,20 @@ import java.util.List;
 @Getter
 public class Interns implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public Interns(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Interns")
+                //TODO phase 5 effect
+                .description("When you draw cards during the research phase, draw two additional cards.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        //TODO phase 5 effect
-        return "When you draw cards during the research phase, draw two additional cards.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

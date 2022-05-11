@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import lombok.Getter;
@@ -15,6 +16,20 @@ import java.util.List;
 @Getter
 public class RegolithEaters implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public RegolithEaters(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Regolith Eaters")
+                .description("Requires red temperature or warmer. Action: Add 1 microbe to this card, or remove 2 microbes from this card to raise oxygen 1 step.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public CardCollectableResource getCollectableResource() {
@@ -25,11 +40,6 @@ public class RegolithEaters implements BlueCard {
     public TurnResponse buildProject(MarsContext marsContext) {
         marsContext.getPlayer().getCardResourcesCount().put(RegolithEaters.class, 0);
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "Action: Add 1 microbe to this card, or remove 2 microbes from this card to raise oxygen 1 step.";
     }
 
     @Override

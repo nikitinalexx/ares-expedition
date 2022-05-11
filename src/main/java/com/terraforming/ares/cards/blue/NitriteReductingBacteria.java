@@ -1,6 +1,9 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -14,10 +17,20 @@ import java.util.List;
 @Getter
 public class NitriteReductingBacteria implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public NitriteReductingBacteria(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Nitrite Reducting Bacteria")
+                .description("Add 3 microbes to this card. Action: Add 1 microbe to this card or remove 3 microbes to flip an ocean tile.")
+                .bonuses(List.of(Gain.of(GainType.MICROBE, 3)))
+                .build();
+    }
 
     @Override
-    public String description() {
-        return "Add 3 microbes to this card. Action: Add 1 microbe to this card or remove 3 microbes to flip an ocean tile.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

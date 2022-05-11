@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -15,10 +16,19 @@ import java.util.List;
 @Getter
 public class WaterImportFromEuropa implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public WaterImportFromEuropa(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Water Import from Europa")
+                .description("Spend 12 MC to flip an ocean tile. Reduce this by 1 MC per titanium you have. 1 VP per Jupiter you have.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        return "1 VP per JPT you have. Action: Spend 12 MC to flip an ocean tile. Reduce this by 1 MC per titanium you have.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

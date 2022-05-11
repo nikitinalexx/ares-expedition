@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.SpecialEffect;
 import com.terraforming.ares.model.Tag;
@@ -18,10 +19,19 @@ import java.util.Set;
 @Getter
 public class AdvancedAlloys implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public AdvancedAlloys(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Advanced Alloys")
+                .description("Each titanium you have reduces the cost of Space cards an additional 1 MC. Each steel you have reduces the cost of Building cards an additional 1 MC.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        return "Each steel and titanium you have is valued 1 MC more.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

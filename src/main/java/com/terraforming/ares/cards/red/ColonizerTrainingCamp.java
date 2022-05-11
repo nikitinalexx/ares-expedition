@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.red;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import lombok.Getter;
@@ -15,10 +16,19 @@ import java.util.List;
 @Getter
 public class ColonizerTrainingCamp implements BaseExpansionRedCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public ColonizerTrainingCamp(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Colonizer Training Camp")
+                .description("Requires red oxygen or lower.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        return null;
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

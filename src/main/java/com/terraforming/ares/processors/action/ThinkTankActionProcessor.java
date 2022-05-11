@@ -1,10 +1,9 @@
 package com.terraforming.ares.processors.action;
 
 import com.terraforming.ares.cards.blue.ThinkTank;
-import com.terraforming.ares.dto.CardDto;
+import com.terraforming.ares.dto.ProjectCardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Deck;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.model.TurnResponse;
@@ -36,7 +35,7 @@ public class ThinkTankActionProcessor implements BlueActionCardProcessor<ThinkTa
             player.getHand().addCard(card);
 
             ProjectCard projectCard = cardService.getProjectCard(card);
-            resultBuilder.takenCard(CardDto.from(projectCard));
+            resultBuilder.takenCard(ProjectCardDto.from(projectCard));
         }
 
         return resultBuilder.build();

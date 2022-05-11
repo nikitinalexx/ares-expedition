@@ -1,9 +1,12 @@
 package com.terraforming.ares.cards.green;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -17,6 +20,21 @@ import java.util.List;
 @Getter
 public class VestaShipyard implements BaseExpansionGreenCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public VestaShipyard(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Vesta Shipyard")
+                .description("When you play Space, you pay 3 MC less for it.")
+                .incomes(List.of(Gain.of(GainType.TITANIUM, 1)))
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -25,11 +43,6 @@ public class VestaShipyard implements BaseExpansionGreenCard {
         player.setTitaniumIncome(player.getTitaniumIncome() + 1);
 
         return null;
-    }
-
-    @Override
-    public String description() {
-        return "When you play Space, you pay 3 MC less for it.";
     }
 
     @Override

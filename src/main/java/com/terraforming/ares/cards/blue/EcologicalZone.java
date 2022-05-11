@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
@@ -17,6 +18,20 @@ import java.util.Map;
 @Getter
 public class EcologicalZone implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public EcologicalZone(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Ecological Zone")
+                .description("When you play a Animal or Plant, including these, add an animal to this card. 1 VP per 2 animals on this card.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -27,11 +42,6 @@ public class EcologicalZone implements BlueCard {
     @Override
     public CardCollectableResource getCollectableResource() {
         return CardCollectableResource.ANIMAL;
-    }
-
-    @Override
-    public String description() {
-        return "1 VP per 2 animals on this card. When you play a Animal or Plant, including these, add an animal to this card.";
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import lombok.Getter;
@@ -14,17 +15,32 @@ import java.util.List;
  */
 @RequiredArgsConstructor
 @Getter
-public class Birds implements BlueCard{
+public class Birds implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public Birds(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Birds")
+                .description("Requires white oxygen. Add an animal to this card. 1 VP per animal on this card.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        return "Action: Add an animal to this card.";
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override
     public CardCollectableResource getCollectableResource() {
         return CardCollectableResource.ANIMAL;
+    }
+
+    @Override
+    public int getWinningPoints() {
+        //TODO
+        return 0;
     }
 
     @Override

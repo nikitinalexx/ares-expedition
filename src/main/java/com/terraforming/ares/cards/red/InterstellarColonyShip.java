@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.red;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -14,10 +15,19 @@ import java.util.List;
 @Getter
 public class InterstellarColonyShip implements BaseExpansionRedCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public InterstellarColonyShip(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Interstellar Colony Ship")
+                .description("Requires 4 Science tag.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        return null;
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

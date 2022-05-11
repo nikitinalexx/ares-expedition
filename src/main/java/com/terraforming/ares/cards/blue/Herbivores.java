@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -15,10 +16,25 @@ import java.util.function.LongPredicate;
 @Getter
 public class Herbivores implements BlueCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public Herbivores(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Herbivores")
+                .description("Requires 5 oceans to be flipped. When you raise oxygen, flip an ocean tile, or raise temperature, add 1 animal to this card. 1 VP per 2 animals on this card.")
+                .build();
+    }
 
     @Override
-    public String description() {
-        return "1 VP per 2 animals on this card.";
+    public int getWinningPoints() {
+        //TODO
+        return 0;
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
     }
 
     @Override

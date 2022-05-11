@@ -7,12 +7,12 @@ import lombok.Value;
  * Creation date 09.05.2022
  */
 @Value
-public class Income {
-    IncomeType type;
+public class Gain {
+    GainType type;
     int value;
 
-    public static Income of(IncomeType type, int value) {
-        return new Income(type, value);
+    public static Gain of(GainType type, int value) {
+        return new Gain(type, value);
     }
 
 }

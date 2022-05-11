@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.red;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
@@ -20,6 +21,20 @@ import java.util.Map;
 @Getter
 public class CeosFavoriteProject implements BaseExpansionRedCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public CeosFavoriteProject(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("CEO's Favorite Project")
+                .description("Add 2 resources to a card that holds resources.")
+                .build();
+    }
+
+    @Override
+    public CardMetadata getCardMetadata() {
+        return cardMetadata;
+    }
 
     @Override
     public boolean onBuiltEffectApplicableToItself() {
@@ -40,11 +55,6 @@ public class CeosFavoriteProject implements BaseExpansionRedCard {
         ProjectCard targetCard = cardService.getProjectCard(targetCardId);
 
         player.getCardResourcesCount().put(targetCard.getClass(), player.getCardResourcesCount().get(targetCard.getClass()) + 2);
-    }
-
-    @Override
-    public String description() {
-        return "Add 2 resources to a card that holds resources.";
     }
 
     @Override
