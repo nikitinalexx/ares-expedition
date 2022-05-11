@@ -1,11 +1,11 @@
 package com.terraforming.ares.model;
 
+import com.terraforming.ares.model.parameters.OceanRequirement;
 import com.terraforming.ares.model.parameters.ParameterColor;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.function.LongPredicate;
 
 /**
  * Created by oleksii.nikitin
@@ -26,8 +26,8 @@ public interface ProjectCard extends GenericCard {
         return Collections.emptyList();
     }
 
-    default LongPredicate getOceanRequirement() {
-        return currentNumberOfOceans -> (currentNumberOfOceans >= 0 && currentNumberOfOceans <= Constants.MAX_OCEANS);
+    default OceanRequirement getOceanRequirement() {
+        return null;
     }
 
     boolean isActiveCard();

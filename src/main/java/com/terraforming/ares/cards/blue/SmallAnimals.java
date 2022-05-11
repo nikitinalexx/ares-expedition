@@ -23,6 +23,7 @@ public class SmallAnimals implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Small Animals")
                 .description("Requires red temperature or warmer. When you build a forest, add 1 animal to this card. 1 VP per 2 animals on this card.")
+                .cardAction(CardAction.SMALL_ANIMALS)
                 .build();
     }
 

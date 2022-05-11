@@ -22,6 +22,7 @@ public class Tardigrades implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Tardigrades")
                 .description("Action: Add 1 microbe to this card. 1 VP per 3 microbes on this card.")
+                .cardAction(CardAction.ADD_MICROBE)
                 .build();
     }
 

@@ -1,17 +1,14 @@
 package com.terraforming.ares.cards.green;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.model.MarsContext;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.Tag;
-import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
+import com.terraforming.ares.model.parameters.OceanRequirement;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
-import java.util.function.LongPredicate;
 
 /**
  * Created by oleksii.nikitin
@@ -47,9 +44,8 @@ public class Algae implements BaseExpansionGreenCard {
     }
 
     @Override
-    public LongPredicate getOceanRequirement() {
-        //TODO
-        return currentNumberOfOceans -> currentNumberOfOceans >= 5;
+    public OceanRequirement getOceanRequirement() {
+        return OceanRequirement.builder().minValue(5).maxValue(Constants.MAX_OCEANS).build();
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -24,6 +25,7 @@ public class ExtendedResources implements BlueCard {
                 .name("Extended Resources")
                 //TODO during the 5 phase
                 .description("When you keep cards during the research phase, keep one additional card.")
+                .cardAction(CardAction.EXTENDED_RESOURCES)
                 .build();
     }
 

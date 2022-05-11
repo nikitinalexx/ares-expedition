@@ -26,8 +26,9 @@ public class ViralEnhancers implements BlueCard {
     public ViralEnhancers(int id) {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
-                .name("Viral Enchancers")
-                .description("When you play a Animal, Microbe, or Plant, including these, gain 1 plant or add  1 animal or microbe to ANOTHER* card.")
+                .name("Viral Enhancers")
+                .description("When you play a Plant, Microbe, or Animal tags, including these, gain 1 plant or add  1 animal or microbe to ANOTHER* card.")
+                .cardAction(CardAction.VIRAL_ENHANCERS)
                 .build();
     }
 

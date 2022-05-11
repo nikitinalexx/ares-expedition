@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.SpecialEffect;
 import com.terraforming.ares.model.Tag;
@@ -27,6 +28,7 @@ public class ResearchOutpost implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Research Outpost")
                 .description("When you play a card, you pay 1 MC less for it.")
+                .cardAction(CardAction.RESEARCH_OUTPOST)
                 .build();
     }
 

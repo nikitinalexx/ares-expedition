@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -24,6 +25,7 @@ public class UnitedPlanetaryAlliance implements BlueCard {
                 .name("United Planetary Alliance")
                 //TODO support 5 phase
                 .description("When you draw cards during the research phase, draw one additional card and keep one additional card.")
+                .cardAction(CardAction.UNITED_PLANETARY)
                 .build();
     }
 

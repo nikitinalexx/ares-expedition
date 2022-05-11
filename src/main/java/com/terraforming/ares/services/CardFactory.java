@@ -92,7 +92,7 @@ public class CardFactory {
                 new SolarPunk(54),
                 new StandardTechnology(55),
                 new Steelworks(56),
-                new SymbioticFungud(57),
+                new SymbioticFungus(57),
                 new Tardigrades(58),
                 new ThinkTank(59),
                 new UnitedPlanetaryAlliance(60),

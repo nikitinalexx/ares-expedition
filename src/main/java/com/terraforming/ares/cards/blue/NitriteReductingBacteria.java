@@ -25,6 +25,7 @@ public class NitriteReductingBacteria implements BlueCard {
                 .name("Nitrite Reducting Bacteria")
                 .description("Add 3 microbes to this card. Action: Add 1 microbe to this card or remove 3 microbes to flip an ocean tile.")
                 .bonuses(List.of(Gain.of(GainType.MICROBE, 3)))
+                .cardAction(CardAction.NITRITE_REDUCTING)
                 .build();
     }
 

@@ -22,6 +22,7 @@ public class FarmingCoops implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Farming Co-ops")
                 .description("Gain 3 plants. Action: Discard a card in hand to gain 3 plants.")
+                .cardAction(CardAction.FARMING_COOPS)
                 .build();
     }
 

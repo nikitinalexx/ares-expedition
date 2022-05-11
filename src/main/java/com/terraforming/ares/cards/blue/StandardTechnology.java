@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.SpecialEffect;
 import com.terraforming.ares.model.Tag;
@@ -26,6 +27,7 @@ public class StandardTechnology implements BlueCard {
                 .name("Standard Technology")
                 //TODO support standard actions
                 .description("You pay 4 MC less for standard actions that cost MC.")
+                .cardAction(CardAction.STANDARD_TECHNOLOGY)
                 .build();
     }
 

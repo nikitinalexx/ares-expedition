@@ -23,6 +23,7 @@ public class GhgProductionBacteria implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("GHG Production Bacteria")
                 .description("Requires red oxygen or higher. Action: Add 1 microbe to this card, or remove 2 microbes to raise the temperature 1 step.")
+                .cardAction(CardAction.GHG_PRODUCTION)
                 .build();
     }
 

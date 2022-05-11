@@ -23,6 +23,7 @@ public class RegolithEaters implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Regolith Eaters")
                 .description("Requires red temperature or warmer. Action: Add 1 microbe to this card, or remove 2 microbes from this card to raise oxygen 1 step.")
+                .cardAction(CardAction.REGOLITH_EATERS)
                 .build();
     }
 

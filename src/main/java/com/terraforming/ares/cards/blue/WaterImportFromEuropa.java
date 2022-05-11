@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -22,7 +23,8 @@ public class WaterImportFromEuropa implements BlueCard {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
                 .name("Water Import from Europa")
-                .description("Spend 12 MC to flip an ocean tile. Reduce this by 1 MC per titanium you have. 1 VP per Jupiter you have.")
+                .description("Spend 12 MC to flip an ocean tile. Reduce this by 1 MC per titanium income you have. 1 VP per Jupiter you have.")
+                .cardAction(CardAction.WATER_IMPORT)
                 .build();
     }
 

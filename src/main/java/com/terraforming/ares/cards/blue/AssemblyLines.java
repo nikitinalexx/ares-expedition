@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.SpecialEffect;
 import com.terraforming.ares.model.Tag;
@@ -26,6 +27,7 @@ public class AssemblyLines implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Assembly Lines")
                 .description("When you use an \"Action:\" effect on one of your cards, gain 1 MC.")
+                .cardAction(CardAction.ASSEMBLY_LINES)
                 .build();
     }
 

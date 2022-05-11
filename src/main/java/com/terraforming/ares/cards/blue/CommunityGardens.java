@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -24,6 +25,7 @@ public class CommunityGardens implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Community Gardens")
                 .description("Action: Gain 2 MC. *if you chose the action phase this round, also gain 1 plant.")
+                .cardAction(CardAction.COMMUNITY_GARDENS)
                 .build();
     }
 

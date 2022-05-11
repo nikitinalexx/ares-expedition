@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.SpecialEffect;
 import com.terraforming.ares.model.Tag;
@@ -25,6 +26,7 @@ public class MediaGroup implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Media Group")
                 .description("When you play an Event, you pay 5 MC less for it.")
+                .cardAction(CardAction.MEDIA_GROUP)
                 .build();
     }
 

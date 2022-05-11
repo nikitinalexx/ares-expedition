@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -23,6 +24,7 @@ public class IronWorks implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Ironworks")
                 .description("Action: Spend 4 heat to raise oxygen 1 step.")
+                .cardAction(CardAction.IRON_WORKS)
                 .build();
     }
 

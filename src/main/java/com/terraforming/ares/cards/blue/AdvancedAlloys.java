@@ -25,7 +25,7 @@ public class AdvancedAlloys implements BlueCard {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
                 .name("Advanced Alloys")
-                .description("Each titanium you have reduces the cost of Space cards an additional 1 MC. Each steel you have reduces the cost of Building cards an additional 1 MC.")
+                .description("Each titanium you have is worth 1 MC extra. Each steel you have is worth 1 MC extra.")
                 .build();
     }
 

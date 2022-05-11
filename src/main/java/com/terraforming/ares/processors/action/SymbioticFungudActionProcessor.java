@@ -1,6 +1,6 @@
 package com.terraforming.ares.processors.action;
 
-import com.terraforming.ares.cards.blue.SymbioticFungud;
+import com.terraforming.ares.cards.blue.SymbioticFungus;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ProjectCard;
@@ -17,12 +17,12 @@ import java.util.List;
  */
 @Component
 @RequiredArgsConstructor
-public class SymbioticFungudActionProcessor implements BlueActionCardProcessor<SymbioticFungud> {
+public class SymbioticFungudActionProcessor implements BlueActionCardProcessor<SymbioticFungus> {
     private final CardService cardService;
 
     @Override
-    public Class<SymbioticFungud> getType() {
-        return SymbioticFungud.class;
+    public Class<SymbioticFungus> getType() {
+        return SymbioticFungus.class;
     }
 
     @Override

@@ -1,9 +1,8 @@
 package com.terraforming.ares.validation.action;
 
-import com.terraforming.ares.cards.blue.SymbioticFungud;
+import com.terraforming.ares.cards.blue.SymbioticFungus;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.CardCollectableResource;
-import com.terraforming.ares.model.Planet;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.services.CardService;
@@ -19,12 +18,12 @@ import java.util.List;
  */
 @Component
 @RequiredArgsConstructor
-public class SymbioticFungudActionValidator implements ActionValidator<SymbioticFungud> {
+public class SymbioticFungudActionValidator implements ActionValidator<SymbioticFungus> {
     private final CardService cardService;
 
     @Override
-    public Class<SymbioticFungud> getType() {
-        return SymbioticFungud.class;
+    public Class<SymbioticFungus> getType() {
+        return SymbioticFungus.class;
     }
 
     @Override

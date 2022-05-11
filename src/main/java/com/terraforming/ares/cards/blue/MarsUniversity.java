@@ -25,6 +25,7 @@ public class MarsUniversity implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Mars University")
                 .description("When you play a Science tag, including this, you may discard a card. If that card had a Plant tag, draw two cards. Otherwise, draw a card.")
+                .cardAction(CardAction.MARS_UNIVERSITY)
                 .build();
     }
 

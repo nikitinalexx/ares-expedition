@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -23,6 +24,7 @@ public class VolcanicPools implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Volcanic Pools")
                 .description("Action: Spend 12 MC to flip an ocean tile. Reduce this by 1 MC per Energy tag you have.")
+                .cardAction(CardAction.VOLCANIC_POOLS)
                 .build();
     }
 

@@ -23,6 +23,7 @@ public class Livestock implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Livestock")
                 .description("Requires yellow oxygen or higher. When you raise the temperature, add 1 animal to this card. 1 VP per animal on this card.")
+                .cardAction(CardAction.LIVESTOCK)
                 .build();
     }
 

@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -23,6 +24,7 @@ public class MatterManufactoring implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Matter Manufactoring")
                 .description("Action: Spend 1 MC to draw a card.")
+                .cardAction(CardAction.MATTER_MANUFACTORING)
                 .build();
     }
 

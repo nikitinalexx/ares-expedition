@@ -26,6 +26,7 @@ public class EnergySubsidies implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Energy Subsidies")
                 .description("When you play an Energy tag, you pay 4 МС less for it and you draw a card.")
+                .cardAction(CardAction.ENERGY_SUBSIDIES)
                 .build();
     }
 

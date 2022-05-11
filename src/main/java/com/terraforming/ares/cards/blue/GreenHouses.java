@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.parameters.ParameterColor;
@@ -24,6 +25,7 @@ public class GreenHouses implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Greenhouses")
                 .description("Requires yellow temperature or warmer. Action: Spend up to 4 heat to gain that amount of plants.")
+                .cardAction(CardAction.GREEN_HOUSES)
                 .build();
     }
 

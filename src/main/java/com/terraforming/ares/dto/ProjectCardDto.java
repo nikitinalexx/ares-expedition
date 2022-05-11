@@ -1,10 +1,9 @@
 package com.terraforming.ares.dto;
 
-import com.terraforming.ares.model.CardColor;
-import com.terraforming.ares.model.ProjectCard;
-import com.terraforming.ares.model.SpecialEffect;
-import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.parameters.OceanRequirement;
+import com.terraforming.ares.model.parameters.ParameterColor;
 import lombok.Value;
 
 import java.util.ArrayList;
@@ -25,6 +24,11 @@ public class ProjectCardDto {
     List<Gain> incomes;
     CardColor cardColor;
     List<SpecialEffect> specialEffects;
+    CardAction cardAction;
+    List<Tag> tagReq;
+    List<ParameterColor> tempReq;
+    List<ParameterColor> oxygenReq;
+    OceanRequirement oceanRequirement;
 
     public static ProjectCardDto from(ProjectCard card) {
         return new ProjectCardDto(
@@ -36,7 +40,12 @@ public class ProjectCardDto {
                 card.getCardMetadata().getDescription(),
                 card.getIncomes(),
                 card.getColor(),
-                card.getSpecialEffects().isEmpty() ? List.of() : new ArrayList<>(card.getSpecialEffects())
+                card.getSpecialEffects().isEmpty() ? List.of() : new ArrayList<>(card.getSpecialEffects()),
+                card.getCardMetadata().getCardAction(),
+                card.getTagRequirements(),
+                card.getTemperatureRequirement(),
+                card.getOxygenRequirement(),
+                card.getOceanRequirement()
         );
     }
 }

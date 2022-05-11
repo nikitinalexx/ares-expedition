@@ -23,6 +23,7 @@ public class Fish implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Fish")
                 .description("Requires red temperature or warmer. When you flip an ocean tile, add 1 animal to this card. 1 VP per animal on this card.")
+                .cardAction(CardAction.FISH)
                 .build();
     }
 

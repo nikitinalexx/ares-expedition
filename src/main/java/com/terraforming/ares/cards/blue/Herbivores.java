@@ -2,11 +2,11 @@ package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.parameters.OceanRequirement;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
-import java.util.function.LongPredicate;
 
 /**
  * Created by oleksii.nikitin
@@ -23,6 +23,7 @@ public class Herbivores implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Herbivores")
                 .description("Requires 5 oceans to be flipped. When you raise oxygen, flip an ocean tile, or raise temperature, add 1 animal to this card. 1 VP per 2 animals on this card.")
+                .cardAction(CardAction.HERBIVORES)
                 .build();
     }
 
@@ -43,8 +44,8 @@ public class Herbivores implements BlueCard {
     }
 
     @Override
-    public LongPredicate getOceanRequirement() {
-        return numberOfFlippedOceans -> numberOfFlippedOceans >= 5;
+    public OceanRequirement getOceanRequirement() {
+        return OceanRequirement.builder().minValue(5).maxValue(Constants.MAX_OCEANS).build();
     }
 
     @Override

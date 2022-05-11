@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards;
 
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.income.Gain;
 import lombok.Builder;
 import lombok.Value;
@@ -19,4 +20,5 @@ public class CardMetadata {
     List<Gain> incomes = List.of();
     @Builder.Default
     List<Gain> bonuses = List.of();
+    CardAction cardAction;
 }

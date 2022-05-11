@@ -111,7 +111,7 @@ public class TurnService {
                 game -> {
                     Player player = game.getPlayerByUuid(playerUuid);
 
-                    return cardValidationService.validateCard(player, game.getPlanet(), projectId, payments, inputParams);
+                    return cardValidationService.validateCard(player, game, projectId, payments, inputParams);
                 });
     }
 
@@ -122,7 +122,7 @@ public class TurnService {
                 game -> {
                     Player player = game.getPlayerByUuid(playerUuid);
 
-                    return cardValidationService.validateCard(player, game.getPlanet(), projectId, payments, inputParams);
+                    return cardValidationService.validateCard(player, game, projectId, payments, inputParams);
                 });
     }
 

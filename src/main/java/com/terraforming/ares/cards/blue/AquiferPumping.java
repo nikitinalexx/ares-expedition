@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -24,6 +25,7 @@ public class AquiferPumping implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Aquifer Pumping")
                 .description("Action: Spend 10 MC to flip an ocean tile. Reduce this by 2 MC per steel you have.")
+                .cardAction(CardAction.AQUIFER_PUMPING)
                 .build();
     }
 

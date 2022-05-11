@@ -32,7 +32,7 @@ public class AdvancedEcosystems implements BaseExpansionRedCard {
 
     @Override
     public List<Tag> getTagRequirements() {
-        return List.of(Tag.ANIMAL, Tag.MICROBE, Tag.PLANT);
+        return List.of(Tag.PLANT, Tag.MICROBE, Tag.ANIMAL);
     }
 
     @Override

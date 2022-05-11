@@ -271,10 +271,27 @@ li.events::before {
   filter: grayscale(0.2);
 }
 
+.requirements-ryw {
+  background-image: url(../images/requisites/red_yel_whi.png);
+}
+
+.requirements-w {
+  background-image: url(../images/requisites/whi.png);
+}
+
+.requirements-p {
+  background-image: url(../images/requisites/pur.png);
+}
+
+.requirements-yw {
+  background-image: url(../images/requisites/yel_whi.png);
+}
+
 .description {
   font-size: 11px;
   line-height: 13px;
   font-weight: normal;
+  font-family: Arial;
 }
 
 .display {
@@ -313,6 +330,13 @@ li.events::before {
   background-image: url(../images/tiles/empty.png);
 }
 
+.temperature-tile {
+  background-image: url(../images/global-parameters/temperature.png);
+  width: 14px;
+  background-size: 14px 46px;
+
+}
+
 .globals-box {
   width: 100px;
   text-shadow: none;
@@ -326,6 +350,29 @@ li.events::before {
   background-image: url(../images/requisites/min_big.png);
   background-size: 114px 60px;
   background-position: -9px -9px;
+}
+
+.ocean-tile {
+  background-image: url(../images/tiles/ocean.png);
+}
+
+.forest-tile {
+  background-image: url(../images/tiles/greenery.png);
+  background-size: 50px 46px;
+  width: 50px;
+}
+
+.oxygen-tile {
+  background-image: url(../images/global-parameters/oxygen.png);
+  width: 46px;
+  background-size: 46px;
+}
+
+.rating {
+  background-image: url(../images/resources/TR.png);
+  width: 50px;
+  height: 40px;
+  background-size: 50px 40px;
 }
 
 /************** Style the Content ************/
@@ -348,7 +395,7 @@ li.events::before {
   background-image: url("../images/tags/space.png");
 }
 
-.tag-power {
+.tag-energy {
   background-image: url("../images/tags/power.png");
 }
 
@@ -378,6 +425,146 @@ li.events::before {
 
 .tag-science {
   background-image: url("../images/tags/science.png");
+}
+
+/**************Resources***********/
+.resource {
+  font-family: Prototype;
+  position: relative;
+  display: inline-block;
+  margin-top: 5px;
+  margin-left: 3px;
+  margin-right: 3px;
+  margin-bottom: 10px;
+  width: 30px;
+  height: 30px;
+  font-size: 22px;
+  line-height: 30px;
+  background-size: 30px;
+  filter: drop-shadow(0px 0px 1px black);
+  vertical-align: middle;
+}
+
+.resource-tag {
+  position: relative;
+  display: inline-block;
+  text-align: center;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  background-size: 34px 34px;
+  background-position: -2px -2px;
+  line-height: 28px;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.6), 0 0 0 2px rgba(0,0,0,0.3);
+  vertical-align: middle;
+  margin-bottom: 5px;
+  filter: brightness(0.9);
+}
+
+.money {
+  font-family: Prototype;
+  color:black;
+  background-image: url(../images/megacredits/megacredit.png);
+  font-weight: normal;
+  font-size: 18px;
+  text-align: center;
+}
+
+.steel {
+  background-image: url(../images/resources/steel.png);
+}
+
+.titanium {
+  background-image: url(../images/resources/titanium.png);
+}
+
+.plant {
+  background-image: url(../images/resources/plant.png);
+}
+.energy {
+  background-image: url(../images/resources/energy.png);
+}
+
+.heat {
+  background-image: url(../images/resources/heat.png);
+}
+
+.microbe {
+  background-image: url(../images/resources/microbe.png);
+
+}
+.animal {
+  background-image: url(../images/resources/animal.png);
+
+}
+.science {
+  background-image: url(../images/resources/science.png);
+}
+
+.card {
+  background: url("../images/resources/card.png");
+  height: 40px;
+  width: 30px;
+  background-size: 30px 40px;
+  vertical-align: middle;
+}
+
+.card-blue {
+  background: url("../images/resources/blueCard.png");
+  height: 40px;
+  width: 30px;
+  background-size: 30px 40px;
+  vertical-align: middle;
+}
+
+.card-red {
+  background: url("../images/resources/redCard.png");
+  height: 40px;
+  width: 30px;
+  background-size: 30px 40px;
+  vertical-align: middle;
+}
+
+.card-green {
+  background: url("../images/resources/greenCard.png");
+  height: 40px;
+  width: 30px;
+  background-size: 30px 40px;
+  vertical-align: middle;
+}
+
+.card-face {
+  background: linear-gradient(#ddd 20%, #74aedb 20%, #74aedb 80%, #ddd 80%, #ddd 100%);
+  font-size: 14px;
+  line-height: 40px;
+  box-shadow: 0 0 2px 1px rgba(0,0,0,.5);
+  border-radius: 2px;
+  height: 40px;
+}
+
+.card-icon {
+  position: absolute;
+  margin-left: 15px;
+  margin-top: -10px;
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+  border-radius: 10px;
+  background-size: 20px 20px;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.3);
+}
+
+/************** Extras ************/
+.red-arrow {
+  background-image: url(../images/misc/arrow.png);
+  background-size: 30px;
+  width: 30px;
+  height: 30px;
+  vertical-align: middle;
+  display: inline-block;
+  margin-bottom: 5px;
+  background-repeat: no-repeat;
+  background-position: 0px;
 }
 
 /*********** Background colors************/

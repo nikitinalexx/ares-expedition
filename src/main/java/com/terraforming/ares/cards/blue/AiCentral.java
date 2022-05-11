@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -25,7 +26,8 @@ public class AiCentral implements BlueCard {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
                 .name("Ai Central")
-                .description("Requires 5 SCT. Action: Draw 2 cards.")
+                .description("Requires 5 Science. Action: Draw 2 cards.")
+                .cardAction(CardAction.AI_CENTRAL)
                 .build();
     }
 

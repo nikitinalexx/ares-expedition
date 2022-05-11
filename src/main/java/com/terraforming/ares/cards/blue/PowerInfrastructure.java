@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -23,6 +24,7 @@ public class PowerInfrastructure implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Power Infrastructure")
                 .description("Action: Spend any amount of heat to gain that amount of MC.")
+                .cardAction(CardAction.POWER_INFRASTRUCTURE)
                 .build();
     }
 

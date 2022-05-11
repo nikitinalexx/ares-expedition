@@ -2,10 +2,7 @@ package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Expansion;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.ProjectCard;
-import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +25,7 @@ public class OlympusConference implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Olympus Conference")
                 .description("When you play a Science tag, including this, draw a card.")
+                .cardAction(CardAction.OLYMPUS_CONFERENCE)
                 .build();
     }
 

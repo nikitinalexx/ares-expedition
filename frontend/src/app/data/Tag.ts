@@ -1,12 +1,12 @@
 export enum Tag {
-  SPACE,
-  EARTH,
-  EVENT,
-  SCIENCE,
-  PLANT,
-  ENERGY,
-  BUILDING,
-  ANIMAL,
-  JUPITER,
-  MICROBE
+  SPACE = 'Space',
+  EARTH = 'Earth',
+  EVENT = 'Event',
+  SCIENCE = 'Science',
+  PLANT = 'Plant',
+  ENERGY = 'Energy',
+  BUILDING = 'Building',
+  ANIMAL = 'Animal',
+  JUPITER = 'Jupiter',
+  MICROBE = 'Microbe'
 }

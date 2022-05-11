@@ -25,7 +25,8 @@ public class AnaerobicMicroorganisms implements BlueCard {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
                 .name("Anaerobic Microorganisms")
-                .description("When you play a card, you may remove 2 microbes from this card to pay 10 MC less for that card. When you play an Animal, Microbe, or Plant, including this, add a microbe to this card.")
+                .description("When you play an Animal, Microbe, or Plant, including this, add a microbe to this card. When you play a card, you may remove 2 microbes from this card to pay 10 MC less for that card.")
+                .cardAction(CardAction.ANAEROBIC_MICROORGANISMS)
                 .build();
     }
 

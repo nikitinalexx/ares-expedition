@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.parameters.ParameterColor;
@@ -24,6 +25,7 @@ public class ExtremeColdFungus implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Extreme-Cold Fungus")
                 .description("Requires purple temperature. Gain 1 plant or add a microbe to ANOTHER* card.")
+                .cardAction(CardAction.EXTREME_COLD_FUNGUS)
                 .build();
     }
 

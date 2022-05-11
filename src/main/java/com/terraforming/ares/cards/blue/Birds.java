@@ -24,6 +24,7 @@ public class Birds implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Birds")
                 .description("Requires white oxygen. Add an animal to this card. 1 VP per animal on this card.")
+                .cardAction(CardAction.ADD_ANIMAL)
                 .build();
     }
 

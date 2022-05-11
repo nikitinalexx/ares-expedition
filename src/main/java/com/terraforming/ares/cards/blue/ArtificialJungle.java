@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ public class ArtificialJungle implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Artificial Jungle")
                 .description("Action: Spend 1 plant to draw a card.")
+                .cardAction(CardAction.ARTIFICIAL_JUNGLE)
                 .build();
     }
 

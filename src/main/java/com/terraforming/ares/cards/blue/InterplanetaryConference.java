@@ -26,6 +26,7 @@ public class InterplanetaryConference implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Interplanetary Conference")
                 .description("When you play an Earth or Jupiter tag, excluding this, you pay 3 MC less and draw a card.")
+                .cardAction(CardAction.INTERPLANETARY_CONFERENCE)
                 .build();
     }
 

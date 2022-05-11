@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -23,6 +24,7 @@ public class DevelopmentCenter implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Development Center")
                 .description("Action: Spend 2 heat to draw a card.")
+                .cardAction(CardAction.DEVELOPMENT_CENTER)
                 .build();
     }
 

@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ public class DevelopedInfrastructure implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Developed Infrastructure")
                 .description("Action: Spend 10 MC to raise the temperature 1 step. Reduce this by 5 МС if you have 5 or more blue cards in play.")
+                .cardAction(CardAction.DEVELOPED_INFRASTRUCTURE)
                 .build();
     }
 

@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -24,6 +25,7 @@ public class InterplanetaryRelations implements BlueCard {
                 .name("Interplanetary Relations")
                 //TODO phase 5 effect
                 .description("When you draw cards during the research phase, draw one additional card and keep one additional card. 1 VP per 4 cards you have played.")
+                .cardAction(CardAction.INTERPLANETARY_RELATIONS)
                 .build();
     }
 

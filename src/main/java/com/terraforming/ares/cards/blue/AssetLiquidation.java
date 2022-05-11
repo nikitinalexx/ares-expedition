@@ -23,6 +23,7 @@ public class AssetLiquidation implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Asset Liquidation")
                 .description("You may play an additional blue or red card this phase. Action: Spend 1 TR to draw 3 cards.")
+                .cardAction(CardAction.ASSET_LIQUIDATION)
                 .build();
     }
 

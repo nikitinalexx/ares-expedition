@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -24,6 +25,7 @@ public class Interns implements BlueCard {
                 .name("Interns")
                 //TODO phase 5 effect
                 .description("When you draw cards during the research phase, draw two additional cards.")
+                .cardAction(CardAction.INTERNS)
                 .build();
     }
 

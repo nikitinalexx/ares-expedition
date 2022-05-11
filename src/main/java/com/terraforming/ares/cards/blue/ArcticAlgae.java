@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
@@ -27,6 +28,7 @@ public class ArcticAlgae implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Arctic Algae")
                 .description("Requires red temperature or warmer. When you flip an ocean tile, gain 4 plants.")
+                .cardAction(CardAction.ARCTIC_ALGAE)
                 .build();
     }
 

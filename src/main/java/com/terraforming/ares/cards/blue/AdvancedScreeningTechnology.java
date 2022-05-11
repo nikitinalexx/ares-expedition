@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -24,6 +25,7 @@ public class AdvancedScreeningTechnology implements BlueCard{
         this.cardMetadata = CardMetadata.builder()
                 .name("Advanced Screening Tech")
                 .description("Action: Reveal the top 3 cards of the deck. Place a card with a Science or Plant revealed this way into your hand. Discard the rest.")
+                .cardAction(CardAction.SCREENING_TECHNOLOGY)
                 .build();
     }
 

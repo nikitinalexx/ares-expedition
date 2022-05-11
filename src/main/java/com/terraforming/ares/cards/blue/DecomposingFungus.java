@@ -26,6 +26,7 @@ public class DecomposingFungus implements BlueCard {
                 .name("Decomposing Fungus")
                 .description("Place 2 microbes on this card. Action: Remove 1 animal or 1 microbe from one of your cards to gain 3 plants.")
                 .bonuses(List.of(Gain.of(GainType.MICROBE, 2)))
+                .cardAction(CardAction.DECOMPOSING_FUNGUS)
                 .build();
     }
 

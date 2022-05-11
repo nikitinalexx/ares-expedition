@@ -6,11 +6,11 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
+import com.terraforming.ares.model.parameters.OceanRequirement;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
-import java.util.function.LongPredicate;
 
 /**
  * Created by oleksii.nikitin
@@ -46,8 +46,8 @@ public class DustyQuarry implements BaseExpansionGreenCard {
     }
 
     @Override
-    public LongPredicate getOceanRequirement() {
-        return currentNumberOfOceans -> currentNumberOfOceans <= 3;
+    public OceanRequirement getOceanRequirement() {
+        return OceanRequirement.builder().minValue(0).maxValue(3).build();
     }
 
     @Override

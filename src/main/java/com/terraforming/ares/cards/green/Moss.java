@@ -5,13 +5,13 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
+import com.terraforming.ares.model.parameters.OceanRequirement;
 import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.LongPredicate;
 
 /**
  * Created by oleksii.nikitin
@@ -58,9 +58,8 @@ public class Moss implements BaseExpansionGreenCard {
     }
 
     @Override
-    public LongPredicate getOceanRequirement() {
-        //TODO
-        return currentNumberOfOceans -> currentNumberOfOceans >= 3;
+    public OceanRequirement getOceanRequirement() {
+        return OceanRequirement.builder().minValue(3).maxValue(Constants.MAX_OCEANS).build();
     }
 
     @Override

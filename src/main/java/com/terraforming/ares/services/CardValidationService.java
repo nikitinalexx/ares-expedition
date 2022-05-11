@@ -48,7 +48,7 @@ public class CardValidationService {
         );
     }
 
-    public String validateCard(Player player, Planet planet, int cardId, List<Payment> payments, Map<Integer, List<Integer>> inputParameters) {
+    public String validateCard(Player player, MarsGame game, int cardId, List<Payment> payments, Map<Integer, List<Integer>> inputParameters) {
         ProjectCard projectCard = cardService.getProjectCard(cardId);
         if (projectCard == null) {
             return "Card doesn't exist " + cardId;
@@ -63,9 +63,9 @@ public class CardValidationService {
         boolean builtSpecialDesignLastTurn = player.isBuiltSpecialDesignLastTurn();
 
         //TODO requirements should be set at the beginning of phase
-        return validateOxygen(planet, projectCard, playerMayAmplifyGlobalRequirement || builtSpecialDesignLastTurn)
-                .or(() -> validateTemperature(planet, projectCard, playerMayAmplifyGlobalRequirement || builtSpecialDesignLastTurn))
-                .or(() -> validateOceans(planet, projectCard))
+        return validateOxygen(game.getPlanetAtTheStartOfThePhase(), projectCard, playerMayAmplifyGlobalRequirement || builtSpecialDesignLastTurn)
+                .or(() -> validateTemperature(game.getPlanetAtTheStartOfThePhase(), projectCard, playerMayAmplifyGlobalRequirement || builtSpecialDesignLastTurn))
+                .or(() -> validateOceans(game.getPlanetAtTheStartOfThePhase(), projectCard))
                 .or(() -> validateTags(player, projectCard))
                 .or(() -> validatePayments(projectCard, player, payments))
                 .or(() -> validateInputParameters(projectCard, player, inputParameters))

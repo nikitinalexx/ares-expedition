@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.SpecialEffect;
 import com.terraforming.ares.model.Tag;
@@ -25,6 +26,7 @@ public class EarthCatapult implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Earth Catapult")
                 .description("When you play a card, you pay 2 MC less for it.")
+                .cardAction(CardAction.EARTH_CATAPULT)
                 .build();
     }
 

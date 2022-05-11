@@ -2,6 +2,7 @@ package com.terraforming.ares.model;
 
 import com.terraforming.ares.model.parameters.MeasurableGlobalParameter;
 import com.terraforming.ares.model.parameters.Ocean;
+import com.terraforming.ares.model.parameters.OceanRequirement;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +10,6 @@ import lombok.Builder;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.LongPredicate;
 import java.util.stream.Collectors;
 
 /**
@@ -51,8 +51,13 @@ public class Planet {
         return isValidParameter(validParameters, GlobalParameter.OXYGEN);
     }
 
-    public boolean isValidNumberOfOceans(LongPredicate oceanRequirement) {
-        return oceanRequirement.test(oceans.stream().filter(Ocean::isRevealed).count());
+    public boolean isValidNumberOfOceans(OceanRequirement oceanRequirement) {
+        if (oceanRequirement == null) {
+            return true;
+        }
+        int oceansOpened = (int) oceans.stream().filter(Ocean::isRevealed).count();
+
+        return oceansOpened >= oceanRequirement.getMinValue() && oceansOpened <= oceanRequirement.getMaxValue();
     }
 
     public Ocean revealOcean() {

@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -23,6 +24,7 @@ public class HydroElectricEnergy implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Hydro-Electric Energy")
                 .description("Spend 1 MC to get 2 heat.  *if you chose the action phase this round, gain 1 additional heat.")
+                .cardAction(CardAction.HYDRO_ELECTRIC)
                 .build();
     }
 

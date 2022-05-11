@@ -25,6 +25,7 @@ public class EcologicalZone implements BlueCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Ecological Zone")
                 .description("When you play a Animal or Plant, including these, add an animal to this card. 1 VP per 2 animals on this card.")
+                .cardAction(CardAction.ECOLOGICAL_ZONE)
                 .build();
     }
 
