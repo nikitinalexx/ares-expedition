@@ -11,4 +11,9 @@ public interface CorporationCard extends GenericCard{
     default int getPrice() {
         return 0;
     }
+
+    @Override
+    default CardColor getColor() {
+        return CardColor.CORPORATION;
+    }
 }

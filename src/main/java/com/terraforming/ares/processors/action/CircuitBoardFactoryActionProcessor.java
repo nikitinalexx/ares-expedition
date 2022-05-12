@@ -1,7 +1,7 @@
 package com.terraforming.ares.processors.action;
 
 import com.terraforming.ares.cards.blue.CircuitBoardFactory;
-import com.terraforming.ares.dto.ProjectCardDto;
+import com.terraforming.ares.dto.CardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
@@ -33,7 +33,7 @@ public class CircuitBoardFactoryActionProcessor implements BlueActionCardProcess
             player.getHand().addCard(card);
 
             ProjectCard projectCard = deckService.getProjectCard(card);
-            resultBuilder.takenCard(ProjectCardDto.from(projectCard));
+            resultBuilder.takenCard(CardDto.from(projectCard));
         }
 
         return resultBuilder.build();

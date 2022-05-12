@@ -1,6 +1,6 @@
 package com.terraforming.ares.controllers;
 
-import com.terraforming.ares.dto.ProjectCardDto;
+import com.terraforming.ares.dto.CardDto;
 import com.terraforming.ares.dto.GameDto;
 import com.terraforming.ares.dto.PlayerDto;
 import com.terraforming.ares.dto.PlayerUuidsDto;
@@ -9,9 +9,12 @@ import com.terraforming.ares.model.Deck;
 import com.terraforming.ares.model.GameParameters;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardFactory;
+import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.GameService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,14 +31,23 @@ import java.util.stream.Collectors;
 public class GameController {
     private final GameService gameService;
     private final CardFactory cardFactory;
+    private final CardService cardService;
 
     @PostMapping("/game/new")
-    public PlayerUuidsDto startNewGame(GameParameters gameParameters) {
-        MarsGame marsGame = gameService.startNewGame(gameParameters);
+    public PlayerUuidsDto startNewGame(@RequestBody GameParameters gameParameters) {
+        try {
+            if (gameParameters.getPlayersCount() != 2) {
+                throw new IllegalArgumentException("Only two players are supported so far");
+            }
 
-        return PlayerUuidsDto.builder()
-                .players(new ArrayList<>(marsGame.getPlayerUuidToPlayer().keySet()))
-                .build();
+            MarsGame marsGame = gameService.startNewGame(gameParameters);
+
+            return PlayerUuidsDto.builder()
+                    .players(new ArrayList<>(marsGame.getPlayerUuidToPlayer().keySet()))
+                    .build();
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
     }
 
     @GetMapping("/game/player/{playerUuid}")
@@ -49,10 +61,10 @@ public class GameController {
     }
 
     @GetMapping("/projects")
-    public List<ProjectCardDto> getAllProjectCards() {
+    public List<CardDto> getAllProjectCards() {
         return cardFactory.getAllProjects()
                 .stream()
-                .map(ProjectCardDto::from)
+                .map(CardDto::from)
                 .collect(Collectors.toList());
     }
 
@@ -60,14 +72,10 @@ public class GameController {
         Deck corporations = player.getCorporations();
 
         return PlayerDto.builder()
-                .corporationsChoice(
-                        Deck.builder()
-                                .cards(corporations.getCards())
-                                .build()
-                )
+                .corporations(corporations.getCards().stream().map(cardService::getCorporationCard).map(CardDto::from).collect(Collectors.toList()))
+                .hand(player.getHand().getCards().stream().map(cardService::getProjectCard).map(CardDto::from).collect(Collectors.toList()))
                 .corporationId(player.getSelectedCorporationCard())
                 .phase(player.getChosenPhase())
-                .hand(player.getHand())
                 .build();
     }
 

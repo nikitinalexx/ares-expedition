@@ -1,1 +1,17 @@
-<h1>New Game Creation Page</h1>
+<div class="bg-danger mt-2 p-2 text-center text-white"
+     *ngIf="errorMessage != null">
+  {{errorMessage}}
+</div>
+<form #form="ngForm" (ngSubmit)="createNewGame(form)">
+  <div class="d-grid gap-2 col-6 mx-auto" style="margin-top: 200px;">
+    <label for="playerCount" class="form-label p-1 mb-2 bg-warning text-dark">Player count (2)</label>
+    <input type="number" class="form-control" id="playerCount" name="playerCount" [(ngModel)]="playerCount">
+    <button type="submit" class="btn btn-warning btn-lg">Create</button>
+  </div>
+</form>
+
+<div *ngIf="playersPresent()" class="d-grid gap-2 col-6 mx-auto" style="margin-top: 10px;">
+  <div *ngFor="let player of players" class="bg-warning">
+    <a href="{{getPlayerLink(player)}}" class="link-primary">{{getPlayerLink(player)}}</a>
+  </div>
+</div>

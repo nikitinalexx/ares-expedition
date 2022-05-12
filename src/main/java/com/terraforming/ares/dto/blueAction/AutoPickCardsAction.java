@@ -1,6 +1,6 @@
 package com.terraforming.ares.dto.blueAction;
 
-import com.terraforming.ares.dto.ProjectCardDto;
+import com.terraforming.ares.dto.CardDto;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.TurnResponseType;
 import lombok.Builder;
@@ -17,7 +17,7 @@ import java.util.List;
 @Builder
 public class AutoPickCardsAction implements TurnResponse {
     @Singular
-    List<ProjectCardDto> takenCards;
+    List<CardDto> takenCards;
 
     @Override
     public TurnResponseType getResponseType() {

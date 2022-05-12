@@ -16,15 +16,28 @@ import java.util.List;
 @Getter
 public class DevTechs implements CorporationCard {
     private final int id;
+    private final CardMetadata cardMetadata;
 
-    @Override
-    public TurnResponse buildProject(MarsContext marsContext) {
-        marsContext.getPlayer().setMc(40);
-        return null;
+    public DevTechs(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("DevTechs")
+                .description("40 Mc. Draw 5 cards from the deck and take all green cards.")
+                .build();
     }
 
     @Override
-    public CardMetadata getCardMetadata() {
+    public TurnResponse buildProject(MarsContext marsContext) {
+        Player player = marsContext.getPlayer();
+        player.setMc(40);
+
+        List<Integer> cards = marsContext.getGame().dealCards(5);
+        for (Integer card : cards) {
+            if (marsContext.getCardService().getProjectCard(card).getColor() == CardColor.GREEN) {
+                player.getHand().addCard(card);
+            }
+        }
+
         return null;
     }
 

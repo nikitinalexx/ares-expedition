@@ -1,7 +1,7 @@
 package com.terraforming.ares.cards.red;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.dto.ProjectCardDto;
+import com.terraforming.ares.dto.CardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Tag;
@@ -43,7 +43,7 @@ public class LagrangeObservatory implements BaseExpansionRedCard {
 
         for (Integer card : marsContext.getGame().dealCards(1)) {
             marsContext.getPlayer().getHand().addCard(card);
-            resultBuilder.takenCard(ProjectCardDto.from(marsContext.getCardService().getProjectCard(card)));
+            resultBuilder.takenCard(CardDto.from(marsContext.getCardService().getProjectCard(card)));
         }
 
         return resultBuilder.build();

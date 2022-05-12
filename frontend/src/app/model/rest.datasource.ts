@@ -1,8 +1,11 @@
 import {Inject, Injectable, InjectionToken} from '@angular/core';
-import {HttpClient, HttpHeaders} from '@angular/common/http';
+import {HttpClient, HttpErrorResponse, HttpHeaders} from '@angular/common/http';
 import {Observable, throwError} from 'rxjs';
 import {catchError} from 'rxjs/operators';
-import {ProjectCard} from '../data/ProjectCard';
+import {Card} from '../data/Card';
+import {NewGame} from '../data/NewGame';
+import {NewGameRequest} from '../data/NewGameRequest';
+import {Game} from "../data/Game";
 
 export const REST_URL = new InjectionToken('rest_url');
 
@@ -12,11 +15,19 @@ export class RestDataSource {
               @Inject(REST_URL) private url: string) {
   }
 
-  getData(): Observable<ProjectCard[]> {
-    return this.sendRequest<ProjectCard[]>('GET', this.url);
+  getData(): Observable<Card[]> {
+    return this.sendRequest<Card[]>('GET', this.url + '/projects');
   }
 
-  private sendRequest<T>(verb: string, url: string, body?: ProjectCard[])
+  createGame(requestBody: NewGameRequest): Observable<NewGame> {
+    return this.sendRequest<NewGame>('POST', this.url + '/game/new', requestBody);
+  }
+
+  getGame(playerUuid: string): Observable<Game> {
+    return this.sendRequest<Game>('GET', this.url + '/game/player/' + playerUuid);
+  }
+
+  private sendRequest<T>(verb: string, url: string, body?: any)
     : Observable<T> {
 
     let myHeaders = new HttpHeaders();
@@ -26,8 +37,9 @@ export class RestDataSource {
     return this.http.request<T>(verb, url, {
       body,
       headers: myHeaders
-    }).pipe(catchError((error: Response) =>
-      throwError(`Network Error: ${error.statusText} (${error.status})`)));
+    }).pipe(catchError((error: HttpErrorResponse) => {
+      return throwError(`Error: ${error.error?.message} (${error.status})`);
+    }));
   }
 
 }

@@ -2,11 +2,14 @@ package com.terraforming.ares.model;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.parameters.OceanRequirement;
+import com.terraforming.ares.model.parameters.ParameterColor;
 import com.terraforming.ares.services.CardService;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -29,6 +32,32 @@ public interface GenericCard {
     Expansion getExpansion();
 
     int getPrice();
+
+    CardColor getColor();
+
+    default int getWinningPoints() {
+        return 0;
+    }
+
+    default Set<SpecialEffect> getSpecialEffects() {
+        return Collections.emptySet();
+    }
+
+    default List<Tag> getTagRequirements() {
+        return Collections.emptyList();
+    }
+
+    default List<ParameterColor> getTemperatureRequirement() {
+        return Collections.emptyList();
+    }
+
+    default List<ParameterColor> getOxygenRequirement() {
+        return Collections.emptyList();
+    }
+
+    default OceanRequirement getOceanRequirement() {
+        return null;
+    }
 
     default void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
     }

@@ -5,5 +5,5 @@ package com.terraforming.ares.model;
  * Creation date 29.04.2022
  */
 public enum CardColor {
-    GREEN, BLUE, RED
+    GREEN, BLUE, RED, CORPORATION
 }

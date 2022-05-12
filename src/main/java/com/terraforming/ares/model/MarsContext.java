@@ -1,6 +1,6 @@
 package com.terraforming.ares.model;
 
-import com.terraforming.ares.dto.ProjectCardDto;
+import com.terraforming.ares.dto.CardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.services.CardService;
@@ -25,7 +25,7 @@ public class MarsContext {
 
         for (Integer card : game.dealCards(count)) {
             player.getHand().addCard(card);
-            resultBuilder.takenCard(ProjectCardDto.from(cardService.getProjectCard(card)));
+            resultBuilder.takenCard(CardDto.from(cardService.getProjectCard(card)));
         }
 
         return resultBuilder.build();

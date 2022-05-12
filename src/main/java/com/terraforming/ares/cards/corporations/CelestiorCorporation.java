@@ -16,10 +16,14 @@ import java.util.List;
 @Getter
 public class CelestiorCorporation implements CorporationCard {
     private final int id;
+    private final CardMetadata cardMetadata;
 
-    @Override
-    public CardMetadata getCardMetadata() {
-        return null;
+    public CelestiorCorporation(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Celestior Corporation")
+                .description("50 Mc. Blue action bonus that is not implemented yet")
+                .build();
     }
 
     @Override

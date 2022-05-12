@@ -1,14 +1,15 @@
 package com.terraforming.ares.model;
 
-import lombok.Builder;
-import lombok.Value;
+import lombok.*;
 
 /**
  * Created by oleksii.nikitin
  * Creation date 25.04.2022
  */
 @Builder
-@Value
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
 public class GameParameters {
     private int playersCount;
 }

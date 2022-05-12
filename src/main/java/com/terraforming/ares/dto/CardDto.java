@@ -14,7 +14,7 @@ import java.util.List;
  * Creation date 05.05.2022
  */
 @Value
-public class ProjectCardDto {
+public class CardDto {
     int id;
     String name;
     int price;
@@ -31,8 +31,8 @@ public class ProjectCardDto {
     OceanRequirement oceanRequirement;
     List<Gain> bonuses;
 
-    public static ProjectCardDto from(ProjectCard card) {
-        return new ProjectCardDto(
+    public static CardDto from(GenericCard card) {
+        return new CardDto(
                 card.getId(),
                 card.getCardMetadata().getName(),
                 card.getPrice(),
@@ -50,4 +50,5 @@ public class ProjectCardDto {
                 card.getCardMetadata().getBonuses()
         );
     }
+
 }

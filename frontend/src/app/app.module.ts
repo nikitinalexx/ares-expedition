@@ -10,14 +10,17 @@ import {IndexModule} from './index/index.module';
 import {NewGameModule} from './newGame/newGame.module';
 import {IndexComponent} from './index/index.component';
 import {APP_BASE_HREF} from '@angular/common';
+import {GameComponent} from './game/game.component';
+import {GameModule} from './game/game.module';
 
 @NgModule({
   imports: [
-    BrowserModule, CardServiceModule, NewGameModule, IndexModule,
+    BrowserModule, CardServiceModule, NewGameModule, IndexModule, GameModule,
     RouterModule.forRoot([
       {path: 'cards', component: CardServiceComponent},
       {path: 'new', component: NewGameComponent},
       {path: 'index', component: IndexComponent},
+      {path: 'game/:playerUuid', component: GameComponent},
       {path: '**', redirectTo: '/index'}
     ])],
   declarations: [

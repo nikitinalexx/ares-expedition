@@ -6,7 +6,7 @@ import {ParameterColor} from './ParameterColor';
 import {OceanRequirement} from './OceanRequirement';
 import {Gain} from './Gain';
 
-export class ProjectCard {
+export class Card {
   constructor(id: number,
               name: string,
               price: number,

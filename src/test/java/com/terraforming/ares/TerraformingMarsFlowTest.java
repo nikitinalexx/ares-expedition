@@ -2,6 +2,7 @@ package com.terraforming.ares;
 
 import com.terraforming.ares.controllers.GameController;
 import com.terraforming.ares.controllers.PlayController;
+import com.terraforming.ares.dto.CardDto;
 import com.terraforming.ares.dto.PlayerUuidsDto;
 import com.terraforming.ares.model.GameParameters;
 import com.terraforming.ares.model.payments.MegacreditsPayment;
@@ -59,7 +60,7 @@ public class TerraformingMarsFlowTest {
             assertEquals(Collections.singletonList(TurnType.PICK_CORPORATION), playController.getPossibleTurns(playerUuid));
 
             //3,2,7,4
-            assertEquals(2, gameController.getGameByPlayerUuid(playerUuid).getPlayer().getCorporationsChoice().getCards().size());
+            assertEquals(2, gameController.getGameByPlayerUuid(playerUuid).getPlayer().getCorporations().size());
         }
 
         Exception exception = assertThrows(IllegalStateException.class, () -> {
@@ -72,7 +73,7 @@ public class TerraformingMarsFlowTest {
 
         playController.chooseCorporation(
                 firstPlayer,
-                gameController.getGameByPlayerUuid(firstPlayer).getPlayer().getCorporationsChoice().getCards().get(0)
+                gameController.getGameByPlayerUuid(firstPlayer).getPlayer().getCorporations().get(0).getId()
         );
 
         //before all players complete corporation pick, the corporationId is null
@@ -93,7 +94,7 @@ public class TerraformingMarsFlowTest {
 
         playController.chooseCorporation(
                 secondPlayer,
-                gameController.getGameByPlayerUuid(secondPlayer).getPlayer().getCorporationsChoice().getCards().get(0)
+                gameController.getGameByPlayerUuid(secondPlayer).getPlayer().getCorporations().get(0).getId()
         );
 
         gameProcessorService.asyncUpdate();
@@ -127,21 +128,20 @@ public class TerraformingMarsFlowTest {
                 gameController.getGameByPlayerUuid(secondPlayer)
                         .getPlayer()
                         .getHand()
-                        .getCards()
                         .stream()
                         .limit(1)
-                        .collect(Collectors.toList()
-                        )
+                        .map(CardDto::getId)
+                        .collect(Collectors.toList())
         );
 
         assertEquals("WAIT", playController.getNextAction(firstPlayer));
         assertEquals("TURN", playController.getNextAction(secondPlayer));
-        assertEquals(9, gameController.getGameByPlayerUuid(secondPlayer).getPlayer().getHand().getCards().size());
+        assertEquals(9, gameController.getGameByPlayerUuid(secondPlayer).getPlayer().getHand().size());
 
         exception = assertThrows(IllegalStateException.class, () -> {
             playController.buildGreenProject(
                     secondPlayer,
-                    gameController.getGameByPlayerUuid(secondPlayer).getPlayer().getHand().getCards().get(0),
+                    gameController.getGameByPlayerUuid(secondPlayer).getPlayer().getHand().get(0).getId(),
                     Collections.singletonList(new MegacreditsPayment(10)),
                     Collections.emptyMap()
             );
@@ -151,7 +151,7 @@ public class TerraformingMarsFlowTest {
 
         playController.buildGreenProject(
                 secondPlayer,
-                gameController.getGameByPlayerUuid(secondPlayer).getPlayer().getHand().getCards().get(0),
+                gameController.getGameByPlayerUuid(secondPlayer).getPlayer().getHand().get(0).getId(),
                 Collections.singletonList(new MegacreditsPayment(5)),
                 Collections.emptyMap()
         );

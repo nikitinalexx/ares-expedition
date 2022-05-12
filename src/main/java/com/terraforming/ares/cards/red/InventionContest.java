@@ -1,7 +1,7 @@
 package com.terraforming.ares.cards.red;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.dto.ProjectCardDto;
+import com.terraforming.ares.dto.CardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
@@ -45,7 +45,7 @@ public class InventionContest implements BaseExpansionRedCard {
             marsContext.getPlayer().getHand().addCard(card);
 
             ProjectCard projectCard = marsContext.getCardService().getProjectCard(card);
-            resultBuilder.takenCard(ProjectCardDto.from(projectCard));
+            resultBuilder.takenCard(CardDto.from(projectCard));
         }
 
         marsContext.getPlayer().setNextTurn(

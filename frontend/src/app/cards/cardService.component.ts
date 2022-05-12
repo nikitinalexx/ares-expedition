@@ -1,6 +1,6 @@
 import {Component} from '@angular/core';
 import {CardRepository} from '../model/cardRepository.model';
-import {ProjectCard} from '../data/ProjectCard';
+import {Card} from '../data/Card';
 import {CardColor} from '../data/CardColor';
 import {SpecialEffect} from '../data/SpecialEffect';
 import {CardAction} from '../data/CardAction';
@@ -17,17 +17,17 @@ export class CardServiceComponent {
   constructor(private model: CardRepository) {
   }
 
-  getProjectCards(): ProjectCard[] {
+  getProjectCards(): Card[] {
     return this.model.getProjectCards();
   }
 
-  getTagClasses(card: ProjectCard, tagNumber: number): string {
+  getTagClasses(card: Card, tagNumber: number): string {
     if (card.tags[tagNumber]) {
       return 'tag-' + card.tags[tagNumber].toString().toLowerCase();
     }
   }
 
-  getBackgroundColorClass(card: ProjectCard): string {
+  getBackgroundColorClass(card: Card): string {
     switch (card.cardColor) {
       case CardColor.BLUE:
         return 'background-color-active';
@@ -38,39 +38,39 @@ export class CardServiceComponent {
     }
   }
 
-  getFormattedId(card: ProjectCard): string {
+  getFormattedId(card: Card): string {
     return ('000' + card.id).substr(-3);
   }
 
-  hasAmplifyGlobalRequirements(card: ProjectCard): boolean {
+  hasAmplifyGlobalRequirements(card: Card): boolean {
     return this.hasSpecialEffect(card, SpecialEffect.AMPLIFY_GLOBAL_REQUIREMENT);
   }
 
-  hasAdvancedAlloysRequirements(card: ProjectCard): boolean {
+  hasAdvancedAlloysRequirements(card: Card): boolean {
     return this.hasSpecialEffect(card, SpecialEffect.ADVANCED_ALLOYS);
   }
 
-  hasSpecialEffect(card: ProjectCard, specialEffect: SpecialEffect): boolean {
+  hasSpecialEffect(card: Card, specialEffect: SpecialEffect): boolean {
     return card.specialEffects.indexOf(SpecialEffect[specialEffect]) > -1;
   }
 
-  hasBonuses(card: ProjectCard): boolean {
+  hasBonuses(card: Card): boolean {
     return card.bonuses && card.bonuses.length !== 0;
   }
 
-  manyBonuses(card: ProjectCard): boolean {
+  manyBonuses(card: Card): boolean {
     return card.bonuses.length >= 3;
   }
 
-  hasIncomes(card: ProjectCard): boolean {
+  hasIncomes(card: Card): boolean {
     return card.incomes && card.incomes.length !== 0;
   }
 
-  hasMcBonus(card: ProjectCard): boolean {
+  hasMcBonus(card: Card): boolean {
     return card.bonuses.find(gain => gain.type === GainType[GainType.MC]) !== undefined;
   }
 
-  getOceanBonuses(card: ProjectCard): number[] {
+  getOceanBonuses(card: Card): number[] {
     const bonus = card.bonuses.find(gain => gain.type === GainType[GainType.OCEAN]);
     if (!bonus) {
       return [];
@@ -78,7 +78,7 @@ export class CardServiceComponent {
     return this.generateArray(bonus.value);
   }
 
-  getOxygenBonuses(card: ProjectCard): number[] {
+  getOxygenBonuses(card: Card): number[] {
     const bonus = card.bonuses.find(gain => gain.type === GainType[GainType.OXYGEN]);
     if (!bonus) {
       return [];
@@ -86,7 +86,7 @@ export class CardServiceComponent {
     return this.generateArray(bonus.value);
   }
 
-  getForestBonuses(card: ProjectCard): number[] {
+  getForestBonuses(card: Card): number[] {
     const bonus = card.bonuses.find(gain => gain.type === GainType[GainType.FOREST]);
     if (!bonus) {
       return [];
@@ -94,7 +94,7 @@ export class CardServiceComponent {
     return this.generateArray(bonus.value);
   }
 
-  getTerraformingBonuses(card: ProjectCard): number[] {
+  getTerraformingBonuses(card: Card): number[] {
     const bonus = card.bonuses.find(gain => gain.type === GainType[GainType.TERRAFORMING_RATING]);
     if (!bonus) {
       return [];
@@ -102,12 +102,12 @@ export class CardServiceComponent {
     return this.generateArray(Math.abs(bonus.value));
   }
 
-  getTerraformingBonusSign(card: ProjectCard): string {
+  getTerraformingBonusSign(card: Card): string {
     const bonus = card.bonuses.find(gain => gain.type === GainType[GainType.TERRAFORMING_RATING]);
     return bonus.value < 0 ? '-' : '';
   }
 
-  getPlantBonuses(card: ProjectCard): number[] {
+  getPlantBonuses(card: Card): number[] {
     const bonus = card.bonuses.find(gain => gain.type === GainType[GainType.PLANT]);
     if (!bonus) {
       return [];
@@ -115,7 +115,7 @@ export class CardServiceComponent {
     return this.generateArray(bonus.value);
   }
 
-  getHeatBonuses(card: ProjectCard): number[] {
+  getHeatBonuses(card: Card): number[] {
     const bonus = card.bonuses.find(gain => gain.type === GainType[GainType.HEAT]);
     if (!bonus) {
       return [];
@@ -123,7 +123,7 @@ export class CardServiceComponent {
     return this.generateArray(bonus.value);
   }
 
-  getCardBonuses(card: ProjectCard): number[] {
+  getCardBonuses(card: Card): number[] {
     const bonus = card.bonuses.find(gain => gain.type === GainType[GainType.CARD]);
     if (!bonus) {
       return [];
@@ -131,7 +131,7 @@ export class CardServiceComponent {
     return this.generateArray(bonus.value);
   }
 
-  getTemperatureBonuses(card: ProjectCard): number[] {
+  getTemperatureBonuses(card: Card): number[] {
     const bonus = card.bonuses.find(gain => gain.type === GainType[GainType.TEMPERATURE]);
     if (!bonus) {
       return [];
@@ -139,7 +139,7 @@ export class CardServiceComponent {
     return this.generateArray(bonus.value);
   }
 
-  getMcBonus(card: ProjectCard): number {
+  getMcBonus(card: Card): number {
     const bonus = card.bonuses.find(gain => gain.type === GainType[GainType.MC]);
     if (!bonus) {
       return null;
@@ -147,7 +147,7 @@ export class CardServiceComponent {
     return bonus.value;
   }
 
-  getIncomes(card: ProjectCard): Gain[] {
+  getIncomes(card: Card): Gain[] {
     return card.incomes;
   }
 
@@ -170,7 +170,7 @@ export class CardServiceComponent {
     }
   }
 
-  getNameStyle(card: ProjectCard): { 'font-size.px': number } {
+  getNameStyle(card: Card): { 'font-size.px': number } {
     if (card.name.length > 22) {
       const proportion = card.name.length / 22;
       return {'font-size.px': 16 / proportion};
@@ -186,391 +186,391 @@ export class CardServiceComponent {
     return result;
   }
 
-  actionScreeningTechnology(card: ProjectCard): boolean {
+  actionScreeningTechnology(card: Card): boolean {
     return card.cardAction === CardAction.SCREENING_TECHNOLOGY;
   }
 
-  actionAiCentral(card: ProjectCard): boolean {
+  actionAiCentral(card: Card): boolean {
     return card.cardAction === CardAction.AI_CENTRAL;
   }
 
-  actionAnaerobicOrganisms(card: ProjectCard): boolean {
+  actionAnaerobicOrganisms(card: Card): boolean {
     return card.cardAction === CardAction.ANAEROBIC_MICROORGANISMS;
   }
 
-  actionAntiGravity(card: ProjectCard): boolean {
+  actionAntiGravity(card: Card): boolean {
     return card.cardAction === CardAction.ANTI_GRAVITY_TECH;
   }
 
-  actionAquiferPumping(card: ProjectCard): boolean {
+  actionAquiferPumping(card: Card): boolean {
     return card.cardAction === CardAction.AQUIFER_PUMPING;
   }
 
-  actionArcticAlgae(card: ProjectCard): boolean {
+  actionArcticAlgae(card: Card): boolean {
     return card.cardAction === CardAction.ARCTIC_ALGAE;
   }
 
-  actionArtificialJungle(card: ProjectCard): boolean {
+  actionArtificialJungle(card: Card): boolean {
     return card.cardAction === CardAction.ARTIFICIAL_JUNGLE;
   }
 
-  actionAssemblyLines(card: ProjectCard): boolean {
+  actionAssemblyLines(card: Card): boolean {
     return card.cardAction === CardAction.ASSEMBLY_LINES;
   }
 
-  actionAssetLiquidation(card: ProjectCard): boolean {
+  actionAssetLiquidation(card: Card): boolean {
     return card.cardAction === CardAction.ASSET_LIQUIDATION;
   }
 
-  actionAddAnimal(card: ProjectCard): boolean {
+  actionAddAnimal(card: Card): boolean {
     return card.cardAction === CardAction.ADD_ANIMAL;
   }
 
-  actionBrainstormingSession(card: ProjectCard): boolean {
+  actionBrainstormingSession(card: Card): boolean {
     return card.cardAction === CardAction.BRAINSTORMING_SESSION;
   }
 
-  actionCaretakerContract(card: ProjectCard): boolean {
+  actionCaretakerContract(card: Card): boolean {
     return card.cardAction === CardAction.CARETAKER_CONTRACT;
   }
 
-  actionCircuitBoard(card: ProjectCard): boolean {
+  actionCircuitBoard(card: Card): boolean {
     return card.cardAction === CardAction.CIRCUIT_BOARD;
   }
 
-  actionCommunityGardens(card: ProjectCard): boolean {
+  actionCommunityGardens(card: Card): boolean {
     return card.cardAction === CardAction.COMMUNITY_GARDENS;
   }
 
-  actionCompostingFactory(card: ProjectCard): boolean {
+  actionCompostingFactory(card: Card): boolean {
     return card.cardAction === CardAction.COMPOSTING_FACTORY;
   }
 
-  actionConservedBiome(card: ProjectCard): boolean {
+  actionConservedBiome(card: Card): boolean {
     return card.cardAction === CardAction.CONSERVED_BIOME;
   }
 
-  actionDecomposers(card: ProjectCard): boolean {
+  actionDecomposers(card: Card): boolean {
     return card.cardAction === CardAction.DECOMPOSERS;
   }
 
-  actionDecomposingFungus(card: ProjectCard): boolean {
+  actionDecomposingFungus(card: Card): boolean {
     return card.cardAction === CardAction.DECOMPOSING_FUNGUS;
   }
 
-  actionDevelopedInfrastructure(card: ProjectCard): boolean {
+  actionDevelopedInfrastructure(card: Card): boolean {
     return card.cardAction === CardAction.DEVELOPED_INFRASTRUCTURE;
   }
 
-  actionDevelopmentCenter(card: ProjectCard): boolean {
+  actionDevelopmentCenter(card: Card): boolean {
     return card.cardAction === CardAction.DEVELOPMENT_CENTER;
   }
 
-  actionEarthCatapult(card: ProjectCard): boolean {
+  actionEarthCatapult(card: Card): boolean {
     return card.cardAction === CardAction.EARTH_CATAPULT;
   }
 
-  actionEcologicalZone(card: ProjectCard): boolean {
+  actionEcologicalZone(card: Card): boolean {
     return card.cardAction === CardAction.ECOLOGICAL_ZONE;
   }
 
-  actionEnergySubsidies(card: ProjectCard): boolean {
+  actionEnergySubsidies(card: Card): boolean {
     return card.cardAction === CardAction.ENERGY_SUBSIDIES;
   }
 
-  actionExtendedResources(card: ProjectCard): boolean {
+  actionExtendedResources(card: Card): boolean {
     return card.cardAction === CardAction.EXTENDED_RESOURCES;
   }
 
-  actionExtremeColdFungus(card: ProjectCard): boolean {
+  actionExtremeColdFungus(card: Card): boolean {
     return card.cardAction === CardAction.EXTREME_COLD_FUNGUS;
   }
 
-  actionFarmersMarket(card: ProjectCard): boolean {
+  actionFarmersMarket(card: Card): boolean {
     return card.cardAction === CardAction.FARMERS_MARKET;
   }
 
-  actionFarmingCoops(card: ProjectCard): boolean {
+  actionFarmingCoops(card: Card): boolean {
     return card.cardAction === CardAction.FARMING_COOPS;
   }
 
-  actionFish(card: ProjectCard): boolean {
+  actionFish(card: Card): boolean {
     return card.cardAction === CardAction.FISH;
   }
 
-  actionGhgProduction(card: ProjectCard): boolean {
+  actionGhgProduction(card: Card): boolean {
     return card.cardAction === CardAction.GHG_PRODUCTION;
   }
 
-  actionGreenHouses(card: ProjectCard): boolean {
+  actionGreenHouses(card: Card): boolean {
     return card.cardAction === CardAction.GREEN_HOUSES;
   }
 
-  actionHerbivores(card: ProjectCard): boolean {
+  actionHerbivores(card: Card): boolean {
     return card.cardAction === CardAction.HERBIVORES;
   }
 
-  actionHydroElectric(card: ProjectCard): boolean {
+  actionHydroElectric(card: Card): boolean {
     return card.cardAction === CardAction.HYDRO_ELECTRIC;
   }
 
-  actionInterns(card: ProjectCard): boolean {
+  actionInterns(card: Card): boolean {
     return card.cardAction === CardAction.INTERNS;
   }
 
-  actionInterplanetaryConference(card: ProjectCard): boolean {
+  actionInterplanetaryConference(card: Card): boolean {
     return card.cardAction === CardAction.INTERPLANETARY_CONFERENCE;
   }
 
-  actionInterplanetaryRelations(card: ProjectCard): boolean {
+  actionInterplanetaryRelations(card: Card): boolean {
     return card.cardAction === CardAction.INTERPLANETARY_RELATIONS;
   }
 
-  actionIronWorks(card: ProjectCard): boolean {
+  actionIronWorks(card: Card): boolean {
     return card.cardAction === CardAction.IRON_WORKS;
   }
 
-  actionLivestock(card: ProjectCard): boolean {
+  actionLivestock(card: Card): boolean {
     return card.cardAction === CardAction.LIVESTOCK;
   }
 
-  actionMarsUniversity(card: ProjectCard): boolean {
+  actionMarsUniversity(card: Card): boolean {
     return card.cardAction === CardAction.MARS_UNIVERSITY;
   }
 
-  actionMatterManufactoring(card: ProjectCard): boolean {
+  actionMatterManufactoring(card: Card): boolean {
     return card.cardAction === CardAction.MATTER_MANUFACTORING;
   }
 
-  actionMediaGroup(card: ProjectCard): boolean {
+  actionMediaGroup(card: Card): boolean {
     return card.cardAction === CardAction.MEDIA_GROUP;
   }
 
-  actionNitriteReducting(card: ProjectCard): boolean {
+  actionNitriteReducting(card: Card): boolean {
     return card.cardAction === CardAction.NITRITE_REDUCTING;
   }
 
-  actionOlympusConference(card: ProjectCard): boolean {
+  actionOlympusConference(card: Card): boolean {
     return card.cardAction === CardAction.OLYMPUS_CONFERENCE;
   }
 
-  actionOptimalAerobraking(card: ProjectCard): boolean {
+  actionOptimalAerobraking(card: Card): boolean {
     return card.cardAction === CardAction.OPTIMAL_AEROBRAKING;
   }
 
-  actionPhysicsComplex(card: ProjectCard): boolean {
+  actionPhysicsComplex(card: Card): boolean {
     return card.cardAction === CardAction.PHYSICS_COMPLEX;
   }
 
-  actionPowerInfrastructure(card: ProjectCard): boolean {
+  actionPowerInfrastructure(card: Card): boolean {
     return card.cardAction === CardAction.POWER_INFRASTRUCTURE;
   }
 
-  actionRecycledDetritus(card: ProjectCard): boolean {
+  actionRecycledDetritus(card: Card): boolean {
     return card.cardAction === CardAction.RECYCLED_DETRITUS;
   }
 
-  actionRedraftedContracts(card: ProjectCard): boolean {
+  actionRedraftedContracts(card: Card): boolean {
     return card.cardAction === CardAction.REDRAFTED_CONTRACTS;
   }
 
-  actionRegolithEaters(card: ProjectCard): boolean {
+  actionRegolithEaters(card: Card): boolean {
     return card.cardAction === CardAction.REGOLITH_EATERS;
   }
 
-  actionResearchOutpost(card: ProjectCard): boolean {
+  actionResearchOutpost(card: Card): boolean {
     return card.cardAction === CardAction.RESEARCH_OUTPOST;
   }
 
-  actionRestructuredResources(card: ProjectCard): boolean {
+  actionRestructuredResources(card: Card): boolean {
     return card.cardAction === CardAction.RESTRUCTURED_RESOURCES;
   }
 
-  actionSmallAnimals(card: ProjectCard): boolean {
+  actionSmallAnimals(card: Card): boolean {
     return card.cardAction === CardAction.SMALL_ANIMALS;
   }
 
-  actionSolarPunk(card: ProjectCard): boolean {
+  actionSolarPunk(card: Card): boolean {
     return card.cardAction === CardAction.SOLAR_PUNK;
   }
 
-  actionStandardTechnology(card: ProjectCard): boolean {
+  actionStandardTechnology(card: Card): boolean {
     return card.cardAction === CardAction.STANDARD_TECHNOLOGY;
   }
 
-  actionSteelworks(card: ProjectCard): boolean {
+  actionSteelworks(card: Card): boolean {
     return card.cardAction === CardAction.STEELWORKS;
   }
 
-  actionSymbioticFungus(card: ProjectCard): boolean {
+  actionSymbioticFungus(card: Card): boolean {
     return card.cardAction === CardAction.SYMBIOTIC_FUNGUD;
   }
 
-  actionAddMicrobe(card: ProjectCard): boolean {
+  actionAddMicrobe(card: Card): boolean {
     return card.cardAction === CardAction.ADD_MICROBE;
   }
 
-  actionThinktank(card: ProjectCard): boolean {
+  actionThinktank(card: Card): boolean {
     return card.cardAction === CardAction.THINKTANK;
   }
 
-  actionUnitedPlanetary(card: ProjectCard): boolean {
+  actionUnitedPlanetary(card: Card): boolean {
     return card.cardAction === CardAction.UNITED_PLANETARY;
   }
 
-  actionViralEnhancers(card: ProjectCard): boolean {
+  actionViralEnhancers(card: Card): boolean {
     return card.cardAction === CardAction.VIRAL_ENHANCERS;
   }
 
-  actionVolcanicPools(card: ProjectCard): boolean {
+  actionVolcanicPools(card: Card): boolean {
     return card.cardAction === CardAction.VOLCANIC_POOLS;
   }
 
-  actionWaterImport(card: ProjectCard): boolean {
+  actionWaterImport(card: Card): boolean {
     return card.cardAction === CardAction.WATER_IMPORT;
   }
 
-  actionWoodBurningStoves(card: ProjectCard): boolean {
+  actionWoodBurningStoves(card: Card): boolean {
     return card.cardAction === CardAction.WOOD_BURNING_STOVES;
   }
 
-  actionCapitalizeDescription(card: ProjectCard): boolean {
+  actionCapitalizeDescription(card: Card): boolean {
     return card.cardAction === CardAction.CAPITALISE_DESCRIPTION;
   }
 
-  actionImportedHydrogen(card: ProjectCard): boolean {
+  actionImportedHydrogen(card: Card): boolean {
     return card.cardAction === CardAction.IMPORTED_HYDROGEN;
   }
 
-  actionImportedNitrogen(card: ProjectCard): boolean {
+  actionImportedNitrogen(card: Card): boolean {
     return card.cardAction === CardAction.IMPORTED_NITROGEN;
   }
 
-  actionLocalHeatTrapping(card: ProjectCard): boolean {
+  actionLocalHeatTrapping(card: Card): boolean {
     return card.cardAction === CardAction.LOCAL_HEAT_TRAPPING;
   }
 
-  actionNitrogenRichAsteroid(card: ProjectCard): boolean {
+  actionNitrogenRichAsteroid(card: Card): boolean {
     return card.cardAction === CardAction.NITROGEN_RICH_ASTEROID;
   }
 
-  actionSpecialDesign(card: ProjectCard): boolean {
+  actionSpecialDesign(card: Card): boolean {
     return card.cardAction === CardAction.SPECIAL_DESIGN;
   }
 
-  actionTerraformingGanymede(card: ProjectCard): boolean {
+  actionTerraformingGanymede(card: Card): boolean {
     return card.cardAction === CardAction.TERRAFORMING_GANYMEDE;
   }
 
-  actionWorkCrews(card: ProjectCard): boolean {
+  actionWorkCrews(card: Card): boolean {
     return card.cardAction === CardAction.WORK_CREWS;
   }
 
-  actionAstrofarm(card: ProjectCard): boolean {
+  actionAstrofarm(card: Card): boolean {
     return card.cardAction === CardAction.ASTROFARM;
   }
 
-  actionHeatEarthIncome(card: ProjectCard): boolean {
+  actionHeatEarthIncome(card: Card): boolean {
     return card.cardAction === CardAction.HEAT_EARTH_INCOME;
   }
 
-  actionMcEarthIncome(card: ProjectCard): boolean {
+  actionMcEarthIncome(card: Card): boolean {
     return card.cardAction === CardAction.MC_EARTH_INCOME;
   }
 
-  actionPlantPlantIncome(card: ProjectCard): boolean {
+  actionPlantPlantIncome(card: Card): boolean {
     return card.cardAction === CardAction.PLANT_PLANT_INCOME;
   }
 
-  actionMcScienceIncome(card: ProjectCard): boolean {
+  actionMcScienceIncome(card: Card): boolean {
     return card.cardAction === CardAction.MC_SCIENCE_INCOME;
   }
 
-  actionMc2BuildingIncome(card: ProjectCard): boolean {
+  actionMc2BuildingIncome(card: Card): boolean {
     return card.cardAction === CardAction.MC_2_BUILDING_INCOME;
   }
 
-  actionMcEnergyIncome(card: ProjectCard): boolean {
+  actionMcEnergyIncome(card: Card): boolean {
     return card.cardAction === CardAction.MC_ENERGY_INCOME;
   }
 
-  actionMcSpaceIncome(card: ProjectCard): boolean {
+  actionMcSpaceIncome(card: Card): boolean {
     return card.cardAction === CardAction.MC_SPACE_INCOME;
   }
 
-  actionHeatSpaceIncome(card: ProjectCard): boolean {
+  actionHeatSpaceIncome(card: Card): boolean {
     return card.cardAction === CardAction.HEAT_SPACE_INCOME;
   }
 
-  actionMcEventIncome(card: ProjectCard): boolean {
+  actionMcEventIncome(card: Card): boolean {
     return card.cardAction === CardAction.MC_EVENT_INCOME;
   }
 
-  actionHeatEnergyIncome(card: ProjectCard): boolean {
+  actionHeatEnergyIncome(card: Card): boolean {
     return card.cardAction === CardAction.HEAT_ENERGY_INCOME;
   }
 
-  actionPlantMicrobeIncome(card: ProjectCard): boolean {
+  actionPlantMicrobeIncome(card: Card): boolean {
     return card.cardAction === CardAction.PLANT_MICROBE_INCOME;
   }
 
-  actionMcForestIncome(card: ProjectCard): boolean {
+  actionMcForestIncome(card: Card): boolean {
     return card.cardAction === CardAction.MC_FOREST_INCOME;
   }
 
-  actionBiomassCombustors(card: ProjectCard): boolean {
+  actionBiomassCombustors(card: Card): boolean {
     return card.cardAction === CardAction.BIOMASS_COMBUSTORS;
   }
 
-  actionBuildingIndustries(card: ProjectCard): boolean {
+  actionBuildingIndustries(card: Card): boolean {
     return card.cardAction === CardAction.BUILDING_INDUSTRIES;
   }
 
-  actionEnergyStorage(card: ProjectCard): boolean {
+  actionEnergyStorage(card: Card): boolean {
     return card.cardAction === CardAction.ENERGY_STORAGE;
   }
 
-  actionEosChasma(card: ProjectCard): boolean {
+  actionEosChasma(card: Card): boolean {
     return card.cardAction === CardAction.EOS_CHASMA;
   }
 
-  actionFuelFactory(card: ProjectCard): boolean {
+  actionFuelFactory(card: Card): boolean {
     return card.cardAction === CardAction.FUEL_FACTORY;
   }
 
-  actionTallStation(card: ProjectCard): boolean {
+  actionTallStation(card: Card): boolean {
     return card.cardAction === CardAction.TALL_STATION;
   }
 
-  actionTropicalIsland(card: ProjectCard): boolean {
+  actionTropicalIsland(card: Card): boolean {
     return card.cardAction === CardAction.TROPICAL_ISLAND;
   }
 
-  hasTagRequirements(card: ProjectCard): boolean {
+  hasTagRequirements(card: Card): boolean {
     return card.tagReq.length !== 0;
   }
 
-  hasTempRequirements(card: ProjectCard): boolean {
+  hasTempRequirements(card: Card): boolean {
     return card.tempReq && card.tempReq.length !== 0;
   }
 
-  hasOxygenRequirements(card: ProjectCard): boolean {
+  hasOxygenRequirements(card: Card): boolean {
     return card.oxygenReq && card.oxygenReq.length !== 0;
   }
 
-  hasOceanRequirement(card: ProjectCard): boolean {
+  hasOceanRequirement(card: Card): boolean {
     return card.oceanRequirement !== null;
   }
 
-  getTemperatureClass(card: ProjectCard): string {
+  getTemperatureClass(card: Card): string {
     return this.getTemperatureOxygenClass(card.tempReq);
   }
 
-  getOxygenClass(card: ProjectCard): string {
+  getOxygenClass(card: Card): string {
     return this.getTemperatureOxygenClass(card.oxygenReq);
   }
 
-  getOceanRequirementValue(card: ProjectCard): string {
+  getOceanRequirementValue(card: Card): string {
     if (card.oceanRequirement.minValue === 0) {
       return 'Max ' + card.oceanRequirement.maxValue;
     } else {
@@ -596,7 +596,7 @@ export class CardServiceComponent {
     }
   }
 
-  getTagRequirements(card: ProjectCard): string {
+  getTagRequirements(card: Card): string {
     if (card.tagReq.length > 1 && card.tagReq[0] !== card.tagReq[1]) {
       return card.tagReq.map(tag => this.capitalizeFirstLetter(tag.toString().toLowerCase())).join(' ');
     }

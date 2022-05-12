@@ -1,8 +1,9 @@
 package com.terraforming.ares.dto;
 
-import com.terraforming.ares.model.Deck;
 import lombok.Builder;
 import lombok.Getter;
+
+import java.util.List;
 
 /**
  * Created by oleksii.nikitin
@@ -11,8 +12,8 @@ import lombok.Getter;
 @Builder
 @Getter
 public class PlayerDto {
-    private Deck corporationsChoice;
-    private Deck hand;
-    private Integer corporationId;
-    private Integer phase;
+    private final List<CardDto> corporations;
+    private final List<CardDto> hand;
+    private final Integer corporationId;
+    private final Integer phase;
 }

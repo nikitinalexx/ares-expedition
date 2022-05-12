@@ -16,6 +16,15 @@ import java.util.List;
 @Getter
 public class LaunchStarIncorporated implements CorporationCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public LaunchStarIncorporated(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("LaunchStar Incorporated")
+                .description("36 Mc. Not implemented yet")
+                .build();
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -26,11 +35,6 @@ public class LaunchStarIncorporated implements CorporationCard {
     @Override
     public List<Tag> getTags() {
         return Collections.singletonList(Tag.SCIENCE);
-    }
-
-    @Override
-    public CardMetadata getCardMetadata() {
-        return null;
     }
 
     @Override

@@ -1,7 +1,7 @@
 package com.terraforming.ares.processors.action;
 
 import com.terraforming.ares.cards.blue.ArtificialJungle;
-import com.terraforming.ares.dto.ProjectCardDto;
+import com.terraforming.ares.dto.CardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
@@ -32,7 +32,7 @@ public class ArtificialJungleActionProcessor implements BlueActionCardProcessor<
 
         for (Integer card : game.dealCards(1)) {
             player.getHand().addCard(card);
-            resultBuilder.takenCard(ProjectCardDto.from(deckService.getProjectCard(card)));
+            resultBuilder.takenCard(CardDto.from(deckService.getProjectCard(card)));
         }
 
         return resultBuilder.build();

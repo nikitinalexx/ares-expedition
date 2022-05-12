@@ -1,6 +1,6 @@
 package com.terraforming.ares.services;
 
-import com.terraforming.ares.dto.ProjectCardDto;
+import com.terraforming.ares.dto.CardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
 import com.terraforming.ares.model.*;
 import org.springframework.stereotype.Service;
@@ -50,7 +50,7 @@ public class CardService {
 
         for (Integer card : deck.getCards()) {
             player.getHand().addCard(card);
-            resultBuilder.takenCard(ProjectCardDto.from(getProjectCard(card)));
+            resultBuilder.takenCard(CardDto.from(getProjectCard(card)));
         }
 
         return resultBuilder.build();

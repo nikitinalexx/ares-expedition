@@ -3,7 +3,6 @@ package com.terraforming.ares.cards.corporations;
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 import java.util.Collections;
 import java.util.List;
@@ -12,10 +11,18 @@ import java.util.List;
  * Created by oleksii.nikitin
  * Creation date 27.04.2022
  */
-@RequiredArgsConstructor
 @Getter
 public class HelionCorporation implements CorporationCard {
     private final int id;
+    private final CardMetadata cardMetadata;
+
+    public HelionCorporation(int id) {
+        this.id = id;
+        this.cardMetadata = CardMetadata.builder()
+                .name("Helion Corporation")
+                .description("28 Mc. 3 Heat income. You may use Heat as Mc, but not vise versa.")
+                .build();
+    }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
@@ -28,11 +35,6 @@ public class HelionCorporation implements CorporationCard {
     @Override
     public List<Tag> getTags() {
         return Collections.singletonList(Tag.SPACE);
-    }
-
-    @Override
-    public CardMetadata getCardMetadata() {
-        return null;
     }
 
     @Override
