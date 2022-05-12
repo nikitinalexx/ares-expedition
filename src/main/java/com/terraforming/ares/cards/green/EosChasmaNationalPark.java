@@ -29,6 +29,8 @@ public class EosChasmaNationalPark implements BaseExpansionGreenCard {
                 .name("Eos Chasma National Park")
                 .description("Requires red temperature or warmer. Add 1 animal to ANOTHER card and gain 3 plants. During the production phase, this produces 2 MC.")
                 .incomes(List.of(Gain.of(GainType.MC, 2)))
+                .bonuses(List.of(Gain.of(GainType.PLANT, 3)))
+                .cardAction(CardAction.EOS_CHASMA)
                 .build();
     }
 

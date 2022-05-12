@@ -26,6 +26,7 @@ public class Worms implements BaseExpansionGreenCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Worms")
                 .description("Requires red oxygen or higher. During the production phase, this produces 1 plant per Microbe tag you have, including this.")
+                .cardAction(CardAction.PLANT_MICROBE_INCOME)
                 .build();
     }
 

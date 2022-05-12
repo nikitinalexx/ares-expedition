@@ -25,6 +25,7 @@ public class SattelliteFarms implements BaseExpansionGreenCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Sattellite Farms")
                 .description("During the production phase, this produces 1 heat per Space you have, including this.")
+                .cardAction(CardAction.HEAT_SPACE_INCOME)
                 .build();
     }
 

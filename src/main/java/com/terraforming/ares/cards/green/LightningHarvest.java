@@ -25,6 +25,7 @@ public class LightningHarvest implements BaseExpansionGreenCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Lightning Harvest")
                 .description("During the production phase, this produces 1 MC per Science tag you have, including this.")
+                .cardAction(CardAction.MC_SCIENCE_INCOME)
                 .build();
     }
 

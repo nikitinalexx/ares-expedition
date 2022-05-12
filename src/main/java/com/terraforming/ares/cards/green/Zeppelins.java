@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.green;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
@@ -25,6 +26,7 @@ public class Zeppelins implements BaseExpansionGreenCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Zeppelins")
                 .description("Requires red oxygen or higher. During the production phase, this produces 1 MC per Forest you have.")
+                .cardAction(CardAction.MC_FOREST_INCOME)
                 .build();
     }
 

@@ -1,10 +1,7 @@
 package com.terraforming.ares.cards.red;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.model.MarsContext;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.Tag;
-import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -25,6 +22,7 @@ public class TerraformingGanymede implements BaseExpansionRedCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Terraforming Ganymede")
                 .description("Raise your TR 1 step per Jupiter tag you have, including this.")
+                .cardAction(CardAction.TERRAFORMING_GANYMEDE)
                 .build();
     }
 

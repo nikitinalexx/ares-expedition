@@ -29,6 +29,7 @@ public class ProjectCardDto {
     List<ParameterColor> tempReq;
     List<ParameterColor> oxygenReq;
     OceanRequirement oceanRequirement;
+    List<Gain> bonuses;
 
     public static ProjectCardDto from(ProjectCard card) {
         return new ProjectCardDto(
@@ -38,14 +39,15 @@ public class ProjectCardDto {
                 card.getWinningPoints(),
                 card.getTags(),
                 card.getCardMetadata().getDescription(),
-                card.getIncomes(),
+                card.getCardMetadata().getIncomes(),
                 card.getColor(),
                 card.getSpecialEffects().isEmpty() ? List.of() : new ArrayList<>(card.getSpecialEffects()),
                 card.getCardMetadata().getCardAction(),
                 card.getTagRequirements(),
                 card.getTemperatureRequirement(),
                 card.getOxygenRequirement(),
-                card.getOceanRequirement()
+                card.getOceanRequirement(),
+                card.getCardMetadata().getBonuses()
         );
     }
 }

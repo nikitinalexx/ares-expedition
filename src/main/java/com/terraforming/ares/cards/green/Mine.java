@@ -26,7 +26,7 @@ public class Mine implements BaseExpansionGreenCard {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
                 .name("Mine")
-                .description("When you play an Building, you pay 4 MC less for it.")
+                .description("When you play a Building, you pay 4 MC less for it.")
                 .incomes(List.of(Gain.of(GainType.STEEL, 2)))
                 .build();
     }

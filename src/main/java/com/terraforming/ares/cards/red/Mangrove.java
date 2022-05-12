@@ -27,7 +27,7 @@ public class Mangrove implements BaseExpansionRedCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Mangrove")
                 .description("Requires white temperature. Build a Forest and raise oxygen 1 step.")
-                .bonuses(List.of(Gain.of(GainType.FOREST, 1), Gain.of(GainType.OXYGEN, 1)))
+                .bonuses(List.of(Gain.of(GainType.FOREST, 1)))
                 .build();
     }
 

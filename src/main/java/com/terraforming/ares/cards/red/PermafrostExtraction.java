@@ -53,7 +53,7 @@ public class PermafrostExtraction implements BaseExpansionRedCard {
 
     @Override
     public List<ParameterColor> getTemperatureRequirement() {
-        return List.of(ParameterColor.YELLOW);
+        return List.of(ParameterColor.YELLOW, ParameterColor.WHITE);
     }
 
     @Override

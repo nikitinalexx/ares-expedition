@@ -25,6 +25,7 @@ public class MedicalLab implements BaseExpansionGreenCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Medical Lab")
                 .description("During the production phase, this produces 1 MC per 2 Building you have, including this.")
+                .cardAction(CardAction.MC_2_BUILDING_INCOME)
                 .build();
     }
 

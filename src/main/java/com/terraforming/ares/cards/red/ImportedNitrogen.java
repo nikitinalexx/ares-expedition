@@ -28,6 +28,7 @@ public class ImportedNitrogen implements BaseExpansionRedCard {
                 .name("Imported Nitrogen")
                 .description("Raise your TR 1 step. Gain 4 plants. Add 2 animals to ANOTHER card. Add 3 microbes to ANOTHER card.")
                 .bonuses(List.of(Gain.of(GainType.TERRAFORMING_RATING, 1), Gain.of(GainType.PLANT, 4)))
+                .cardAction(CardAction.IMPORTED_NITROGEN)
                 .build();
     }
 

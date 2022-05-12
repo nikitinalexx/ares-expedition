@@ -26,6 +26,7 @@ public class AtmosphericInsulators implements BaseExpansionGreenCard {
                 .name("Atmospheric Insulators")
                 //TODO all tag effects should also include corporations
                 .description("During the production phase, this produces 1 heat per Earth you have, including this.")
+                .cardAction(CardAction.HEAT_EARTH_INCOME)
                 .build();
     }
 

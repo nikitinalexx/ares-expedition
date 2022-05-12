@@ -5,7 +5,7 @@
       <!--1-->
       <li *ngFor="let card of getProjectCards(); let i = index"
           class="filterDiv automated buildingTag jovianTag standard reqs display" data-oxygen="5">
-        <div [ngClass]="getBackgroundColorClass(card)" class="title">{{ card.name }}</div>
+        <div [ngClass]="getBackgroundColorClass(card)" class="title" [ngStyle]="getNameStyle(card)">{{ card.name }}</div>
         <div class="price"> {{card.price}}</div>
 
         <div *ngIf="card.tags[0]" [ngClass]="getTagClasses(card, 0)" class="tag tag1 tag-building "></div>
@@ -22,7 +22,7 @@
           <div *ngIf="hasOxygenRequirements(card)" [ngClass]="getOxygenClass(card)" class="requirements">Oxygen</div>
           <div *ngIf="hasOceanRequirement(card)" class="requirements">{{getOceanRequirementValue(card)}} Oceans</div>
 
-          <div *ngIf="hasAmplifyGlobalRequirements(card)">
+          <div *ngIf="hasAmplifyGlobalRequirements(card) || actionSpecialDesign(card)">
             <div class="tile globals-box">Temperature Oxygen</div>
             : +/- 1 Color
           </div>
@@ -47,7 +47,7 @@
 
           <div *ngIf="actionAnaerobicOrganisms(card)">
             <div class="tag-animal resource-tag"></div> / <div class="tag-plant resource-tag"></div> / <div class="tag-microbe resource-tag"></div> : <div class="microbe resource"></div>
-            <div></div><span class="card resource"></span> : <div class="microbe resource "></div><div class="microbe resource "></div> = <div class="money resource ">10</div>
+            <div></div><span class="card resource"></span> : -<div class="microbe resource "></div><div class="microbe resource "></div> = <div class="money resource ">10</div>
           </div>
 
           <div *ngIf="actionAntiGravity(card)">
@@ -342,7 +342,183 @@
             4 <span class="plant resource "></span>(3*<span class="plant resource "></span>) <div class="red-arrow "></div>
             <div class="tile oxygen-tile"></div>
             <span style="font-size:12px; ">{{card.description.substring(card.description.indexOf('.') + 1)}}</span><br/>
-            <div class="resource plant"></div><div class="resource plant"></div><div class="resource plant"></div><div class="resource plant"></div>
+          </div>
+
+          <div *ngIf="actionCapitalizeDescription(card)">
+            <span style="font-size:14px; ">{{card.description}}</span>
+          </div>
+
+          <div *ngIf="actionLocalHeatTrapping(card)">
+            -3<div class="resource heat" style="margin-right:10px;"></div> + &nbsp;&nbsp;4<div class="resource plant"></div>
+            <br/>
+            2<div class="resource animal"></div>* OR 2<div class="resource microbe"></div>*
+          </div>
+
+          <div *ngIf="actionTerraformingGanymede(card)">
+            <div class="tile rating"></div> / <div class="resource-tag tag-jovian"></div>
+          </div>
+
+          <div *ngIf="actionWorkCrews(card)">
+            <span style="font-size:14px;">NEXT CARD: </span> <div class="resource money">-11</div>
+          </div>
+
+          <div *ngIf="actionEnergyStorage(card)">
+            <div class="requirements">7 TR</div>
+          </div>
+
+          <span *ngIf="actionEosChasma(card)" >
+            <span class="resource animal "></span>*
+          </span>
+
+          <div *ngIf="actionFuelFactory(card)">
+            -3<div class="resource heat" style="margin-right:10px;"></div>
+          </div>
+
+          <div *ngIf="actionTallStation(card)">
+            <div class="resource card card-green"></div>*(<=<div class="resource money">9</div>) : <div class="resource money">-9</div>
+          </div>
+
+          <div *ngIf="actionTropicalIsland(card)">
+            -5<div class="resource heat" style="margin-right:10px;"></div>
+          </div>
+
+          <span *ngIf="hasBonuses(card)">
+            <span *ngFor="let k of getTemperatureBonuses(card); let last=last;">
+              <span class="tile temperature-tile"></span>
+              <br *ngIf="last && !manyBonuses(card)"/>
+            </span>
+            <span *ngFor="let k of getOceanBonuses(card); let last=last;">
+              <span class="tile ocean-tile"></span>
+              <br *ngIf="last"/>
+            </span>
+            <span *ngFor="let k of getOxygenBonuses(card); let last=last;">
+              <span class="tile oxygen-tile"></span>
+              <br *ngIf="last"/>
+            </span>
+            <span *ngFor="let k of getForestBonuses(card); let last=last;">
+              <span class="tile forest-tile"></span>
+              <br *ngIf="last"/>
+            </span>
+            <span *ngFor="let k of getTerraformingBonuses(card); let last=last;" style="font-size: 30px;">
+              {{getTerraformingBonusSign(card)}}<span  class="tile rating"></span>
+              <br *ngIf="last"/>
+            </span>
+            <span *ngFor="let k of getPlantBonuses(card); let last=last;">
+              <span class="resource plant"></span>
+              <br *ngIf="last"/>
+            </span>
+            <span *ngFor="let k of getHeatBonuses(card); let last=last;">
+              <span class="resource heat"></span>
+              <br *ngIf="last"/>
+            </span>
+            <span *ngFor="let k of getCardBonuses(card); let last=last;">
+              <span class="resource card"></span>
+              <br *ngIf="last"/>
+            </span>
+            <div *ngIf="hasMcBonus(card)" class="resource money">{{getMcBonus(card)}}</div>
+          </span>
+
+          <div *ngIf="hasIncomes(card)" class="production-box production-box-size3a">
+            <span *ngFor="let income of getIncomes(card);">
+              {{income.value > 1 && income.type !== 'MC' ? income.value : ''}}
+              <span class="production" [ngClass]="getIncomeClass(income)">{{income.type === 'MC' ? income.value : ''}}</span>
+            </span>
+          </div>
+
+          <div *ngIf="actionAstrofarm(card)">
+            2 <div class="resource microbe "></div>*
+          </div>
+
+          <div *ngIf="actionHeatEarthIncome(card)">
+            <div class="production-box production-box-size2a">
+              <div class="production heat"></div> / <div class="resource-tag production-tag tag-earth"></div>
+            </div>
+          </div>
+
+          <div *ngIf="actionMcEarthIncome(card)">
+            <div class="production-box production-box-size2a">
+              <div class="production money">1</div> / <div class="resource-tag production-tag tag-earth"></div>
+            </div>
+          </div>
+
+          <div *ngIf="actionPlantPlantIncome(card)">
+            <div class="production-box production-box-size2a">
+              <div class="production plant"></div> / <div class="resource-tag production-tag tag-plant"></div>
+            </div>
+          </div>
+
+          <div *ngIf="actionMcScienceIncome(card)">
+            <div class="production-box production-box-size2a">
+              <div class="production money">1</div> / <div class="resource-tag production-tag tag-science"></div>
+            </div>
+          </div>
+
+          <div *ngIf="actionMc2BuildingIncome(card)">
+            <div class="production-box production-box-size2a">
+              <div class="production money">1</div> / 2 <div class="resource-tag production-tag tag-building"></div>
+            </div>
+          </div>
+
+          <div *ngIf="actionMcEnergyIncome(card)">
+            <div class="production-box production-box-size2a">
+              <div class="production money">1</div> / <div class="resource-tag production-tag tag-energy"></div>
+            </div>
+          </div>
+
+          <div *ngIf="actionMcSpaceIncome(card)">
+            <div class="production-box production-box-size2a">
+              <div class="production money">1</div> / <div class="resource-tag production-tag tag-space"></div>
+            </div>
+          </div>
+
+          <div *ngIf="actionHeatSpaceIncome(card)">
+            <div class="production-box production-box-size2a">
+              <div class="production heat"></div> / <div class="resource-tag production-tag tag-space"></div>
+            </div>
+          </div>
+
+          <div *ngIf="actionMcEventIncome(card)">
+            <div class="production-box production-box-size2a">
+              <div class="production money">1</div> / <div class="resource-tag production-tag tag-event"></div>
+            </div>
+          </div>
+
+          <div *ngIf="actionHeatEnergyIncome(card)">
+            <div class="production-box production-box-size2a">
+              <div class="production heat"></div> / <div class="resource-tag production-tag tag-energy"></div>
+            </div>
+          </div>
+
+          <div *ngIf="actionPlantMicrobeIncome(card)">
+            <div class="production-box production-box-size2a">
+              <div class="production plant"></div> / <div class="resource-tag production-tag tag-microbe"></div>
+            </div>
+          </div>
+
+          <div *ngIf="actionMcForestIncome(card)">
+            <div class="production-box production-box-size2a">
+              <div class="production money">1</div> / <div class="forest-tile tile"></div>
+            </div>
+          </div>
+
+          <div *ngIf="actionBiomassCombustors(card)">
+            -2<div class="resource plant" style="margin-right:10px;"></div>
+          </div>
+
+          <div *ngIf="actionBuildingIndustries(card)">
+            -4<div class="resource heat" style="margin-right:10px;"></div>
+          </div>
+
+          <div *ngIf="actionNitrogenRichAsteroid(card)">
+            3 <div class="tag-plant resource-tag"></div> : 4<div class="resource plant"></div>
+          </div>
+
+          <div *ngIf="actionImportedHydrogen(card)">
+            <span>3</span><div class="resource plant "></div> OR <span>3</span><div class="resource microbe "></div>* OR <span>2</span><div class="resource animal "></div>*
+          </div>
+
+          <div *ngIf="actionImportedNitrogen(card)">
+            3<div class="microbe resource"></div>* 2<div class="animal resource"></div>*
           </div>
 
           <div class="description ">

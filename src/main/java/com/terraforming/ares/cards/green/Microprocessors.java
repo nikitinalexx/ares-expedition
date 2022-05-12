@@ -1,10 +1,7 @@
 package com.terraforming.ares.cards.green;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.model.MarsContext;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.Tag;
-import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
@@ -29,6 +26,7 @@ public class Microprocessors implements BaseExpansionGreenCard {
                 .name("Microprocessors")
                 .description("Draw 2 cards. Then, discard a card. During the production phase, this produces 3 heat.")
                 .incomes(List.of(Gain.of(GainType.HEAT, 3)))
+                .cardAction(CardAction.CAPITALISE_DESCRIPTION)
                 .build();
     }
 

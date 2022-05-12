@@ -32,7 +32,7 @@ public class StripMine implements BaseExpansionGreenCard {
                         Gain.of(GainType.TITANIUM, 1)
                 ))
                 //todo validation
-                .incomes(List.of(Gain.of(GainType.TERRAFORMING_RATING, -1)))
+                .bonuses(List.of(Gain.of(GainType.TERRAFORMING_RATING, -1)))
                 .build();
     }
 

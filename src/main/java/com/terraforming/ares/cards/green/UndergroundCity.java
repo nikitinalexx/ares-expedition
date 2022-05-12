@@ -26,7 +26,7 @@ public class UndergroundCity implements BaseExpansionGreenCard {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
                 .name("Underground City")
-                .description("During the production phase, this produces 1 МС. When you play an Building, you pay 2 MC less for it.")
+                .description("During the production phase, this produces 1 МС. When you play a Building, you pay 2 MC less for it.")
                 .incomes(List.of(
                         Gain.of(GainType.MC, 1),
                         Gain.of(GainType.STEEL, 1)

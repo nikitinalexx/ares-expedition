@@ -25,6 +25,7 @@ public class PowerGrid implements BaseExpansionGreenCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Power Grid")
                 .description("During the production phase, this produces 1 МС per Energy you have, including this.")
+                .cardAction(CardAction.MC_ENERGY_INCOME)
                 .build();
     }
 

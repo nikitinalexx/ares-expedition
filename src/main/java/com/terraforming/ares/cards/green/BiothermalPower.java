@@ -29,7 +29,7 @@ public class BiothermalPower implements BaseExpansionGreenCard {
                 .name("Biothermal Power")
                 .description("Build a forest and raise oxygen 1 step. During the production phase, this produces 1 heat.")
                 .incomes(List.of(Gain.of(GainType.HEAT, 1)))
-                .incomes(List.of(Gain.of(GainType.FOREST, 1)))
+                .bonuses(List.of(Gain.of(GainType.FOREST, 1)))
                 .build();
     }
 

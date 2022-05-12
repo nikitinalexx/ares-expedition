@@ -3,8 +3,6 @@ package com.terraforming.ares.cards.red;
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
-import com.terraforming.ares.model.income.Gain;
-import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +25,7 @@ public class LocalHeatTrapping implements BaseExpansionRedCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Local Heat Trapping")
                 .description("Requires you to spend 3 heat. Gain 4 plants and add 2 animals or microbes to ANOTHER card.")
-                .bonuses(List.of(Gain.of(GainType.HEAT, -3), Gain.of(GainType.PLANT, 4)))
+                .cardAction(CardAction.LOCAL_HEAT_TRAPPING)
                 .build();
     }
 

@@ -29,6 +29,7 @@ public class BiomassCombustors implements BaseExpansionGreenCard {
                 .description("Requires you to spend 2 plants. During the production phase, this produces 5 heat.")
                 .incomes(List.of(Gain.of(GainType.HEAT, 5)))
                 .bonuses(List.of(Gain.of(GainType.PLANT, -2)))
+                .cardAction(CardAction.BIOMASS_COMBUSTORS)
                 .build();
     }
 

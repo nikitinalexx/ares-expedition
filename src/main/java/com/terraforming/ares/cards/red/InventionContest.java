@@ -3,10 +3,7 @@ package com.terraforming.ares.cards.red;
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.dto.ProjectCardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
-import com.terraforming.ares.model.MarsContext;
-import com.terraforming.ares.model.ProjectCard;
-import com.terraforming.ares.model.Tag;
-import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +26,7 @@ public class InventionContest implements BaseExpansionRedCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Invention Contest")
                 .description("Draw 3 cards. Keep one of them and discard the other two.")
+                .cardAction(CardAction.CAPITALISE_DESCRIPTION)
                 .build();
     }
 

@@ -1,10 +1,7 @@
 package com.terraforming.ares.cards.green;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.model.MarsContext;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.Tag;
-import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
 import lombok.Getter;
@@ -28,6 +25,7 @@ public class EnergyStorage implements BaseExpansionGreenCard {
                 .name("Energy Storage")
                 .description("Requires you to have 7 or more TR. During the production phase, draw 2 cards.")
                 .incomes(List.of(Gain.of(GainType.CARD, 2)))
+                .cardAction(CardAction.ENERGY_STORAGE)
                 .build();
     }
 

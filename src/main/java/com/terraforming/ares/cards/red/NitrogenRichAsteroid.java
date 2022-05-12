@@ -1,10 +1,7 @@
 package com.terraforming.ares.cards.red;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.model.MarsContext;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.Tag;
-import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.services.CardService;
@@ -34,6 +31,7 @@ public class NitrogenRichAsteroid implements BaseExpansionRedCard {
                         Gain.of(GainType.TEMPERATURE, 1),
                         Gain.of(GainType.PLANT, 2)
                 ))
+                .cardAction(CardAction.NITROGEN_RICH_ASTEROID)
                 .build();
     }
 

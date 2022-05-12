@@ -31,6 +31,7 @@ public class FuelFactory implements BaseExpansionGreenCard {
                         Gain.of(GainType.MC, 1),
                         Gain.of(GainType.TITANIUM, 1)
                 ))
+                .cardAction(CardAction.FUEL_FACTORY)
                 .build();
     }
 

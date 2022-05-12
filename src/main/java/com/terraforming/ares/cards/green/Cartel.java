@@ -25,6 +25,7 @@ public class Cartel implements BaseExpansionGreenCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Cartel")
                 .description("During the production phase, this produces 1 MC per Earth tag you have, including this.")
+                .cardAction(CardAction.MC_EARTH_INCOME)
                 .build();
     }
 

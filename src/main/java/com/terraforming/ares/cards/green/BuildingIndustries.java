@@ -28,7 +28,7 @@ public class BuildingIndustries implements BaseExpansionGreenCard {
                 .name("Building Industries")
                 .description("Requires you to spend 4 heat. When you play a Building, you pay 4 MC less for it.")
                 .incomes(List.of(Gain.of(GainType.STEEL, 2)))
-                .incomes(List.of(Gain.of(GainType.HEAT, -4)))
+                .cardAction(CardAction.BUILDING_INDUSTRIES)
                 .build();
     }
 

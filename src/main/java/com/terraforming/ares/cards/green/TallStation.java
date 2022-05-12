@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.green;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
@@ -27,6 +28,7 @@ public class TallStation implements BaseExpansionGreenCard {
                 .name("Tall Station")
                 .description("You may play a green card from your hand that has a printed cost of 9 MC or less without payind its MC cost. During the production phase, this produces 3 МС.")
                 .incomes(List.of(Gain.of(GainType.MC, 3)))
+                .cardAction(CardAction.TALL_STATION)
                 .build();
     }
 

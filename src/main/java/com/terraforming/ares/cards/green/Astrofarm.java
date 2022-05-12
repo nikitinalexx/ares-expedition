@@ -31,6 +31,7 @@ public class Astrofarm implements BaseExpansionGreenCard {
                         Gain.of(GainType.PLANT, 1),
                         Gain.of(GainType.HEAT, 3)
                 ))
+                .cardAction(CardAction.ASTROFARM)
                 .build();
     }
 

@@ -2,10 +2,7 @@ package com.terraforming.ares.cards.red;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.InputFlag;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.ProjectCard;
-import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +25,7 @@ public class CeosFavoriteProject implements BaseExpansionRedCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("CEO's Favorite Project")
                 .description("Add 2 resources to a card that holds resources.")
+                .cardAction(CardAction.CAPITALISE_DESCRIPTION)
                 .build();
     }
 

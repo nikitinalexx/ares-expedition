@@ -26,7 +26,7 @@ public class MicroMills implements BaseExpansionGreenCard {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
                 .name("Micro-Mills")
-                .description("During the production phase, this produces 1 heat. When you play an Building, you pay 2 MC less for it.")
+                .description("During the production phase, this produces 1 heat. When you play a Building, you pay 2 MC less for it.")
                 .incomes(List.of(
                         Gain.of(GainType.HEAT, 1),
                         Gain.of(GainType.STEEL, 1)

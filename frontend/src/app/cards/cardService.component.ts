@@ -3,8 +3,10 @@ import {CardRepository} from '../model/cardRepository.model';
 import {ProjectCard} from '../data/ProjectCard';
 import {CardColor} from '../data/CardColor';
 import {SpecialEffect} from '../data/SpecialEffect';
-import {CardAction} from "../data/CardAction";
-import {ParameterColor} from "../data/ParameterColor";
+import {CardAction} from '../data/CardAction';
+import {ParameterColor} from '../data/ParameterColor';
+import {GainType} from '../data/GainType';
+import {Gain} from '../data/Gain';
 
 @Component({
   selector: 'app-project-cards',
@@ -50,6 +52,138 @@ export class CardServiceComponent {
 
   hasSpecialEffect(card: ProjectCard, specialEffect: SpecialEffect): boolean {
     return card.specialEffects.indexOf(SpecialEffect[specialEffect]) > -1;
+  }
+
+  hasBonuses(card: ProjectCard): boolean {
+    return card.bonuses && card.bonuses.length !== 0;
+  }
+
+  manyBonuses(card: ProjectCard): boolean {
+    return card.bonuses.length >= 3;
+  }
+
+  hasIncomes(card: ProjectCard): boolean {
+    return card.incomes && card.incomes.length !== 0;
+  }
+
+  hasMcBonus(card: ProjectCard): boolean {
+    return card.bonuses.find(gain => gain.type === GainType[GainType.MC]) !== undefined;
+  }
+
+  getOceanBonuses(card: ProjectCard): number[] {
+    const bonus = card.bonuses.find(gain => gain.type === GainType[GainType.OCEAN]);
+    if (!bonus) {
+      return [];
+    }
+    return this.generateArray(bonus.value);
+  }
+
+  getOxygenBonuses(card: ProjectCard): number[] {
+    const bonus = card.bonuses.find(gain => gain.type === GainType[GainType.OXYGEN]);
+    if (!bonus) {
+      return [];
+    }
+    return this.generateArray(bonus.value);
+  }
+
+  getForestBonuses(card: ProjectCard): number[] {
+    const bonus = card.bonuses.find(gain => gain.type === GainType[GainType.FOREST]);
+    if (!bonus) {
+      return [];
+    }
+    return this.generateArray(bonus.value);
+  }
+
+  getTerraformingBonuses(card: ProjectCard): number[] {
+    const bonus = card.bonuses.find(gain => gain.type === GainType[GainType.TERRAFORMING_RATING]);
+    if (!bonus) {
+      return [];
+    }
+    return this.generateArray(Math.abs(bonus.value));
+  }
+
+  getTerraformingBonusSign(card: ProjectCard): string {
+    const bonus = card.bonuses.find(gain => gain.type === GainType[GainType.TERRAFORMING_RATING]);
+    return bonus.value < 0 ? '-' : '';
+  }
+
+  getPlantBonuses(card: ProjectCard): number[] {
+    const bonus = card.bonuses.find(gain => gain.type === GainType[GainType.PLANT]);
+    if (!bonus) {
+      return [];
+    }
+    return this.generateArray(bonus.value);
+  }
+
+  getHeatBonuses(card: ProjectCard): number[] {
+    const bonus = card.bonuses.find(gain => gain.type === GainType[GainType.HEAT]);
+    if (!bonus) {
+      return [];
+    }
+    return this.generateArray(bonus.value);
+  }
+
+  getCardBonuses(card: ProjectCard): number[] {
+    const bonus = card.bonuses.find(gain => gain.type === GainType[GainType.CARD]);
+    if (!bonus) {
+      return [];
+    }
+    return this.generateArray(bonus.value);
+  }
+
+  getTemperatureBonuses(card: ProjectCard): number[] {
+    const bonus = card.bonuses.find(gain => gain.type === GainType[GainType.TEMPERATURE]);
+    if (!bonus) {
+      return [];
+    }
+    return this.generateArray(bonus.value);
+  }
+
+  getMcBonus(card: ProjectCard): number {
+    const bonus = card.bonuses.find(gain => gain.type === GainType[GainType.MC]);
+    if (!bonus) {
+      return null;
+    }
+    return bonus.value;
+  }
+
+  getIncomes(card: ProjectCard): Gain[] {
+    return card.incomes;
+  }
+
+  getIncomeClass(income: Gain): string {
+    switch (income.type) {
+      case GainType.PLANT:
+        return 'plant';
+      case GainType.CARD:
+        return 'card';
+      case GainType.HEAT:
+        return 'heat';
+      case GainType.STEEL:
+        return 'steel';
+      case GainType.TITANIUM:
+        return 'titanium';
+      case GainType.MC:
+        return 'money';
+      default:
+        return '';
+    }
+  }
+
+  getNameStyle(card: ProjectCard): { 'font-size.px': number } {
+    if (card.name.length > 22) {
+      const proportion = card.name.length / 22;
+      return {'font-size.px': 16 / proportion};
+    }
+    return;
+  }
+
+  generateArray(size: number): number[] {
+    const result = [];
+    for (let i = 0; i < size; i++) {
+      result.push(i);
+    }
+    return result;
   }
 
   actionScreeningTechnology(card: ProjectCard): boolean {
@@ -300,6 +434,118 @@ export class CardServiceComponent {
     return card.cardAction === CardAction.WOOD_BURNING_STOVES;
   }
 
+  actionCapitalizeDescription(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.CAPITALISE_DESCRIPTION;
+  }
+
+  actionImportedHydrogen(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.IMPORTED_HYDROGEN;
+  }
+
+  actionImportedNitrogen(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.IMPORTED_NITROGEN;
+  }
+
+  actionLocalHeatTrapping(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.LOCAL_HEAT_TRAPPING;
+  }
+
+  actionNitrogenRichAsteroid(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.NITROGEN_RICH_ASTEROID;
+  }
+
+  actionSpecialDesign(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.SPECIAL_DESIGN;
+  }
+
+  actionTerraformingGanymede(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.TERRAFORMING_GANYMEDE;
+  }
+
+  actionWorkCrews(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.WORK_CREWS;
+  }
+
+  actionAstrofarm(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.ASTROFARM;
+  }
+
+  actionHeatEarthIncome(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.HEAT_EARTH_INCOME;
+  }
+
+  actionMcEarthIncome(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.MC_EARTH_INCOME;
+  }
+
+  actionPlantPlantIncome(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.PLANT_PLANT_INCOME;
+  }
+
+  actionMcScienceIncome(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.MC_SCIENCE_INCOME;
+  }
+
+  actionMc2BuildingIncome(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.MC_2_BUILDING_INCOME;
+  }
+
+  actionMcEnergyIncome(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.MC_ENERGY_INCOME;
+  }
+
+  actionMcSpaceIncome(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.MC_SPACE_INCOME;
+  }
+
+  actionHeatSpaceIncome(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.HEAT_SPACE_INCOME;
+  }
+
+  actionMcEventIncome(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.MC_EVENT_INCOME;
+  }
+
+  actionHeatEnergyIncome(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.HEAT_ENERGY_INCOME;
+  }
+
+  actionPlantMicrobeIncome(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.PLANT_MICROBE_INCOME;
+  }
+
+  actionMcForestIncome(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.MC_FOREST_INCOME;
+  }
+
+  actionBiomassCombustors(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.BIOMASS_COMBUSTORS;
+  }
+
+  actionBuildingIndustries(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.BUILDING_INDUSTRIES;
+  }
+
+  actionEnergyStorage(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.ENERGY_STORAGE;
+  }
+
+  actionEosChasma(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.EOS_CHASMA;
+  }
+
+  actionFuelFactory(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.FUEL_FACTORY;
+  }
+
+  actionTallStation(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.TALL_STATION;
+  }
+
+  actionTropicalIsland(card: ProjectCard): boolean {
+    return card.cardAction === CardAction.TROPICAL_ISLAND;
+  }
+
   hasTagRequirements(card: ProjectCard): boolean {
     return card.tagReq.length !== 0;
   }
@@ -338,6 +584,9 @@ export class CardServiceComponent {
     }
     if (req.length === 2 && req[0] === ParameterColor.YELLOW) {
       return 'requirements-yw';
+    }
+    if (req.length === 2 && req[0] === ParameterColor.PURPLE) {
+      return 'requirements-pr';
     }
     if (req.length === 1 && req[0] === ParameterColor.WHITE) {
       return 'requirements-w';

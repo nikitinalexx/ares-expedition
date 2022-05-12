@@ -25,6 +25,7 @@ public class Satellites implements BaseExpansionGreenCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Satellites")
                 .description("During the production phase, this produces 1 MC per Space you have, including this.")
+                .cardAction(CardAction.MC_SPACE_INCOME)
                 .build();
     }
 

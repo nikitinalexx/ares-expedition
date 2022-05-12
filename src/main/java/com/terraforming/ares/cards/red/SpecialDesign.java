@@ -1,10 +1,7 @@
 package com.terraforming.ares.cards.red;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.model.MarsContext;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.Tag;
-import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -25,6 +22,7 @@ public class SpecialDesign implements BaseExpansionRedCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Special Design")
                 .description("You may play an additional blue or red card this phase. For the next card you play this phase, you may consider the oxygen or temperature one color higher or lower.")
+                .cardAction(CardAction.SPECIAL_DESIGN)
                 .build();
     }
 

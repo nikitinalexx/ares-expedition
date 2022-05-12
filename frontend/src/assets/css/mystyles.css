@@ -275,6 +275,10 @@ li.events::before {
   background-image: url(../images/requisites/red_yel_whi.png);
 }
 
+.requirements-pr {
+  background-image: url(../images/requisites/pur_red.png);
+}
+
 .requirements-w {
   background-image: url(../images/requisites/whi.png);
 }
@@ -384,6 +388,68 @@ li.events::before {
   font-size: 16px;
   line-height: 20px;
   text-align: center;
+}
+
+.production-box {
+  font-family: Prototype;
+  font-weight: normal;
+  font-size: 18px;
+  width: 44px;
+  display: inline-block;
+  text-shadow: none;
+  border-top: 2px solid rgb(221,221,221);
+  border-left: 2px solid rgb(221,221,221);
+  border-bottom: 2px solid rgb(137,137,137);
+  border-right: 2px solid rgb(137,137,137);
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.6), 0 0 0 2px rgba(0,0,0,0.3);
+  padding-top: 4px;
+  text-align: center;
+  margin-bottom: 10px;
+  margin-top: 2px;
+  padding-bottom: 4px;
+  line-height: 32px;
+  background-image: url(../images/misc/production.png);
+  background-size: cover;
+}
+
+.production-box-size1a {
+  width: 66px;
+}
+
+.production-box-size2 {
+  width: 80px;
+}
+
+.production-box-size2a {
+  width: 100px;
+}
+
+.production-box-size3 {
+  width: 115px;
+}
+
+.production-box-size3a {
+  width: 130px;
+}
+
+.production-box-size4 {
+  width: 150px;
+}
+
+.production-box-size4a {
+  width: 165px;
+}
+
+.production {
+  display: inline-block;
+  position: relative;
+  width: 30px;
+  height: 30px;
+  background-size: 30px;
+  line-height: 30px;
+  margin: 2px;
+  text-align: center;
+  vertical-align: bottom;
 }
 
 /*********** Style the tags ************/

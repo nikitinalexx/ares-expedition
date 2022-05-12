@@ -3,6 +3,8 @@ package com.terraforming.ares.cards.red;
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.TerraformingService;
 import lombok.Getter;
@@ -26,6 +28,8 @@ public class ImportedHydrogen implements BaseExpansionRedCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Imported Hydrogen")
                 .description("Flip an ocean tile. Gain 3 plants, or add 3 microbes or 2 animals to ANOTHER card.")
+                .bonuses(List.of(Gain.of(GainType.OCEAN, 1)))
+                .cardAction(CardAction.IMPORTED_HYDROGEN)
                 .build();
     }
 

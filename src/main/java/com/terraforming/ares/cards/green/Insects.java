@@ -25,6 +25,7 @@ public class Insects implements BaseExpansionGreenCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Insects")
                 .description("During the production phase, this produces 1 plant per Plant you have.")
+                .cardAction(CardAction.PLANT_PLANT_INCOME)
                 .build();
     }
 

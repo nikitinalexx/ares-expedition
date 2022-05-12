@@ -25,6 +25,7 @@ public class Windmills implements BaseExpansionGreenCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Windmills")
                 .description("During the production phase, this produces 1 heat per Energy tag you have.")
+                .cardAction(CardAction.HEAT_ENERGY_INCOME)
                 .build();
     }
 

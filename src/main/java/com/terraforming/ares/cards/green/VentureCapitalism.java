@@ -25,6 +25,7 @@ public class VentureCapitalism implements BaseExpansionGreenCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Venture Capitalism")
                 .description("During the production phase, this produces 1 МС per Event you have.")
+                .cardAction(CardAction.MC_EVENT_INCOME)
                 .build();
     }
 
