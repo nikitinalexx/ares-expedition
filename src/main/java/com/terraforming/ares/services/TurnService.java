@@ -6,6 +6,7 @@ import com.terraforming.ares.model.GameUpdateResult;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.payments.Payment;
+import com.terraforming.ares.model.request.ChooseCorporationRequest;
 import com.terraforming.ares.model.turn.*;
 import com.terraforming.ares.repositories.GameRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +28,9 @@ public class TurnService {
     private final GameProcessorService gameProcessorService;
     private final CardValidationService cardValidationService;
 
-    public void chooseCorporationTurn(String playerUuid, int corporationCardId) {
+    public void chooseCorporationTurn(ChooseCorporationRequest chooseCorporationRequest) {
+        String playerUuid = chooseCorporationRequest.getPlayerUuid();
+        Integer corporationCardId = chooseCorporationRequest.getCorporationId();
         performAsyncTurn(
                 new CorporationChoiceTurn(playerUuid, corporationCardId),
                 playerUuid,

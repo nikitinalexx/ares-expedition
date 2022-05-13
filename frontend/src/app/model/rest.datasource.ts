@@ -5,7 +5,9 @@ import {catchError} from 'rxjs/operators';
 import {Card} from '../data/Card';
 import {NewGame} from '../data/NewGame';
 import {NewGameRequest} from '../data/NewGameRequest';
-import {Game} from "../data/Game";
+import {Game} from '../data/Game';
+import {TurnType} from "../data/TurnType";
+import {ActionDto} from "../data/ActionDto";
 
 export const REST_URL = new InjectionToken('rest_url');
 
@@ -27,6 +29,20 @@ export class RestDataSource {
     return this.sendRequest<Game>('GET', this.url + '/game/player/' + playerUuid);
   }
 
+  pickCorporation(playerUuid: string, corporationId: number): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/game/player/corporation',
+      {'playerUuid': playerUuid, 'corporationId': corporationId}
+    );
+  }
+
+  nextAction(playerUuid: string): Observable<ActionDto> {
+    return this.sendRequest<ActionDto>('GET', this.url + '/action/next/' + playerUuid);
+  }
+
+  nextTurns(playerUuid: string): Observable<TurnType[]> {
+    return this.sendRequest<TurnType[]>('GET', this.url + '/turns/next/' + playerUuid);
+  }
+
   private sendRequest<T>(verb: string, url: string, body?: any)
     : Observable<T> {
 
@@ -38,6 +54,7 @@ export class RestDataSource {
       body,
       headers: myHeaders
     }).pipe(catchError((error: HttpErrorResponse) => {
+      console.log(error);
       return throwError(`Error: ${error.error?.message} (${error.status})`);
     }));
   }

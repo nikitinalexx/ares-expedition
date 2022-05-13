@@ -12,8 +12,10 @@ import java.util.List;
 @Builder
 @Getter
 public class PlayerDto {
+    private final String playerUuid;
     private final List<CardDto> corporations;
     private final List<CardDto> hand;
     private final Integer corporationId;
     private final Integer phase;
+    private final Integer previousPhase;
 }

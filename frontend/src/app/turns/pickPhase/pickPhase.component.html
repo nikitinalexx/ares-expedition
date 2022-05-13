@@ -1,0 +1,17 @@
+<div class="bg-danger mt-2 p-2 text-center text-white"
+     *ngIf="errorMessage != null">
+  {{errorMessage}}
+</div>
+
+<h1>Choose phase</h1>
+
+<div class="card-container">
+  <ul class="myUL">
+    <li *ngFor="let phaseId of getAllowedPhases();" (click)="clickPhase(phaseId)" class="filterDiv display phase-{{phaseId}}" [ngClass]="isSelectedPhase(phaseId)"></li>
+  </ul>
+  <form>
+    <div class="form-group d-grid gap-2 col-6 mx-auto">
+      <button type="submit" class="btn btn-warning btn-lg" (click)="choosePhase(phaseInput)">Confirm</button>
+    </div>
+  </form>
+</div>

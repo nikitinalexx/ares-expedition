@@ -1,7 +1,9 @@
 package com.terraforming.ares.controllers;
 
+import com.terraforming.ares.dto.ActionDto;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.payments.Payment;
+import com.terraforming.ares.model.request.ChooseCorporationRequest;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.GameService;
 import com.terraforming.ares.services.TurnService;
@@ -17,23 +19,24 @@ import java.util.Map;
  */
 @RestController
 @RequiredArgsConstructor
-@CrossOrigin
+@CrossOrigin(origins = "*")
 public class PlayController {
     private final GameService gameService;
     private final TurnService turnService;
 
-    @GetMapping("/action/next")
-    public String getNextAction(String playerUuid) {
-        return gameService.getNextAction(playerUuid);
+    @GetMapping("/action/next/{playerUuid}")
+    public ActionDto getNextAction(@PathVariable String playerUuid) {
+        return new ActionDto(gameService.getNextAction(playerUuid));
     }
 
-    @GetMapping("/turns/next")
-    public List<TurnType> getPossibleTurns(String playerUuid) {
+    @GetMapping("/turns/next/{playerUuid}")
+    public List<TurnType> getPossibleTurns(@PathVariable String playerUuid) {
         return gameService.getPossibleTurns(playerUuid);
     }
 
-    public void chooseCorporation(String playerUuid, int corporationCardId) {
-        turnService.chooseCorporationTurn(playerUuid, corporationCardId);
+    @PostMapping("/game/player/corporation")
+    public void chooseCorporation(@RequestBody ChooseCorporationRequest chooseCorporationRequest) {
+        turnService.chooseCorporationTurn(chooseCorporationRequest);
     }
 
     public void choosePhase(String playerUuid, int phase) {

@@ -1,0 +1,19 @@
+<div class="bg-danger mt-2 p-2 text-center text-white"
+     *ngIf="errorMessage != null">
+  {{errorMessage}}
+</div>
+
+<h1>Choose corporation</h1>
+
+<div class="card-container">
+  <ul class="myUL">
+    <li *ngFor="let card of getCorporationCards();" (click)="clickCorporation(card)" class="filterDiv automated display" [ngClass]="isSelectedCard(card)">
+      <app-card-template [card]="card"></app-card-template>
+    </li>
+  </ul>
+  <form>
+    <div class="form-group d-grid gap-2 col-6 mx-auto">
+      <button type="submit" class="btn btn-warning btn-lg" (click)="chooseCorporation(corporationInput)">Confirm</button>
+    </div>
+  </form>
+</div>

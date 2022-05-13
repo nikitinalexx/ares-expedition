@@ -72,10 +72,12 @@ public class GameController {
         Deck corporations = player.getCorporations();
 
         return PlayerDto.builder()
+                .playerUuid(player.getUuid())
                 .corporations(corporations.getCards().stream().map(cardService::getCorporationCard).map(CardDto::from).collect(Collectors.toList()))
                 .hand(player.getHand().getCards().stream().map(cardService::getProjectCard).map(CardDto::from).collect(Collectors.toList()))
                 .corporationId(player.getSelectedCorporationCard())
                 .phase(player.getChosenPhase())
+                .previousPhase(player.getPreviousChosenPhase())
                 .build();
     }
 

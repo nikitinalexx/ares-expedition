@@ -32,6 +32,11 @@ body {
   padding-bottom: 10px;
 }
 
+.card-container {
+  display: flex;
+  flex-direction: column;
+}
+
 /*project card div*/
 .ul-title {
   display: none;
@@ -66,6 +71,31 @@ body {
   box-shadow: 0 0 2px 1px black;
   transition: transform 200ms ease-in-out;
   will-change: transform;
+}
+
+.phase-1 {
+  height: 240px;
+  background-image: url("../images/phases/1.jpg");
+}
+
+.phase-2 {
+  height: 240px;
+  background-image: url("../images/phases/2.jpg");
+}
+
+.phase-3 {
+  height: 240px;
+  background-image: url("../images/phases/3.jpg");
+}
+
+.phase-4 {
+  height: 240px;
+  background-image: url("../images/phases/4.jpg");
+}
+
+.phase-5 {
+  height: 240px;
+  background-image: url("../images/phases/5.jpg");
 }
 
 li.automated::before {
@@ -114,6 +144,11 @@ li.events::before {
   background-position: -294px -150px;
   border-radius: 15px;
   filter: grayscale(1) brightness(1.9) contrast(0.6) hue-rotate(0deg);
+}
+
+.clicked-card {
+  box-shadow: 0 0 1px 1px #444, 0 0 15px 5px white !important;
+  filter: grayscale(1);
 }
 
 * {

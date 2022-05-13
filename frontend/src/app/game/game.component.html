@@ -1,1 +1,24 @@
-<h1>Pick corporation!!!</h1>
+<div class="bg-danger mt-2 p-2 text-center text-white"
+     *ngIf="errorMessage != null">
+  {{errorMessage}}
+</div>
+
+<div>
+  <app-pick-corporation *ngIf="pickCorporationTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"></app-pick-corporation>
+
+</div>
+
+<div>
+  <app-pick-phase *ngIf="pickPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"></app-pick-phase>
+
+</div>
+
+<h1>Hand</h1>
+
+<div class="card-container">
+  <ul class="myUL">
+    <li *ngFor="let card of getProjects();" class="filterDiv automated display">
+      <app-card-template [card]="card"></app-card-template>
+    </li>
+  </ul>
+</div>
