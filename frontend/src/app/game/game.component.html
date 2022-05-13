@@ -3,21 +3,24 @@
   {{errorMessage}}
 </div>
 
+
 <div>
   <app-pick-corporation *ngIf="pickCorporationTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"></app-pick-corporation>
-
 </div>
 
 <div>
   <app-pick-phase *ngIf="pickPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"></app-pick-phase>
+</div>
 
+<div>
+  <app-first-phase *ngIf="firstPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game" [nextTurns]="nextTurns"></app-first-phase>
 </div>
 
 <h1>Hand</h1>
 
 <div class="card-container">
   <ul class="myUL">
-    <li *ngFor="let card of getProjects();" class="filterDiv automated display">
+    <li *ngFor="let card of getPlayerHand();" class="filterDiv automated display">
       <app-card-template [card]="card"></app-card-template>
     </li>
   </ul>

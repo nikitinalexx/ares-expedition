@@ -14,4 +14,5 @@ import java.util.List;
 public class GameDto {
     private PlayerDto player;
     private List<PlayerDto> otherPlayers;
+    private Integer phase;
 }

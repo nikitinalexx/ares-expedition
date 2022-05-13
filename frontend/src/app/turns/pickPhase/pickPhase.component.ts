@@ -34,12 +34,12 @@ export class PickPhaseComponent {
   }
 
   choosePhase(corporation: number) {
-    // if (!this.corporationInput) {
-    //   this.errorMessage = 'Pick corporation';
-    // } else {
-    //   this.gameRepository.pickCorporation(this.game.player.playerUuid, this.corporationInput)
-    //     .subscribe(data => this.sendToParent(data));
-    // }
+    if (!this.phaseInput) {
+      this.errorMessage = 'Pick phase';
+    } else {
+      this.gameRepository.pickPhase(this.game.player.playerUuid, this.phaseInput)
+        .subscribe(data => this.sendToParent(data));
+    }
   }
 
   sendToParent(data: any) {

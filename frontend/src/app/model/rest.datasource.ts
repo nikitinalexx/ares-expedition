@@ -8,6 +8,7 @@ import {NewGameRequest} from '../data/NewGameRequest';
 import {Game} from '../data/Game';
 import {TurnType} from "../data/TurnType";
 import {ActionDto} from "../data/ActionDto";
+import {BuildProjectRequest} from "../data/BuildProjectRequest";
 
 export const REST_URL = new InjectionToken('rest_url');
 
@@ -35,12 +36,38 @@ export class RestDataSource {
     );
   }
 
+  pickPhase(playerUuid: string, phaseId: number): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/game/player/phase',
+      {'playerUuid': playerUuid, 'phaseId': phaseId}
+    );
+  }
+
+  skipTurn(playerUuid: string): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/game/player/skip',
+      {'playerUuid': playerUuid}
+    );
+  }
+
+  sellCards(playerUuid: string, cards: number[]): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/game/player/sell',
+      {'playerUuid': playerUuid, 'cards': cards}
+    );
+  }
+
   nextAction(playerUuid: string): Observable<ActionDto> {
     return this.sendRequest<ActionDto>('GET', this.url + '/action/next/' + playerUuid);
   }
 
   nextTurns(playerUuid: string): Observable<TurnType[]> {
     return this.sendRequest<TurnType[]>('GET', this.url + '/turns/next/' + playerUuid);
+  }
+
+  buildGreenProject(requestBody: BuildProjectRequest): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/turn/build/green', requestBody);
+  }
+
+  buildBlueRedProject(requestBody: BuildProjectRequest): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/turn/build/blue-red', requestBody);
   }
 
   private sendRequest<T>(verb: string, url: string, body?: any)

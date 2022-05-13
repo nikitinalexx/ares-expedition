@@ -3,7 +3,7 @@ package com.terraforming.ares.controllers;
 import com.terraforming.ares.dto.ActionDto;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.payments.Payment;
-import com.terraforming.ares.model.request.ChooseCorporationRequest;
+import com.terraforming.ares.model.request.*;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.GameService;
 import com.terraforming.ares.services.TurnService;
@@ -39,31 +39,39 @@ public class PlayController {
         turnService.chooseCorporationTurn(chooseCorporationRequest);
     }
 
-    public void choosePhase(String playerUuid, int phase) {
-        turnService.choosePhaseTurn(playerUuid, phase);
+    @PostMapping("/game/player/phase")
+    public void choosePhase(@RequestBody ChoosePhaseRequest choosePhaseRequest) {
+        turnService.choosePhaseTurn(choosePhaseRequest.getPlayerUuid(), choosePhaseRequest.getPhaseId());
     }
 
-    public void skipTurn(String playerUuid) {
-        turnService.skipTurn(playerUuid);
+    @PostMapping("/game/player/skip")
+    public void skipTurn(@RequestBody PlayerUuidRequest playerUuidRequest) {
+        turnService.skipTurn(playerUuidRequest.getPlayerUuid());
     }
 
-    public void sellCards(String playerUuid, List<Integer> cards) {
-        turnService.sellCards(playerUuid, cards);
+    @PostMapping("/game/player/sell")
+    public void sellCards(@RequestBody SellCardsRequest sellCardsRequest) {
+        turnService.sellCards(sellCardsRequest.getPlayerUuid(), sellCardsRequest.getCards());
     }
 
     @PostMapping("/turn/build/green")
-    public void buildGreenProject(String playerUuid,
-                                  int cardId,
-                                  List<Payment> payments,
-                                  @RequestParam(required = false) Map<Integer, List<Integer>> inputParams) {
-        turnService.buildGreenProjectCard(playerUuid, cardId, payments, inputParams);
+    public void buildGreenProject(@RequestBody BuildProjectRequest buildProjectRequest) {
+        turnService.buildGreenProjectCard(
+                buildProjectRequest.getPlayerUuid(),
+                buildProjectRequest.getCardId(),
+                buildProjectRequest.getPayments(),
+                buildProjectRequest.getInputParams()
+        );
     }
 
-    public void buildBlueRedProject(String playerUuid,
-                                    int cardId,
-                                    List<Payment> payments,
-                                    @RequestParam(required = false) Map<Integer, List<Integer>> inputParams) {
-        turnService.buildBlueRedProjectCard(playerUuid, cardId, payments, inputParams);
+    @PostMapping("/turn/build/blue-red")
+    public void buildBlueRedProject(@RequestBody BuildProjectRequest buildProjectRequest) {
+        turnService.buildBlueRedProjectCard(
+                buildProjectRequest.getPlayerUuid(),
+                buildProjectRequest.getCardId(),
+                buildProjectRequest.getPayments(),
+                buildProjectRequest.getInputParams()
+        );
     }
 
     public TurnResponse performBlueAction(String playerUuid,

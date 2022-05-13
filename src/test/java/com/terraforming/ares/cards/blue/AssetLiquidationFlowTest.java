@@ -7,6 +7,8 @@ import com.terraforming.ares.model.Deck;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.model.payments.MegacreditsPayment;
+import com.terraforming.ares.model.request.BuildProjectRequest;
+import com.terraforming.ares.model.request.ChoosePhaseRequest;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.repositories.GameRepository;
 import com.terraforming.ares.services.GameProcessorService;
@@ -83,8 +85,8 @@ class AssetLiquidationFlowTest {
                         .allMatch("TURN"::equals)
         );
 
-        playController.choosePhase(firstPlayer.getUuid(), 2);
-        playController.choosePhase(secondPlayer.getUuid(), 3);
+        playController.choosePhase(ChoosePhaseRequest.builder().playerUuid(firstPlayer.getUuid()).phaseId(2).build());
+        playController.choosePhase(ChoosePhaseRequest.builder().playerUuid(secondPlayer.getUuid()).phaseId(3).build());
 
         gameProcessorService.asyncUpdate();
 
@@ -104,8 +106,14 @@ class AssetLiquidationFlowTest {
                         )
         );
 
-        playController.buildBlueRedProject(firstPlayer.getUuid(), ASSET_LIQUIDATION_CARD_ID, Collections.emptyList(), Collections.emptyMap());
-        playController.buildBlueRedProject(secondPlayer.getUuid(), ADAPTATION_TECHNOLOGY_CARD_ID, Collections.singletonList(new MegacreditsPayment(12)), Collections.emptyMap());
+        playController.buildBlueRedProject(BuildProjectRequest.builder().playerUuid(firstPlayer.getUuid()).cardId(ASSET_LIQUIDATION_CARD_ID).build());
+        playController.buildBlueRedProject(
+                BuildProjectRequest.builder()
+                        .playerUuid(secondPlayer.getUuid())
+                        .cardId(ADAPTATION_TECHNOLOGY_CARD_ID)
+                        .payments(Collections.singletonList(new MegacreditsPayment(12)))
+                        .build()
+        );
 
         gameProcessorService.asyncUpdate();
 
@@ -115,13 +123,25 @@ class AssetLiquidationFlowTest {
         assertEquals(2, firstPlayer.getCanBuildInSecondPhase());
         assertEquals(0, secondPlayer.getCanBuildInSecondPhase());
 
-        playController.buildBlueRedProject(firstPlayer.getUuid(), ASSEMBLY_LINES_CARD_ID, Collections.singletonList(new MegacreditsPayment(13)), Collections.emptyMap());
+        playController.buildBlueRedProject(
+                BuildProjectRequest.builder()
+                        .playerUuid(firstPlayer.getUuid())
+                        .cardId(ASSEMBLY_LINES_CARD_ID)
+                        .payments(Collections.singletonList(new MegacreditsPayment(13)))
+                        .build()
+        );
 
         gameProcessorService.asyncUpdate();
 
         assertEquals(1, firstPlayer.getCanBuildInSecondPhase());
 
-        playController.buildBlueRedProject(firstPlayer.getUuid(), ARTIFICIAL_JUNGLE_CARD_ID, Collections.singletonList(new MegacreditsPayment(5)), Collections.emptyMap());
+        playController.buildBlueRedProject(
+                BuildProjectRequest.builder()
+                        .playerUuid(firstPlayer.getUuid())
+                        .cardId(ARTIFICIAL_JUNGLE_CARD_ID)
+                        .payments(Collections.singletonList(new MegacreditsPayment(5)))
+                        .build()
+        );
 
         gameProcessorService.asyncUpdate();
 

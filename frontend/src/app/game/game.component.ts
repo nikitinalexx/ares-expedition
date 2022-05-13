@@ -33,7 +33,7 @@ export class GameComponent {
     return this.game?.player.corporations;
   }
 
-  getProjects(): Card[] {
+  getPlayerHand(): Card[] {
     return this.game?.player.hand;
   }
 
@@ -43,6 +43,10 @@ export class GameComponent {
 
   pickPhaseTurn(): boolean {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.PICK_PHASE])?.length > 0;
+  }
+
+  firstPhaseTurn(): boolean {
+    return this.game && this.game.phase === 1;
   }
 
   GetOutputVal(newX) {
@@ -56,6 +60,9 @@ export class GameComponent {
         this.errorMessage = null;
         this.model.nextTurns(this.playerUuid).subscribe(turns => {
           this.nextTurns = turns;
+          this.model.getGame(this.playerUuid).subscribe(game => {
+            this.game = game;
+          });
         });
         if (this.subscription) {
           this.subscription.unsubscribe();

@@ -1,0 +1,46 @@
+<div class="bg-danger mt-2 p-2 text-center text-white"
+     *ngIf="errorMessage != null">
+  {{errorMessage}}
+</div>
+
+<h1>Pick turn</h1>
+
+<!-- Form starts -->
+<form #myForm="ngForm" (submit)="submitForm(myForm)" novalidate>
+
+  <div *ngIf="buildGreenProjectTurn()" class="form-check">
+    <input id="greenProject" (click)="onValueClick()" type="radio" class="form-check-input" value="project" name="turn" ngModel required checked>
+    <label class="custom-control-label" for="greenProject">Build green project</label>
+
+    <div *ngIf="myForm.value?.turn === 'project'" class="card-container">
+      <ul class="myUL">
+        <li *ngFor="let card of getGreenPlayerHand();" (click)="clickProjectToBuild(card)" [ngClass]="selectedProjectToBuildClass(card)" class="filterDiv automated display">
+          <app-card-template [card]="card"></app-card-template>
+        </li>
+      </ul>
+    </div>
+
+  </div>
+  <div *ngIf="sellCardsTurn()" class="form-check">
+    <input id="sellCards" (click)="onValueClick()" type="radio" class="form-check-input" value="sellCards" name="turn" ngModel required checked>
+    <label class="custom-control-label" for="sellCards">Sell cards</label>
+
+    <div *ngIf="myForm.value?.turn === 'sellCards'" class="card-container">
+      <ul class="myUL">
+        <li *ngFor="let card of getPlayerHand();" (click)="clickSellCard(card)" [ngClass]="selectedSellCardClass(card)" class="filterDiv automated display">
+          <app-card-template [card]="card"></app-card-template>
+        </li>
+      </ul>
+    </div>
+
+  </div>
+  <div *ngIf="skipTurn()" class="form-check">
+    <input id="skipTurn" (click)="onValueClick()" type="radio" class="form-check-input" value="skipTurn" name="turn" ngModel required checked>
+    <label class="custom-control-label" for="skipTurn">Skip turn</label>
+  </div>
+  <div *ngIf="isSubmitted && myForm.invalid">
+    <p>Please select either value</p>
+  </div>
+  <!-- Submit Button -->
+  <button type="submit" class="btn btn-danger btn-lg btn-block">Select turn</button>
+</form><!-- Form ends -->

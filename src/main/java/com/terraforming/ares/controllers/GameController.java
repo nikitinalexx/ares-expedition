@@ -55,6 +55,7 @@ public class GameController {
         MarsGame game = gameService.getGame(playerUuid);
 
         return GameDto.builder()
+                .phase(game.getCurrentPhase())
                 .player(buildCurrentPlayer(game.getPlayerByUuid(playerUuid)))
                 .otherPlayers(Collections.emptyList())//TODO
                 .build();
