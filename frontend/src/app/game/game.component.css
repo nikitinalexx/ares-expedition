@@ -1,0 +1,85 @@
+.resource_item {
+  display: flex;
+  border-radius: 5px;
+  vertical-align: top;
+  font-family: Prototype;
+  background: linear-gradient(rgba(0, 0, 0, 0.8) 20%, rgba(0, 0, 0, 0.3) 50%);
+  color: #e6e1e1;
+  margin-left: 10px;
+  min-width: 70px;
+  padding: 8px 0px 4px 8px;
+  box-sizing: border-box;
+}
+
+.resource_item_stock {
+  white-space: nowrap;
+}
+
+.resource_icon {
+  width: 36px;
+  height: 36px;
+  display: inline-block;
+  background-size: contain;
+}
+
+.resource_icon_card {
+  width: 36px;
+  height: 51px;
+  display: inline-block;
+  background-size: contain;
+}
+
+.resource_icon--megacredits {
+  background-image: url(../../assets/images/megacredits/megacredit.png);
+}
+
+.resource_icon--cards {
+  background-image: url(../../assets/images/resources/card.png);
+}
+
+.resource_icon--heat {
+  background-image: url(../../assets/images/resources/heat.png);
+}
+
+.resource_icon--plants {
+  background-image: url(../../assets/images/resources/plant.png);
+}
+
+.resource_icon--steel{
+  background-image: url(../../assets/images/resources/steel.png);
+}
+
+.resource_icon--titanium{
+  background-image: url(../../assets/images/resources/titanium.png);
+}
+
+.resource_icon--megacredits::after {
+  position: absolute;
+  content: "€";
+  color: rgba(0, 0, 0, 0.3);
+  font-style: normal;
+  font-family: Arial;
+  font-weight: bold;
+  width: 36px;
+  height: 36px;
+  text-align: center;
+  line-height: 36px;
+}
+
+.resource_item_stock_count {
+  font-size: 30px;
+  text-align: center;
+  line-height: 1;
+  text-shadow: 0 2px 2px black;
+}
+
+.resource_item_prod {
+  border-radius: 10px 10px 0 0;
+  color: #bb8760;
+  text-shadow: 0 0 1px black;
+  min-width: 40px;
+  text-align: center;
+}
+.resource_item_prod_count {
+  display: inline-block;
+}

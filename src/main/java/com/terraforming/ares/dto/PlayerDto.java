@@ -15,7 +15,22 @@ public class PlayerDto {
     private final String playerUuid;
     private final List<CardDto> corporations;
     private final List<CardDto> hand;
+    private final List<CardDto> played;
     private final Integer corporationId;
     private final Integer phase;
     private final Integer previousPhase;
+
+    private final int mc;
+    private final int mcIncome;
+
+    private final int cardIncome;
+
+    private final int heat;
+    private final int heatIncome;
+
+    private final int plants;
+    private final int plantsIncome;
+
+    private final int steelIncome;
+    private final int titaniumIncome;
 }

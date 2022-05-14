@@ -29,6 +29,7 @@ public class HelionCorporation implements CorporationCard {
         Player player = marsContext.getPlayer();
         player.setMc(28);
         player.setHeatIncome(3);
+        player.setSteelIncome(2);//TODO remove
         return null;
     }
 

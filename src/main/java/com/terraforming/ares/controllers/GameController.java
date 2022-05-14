@@ -76,9 +76,19 @@ public class GameController {
                 .playerUuid(player.getUuid())
                 .corporations(corporations.getCards().stream().map(cardService::getCorporationCard).map(CardDto::from).collect(Collectors.toList()))
                 .hand(player.getHand().getCards().stream().map(cardService::getProjectCard).map(CardDto::from).collect(Collectors.toList()))
+                .played(player.getPlayed().getCards().stream().map(cardService::getProjectCard).map(CardDto::from).collect(Collectors.toList()))
                 .corporationId(player.getSelectedCorporationCard())
                 .phase(player.getChosenPhase())
                 .previousPhase(player.getPreviousChosenPhase())
+                .mc(player.getMc())
+                .mcIncome(player.getMcIncome())
+                .cardIncome(player.getCardIncome())
+                .heat(player.getHeat())
+                .heatIncome(player.getHeatIncome())
+                .plants(player.getPlants())
+                .plantsIncome(player.getPlantsIncome())
+                .steelIncome(player.getSteelIncome())
+                .titaniumIncome(player.getTitaniumIncome())
                 .build();
     }
 

@@ -9,7 +9,8 @@ import {Subscription, timer} from 'rxjs';
 
 @Component({
   selector: 'app-game',
-  templateUrl: './game.component.html'
+  templateUrl: './game.component.html',
+  styleUrls: ['./game.component.css']
 })
 export class GameComponent {
   public errorMessage: string;

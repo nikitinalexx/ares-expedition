@@ -1,0 +1,12 @@
+.payments_type {
+  margin-bottom: 15px;
+}
+
+.input-group {
+  display: -ms-flexbox;
+  display: flex
+}
+
+.payments_type_icon {
+  margin: 0px 10px 0 0;
+}

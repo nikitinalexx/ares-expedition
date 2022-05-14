@@ -1,9 +1,14 @@
 <div [ngClass]="getBackgroundColorClass(card)" class="title" [ngStyle]="getNameStyle(card)">{{ card.name }}</div>
   <div class="price"> {{card.price}}</div>
 
-  <div *ngIf="card.tags[0]" [ngClass]="getTagClasses(card, 0)" class="tag tag1 tag-building "></div>
-  <div *ngIf="card.tags[1]" [ngClass]="getTagClasses(card, 1)" class="tag tag2 tag-building "></div>
-  <div *ngIf="card.tags[2]" [ngClass]="getTagClasses(card, 2)" class="tag tag3 tag-building "></div>
+  <div *ngIf="discountApplicable(card)">
+    <div class="card-cost-transition"></div>
+    <div class="price card-old-cost">{{card.price - getDiscount(card)}}</div>
+  </div>
+
+  <div *ngIf="card.tags[0]" [ngClass]="getTagClasses(card, 0)" class="tag tag1 "></div>
+  <div *ngIf="card.tags[1]" [ngClass]="getTagClasses(card, 1)" class="tag tag2 "></div>
+  <div *ngIf="card.tags[2]" [ngClass]="getTagClasses(card, 2)" class="tag tag3 "></div>
 
   <div class="number">#{{getFormattedId(card)}}</div>
   <div class="content ">

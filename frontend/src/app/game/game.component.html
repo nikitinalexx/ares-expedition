@@ -1,8 +1,44 @@
+<nav class="sticky-top navbar navbar-expand-lg navbar-light bg-dark text-white">
+  <div class="navbar-brand text-white" style="padding-left: 20px">You</div>
+  <div class="navbar-nav">
+    <div class="resource_item">
+      <div class="resource_item_stock"><em class="resource_icon resource_icon--megacredits"></em>
+        <div class="resource_item_stock_count">{{game?.player?.mc}}</div>
+      </div>
+      <div class="resource_item_prod"><span class="resource_item_prod_count">{{game?.player?.mcIncome}}</span></div>
+    </div>
+    <div class="resource_item">
+      <div class="resource_item_stock"><em class="resource_icon resource_icon--heat"></em>
+        <div class="resource_item_stock_count">{{game?.player?.heat}}</div>
+      </div>
+      <div class="resource_item_prod"><span class="resource_item_prod_count">{{game?.player?.heatIncome}}</span></div>
+    </div>
+    <div class="resource_item">
+      <div class="resource_item_stock"><em class="resource_icon resource_icon--plants"></em>
+        <div class="resource_item_stock_count">{{game?.player?.plants}}</div>
+      </div>
+      <div class="resource_item_prod"><span class="resource_item_prod_count">{{game?.player?.plantsIncome}}</span></div>
+    </div>
+    <div class="resource_item">
+      <div class="resource_item_stock"><em class="resource_icon resource_icon--steel"></em></div>
+      <div class="resource_item_prod"><span class="resource_item_prod_count">{{game?.player?.steelIncome}}</span></div>
+    </div>
+    <div class="resource_item">
+      <div class="resource_item_stock"><em class="resource_icon resource_icon--titanium"></em></div>
+      <div class="resource_item_prod"><span class="resource_item_prod_count">{{game?.player?.titaniumIncome}}</span></div>
+    </div>
+    <div class="resource_item">
+      <div class="resource_item_stock"><em class="resource_icon_card resource_icon--cards"></em>
+      </div>
+      <div class="resource_item_prod"><span class="resource_item_prod_count">{{game?.player?.cardIncome}}</span></div>
+    </div>
+  </div>
+</nav>
+
 <div class="bg-danger mt-2 p-2 text-center text-white"
      *ngIf="errorMessage != null">
   {{errorMessage}}
 </div>
-
 
 <div>
   <app-pick-corporation *ngIf="pickCorporationTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"></app-pick-corporation>

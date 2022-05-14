@@ -17,7 +17,7 @@ body {
 .app-container {
   max-width: 1750px;
   height: 850px;
-  padding-top: 20px;
+  padding-top: 1px;
   margin: auto;
   background-repeat: no-repeat;
   background: linear-gradient(to top, #000000, transparent 20%),
@@ -500,7 +500,7 @@ li.events::before {
   background-image: url("../images/tags/power.png");
 }
 
-.tag-jovian {
+.tag-jupiter {
   background-image: url("../images/tags/jovian.png");
 }
 

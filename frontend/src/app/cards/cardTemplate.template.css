@@ -1,0 +1,16 @@
+.card-cost-transition {
+  position: absolute;
+  background-image: url(../../assets/images/misc/cost-transition-arrow.png);
+  width: 14px;
+  height: 21px;
+  left: 9px;
+  top: 40px;
+  z-index: 2;
+}
+.card-old-cost {
+  transform: scale(0.6);
+  filter: grayscale(60%);
+  top: 130px;
+  left: 1px;
+  position: absolute;
+}

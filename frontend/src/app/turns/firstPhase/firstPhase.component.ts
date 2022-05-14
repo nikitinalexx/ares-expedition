@@ -4,11 +4,12 @@ import {GameRepository} from '../../model/gameRepository.model';
 import {TurnType} from '../../data/TurnType';
 import {NgForm} from '@angular/forms';
 import {Card} from '../../data/Card';
-import {CardColor} from "../../data/CardColor";
+import {CardColor} from '../../data/CardColor';
 
 @Component({
   selector: 'app-first-phase',
-  templateUrl: './firstPhase.component.html'
+  templateUrl: './firstPhase.component.html',
+  styleUrls: ['./firstPhase.component.css']
 })
 export class FirstPhaseComponent {
   public errorMessage: string;
