@@ -54,7 +54,6 @@ public class Player {
     private int titaniumIncome;
 
     public void clearRoundResults() {
-        previousChosenPhase = chosenPhase;
         chosenPhase = null;
         activatedBlueCards = Deck.builder().build();
         activatedBlueActionTwice = false;

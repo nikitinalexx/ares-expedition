@@ -38,6 +38,10 @@ export class GameComponent {
     return this.game?.player.hand;
   }
 
+  getPlayerPlayedCards(): Card[] {
+    return this.game?.player.played;
+  }
+
   pickCorporationTurn(): boolean {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.PICK_CORPORATION])?.length > 0;
   }
@@ -47,7 +51,7 @@ export class GameComponent {
   }
 
   firstPhaseTurn(): boolean {
-    return this.game && this.game.phase === 1;
+    return this.game && this.game.phase === 1 && this.nextAction === 'TURN';
   }
 
   GetOutputVal(newX) {

@@ -11,7 +11,7 @@ import java.util.Random;
  */
 @Service
 public class ShuffleService {
-    private final Random random = new Random(0);
+    private final Random random = new Random();
 
     public <T> void shuffle(List<T> elements) {
         for (int i = 0; i < elements.size() - 1; i++) {

@@ -5,6 +5,10 @@ import {TurnType} from '../../data/TurnType';
 import {NgForm} from '@angular/forms';
 import {Card} from '../../data/Card';
 import {CardColor} from '../../data/CardColor';
+import {DiscountComponent} from "../../discount/discount.component";
+import {BuildProjectRequest} from "../../data/BuildProjectRequest";
+import {Payment} from "../../data/Payment";
+import {PaymentType} from "../../data/PaymentType";
 
 @Component({
   selector: 'app-first-phase',
@@ -15,7 +19,7 @@ export class FirstPhaseComponent {
   public errorMessage: string;
   isSubmitted = false;
   cardsToCell: number[];
-  selectedProject: number;
+  selectedProject: Card;
 
   @Input()
   game: Game;
@@ -23,7 +27,7 @@ export class FirstPhaseComponent {
   nextTurns: TurnType[];
   @Output() outputToParent = new EventEmitter<any>();
 
-  constructor(private gameRepository: GameRepository) {
+  constructor(private gameRepository: GameRepository, private discountService: DiscountComponent) {
 
   }
 
@@ -66,15 +70,15 @@ export class FirstPhaseComponent {
   }
 
   clickProjectToBuild(card: Card) {
-    if (this.selectedProject && this.selectedProject === card.id) {
+    if (this.selectedProject && this.selectedProject.id === card.id) {
       this.selectedProject = null;
     } else {
-      this.selectedProject = card.id;
+      this.selectedProject = card;
     }
   }
 
   selectedProjectToBuildClass(card: Card): string {
-    if (this.selectedProject && this.selectedProject === card.id) {
+    if (this.selectedProject && this.selectedProject.id === card.id) {
       return 'clicked-card';
     }
     return '';
@@ -87,6 +91,14 @@ export class FirstPhaseComponent {
     return '';
   }
 
+  getDiscountedMcPriceOfSelectedProject(): number {
+    if (this.selectedProject) {
+      return this.selectedProject.price - this.discountService.getDiscount(this.selectedProject, this.game);
+    } else {
+      return 0;
+    }
+  }
+
 
   onValueClick() {
     this.cardsToCell = [];
@@ -94,8 +106,10 @@ export class FirstPhaseComponent {
   }
 
   submitForm(form: NgForm) {
+    this.errorMessage = null;
     this.isSubmitted = true;
     if (!form.valid) {
+      console.log('form invalid');
       return false;
     } else {
       if (form.value.turn === 'skipTurn') {
@@ -109,6 +123,21 @@ export class FirstPhaseComponent {
             this.cardsToCell = [];
           }
         );
+      } else if (form.value.turn === 'project' && form.value.mcPrice !== null) {
+        const request = new BuildProjectRequest(
+          this.game.player.playerUuid,
+          this.selectedProject.id,
+          [new Payment(form.value.mcPrice, PaymentType.MEGACREDITS)],
+          null
+        );
+        console.log(request);
+
+        this.gameRepository.buildGreenProject(request).subscribe(data => {
+          this.sendToParent(data);
+          this.selectedProject = null;
+        }, error => {
+          this.errorMessage = error;
+        });
       }
     }
   }

@@ -19,6 +19,7 @@ public class PickPhaseProcessor implements TurnProcessor<PhaseChoiceTurn> {
         Player player = game.getPlayerUuidToPlayer().get(turn.getPlayerUuid());
 
         player.clearRoundResults();
+        player.setPreviousChosenPhase(turn.getPhaseId());
         player.setChosenPhase(turn.getPhaseId());
 
         player.setCanBuildInFirstPhase(1);

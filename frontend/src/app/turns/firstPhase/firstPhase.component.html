@@ -23,7 +23,7 @@
         <div class="form-row">
           <div class="col-sm-1">
             <label for="mcInput" class="text-white">Payment</label>
-            <input type="number" class="form-control form-control-sm" id="mcInput">
+            <input type="number" class="form-control form-control-sm" id="mcInput" [ngModel]="getDiscountedMcPriceOfSelectedProject()" name="mcPrice" required>
           </div>
         </div>
       </div>

@@ -52,7 +52,17 @@
   <app-first-phase *ngIf="firstPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game" [nextTurns]="nextTurns"></app-first-phase>
 </div>
 
-<h1>Hand</h1>
+<h2 class="text-white">Played</h2>
+
+<div class="card-container">
+  <ul class="myUL">
+    <li *ngFor="let card of getPlayerPlayedCards();" class="filterDiv automated display">
+      <app-card-template [card]="card"></app-card-template>
+    </li>
+  </ul>
+</div>
+
+<h2 class="text-white">Hand</h2>
 
 <div class="card-container">
   <ul class="myUL">

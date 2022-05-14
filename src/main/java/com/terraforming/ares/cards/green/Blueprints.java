@@ -44,8 +44,9 @@ public class Blueprints implements BaseExpansionGreenCard {
         Player player = marsContext.getPlayer();
 
         player.setMcIncome(player.getMcIncome() + 2);
+        player.setCardIncome(player.getCardIncome() + 1);
 
-        return marsContext.dealCards(1);
+        return null;
     }
 
     @Override

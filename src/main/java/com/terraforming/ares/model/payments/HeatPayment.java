@@ -1,5 +1,7 @@
 package com.terraforming.ares.model.payments;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardService;
 
@@ -9,7 +11,8 @@ import com.terraforming.ares.services.CardService;
  */
 public class HeatPayment extends GenericPayment {
 
-    public HeatPayment(int value) {
+    @JsonCreator
+    public HeatPayment(@JsonProperty("value") int value) {
         super(value);
     }
 
