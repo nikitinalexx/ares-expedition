@@ -12,11 +12,11 @@ import {PaymentType} from '../../data/PaymentType';
 import {SellCardsComponent} from '../sellCards/sellCards.component';
 
 @Component({
-  selector: 'app-first-phase',
-  templateUrl: './firstPhase.component.html',
+  selector: 'app-second-phase',
+  templateUrl: './secondPhase.component.html',
   styleUrls: ['../turns.component.css']
 })
-export class FirstPhaseComponent implements OnInit {
+export class SecondPhaseComponent implements OnInit {
   public errorMessage: string;
   isSubmitted = false;
   selectedProject: Card;
@@ -47,8 +47,8 @@ export class FirstPhaseComponent implements OnInit {
     this.outputToParent.emit(data);
   }
 
-  buildGreenProjectTurn(): boolean {
-    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.BUILD_GREEN_PROJECT])?.length > 0;
+  buildBlueRedProjectTurn(): boolean {
+    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.BUILD_BLUE_RED_PROJECT])?.length > 0;
   }
 
   sellCardsTurn(): boolean {
@@ -63,8 +63,10 @@ export class FirstPhaseComponent implements OnInit {
     return this.game?.player.hand;
   }
 
-  getGreenPlayerHand(): Card[] {
-    return this.game?.player.hand.filter(card => card.cardColor === CardColor[CardColor.GREEN]);
+  getBlueRedPlayerHand(): Card[] {
+    return this.game?.player.hand.filter(
+      card => card.cardColor === CardColor[CardColor.BLUE] || card.cardColor === CardColor[CardColor.RED]
+    );
   }
 
   clickProjectToBuild(card: Card) {
@@ -110,7 +112,7 @@ export class FirstPhaseComponent implements OnInit {
       } else if (formGroup.value.turn === 'sellCards') {
         this.sellCardsService.sellCards(this.game);
         this.sendToParent(null);
-      } else if (formGroup.value.turn === 'greenProject' && formGroup.value.mcPrice !== null) {
+      } else if (formGroup.value.turn === 'blueRedProject' && formGroup.value.mcPrice !== null) {
         console.log(formGroup.value);
         const request = new BuildProjectRequest(
           this.game.player.playerUuid,
@@ -120,7 +122,7 @@ export class FirstPhaseComponent implements OnInit {
         );
         console.log(request);
 
-        this.gameRepository.buildGreenProject(request).subscribe(data => {
+        this.gameRepository.buildBlueRedProject(request).subscribe(data => {
           this.sendToParent(data);
           this.selectedProject = null;
         }, error => {

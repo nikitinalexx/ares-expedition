@@ -1,4 +1,4 @@
-<nav class="sticky-top navbar navbar-expand-lg navbar-light bg-dark text-white">
+<nav class="sticky-top navbar navbar-expand navbar-light bg-dark text-white">
   <div class="navbar-brand text-white" style="padding-left: 20px">You</div>
   <div class="navbar-nav">
     <div class="resource_item">
@@ -50,6 +50,10 @@
 
 <div>
   <app-first-phase *ngIf="firstPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game" [nextTurns]="nextTurns"></app-first-phase>
+</div>
+
+<div>
+  <app-second-phase *ngIf="secondPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game" [nextTurns]="nextTurns"></app-second-phase>
 </div>
 
 <h2 class="text-white">Played</h2>

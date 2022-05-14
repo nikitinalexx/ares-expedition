@@ -8,13 +8,13 @@
 <!-- Form starts -->
 <form [formGroup]="parentForm" (submit)="submitForm(parentForm)" novalidate>
 
-  <div *ngIf="buildGreenProjectTurn()" class="form-check">
-    <input id="greenProject" (click)="onValueClick()" type="radio" class="form-check-input" value="greenProject" formControlName="turn" [checked]="this.parentForm.value?.turn === 'greenProject'">
-    <label class="custom-control-label text-white" for="greenProject">Build green project</label>
+  <div *ngIf="buildBlueRedProjectTurn()" class="form-check">
+    <input id="blueRedProject" (click)="onValueClick()" type="radio" class="form-check-input" value="blueRedProject" formControlName="turn" [checked]="this.parentForm.value?.turn === 'blueRedProject'">
+    <label class="custom-control-label text-white" for="blueRedProject">Build blue/red project</label>
 
-    <div *ngIf="parentForm.value?.turn === 'greenProject'" class="card-container">
+    <div *ngIf="parentForm.value?.turn === 'blueRedProject'" class="card-container">
       <ul class="myUL">
-        <li *ngFor="let card of getGreenPlayerHand();" (click)="clickProjectToBuild(card)" [ngClass]="selectedProjectToBuildClass(card)" class="filterDiv automated display">
+        <li *ngFor="let card of getBlueRedPlayerHand();" (click)="clickProjectToBuild(card)" [ngClass]="selectedProjectToBuildClass(card)" class="filterDiv automated display">
           <app-card-template [card]="card" [game]="game"></app-card-template>
         </li>
       </ul>
