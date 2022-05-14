@@ -32,6 +32,10 @@ export class GameRepository {
     return this.dataSource.sellCards(playerUuid, cards);
   }
 
+  discardCards(playerUuid: string, cards: number[]): Observable<any> {
+    return this.dataSource.discardCards(playerUuid, cards);
+  }
+
   nextAction(playerUuid: string): Observable<ActionDto> {
     return this.dataSource.nextAction(playerUuid);
   }

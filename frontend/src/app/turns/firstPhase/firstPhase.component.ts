@@ -111,14 +111,12 @@ export class FirstPhaseComponent implements OnInit {
         this.sellCardsService.sellCards(this.game);
         this.sendToParent(null);
       } else if (formGroup.value.turn === 'greenProject' && formGroup.value.mcPrice !== null) {
-        console.log(formGroup.value);
         const request = new BuildProjectRequest(
           this.game.player.playerUuid,
           this.selectedProject.id,
           [new Payment(formGroup.value.mcPrice, PaymentType.MEGACREDITS)],
           null
         );
-        console.log(request);
 
         this.gameRepository.buildGreenProject(request).subscribe(data => {
           this.sendToParent(data);

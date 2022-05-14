@@ -1,13 +1,13 @@
 package com.terraforming.ares.controllers;
 
-import com.terraforming.ares.dto.CardDto;
-import com.terraforming.ares.dto.GameDto;
-import com.terraforming.ares.dto.PlayerDto;
-import com.terraforming.ares.dto.PlayerUuidsDto;
+import com.terraforming.ares.dto.*;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Deck;
 import com.terraforming.ares.model.GameParameters;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.turn.DiscardCardsTurn;
+import com.terraforming.ares.model.turn.Turn;
+import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardFactory;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.GameService;
@@ -89,7 +89,22 @@ public class GameController {
                 .plantsIncome(player.getPlantsIncome())
                 .steelIncome(player.getSteelIncome())
                 .titaniumIncome(player.getTitaniumIncome())
+                .nextTurn(buildTurnDto(player.getNextTurn()))
                 .build();
+    }
+
+    private TurnDto buildTurnDto(Turn turn) {
+        if (turn != null && turn.getType() == TurnType.DISCARD_CARDS) {
+            DiscardCardsTurn discardCardsTurnDto = (DiscardCardsTurn) turn;
+            return DiscardCardsTurnDto.builder()
+                    .size(discardCardsTurnDto.getSize())
+                    .onlyFromSelectedCards(discardCardsTurnDto.isOnlyFromSelectedCards())
+                    .cards(
+                            discardCardsTurnDto.getCards().stream().map(cardService::getProjectCard).map(CardDto::from).collect(Collectors.toList())
+                    ).build();
+        }
+        return null;
+
     }
 
 }

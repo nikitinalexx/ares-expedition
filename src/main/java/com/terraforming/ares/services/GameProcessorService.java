@@ -80,8 +80,12 @@ public class GameProcessorService {
     }
 
     private void processNextTurn(Player player, MarsGame game) {
-        processTurn(player.getNextTurn(), game);
-        player.setNextTurn(null);
+        Turn turnToProcess = player.getNextTurn();
+        processTurn(turnToProcess, game);
+
+        if (turnToProcess == player.getNextTurn()) {
+            player.setNextTurn(null);
+        }
     }
 
     @SuppressWarnings("unchecked")

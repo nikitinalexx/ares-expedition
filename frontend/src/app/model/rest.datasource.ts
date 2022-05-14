@@ -70,6 +70,12 @@ export class RestDataSource {
     return this.sendRequest<any>('POST', this.url + '/turn/build/blue-red', requestBody);
   }
 
+  discardCards(playerUuid: string, cards: number[]): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/turn/cards/discard',
+      {'playerUuid': playerUuid, 'cards': cards}
+    );
+  }
+
   private sendRequest<T>(verb: string, url: string, body?: any)
     : Observable<T> {
 

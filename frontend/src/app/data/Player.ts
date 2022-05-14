@@ -13,6 +13,7 @@ export class Player {
               heatIncome: number,
               plantsIncome: number,
               steelIncome: number,
+              nextTurn: any,
               titaniumIncome: number,
               corporationId?: number,
               phase?: number) {
@@ -35,5 +36,6 @@ export class Player {
   cardIncome: number;
   steelIncome: number;
   titaniumIncome: number;
+  nextTurn: any;
 
 }

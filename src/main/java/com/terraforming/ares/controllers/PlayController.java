@@ -80,8 +80,9 @@ public class PlayController {
         return turnService.performBlueAction(playerUuid, projectId, inputParams);
     }
 
-    public TurnResponse discardCards(String playerUuid, List<Integer> cards) {
-        return turnService.discardCards(playerUuid, cards);
+    @PostMapping("/turn/cards/discard")
+    public TurnResponse discardCards(@RequestBody DiscardCardsRequest request) {
+        return turnService.discardCards(request.getPlayerUuid(), request.getCards());
     }
 
 }

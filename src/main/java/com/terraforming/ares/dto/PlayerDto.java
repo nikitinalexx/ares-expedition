@@ -1,5 +1,6 @@
 package com.terraforming.ares.dto;
 
+import com.terraforming.ares.model.turn.Turn;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -19,6 +20,7 @@ public class PlayerDto {
     private final Integer corporationId;
     private final Integer phase;
     private final Integer previousPhase;
+    private final TurnDto nextTurn;
 
     private final int mc;
     private final int mcIncome;

@@ -20,6 +20,7 @@ export class SecondPhaseComponent implements OnInit {
   public errorMessage: string;
   isSubmitted = false;
   selectedProject: Card;
+  projectsToDiscard: number[];
   @ViewChild(SellCardsComponent) sellCardsService;
 
   parentForm: FormGroup;
@@ -51,6 +52,10 @@ export class SecondPhaseComponent implements OnInit {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.BUILD_BLUE_RED_PROJECT])?.length > 0;
   }
 
+  discardCardsTurn(): boolean {
+    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.DISCARD_CARDS])?.length > 0;
+  }
+
   sellCardsTurn(): boolean {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.SELL_CARDS])?.length > 0;
   }
@@ -69,6 +74,10 @@ export class SecondPhaseComponent implements OnInit {
     );
   }
 
+  getDiscardCards(): Card[] {
+    return this.game.player.nextTurn.cards;
+  }
+
   clickProjectToBuild(card: Card) {
     if (this.selectedProject && this.selectedProject.id === card.id) {
       this.selectedProject = null;
@@ -85,6 +94,25 @@ export class SecondPhaseComponent implements OnInit {
     return '';
   }
 
+  clickProjectToDiscard(card: Card) {
+    if (!this.projectsToDiscard) {
+      this.projectsToDiscard = [];
+    }
+    const index = this.projectsToDiscard.indexOf(card.id, 0);
+    if (index > -1) {
+      this.projectsToDiscard.splice(index, 1);
+    } else {
+      this.projectsToDiscard.push(card.id);
+    }
+  }
+
+  selectedProjectToDiscardClass(card: Card): string {
+    if (this.projectsToDiscard && this.projectsToDiscard.some(element => element === card.id)) {
+      return 'clicked-card';
+    }
+    return '';
+  }
+
   getDiscountedMcPriceOfSelectedProject(): number {
     if (this.selectedProject) {
       return this.selectedProject.price - this.discountService.getDiscount(this.selectedProject, this.game);
@@ -92,7 +120,6 @@ export class SecondPhaseComponent implements OnInit {
       return 0;
     }
   }
-
 
   onValueClick() {
     this.selectedProject = null;
@@ -113,14 +140,12 @@ export class SecondPhaseComponent implements OnInit {
         this.sellCardsService.sellCards(this.game);
         this.sendToParent(null);
       } else if (formGroup.value.turn === 'blueRedProject' && formGroup.value.mcPrice !== null) {
-        console.log(formGroup.value);
         const request = new BuildProjectRequest(
           this.game.player.playerUuid,
           this.selectedProject.id,
           [new Payment(formGroup.value.mcPrice, PaymentType.MEGACREDITS)],
           null
         );
-        console.log(request);
 
         this.gameRepository.buildBlueRedProject(request).subscribe(data => {
           this.sendToParent(data);
@@ -128,6 +153,21 @@ export class SecondPhaseComponent implements OnInit {
         }, error => {
           this.errorMessage = error;
         });
+      } else if (formGroup.value.turn === 'discardCards') {
+        if (!this.projectsToDiscard || this.projectsToDiscard.length !== this.game.player.nextTurn.size) {
+          this.errorMessage = 'Invalid number of cards to discard';
+        } else {
+          this.gameRepository.discardCards(this.game.player.playerUuid, this.projectsToDiscard).subscribe(
+            data => {
+              this.sendToParent(data);
+              this.selectedProject = null;
+              this.errorMessage = null;
+            },
+            error => {
+              this.errorMessage = error;
+            }
+          );
+        }
       }
     }
   }

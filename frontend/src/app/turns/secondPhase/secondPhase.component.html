@@ -40,6 +40,21 @@
     <input id="skipTurn" (click)="onValueClick()" type="radio" class="form-check-input" value="skipTurn" formControlName="turn" required [checked]="this.parentForm.value?.turn === 'skipTurn'">
     <label class="custom-control-label text-white" for="skipTurn">Skip turn</label>
   </div>
+
+  <div *ngIf="discardCardsTurn()" class="form-check">
+    <input id="discardCards" (click)="onValueClick()" type="radio" class="form-check-input" value="discardCards" formControlName="turn" [checked]="this.parentForm.value?.turn === 'discardCards'">
+    <label class="custom-control-label text-white" for="discardCards">Discard {{game.player.nextTurn.size }} cards</label>
+
+    <div *ngIf="parentForm.value?.turn === 'discardCards'" class="card-container">
+      <ul class="myUL">
+        <li *ngFor="let card of getDiscardCards();" (click)="clickProjectToDiscard(card)" [ngClass]="selectedProjectToDiscardClass(card)" class="filterDiv automated display">
+          <app-card-template [card]="card" [game]="game"></app-card-template>
+        </li>
+      </ul>
+    </div>
+
+  </div>
+
   <div *ngIf="isSubmitted && parentForm.invalid">
     <p>Please select either value</p>
   </div>
