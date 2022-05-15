@@ -11,6 +11,7 @@ import {Payment} from '../../data/Payment';
 import {PaymentType} from '../../data/PaymentType';
 import {SellCardsComponent} from '../sellCards/sellCards.component';
 import {CardResource} from '../../data/CardResource';
+import {CardAction} from "../../data/CardAction";
 
 @Component({
   selector: 'app-first-phase',
@@ -44,7 +45,8 @@ export class FirstPhaseComponent implements OnInit {
       turn: ['', Validators.required],
       mcPrice: [''],
       onBuildMicrobeEffectChoice: ['chooseMicrobe'],
-      onBuildAnimalEffectChoice: ['chooseAnimal']
+      onBuildAnimalEffectChoice: ['chooseAnimal'],
+      anaerobicMicroorganisms: [false]
     });
   }
 
@@ -109,6 +111,16 @@ export class FirstPhaseComponent implements OnInit {
       this.selectedProject = null;
     } else {
       this.selectedProject = card;
+      this.parentForm.controls.mcPrice.setValue(Math.max(
+        0, this.getDiscountedMcPriceOfSelectedProject() - (this.parentForm.value.anaerobicMicroorganisms ? 10 : 0)
+      ));
+    }
+  }
+
+  anaerobicMicroorganismsClicked($event: any) {
+    if ($event.target.checked) {
+      this.parentForm.controls.mcPrice.setValue(Math.max(0, this.getDiscountedMcPriceOfSelectedProject() - 10));
+    } else {
       this.parentForm.controls.mcPrice.setValue(this.getDiscountedMcPriceOfSelectedProject());
     }
   }
@@ -126,6 +138,19 @@ export class FirstPhaseComponent implements OnInit {
     } else {
       return 0;
     }
+  }
+
+  anaerobicMicroorganismsCardAction(): boolean {
+    if (!this.selectedProject) {
+      return false;
+    }
+    const anaerobicMicroorganismsCard = this.game.player.played.find(
+      card => card.cardAction === CardAction[CardAction.ANAEROBIC_MICROORGANISMS]
+    );
+    if (!anaerobicMicroorganismsCard) {
+      return false;
+    }
+    return this.game.player.cardResources[anaerobicMicroorganismsCard.id] >= 2;
   }
 
 
@@ -176,10 +201,16 @@ export class FirstPhaseComponent implements OnInit {
           }
         }
 
+        const payments = [new Payment(formGroup.value.mcPrice, PaymentType.MEGACREDITS)];
+
+        if (this.parentForm.value.anaerobicMicroorganisms) {
+          payments.push(new Payment(2, PaymentType.ANAEROBIC_MICROORGANISMS));
+        }
+
         const request = new BuildProjectRequest(
           this.game.player.playerUuid,
           this.selectedProject.id,
-          [new Payment(formGroup.value.mcPrice, PaymentType.MEGACREDITS)],
+          payments,
           inputParams
         );
 

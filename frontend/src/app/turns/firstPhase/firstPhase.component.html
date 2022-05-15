@@ -24,8 +24,15 @@
       <div class="form-group" *ngIf="selectedProject">
         <div class="form-row">
           <div class="col-sm-1">
-            <label for="mcInput" class="text-white">Payment</label>
+            <label for="mcInput" class="text-white">Mc</label>
             <input type="number" class="form-control form-control-sm" id="mcInput" formControlName="mcPrice">
+          </div>
+        </div>
+
+        <div class="form-row" *ngIf="anaerobicMicroorganismsCardAction()">
+          <div class="col-sm-1">
+            <label for="anaerobicMicroorganisms" class="text-white">Anaerobic Microorganisms</label>
+            <input type="checkbox" (change)="anaerobicMicroorganismsClicked($event)" class="custom-control-input" id="anaerobicMicroorganisms" formControlName="anaerobicMicroorganisms">
           </div>
         </div>
       </div>

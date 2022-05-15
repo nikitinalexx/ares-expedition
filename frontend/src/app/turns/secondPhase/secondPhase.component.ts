@@ -10,6 +10,7 @@ import {BuildProjectRequest} from '../../data/BuildProjectRequest';
 import {Payment} from '../../data/Payment';
 import {PaymentType} from '../../data/PaymentType';
 import {SellCardsComponent} from '../sellCards/sellCards.component';
+import {CardAction} from "../../data/CardAction";
 
 @Component({
   selector: 'app-second-phase',
@@ -40,7 +41,8 @@ export class SecondPhaseComponent implements OnInit {
   ngOnInit() {
     this.parentForm = this.formBuilder.group({
       turn: ['', Validators.required],
-      mcPrice: ['']
+      mcPrice: [''],
+      anaerobicMicroorganisms: [false]
     });
   }
 
@@ -83,6 +85,16 @@ export class SecondPhaseComponent implements OnInit {
       this.selectedProject = null;
     } else {
       this.selectedProject = card;
+      this.parentForm.controls.mcPrice.setValue(Math.max(
+        0, this.getDiscountedMcPriceOfSelectedProject() - (this.parentForm.value.anaerobicMicroorganisms ? 10 : 0)
+      ));
+    }
+  }
+
+  anaerobicMicroorganismsClicked($event: any) {
+    if ($event.target.checked) {
+      this.parentForm.controls.mcPrice.setValue(Math.max(0, this.getDiscountedMcPriceOfSelectedProject() - 10));
+    } else {
       this.parentForm.controls.mcPrice.setValue(this.getDiscountedMcPriceOfSelectedProject());
     }
   }
@@ -125,6 +137,19 @@ export class SecondPhaseComponent implements OnInit {
     this.selectedProject = null;
   }
 
+  anaerobicMicroorganismsCardAction(): boolean {
+    if (!this.selectedProject) {
+      return false;
+    }
+    const anaerobicMicroorganismsCard = this.game.player.played.find(
+      card => card.cardAction === CardAction[CardAction.ANAEROBIC_MICROORGANISMS]
+    );
+    if (!anaerobicMicroorganismsCard) {
+      return false;
+    }
+    return this.game.player.cardResources[anaerobicMicroorganismsCard.id] >= 2;
+  }
+
   submitForm(formGroup: FormGroup) {
     this.errorMessage = null;
     this.isSubmitted = true;
@@ -140,10 +165,16 @@ export class SecondPhaseComponent implements OnInit {
         this.sellCardsService.sellCards(this.game);
         this.sendToParent(null);
       } else if (formGroup.value.turn === 'blueRedProject' && formGroup.value.mcPrice !== null) {
+        const payments = [new Payment(formGroup.value.mcPrice, PaymentType.MEGACREDITS)];
+
+        if (this.parentForm.value.anaerobicMicroorganisms) {
+          payments.push(new Payment(2, PaymentType.ANAEROBIC_MICROORGANISMS));
+        }
+
         const request = new BuildProjectRequest(
           this.game.player.playerUuid,
           this.selectedProject.id,
-          [new Payment(formGroup.value.mcPrice, PaymentType.MEGACREDITS)],
+          payments,
           null
         );
 
