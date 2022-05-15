@@ -49,6 +49,26 @@
 
         </div>
 
+        <div *ngIf="expectsDecomposersInput()">
+          <h1 class="text-white">Decomposers effect: </h1>
+          <div class="form-group">
+            <div class="form-row">
+              <div class="col-sm-1">
+                <label class="custom-control-label text-white" for="takeMicrobes">Take microbes</label>
+                <input id="takeMicrobes" type="number" class="form-control form-control-sm"
+                       formControlName="takeMicrobes"
+                >
+              </div>
+              <div class="col-sm-1">
+                <label class="custom-control-label text-white" for="takeCards">Take cards</label>
+                <input id="takeCards" type="number" class="form-control form-control-sm"
+                       formControlName="takeCards"
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>

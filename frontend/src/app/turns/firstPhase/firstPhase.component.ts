@@ -11,9 +11,9 @@ import {Payment} from '../../data/Payment';
 import {PaymentType} from '../../data/PaymentType';
 import {SellCardsComponent} from '../sellCards/sellCards.component';
 import {CardResource} from '../../data/CardResource';
-import {CardAction} from "../../data/CardAction";
-import {Tag} from "../../data/Tag";
-import {InputFlag} from "../../data/InputFlag";
+import {CardAction} from '../../data/CardAction';
+import {Tag} from '../../data/Tag';
+import {InputFlag} from '../../data/InputFlag';
 
 @Component({
   selector: 'app-first-phase',
@@ -50,7 +50,9 @@ export class FirstPhaseComponent implements OnInit {
       onBuildMicrobeEffectChoice: ['chooseMicrobe'],
       onBuildAnimalEffectChoice: ['chooseAnimal'],
       anaerobicMicroorganisms: [false],
-      marsUniversityDiscardLess: [false]
+      marsUniversityDiscardLess: [false],
+      takeMicrobes: 0,
+      takeCards: 0
     });
   }
 
@@ -188,6 +190,13 @@ export class FirstPhaseComponent implements OnInit {
     return '';
   }
 
+  expectsDecomposersInput(): boolean {
+    return this.selectedProject.cardAction === CardAction[CardAction.DECOMPOSERS]
+      || (this.game.player.played.some(card => card.tags.some(tag =>
+          tag === Tag[Tag.ANIMAL] || tag === Tag[Tag.MICROBE] || tag === Tag[Tag.PLANT]))
+      );
+  }
+
   resetAllInputs() {
     this.selectedProject = null;
     this.onBuildMicrobeChoice = null;
@@ -237,7 +246,7 @@ export class FirstPhaseComponent implements OnInit {
             }
             inputParams[this.getMicrobeOnBuildEffectInputParamId()] = [this.onBuildMicrobeChoice.id];
           } else if (this.parentForm.value.onBuildMicrobeEffectChoice === 'skipMicrobe') {
-            inputParams[this.getMicrobeOnBuildEffectInputParamId()] = [-1];
+            inputParams[this.getMicrobeOnBuildEffectInputParamId()] = [InputFlag.SKIP_ACTION.valueOf()];
           }
         }
 
@@ -251,6 +260,21 @@ export class FirstPhaseComponent implements OnInit {
           } else if (this.parentForm.value.onBuildAnimalEffectChoice === 'skipAnimal') {
             inputParams[this.getAnimalOnBuildEffectInputParamId()] = [-1];
           }
+        }
+
+        if (this.expectsDecomposersInput()) {
+          const expectedInputSum = this.selectedProject.tags.some(
+            tag => tag === Tag[Tag.ANIMAL] || tag === Tag[Tag.MICROBE] || tag === Tag[Tag.PLANT]
+          );
+          const takeMicrobes = this.parentForm.value.takeMicrobes ? this.parentForm.value.takeMicrobes : 0;
+          const takeCards = this.parentForm.value.takeCards ? this.parentForm.value.takeCards : 0;
+
+          if (expectedInputSum !== (takeMicrobes + takeCards)) {
+            this.errorMessage = 'Sum of taken microbes and cards doesn\'t correspond to tag sum';
+            return;
+          }
+          inputParams[InputFlag.DECOMPOSERS_TAKE_MICROBE.valueOf()] = [takeMicrobes];
+          inputParams[InputFlag.DECOMPOSERS_TAKE_CARD.valueOf()] = [takeCards];
         }
 
         const payments = [new Payment(formGroup.value.mcPrice, PaymentType.MEGACREDITS)];

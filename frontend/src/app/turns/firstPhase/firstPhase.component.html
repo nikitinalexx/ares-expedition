@@ -32,7 +32,8 @@
         <div class="form-row" *ngIf="anaerobicMicroorganismsCardAction()">
           <div class="col-sm-1">
             <label for="anaerobicMicroorganisms" class="text-white">Anaerobic Microorganisms</label>
-            <input type="checkbox" (change)="anaerobicMicroorganismsClicked($event)" class="custom-control-input" id="anaerobicMicroorganisms" formControlName="anaerobicMicroorganisms">
+            <input type="checkbox" (change)="anaerobicMicroorganismsClicked($event)" class="custom-control-input"
+                   id="anaerobicMicroorganisms" formControlName="anaerobicMicroorganisms">
           </div>
         </div>
 
@@ -47,7 +48,8 @@
           </ul>
 
           <label for="marsUniversityDiscardLess" class="text-white">Discard fewer cards</label>
-          <input type="checkbox" class="custom-control-input" id="marsUniversityDiscardLess" formControlName="marsUniversityDiscardLess">
+          <input type="checkbox" class="custom-control-input" id="marsUniversityDiscardLess"
+                 formControlName="marsUniversityDiscardLess">
 
         </div>
       </div>
@@ -76,7 +78,8 @@
 
         <ul class="myUL" *ngIf="parentForm.value.onBuildMicrobeEffectChoice === 'chooseMicrobe'">
           <li *ngFor="let card of getMicrobePlayedCards();" (click)="onBuildMicrobeChoice = card"
-              [ngClass]="onBuildMicrobeChoice && onBuildMicrobeChoice.id == card.id ? 'clicked-card': ''" class="filterDiv automated display">
+              [ngClass]="onBuildMicrobeChoice && onBuildMicrobeChoice.id == card.id ? 'clicked-card': ''"
+              class="filterDiv automated display">
             <app-card-template [card]="card" [game]="game"></app-card-template>
           </li>
         </ul>
@@ -105,11 +108,33 @@
 
         <ul class="myUL" *ngIf="parentForm.value.onBuildAnimalEffectChoice === 'chooseAnimal'">
           <li *ngFor="let card of getAnimalPlayedCards();" (click)="onBuildAnimalChoice = card"
-              [ngClass]="onBuildAnimalChoice && onBuildAnimalChoice.id == card.id ? 'clicked-card': ''" class="filterDiv automated display">
+              [ngClass]="onBuildAnimalChoice && onBuildAnimalChoice.id == card.id ? 'clicked-card': ''"
+              class="filterDiv automated display">
             <app-card-template [card]="card" [game]="game"></app-card-template>
           </li>
         </ul>
       </div>
+
+      <div *ngIf="expectsDecomposersInput()">
+        <h1 class="text-white">Decomposers effect: </h1>
+        <div class="form-group">
+          <div class="form-row">
+            <div class="col-sm-1">
+              <label class="custom-control-label text-white" for="takeMicrobes">Take microbes</label>
+              <input id="takeMicrobes" type="number" class="form-control form-control-sm"
+                     formControlName="takeMicrobes"
+              >
+            </div>
+            <div class="col-sm-1">
+              <label class="custom-control-label text-white" for="takeCards">Take cards</label>
+              <input id="takeCards" type="number" class="form-control form-control-sm"
+                     formControlName="takeCards"
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
   </div>

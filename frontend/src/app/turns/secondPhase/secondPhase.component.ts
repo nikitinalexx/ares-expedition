@@ -45,7 +45,9 @@ export class SecondPhaseComponent implements OnInit {
       turn: ['', Validators.required],
       mcPrice: [''],
       anaerobicMicroorganisms: [false],
-      marsUniversityDiscardLess: [false]
+      marsUniversityDiscardLess: [false],
+      takeMicrobes: 0,
+      takeCards: 0
     });
   }
 
@@ -173,6 +175,13 @@ export class SecondPhaseComponent implements OnInit {
       && this.selectedProject.tags.some(tag => tag === Tag[Tag.SCIENCE]);
   }
 
+  expectsDecomposersInput(): boolean {
+    return this.selectedProject.cardAction === CardAction[CardAction.DECOMPOSERS]
+      || (this.game.player.played.some(card => card.tags.some(tag =>
+          tag === Tag[Tag.ANIMAL] || tag === Tag[Tag.MICROBE] || tag === Tag[Tag.PLANT]))
+      );
+  }
+
   submitForm(formGroup: FormGroup) {
     this.errorMessage = null;
     this.isSubmitted = true;
@@ -205,6 +214,21 @@ export class SecondPhaseComponent implements OnInit {
           } else {
             inputParams[InputFlag.MARS_UNIVERSITY_CARD.valueOf()] = this.projectsToDiscard;
           }
+        }
+
+        if (this.expectsDecomposersInput()) {
+          const expectedInputSum = this.selectedProject.tags.filter(
+            tag => tag === Tag[Tag.ANIMAL] || tag === Tag[Tag.MICROBE] || tag === Tag[Tag.PLANT]
+          ).length;
+          const takeMicrobes = this.parentForm.value.takeMicrobes ? this.parentForm.value.takeMicrobes : 0;
+          const takeCards = this.parentForm.value.takeCards ? this.parentForm.value.takeCards : 0;
+
+          if (expectedInputSum !== (takeMicrobes + takeCards)) {
+            this.errorMessage = 'Sum of taken microbes and cards doesn\'t correspond to tag sum';
+            return;
+          }
+          inputParams[InputFlag.DECOMPOSERS_TAKE_MICROBE.valueOf()] = [takeMicrobes];
+          inputParams[InputFlag.DECOMPOSERS_TAKE_CARD.valueOf()] = [takeCards];
         }
 
         const payments = [new Payment(formGroup.value.mcPrice, PaymentType.MEGACREDITS)];

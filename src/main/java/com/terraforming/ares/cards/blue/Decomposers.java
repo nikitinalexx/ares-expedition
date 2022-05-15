@@ -42,7 +42,7 @@ public class Decomposers implements BlueCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        marsContext.getPlayer().getCardResourcesCount().put(Decomposers.class, 1);
+        marsContext.getPlayer().getCardResourcesCount().put(Decomposers.class, 0);
         return null;
     }
 
@@ -79,6 +79,16 @@ public class Decomposers implements BlueCard {
     @Override
     public int getPrice() {
         return 7;
+    }
+
+    @Override
+    public boolean onBuiltEffectApplicableToOther() {
+        return true;
+    }
+
+    @Override
+    public boolean onBuiltEffectApplicableToItself() {
+        return true;
     }
 
     @Override

@@ -36,16 +36,12 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
             previouslyPlayedCard.onProjectBuiltEffect(cardService, game, player, card, turn.getInputParams());
         }
 
-        if (card.onBuiltEffectApplicableToItself()) {
-            card.onProjectBuiltEffect(cardService, game, player, card, turn.getInputParams());
-        }
-
         player.getHand().removeCards(Collections.singletonList(turn.getProjectId()));
         player.getPlayed().addCard(turn.getProjectId());
 
         processTurnInternal(turn, game);
 
-        return card.buildProject(
+        TurnResponse response = card.buildProject(
                 MarsContext.builder()
                         .game(game)
                         .player(player)
@@ -53,6 +49,12 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
                         .cardService(cardService)
                         .build()
         );
+
+        if (card.onBuiltEffectApplicableToItself()) {
+            card.onProjectBuiltEffect(cardService, game, player, card, turn.getInputParams());
+        }
+
+        return response;
     }
 
     protected void processTurnInternal(T turn, MarsGame game) {

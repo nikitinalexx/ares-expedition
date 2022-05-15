@@ -26,6 +26,9 @@ public class CardMetadata {
     List<Gain> bonuses = List.of();
     CardAction cardAction;
     WinPointsInfo winPointsInfo;
+    /*
+    * When this card is built, put some resources onto the other card
+     */
     @Singular("resourceOnBuild")
     List<PutResourceOnBuild> resourcesOnBuild;
     @Singular("actionInputData")

@@ -48,7 +48,7 @@ public class DecomposersOnBuiltEffectValidator implements OnBuiltEffectValidator
             return "Decomposers Take Microbe/Card sum is not equal to played card Animal/Microbe/Plant tag count";
         }
 
-        int microbesTotal = player.getCardResourcesCount().get(Decomposers.class) + takeMicrobes;
+        int microbesTotal = player.getCardResourcesCount().getOrDefault(Decomposers.class, 0) + takeMicrobes;
 
         if (microbesTotal < takeCards) {
             return "You can't pick Cards more than Microbes you have";
