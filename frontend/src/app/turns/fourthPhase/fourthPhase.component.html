@@ -1,0 +1,14 @@
+<h1>Pick turn</h1>
+
+<!-- Form starts -->
+<form [formGroup]="parentForm" (submit)="submitForm(parentForm)" novalidate>
+
+  <div *ngIf="collectIncomeTurn()" class="form-check">
+    <input id="collectIncome" type="radio" class="form-check-input" value="collectIncome" formControlName="turn"
+           required [checked]="this.parentForm.value?.turn === 'collectIncome'">
+    <label class="custom-control-label text-white" for="collectIncome">Collect Income</label>
+  </div>
+
+  <!-- Submit Button -->
+  <button type="submit" class="btn btn-danger btn-lg btn-block">Select turn</button>
+</form><!-- Form ends -->

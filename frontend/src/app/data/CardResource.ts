@@ -1,4 +1,4 @@
-export enum WinPointsType {
+export enum CardResource {
   MICROBE = 'MICROBE',
   ANIMAL = 'ANIMAL',
   SCIENCE = 'SCIENCE',

@@ -1,10 +1,10 @@
 package com.terraforming.ares.dto;
 
-import com.terraforming.ares.model.turn.Turn;
 import lombok.Builder;
 import lombok.Getter;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by oleksii.nikitin
@@ -21,6 +21,7 @@ public class PlayerDto {
     private final Integer phase;
     private final Integer previousPhase;
     private final TurnDto nextTurn;
+    private final Map<Integer, Integer> cardResources;
 
     private final int mc;
     private final int mcIncome;

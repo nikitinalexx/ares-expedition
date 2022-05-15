@@ -83,4 +83,9 @@ public class PlayController {
         return turnService.discardCards(request.getPlayerUuid(), request.getCards());
     }
 
+    @PostMapping("/turn/collect-income")
+    public void discardCards(@RequestBody PlayerUuidRequest playerUuidRequest) {
+        turnService.collectIncomeTurn(playerUuidRequest.getPlayerUuid());
+    }
+
 }

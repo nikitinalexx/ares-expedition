@@ -1,10 +1,10 @@
-import {WinPointsType} from "./WinPointsType";
+import {CardResource} from './CardResource';
 
 export class WinPointsInfo {
-  constructor(type: WinPointsType, resources: number, points: number) {
+  constructor(type: CardResource, resources: number, points: number) {
   }
 
-  type: WinPointsType;
+  type: CardResource;
   resources: number;
   points: number;
 }

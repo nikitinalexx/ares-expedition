@@ -76,6 +76,13 @@ export class RestDataSource {
     );
   }
 
+  collectIncome(playerUuid: string): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/turn/collect-income',
+      {'playerUuid': playerUuid}
+    );
+  }
+
+
   private sendRequest<T>(verb: string, url: string, body?: any)
     : Observable<T> {
 

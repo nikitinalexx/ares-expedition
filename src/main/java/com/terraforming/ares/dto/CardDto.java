@@ -32,6 +32,7 @@ public class CardDto {
     OceanRequirement oceanRequirement;
     List<Gain> bonuses;
     WinPointsInfo winPointsInfo;
+    CardCollectableResource cardResource;
 
     public static CardDto from(GenericCard card) {
         return new CardDto(
@@ -50,7 +51,8 @@ public class CardDto {
                 card.getOxygenRequirement(),
                 card.getOceanRequirement(),
                 card.getCardMetadata().getBonuses(),
-                card.getCardMetadata().getWinPointsInfo()
+                card.getCardMetadata().getWinPointsInfo(),
+                card.getCollectableResource() != CardCollectableResource.NONE ? card.getCollectableResource() : null
         );
     }
 

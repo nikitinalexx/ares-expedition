@@ -19,9 +19,9 @@
     (card.winPointsInfo.points >= card.winPointsInfo.resources ? '' : card.winPointsInfo.resources) }}
       <div class="{{card.winPointsInfo.type.toString().toLowerCase()}} resource"></div></div>
 
-    <div *ngIf="card.winPointsInfo && game?.player" class="points-player">
-      <span class="points-counter">2</span>
-      <span class="{{card.winPointsInfo.type.toString().toLowerCase()}} resource player-resource"></span>
+    <div *ngIf="game?.player && card.cardResource" class="points-player">
+      <span class="points-counter">{{game.player.cardResources.get(card.id)}}</span>
+      <span class="{{card.cardResource.toString().toLowerCase()}} resource player-resource"></span>
     </div>
 
     <div *ngIf="hasTagRequirements(card)" class="requirements">{{getTagRequirements(card)}}</div>

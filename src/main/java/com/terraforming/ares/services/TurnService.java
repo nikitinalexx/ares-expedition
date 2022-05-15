@@ -58,6 +58,10 @@ public class TurnService {
         });
     }
 
+    public void collectIncomeTurn(String playerUuid) {
+        performAsyncTurn(new CollectIncomeTurn(playerUuid), playerUuid, game -> null);
+    }
+
     public void skipTurn(String playerUuid) {
         performAsyncTurn(new SkipTurn(playerUuid), playerUuid, game -> null);
     }

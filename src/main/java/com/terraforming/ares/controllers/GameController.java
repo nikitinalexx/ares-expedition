@@ -2,9 +2,7 @@ package com.terraforming.ares.controllers;
 
 import com.terraforming.ares.dto.*;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Deck;
-import com.terraforming.ares.model.GameParameters;
-import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
 import com.terraforming.ares.model.turn.Turn;
 import com.terraforming.ares.model.turn.TurnType;
@@ -90,6 +88,14 @@ public class GameController {
                 .steelIncome(player.getSteelIncome())
                 .titaniumIncome(player.getTitaniumIncome())
                 .nextTurn(buildTurnDto(player.getNextTurn()))
+                .cardResources(
+                        player.getPlayed().getCards().stream().map(cardService::getProjectCard)
+                                .filter(card -> card.getCollectableResource() != CardCollectableResource.NONE)
+                                .collect(Collectors.toMap(
+                                        GenericCard::getId,
+                                        card -> player.getCardResourcesCount().get(card.getClass())
+                                ))
+                )
                 .build();
     }
 
