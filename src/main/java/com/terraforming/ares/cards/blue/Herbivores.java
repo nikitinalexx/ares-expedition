@@ -3,6 +3,7 @@ package com.terraforming.ares.cards.blue;
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.parameters.OceanRequirement;
+import com.terraforming.ares.model.winPoints.WinPointsInfo;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -24,6 +25,12 @@ public class Herbivores implements BlueCard {
                 .name("Herbivores")
                 .description("Requires 5 oceans to be flipped. When you raise oxygen, flip an ocean tile, or raise temperature, add 1 animal to this card. 1 VP per 2 animals on this card.")
                 .cardAction(CardAction.HERBIVORES)
+                .winPointsInfo(WinPointsInfo.builder()
+                        .type(CardCollectableResource.ANIMAL)
+                        .resources(2)
+                        .points(1)
+                        .build()
+                )
                 .build();
     }
 

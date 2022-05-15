@@ -2,6 +2,7 @@ package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.winPoints.WinPointsInfo;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -23,6 +24,12 @@ public class Tardigrades implements BlueCard {
                 .name("Tardigrades")
                 .description("Action: Add 1 microbe to this card. 1 VP per 3 microbes on this card.")
                 .cardAction(CardAction.ADD_MICROBE)
+                .winPointsInfo(WinPointsInfo.builder()
+                        .type(CardCollectableResource.MICROBE)
+                        .resources(3)
+                        .points(1)
+                        .build()
+                )
                 .build();
     }
 

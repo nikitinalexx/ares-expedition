@@ -2,6 +2,7 @@ package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.winPoints.WinPointsInfo;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -23,6 +24,12 @@ public class PhysicsComplex implements BlueCard {
                 .name("Physics Complex")
                 .description("Requires 4 Science tags. When you raise the temperature, add 1 science resource to this card. 1 VP per 2 science res on this card.")
                 .cardAction(CardAction.PHYSICS_COMPLEX)
+                .winPointsInfo(WinPointsInfo.builder()
+                        .type(CardCollectableResource.SCIENCE)
+                        .resources(2)
+                        .points(1)
+                        .build()
+                )
                 .build();
     }
 

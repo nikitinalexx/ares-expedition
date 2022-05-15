@@ -3,6 +3,7 @@ package com.terraforming.ares.cards.blue;
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.winPoints.WinPointsInfo;
 import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,12 @@ public class EcologicalZone implements BlueCard {
                 .name("Ecological Zone")
                 .description("When you play a Animal or Plant, including these, add an animal to this card. 1 VP per 2 animals on this card.")
                 .cardAction(CardAction.ECOLOGICAL_ZONE)
+                .winPointsInfo(WinPointsInfo.builder()
+                        .type(CardCollectableResource.ANIMAL)
+                        .resources(2)
+                        .points(1)
+                        .build()
+                )
                 .build();
     }
 

@@ -5,6 +5,7 @@ import {CardAction} from './CardAction';
 import {ParameterColor} from './ParameterColor';
 import {OceanRequirement} from './OceanRequirement';
 import {Gain} from './Gain';
+import {WinPointsInfo} from './WinPointsInfo';
 
 export class Card {
   constructor(id: number,
@@ -18,6 +19,7 @@ export class Card {
               incomes: Gain[],
               tempReq: ParameterColor[],
               oxygenReq: ParameterColor[],
+              winPointsInfo?: WinPointsInfo,
               oceanRequirement?: OceanRequirement,
               tags: Tag[] = [],
               specialEffects: SpecialEffect[] = [],
@@ -39,4 +41,5 @@ export class Card {
   tempReq: ParameterColor[];
   oxygenReq: ParameterColor[];
   oceanRequirement: OceanRequirement;
+  winPointsInfo: WinPointsInfo;
 }

@@ -14,6 +14,16 @@
   <div class="content ">
     <div *ngIf="card.winPoints" class="points points-big">{{ card.winPoints }}</div>
 
+    <div *ngIf="card.winPointsInfo" class="points" style="font-size: 26px;">
+      {{card.winPointsInfo.points + '/' +
+    (card.winPointsInfo.points >= card.winPointsInfo.resources ? '' : card.winPointsInfo.resources) }}
+      <div class="{{card.winPointsInfo.type.toString().toLowerCase()}} resource"></div></div>
+
+    <div *ngIf="card.winPointsInfo && game?.player" class="points-player">
+      <span class="points-counter">2</span>
+      <span class="{{card.winPointsInfo.type.toString().toLowerCase()}} resource player-resource"></span>
+    </div>
+
     <div *ngIf="hasTagRequirements(card)" class="requirements">{{getTagRequirements(card)}}</div>
 
     <div *ngIf="hasTempRequirements(card)" [ngClass]="getTemperatureClass(card)" class="requirements">Temperature</div>
@@ -214,7 +224,7 @@
     </div>
 
     <div *ngIf="actionInterplanetaryConference(card)">
-      <div class="resource-tag tag-earth"></div>/<div class="resource-tag tag-jovian"></div> : <div class="money resource ">-3</div><span class="card resource "></span>
+      <div class="resource-tag tag-earth"></div>/<div class="resource-tag tag-jupiter"></div> : <div class="money resource ">-3</div><span class="card resource "></span>
     </div>
 
     <div *ngIf="actionInterplanetaryRelations(card)">
@@ -353,7 +363,7 @@
     </div>
 
     <div *ngIf="actionTerraformingGanymede(card)">
-      <div class="tile rating"></div> / <div class="resource-tag tag-jovian"></div>
+      <div class="tile rating"></div> / <div class="resource-tag tag-jupiter"></div>
     </div>
 
     <div *ngIf="actionWorkCrews(card)">

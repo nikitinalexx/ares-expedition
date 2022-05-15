@@ -274,6 +274,38 @@ li.events::before {
   text-shadow: 0 0 5px darkorange;
 }
 
+.points-player {
+  position: absolute;
+  margin-left: -5px;
+  margin-top: 197px;
+  font-weight: normal;
+  width: 60px;
+  height: 30px;
+  line-height: 35px;
+  font-size: 28px;
+  text-align: center;
+  border-radius: 10px;
+  background-color: rgb(205, 162, 130);
+  background: linear-gradient(#cc8b00, rgb(128, 87, 0), rgb(128, 87, 0));
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(0, 0, 0, 0.3);
+  background: url(../images/mars.png);
+  background-size: 90px;
+  background-position: -5px -25px;
+  text-shadow: 0 0 5px darkorange;
+  filter: grayscale(60%);
+}
+
+.points-counter {
+  font-size: 22px;
+  vertical-align: top;
+}
+
+.player-resource {
+  transform: scale(0.6);
+  top: -4px;
+  left: 5px;
+}
+
 .points-big {
   line-height: 42px;
   font-size: 36px;
@@ -600,6 +632,10 @@ li.events::before {
 }
 .science {
   background-image: url(../images/resources/science.png);
+}
+
+.forest {
+  background-image: url(../images/tiles/greenery.png);
 }
 
 .card {

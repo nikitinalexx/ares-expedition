@@ -3,6 +3,7 @@ package com.terraforming.ares.cards.blue;
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.parameters.ParameterColor;
+import com.terraforming.ares.model.winPoints.WinPointsInfo;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -24,6 +25,12 @@ public class Livestock implements BlueCard {
                 .name("Livestock")
                 .description("Requires yellow oxygen or higher. When you raise the temperature, add 1 animal to this card. 1 VP per animal on this card.")
                 .cardAction(CardAction.LIVESTOCK)
+                .winPointsInfo(WinPointsInfo.builder()
+                        .type(CardCollectableResource.ANIMAL)
+                        .resources(1)
+                        .points(1)
+                        .build()
+                )
                 .build();
     }
 

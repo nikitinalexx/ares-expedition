@@ -2,7 +2,6 @@ package com.terraforming.ares.controllers;
 
 import com.terraforming.ares.dto.ActionDto;
 import com.terraforming.ares.model.TurnResponse;
-import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.request.*;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.GameService;
@@ -11,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by oleksii.nikitin

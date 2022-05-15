@@ -3,6 +3,7 @@ package com.terraforming.ares.cards.blue;
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.parameters.ParameterColor;
+import com.terraforming.ares.model.winPoints.WinPointsInfo;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -24,6 +25,12 @@ public class Fish implements BlueCard {
                 .name("Fish")
                 .description("Requires red temperature or warmer. When you flip an ocean tile, add 1 animal to this card. 1 VP per animal on this card.")
                 .cardAction(CardAction.FISH)
+                .winPointsInfo(WinPointsInfo.builder()
+                        .type(CardCollectableResource.ANIMAL)
+                        .resources(1)
+                        .points(1)
+                        .build()
+                )
                 .build();
     }
 

@@ -74,4 +74,8 @@ public interface GenericCard {
     default void onForestBuiltEffect(Player player) {
     }
 
+    default CardCollectableResource getCollectableResource() {
+        return CardCollectableResource.NONE;
+    }
+
 }

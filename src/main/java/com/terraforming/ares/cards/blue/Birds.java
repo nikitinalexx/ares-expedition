@@ -3,6 +3,7 @@ package com.terraforming.ares.cards.blue;
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.parameters.ParameterColor;
+import com.terraforming.ares.model.winPoints.WinPointsInfo;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -25,6 +26,12 @@ public class Birds implements BlueCard {
                 .name("Birds")
                 .description("Requires white oxygen. Add an animal to this card. 1 VP per animal on this card.")
                 .cardAction(CardAction.ADD_ANIMAL)
+                .winPointsInfo(WinPointsInfo.builder()
+                        .type(CardCollectableResource.ANIMAL)
+                        .resources(1)
+                        .points(1)
+                        .build()
+                )
                 .build();
     }
 
@@ -36,12 +43,6 @@ public class Birds implements BlueCard {
     @Override
     public CardCollectableResource getCollectableResource() {
         return CardCollectableResource.ANIMAL;
-    }
-
-    @Override
-    public int getWinningPoints() {
-        //TODO
-        return 0;
     }
 
     @Override

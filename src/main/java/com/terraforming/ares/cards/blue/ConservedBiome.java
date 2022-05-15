@@ -2,8 +2,10 @@ package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.CardAction;
+import com.terraforming.ares.model.CardCollectableResource;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.model.winPoints.WinPointsInfo;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -25,18 +27,18 @@ public class ConservedBiome implements BlueCard {
                 .name("Conserved Biome")
                 .description("Add a microbe to ANOTHER* card or add an animal to ANOTHER* card. 1 VP per 2 forests you have.")
                 .cardAction(CardAction.CONSERVED_BIOME)
+                .winPointsInfo(WinPointsInfo.builder()
+                        .type(CardCollectableResource.FOREST)
+                        .resources(2)
+                        .points(1)
+                        .build()
+                )
                 .build();
     }
 
     @Override
     public CardMetadata getCardMetadata() {
         return cardMetadata;
-    }
-
-    @Override
-    public int getWinningPoints() {
-        //TODO
-        return 0;
     }
 
     @Override

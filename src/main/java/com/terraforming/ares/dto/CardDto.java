@@ -4,6 +4,7 @@ import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.parameters.OceanRequirement;
 import com.terraforming.ares.model.parameters.ParameterColor;
+import com.terraforming.ares.model.winPoints.WinPointsInfo;
 import lombok.Value;
 
 import java.util.ArrayList;
@@ -30,6 +31,7 @@ public class CardDto {
     List<ParameterColor> oxygenReq;
     OceanRequirement oceanRequirement;
     List<Gain> bonuses;
+    WinPointsInfo winPointsInfo;
 
     public static CardDto from(GenericCard card) {
         return new CardDto(
@@ -47,7 +49,8 @@ public class CardDto {
                 card.getTemperatureRequirement(),
                 card.getOxygenRequirement(),
                 card.getOceanRequirement(),
-                card.getCardMetadata().getBonuses()
+                card.getCardMetadata().getBonuses(),
+                card.getCardMetadata().getWinPointsInfo()
         );
     }
 
