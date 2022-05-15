@@ -5,5 +5,6 @@ package com.terraforming.ares.model.action;
  * Creation date 15.05.2022
  */
 public enum ActionInputDataType {
-    DISCARD_CARD
+    DISCARD_CARD,
+    DISCARD_HEAT
 }

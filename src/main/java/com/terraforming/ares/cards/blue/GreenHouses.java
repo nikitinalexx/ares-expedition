@@ -4,6 +4,8 @@ import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.model.action.ActionInputData;
+import com.terraforming.ares.model.action.ActionInputDataType;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,13 @@ public class GreenHouses implements BlueCard {
                 .name("Greenhouses")
                 .description("Requires yellow temperature or warmer. Action: Spend up to 4 heat to gain that amount of plants.")
                 .cardAction(CardAction.GREEN_HOUSES)
+                .actionInputData(
+                        ActionInputData.builder()
+                                .type(ActionInputDataType.DISCARD_HEAT)
+                                .min(1)
+                                .max(4)
+                                .build()
+                )
                 .build();
     }
 

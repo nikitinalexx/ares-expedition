@@ -38,7 +38,8 @@ export class ThirdPhaseComponent implements OnInit {
 
   ngOnInit() {
     this.parentForm = this.formBuilder.group({
-      turn: ['', Validators.required]
+      turn: ['', Validators.required],
+      heatInput: ['']
     });
   }
 
@@ -73,6 +74,12 @@ export class ThirdPhaseComponent implements OnInit {
   expectsCardActionInput(): boolean {
     return this.selectedProject && this.selectedProject?.actionInputData.some(data =>
       data.type === ActionInputDataType[ActionInputDataType.DISCARD_CARD]
+    );
+  }
+
+  expectsHeatActionInput(): boolean {
+    return this.selectedProject && this.selectedProject?.actionInputData.some(data =>
+      data.type === ActionInputDataType[ActionInputDataType.DISCARD_HEAT]
     );
   }
 
@@ -159,6 +166,24 @@ export class ThirdPhaseComponent implements OnInit {
             return;
           }
           inputParams = inputParams.concat(this.cardsToDiscard);
+        }
+
+        if (this.expectsHeatActionInput()) {
+          const expectedCount = this.selectedProject.actionInputData.find(data =>
+            data.type === ActionInputDataType[ActionInputDataType.DISCARD_HEAT]
+          );
+          const min = expectedCount.min;
+          const max = expectedCount.max;
+          const inputValue = this.parentForm.get('heatInput').value;
+          if (!inputValue || inputValue < min || inputValue > max) {
+            this.errorMessage = min + ' to ' + max + ' heat to discard is expected';
+            return;
+          }
+          if (this.game.player.heat < inputValue) {
+            this.errorMessage = 'Not enough heat';
+            return;
+          }
+          inputParams.push(inputValue);
         }
 
         const request = new BlueActionRequest(

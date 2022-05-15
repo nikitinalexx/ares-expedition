@@ -34,6 +34,19 @@
 
     </div>
 
+    <div *ngIf="expectsHeatActionInput()" class="card-container">
+      <h1 class="text-white">How much heat to discard </h1>
+
+      <div class="form-group">
+        <div class="form-row">
+          <div class="col-sm-1">
+            <input type="number" class="form-control form-control-sm" id="heatInput" formControlName="heatInput">
+          </div>
+        </div>
+      </div>
+
+    </div>
+
   </div>
 
   <div *ngIf="sellCardsTurn()" class="form-check">
