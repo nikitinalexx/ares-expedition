@@ -177,7 +177,9 @@ export class SecondPhaseComponent implements OnInit {
 
   expectsDecomposersInput(): boolean {
     return this.selectedProject.cardAction === CardAction[CardAction.DECOMPOSERS]
-      || (this.game.player.played.some(card => card.tags.some(tag =>
+      ||
+      this.game.player.played.some(card => card.cardAction === CardAction[CardAction.DECOMPOSERS])
+      && (this.game.player.played.some(card => card.tags.some(tag =>
           tag === Tag[Tag.ANIMAL] || tag === Tag[Tag.MICROBE] || tag === Tag[Tag.PLANT]))
       );
   }

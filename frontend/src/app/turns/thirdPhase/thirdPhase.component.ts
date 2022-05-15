@@ -10,6 +10,8 @@ import {SellCardsComponent} from '../sellCards/sellCards.component';
 import {BlueActionRequest} from '../../data/BlueActionRequest';
 import {ActionInputDataType} from '../../data/ActionInputDataType';
 import {CardResource} from "../../data/CardResource";
+import {CardAction} from "../../data/CardAction";
+import {InputFlag} from "../../data/InputFlag";
 
 @Component({
   selector: 'app-third-phase',
@@ -41,7 +43,8 @@ export class ThirdPhaseComponent implements OnInit {
     this.parentForm = this.formBuilder.group({
       turn: ['', Validators.required],
       heatInput: [''],
-      addOrUseMicrobe: ['addMicrobe']
+      addOrUseMicrobe: ['addMicrobe'],
+      gainPlantOrMicrobe: ['gainPlant']
     });
   }
 
@@ -74,6 +77,12 @@ export class ThirdPhaseComponent implements OnInit {
         card.cardResource === CardResource[CardResource.ANIMAL] || card.cardResource === CardResource[CardResource.MICROBE]
       );
     }
+
+    if (this.selectedProject && this.selectedProject.cardAction === CardAction[CardAction.EXTREME_COLD_FUNGUS]) {
+      return this.game.player.played.filter(card =>
+        card.cardResource === CardResource[CardResource.MICROBE]
+      );
+    }
   }
 
   getBlueUnplayedCards(): Card[] {
@@ -103,13 +112,17 @@ export class ThirdPhaseComponent implements OnInit {
     );
   }
 
+  expectsExtremeColdFungusInput(): boolean {
+    return this.selectedProject && this.selectedProject.cardAction === CardAction.EXTREME_COLD_FUNGUS;
+  }
+
   getDiscardCards(): Card[] {
     return this.game.player.nextTurn.cards;
   }
 
   selectProject(card: Card) {
     if (this.selectedProject && this.selectedProject.id === card.id) {
-      this.selectedProject = null;
+      this.clearInput();
     } else {
       this.selectedProject = card;
     }
@@ -215,6 +228,19 @@ export class ThirdPhaseComponent implements OnInit {
             inputParams.push(inputConfig.min);
           } else {
             inputParams.push(inputConfig.max);
+          }
+        }
+
+        if (this.expectsExtremeColdFungusInput()) {
+          if (this.parentForm.value.gainPlantOrMicrobe === 'gainPlant') {
+            inputParams.push(InputFlag.EXTEME_COLD_FUNGUS_PICK_PLANT.valueOf());
+          } else {
+            if (!this.actionTargetCards || this.actionTargetCards.length !== 1) {
+              this.errorMessage = 'One card is expected to be selected';
+              return;
+            }
+            inputParams.push(InputFlag.EXTREME_COLD_FUNGUS_PUT_MICROBE.valueOf());
+            inputParams.push(this.actionTargetCards[0]);
           }
         }
 
