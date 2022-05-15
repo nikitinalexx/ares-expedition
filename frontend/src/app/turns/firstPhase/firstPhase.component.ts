@@ -10,6 +10,7 @@ import {BuildProjectRequest} from '../../data/BuildProjectRequest';
 import {Payment} from '../../data/Payment';
 import {PaymentType} from '../../data/PaymentType';
 import {SellCardsComponent} from '../sellCards/sellCards.component';
+import {CardResource} from '../../data/CardResource';
 
 @Component({
   selector: 'app-first-phase',
@@ -20,6 +21,8 @@ export class FirstPhaseComponent implements OnInit {
   public errorMessage: string;
   isSubmitted = false;
   selectedProject: Card;
+  onBuildMicrobeChoice = null;
+  onBuildAnimalChoice = null;
   @ViewChild(SellCardsComponent) sellCardsService;
 
   parentForm: FormGroup;
@@ -39,7 +42,9 @@ export class FirstPhaseComponent implements OnInit {
   ngOnInit() {
     this.parentForm = this.formBuilder.group({
       turn: ['', Validators.required],
-      mcPrice: ['']
+      mcPrice: [''],
+      onBuildMicrobeEffectChoice: ['chooseMicrobe'],
+      onBuildAnimalEffectChoice: ['chooseAnimal']
     });
   }
 
@@ -67,6 +72,38 @@ export class FirstPhaseComponent implements OnInit {
     return this.game?.player.hand.filter(card => card.cardColor === CardColor[CardColor.GREEN]);
   }
 
+  getMicrobePlayedCards(): Card[] {
+    return this.game?.player.played.filter(card => card.cardResource === CardResource[CardResource.MICROBE]);
+  }
+
+  getAnimalPlayedCards(): Card[] {
+    return this.game?.player.played.filter(card => card.cardResource === CardResource[CardResource.ANIMAL]);
+  }
+
+  expectsMicrobeOnBuildEffectInput(): boolean {
+    return this.selectedProject && this.selectedProject?.resourcesOnBuild.some(resource =>
+      resource.type === CardResource[CardResource.MICROBE]
+    );
+  }
+
+  expectsAnimalOnBuildEffectInput(): boolean {
+    return this.selectedProject && this.selectedProject?.resourcesOnBuild.some(resource =>
+      resource.type === CardResource[CardResource.ANIMAL]
+    );
+  }
+
+  getMicrobeOnBuildEffectInputParamId(): number {
+    return this.selectedProject?.resourcesOnBuild.find(resource =>
+      resource.type === CardResource[CardResource.MICROBE]
+    ).paramId;
+  }
+
+  getAnimalOnBuildEffectInputParamId(): number {
+    return this.selectedProject?.resourcesOnBuild.find(resource =>
+      resource.type === CardResource[CardResource.ANIMAL]
+    ).paramId;
+  }
+
   clickProjectToBuild(card: Card) {
     if (this.selectedProject && this.selectedProject.id === card.id) {
       this.selectedProject = null;
@@ -92,8 +129,10 @@ export class FirstPhaseComponent implements OnInit {
   }
 
 
-  onValueClick() {
+  resetAllInputs() {
     this.selectedProject = null;
+    this.onBuildMicrobeChoice = null;
+    this.onBuildAnimalChoice = null;
   }
 
   submitForm(formGroup: FormGroup) {
@@ -111,11 +150,37 @@ export class FirstPhaseComponent implements OnInit {
         this.sellCardsService.sellCards(this.game);
         this.sendToParent(null);
       } else if (formGroup.value.turn === 'greenProject' && formGroup.value.mcPrice !== null) {
+        const inputParams = new Map<number, number[]>();
+
+        if (this.expectsMicrobeOnBuildEffectInput()) {
+          if (this.parentForm.value.onBuildMicrobeEffectChoice === 'chooseMicrobe') {
+            if (!this.onBuildMicrobeChoice) {
+              this.errorMessage = 'You need to choose a microbe card';
+              return;
+            }
+            inputParams[this.getMicrobeOnBuildEffectInputParamId()] = [this.onBuildMicrobeChoice.id];
+          } else if (this.parentForm.value.onBuildMicrobeEffectChoice === 'skipMicrobe') {
+            inputParams[this.getMicrobeOnBuildEffectInputParamId()] = [-1];
+          }
+        }
+
+        if (this.expectsAnimalOnBuildEffectInput()) {
+          if (this.parentForm.value.onBuildAnimalEffectChoice === 'chooseAnimal') {
+            if (!this.onBuildAnimalChoice) {
+              this.errorMessage = 'You need to choose an animal card';
+              return;
+            }
+            inputParams[this.getAnimalOnBuildEffectInputParamId()] = [this.onBuildAnimalChoice.id];
+          } else if (this.parentForm.value.onBuildAnimalEffectChoice === 'skipAnimal') {
+            inputParams[this.getAnimalOnBuildEffectInputParamId()] = [-1];
+          }
+        }
+
         const request = new BuildProjectRequest(
           this.game.player.playerUuid,
           this.selectedProject.id,
           [new Payment(formGroup.value.mcPrice, PaymentType.MEGACREDITS)],
-          null
+          inputParams
         );
 
         this.gameRepository.buildGreenProject(request).subscribe(data => {

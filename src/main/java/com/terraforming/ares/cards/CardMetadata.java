@@ -1,9 +1,12 @@
 package com.terraforming.ares.cards;
 
 import com.terraforming.ares.model.CardAction;
+import com.terraforming.ares.model.action.ActionInputData;
+import com.terraforming.ares.model.build.PutResourceOnBuild;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.winPoints.WinPointsInfo;
 import lombok.Builder;
+import lombok.Singular;
 import lombok.Value;
 
 import java.util.List;
@@ -23,4 +26,8 @@ public class CardMetadata {
     List<Gain> bonuses = List.of();
     CardAction cardAction;
     WinPointsInfo winPointsInfo;
+    @Singular("resourceOnBuild")
+    List<PutResourceOnBuild> resourcesOnBuild;
+    @Singular("actionInputData")
+    List<ActionInputData> actionsInputData;
 }

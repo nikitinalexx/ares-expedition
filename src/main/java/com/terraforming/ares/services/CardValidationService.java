@@ -7,6 +7,7 @@ import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.validation.action.ActionValidator;
 import com.terraforming.ares.validation.input.OnBuiltEffectValidator;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 import java.util.function.Function;
@@ -156,7 +157,10 @@ public class CardValidationService {
         Optional<String> validationResult = Optional.empty();
 
         if (card.onBuiltEffectApplicableToItself()) {
-            validationResult = validationResult.or(() -> Optional.ofNullable(onBuiltEffectValidators.get(card.getClass())).map(s -> s.validate(card, player, inputParams)));
+            validationResult = validationResult.or(
+                    () -> Optional.ofNullable(onBuiltEffectValidators.get(card.getClass()))
+                            .map(validator -> validator.validate(card, player, CollectionUtils.isEmpty(inputParams) ? Map.of() : inputParams))
+            );
         }
 
         return validationResult.or(() ->

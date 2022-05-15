@@ -3,6 +3,7 @@ package com.terraforming.ares.cards.green;
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.build.PutResourceOnBuild;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.model.parameters.ParameterColor;
@@ -31,6 +32,13 @@ public class EosChasmaNationalPark implements BaseExpansionGreenCard {
                 .incomes(List.of(Gain.of(GainType.MC, 2)))
                 .bonuses(List.of(Gain.of(GainType.PLANT, 3)))
                 .cardAction(CardAction.EOS_CHASMA)
+                .resourceOnBuild(
+                        PutResourceOnBuild.builder()
+                                .type(CardCollectableResource.ANIMAL)
+                                .count(1)
+                                .paramId(InputFlag.EOS_CHASMA_PUT_RESOURCE.getId())
+                                .build()
+                )
                 .build();
     }
 

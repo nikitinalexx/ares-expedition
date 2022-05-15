@@ -2,6 +2,8 @@ package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.action.ActionInputData;
+import com.terraforming.ares.model.action.ActionInputDataType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -23,6 +25,13 @@ public class FarmingCoops implements BlueCard {
                 .name("Farming Co-ops")
                 .description("Gain 3 plants. Action: Discard a card in hand to gain 3 plants.")
                 .cardAction(CardAction.FARMING_COOPS)
+                .actionInputData(
+                        ActionInputData.builder()
+                                .type(ActionInputDataType.DISCARD_CARD)
+                                .min(1)
+                                .max(1)
+                                .build()
+                )
                 .build();
     }
 

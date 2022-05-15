@@ -54,6 +54,8 @@ public class BlueActionProcessor implements TurnProcessor<PerformBlueActionTurn>
             player.setMc(player.getMc() + 1);
         }
 
+        player.getActivatedBlueCards().addCard(projectCard.getId());
+
         return response;
     }
 

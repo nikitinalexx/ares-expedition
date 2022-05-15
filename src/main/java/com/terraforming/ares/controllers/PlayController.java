@@ -72,10 +72,13 @@ public class PlayController {
         );
     }
 
-    public TurnResponse performBlueAction(String playerUuid,
-                                          int projectId,
-                                          @RequestParam(required = false) List<Integer> inputParams) {
-        return turnService.performBlueAction(playerUuid, projectId, inputParams);
+    @PostMapping("/turn/blue/action")
+    public TurnResponse performBlueAction(@RequestBody BlueActionRequest blueActionRequest) {
+        return turnService.performBlueAction(
+                blueActionRequest.getPlayerUuid(),
+                blueActionRequest.getCardId(),
+                blueActionRequest.getInputParams()
+        );
     }
 
     @PostMapping("/turn/cards/discard")

@@ -27,6 +27,11 @@ public class DevTechs implements CorporationCard {
     }
 
     @Override
+    public boolean isActiveCard() {
+        return false;
+    }
+
+    @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
         player.setMc(40);

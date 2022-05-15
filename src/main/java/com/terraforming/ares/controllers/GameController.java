@@ -34,8 +34,8 @@ public class GameController {
     @PostMapping("/game/new")
     public PlayerUuidsDto startNewGame(@RequestBody GameParameters gameParameters) {
         try {
-            if (gameParameters.getPlayersCount() != 2) {
-                throw new IllegalArgumentException("Only two players are supported so far");
+            if (gameParameters.getPlayersCount() != 2 && gameParameters.getPlayersCount() != 1) {
+                throw new IllegalArgumentException("Only one/two players are supported so far");
             }
 
             MarsGame marsGame = gameService.startNewGame(gameParameters);
@@ -96,6 +96,7 @@ public class GameController {
                                         card -> player.getCardResourcesCount().get(card.getClass())
                                 ))
                 )
+                .activatedBlueCards(player.getActivatedBlueCards().getCards())
                 .build();
     }
 

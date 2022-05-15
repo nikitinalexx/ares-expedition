@@ -16,6 +16,7 @@ export class Player {
               nextTurn: any,
               titaniumIncome: number,
               cardResources: Map<number, number>,
+              activatedBlueCards: number[],
               corporationId?: number,
               phase?: number) {
 
@@ -39,5 +40,6 @@ export class Player {
   titaniumIncome: number;
   nextTurn: any;
   cardResources: Map<number, number>;
+  activatedBlueCards: number[];
 
 }

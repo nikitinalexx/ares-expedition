@@ -9,12 +9,14 @@
 <form [formGroup]="parentForm" (submit)="submitForm(parentForm)" novalidate>
 
   <div *ngIf="buildGreenProjectTurn()" class="form-check">
-    <input id="greenProject" (click)="onValueClick()" type="radio" class="form-check-input" value="greenProject" formControlName="turn" [checked]="this.parentForm.value?.turn === 'greenProject'">
+    <input id="greenProject" (click)="resetAllInputs()" type="radio" class="form-check-input" value="greenProject"
+           formControlName="turn" [checked]="this.parentForm.value?.turn === 'greenProject'">
     <label class="custom-control-label text-white" for="greenProject">Build green project</label>
 
     <div *ngIf="parentForm.value?.turn === 'greenProject'" class="card-container">
       <ul class="myUL">
-        <li *ngFor="let card of getGreenPlayerHand();" (click)="clickProjectToBuild(card)" [ngClass]="selectedProjectToBuildClass(card)" class="filterDiv automated display">
+        <li *ngFor="let card of getGreenPlayerHand();" (click)="clickProjectToBuild(card)"
+            [ngClass]="selectedProjectToBuildClass(card)" class="filterDiv automated display">
           <app-card-template [card]="card" [game]="game"></app-card-template>
         </li>
       </ul>
@@ -28,6 +30,64 @@
         </div>
       </div>
 
+
+      <div *ngIf="expectsMicrobeOnBuildEffectInput()">
+        <h1 class="text-white">Choose card to put microbes on </h1>
+
+        <div class="form-check">
+          <input id="chooseMicrobes" type="radio"
+                 class="form-check-input"
+                 value="chooseMicrobe"
+                 formControlName="onBuildMicrobeEffectChoice"
+                 [checked]="parentForm.value.onBuildMicrobeEffectChoice === 'chooseMicrobe'"
+          >
+          <label class="custom-control-label text-white" for="chooseMicrobes">Choose microbe card</label>
+        </div>
+
+        <div class="form-check">
+          <input id="skipMicrobes" type="radio" class="form-check-input" value="skipMicrobe"
+                 formControlName="onBuildMicrobeEffectChoice"
+                 [checked]="parentForm.value.onBuildMicrobeEffectChoice === 'skipMicrobe'">
+          <label class="custom-control-label text-white" for="skipMicrobes">Skip microbes choice</label>
+        </div>
+
+
+        <ul class="myUL" *ngIf="parentForm.value.onBuildMicrobeEffectChoice === 'chooseMicrobe'">
+          <li *ngFor="let card of getMicrobePlayedCards();" (click)="onBuildMicrobeChoice = card"
+              [ngClass]="onBuildMicrobeChoice && onBuildMicrobeChoice.id == card.id ? 'clicked-card': ''" class="filterDiv automated display">
+            <app-card-template [card]="card" [game]="game"></app-card-template>
+          </li>
+        </ul>
+      </div>
+
+      <div *ngIf="expectsAnimalOnBuildEffectInput()">
+        <h1 class="text-white">Choose card to put animals on </h1>
+
+        <div class="form-check">
+          <input id="chooseAnimal" type="radio"
+                 class="form-check-input"
+                 value="chooseAnimal"
+                 formControlName="onBuildAnimalEffectChoice"
+                 [checked]="parentForm.value.onBuildAnimalEffectChoice === 'chooseAnimal'"
+          >
+          <label class="custom-control-label text-white" for="chooseAnimal">Choose animal card</label>
+        </div>
+
+        <div class="form-check">
+          <input id="skipAnimal" type="radio" class="form-check-input" value="skipAnimal"
+                 formControlName="onBuildAnimalEffectChoice"
+                 [checked]="parentForm.value.onBuildAnimalEffectChoice === 'skipAnimal'">
+          <label class="custom-control-label text-white" for="skipAnimal">Skip animal choice</label>
+        </div>
+
+
+        <ul class="myUL" *ngIf="parentForm.value.onBuildAnimalEffectChoice === 'chooseAnimal'">
+          <li *ngFor="let card of getAnimalPlayedCards();" (click)="onBuildAnimalChoice = card"
+              [ngClass]="onBuildAnimalChoice && onBuildAnimalChoice.id == card.id ? 'clicked-card': ''" class="filterDiv automated display">
+            <app-card-template [card]="card" [game]="game"></app-card-template>
+          </li>
+        </ul>
+      </div>
     </div>
 
   </div>
@@ -37,9 +97,11 @@
   </div>
 
   <div *ngIf="skipTurn()" class="form-check">
-    <input id="skipTurn" (click)="onValueClick()" type="radio" class="form-check-input" value="skipTurn" formControlName="turn" required [checked]="this.parentForm.value?.turn === 'skipTurn'">
+    <input id="skipTurn" (click)="resetAllInputs()" type="radio" class="form-check-input" value="skipTurn"
+           formControlName="turn" required [checked]="this.parentForm.value?.turn === 'skipTurn'">
     <label class="custom-control-label text-white" for="skipTurn">Skip turn</label>
   </div>
+
   <div *ngIf="isSubmitted && parentForm.invalid">
     <p>Please select either value</p>
   </div>

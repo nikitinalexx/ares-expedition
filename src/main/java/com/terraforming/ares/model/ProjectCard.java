@@ -6,8 +6,6 @@ package com.terraforming.ares.model;
  */
 public interface ProjectCard extends GenericCard {
 
-    boolean isActiveCard();
-
     default boolean onBuiltEffectApplicableToItself() {
         return false;
     }

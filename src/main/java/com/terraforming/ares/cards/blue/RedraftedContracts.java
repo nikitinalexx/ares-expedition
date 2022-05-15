@@ -3,6 +3,8 @@ package com.terraforming.ares.cards.blue;
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
+import com.terraforming.ares.model.action.ActionInputData;
+import com.terraforming.ares.model.action.ActionInputDataType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -22,6 +24,13 @@ public class RedraftedContracts implements BlueCard {
                 .name("Redrafted Contracts")
                 .description("Action: Discard up to three cards in hand. Draw that many cards.")
                 .cardAction(CardAction.REDRAFTED_CONTRACTS)
+                .actionInputData(
+                        ActionInputData.builder()
+                                .type(ActionInputDataType.DISCARD_CARD)
+                                .min(1)
+                                .max(3)
+                                .build()
+                )
                 .build();
     }
 

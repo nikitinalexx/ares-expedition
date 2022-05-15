@@ -3,6 +3,7 @@ package com.terraforming.ares.cards.green;
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.build.PutResourceOnBuild;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.services.CardService;
@@ -32,6 +33,13 @@ public class Astrofarm implements BaseExpansionGreenCard {
                         Gain.of(GainType.HEAT, 3)
                 ))
                 .cardAction(CardAction.ASTROFARM)
+                .resourceOnBuild(
+                        PutResourceOnBuild.builder()
+                                .type(CardCollectableResource.MICROBE)
+                                .count(2)
+                                .paramId(InputFlag.ASTROFARM_PUT_RESOURCE.getId())
+                                .build()
+                )
                 .build();
     }
 

@@ -1,6 +1,8 @@
 package com.terraforming.ares.dto;
 
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.action.ActionInputData;
+import com.terraforming.ares.model.build.PutResourceOnBuild;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.parameters.OceanRequirement;
 import com.terraforming.ares.model.parameters.ParameterColor;
@@ -33,6 +35,9 @@ public class CardDto {
     List<Gain> bonuses;
     WinPointsInfo winPointsInfo;
     CardCollectableResource cardResource;
+    List<PutResourceOnBuild> resourcesOnBuild;
+    boolean isActive;
+    List<ActionInputData> actionInputData;
 
     public static CardDto from(GenericCard card) {
         return new CardDto(
@@ -52,7 +57,10 @@ public class CardDto {
                 card.getOceanRequirement(),
                 card.getCardMetadata().getBonuses(),
                 card.getCardMetadata().getWinPointsInfo(),
-                card.getCollectableResource() != CardCollectableResource.NONE ? card.getCollectableResource() : null
+                card.getCollectableResource() != CardCollectableResource.NONE ? card.getCollectableResource() : null,
+                card.getCardMetadata().getResourcesOnBuild(),
+                card.isActiveCard(),
+                card.getCardMetadata().getActionsInputData()
         );
     }
 

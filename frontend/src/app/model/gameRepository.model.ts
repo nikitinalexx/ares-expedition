@@ -5,6 +5,7 @@ import {Observable} from 'rxjs';
 import {TurnType} from '../data/TurnType';
 import {ActionDto} from '../data/ActionDto';
 import {BuildProjectRequest} from "../data/BuildProjectRequest";
+import {BlueActionRequest} from "../data/BlueActionRequest";
 
 @Injectable()
 export class GameRepository {
@@ -54,6 +55,10 @@ export class GameRepository {
 
   buildBlueRedProject(requestBody: BuildProjectRequest): Observable<any> {
     return this.dataSource.buildBlueRedProject(requestBody);
+  }
+
+  blueAction(requestBody: BlueActionRequest): Observable<any> {
+    return this.dataSource.blueAction(requestBody);
   }
 
 }

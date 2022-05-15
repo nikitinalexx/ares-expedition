@@ -22,6 +22,7 @@ public class PlayerDto {
     private final Integer previousPhase;
     private final TurnDto nextTurn;
     private final Map<Integer, Integer> cardResources;
+    private List<Integer> activatedBlueCards;
 
     private final int mc;
     private final int mcIncome;

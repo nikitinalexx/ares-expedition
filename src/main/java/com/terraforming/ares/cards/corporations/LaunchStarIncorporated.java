@@ -27,6 +27,11 @@ public class LaunchStarIncorporated implements CorporationCard {
     }
 
     @Override
+    public boolean isActiveCard() {
+        return false;
+    }
+
+    @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         marsContext.getPlayer().setMc(36);
         return null;

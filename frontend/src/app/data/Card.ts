@@ -7,6 +7,8 @@ import {OceanRequirement} from './OceanRequirement';
 import {Gain} from './Gain';
 import {WinPointsInfo} from './WinPointsInfo';
 import {CardResource} from './CardResource';
+import {PutResourceOnBuild} from './PutResourceOnBuild';
+import {ActionInputData} from './ActionInputData';
 
 export class Card {
   constructor(id: number,
@@ -21,6 +23,9 @@ export class Card {
               tempReq: ParameterColor[],
               oxygenReq: ParameterColor[],
               cardResource: CardResource,
+              resourcesOnBuild: PutResourceOnBuild[],
+              active: boolean,
+              actionInputData?: ActionInputData[],
               winPointsInfo?: WinPointsInfo,
               oceanRequirement?: OceanRequirement,
               tags: Tag[] = [],
@@ -45,4 +50,7 @@ export class Card {
   oceanRequirement: OceanRequirement;
   winPointsInfo: WinPointsInfo;
   cardResource: CardResource;
+  resourcesOnBuild: PutResourceOnBuild[];
+  active: boolean;
+  actionInputData: ActionInputData[];
 }

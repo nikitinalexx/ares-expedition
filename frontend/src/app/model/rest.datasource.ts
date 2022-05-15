@@ -9,6 +9,7 @@ import {Game} from '../data/Game';
 import {TurnType} from "../data/TurnType";
 import {ActionDto} from "../data/ActionDto";
 import {BuildProjectRequest} from "../data/BuildProjectRequest";
+import {BlueActionRequest} from "../data/BlueActionRequest";
 
 export const REST_URL = new InjectionToken('rest_url');
 
@@ -68,6 +69,10 @@ export class RestDataSource {
 
   buildBlueRedProject(requestBody: BuildProjectRequest): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/turn/build/blue-red', requestBody);
+  }
+
+  blueAction(requestBody: BlueActionRequest): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/turn/blue/action', requestBody);
   }
 
   discardCards(playerUuid: string, cards: number[]): Observable<any> {

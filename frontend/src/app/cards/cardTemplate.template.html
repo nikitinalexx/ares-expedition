@@ -20,7 +20,7 @@
       <div class="{{card.winPointsInfo.type.toString().toLowerCase()}} resource"></div></div>
 
     <div *ngIf="game?.player && card.cardResource" class="points-player">
-      <span class="points-counter">{{game.player.cardResources.get(card.id)}}</span>
+      <span class="points-counter">{{game.player.cardResources[card.id]}}</span>
       <span class="{{card.cardResource.toString().toLowerCase()}} resource player-resource"></span>
     </div>
 

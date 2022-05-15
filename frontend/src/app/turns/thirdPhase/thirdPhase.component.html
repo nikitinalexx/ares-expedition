@@ -1,0 +1,55 @@
+<div class="bg-danger mt-2 p-2 text-center text-white"
+     *ngIf="errorMessage != null">
+  {{errorMessage}}
+</div>
+
+<h1>Pick turn</h1>
+
+<!-- Form starts -->
+<form [formGroup]="parentForm" (submit)="submitForm(parentForm)" novalidate>
+
+  <div *ngIf="blueActionTurn()" class="form-check">
+    <input id="blueAction" (click)="clearInput()" type="radio" class="form-check-input" value="blueAction"
+           formControlName="turn" [checked]="this.parentForm.value?.turn === 'blueAction'">
+    <label class="custom-control-label text-white" for="blueAction">Perform action</label>
+
+    <div *ngIf="parentForm.value?.turn === 'blueAction'" class="card-container">
+      <ul class="myUL">
+        <li *ngFor="let card of getBlueUnplayedCards();" (click)="selectProject(card)"
+            [ngClass]="selectedProjectClass(card)" class="filterDiv automated display">
+          <app-card-template [card]="card" [game]="game"></app-card-template>
+        </li>
+      </ul>
+    </div>
+
+    <div *ngIf="expectsCardActionInput()" class="card-container">
+      <h1 class="text-white">Choose card to discard </h1>
+
+      <ul class="myUL">
+        <li *ngFor="let card of getPlayerHand();" (click)="addCardToDiscard(card)"
+            [ngClass]="getCardToDiscardClass(card)" class="filterDiv automated display">
+          <app-card-template [card]="card" [game]="game"></app-card-template>
+        </li>
+      </ul>
+
+    </div>
+
+  </div>
+
+  <div *ngIf="sellCardsTurn()" class="form-check">
+    <app-sell-cards [game]="game" [parentForm]="parentForm"></app-sell-cards>
+  </div>
+
+  <div *ngIf="skipTurn()" class="form-check">
+    <input id="skipTurn" (click)="clearInput()" type="radio" class="form-check-input" value="skipTurn"
+           formControlName="turn" required [checked]="this.parentForm.value?.turn === 'skipTurn'">
+    <label class="custom-control-label text-white" for="skipTurn">Skip turn</label>
+  </div>
+
+  <div *ngIf="isSubmitted && parentForm.invalid">
+    <p>Please select either value</p>
+  </div>
+
+  <!-- Submit Button -->
+  <button type="submit" class="btn btn-danger btn-lg btn-block">Select turn</button>
+</form><!-- Form ends -->

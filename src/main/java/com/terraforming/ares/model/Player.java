@@ -20,7 +20,8 @@ public class Player {
     @Builder.Default
     private Deck played = Deck.builder().build();
     private Deck corporations;
-    private Deck activatedBlueCards;
+    @Builder.Default
+    private Deck activatedBlueCards = Deck.builder().build();
     private boolean activatedBlueActionTwice;
     private Integer selectedCorporationCard;
     @Builder.Default
