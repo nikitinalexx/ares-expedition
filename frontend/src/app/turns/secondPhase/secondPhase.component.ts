@@ -11,6 +11,8 @@ import {Payment} from '../../data/Payment';
 import {PaymentType} from '../../data/PaymentType';
 import {SellCardsComponent} from '../sellCards/sellCards.component';
 import {CardAction} from "../../data/CardAction";
+import {Tag} from "../../data/Tag";
+import {InputFlag} from "../../data/InputFlag";
 
 @Component({
   selector: 'app-second-phase',
@@ -42,7 +44,8 @@ export class SecondPhaseComponent implements OnInit {
     this.parentForm = this.formBuilder.group({
       turn: ['', Validators.required],
       mcPrice: [''],
-      anaerobicMicroorganisms: [false]
+      anaerobicMicroorganisms: [false],
+      marsUniversityDiscardLess: [false]
     });
   }
 
@@ -70,6 +73,12 @@ export class SecondPhaseComponent implements OnInit {
     return this.game?.player.hand;
   }
 
+  getPlayerHandWithoutSelectedCard(): Card[] {
+    return this.game.player.hand.filter(
+      card => card.id !== this.selectedProject.id
+    );
+  }
+
   getBlueRedPlayerHand(): Card[] {
     return this.game?.player.hand.filter(
       card => card.cardColor === CardColor[CardColor.BLUE] || card.cardColor === CardColor[CardColor.RED]
@@ -92,6 +101,14 @@ export class SecondPhaseComponent implements OnInit {
   }
 
   anaerobicMicroorganismsClicked($event: any) {
+    if ($event.target.checked) {
+      this.parentForm.controls.mcPrice.setValue(Math.max(0, this.getDiscountedMcPriceOfSelectedProject() - 10));
+    } else {
+      this.parentForm.controls.mcPrice.setValue(this.getDiscountedMcPriceOfSelectedProject());
+    }
+  }
+
+  marsUniversityDiscardLessClicked($event: any) {
     if ($event.target.checked) {
       this.parentForm.controls.mcPrice.setValue(Math.max(0, this.getDiscountedMcPriceOfSelectedProject() - 10));
     } else {
@@ -150,6 +167,12 @@ export class SecondPhaseComponent implements OnInit {
     return this.game.player.cardResources[anaerobicMicroorganismsCard.id] >= 2;
   }
 
+  marsUniversityEffect(): boolean {
+    return (this.selectedProject.cardAction === CardAction[CardAction.MARS_UNIVERSITY]
+      || this.game.player.played.some(card => card.cardAction === CardAction[CardAction.MARS_UNIVERSITY]))
+      && this.selectedProject.tags.some(tag => tag === Tag[Tag.SCIENCE]);
+  }
+
   submitForm(formGroup: FormGroup) {
     this.errorMessage = null;
     this.isSubmitted = true;
@@ -165,6 +188,25 @@ export class SecondPhaseComponent implements OnInit {
         this.sellCardsService.sellCards(this.game);
         this.sendToParent(null);
       } else if (formGroup.value.turn === 'blueRedProject' && formGroup.value.mcPrice !== null) {
+        const inputParams = new Map<number, number[]>();
+        if (this.marsUniversityEffect()) {
+          const scienceTagsCount = this.selectedProject.tags.filter(tag => tag === Tag[Tag.SCIENCE]).length;
+          if (this.projectsToDiscard && this.projectsToDiscard.length > scienceTagsCount) {
+            this.errorMessage = 'Mars University may only discard ' + scienceTagsCount + ' cards';
+            return;
+          }
+          if ((!this.projectsToDiscard || this.projectsToDiscard.length < scienceTagsCount)
+            && !this.parentForm.value.marsUniversityDiscardLess) {
+            this.errorMessage = 'You should either select ' + scienceTagsCount + ' cards to discard or mark the Discard Less checkbox';
+            return;
+          }
+          if (!this.projectsToDiscard || this.projectsToDiscard.length < scienceTagsCount) {
+            inputParams[InputFlag.MARS_UNIVERSITY_CARD.valueOf()] = [InputFlag.SKIP_ACTION.valueOf()];
+          } else {
+            inputParams[InputFlag.MARS_UNIVERSITY_CARD.valueOf()] = this.projectsToDiscard;
+          }
+        }
+
         const payments = [new Payment(formGroup.value.mcPrice, PaymentType.MEGACREDITS)];
 
         if (this.parentForm.value.anaerobicMicroorganisms) {
@@ -175,7 +217,7 @@ export class SecondPhaseComponent implements OnInit {
           this.game.player.playerUuid,
           this.selectedProject.id,
           payments,
-          null
+          inputParams
         );
 
         this.gameRepository.buildBlueRedProject(request).subscribe(data => {

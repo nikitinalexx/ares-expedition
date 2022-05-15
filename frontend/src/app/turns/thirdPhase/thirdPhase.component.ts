@@ -9,6 +9,7 @@ import {DiscountComponent} from '../../discount/discount.component';
 import {SellCardsComponent} from '../sellCards/sellCards.component';
 import {BlueActionRequest} from '../../data/BlueActionRequest';
 import {ActionInputDataType} from '../../data/ActionInputDataType';
+import {CardResource} from "../../data/CardResource";
 
 @Component({
   selector: 'app-third-phase',
@@ -19,7 +20,7 @@ export class ThirdPhaseComponent implements OnInit {
   public errorMessage: string;
   isSubmitted = false;
   selectedProject: Card;
-  cardsToDiscard = [];
+  actionTargetCards = [];
   @ViewChild(SellCardsComponent) sellCardsService;
 
   parentForm: FormGroup;
@@ -39,7 +40,8 @@ export class ThirdPhaseComponent implements OnInit {
   ngOnInit() {
     this.parentForm = this.formBuilder.group({
       turn: ['', Validators.required],
-      heatInput: ['']
+      heatInput: [''],
+      addOrUseMicrobe: ['addMicrobe']
     });
   }
 
@@ -59,8 +61,19 @@ export class ThirdPhaseComponent implements OnInit {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.PERFORM_BLUE_ACTION])?.length > 0;
   }
 
-  getPlayerHand(): Card[] {
-    return this.game?.player.hand;
+  getPlayerHandForAction(): Card[] {
+    if (this.selectedProject && this.selectedProject?.actionInputData.some(data =>
+      data.type === ActionInputDataType[ActionInputDataType.DISCARD_CARD]
+    )) {
+      return this.game.player.hand;
+    }
+    if (this.selectedProject && this.selectedProject?.actionInputData.some(data =>
+      data.type === ActionInputDataType[ActionInputDataType.MICROBE_ANIMAL_CARD]
+    )) {
+      return this.game.player.played.filter(card =>
+        card.cardResource === CardResource[CardResource.ANIMAL] || card.cardResource === CardResource[CardResource.MICROBE]
+      );
+    }
   }
 
   getBlueUnplayedCards(): Card[] {
@@ -74,12 +87,19 @@ export class ThirdPhaseComponent implements OnInit {
   expectsCardActionInput(): boolean {
     return this.selectedProject && this.selectedProject?.actionInputData.some(data =>
       data.type === ActionInputDataType[ActionInputDataType.DISCARD_CARD]
+      || data.type === ActionInputDataType[ActionInputDataType.MICROBE_ANIMAL_CARD]
     );
   }
 
   expectsHeatActionInput(): boolean {
     return this.selectedProject && this.selectedProject?.actionInputData.some(data =>
       data.type === ActionInputDataType[ActionInputDataType.DISCARD_HEAT]
+    );
+  }
+
+  expectsAddDiscardMicrobeInput(): boolean {
+    return this.selectedProject && this.selectedProject?.actionInputData.some(data =>
+      data.type === ActionInputDataType[ActionInputDataType.ADD_DISCARD_MICROBE]
     );
   }
 
@@ -104,26 +124,26 @@ export class ThirdPhaseComponent implements OnInit {
 
   clearInput() {
     this.selectedProject = null;
-    this.cardsToDiscard = [];
+    this.actionTargetCards = [];
     this.errorMessage = null;
   }
 
-  addCardToDiscard(card: Card) {
-    if (!this.cardsToDiscard) {
-      this.cardsToDiscard = [];
+  addCardToActionTargetCards(card: Card) {
+    if (!this.actionTargetCards) {
+      this.actionTargetCards = [];
     }
-    if (this.cardsToDiscard.find(element => element === card.id)) {
-      const index = this.cardsToDiscard.indexOf(card.id, 0);
+    if (this.actionTargetCards.find(element => element === card.id)) {
+      const index = this.actionTargetCards.indexOf(card.id, 0);
       if (index > -1) {
-        this.cardsToDiscard.splice(index, 1);
+        this.actionTargetCards.splice(index, 1);
       }
     } else {
-      this.cardsToDiscard.push(card.id);
+      this.actionTargetCards.push(card.id);
     }
   }
 
-  getCardToDiscardClass(card: Card): string {
-    if (this.cardsToDiscard && this.cardsToDiscard.find(c => c === card.id)) {
+  getActionTargetCardClass(card: Card): string {
+    if (this.actionTargetCards && this.actionTargetCards.find(c => c === card.id)) {
       return 'clicked-card';
     } else {
       return '';
@@ -154,18 +174,19 @@ export class ThirdPhaseComponent implements OnInit {
         if (this.expectsCardActionInput()) {
           const expectedCount = this.selectedProject.actionInputData.find(data =>
             data.type === ActionInputDataType[ActionInputDataType.DISCARD_CARD]
+            || data.type === ActionInputDataType[ActionInputDataType.MICROBE_ANIMAL_CARD]
           );
           const min = expectedCount.min;
           const max = expectedCount.max;
-          if (!this.cardsToDiscard || this.cardsToDiscard.length < min || this.cardsToDiscard.length > max) {
+          if (!this.actionTargetCards || this.actionTargetCards.length < min || this.actionTargetCards.length > max) {
             if (min === max) {
-              this.errorMessage = 'Exactly ' + expectedCount + ' cards to discard are expected';
+              this.errorMessage = 'Exactly ' + min + ' cards are expected to be selected';
             } else {
-              this.errorMessage = min + ' to ' + max + ' cards to discard are expected';
+              this.errorMessage = min + ' to ' + max + ' cards are expected to be selected';
             }
             return;
           }
-          inputParams = inputParams.concat(this.cardsToDiscard);
+          inputParams = inputParams.concat(this.actionTargetCards);
         }
 
         if (this.expectsHeatActionInput()) {
@@ -184,6 +205,17 @@ export class ThirdPhaseComponent implements OnInit {
             return;
           }
           inputParams.push(inputValue);
+        }
+
+        if (this.expectsAddDiscardMicrobeInput()) {
+          const inputConfig = this.selectedProject.actionInputData.find(data =>
+            data.type === ActionInputDataType[ActionInputDataType.ADD_DISCARD_MICROBE]
+          );
+          if (this.parentForm.value.addOrUseMicrobe === 'addMicrobe') {
+            inputParams.push(inputConfig.min);
+          } else {
+            inputParams.push(inputConfig.max);
+          }
         }
 
         const request = new BlueActionRequest(

@@ -2,6 +2,8 @@ package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.action.ActionInputData;
+import com.terraforming.ares.model.action.ActionInputDataType;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
 import lombok.Getter;
@@ -26,6 +28,13 @@ public class NitriteReductingBacteria implements BlueCard {
                 .description("Add 3 microbes to this card. Action: Add 1 microbe to this card or remove 3 microbes to flip an ocean tile.")
                 .bonuses(List.of(Gain.of(GainType.MICROBE, 3)))
                 .cardAction(CardAction.NITRITE_REDUCTING)
+                .actionInputData(
+                        ActionInputData.builder()
+                                .type(ActionInputDataType.ADD_DISCARD_MICROBE)
+                                .min(1)
+                                .max(3)
+                                .build()
+                )
                 .build();
     }
 
@@ -41,7 +50,7 @@ public class NitriteReductingBacteria implements BlueCard {
 
     @Override
     public boolean isActiveCard() {
-        return false;
+        return true;
     }
 
     @Override

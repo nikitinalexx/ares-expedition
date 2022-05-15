@@ -2,6 +2,8 @@ package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.action.ActionInputData;
+import com.terraforming.ares.model.action.ActionInputDataType;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,13 @@ public class RegolithEaters implements BlueCard {
                 .name("Regolith Eaters")
                 .description("Requires red temperature or warmer. Action: Add 1 microbe to this card, or remove 2 microbes from this card to raise oxygen 1 step.")
                 .cardAction(CardAction.REGOLITH_EATERS)
+                .actionInputData(
+                        ActionInputData.builder()
+                                .type(ActionInputDataType.ADD_DISCARD_MICROBE)
+                                .min(1)
+                                .max(2)
+                                .build()
+                )
                 .build();
     }
 

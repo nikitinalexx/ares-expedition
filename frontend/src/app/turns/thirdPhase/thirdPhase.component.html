@@ -23,15 +23,14 @@
     </div>
 
     <div *ngIf="expectsCardActionInput()" class="card-container">
-      <h1 class="text-white">Choose card to discard </h1>
+      <h1 class="text-white">Choose card to apply the effect </h1>
 
       <ul class="myUL">
-        <li *ngFor="let card of getPlayerHand();" (click)="addCardToDiscard(card)"
-            [ngClass]="getCardToDiscardClass(card)" class="filterDiv automated display">
+        <li *ngFor="let card of getPlayerHandForAction();" (click)="addCardToActionTargetCards(card)"
+            [ngClass]="getActionTargetCardClass(card)" class="filterDiv automated display">
           <app-card-template [card]="card" [game]="game"></app-card-template>
         </li>
       </ul>
-
     </div>
 
     <div *ngIf="expectsHeatActionInput()" class="card-container">
@@ -44,13 +43,33 @@
           </div>
         </div>
       </div>
+    </div>
 
+    <div *ngIf="expectsAddDiscardMicrobeInput()">
+      <div class="form-group">
+        <div class="form-row">
+          <div class="col-sm-1">
+            <input id="addMicrobe" type="radio" class="form-check-input" value="addMicrobe"
+                   formControlName="addOrUseMicrobe"
+                   [checked]="this.parentForm.value?.addOrUseMicrobe === 'addMicrobe'"
+            >
+            <label class="custom-control-label text-white" for="addMicrobe">Add microbe</label>
+          </div>
+          <div class="col-sm-1">
+            <input id="useMicrobe" type="radio" class="form-check-input" value="useMicrobe"
+                   formControlName="addOrUseMicrobe"
+                   [checked]="this.parentForm.value?.addOrUseMicrobe === 'useMicrobe'"
+            >
+            <label class="custom-control-label text-white" for="useMicrobe">Use microbe</label>
+          </div>
+        </div>
+      </div>
     </div>
 
   </div>
 
   <div *ngIf="sellCardsTurn()" class="form-check">
-    <app-sell-cards [game]="game" [parentForm]="parentForm"></app-sell-cards>
+    <app-sell-cards (click)="clearInput()" [game]="game" [parentForm]="parentForm"></app-sell-cards>
   </div>
 
   <div *ngIf="skipTurn()" class="form-check">

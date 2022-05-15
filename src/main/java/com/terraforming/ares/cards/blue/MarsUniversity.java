@@ -36,7 +36,6 @@ public class MarsUniversity implements BlueCard {
 
     @Override
     public boolean onBuiltEffectApplicableToItself() {
-        //TODO test this class and this method
         return true;
     }
 

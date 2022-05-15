@@ -6,5 +6,7 @@ package com.terraforming.ares.model.action;
  */
 public enum ActionInputDataType {
     DISCARD_CARD,
-    DISCARD_HEAT
+    DISCARD_HEAT,
+    ADD_DISCARD_MICROBE,
+    MICROBE_ANIMAL_CARD
 }

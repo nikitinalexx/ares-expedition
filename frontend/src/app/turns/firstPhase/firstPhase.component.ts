@@ -12,6 +12,8 @@ import {PaymentType} from '../../data/PaymentType';
 import {SellCardsComponent} from '../sellCards/sellCards.component';
 import {CardResource} from '../../data/CardResource';
 import {CardAction} from "../../data/CardAction";
+import {Tag} from "../../data/Tag";
+import {InputFlag} from "../../data/InputFlag";
 
 @Component({
   selector: 'app-first-phase',
@@ -24,6 +26,7 @@ export class FirstPhaseComponent implements OnInit {
   selectedProject: Card;
   onBuildMicrobeChoice = null;
   onBuildAnimalChoice = null;
+  projectsToDiscard: number[];
   @ViewChild(SellCardsComponent) sellCardsService;
 
   parentForm: FormGroup;
@@ -46,7 +49,8 @@ export class FirstPhaseComponent implements OnInit {
       mcPrice: [''],
       onBuildMicrobeEffectChoice: ['chooseMicrobe'],
       onBuildAnimalEffectChoice: ['chooseAnimal'],
-      anaerobicMicroorganisms: [false]
+      anaerobicMicroorganisms: [false],
+      marsUniversityDiscardLess: [false]
     });
   }
 
@@ -153,6 +157,36 @@ export class FirstPhaseComponent implements OnInit {
     return this.game.player.cardResources[anaerobicMicroorganismsCard.id] >= 2;
   }
 
+  marsUniversityEffect(): boolean {
+    return (this.selectedProject.cardAction === CardAction[CardAction.MARS_UNIVERSITY]
+      || this.game.player.played.some(card => card.cardAction === CardAction[CardAction.MARS_UNIVERSITY]))
+      && this.selectedProject.tags.some(tag => tag === Tag[Tag.SCIENCE]);
+  }
+
+  getPlayerHandWithoutSelectedCard(): Card[] {
+    return this.game.player.hand.filter(
+      card => card.id !== this.selectedProject.id
+    );
+  }
+
+  clickProjectToDiscard(card: Card) {
+    if (!this.projectsToDiscard) {
+      this.projectsToDiscard = [];
+    }
+    const index = this.projectsToDiscard.indexOf(card.id, 0);
+    if (index > -1) {
+      this.projectsToDiscard.splice(index, 1);
+    } else {
+      this.projectsToDiscard.push(card.id);
+    }
+  }
+
+  selectedProjectToDiscardClass(card: Card): string {
+    if (this.projectsToDiscard && this.projectsToDiscard.some(element => element === card.id)) {
+      return 'clicked-card';
+    }
+    return '';
+  }
 
   resetAllInputs() {
     this.selectedProject = null;
@@ -176,6 +210,24 @@ export class FirstPhaseComponent implements OnInit {
         this.sendToParent(null);
       } else if (formGroup.value.turn === 'greenProject' && formGroup.value.mcPrice !== null) {
         const inputParams = new Map<number, number[]>();
+
+        if (this.marsUniversityEffect()) {
+          const scienceTagsCount = this.selectedProject.tags.filter(tag => tag === Tag[Tag.SCIENCE]).length;
+          if (this.projectsToDiscard && this.projectsToDiscard.length > scienceTagsCount) {
+            this.errorMessage = 'Mars University may only discard ' + scienceTagsCount + ' cards';
+            return;
+          }
+          if ((!this.projectsToDiscard || this.projectsToDiscard.length < scienceTagsCount)
+            && !this.parentForm.value.marsUniversityDiscardLess) {
+            this.errorMessage = 'You should either select ' + scienceTagsCount + ' cards to discard or mark the Discard Less checkbox';
+            return;
+          }
+          if (!this.projectsToDiscard || this.projectsToDiscard.length < scienceTagsCount) {
+            inputParams[InputFlag.MARS_UNIVERSITY_CARD.valueOf()] = [InputFlag.SKIP_ACTION.valueOf()];
+          } else {
+            inputParams[InputFlag.MARS_UNIVERSITY_CARD.valueOf()] = this.projectsToDiscard;
+          }
+        }
 
         if (this.expectsMicrobeOnBuildEffectInput()) {
           if (this.parentForm.value.onBuildMicrobeEffectChoice === 'chooseMicrobe') {

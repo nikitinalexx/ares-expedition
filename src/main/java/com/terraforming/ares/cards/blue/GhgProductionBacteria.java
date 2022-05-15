@@ -2,6 +2,8 @@ package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.action.ActionInputData;
+import com.terraforming.ares.model.action.ActionInputDataType;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,13 @@ public class GhgProductionBacteria implements BlueCard {
                 .name("GHG Production Bacteria")
                 .description("Requires red oxygen or higher. Action: Add 1 microbe to this card, or remove 2 microbes to raise the temperature 1 step.")
                 .cardAction(CardAction.GHG_PRODUCTION)
+                .actionInputData(
+                        ActionInputData.builder()
+                                .type(ActionInputDataType.ADD_DISCARD_MICROBE)
+                                .min(1)
+                                .max(2)
+                                .build()
+                )
                 .build();
     }
 

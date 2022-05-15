@@ -2,6 +2,7 @@ package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.action.ActionInputData;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
 import lombok.Getter;
@@ -9,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.Collections;
 import java.util.List;
+
+import static com.terraforming.ares.model.action.ActionInputDataType.MICROBE_ANIMAL_CARD;
 
 /**
  * Created by oleksii.nikitin
@@ -27,6 +30,13 @@ public class DecomposingFungus implements BlueCard {
                 .description("Place 2 microbes on this card. Action: Remove 1 animal or 1 microbe from one of your cards to gain 3 plants.")
                 .bonuses(List.of(Gain.of(GainType.MICROBE, 2)))
                 .cardAction(CardAction.DECOMPOSING_FUNGUS)
+                .actionInputData(
+                        ActionInputData.builder()
+                                .type(MICROBE_ANIMAL_CARD)
+                                .min(1)
+                                .max(1)
+                                .build()
+                )
                 .build();
     }
 

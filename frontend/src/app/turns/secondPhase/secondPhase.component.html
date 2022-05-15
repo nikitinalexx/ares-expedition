@@ -33,10 +33,24 @@
             <input type="checkbox" (change)="anaerobicMicroorganismsClicked($event)" class="custom-control-input" id="anaerobicMicroorganisms" formControlName="anaerobicMicroorganisms">
           </div>
         </div>
+
+        <div *ngIf="marsUniversityEffect()" class="card-container">
+          <h1 class="text-white">Mars University Discard Cards: </h1>
+
+          <ul class="myUL">
+            <li *ngFor="let card of getPlayerHandWithoutSelectedCard();" (click)="clickProjectToDiscard(card)"
+                [ngClass]="selectedProjectToDiscardClass(card)" class="filterDiv automated display">
+              <app-card-template [card]="card" [game]="game"></app-card-template>
+            </li>
+          </ul>
+
+          <label for="marsUniversityDiscardLess" class="text-white">Discard fewer cards</label>
+          <input type="checkbox" class="custom-control-input" id="marsUniversityDiscardLess" formControlName="marsUniversityDiscardLess">
+
+        </div>
+
       </div>
-
     </div>
-
   </div>
 
   <div *ngIf="sellCardsTurn()" class="form-check">

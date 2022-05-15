@@ -5,11 +5,14 @@ import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.CardCollectableResource;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.model.action.ActionInputData;
 import com.terraforming.ares.model.winPoints.WinPointsInfo;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
+
+import static com.terraforming.ares.model.action.ActionInputDataType.MICROBE_ANIMAL_CARD;
 
 /**
  * Created by oleksii.nikitin
@@ -32,6 +35,13 @@ public class ConservedBiome implements BlueCard {
                         .resources(2)
                         .points(1)
                         .build()
+                )
+                .actionInputData(
+                        ActionInputData.builder()
+                                .type(MICROBE_ANIMAL_CARD)
+                                .min(1)
+                                .max(1)
+                                .build()
                 )
                 .build();
     }

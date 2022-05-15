@@ -122,6 +122,7 @@ public class CardFactory {
                 new InvestmentLoan(84),
                 new LagrangeObservatory(85),
                 new LakeMariners(86),
+                new LargeConvoy(87),
                 new LavaFlows(88),
                 new LocalHeatTrapping(89),
                 new Mangrove(90),
