@@ -34,6 +34,14 @@
           </div>
         </div>
 
+        <div class="form-row" *ngIf="restructuredResourcesCardAction()">
+          <div class="col-sm-1">
+            <label for="restructuredResources" class="text-white">Restructured Resources</label>
+            <input type="checkbox" (change)="restructuredResourcesClicked($event)" class="custom-control-input"
+                   id="restructuredResources" formControlName="restructuredResources">
+          </div>
+        </div>
+
         <div *ngIf="marsUniversityEffect()" class="card-container">
           <h1 class="text-white">Mars University Discard Cards: </h1>
 

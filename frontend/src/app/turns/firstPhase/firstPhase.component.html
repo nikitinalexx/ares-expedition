@@ -37,6 +37,14 @@
           </div>
         </div>
 
+        <div class="form-row" *ngIf="restructuredResourcesCardAction()">
+          <div class="col-sm-1">
+            <label for="restructuredResources" class="text-white">Restructured Resources</label>
+            <input type="checkbox" (change)="restructuredResourcesClicked($event)" class="custom-control-input"
+                   id="restructuredResources" formControlName="restructuredResources">
+          </div>
+        </div>
+
         <div *ngIf="marsUniversityEffect()" class="card-container">
           <h1 class="text-white">Mars University Discard Cards: </h1>
 
@@ -52,89 +60,87 @@
                  formControlName="marsUniversityDiscardLess">
 
         </div>
-      </div>
 
-
-      <div *ngIf="expectsMicrobeOnBuildEffectInput()">
-        <h1 class="text-white">Choose card to put microbes on </h1>
-
-        <div class="form-check">
-          <input id="chooseMicrobes" type="radio"
-                 class="form-check-input"
-                 value="chooseMicrobe"
-                 formControlName="onBuildMicrobeEffectChoice"
-                 [checked]="parentForm.value.onBuildMicrobeEffectChoice === 'chooseMicrobe'"
-          >
-          <label class="custom-control-label text-white" for="chooseMicrobes">Choose microbe card</label>
-        </div>
-
-        <div class="form-check">
-          <input id="skipMicrobes" type="radio" class="form-check-input" value="skipMicrobe"
-                 formControlName="onBuildMicrobeEffectChoice"
-                 [checked]="parentForm.value.onBuildMicrobeEffectChoice === 'skipMicrobe'">
-          <label class="custom-control-label text-white" for="skipMicrobes">Skip microbes choice</label>
-        </div>
-
-
-        <ul class="myUL" *ngIf="parentForm.value.onBuildMicrobeEffectChoice === 'chooseMicrobe'">
-          <li *ngFor="let card of getMicrobePlayedCards();" (click)="onBuildMicrobeChoice = card"
-              [ngClass]="onBuildMicrobeChoice && onBuildMicrobeChoice.id == card.id ? 'clicked-card': ''"
-              class="filterDiv automated display">
-            <app-card-template [card]="card" [game]="game"></app-card-template>
-          </li>
-        </ul>
-      </div>
-
-      <div *ngIf="expectsAnimalOnBuildEffectInput()">
-        <h1 class="text-white">Choose card to put animals on </h1>
-
-        <div class="form-check">
-          <input id="chooseAnimal" type="radio"
-                 class="form-check-input"
-                 value="chooseAnimal"
-                 formControlName="onBuildAnimalEffectChoice"
-                 [checked]="parentForm.value.onBuildAnimalEffectChoice === 'chooseAnimal'"
-          >
-          <label class="custom-control-label text-white" for="chooseAnimal">Choose animal card</label>
-        </div>
-
-        <div class="form-check">
-          <input id="skipAnimal" type="radio" class="form-check-input" value="skipAnimal"
-                 formControlName="onBuildAnimalEffectChoice"
-                 [checked]="parentForm.value.onBuildAnimalEffectChoice === 'skipAnimal'">
-          <label class="custom-control-label text-white" for="skipAnimal">Skip animal choice</label>
-        </div>
-
-
-        <ul class="myUL" *ngIf="parentForm.value.onBuildAnimalEffectChoice === 'chooseAnimal'">
-          <li *ngFor="let card of getAnimalPlayedCards();" (click)="onBuildAnimalChoice = card"
-              [ngClass]="onBuildAnimalChoice && onBuildAnimalChoice.id == card.id ? 'clicked-card': ''"
-              class="filterDiv automated display">
-            <app-card-template [card]="card" [game]="game"></app-card-template>
-          </li>
-        </ul>
-      </div>
-
-      <div *ngIf="expectsDecomposersInput()">
-        <h1 class="text-white">Decomposers effect: </h1>
-        <div class="form-group">
-          <div class="form-row">
-            <div class="col-sm-1">
-              <label class="custom-control-label text-white" for="takeMicrobes">Take microbes</label>
-              <input id="takeMicrobes" type="number" class="form-control form-control-sm"
-                     formControlName="takeMicrobes"
-              >
-            </div>
-            <div class="col-sm-1">
-              <label class="custom-control-label text-white" for="takeCards">Take cards</label>
-              <input id="takeCards" type="number" class="form-control form-control-sm"
-                     formControlName="takeCards"
-              >
+        <div *ngIf="expectsDecomposersInput()">
+          <h1 class="text-white">Decomposers effect: </h1>
+          <div class="form-group">
+            <div class="form-row">
+              <div class="col-sm-1">
+                <label class="custom-control-label text-white" for="takeMicrobes">Take microbes</label>
+                <input id="takeMicrobes" type="number" class="form-control form-control-sm"
+                       formControlName="takeMicrobes"
+                >
+              </div>
+              <div class="col-sm-1">
+                <label class="custom-control-label text-white" for="takeCards">Take cards</label>
+                <input id="takeCards" type="number" class="form-control form-control-sm"
+                       formControlName="takeCards"
+                >
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
+        <div *ngIf="expectsMicrobeOnBuildEffectInput()">
+          <h1 class="text-white">Choose card to put microbes on </h1>
+
+          <div class="form-check">
+            <input id="chooseMicrobes" type="radio"
+                   class="form-check-input"
+                   value="chooseMicrobe"
+                   formControlName="onBuildMicrobeEffectChoice"
+                   [checked]="parentForm.value.onBuildMicrobeEffectChoice === 'chooseMicrobe'"
+            >
+            <label class="custom-control-label text-white" for="chooseMicrobes">Choose microbe card</label>
+          </div>
+
+          <div class="form-check">
+            <input id="skipMicrobes" type="radio" class="form-check-input" value="skipMicrobe"
+                   formControlName="onBuildMicrobeEffectChoice"
+                   [checked]="parentForm.value.onBuildMicrobeEffectChoice === 'skipMicrobe'">
+            <label class="custom-control-label text-white" for="skipMicrobes">Skip microbes choice</label>
+          </div>
+
+
+          <ul class="myUL" *ngIf="parentForm.value.onBuildMicrobeEffectChoice === 'chooseMicrobe'">
+            <li *ngFor="let card of getMicrobePlayedCards();" (click)="onBuildMicrobeChoice = card"
+                [ngClass]="onBuildMicrobeChoice && onBuildMicrobeChoice.id == card.id ? 'clicked-card': ''"
+                class="filterDiv automated display">
+              <app-card-template [card]="card" [game]="game"></app-card-template>
+            </li>
+          </ul>
+        </div>
+
+        <div *ngIf="expectsAnimalOnBuildEffectInput()">
+          <h1 class="text-white">Choose card to put animals on </h1>
+
+          <div class="form-check">
+            <input id="chooseAnimal" type="radio"
+                   class="form-check-input"
+                   value="chooseAnimal"
+                   formControlName="onBuildAnimalEffectChoice"
+                   [checked]="parentForm.value.onBuildAnimalEffectChoice === 'chooseAnimal'"
+            >
+            <label class="custom-control-label text-white" for="chooseAnimal">Choose animal card</label>
+          </div>
+
+          <div class="form-check">
+            <input id="skipAnimal" type="radio" class="form-check-input" value="skipAnimal"
+                   formControlName="onBuildAnimalEffectChoice"
+                   [checked]="parentForm.value.onBuildAnimalEffectChoice === 'skipAnimal'">
+            <label class="custom-control-label text-white" for="skipAnimal">Skip animal choice</label>
+          </div>
+
+
+          <ul class="myUL" *ngIf="parentForm.value.onBuildAnimalEffectChoice === 'chooseAnimal'">
+            <li *ngFor="let card of getAnimalPlayedCards();" (click)="onBuildAnimalChoice = card"
+                [ngClass]="onBuildAnimalChoice && onBuildAnimalChoice.id == card.id ? 'clicked-card': ''"
+                class="filterDiv automated display">
+              <app-card-template [card]="card" [game]="game"></app-card-template>
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
 
   </div>

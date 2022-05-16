@@ -52,7 +52,8 @@ export class FirstPhaseComponent implements OnInit {
       anaerobicMicroorganisms: [false],
       marsUniversityDiscardLess: [false],
       takeMicrobes: 0,
-      takeCards: 0
+      takeCards: 0,
+      restructuredResources: [false]
     });
   }
 
@@ -117,18 +118,52 @@ export class FirstPhaseComponent implements OnInit {
       this.selectedProject = null;
     } else {
       this.selectedProject = card;
-      this.parentForm.controls.mcPrice.setValue(Math.max(
-        0, this.getDiscountedMcPriceOfSelectedProject() - (this.parentForm.value.anaerobicMicroorganisms ? 10 : 0)
-      ));
+      this.parentForm.controls.mcPrice.setValue(
+        this.getDiscountedMcPriceWithEffectsApplied(
+          this.parentForm.value.anaerobicMicroorganisms,
+          this.parentForm.value.restructuredResources)
+      );
     }
   }
 
   anaerobicMicroorganismsClicked($event: any) {
     if ($event.target.checked) {
-      this.parentForm.controls.mcPrice.setValue(Math.max(0, this.getDiscountedMcPriceOfSelectedProject() - 10));
+      this.parentForm.controls.mcPrice.setValue(
+        this.getDiscountedMcPriceWithEffectsApplied(
+          true,
+          this.parentForm.value.restructuredResources)
+      );
     } else {
-      this.parentForm.controls.mcPrice.setValue(this.getDiscountedMcPriceOfSelectedProject());
+      this.parentForm.controls.mcPrice.setValue(
+        this.getDiscountedMcPriceWithEffectsApplied(
+          false,
+          this.parentForm.value.restructuredResources)
+      );
     }
+  }
+
+  restructuredResourcesClicked($event: any) {
+    if ($event.target.checked) {
+      this.parentForm.controls.mcPrice.setValue(
+        this.getDiscountedMcPriceWithEffectsApplied(
+          this.parentForm.value.anaerobicMicroorganisms,
+          true)
+      );
+    } else {
+      this.parentForm.controls.mcPrice.setValue(
+        this.getDiscountedMcPriceWithEffectsApplied(
+          this.parentForm.value.anaerobicMicroorganisms,
+          false)
+      );
+    }
+  }
+
+  getDiscountedMcPriceWithEffectsApplied(anaerobicMicroorganisms: boolean, restructuredResources: boolean): number {
+    return Math.max(
+      0, this.getDiscountedMcPriceOfSelectedProject() -
+      (anaerobicMicroorganisms ? 10 : 0) -
+      (restructuredResources ? 5 : 0)
+    );
   }
 
   selectedProjectToBuildClass(card: Card): string {
@@ -157,6 +192,19 @@ export class FirstPhaseComponent implements OnInit {
       return false;
     }
     return this.game.player.cardResources[anaerobicMicroorganismsCard.id] >= 2;
+  }
+
+  restructuredResourcesCardAction(): boolean {
+    if (!this.selectedProject) {
+      return false;
+    }
+    const restructuredResourcesCard = this.game.player.played.find(
+      card => card.cardAction === CardAction[CardAction.RESTRUCTURED_RESOURCES]
+    );
+    if (!restructuredResourcesCard) {
+      return false;
+    }
+    return this.game.player.plants > 0;
   }
 
   marsUniversityEffect(): boolean {
@@ -283,6 +331,10 @@ export class FirstPhaseComponent implements OnInit {
 
         if (this.parentForm.value.anaerobicMicroorganisms) {
           payments.push(new Payment(2, PaymentType.ANAEROBIC_MICROORGANISMS));
+        }
+
+        if (this.parentForm.value.restructuredResources) {
+          payments.push(new Payment(1, PaymentType.RESTRUCTURED_RESOURCES));
         }
 
         const request = new BuildProjectRequest(
