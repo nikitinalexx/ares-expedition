@@ -60,7 +60,7 @@ public class ImportedNitrogenOnBuiltEffectValidator implements OnBuiltEffectVali
             if (!player.getPlayed().containsCard(microbesCardId)) {
                 return "Player doesn't have the selected microbe card built";
             }
-            ProjectCard microbeCard = cardService.getProjectCard(animalsCardId);
+            ProjectCard microbeCard = cardService.getProjectCard(microbesCardId);
             if (microbeCard.getCollectableResource() != CardCollectableResource.MICROBE) {
                 return "Selected card doesn't collect microbes";
             }

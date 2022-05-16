@@ -452,6 +452,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.IMPORTED_HYDROGEN;
   }
 
+  actionLargeConvoy(card: Card): boolean {
+    return card.cardAction === CardAction.LARGE_CONVOY;
+  }
+
   actionImportedNitrogen(card: Card): boolean {
     return card.cardAction === CardAction.IMPORTED_NITROGEN;
   }

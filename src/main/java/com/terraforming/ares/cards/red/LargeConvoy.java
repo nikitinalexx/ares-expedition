@@ -31,6 +31,7 @@ public class LargeConvoy implements BaseExpansionRedCard {
                 .name("Large Convoy")
                 .description("Flip an ocean tile. Draw 2 cards. Gain 5 plants or add 3 animals to ANY card.")
                 .bonuses(List.of(Gain.of(GainType.OCEAN, 1), Gain.of(GainType.CARD, 2)))
+                .cardAction(CardAction.LARGE_CONVOY)
                 .build();
     }
 

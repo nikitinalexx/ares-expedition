@@ -397,7 +397,7 @@
             </span>
             <span *ngFor="let k of getOceanBonuses(card); let last=last;">
               <span class="tile ocean-tile"></span>
-              <br *ngIf="last"/>
+              <br *ngIf="last && !actionLargeConvoy(card)"/>
             </span>
             <span *ngFor="let k of getOxygenBonuses(card); let last=last;">
               <span class="tile oxygen-tile"></span>
@@ -527,6 +527,10 @@
 
     <div *ngIf="actionImportedNitrogen(card)">
       3<div class="microbe resource"></div>* 2<div class="animal resource"></div>*
+    </div>
+
+    <div *ngIf="actionLargeConvoy(card)">
+      <span>5</span><div class="resource plant "></div> OR <span>3</span><div class="resource animal "></div>*
     </div>
 
     <div class="description ">

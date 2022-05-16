@@ -9,5 +9,6 @@ public enum CardCollectableResource {
     MICROBE,
     ANIMAL,
     SCIENCE,
-    FOREST
+    FOREST,
+    ANY
 }

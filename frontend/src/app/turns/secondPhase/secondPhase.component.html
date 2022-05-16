@@ -96,8 +96,104 @@
             <h1 class="text-white">Take microbes and animals</h1>
 
             <ul class="myUL">
-              <li *ngFor="let card of getMicrobeAnimalPlayedCardsWithSelected();" (click)="clickViralEnhancersTargetCard(card)"
+              <li *ngFor="let card of getMicrobeAnimalPlayedCardsWithSelected();"
+                  (click)="clickViralEnhancersTargetCard(card)"
                   [ngClass]="selectedViralEnhancersCardClass(card)" class="filterDiv automated display">
+                <app-card-template [card]="card" [game]="game"></app-card-template>
+              </li>
+            </ul>
+
+          </div>
+        </div>
+
+        <div *ngIf="expectsResourceInputOnBuild()">
+          <h1 class="text-white">Choose card to put resource on </h1>
+
+          <ul class="myUL">
+            <li *ngFor="let card of getResourcePlayedCards();" (click)="onBuildResourceChoice = card"
+                [ngClass]="onBuildResourceChoice && onBuildResourceChoice.id == card.id ? 'clicked-card': ''"
+                class="filterDiv automated display">
+              <app-card-template [card]="card" [game]="game"></app-card-template>
+            </li>
+          </ul>
+        </div>
+
+        <div *ngIf="importedHydrogenEffect()" class="card-container">
+          <div class="form-group">
+            <div class="form-check">
+              <label for="importedHydrogenPlants" class="text-white">Take plants</label>
+              <input type="radio" class="form-check-input" id="importedHydrogenPlants" value="plants"
+                     formControlName="importedHydrogenForm"
+                     [checked]="parentForm.value.importedHydrogenForm === 'plants'">
+            </div>
+
+            <div class="form-check">
+              <input id="takeMicrobeAnimal" type="radio" class="form-check-input" value="microbeAnimal"
+                     formControlName="importedHydrogenForm"
+                     [checked]="parentForm.value.importedHydrogenForm === 'microbeAnimal'">
+              <label class="custom-control-label text-white" for="takeMicrobeAnimal">Take microbes/animals</label>
+            </div>
+
+
+            <ul class="myUL" *ngIf="parentForm.value.importedHydrogenForm === 'microbeAnimal'">
+              <li *ngFor="let card of getMicrobeAnimalPlayedCards();" (click)="importedHydrogenMicrobeAnimal = card"
+                  [ngClass]="importedHydrogenMicrobeAnimal && importedHydrogenMicrobeAnimal.id == card.id ? 'clicked-card': ''"
+                  class="filterDiv automated display">
+                <app-card-template [card]="card" [game]="game"></app-card-template>
+              </li>
+            </ul>
+
+          </div>
+        </div>
+
+        <div *ngIf="importedNitrogenEffect()" class="card-container">
+          <h2 class="text-white">Imported Nitrogen choose Animals and Microbes</h2>
+          <div class="form-group">
+            <ul class="myUL">
+              <li *ngFor="let card of getMicrobeAnimalPlayedCards();" (click)="importedNitrogenClick(card)"
+                  [ngClass]="importedNitrogenCardClass(card)"
+                  class="filterDiv automated display">
+                <app-card-template [card]="card" [game]="game"></app-card-template>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div *ngIf="largeConvoyEffect()" class="card-container">
+          <div class="form-group">
+            <div class="form-check">
+              <label for="largeConvoyPlants" class="text-white">Take plants</label>
+              <input type="radio" class="form-check-input" id="largeConvoyPlants" value="plants"
+                     formControlName="largeConvoyForm"
+                     [checked]="parentForm.value.largeConvoyForm === 'plants'">
+            </div>
+
+            <div class="form-check">
+              <input id="takeAnimals" type="radio" class="form-check-input" value="animal"
+                     formControlName="largeConvoyForm"
+                     [checked]="parentForm.value.largeConvoyForm === 'animal'">
+              <label class="custom-control-label text-white" for="takeAnimals">Take animals</label>
+            </div>
+
+
+            <ul class="myUL" *ngIf="parentForm.value.largeConvoyForm === 'animal'">
+              <li *ngFor="let card of getAnimalPlayedCards();" (click)="largeConvoyAnimalCard = card"
+                  [ngClass]="largeConvoyAnimalCard && largeConvoyAnimalCard.id == card.id ? 'clicked-card': ''"
+                  class="filterDiv automated display">
+                <app-card-template [card]="card" [game]="game"></app-card-template>
+              </li>
+            </ul>
+
+          </div>
+        </div>
+
+        <div *ngIf="localHeatTrappingEffect()" class="card-container">
+          <div class="form-group">
+
+            <ul class="myUL">
+              <li *ngFor="let card of getMicrobeAnimalPlayedCards();" (click)="localHeatTrappingCard = card"
+                  [ngClass]="localHeatTrappingCard && localHeatTrappingCard.id == card.id ? 'clicked-card': ''"
+                  class="filterDiv automated display">
                 <app-card-template [card]="card" [game]="game"></app-card-template>
               </li>
             </ul>

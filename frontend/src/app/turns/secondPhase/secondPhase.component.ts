@@ -14,6 +14,7 @@ import {CardAction} from '../../data/CardAction';
 import {Tag} from '../../data/Tag';
 import {InputFlag} from '../../data/InputFlag';
 import {CardResource} from '../../data/CardResource';
+import {DiscardCardsTurn} from "../../data/DiscardCardsTurn";
 
 @Component({
   selector: 'app-second-phase',
@@ -26,6 +27,12 @@ export class SecondPhaseComponent implements OnInit {
   selectedProject: Card;
   projectsToDiscard: number[];
   viralEnhancersTargetCards: number[];
+  onBuildResourceChoice = null;
+  importedHydrogenMicrobeAnimal = null;
+  importedNitrogenMicrobeCard = null;
+  importedNitrogenAnimalCard = null;
+  largeConvoyAnimalCard = null;
+  localHeatTrappingCard = null;
   @ViewChild(SellCardsComponent) sellCardsService;
 
   parentForm: FormGroup;
@@ -51,7 +58,9 @@ export class SecondPhaseComponent implements OnInit {
       takeMicrobes: 0,
       takeCards: 0,
       restructuredResources: [false],
-      viralEnhancersPlantInput: 0
+      viralEnhancersPlantInput: 0,
+      importedHydrogenForm: 'plants',
+      largeConvoyForm: 'plants'
     });
   }
 
@@ -92,6 +101,15 @@ export class SecondPhaseComponent implements OnInit {
       || card.cardResource === CardResource[CardResource.MICROBE]);
   }
 
+  getMicrobeAnimalPlayedCards(): Card[] {
+    return this.game?.player.played.filter(card => card.cardResource === CardResource[CardResource.ANIMAL]
+      || card.cardResource === CardResource[CardResource.MICROBE]);
+  }
+
+  getAnimalPlayedCards(): Card[] {
+    return this.game?.player.played.filter(card => card.cardResource === CardResource[CardResource.ANIMAL]);
+  }
+
   getBlueRedPlayerHand(): Card[] {
     return this.game?.player.hand.filter(
       card => card.cardColor === CardColor[CardColor.BLUE] || card.cardColor === CardColor[CardColor.RED]
@@ -99,7 +117,12 @@ export class SecondPhaseComponent implements OnInit {
   }
 
   getDiscardCards(): Card[] {
-    return this.game.player.nextTurn.cards;
+    const nextTurn = this.game.player.nextTurn as DiscardCardsTurn;
+    if (nextTurn.onlyFromSelectedCards) {
+      return this.game.player.nextTurn.cards;
+    } else {
+      return this.game.player?.hand;
+    }
   }
 
   clickProjectToBuild(card: Card) {
@@ -112,6 +135,32 @@ export class SecondPhaseComponent implements OnInit {
           this.parentForm.value.anaerobicMicroorganisms,
           this.parentForm.value.restructuredResources)
       );
+    }
+  }
+
+  importedNitrogenClick(card: Card) {
+    if (card.cardResource === CardResource[CardResource.MICROBE]) {
+      if (this.importedNitrogenMicrobeCard && this.importedNitrogenMicrobeCard.id === card.id) {
+        this.importedNitrogenMicrobeCard = null;
+      } else {
+        this.importedNitrogenMicrobeCard = card;
+      }
+    }
+    if (card.cardResource === CardResource[CardResource.ANIMAL]) {
+      if (this.importedNitrogenAnimalCard && this.importedNitrogenAnimalCard.id === card.id) {
+        this.importedNitrogenAnimalCard = null;
+      } else {
+        this.importedNitrogenAnimalCard = card;
+      }
+    }
+  }
+
+  importedNitrogenCardClass(card: Card) {
+    if (this.importedNitrogenMicrobeCard && this.importedNitrogenMicrobeCard.id === card.id
+      || this.importedNitrogenAnimalCard && this.importedNitrogenAnimalCard.id === card.id) {
+      return 'clicked-card';
+    } else {
+      return '';
     }
   }
 
@@ -210,6 +259,12 @@ export class SecondPhaseComponent implements OnInit {
 
   resetAllInputs() {
     this.selectedProject = null;
+    this.onBuildResourceChoice = null;
+    this.importedHydrogenMicrobeAnimal = null;
+    this.importedNitrogenAnimalCard = null;
+    this.importedNitrogenMicrobeCard = null;
+    this.largeConvoyAnimalCard = null;
+    this.localHeatTrappingCard = null;
   }
 
   anaerobicMicroorganismsCardAction(): boolean {
@@ -252,6 +307,22 @@ export class SecondPhaseComponent implements OnInit {
       );
   }
 
+  importedHydrogenEffect(): boolean {
+    return this.selectedProject.cardAction === CardAction[CardAction.IMPORTED_HYDROGEN];
+  }
+
+  localHeatTrappingEffect(): boolean {
+    return this.selectedProject.cardAction === CardAction[CardAction.LOCAL_HEAT_TRAPPING];
+  }
+
+  importedNitrogenEffect(): boolean {
+    return this.selectedProject.cardAction === CardAction[CardAction.IMPORTED_NITROGEN];
+  }
+
+  largeConvoyEffect(): boolean {
+    return this.selectedProject.cardAction === CardAction[CardAction.LARGE_CONVOY];
+  }
+
   expectsDecomposersInput(): boolean {
     return this.selectedProject.cardAction === CardAction[CardAction.DECOMPOSERS]
       ||
@@ -259,6 +330,20 @@ export class SecondPhaseComponent implements OnInit {
       && (this.game.player.played.some(card => card.tags.some(tag =>
           tag === Tag[Tag.ANIMAL] || tag === Tag[Tag.MICROBE] || tag === Tag[Tag.PLANT]))
       );
+  }
+
+  expectsResourceInputOnBuild(): boolean {
+    return this.selectedProject && this.selectedProject?.resourcesOnBuild.some(resource =>
+      resource.type === CardResource[CardResource.ANY]
+    );
+  }
+
+  getResourcePlayedCards(): Card[] {
+    return this.game?.player.played.filter(card =>
+      card.cardResource
+      && card.cardResource !== CardResource[CardResource.NONE]
+      && card.cardResource !== CardResource[CardResource.FOREST]
+    );
   }
 
   submitForm(formGroup: FormGroup) {
@@ -310,6 +395,19 @@ export class SecondPhaseComponent implements OnInit {
           inputParams[InputFlag.DECOMPOSERS_TAKE_CARD.valueOf()] = [takeCards];
         }
 
+        if (this.expectsResourceInputOnBuild()) {
+          if (!this.onBuildResourceChoice) {
+            this.errorMessage = 'You need to choose a resource card';
+            return;
+          }
+
+          const paramId = this.selectedProject?.resourcesOnBuild.find(resource =>
+            resource.type === CardResource[CardResource.ANY]
+          ).paramId;
+
+          inputParams[paramId] = [this.onBuildResourceChoice.id];
+        }
+
         if (this.viralEnhancersEffect()) {
           const expectedInputSum = this.selectedProject.tags.filter(
             tag => tag === Tag[Tag.ANIMAL] || tag === Tag[Tag.MICROBE] || tag === Tag[Tag.PLANT]
@@ -342,6 +440,51 @@ export class SecondPhaseComponent implements OnInit {
             }
             inputParams[InputFlag.VIRAL_ENHANCERS_PUT_RESOURCE.valueOf()] = cardsInput;
           }
+        }
+
+        if (this.importedHydrogenEffect()) {
+          if (this.parentForm.value.importedHydrogenForm === 'microbeAnimal' && !this.importedHydrogenMicrobeAnimal) {
+            this.errorMessage = 'You need to choose an Animal/Microbe card';
+            return;
+          }
+
+          if (this.parentForm.value.importedHydrogenForm === 'plants') {
+            inputParams[InputFlag.IMPORTED_HYDROGEN_PICK_PLANT.valueOf()] = [];
+          } else {
+            inputParams[InputFlag.IMPORTED_HYDROGEN_PUT_RESOURCE.valueOf()] = [this.importedHydrogenMicrobeAnimal.id];
+          }
+        }
+
+        if (this.importedNitrogenEffect()) {
+
+          inputParams[InputFlag.IMPORTED_NITROGEN_ADD_MICROBES.valueOf()] = [
+            this.importedNitrogenMicrobeCard ? this.importedNitrogenMicrobeCard.id : InputFlag.SKIP_ACTION.valueOf()
+          ];
+
+          inputParams[InputFlag.IMPORTED_NITROGEN_ADD_ANIMALS.valueOf()] = [
+            this.importedNitrogenAnimalCard ? this.importedNitrogenAnimalCard.id : InputFlag.SKIP_ACTION.valueOf()
+          ];
+        }
+
+        if (this.largeConvoyEffect()) {
+
+          if (this.parentForm.value.largeConvoyForm === 'animal' && !this.largeConvoyAnimalCard) {
+            this.errorMessage = 'You need to choose an Animal card';
+            return;
+          }
+
+          if (this.parentForm.value.largeConvoyForm === 'plants') {
+            inputParams[InputFlag.LARGE_CONVOY_PICK_PLANT.valueOf()] = [];
+          } else {
+            inputParams[InputFlag.LARGE_CONVOY_ADD_ANIMAL.valueOf()] = [this.largeConvoyAnimalCard.id];
+          }
+        }
+
+        if (this.localHeatTrappingEffect()) {
+          console.log(true);
+          inputParams[InputFlag.LOCAL_HEAT_TRAPPING_PUT_RESOURCE.valueOf()] = [
+            this.localHeatTrappingCard ? this.localHeatTrappingCard.id : InputFlag.SKIP_ACTION.valueOf()
+          ];
         }
 
         const payments = [new Payment(formGroup.value.mcPrice, PaymentType.MEGACREDITS)];

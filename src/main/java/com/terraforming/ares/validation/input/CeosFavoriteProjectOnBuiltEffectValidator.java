@@ -46,7 +46,7 @@ public class CeosFavoriteProjectOnBuiltEffectValidator implements OnBuiltEffectV
         }
 
         ProjectCard targetCard = cardService.getProjectCard(cardId);
-        if (targetCard.getCollectableResource() != CardCollectableResource.NONE) {
+        if (targetCard.getCollectableResource() == CardCollectableResource.NONE || targetCard.getCollectableResource() == CardCollectableResource.FOREST) {
             return "Selected card doesn't collect any resources";
         }
 

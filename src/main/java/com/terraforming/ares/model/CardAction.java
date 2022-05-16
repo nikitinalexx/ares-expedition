@@ -94,5 +94,6 @@ public enum CardAction {
     EOS_CHASMA,
     FUEL_FACTORY,
     TALL_STATION,
-    TROPICAL_ISLAND
+    TROPICAL_ISLAND,
+    LARGE_CONVOY
 }
