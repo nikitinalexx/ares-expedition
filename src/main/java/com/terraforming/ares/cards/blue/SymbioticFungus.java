@@ -4,6 +4,8 @@ import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.model.action.ActionInputData;
+import com.terraforming.ares.model.action.ActionInputDataType;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,13 @@ public class SymbioticFungus implements BlueCard {
                 .name("Symbiotic Fungus")
                 .description("Requires red temperature or warmer. Add a microbe to ANOTHER* card.")
                 .cardAction(CardAction.SYMBIOTIC_FUNGUD)
+                .actionInputData(
+                        ActionInputData.builder()
+                                .type(ActionInputDataType.MICROBE_CARD)
+                                .min(1)
+                                .max(1)
+                                .build()
+                )
                 .build();
     }
 

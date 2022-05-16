@@ -78,7 +78,11 @@ export class ThirdPhaseComponent implements OnInit {
       );
     }
 
-    if (this.selectedProject && this.selectedProject.cardAction === CardAction[CardAction.EXTREME_COLD_FUNGUS]) {
+    if (this.selectedProject && (
+      this.selectedProject.cardAction === CardAction[CardAction.EXTREME_COLD_FUNGUS]
+      || this.selectedProject?.actionInputData.some(data =>
+      data.type === ActionInputDataType[ActionInputDataType.MICROBE_CARD]
+      ))) {
       return this.game.player.played.filter(card =>
         card.cardResource === CardResource[CardResource.MICROBE]
       );
@@ -96,6 +100,7 @@ export class ThirdPhaseComponent implements OnInit {
   expectsCardActionInput(): boolean {
     return this.selectedProject && this.selectedProject?.actionInputData.some(data =>
       data.type === ActionInputDataType[ActionInputDataType.DISCARD_CARD]
+      || data.type === ActionInputDataType[ActionInputDataType.MICROBE_CARD]
       || data.type === ActionInputDataType[ActionInputDataType.MICROBE_ANIMAL_CARD]
     );
   }
@@ -109,6 +114,12 @@ export class ThirdPhaseComponent implements OnInit {
   expectsAddDiscardMicrobeInput(): boolean {
     return this.selectedProject && this.selectedProject?.actionInputData.some(data =>
       data.type === ActionInputDataType[ActionInputDataType.ADD_DISCARD_MICROBE]
+    );
+  }
+
+  expectsMicrobeInput(): boolean {
+    return this.selectedProject && this.selectedProject?.actionInputData.some(data =>
+      data.type === ActionInputDataType[ActionInputDataType.MICROBE_CARD]
     );
   }
 
@@ -188,6 +199,7 @@ export class ThirdPhaseComponent implements OnInit {
           const expectedCount = this.selectedProject.actionInputData.find(data =>
             data.type === ActionInputDataType[ActionInputDataType.DISCARD_CARD]
             || data.type === ActionInputDataType[ActionInputDataType.MICROBE_ANIMAL_CARD]
+            || data.type === ActionInputDataType[ActionInputDataType.MICROBE_CARD]
           );
           const min = expectedCount.min;
           const max = expectedCount.max;

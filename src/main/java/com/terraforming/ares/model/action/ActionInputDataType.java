@@ -8,5 +8,6 @@ public enum ActionInputDataType {
     DISCARD_CARD,
     DISCARD_HEAT,
     ADD_DISCARD_MICROBE,
-    MICROBE_ANIMAL_CARD
+    MICROBE_ANIMAL_CARD,
+    MICROBE_CARD
 }
