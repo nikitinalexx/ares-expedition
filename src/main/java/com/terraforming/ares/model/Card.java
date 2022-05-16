@@ -15,7 +15,7 @@ import java.util.Set;
  * Created by oleksii.nikitin
  * Creation date 29.04.2022
  */
-public interface GenericCard {
+public interface Card {
 
     int getId();
 
@@ -61,7 +61,7 @@ public interface GenericCard {
         return null;
     }
 
-    default void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
+    default void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
     }
 
     default void onOceanFlippedEffect(Player player) {
@@ -78,6 +78,16 @@ public interface GenericCard {
 
     default CardCollectableResource getCollectableResource() {
         return CardCollectableResource.NONE;
+    }
+
+    boolean isCorporation();
+
+    default boolean onBuiltEffectApplicableToItself() {
+        return false;
+    }
+
+    default boolean onBuiltEffectApplicableToOther() {
+        return false;
     }
 
 }

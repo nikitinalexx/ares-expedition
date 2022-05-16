@@ -2,8 +2,8 @@ package com.terraforming.ares.processors.action;
 
 import com.terraforming.ares.cards.blue.SymbioticFungus;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,7 @@ public class SymbioticFungudActionProcessor implements BlueActionCardProcessor<S
     public TurnResponse process(MarsGame game, Player player, List<Integer> inputParameters) {
         Integer cardIdToPutMicrobeOn = inputParameters.get(0);
 
-        ProjectCard projectCard = cardService.getProjectCard(cardIdToPutMicrobeOn);
+        Card projectCard = cardService.getCard(cardIdToPutMicrobeOn);
 
         player.getCardResourcesCount().put(
                 projectCard.getClass(),

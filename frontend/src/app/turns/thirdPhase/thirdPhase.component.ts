@@ -4,14 +4,13 @@ import {GameRepository} from '../../model/gameRepository.model';
 import {TurnType} from '../../data/TurnType';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {Card} from '../../data/Card';
-import {CardColor} from '../../data/CardColor';
 import {DiscountComponent} from '../../discount/discount.component';
 import {SellCardsComponent} from '../sellCards/sellCards.component';
 import {BlueActionRequest} from '../../data/BlueActionRequest';
 import {ActionInputDataType} from '../../data/ActionInputDataType';
-import {CardResource} from "../../data/CardResource";
-import {CardAction} from "../../data/CardAction";
-import {InputFlag} from "../../data/InputFlag";
+import {CardResource} from '../../data/CardResource';
+import {CardAction} from '../../data/CardAction';
+import {InputFlag} from '../../data/InputFlag';
 
 @Component({
   selector: 'app-third-phase',
@@ -89,10 +88,9 @@ export class ThirdPhaseComponent implements OnInit {
     }
   }
 
-  getBlueUnplayedCards(): Card[] {
+  getActiveCards(): Card[] {
     return this.game?.player.played.filter(
-      card => card.cardColor === CardColor[CardColor.BLUE]
-        && card.active
+      card => card.active
         && !this.game.player.activatedBlueCards.find(abc => abc === card.id)
     );
   }

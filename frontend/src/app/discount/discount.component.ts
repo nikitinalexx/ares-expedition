@@ -58,6 +58,17 @@ export class DiscountComponent {
     if (this.ownsSpecialEffect(player, SpecialEffect.RESEARCH_OUTPOST_DISCOUNT_1)) {
       discount += 1;
     }
+
+    if (this.ownsSpecialEffect(player, SpecialEffect.DEV_TECHS_DISCOUNT)
+      && card.cardColor === CardColor[CardColor.GREEN]) {
+      discount += 2;
+    }
+
+    if (this.ownsSpecialEffect(player, SpecialEffect.LAUNCH_STAR_DISCOUNT)
+      && card.cardColor === CardColor[CardColor.BLUE]) {
+      discount += 3;
+    }
+
     return Math.min(card.price, discount);
   }
 

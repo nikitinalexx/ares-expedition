@@ -4,8 +4,8 @@ import com.terraforming.ares.cards.blue.ThinkTank;
 import com.terraforming.ares.dto.CardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +34,7 @@ public class ThinkTankActionProcessor implements BlueActionCardProcessor<ThinkTa
         for (Integer card : game.dealCards(1)) {
             player.getHand().addCard(card);
 
-            ProjectCard projectCard = cardService.getProjectCard(card);
+            Card projectCard = cardService.getCard(card);
             resultBuilder.takenCard(CardDto.from(projectCard));
         }
 

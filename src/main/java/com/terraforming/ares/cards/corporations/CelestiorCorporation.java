@@ -23,12 +23,13 @@ public class CelestiorCorporation implements CorporationCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Celestior Corporation")
                 .description("50 Mc. Blue action bonus that is not implemented yet")
+                .cardAction(CardAction.CELESTIOR_CORPORATION)
                 .build();
     }
 
     @Override
     public boolean isActiveCard() {
-        return false;
+        return true;
     }
 
     @Override

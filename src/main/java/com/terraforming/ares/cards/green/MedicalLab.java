@@ -35,11 +35,11 @@ public class MedicalLab implements BaseExpansionGreenCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
+    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
         int buildingTagCountBefore = (int) player
                 .getPlayed()
                 .getCards().stream()
-                .map(cardService::getProjectCard)
+                .map(cardService::getCard)
                 .flatMap(card -> card.getTags().stream())
                 .filter(Tag.BUILDING::equals).count();
 
@@ -61,7 +61,7 @@ public class MedicalLab implements BaseExpansionGreenCard {
         int buildingTagCount = (int) marsContext.getPlayer()
                 .getPlayed()
                 .getCards().stream()
-                .map(marsContext.getCardService()::getProjectCard)
+                .map(marsContext.getCardService()::getCard)
                 .flatMap(card -> card.getTags().stream())
                 .filter(Tag.BUILDING::equals).count();
 

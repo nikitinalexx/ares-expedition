@@ -53,7 +53,7 @@ public class PhobosFalls implements BaseExpansionRedCard {
 
         for (Integer card : marsContext.getGame().dealCards(2)) {
             marsContext.getPlayer().getHand().addCard(card);
-            resultBuilder.takenCard(CardDto.from(marsContext.getCardService().getProjectCard(card)));
+            resultBuilder.takenCard(CardDto.from(marsContext.getCardService().getCard(card)));
         }
 
         return resultBuilder.build();

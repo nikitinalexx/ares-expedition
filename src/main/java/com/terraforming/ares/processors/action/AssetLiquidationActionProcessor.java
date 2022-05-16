@@ -32,7 +32,7 @@ public class AssetLiquidationActionProcessor implements BlueActionCardProcessor<
 
         for (Integer card : game.dealCards(3)) {
             player.getHand().addCard(card);
-            resultBuilder.takenCard(CardDto.from(deckService.getProjectCard(card)));
+            resultBuilder.takenCard(CardDto.from(deckService.getCard(card)));
         }
 
         return resultBuilder.build();

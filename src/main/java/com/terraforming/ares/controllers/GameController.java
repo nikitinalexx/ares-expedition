@@ -72,9 +72,9 @@ public class GameController {
 
         return PlayerDto.builder()
                 .playerUuid(player.getUuid())
-                .corporations(corporations.getCards().stream().map(cardService::getCorporationCard).map(CardDto::from).collect(Collectors.toList()))
-                .hand(player.getHand().getCards().stream().map(cardService::getProjectCard).map(CardDto::from).collect(Collectors.toList()))
-                .played(player.getPlayed().getCards().stream().map(cardService::getProjectCard).map(CardDto::from).collect(Collectors.toList()))
+                .corporations(corporations.getCards().stream().map(cardService::getCard).map(CardDto::from).collect(Collectors.toList()))
+                .hand(player.getHand().getCards().stream().map(cardService::getCard).map(CardDto::from).collect(Collectors.toList()))
+                .played(player.getPlayed().getCards().stream().map(cardService::getCard).map(CardDto::from).collect(Collectors.toList()))
                 .corporationId(player.getSelectedCorporationCard())
                 .phase(player.getChosenPhase())
                 .previousPhase(player.getPreviousChosenPhase())
@@ -89,10 +89,10 @@ public class GameController {
                 .titaniumIncome(player.getTitaniumIncome())
                 .nextTurn(buildTurnDto(player.getNextTurn()))
                 .cardResources(
-                        player.getPlayed().getCards().stream().map(cardService::getProjectCard)
+                        player.getPlayed().getCards().stream().map(cardService::getCard)
                                 .filter(card -> card.getCollectableResource() != CardCollectableResource.NONE)
                                 .collect(Collectors.toMap(
-                                        GenericCard::getId,
+                                        Card::getId,
                                         card -> player.getCardResourcesCount().get(card.getClass())
                                 ))
                 )
@@ -107,7 +107,7 @@ public class GameController {
                     .size(discardCardsTurnDto.getSize())
                     .onlyFromSelectedCards(discardCardsTurnDto.isOnlyFromSelectedCards())
                     .cards(
-                            discardCardsTurnDto.getCards().stream().map(cardService::getProjectCard).map(CardDto::from).collect(Collectors.toList())
+                            discardCardsTurnDto.getCards().stream().map(cardService::getCard).map(CardDto::from).collect(Collectors.toList())
                     ).build();
         }
         return null;

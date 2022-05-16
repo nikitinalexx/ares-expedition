@@ -1,10 +1,7 @@
 package com.terraforming.ares.processors.turn;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.MarsContext;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.ProjectCard;
-import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.turn.GenericBuildProjectTurn;
 import com.terraforming.ares.services.CardService;
@@ -25,7 +22,7 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
     @Override
     public TurnResponse processTurn(T turn, MarsGame game) {
         Player player = game.getPlayerUuidToPlayer().get(turn.getPlayerUuid());
-        ProjectCard card = cardService.getProjectCard(turn.getProjectId());
+        Card card = cardService.getCard(turn.getProjectId());
 
         for (Payment payment : turn.getPayments()) {
             payment.pay(cardService, player);
@@ -41,7 +38,7 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
         );
 
         for (Integer previouslyPlayedCardId : player.getPlayed().getCards()) {
-            ProjectCard previouslyPlayedCard = cardService.getProjectCard(previouslyPlayedCardId);
+            Card previouslyPlayedCard = cardService.getCard(previouslyPlayedCardId);
             previouslyPlayedCard.onProjectBuiltEffect(cardService, game, player, card, turn.getInputParams());
         }
 

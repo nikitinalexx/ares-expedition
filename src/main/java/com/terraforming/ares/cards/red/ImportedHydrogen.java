@@ -58,7 +58,7 @@ public class ImportedHydrogen implements BaseExpansionRedCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> input) {
+    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> input) {
         if (input.containsKey(InputFlag.IMPORTED_HYDROGEN_PICK_PLANT.getId())) {
             player.setPlants(player.getPlants() + 3);
             return;
@@ -66,7 +66,7 @@ public class ImportedHydrogen implements BaseExpansionRedCard {
 
         int inputCardId = input.get(InputFlag.IMPORTED_HYDROGEN_PUT_RESOURCE.getId()).get(0);
 
-        ProjectCard inputCard = cardService.getProjectCard(inputCardId);
+        Card inputCard = cardService.getCard(inputCardId);
         int resourcedToAdd = 2;
         if (inputCard.getCollectableResource() == CardCollectableResource.MICROBE) {
             resourcedToAdd = 3;

@@ -53,12 +53,12 @@ public class CeosFavoriteProject implements BaseExpansionRedCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
+    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
         List<Integer> cardInput = inputParams.get(InputFlag.CEOS_FAVORITE_PUT_RESOURCES.getId());
 
         int targetCardId = cardInput.get(0);
 
-        ProjectCard targetCard = cardService.getProjectCard(targetCardId);
+        Card targetCard = cardService.getCard(targetCardId);
 
         player.getCardResourcesCount().put(targetCard.getClass(), player.getCardResourcesCount().get(targetCard.getClass()) + 2);
     }

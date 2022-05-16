@@ -35,7 +35,7 @@ public class Windmills implements BaseExpansionGreenCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
+    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
         int energyTagsCount = (int) project.getTags().stream().filter(Tag.ENERGY::equals).count();
 
         player.setHeatIncome(player.getHeatIncome() + energyTagsCount);
@@ -46,7 +46,7 @@ public class Windmills implements BaseExpansionGreenCard {
         int energyTagsCount = (int) marsContext.getPlayer()
                 .getPlayed()
                 .getCards().stream()
-                .map(marsContext.getCardService()::getProjectCard)
+                .map(marsContext.getCardService()::getCard)
                 .flatMap(card -> card.getTags().stream())
                 .filter(Tag.ENERGY::equals).count();
 

@@ -2,8 +2,8 @@ package com.terraforming.ares.processors.action;
 
 import com.terraforming.ares.cards.blue.ConservedBiome;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,7 @@ public class ConservedBiomeActionProcessor implements BlueActionCardProcessor<Co
     public TurnResponse process(MarsGame game, Player player, List<Integer> inputParameters) {
         Integer cardIdToAddTo = inputParameters.get(0);
 
-        ProjectCard project = cardService.getProjectCard(cardIdToAddTo);
+        Card project = cardService.getCard(cardIdToAddTo);
 
         Integer currentResourceCount = player.getCardResourcesCount().get(project.getClass());
 

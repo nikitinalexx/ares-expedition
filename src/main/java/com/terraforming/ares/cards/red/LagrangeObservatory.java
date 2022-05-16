@@ -43,7 +43,7 @@ public class LagrangeObservatory implements BaseExpansionRedCard {
 
         for (Integer card : marsContext.getGame().dealCards(1)) {
             marsContext.getPlayer().getHand().addCard(card);
-            resultBuilder.takenCard(CardDto.from(marsContext.getCardService().getProjectCard(card)));
+            resultBuilder.takenCard(CardDto.from(marsContext.getCardService().getCard(card)));
         }
 
         return resultBuilder.build();

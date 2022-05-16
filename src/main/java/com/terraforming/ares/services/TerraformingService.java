@@ -1,7 +1,6 @@
 package com.terraforming.ares.services;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Deck;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.parameters.Ocean;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +45,7 @@ public class TerraformingService {
 
         player.setTerraformingRating(player.getTerraformingRating() + 1);
 
-        player.getPlayed().getCards().stream().map(cardService::getProjectCard).forEach(
+        player.getPlayed().getCards().stream().map(cardService::getCard).forEach(
                 projectCard -> projectCard.onOceanFlippedEffect(player)
         );
     }
@@ -63,7 +62,7 @@ public class TerraformingService {
         player.getPlayed()
                 .getCards()
                 .stream()
-                .map(cardService::getProjectCard)
+                .map(cardService::getCard)
                 .forEach(project -> project.onOxygenChangedEffect(player));
     }
 
@@ -79,7 +78,7 @@ public class TerraformingService {
         player.getPlayed()
                 .getCards()
                 .stream()
-                .map(cardService::getProjectCard)
+                .map(cardService::getCard)
                 .forEach(project -> project.onTemperatureChangedEffect(player));
     }
 
@@ -92,7 +91,7 @@ public class TerraformingService {
             player.getPlayed()
                     .getCards()
                     .stream()
-                    .map(cardService::getProjectCard)
+                    .map(cardService::getCard)
                     .forEach(project -> project.onOxygenChangedEffect(player));
         }
 
@@ -101,7 +100,7 @@ public class TerraformingService {
         player.getPlayed()
                 .getCards()
                 .stream()
-                .map(cardService::getProjectCard)
+                .map(cardService::getCard)
                 .forEach(project -> project.onForestBuiltEffect(player));
     }
 

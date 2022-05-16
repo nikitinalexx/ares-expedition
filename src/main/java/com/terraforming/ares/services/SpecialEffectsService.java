@@ -19,7 +19,7 @@ public class SpecialEffectsService {
                 .getPlayed()
                 .getCards()
                 .stream()
-                .map(deckService::getProjectCard)
+                .map(deckService::getCard)
                 .anyMatch(card -> card.getSpecialEffects().contains(specialEffect));
     }
 

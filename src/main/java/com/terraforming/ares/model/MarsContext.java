@@ -25,7 +25,7 @@ public class MarsContext {
 
         for (Integer card : game.dealCards(count)) {
             player.getHand().addCard(card);
-            resultBuilder.takenCard(CardDto.from(cardService.getProjectCard(card)));
+            resultBuilder.takenCard(CardDto.from(cardService.getCard(card)));
         }
 
         return resultBuilder.build();

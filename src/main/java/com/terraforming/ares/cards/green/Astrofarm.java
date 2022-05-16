@@ -49,7 +49,7 @@ public class Astrofarm implements BaseExpansionGreenCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> input) {
+    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> input) {
         List<Integer> cardInput = input.get(InputFlag.ASTROFARM_PUT_RESOURCE.getId());
 
         Integer cardId = cardInput.get(0);
@@ -58,7 +58,7 @@ public class Astrofarm implements BaseExpansionGreenCard {
             return;
         }
 
-        ProjectCard inputCard = cardService.getProjectCard(cardId);
+        Card inputCard = cardService.getCard(cardId);
 
         player.getCardResourcesCount().put(
                 inputCard.getClass(),

@@ -1,8 +1,8 @@
 package com.terraforming.ares.validation.input;
 
 import com.terraforming.ares.cards.blue.Decomposers;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.model.Tag;
 import org.springframework.stereotype.Component;
 
@@ -25,7 +25,7 @@ public class DecomposersOnBuiltEffectValidator implements OnBuiltEffectValidator
     }
 
     @Override
-    public String validate(ProjectCard card, Player player, Map<Integer, List<Integer>> input) {
+    public String validate(Card card, Player player, Map<Integer, List<Integer>> input) {
         long tagsCount = card.getTags()
                 .stream()
                 .filter(tag -> tag == Tag.ANIMAL || tag == Tag.MICROBE || tag == Tag.PLANT)

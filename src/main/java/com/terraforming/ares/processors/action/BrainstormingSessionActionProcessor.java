@@ -4,7 +4,10 @@ import com.terraforming.ares.cards.blue.BrainstormingSession;
 import com.terraforming.ares.dto.CardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickDiscardCardsAction;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.Card;
+import com.terraforming.ares.model.CardColor;
+import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -28,7 +31,7 @@ public class BrainstormingSessionActionProcessor implements BlueActionCardProces
         AutoPickDiscardCardsAction.AutoPickDiscardCardsActionBuilder resultBuilder = AutoPickDiscardCardsAction.builder();
 
         for (Integer card : game.dealCards(1)) {
-            ProjectCard projectCard = deckService.getProjectCard(card);
+            Card projectCard = deckService.getCard(card);
             if (projectCard.getColor() == CardColor.GREEN) {
                 player.setMc(player.getMc() + 1);
                 resultBuilder.discardedCard(CardDto.from(projectCard));

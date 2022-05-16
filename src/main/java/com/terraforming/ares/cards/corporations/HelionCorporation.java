@@ -21,6 +21,7 @@ public class HelionCorporation implements CorporationCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Helion Corporation")
                 .description("28 Mc. 3 Heat income. You may use Heat as Mc, but not vise versa.")
+                .cardAction(CardAction.HELION_CORPORATION)
                 .build();
     }
 
@@ -34,7 +35,6 @@ public class HelionCorporation implements CorporationCard {
         Player player = marsContext.getPlayer();
         player.setMc(28);
         player.setHeatIncome(3);
-        player.setSteelIncome(2);//TODO remove
         return null;
     }
 

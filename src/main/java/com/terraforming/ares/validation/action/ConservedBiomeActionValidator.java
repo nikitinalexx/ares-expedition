@@ -2,10 +2,9 @@ package com.terraforming.ares.validation.action;
 
 import com.terraforming.ares.cards.blue.ConservedBiome;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardCollectableResource;
-import com.terraforming.ares.model.Planet;
 import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -39,7 +38,7 @@ public class ConservedBiomeActionValidator implements ActionValidator<ConservedB
             return "Player doesn't have the selected project card.";
         }
 
-        ProjectCard project = cardService.getProjectCard(cardToAddTo);
+        Card project = cardService.getCard(cardToAddTo);
         CardCollectableResource collectableResourceType = project.getCollectableResource();
 
         if (collectableResourceType != CardCollectableResource.MICROBE && collectableResourceType != CardCollectableResource.ANIMAL) {

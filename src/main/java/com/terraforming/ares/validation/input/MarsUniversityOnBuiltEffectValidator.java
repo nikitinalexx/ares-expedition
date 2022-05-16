@@ -1,10 +1,7 @@
 package com.terraforming.ares.validation.input;
 
 import com.terraforming.ares.cards.blue.MarsUniversity;
-import com.terraforming.ares.model.InputFlag;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.ProjectCard;
-import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.model.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -24,7 +21,7 @@ public class MarsUniversityOnBuiltEffectValidator implements OnBuiltEffectValida
     }
 
     @Override
-    public String validate(ProjectCard card, Player player, Map<Integer, List<Integer>> input) {
+    public String validate(Card card, Player player, Map<Integer, List<Integer>> input) {
         //TODO test
         long scienceTagsCount = card.getTags()
                 .stream()

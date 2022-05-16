@@ -1,10 +1,7 @@
 package com.terraforming.ares.validation.input;
 
 import com.terraforming.ares.cards.red.ImportedHydrogen;
-import com.terraforming.ares.model.CardCollectableResource;
-import com.terraforming.ares.model.InputFlag;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.ProjectCard;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -30,7 +27,7 @@ public class ImportedHydrogenOnBuiltEffectValidator implements OnBuiltEffectVali
     }
 
     @Override
-    public String validate(ProjectCard card, Player player, Map<Integer, List<Integer>> input) {
+    public String validate(Card card, Player player, Map<Integer, List<Integer>> input) {
         if (!input.containsKey(InputFlag.IMPORTED_HYDROGEN_PICK_PLANT.getId())
                 && !input.containsKey(InputFlag.IMPORTED_HYDROGEN_PUT_RESOURCE.getId())) {
             return INCORRECT_INPUT_ERROR_MESSAGE;
@@ -51,7 +48,7 @@ public class ImportedHydrogenOnBuiltEffectValidator implements OnBuiltEffectVali
             return "Selected card was not built by player";
         }
 
-        ProjectCard inputCard = cardService.getProjectCard(inputCardId);
+        Card inputCard = cardService.getCard(inputCardId);
         if (inputCard.getCollectableResource() != CardCollectableResource.MICROBE
                 && inputCard.getCollectableResource() != CardCollectableResource.ANIMAL) {
             return "Selected card does not collect Animals or Microbes";

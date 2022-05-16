@@ -28,7 +28,7 @@ public class PaymentValidationService {
         ));
     }
 
-    public String validate(ProjectCard projectCard, Player player, List<Payment> payments) {
+    public String validate(Card card, Player player, List<Payment> payments) {
         for (Payment payment : payments) {
             PaymentValidator paymentValidator = validators.get(payment.getType());
             if (paymentValidator == null) {
@@ -40,13 +40,13 @@ public class PaymentValidationService {
             }
         }
 
-        if (player.isCanBuildAnotherGreenWith9Discount() && projectCard.getPrice() > 9) {
+        if (player.isCanBuildAnotherGreenWith9Discount() && card.getPrice() > 9) {
             return "Can only build a second building with print price of 9 or less";
         }
 
 
-        int discount = getDiscount(projectCard, player);
-        int discountedPrice = Math.max(0, projectCard.getPrice() - discount);
+        int discount = getDiscount(card, player);
+        int discountedPrice = Math.max(0, card.getPrice() - discount);
 
         int totalPayment = payments.stream().mapToInt(Payment::getTotalValue).sum();
 
@@ -59,10 +59,10 @@ public class PaymentValidationService {
         }
     }
 
-    private int getDiscount(ProjectCard projectCard, Player player) {
+    private int getDiscount(Card card, Player player) {
         int discount = 0;
 
-        List<Tag> tags = projectCard.getTags();
+        List<Tag> tags = card.getTags();
 
         boolean playerOwnsAdvancedAlloys = specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ADVANCED_ALLOYS);
 
@@ -74,7 +74,7 @@ public class PaymentValidationService {
             discount += player.getTitaniumIncome() * (3 + (playerOwnsAdvancedAlloys ? 1 : 0));
         }
 
-        if (projectCard.getColor() == CardColor.GREEN && player.getChosenPhase() == 1) {
+        if (card.getColor() == CardColor.GREEN && player.getChosenPhase() == 1) {
             discount += 3;
         }
 
@@ -82,21 +82,21 @@ public class PaymentValidationService {
             discount += 2;
         }
 
-        if (projectCard.getTags().contains(Tag.ENERGY) &&
+        if (card.getTags().contains(Tag.ENERGY) &&
                 specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ENERGY_SUBSIDIES_DISCOUNT_4)) {
             discount += 4;
         }
 
         if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.INTERPLANETARY_CONFERENCE)) {
-            if (projectCard.getTags().contains(Tag.EARTH)) {
+            if (card.getTags().contains(Tag.EARTH)) {
                 discount += 3;
             }
-            if (projectCard.getTags().contains(Tag.JUPITER)) {
+            if (card.getTags().contains(Tag.JUPITER)) {
                 discount += 3;
             }
         }
 
-        if (projectCard.getTags().contains(Tag.EVENT) &&
+        if (card.getTags().contains(Tag.EVENT) &&
                 specialEffectsService.ownsSpecialEffect(player, SpecialEffect.MEDIA_GROUP)) {
             discount += 5;
         }
@@ -105,13 +105,21 @@ public class PaymentValidationService {
             discount += 1;
         }
 
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.DEV_TECHS_DISCOUNT) && card.getColor() == CardColor.GREEN) {
+            discount += 2;
+        }
+
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.LAUNCH_STAR_DISCOUNT) && card.getColor() == CardColor.BLUE) {
+            discount += 3;
+        }
+
         //todo add to frontend validation
         if (player.isBuiltWorkCrewsLastTurn()) {
             discount += 11;
         }
 
         //todo add to frontend validation
-        if (player.isCanBuildAnotherGreenWith9Discount() && projectCard.getPrice() <= 9) {
+        if (player.isCanBuildAnotherGreenWith9Discount() && card.getPrice() <= 9) {
             discount += 9;
         }
 

@@ -30,7 +30,7 @@ public class VolcanicPoolsActionProcessor implements BlueActionCardProcessor<Vol
         int energyTags = (int) player.getPlayed()
                 .getCards()
                 .stream()
-                .map(cardService::getProjectCard)
+                .map(cardService::getCard)
                 .flatMap(projectCard -> projectCard.getTags().stream())
                 .filter(Tag.ENERGY::equals).count();
 

@@ -7,6 +7,7 @@ import com.terraforming.ares.cards.corporations.HelionCorporation;
 import com.terraforming.ares.cards.corporations.LaunchStarIncorporated;
 import com.terraforming.ares.cards.green.*;
 import com.terraforming.ares.cards.red.*;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CorporationCard;
 import com.terraforming.ares.model.ProjectCard;
 import org.springframework.stereotype.Service;
@@ -23,13 +24,12 @@ import java.util.stream.Stream;
  */
 @Service
 public class CardFactory {
-    //TODO do something with these ids
-    private final Map<Integer, CorporationCard> inmemoryCorporationsStorage = Map.of(
-            1, new HelionCorporation(1),
-            2, new CelestiorCorporation(2),
-            3, new DevTechs(3),
-            4, new LaunchStarIncorporated(4)
-    );
+    private final Map<Integer, CorporationCard> inmemoryCorporationsStorage = List.of(
+            new HelionCorporation(10000),
+            new CelestiorCorporation(10001),
+            new DevTechs(10002),
+            new LaunchStarIncorporated(10003)
+    ).stream().collect(Collectors.toMap(Card::getId, Function.identity()));
 
     private final Map<Integer, ProjectCard> inmemoryProjectCards;
     private final List<ProjectCard> sortedProjects;

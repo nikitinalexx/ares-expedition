@@ -17,7 +17,7 @@
       <ul class="myUL">
         <li *ngFor="let card of getGreenPlayerHand();" (click)="clickProjectToBuild(card)"
             [ngClass]="selectedProjectToBuildClass(card)" class="filterDiv automated display">
-          <app-card-template [card]="card" [game]="game"></app-card-template>
+          <app-card-template [card]="card" [game]="game" [showDiscount]="true"></app-card-template>
         </li>
       </ul>
 

@@ -1,10 +1,10 @@
 package com.terraforming.ares.validation.input;
 
 import com.terraforming.ares.cards.red.CeosFavoriteProject;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardCollectableResource;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -29,7 +29,7 @@ public class CeosFavoriteProjectOnBuiltEffectValidator implements OnBuiltEffectV
     }
 
     @Override
-    public String validate(ProjectCard builtCard, Player player, Map<Integer, List<Integer>> input) {
+    public String validate(Card builtCard, Player player, Map<Integer, List<Integer>> input) {
         if (!input.containsKey(InputFlag.CEOS_FAVORITE_PUT_RESOURCES.getId())) {
             return ERROR_MESSAGE_INPUT_MISSING;
         }
@@ -45,7 +45,7 @@ public class CeosFavoriteProjectOnBuiltEffectValidator implements OnBuiltEffectV
             return "You can't put resources on a card you haven't built";
         }
 
-        ProjectCard targetCard = cardService.getProjectCard(cardId);
+        Card targetCard = cardService.getCard(cardId);
         if (targetCard.getCollectableResource() == CardCollectableResource.NONE || targetCard.getCollectableResource() == CardCollectableResource.FOREST) {
             return "Selected card doesn't collect any resources";
         }

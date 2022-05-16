@@ -35,7 +35,7 @@ public class OptimalAerobraking implements BlueCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
+    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
         if (project.getTags().contains(Tag.EVENT)) {
             player.setHeat(player.getHeat() + 2);
             player.setPlants(player.getPlants() + 2);

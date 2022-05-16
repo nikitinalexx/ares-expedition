@@ -1,8 +1,12 @@
 package com.terraforming.ares.validation.payment;
 
+import com.terraforming.ares.model.CardAction;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.payments.PaymentType;
+import com.terraforming.ares.services.CardService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -10,7 +14,10 @@ import org.springframework.stereotype.Component;
  * Creation date 03.05.2022
  */
 @Component
+@RequiredArgsConstructor
 public class HeatPaymentValidator implements PaymentValidator {
+    private final CardService cardService;
+
     @Override
     public PaymentType getType() {
         return PaymentType.HEAT;
@@ -18,7 +25,13 @@ public class HeatPaymentValidator implements PaymentValidator {
 
     @Override
     public String validate(Player player, Payment payment) {
-        //TODO check that player is allowed to use this payment type
+        Card corporationCard = cardService.getCard(player.getSelectedCorporationCard());
+        CardAction cardAction = corporationCard.getCardMetadata().getCardAction();
+
+        if (cardAction != CardAction.HELION_CORPORATION) {
+            return "Only helion corporation may pay with heat";
+        }
+
         if (player.getHeat() < payment.getValue()) {
             return "Not enough HEAT to build the project";
         }

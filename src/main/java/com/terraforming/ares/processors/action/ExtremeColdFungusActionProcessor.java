@@ -2,10 +2,7 @@ package com.terraforming.ares.processors.action;
 
 import com.terraforming.ares.cards.blue.ExtremeColdFungus;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.ProjectCard;
-import com.terraforming.ares.model.InputFlag;
-import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -35,11 +32,11 @@ public class ExtremeColdFungusActionProcessor implements BlueActionCardProcessor
         } else {
             Integer cardToAddTo = inputParameters.get(1);
 
-            ProjectCard project = cardService.getProjectCard(cardToAddTo);
+            Card card = cardService.getCard(cardToAddTo);
 
-            Integer currentResourceCount = player.getCardResourcesCount().get(project.getClass());
+            Integer currentResourceCount = player.getCardResourcesCount().get(card.getClass());
 
-            player.getCardResourcesCount().put(project.getClass(), currentResourceCount + 1);
+            player.getCardResourcesCount().put(card.getClass(), currentResourceCount + 1);
         }
 
         return null;

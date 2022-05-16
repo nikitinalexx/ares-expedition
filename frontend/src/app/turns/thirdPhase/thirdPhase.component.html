@@ -15,9 +15,9 @@
 
     <div *ngIf="parentForm.value?.turn === 'blueAction'" class="card-container">
       <ul class="myUL">
-        <li *ngFor="let card of getBlueUnplayedCards();" (click)="selectProject(card)"
+        <li *ngFor="let card of getActiveCards();" (click)="selectProject(card)"
             [ngClass]="selectedProjectClass(card)" class="filterDiv automated display">
-          <app-card-template [card]="card" [game]="game"></app-card-template>
+          <app-card-template [card]="card"></app-card-template>
         </li>
       </ul>
     </div>
@@ -28,7 +28,7 @@
       <ul class="myUL">
         <li *ngFor="let card of getPlayerHandForAction();" (click)="addCardToActionTargetCards(card)"
             [ngClass]="getActionTargetCardClass(card)" class="filterDiv automated display">
-          <app-card-template [card]="card" [game]="game"></app-card-template>
+          <app-card-template [card]="card"></app-card-template>
         </li>
       </ul>
     </div>
@@ -92,7 +92,7 @@
         <ul class="myUL">
           <li *ngFor="let card of getPlayerHandForAction();" (click)="addCardToActionTargetCards(card)"
               [ngClass]="getActionTargetCardClass(card)" class="filterDiv automated display">
-            <app-card-template [card]="card" [game]="game"></app-card-template>
+            <app-card-template [card]="card"></app-card-template>
           </li>
         </ul>
       </div>

@@ -48,7 +48,7 @@ public class ExtremeColdFungusActionValidator implements ActionValidator<Extreme
                 return "Player doesn't have the selected project card.";
             }
 
-            ProjectCard project = cardService.getProjectCard(cardToPutOn);
+            Card project = cardService.getCard(cardToPutOn);
 
             if (project.getCollectableResource() != CardCollectableResource.MICROBE) {
                 return "You may only add resource to a Microbe card";

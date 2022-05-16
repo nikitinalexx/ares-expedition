@@ -38,7 +38,7 @@ public class ImportedNitrogen implements BaseExpansionRedCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> input) {
+    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> input) {
         List<Integer> animalsInput = input.get(InputFlag.IMPORTED_NITROGEN_ADD_ANIMALS.getId());
         List<Integer> microbesInput = input.get(InputFlag.IMPORTED_NITROGEN_ADD_MICROBES.getId());
 
@@ -47,12 +47,12 @@ public class ImportedNitrogen implements BaseExpansionRedCard {
         Integer microbesCardId = microbesInput.get(0);
 
         if (animalsCardId != InputFlag.SKIP_ACTION.getId()) {
-            ProjectCard animalsCard = cardService.getProjectCard(animalsCardId);
+            Card animalsCard = cardService.getCard(animalsCardId);
             player.getCardResourcesCount().put(animalsCard.getClass(), player.getCardResourcesCount().get(animalsCard.getClass()) + 2);
         }
 
         if (microbesCardId != InputFlag.SKIP_ACTION.getId()) {
-            ProjectCard microbeCard = cardService.getProjectCard(microbesCardId);
+            Card microbeCard = cardService.getCard(microbesCardId);
             player.getCardResourcesCount().put(microbeCard.getClass(), player.getCardResourcesCount().get(microbeCard.getClass()) + 3);
         }
     }

@@ -19,11 +19,17 @@ export class CardTemplateComponent {
   card: Card;
   @Input()
   game: Game;
+  @Input()
+  showDiscount: boolean;
 
   constructor(private discountService: DiscountComponent) {
   }
 
   discountApplicable(card: Card): boolean {
+    console.log(this.showDiscount);
+    if (!this.showDiscount) {
+      return false;
+    }
     return this.discountService.isDiscountApplicable(card, this.game);
   }
 
@@ -558,6 +564,22 @@ export class CardTemplateComponent {
 
   actionTropicalIsland(card: Card): boolean {
     return card.cardAction === CardAction.TROPICAL_ISLAND;
+  }
+
+  isHelionCorporation(card: Card): boolean {
+    return card.cardAction === CardAction.HELION_CORPORATION;
+  }
+
+  isCelestiorCorporation(card: Card): boolean {
+    return card.cardAction === CardAction.CELESTIOR_CORPORATION;
+  }
+
+  isDevTechsCorporation(card: Card): boolean {
+    return card.cardAction === CardAction.DEVTECHS_CORPORATION;
+  }
+
+  isLaunchStarCorporation(card: Card): boolean {
+    return card.cardAction === CardAction.LAUNCH_STAR_CORPORATION;
   }
 
   hasTagRequirements(card: Card): boolean {

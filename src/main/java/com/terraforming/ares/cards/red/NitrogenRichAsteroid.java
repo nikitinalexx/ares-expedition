@@ -50,7 +50,7 @@ public class NitrogenRichAsteroid implements BaseExpansionRedCard {
         terraformingService.increaseTemperature(marsContext.getGame(), marsContext.getPlayer());
         player.setPlants(player.getPlants() + 2);
 
-        long plantsMin3 = player.getPlayed().getCards().stream().map(cardService::getProjectCard)
+        long plantsMin3 = player.getPlayed().getCards().stream().map(cardService::getCard)
                 .flatMap(card -> card.getTags().stream())
                 .filter(Tag.PLANT::equals)
                 .limit(3)

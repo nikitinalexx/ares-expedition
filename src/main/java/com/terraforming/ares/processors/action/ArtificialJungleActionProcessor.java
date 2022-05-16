@@ -32,7 +32,7 @@ public class ArtificialJungleActionProcessor implements BlueActionCardProcessor<
 
         for (Integer card : game.dealCards(1)) {
             player.getHand().addCard(card);
-            resultBuilder.takenCard(CardDto.from(deckService.getProjectCard(card)));
+            resultBuilder.takenCard(CardDto.from(deckService.getCard(card)));
         }
 
         return resultBuilder.build();

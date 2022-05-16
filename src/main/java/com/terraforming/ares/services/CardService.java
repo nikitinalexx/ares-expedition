@@ -24,25 +24,31 @@ public class CardService {
     }
 
     public Deck createProjectsDeck(List<Expansion> expansions) {
-        //TODO logic that builds a deck based on list of selected expansions
-        return Deck.builder()
-                .cards(new LinkedList<>(projects.keySet()))
-                .build();
+        if (expansions.stream().anyMatch(Expansion.BASE::equals)) {
+            return Deck.builder()
+                    .cards(new LinkedList<>(projects.keySet()))
+                    .build();
+        } else {
+            return Deck.builder().build();
+        }
     }
 
     public Deck createCorporationsDeck(List<Expansion> expansions) {
-        //TODO logic that builds a deck based on list of selected expansions
-        return Deck.builder()
-                .cards(new LinkedList<>(corporations.keySet()))
-                .build();
+        if (expansions.stream().anyMatch(Expansion.BASE::equals)) {
+            return Deck.builder()
+                    .cards(new LinkedList<>(corporations.keySet()))
+                    .build();
+        } else {
+            return Deck.builder().build();
+        }
     }
 
-    public CorporationCard getCorporationCard(int id) {
+    public Card getCard(int id) {
+        ProjectCard projectCard = projects.get(id);
+        if (projectCard != null) {
+            return projectCard;
+        }
         return corporations.get(id);
-    }
-
-    public ProjectCard getProjectCard(int id) {
-        return projects.get(id);
     }
 
     public AutoPickCardsAction dealCards(Deck deck, Player player) {
@@ -50,7 +56,7 @@ public class CardService {
 
         for (Integer card : deck.getCards()) {
             player.getHand().addCard(card);
-            resultBuilder.takenCard(CardDto.from(getProjectCard(card)));
+            resultBuilder.takenCard(CardDto.from(getCard(card)));
         }
 
         return resultBuilder.build();

@@ -27,7 +27,7 @@ public class ViralEnhancersOnBuiltEffectValidator implements OnBuiltEffectValida
     }
 
     @Override
-    public String validate(ProjectCard card, Player player, Map<Integer, List<Integer>> input) {
+    public String validate(Card card, Player player, Map<Integer, List<Integer>> input) {
         long tagsCount = card.getTags()
                 .stream()
                 .filter(tag -> tag == Tag.ANIMAL || tag == Tag.MICROBE || tag == Tag.PLANT)
@@ -59,7 +59,7 @@ public class ViralEnhancersOnBuiltEffectValidator implements OnBuiltEffectValida
                     return "Player doesn't have the selected card to add Animal/Microbe to";
                 }
 
-                ProjectCard projectCard = cardService.getProjectCard(cardId);
+                Card projectCard = cardService.getCard(cardId);
                 if (projectCard.getCollectableResource() != CardCollectableResource.ANIMAL
                         && projectCard.getCollectableResource() != CardCollectableResource.MICROBE) {
                     return "Selected card can not collect any animals or resources";

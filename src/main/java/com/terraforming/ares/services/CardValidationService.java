@@ -50,8 +50,8 @@ public class CardValidationService {
     }
 
     public String validateCard(Player player, MarsGame game, int cardId, List<Payment> payments, Map<Integer, List<Integer>> inputParameters) {
-        ProjectCard projectCard = cardService.getProjectCard(cardId);
-        if (projectCard == null) {
+        Card card = cardService.getCard(cardId);
+        if (card == null) {
             return "Card doesn't exist " + cardId;
         }
 
@@ -64,23 +64,23 @@ public class CardValidationService {
         boolean builtSpecialDesignLastTurn = player.isBuiltSpecialDesignLastTurn();
 
         //TODO requirements should be set at the beginning of phase
-        return validateOxygen(game.getPlanetAtTheStartOfThePhase(), projectCard, playerMayAmplifyGlobalRequirement || builtSpecialDesignLastTurn)
-                .or(() -> validateTemperature(game.getPlanetAtTheStartOfThePhase(), projectCard, playerMayAmplifyGlobalRequirement || builtSpecialDesignLastTurn))
-                .or(() -> validateOceans(game.getPlanetAtTheStartOfThePhase(), projectCard))
-                .or(() -> validateTags(player, projectCard))
-                .or(() -> validatePayments(projectCard, player, payments))
-                .or(() -> validateInputParameters(projectCard, player, inputParameters))
+        return validateOxygen(game.getPlanetAtTheStartOfThePhase(), card, playerMayAmplifyGlobalRequirement || builtSpecialDesignLastTurn)
+                .or(() -> validateTemperature(game.getPlanetAtTheStartOfThePhase(), card, playerMayAmplifyGlobalRequirement || builtSpecialDesignLastTurn))
+                .or(() -> validateOceans(game.getPlanetAtTheStartOfThePhase(), card))
+                .or(() -> validateTags(player, card))
+                .or(() -> validatePayments(card, player, payments))
+                .or(() -> validateInputParameters(card, player, inputParameters))
                 .orElse(null);
     }
 
     @SuppressWarnings("unchecked")
     public String validateBlueAction(Player player, MarsGame game, int cardId, List<Integer> inputParameters) {
-        ProjectCard projectCard = cardService.getProjectCard(cardId);
-        if (projectCard == null) {
-            return "Card doesn't exist " + cardId;
+        Card card = cardService.getCard(cardId);
+        if (card == null) {
+            return "card doesn't exist " + cardId;
         }
 
-        if (projectCard.getColor() != CardColor.BLUE || !projectCard.isActiveCard()) {
+        if (!card.isActiveCard()) {
             return "Selected card doesn't contain an action";
         }
 
@@ -97,7 +97,7 @@ public class CardValidationService {
             }
         }
 
-        ActionValidator<ProjectCard> validator = (ActionValidator<ProjectCard>) blueActionValidators.get(projectCard.getClass());
+        ActionValidator<Card> validator = (ActionValidator<Card>) blueActionValidators.get(card.getClass());
 
         if (validator != null) {
             return validator.validate(game, player, inputParameters);
@@ -106,7 +106,7 @@ public class CardValidationService {
         }
     }
 
-    private Optional<String> validateOxygen(Planet planet, ProjectCard card, boolean playerMayAmplifyGlobalRequirement) {
+    private Optional<String> validateOxygen(Planet planet, Card card, boolean playerMayAmplifyGlobalRequirement) {
         if (planet.isValidOxygen(
                 playerMayAmplifyGlobalRequirement ? amplifyRequirement(card.getOxygenRequirement()) : card.getOxygenRequirement()
         )) {
@@ -116,7 +116,7 @@ public class CardValidationService {
         }
     }
 
-    private Optional<String> validateTemperature(Planet planet, ProjectCard card, boolean playerMayAmplifyGlobalRequirement) {
+    private Optional<String> validateTemperature(Planet planet, Card card, boolean playerMayAmplifyGlobalRequirement) {
         if (planet.isValidTemperatute(
                 playerMayAmplifyGlobalRequirement ? amplifyRequirement(card.getTemperatureRequirement()) : card.getTemperatureRequirement()
         )) {
@@ -141,7 +141,7 @@ public class CardValidationService {
         return resultRequirement;
     }
 
-    private Optional<String> validateOceans(Planet planet, ProjectCard card) {
+    private Optional<String> validateOceans(Planet planet, Card card) {
         if (planet.isValidNumberOfOceans(card.getOceanRequirement())) {
             return Optional.empty();
         } else {
@@ -149,11 +149,11 @@ public class CardValidationService {
         }
     }
 
-    private Optional<String> validatePayments(ProjectCard card, Player player, List<Payment> payments) {
+    private Optional<String> validatePayments(Card card, Player player, List<Payment> payments) {
         return Optional.ofNullable(paymentValidationService.validate(card, player, payments));
     }
 
-    private Optional<String> validateInputParameters(ProjectCard card, Player player, Map<Integer, List<Integer>> inputParams) {
+    private Optional<String> validateInputParameters(Card card, Player player, Map<Integer, List<Integer>> inputParams) {
         Optional<String> validationResult = Optional.empty();
 
         if (card.onBuiltEffectApplicableToItself()) {
@@ -167,8 +167,8 @@ public class CardValidationService {
                 player.getPlayed()
                         .getCards()
                         .stream()
-                        .map(cardService::getProjectCard)
-                        .filter(ProjectCard::onBuiltEffectApplicableToOther)
+                        .map(cardService::getCard)
+                        .filter(Card::onBuiltEffectApplicableToOther)
                         .map(c -> onBuiltEffectValidators.get(c.getClass()))
                         .filter(Objects::nonNull)
                         .map(validator -> validator.validate(card, player, inputParams))
@@ -177,17 +177,17 @@ public class CardValidationService {
         );
     }
 
-    private Optional<String> validateTags(Player player, ProjectCard projectCard) {
+    private Optional<String> validateTags(Player player, Card Card) {
         List<Integer> cards = player.getPlayed().getCards();
 
-        List<Tag> tagRequirements = new LinkedList<>(projectCard.getTagRequirements());
+        List<Tag> tagRequirements = new LinkedList<>(Card.getTagRequirements());
 
         if (tagRequirements.isEmpty()) {
             return Optional.empty();
         }
 
         for (Integer card : cards) {
-            ProjectCard builtProject = cardService.getProjectCard(card);
+            Card builtProject = cardService.getCard(card);
 
             tagRequirements.removeAll(builtProject.getTags());
 

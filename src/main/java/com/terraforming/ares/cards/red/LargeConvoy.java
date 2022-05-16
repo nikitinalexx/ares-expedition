@@ -46,7 +46,7 @@ public class LargeConvoy implements BaseExpansionRedCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> input) {
+    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> input) {
         if (input.containsKey(InputFlag.LARGE_CONVOY_PICK_PLANT.getId())) {
             player.setPlants(player.getPlants() + 5);
             return;
@@ -55,7 +55,7 @@ public class LargeConvoy implements BaseExpansionRedCard {
         List<Integer> animalsInput = input.get(InputFlag.LARGE_CONVOY_ADD_ANIMAL.getId());
         Integer animalsCardId = animalsInput.get(0);
 
-        ProjectCard animalsCard = cardService.getProjectCard(animalsCardId);
+        Card animalsCard = cardService.getCard(animalsCardId);
 
         player.getCardResourcesCount().put(
                 animalsCard.getClass(),
@@ -78,7 +78,7 @@ public class LargeConvoy implements BaseExpansionRedCard {
 
         for (Integer card : marsContext.getGame().dealCards(2)) {
             marsContext.getPlayer().getHand().addCard(card);
-            resultBuilder.takenCard(CardDto.from(marsContext.getCardService().getProjectCard(card)));
+            resultBuilder.takenCard(CardDto.from(marsContext.getCardService().getCard(card)));
         }
 
         return resultBuilder.build();

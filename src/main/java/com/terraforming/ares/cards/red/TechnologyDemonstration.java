@@ -3,7 +3,10 @@ package com.terraforming.ares.cards.red;
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.dto.CardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
-import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.Card;
+import com.terraforming.ares.model.MarsContext;
+import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.services.TerraformingService;
@@ -47,7 +50,7 @@ public class TechnologyDemonstration implements BaseExpansionRedCard {
         for (Integer card : marsContext.getGame().dealCards(2)) {
             marsContext.getPlayer().getHand().addCard(card);
 
-            ProjectCard projectCard = marsContext.getCardService().getProjectCard(card);
+            Card projectCard = marsContext.getCardService().getCard(card);
             resultBuilder.takenCard(CardDto.from(projectCard));
         }
 

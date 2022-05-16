@@ -1,10 +1,10 @@
 package com.terraforming.ares.validation.input;
 
 import com.terraforming.ares.cards.green.Astrofarm;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardCollectableResource;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -30,7 +30,7 @@ public class AstrofarmOnBuiltEffectValidator implements OnBuiltEffectValidator<A
     }
 
     @Override
-    public String validate(ProjectCard card, Player player, Map<Integer, List<Integer>> input) {
+    public String validate(Card card, Player player, Map<Integer, List<Integer>> input) {
         List<Integer> cardInput = input.get(InputFlag.ASTROFARM_PUT_RESOURCE.getId());
 
         if (CollectionUtils.isEmpty(cardInput)) {
@@ -47,7 +47,7 @@ public class AstrofarmOnBuiltEffectValidator implements OnBuiltEffectValidator<A
             return "Selected card was not built by player";
         }
 
-        ProjectCard inputCard = cardService.getProjectCard(cardId);
+        Card inputCard = cardService.getCard(cardId);
         if (inputCard.getCollectableResource() != CardCollectableResource.MICROBE) {
             return "Selected card does not collect Microbes";
         }

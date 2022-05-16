@@ -1,10 +1,7 @@
 package com.terraforming.ares.processors.turn;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.CorporationCard;
-import com.terraforming.ares.model.MarsContext;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.turn.CorporationChoiceTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
@@ -26,8 +23,9 @@ public class PickCorporationProcessor implements TurnProcessor<CorporationChoice
     public TurnResponse processTurn(CorporationChoiceTurn turn, MarsGame game) {
         Player player = game.getPlayerUuidToPlayer().get(turn.getPlayerUuid());
         player.setSelectedCorporationCard(turn.getCorporationCardId());
+        player.getPlayed().addCard(turn.getCorporationCardId());
 
-        CorporationCard card = carsService.getCorporationCard(turn.getCorporationCardId());
+        Card card = carsService.getCard(turn.getCorporationCardId());
         return card.buildProject(
                 MarsContext.builder()
                         .game(game)

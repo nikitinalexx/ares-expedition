@@ -25,6 +25,7 @@ export class Card {
               cardResource: CardResource,
               resourcesOnBuild: PutResourceOnBuild[],
               active: boolean,
+              corporation: boolean,
               actionInputData?: ActionInputData[],
               winPointsInfo?: WinPointsInfo,
               oceanRequirement?: OceanRequirement,
@@ -53,4 +54,5 @@ export class Card {
   resourcesOnBuild: PutResourceOnBuild[];
   active: boolean;
   actionInputData: ActionInputData[];
+  corporation: boolean
 }

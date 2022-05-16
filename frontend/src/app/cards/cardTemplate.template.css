@@ -14,3 +14,16 @@
   left: 1px;
   position: absolute;
 }
+
+.corporation-name {
+  font-size:34px;
+  width:140px;
+  height: 40px;
+  text-align: center;
+  margin-top:5px;
+  border:2px solid black;
+  margin-left:8px;
+  background: #e6e600;
+  box-shadow: 6px 6px 6px grey;
+  border-radius:2px;
+}

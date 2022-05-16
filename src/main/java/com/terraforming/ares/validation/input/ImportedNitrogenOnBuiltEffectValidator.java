@@ -1,10 +1,10 @@
 package com.terraforming.ares.validation.input;
 
 import com.terraforming.ares.cards.red.ImportedNitrogen;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardCollectableResource;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -30,7 +30,7 @@ public class ImportedNitrogenOnBuiltEffectValidator implements OnBuiltEffectVali
     }
 
     @Override
-    public String validate(ProjectCard card, Player player, Map<Integer, List<Integer>> input) {
+    public String validate(Card card, Player player, Map<Integer, List<Integer>> input) {
         if (!input.containsKey(InputFlag.IMPORTED_NITROGEN_ADD_ANIMALS.getId())
                 || !input.containsKey(InputFlag.IMPORTED_NITROGEN_ADD_MICROBES.getId())) {
             return INCORRECT_INPUT_ERROR_MESSAGE;
@@ -50,7 +50,7 @@ public class ImportedNitrogenOnBuiltEffectValidator implements OnBuiltEffectVali
             if (!player.getPlayed().containsCard(animalsCardId)) {
                 return "Player doesn't have the selected animal card built";
             }
-            ProjectCard animalsCard = cardService.getProjectCard(animalsCardId);
+            Card animalsCard = cardService.getCard(animalsCardId);
             if (animalsCard.getCollectableResource() != CardCollectableResource.ANIMAL) {
                 return "Selected card doesn't collect animals";
             }
@@ -60,7 +60,7 @@ public class ImportedNitrogenOnBuiltEffectValidator implements OnBuiltEffectVali
             if (!player.getPlayed().containsCard(microbesCardId)) {
                 return "Player doesn't have the selected microbe card built";
             }
-            ProjectCard microbeCard = cardService.getProjectCard(microbesCardId);
+            Card microbeCard = cardService.getCard(microbesCardId);
             if (microbeCard.getCollectableResource() != CardCollectableResource.MICROBE) {
                 return "Selected card doesn't collect microbes";
             }

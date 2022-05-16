@@ -1,10 +1,10 @@
 package com.terraforming.ares.validation.input;
 
 import com.terraforming.ares.cards.red.LargeConvoy;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardCollectableResource;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -30,7 +30,7 @@ public class LargeConvoyOnBuiltEffectValidator implements OnBuiltEffectValidator
     }
 
     @Override
-    public String validate(ProjectCard card, Player player, Map<Integer, List<Integer>> input) {
+    public String validate(Card card, Player player, Map<Integer, List<Integer>> input) {
         if (!input.containsKey(InputFlag.LARGE_CONVOY_PICK_PLANT.getId())
                 && !input.containsKey(InputFlag.LARGE_CONVOY_ADD_ANIMAL.getId())) {
             return INCORRECT_INPUT_ERROR_MESSAGE;
@@ -51,7 +51,7 @@ public class LargeConvoyOnBuiltEffectValidator implements OnBuiltEffectValidator
         if (!player.getPlayed().containsCard(animalsCardId)) {
             return "Player doesn't have the selected animal card built";
         }
-        ProjectCard animalsCard = cardService.getProjectCard(animalsCardId);
+        Card animalsCard = cardService.getCard(animalsCardId);
         if (animalsCard.getCollectableResource() != CardCollectableResource.ANIMAL) {
             return "Selected card doesn't collect animals";
         }

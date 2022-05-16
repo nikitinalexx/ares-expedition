@@ -4,8 +4,8 @@ import com.terraforming.ares.cards.blue.CircuitBoardFactory;
 import com.terraforming.ares.dto.CardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +32,7 @@ public class CircuitBoardFactoryActionProcessor implements BlueActionCardProcess
         for (Integer card : game.dealCards(1)) {
             player.getHand().addCard(card);
 
-            ProjectCard projectCard = deckService.getProjectCard(card);
+            Card projectCard = deckService.getCard(card);
             resultBuilder.takenCard(CardDto.from(projectCard));
         }
 

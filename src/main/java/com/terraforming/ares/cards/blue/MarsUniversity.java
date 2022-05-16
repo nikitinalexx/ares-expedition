@@ -45,7 +45,7 @@ public class MarsUniversity implements BlueCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard card, Map<Integer, List<Integer>> inputParams) {
+    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card card, Map<Integer, List<Integer>> inputParams) {
         long scienceTagsCount = card.getTags()
                 .stream()
                 .filter(Tag.SCIENCE::equals)
@@ -69,7 +69,7 @@ public class MarsUniversity implements BlueCard {
     private void discardCard(CardService cardService, Integer cardIdToDiscard, MarsGame game, Player player) {
         player.getHand().removeCards(List.of(cardIdToDiscard));
 
-        ProjectCard cardToDiscard = cardService.getProjectCard(cardIdToDiscard);
+        Card cardToDiscard = cardService.getCard(cardIdToDiscard);
 
         int cardsToReceive = cardToDiscard.getTags().contains(Tag.PLANT) ? 2 : 1;
 

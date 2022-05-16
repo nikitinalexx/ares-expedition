@@ -36,7 +36,7 @@ public class AtmosphericInsulators implements BaseExpansionGreenCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
+    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
         int earthTags = (int) project.getTags().stream().filter(Tag.EARTH::equals).count();
 
         player.setHeatIncome(player.getHeatIncome() + earthTags);
@@ -47,7 +47,7 @@ public class AtmosphericInsulators implements BaseExpansionGreenCard {
         int earthTagCount = (int) marsContext.getPlayer()
                 .getPlayed()
                 .getCards().stream()
-                .map(marsContext.getCardService()::getProjectCard)
+                .map(marsContext.getCardService()::getCard)
                 .flatMap(card -> card.getTags().stream())
                 .filter(Tag.EARTH::equals).count();
 

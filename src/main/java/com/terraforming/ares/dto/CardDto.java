@@ -38,8 +38,9 @@ public class CardDto {
     List<PutResourceOnBuild> resourcesOnBuild;
     boolean isActive;
     List<ActionInputData> actionInputData;
+    boolean corporation;
 
-    public static CardDto from(GenericCard card) {
+    public static CardDto from(Card card) {
         return new CardDto(
                 card.getId(),
                 card.getCardMetadata().getName(),
@@ -60,7 +61,8 @@ public class CardDto {
                 card.getCollectableResource() != CardCollectableResource.NONE ? card.getCollectableResource() : null,
                 card.getCardMetadata().getResourcesOnBuild(),
                 card.isActiveCard(),
-                card.getCardMetadata().getActionsInputData()
+                card.getCardMetadata().getActionsInputData(),
+                card.isCorporation()
         );
     }
 

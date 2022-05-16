@@ -35,7 +35,7 @@ public class Insects implements BaseExpansionGreenCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
+    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
         int plantTagsCount = (int) project.getTags().stream().filter(Tag.PLANT::equals).count();
 
         player.setPlantsIncome(player.getPlantsIncome() + plantTagsCount);
@@ -52,7 +52,7 @@ public class Insects implements BaseExpansionGreenCard {
 
         //TODO consider corporations with PLANT tag
 
-        int plantTagsCount = (int) player.getPlayed().getCards().stream().map(marsContext.getCardService()::getProjectCard)
+        int plantTagsCount = (int) player.getPlayed().getCards().stream().map(marsContext.getCardService()::getCard)
                 .flatMap(card -> card.getTags().stream())
                 .filter(Tag.PLANT::equals)
                 .count();

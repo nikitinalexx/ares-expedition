@@ -1,6 +1,6 @@
 package com.terraforming.ares.processors.action;
 
-import com.terraforming.ares.cards.blue.AdvancedScreeningTechnology;
+import com.terraforming.ares.cards.corporations.CelestiorCorporation;
 import com.terraforming.ares.dto.CardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickDiscardCardsAction;
 import com.terraforming.ares.mars.MarsGame;
@@ -18,12 +18,12 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @RequiredArgsConstructor
-public class AdvancedScreeningTechnologyActionProcessor implements BlueActionCardProcessor<AdvancedScreeningTechnology> {
+public class CelestiorCorporationActionProcessor implements BlueActionCardProcessor<CelestiorCorporation> {
     private final CardService deckService;
 
     @Override
-    public Class<AdvancedScreeningTechnology> getType() {
-        return AdvancedScreeningTechnology.class;
+    public Class<CelestiorCorporation> getType() {
+        return CelestiorCorporation.class;
     }
 
     @Override
@@ -32,7 +32,7 @@ public class AdvancedScreeningTechnologyActionProcessor implements BlueActionCar
 
         for (Integer card : game.dealCards(3)) {
             Card projectCard = deckService.getCard(card);
-            if (projectCard.getTags().contains(Tag.SCIENCE) || projectCard.getTags().contains(Tag.PLANT)) {
+            if (projectCard.getTags().contains(Tag.EVENT)) {
                 player.getHand().addCard(card);
                 resultBuilder.takenCard(CardDto.from(projectCard));
             } else {

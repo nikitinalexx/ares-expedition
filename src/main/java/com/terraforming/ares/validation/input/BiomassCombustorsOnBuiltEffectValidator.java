@@ -1,8 +1,8 @@
 package com.terraforming.ares.validation.input;
 
 import com.terraforming.ares.cards.green.BiomassCombustors;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.ProjectCard;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -21,7 +21,7 @@ public class BiomassCombustorsOnBuiltEffectValidator implements OnBuiltEffectVal
     }
 
     @Override
-    public String validate(ProjectCard card, Player player, Map<Integer, List<Integer>> input) {
+    public String validate(Card card, Player player, Map<Integer, List<Integer>> input) {
         if (player.getPlants() < 2) {
             return "Not enough Plants to build the project";
         }

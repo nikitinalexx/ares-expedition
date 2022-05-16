@@ -4,9 +4,13 @@ import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.util.CollectionUtils;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+
+import static com.terraforming.ares.model.SpecialEffect.LAUNCH_STAR_DISCOUNT;
 
 /**
  * Created by oleksii.nikitin
@@ -22,7 +26,8 @@ public class LaunchStarIncorporated implements CorporationCard {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
                 .name("LaunchStar Incorporated")
-                .description("36 Mc. Not implemented yet")
+                .description("36 Mc. Draw cards until Blue is found. Take it and discard other. Blue cards cost 3 MC less.")
+                .cardAction(CardAction.LAUNCH_STAR_CORPORATION)
                 .build();
     }
 
@@ -32,8 +37,29 @@ public class LaunchStarIncorporated implements CorporationCard {
     }
 
     @Override
+    public Set<SpecialEffect> getSpecialEffects() {
+        return Set.of(LAUNCH_STAR_DISCOUNT);
+    }
+
+    @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        marsContext.getPlayer().setMc(36);
+        Player player = marsContext.getPlayer();
+
+        player.setMc(36);
+
+        while (true) {
+            List<Integer> cards = marsContext.getGame().dealCards(1);
+            if (CollectionUtils.isEmpty(cards)) {
+                break;
+            }
+            Integer card = cards.get(0);
+
+            if (marsContext.getCardService().getCard(card).getColor() == CardColor.BLUE) {
+                player.getHand().addCard(card);
+                break;
+            }
+        }
+
         return null;
     }
 

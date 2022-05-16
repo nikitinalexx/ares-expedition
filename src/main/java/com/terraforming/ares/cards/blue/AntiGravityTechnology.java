@@ -38,7 +38,7 @@ public class AntiGravityTechnology implements BlueCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame marsGame, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
+    public void onProjectBuiltEffect(CardService cardService, MarsGame marsGame, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
         player.setHeat(player.getHeat() + 2);
         player.setPlants(player.getPlants() + 2);
     }

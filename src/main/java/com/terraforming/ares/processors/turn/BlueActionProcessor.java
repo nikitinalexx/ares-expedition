@@ -1,10 +1,7 @@
 package com.terraforming.ares.processors.turn;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.ProjectCard;
-import com.terraforming.ares.model.SpecialEffect;
-import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.turn.PerformBlueActionTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.processors.action.BlueActionCardProcessor;
@@ -44,7 +41,7 @@ public class BlueActionProcessor implements TurnProcessor<PerformBlueActionTurn>
     public TurnResponse processTurn(PerformBlueActionTurn turn, MarsGame game) {
         Player player = game.getPlayerUuidToPlayer().get(turn.getPlayerUuid());
 
-        ProjectCard projectCard = deckService.getProjectCard(turn.getProjectId());
+        Card projectCard = deckService.getCard(turn.getProjectId());
 
         BlueActionCardProcessor<ProjectCard> blueActionCardProcessor = (BlueActionCardProcessor<ProjectCard>) blueActionProcessors.get(projectCard.getClass());
 

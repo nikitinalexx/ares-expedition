@@ -2,9 +2,9 @@ package com.terraforming.ares.validation.action;
 
 import com.terraforming.ares.cards.blue.SymbioticFungus;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardCollectableResource;
 import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.ProjectCard;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -38,7 +38,7 @@ public class SymbioticFungudActionValidator implements ActionValidator<Symbiotic
             return "SymbioticFungud - player doesn't have the selected card";
         }
 
-        ProjectCard card = cardService.getProjectCard(selectedCardId);
+        Card card = cardService.getCard(selectedCardId);
         if (card.getCollectableResource() != CardCollectableResource.MICROBE) {
             return "SymbioticFungud may only place a microbe on a microbe collecting card";
         }

@@ -44,7 +44,7 @@ public class InventionContest implements BaseExpansionRedCard {
         for (Integer card : cards) {
             marsContext.getPlayer().getHand().addCard(card);
 
-            ProjectCard projectCard = marsContext.getCardService().getProjectCard(card);
+            Card projectCard = marsContext.getCardService().getCard(card);
             resultBuilder.takenCard(CardDto.from(projectCard));
         }
 

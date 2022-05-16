@@ -38,7 +38,7 @@ public class ViralEnhancers implements BlueCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
+    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
         long tagsCount = project.getTags()
                 .stream()
                 .filter(tag -> tag == Tag.ANIMAL || tag == Tag.MICROBE || tag == Tag.PLANT)
@@ -57,7 +57,7 @@ public class ViralEnhancers implements BlueCard {
 
         if (!CollectionUtils.isEmpty(microbeAnimalsInput)) {
             for (Integer cardId : microbeAnimalsInput) {
-                ProjectCard projectCard = cardService.getProjectCard(cardId);
+                Card projectCard = cardService.getCard(cardId);
                 player.getCardResourcesCount().put(
                         projectCard.getClass(),
                         player.getCardResourcesCount().get(projectCard.getClass()) + 1

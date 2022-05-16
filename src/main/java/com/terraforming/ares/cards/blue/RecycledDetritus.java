@@ -35,7 +35,7 @@ public class RecycledDetritus implements BlueCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
+    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
         if (project.getTags().contains(Tag.EVENT)) {
             for (Integer card : game.dealCards(2)) {
                 player.getHand().addCard(card);

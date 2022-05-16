@@ -41,7 +41,7 @@ public class BusinessContracts implements BaseExpansionRedCard {
         for (Integer card : marsContext.getGame().dealCards(4)) {
             marsContext.getPlayer().getHand().addCard(card);
 
-            ProjectCard projectCard = marsContext.getCardService().getProjectCard(card);
+            Card projectCard = marsContext.getCardService().getCard(card);
             resultBuilder.takenCard(CardDto.from(projectCard));
         }
 

@@ -1,7 +1,10 @@
 package com.terraforming.ares.validation.input;
 
 import com.terraforming.ares.cards.green.EosChasmaNationalPark;
-import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.Card;
+import com.terraforming.ares.model.CardCollectableResource;
+import com.terraforming.ares.model.InputFlag;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -9,8 +12,6 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Map;
-
-import static com.terraforming.ares.model.InputFlag.VIRAL_ENHANCERS_TAKE_PLANT;
 
 /**
  * Created by oleksii.nikitin
@@ -29,7 +30,7 @@ public class EosChasmaNationalParkOnBuiltEffectValidator implements OnBuiltEffec
     }
 
     @Override
-    public String validate(ProjectCard card, Player player, Map<Integer, List<Integer>> input) {
+    public String validate(Card card, Player player, Map<Integer, List<Integer>> input) {
         List<Integer> cardInput = input.get(InputFlag.EOS_CHASMA_PUT_RESOURCE.getId());
 
         if (CollectionUtils.isEmpty(cardInput)) {
@@ -46,7 +47,7 @@ public class EosChasmaNationalParkOnBuiltEffectValidator implements OnBuiltEffec
             return "Selected card was not built by player";
         }
 
-        ProjectCard inputCard = cardService.getProjectCard(cardId);
+        Card inputCard = cardService.getCard(cardId);
         if (inputCard.getCollectableResource() != CardCollectableResource.ANIMAL) {
             return "Selected card does not collect Animals";
         }

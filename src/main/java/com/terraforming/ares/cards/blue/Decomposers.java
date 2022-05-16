@@ -92,7 +92,7 @@ public class Decomposers implements BlueCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard card, Map<Integer, List<Integer>> inputParams) {
+    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card card, Map<Integer, List<Integer>> inputParams) {
         if (!card.getTags().contains(Tag.ANIMAL) &&
                 !card.getTags().contains(Tag.MICROBE) &&
                 !card.getTags().contains(Tag.PLANT)) {

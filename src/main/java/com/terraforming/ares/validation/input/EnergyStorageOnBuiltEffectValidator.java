@@ -1,8 +1,8 @@
 package com.terraforming.ares.validation.input;
 
 import com.terraforming.ares.cards.green.EnergyStorage;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.ProjectCard;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -23,7 +23,7 @@ public class EnergyStorageOnBuiltEffectValidator implements OnBuiltEffectValidat
     }
 
     @Override
-    public String validate(ProjectCard card, Player player, Map<Integer, List<Integer>> input) {
+    public String validate(Card card, Player player, Map<Integer, List<Integer>> input) {
         if (player.getTerraformingRating() < 7) {
             return "You need to have at least 7 TR";
         }

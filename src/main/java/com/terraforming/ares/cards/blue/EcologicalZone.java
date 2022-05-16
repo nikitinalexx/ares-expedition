@@ -53,7 +53,7 @@ public class EcologicalZone implements BlueCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard card, Map<Integer, List<Integer>> inputParams) {
+    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card card, Map<Integer, List<Integer>> inputParams) {
         long animalsToAddCount = card.getTags().stream().filter(tag -> tag == Tag.ANIMAL || tag == Tag.PLANT).count();
 
         if (animalsToAddCount == 0) {

@@ -35,7 +35,7 @@ public class Satellites implements BaseExpansionGreenCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, ProjectCard project, Map<Integer, List<Integer>> inputParams) {
+    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
         int spaceTags = (int) project.getTags().stream().filter(Tag.SPACE::equals).count();
 
         player.setMcIncome(player.getMcIncome() + spaceTags);
@@ -46,7 +46,7 @@ public class Satellites implements BaseExpansionGreenCard {
         int spaceTags = (int) marsContext.getPlayer()
                 .getPlayed()
                 .getCards().stream()
-                .map(marsContext.getCardService()::getProjectCard)
+                .map(marsContext.getCardService()::getCard)
                 .flatMap(card -> card.getTags().stream())
                 .filter(Tag.SPACE::equals).count();
 

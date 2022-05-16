@@ -38,7 +38,7 @@ public class TerraformingGanymede implements BaseExpansionRedCard {
         int jupiterTags = (int) player.getPlayed()
                 .getCards()
                 .stream()
-                .map(marsContext.getCardService()::getProjectCard)
+                .map(marsContext.getCardService()::getCard)
                 .flatMap(projectCard -> projectCard.getTags().stream())
                 .filter(Tag.JUPITER::equals).count();
 
