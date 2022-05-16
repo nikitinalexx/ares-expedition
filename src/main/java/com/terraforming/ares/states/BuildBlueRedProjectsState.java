@@ -31,7 +31,7 @@ public class BuildBlueRedProjectsState extends AbstractState {
                     TurnType.SKIP_TURN
             ));
             if (player.getChosenPhase() == 2 && !player.isPickedCardInSecondPhase()) {
-                actions.add(TurnType.TAKE_CARD);
+                actions.add(TurnType.PICK_EXTRA_CARD);
             }
             return actions;
         }

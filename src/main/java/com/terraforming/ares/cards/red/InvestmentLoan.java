@@ -27,7 +27,7 @@ public class InvestmentLoan implements BaseExpansionRedCard {
         this.cardMetadata = CardMetadata.builder()
                 .name("Investment Loan")
                 .description("Requires you to spend 1 TR. Gain 10 MC.")
-                .bonuses(List.of(Gain.of(GainType.TERRAFORMING_RATING, -1), Gain.of(GainType.MC, -10)))
+                .bonuses(List.of(Gain.of(GainType.TERRAFORMING_RATING, -1), Gain.of(GainType.MC, 10)))
                 .build();
     }
 

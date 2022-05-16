@@ -49,6 +49,12 @@ export class RestDataSource {
     );
   }
 
+  pickCard(playerUuid: string): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/game/pick-card',
+      {'playerUuid': playerUuid}
+    );
+  }
+
   sellCards(playerUuid: string, cards: number[]): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/game/player/sell',
       {'playerUuid': playerUuid, 'cards': cards}

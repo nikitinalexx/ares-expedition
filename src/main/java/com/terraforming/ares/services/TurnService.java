@@ -66,6 +66,10 @@ public class TurnService {
         performAsyncTurn(new SkipTurn(playerUuid), playerUuid, game -> null);
     }
 
+    public void pickExtraCardTurn(String playerUuid) {
+        performAsyncTurn(new PickExtraCardTurn(playerUuid), playerUuid, game -> null);
+    }
+
     public TurnResponse sellCards(String playerUuid, List<Integer> cards) {
         return performSyncTurn(new SellCardsTurn(playerUuid, cards),
                 playerUuid,

@@ -204,6 +204,12 @@
     </div>
   </div>
 
+  <div *ngIf="pickExtraCardTurn()" class="form-check">
+    <input id="pickExtraCard" (click)="resetAllInputs()" type="radio" class="form-check-input" value="pickExtraCard"
+           formControlName="turn" required [checked]="this.parentForm.value?.turn === 'pickExtraCard'">
+    <label class="custom-control-label text-white" for="pickExtraCard">Pick card</label>
+  </div>
+
   <div *ngIf="sellCardsTurn()" class="form-check">
     <app-sell-cards [game]="game" [parentForm]="parentForm"></app-sell-cards>
   </div>

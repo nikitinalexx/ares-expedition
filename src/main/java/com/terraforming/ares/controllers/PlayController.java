@@ -91,4 +91,9 @@ public class PlayController {
         turnService.collectIncomeTurn(playerUuidRequest.getPlayerUuid());
     }
 
+    @PostMapping("/game/pick-card")
+    public void pickExtraCardTurn(@RequestBody PlayerUuidRequest playerUuidRequest) {
+        turnService.pickExtraCardTurn(playerUuidRequest.getPlayerUuid());
+    }
+
 }

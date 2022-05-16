@@ -80,6 +80,10 @@ export class SecondPhaseComponent implements OnInit {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.SELL_CARDS])?.length > 0;
   }
 
+  pickExtraCardTurn(): boolean {
+    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.PICK_EXTRA_CARD])?.length > 0;
+  }
+
   skipTurn(): boolean {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.SKIP_TURN])?.length > 0;
   }
@@ -355,6 +359,10 @@ export class SecondPhaseComponent implements OnInit {
     } else {
       if (formGroup.value.turn === 'skipTurn') {
         this.gameRepository.skipTurn(this.game.player.playerUuid).subscribe(
+          data => this.sendToParent(data)
+        );
+      } else if (formGroup.value.turn === 'pickExtraCard') {
+        this.gameRepository.pickCard(this.game.player.playerUuid).subscribe(
           data => this.sendToParent(data)
         );
       } else if (formGroup.value.turn === 'sellCards') {

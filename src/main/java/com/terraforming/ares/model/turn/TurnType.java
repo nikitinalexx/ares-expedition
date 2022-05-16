@@ -17,7 +17,7 @@ public enum TurnType {
     PERFORM_BLUE_ACTION(false),
     COLLECT_INCOME(true),
     DRAFT_CARDS(true),
-    TAKE_CARD(true),
+    PICK_EXTRA_CARD(true),
     DISCARD_CARDS(false, true);
 
     private final boolean isTerminal;

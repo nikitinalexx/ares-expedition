@@ -39,7 +39,9 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
 
         for (Integer previouslyPlayedCardId : player.getPlayed().getCards()) {
             Card previouslyPlayedCard = cardService.getCard(previouslyPlayedCardId);
-            previouslyPlayedCard.onProjectBuiltEffect(cardService, game, player, card, turn.getInputParams());
+            if (previouslyPlayedCard.onBuiltEffectApplicableToOther()) {
+                previouslyPlayedCard.onProjectBuiltEffect(cardService, game, player, card, turn.getInputParams());
+            }
         }
 
         player.getHand().removeCards(Collections.singletonList(turn.getProjectId()));

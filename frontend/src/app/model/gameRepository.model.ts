@@ -29,6 +29,10 @@ export class GameRepository {
     return this.dataSource.skipTurn(playerUuid);
   }
 
+  pickCard(playerUuid: string): Observable<any> {
+    return this.dataSource.pickCard(playerUuid);
+  }
+
   sellCards(playerUuid: string, cards: number[]): Observable<any> {
     return this.dataSource.sellCards(playerUuid, cards);
   }
