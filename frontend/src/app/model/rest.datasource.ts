@@ -50,7 +50,7 @@ export class RestDataSource {
   }
 
   pickCard(playerUuid: string): Observable<any> {
-    return this.sendRequest<any>('POST', this.url + '/game/pick-card',
+    return this.sendRequest<any>('POST', this.url + '/turn/pick-card',
       {'playerUuid': playerUuid}
     );
   }
@@ -89,6 +89,12 @@ export class RestDataSource {
 
   collectIncome(playerUuid: string): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/turn/collect-income',
+      {'playerUuid': playerUuid}
+    );
+  }
+
+  draftCards(playerUuid: string): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/turn/draft-cards',
       {'playerUuid': playerUuid}
     );
   }

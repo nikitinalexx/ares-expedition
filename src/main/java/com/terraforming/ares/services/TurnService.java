@@ -70,6 +70,10 @@ public class TurnService {
         performAsyncTurn(new PickExtraCardTurn(playerUuid), playerUuid, game -> null);
     }
 
+    public void draftCards(String playerUuid) {
+        performSyncTurn(new DraftCardsTurn(playerUuid), playerUuid, game -> null);
+    }
+
     public TurnResponse sellCards(String playerUuid, List<Integer> cards) {
         return performSyncTurn(new SellCardsTurn(playerUuid, cards),
                 playerUuid,
@@ -112,7 +116,8 @@ public class TurnService {
                     }
 
                     return null;
-                });
+                }
+        );
     }
 
     public void buildGreenProjectCard(String playerUuid, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {

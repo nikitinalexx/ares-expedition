@@ -66,6 +66,10 @@ export class GameComponent {
     return this.game && this.game.phase === 4 && this.nextAction === 'TURN';
   }
 
+  fifthPhaseTurn(): boolean {
+    return this.game && this.game.phase === 5 && this.nextAction === 'TURN';
+  }
+
   GetOutputVal(newX) {
     this.identifyNextAction();
   }

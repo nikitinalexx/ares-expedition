@@ -3,11 +3,13 @@ package com.terraforming.ares.cards.blue;
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
+import com.terraforming.ares.model.SpecialEffect;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -52,5 +54,10 @@ public class UnitedPlanetaryAlliance implements BlueCard {
     @Override
     public int getPrice() {
         return 11;
+    }
+
+    @Override
+    public Set<SpecialEffect> getSpecialEffects() {
+        return Set.of(SpecialEffect.UNITED_PLANETARY_ALLIANCE);
     }
 }

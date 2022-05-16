@@ -45,6 +45,10 @@ export class GameRepository {
     return this.dataSource.collectIncome(playerUuid);
   }
 
+  draftCards(playerUuid: string): Observable<any> {
+    return this.dataSource.draftCards(playerUuid);
+  }
+
   nextAction(playerUuid: string): Observable<ActionDto> {
     return this.dataSource.nextAction(playerUuid);
   }

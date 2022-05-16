@@ -64,6 +64,10 @@
   <app-fourth-phase *ngIf="fourthPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game" [nextTurns]="nextTurns"></app-fourth-phase>
 </div>
 
+<div>
+  <app-fifth-phase *ngIf="fifthPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game" [nextTurns]="nextTurns"></app-fifth-phase>
+</div>
+
 <h2 class="text-white">Played</h2>
 
 <div class="card-container">

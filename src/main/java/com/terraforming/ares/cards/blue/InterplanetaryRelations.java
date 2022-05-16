@@ -3,11 +3,13 @@ package com.terraforming.ares.cards.blue;
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Expansion;
+import com.terraforming.ares.model.SpecialEffect;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -27,6 +29,11 @@ public class InterplanetaryRelations implements BlueCard {
                 .description("When you draw cards during the research phase, draw one additional card and keep one additional card. 1 VP per 4 cards you have played.")
                 .cardAction(CardAction.INTERPLANETARY_RELATIONS)
                 .build();
+    }
+
+    @Override
+    public Set<SpecialEffect> getSpecialEffects() {
+        return Set.of(SpecialEffect.INTERPLANETARY_RELATIONS);
     }
 
     @Override
