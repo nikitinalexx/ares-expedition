@@ -10,9 +10,10 @@ import {BuildProjectRequest} from '../../data/BuildProjectRequest';
 import {Payment} from '../../data/Payment';
 import {PaymentType} from '../../data/PaymentType';
 import {SellCardsComponent} from '../sellCards/sellCards.component';
-import {CardAction} from "../../data/CardAction";
-import {Tag} from "../../data/Tag";
-import {InputFlag} from "../../data/InputFlag";
+import {CardAction} from '../../data/CardAction';
+import {Tag} from '../../data/Tag';
+import {InputFlag} from '../../data/InputFlag';
+import {CardResource} from '../../data/CardResource';
 
 @Component({
   selector: 'app-second-phase',
@@ -24,6 +25,7 @@ export class SecondPhaseComponent implements OnInit {
   isSubmitted = false;
   selectedProject: Card;
   projectsToDiscard: number[];
+  viralEnhancersTargetCards: number[];
   @ViewChild(SellCardsComponent) sellCardsService;
 
   parentForm: FormGroup;
@@ -48,7 +50,8 @@ export class SecondPhaseComponent implements OnInit {
       marsUniversityDiscardLess: [false],
       takeMicrobes: 0,
       takeCards: 0,
-      restructuredResources: [false]
+      restructuredResources: [false],
+      viralEnhancersPlantInput: 0
     });
   }
 
@@ -80,6 +83,13 @@ export class SecondPhaseComponent implements OnInit {
     return this.game.player.hand.filter(
       card => card.id !== this.selectedProject.id
     );
+  }
+
+  getMicrobeAnimalPlayedCardsWithSelected(): Card[] {
+    const playedCopy = [this.selectedProject];
+    this.game?.player.played.forEach(e => playedCopy.push(e));
+    return playedCopy.filter(card => card.cardResource === CardResource[CardResource.ANIMAL]
+      || card.cardResource === CardResource[CardResource.MICROBE]);
   }
 
   getBlueRedPlayerHand(): Card[] {
@@ -171,6 +181,25 @@ export class SecondPhaseComponent implements OnInit {
     return '';
   }
 
+  clickViralEnhancersTargetCard(card: Card) {
+    if (!this.viralEnhancersTargetCards) {
+      this.viralEnhancersTargetCards = [];
+    }
+    const index = this.viralEnhancersTargetCards.indexOf(card.id, 0);
+    if (index > -1) {
+      this.viralEnhancersTargetCards.splice(index, 1);
+    } else {
+      this.viralEnhancersTargetCards.push(card.id);
+    }
+  }
+
+  selectedViralEnhancersCardClass(card: Card): string {
+    if (this.viralEnhancersTargetCards && this.viralEnhancersTargetCards.some(element => element === card.id)) {
+      return 'clicked-card';
+    }
+    return '';
+  }
+
   getDiscountedMcPriceOfSelectedProject(): number {
     if (this.selectedProject) {
       return this.selectedProject.price - this.discountService.getDiscount(this.selectedProject, this.game);
@@ -179,7 +208,7 @@ export class SecondPhaseComponent implements OnInit {
     }
   }
 
-  onValueClick() {
+  resetAllInputs() {
     this.selectedProject = null;
   }
 
@@ -213,6 +242,14 @@ export class SecondPhaseComponent implements OnInit {
     return (this.selectedProject.cardAction === CardAction[CardAction.MARS_UNIVERSITY]
       || this.game.player.played.some(card => card.cardAction === CardAction[CardAction.MARS_UNIVERSITY]))
       && this.selectedProject.tags.some(tag => tag === Tag[Tag.SCIENCE]);
+  }
+
+  viralEnhancersEffect(): boolean {
+    return (this.selectedProject.cardAction === CardAction[CardAction.VIRAL_ENHANCERS]
+      || this.game.player.played.some(card => card.cardAction === CardAction[CardAction.VIRAL_ENHANCERS]))
+      && this.selectedProject.tags.some(tag =>
+        tag === Tag[Tag.PLANT] || tag === Tag[Tag.MICROBE] || tag === Tag[Tag.ANIMAL]
+      );
   }
 
   expectsDecomposersInput(): boolean {
@@ -271,6 +308,40 @@ export class SecondPhaseComponent implements OnInit {
           }
           inputParams[InputFlag.DECOMPOSERS_TAKE_MICROBE.valueOf()] = [takeMicrobes];
           inputParams[InputFlag.DECOMPOSERS_TAKE_CARD.valueOf()] = [takeCards];
+        }
+
+        if (this.viralEnhancersEffect()) {
+          const expectedInputSum = this.selectedProject.tags.filter(
+            tag => tag === Tag[Tag.ANIMAL] || tag === Tag[Tag.MICROBE] || tag === Tag[Tag.PLANT]
+          ).length;
+          const takePlants = this.parentForm.value.viralEnhancersPlantInput ? this.parentForm.value.viralEnhancersPlantInput : 0;
+          const cardsSelected = this.viralEnhancersTargetCards ? this.viralEnhancersTargetCards.length : 0;
+          if (takePlants + cardsSelected > expectedInputSum) {
+            this.errorMessage = 'Only ' + expectedInputSum + ' choices available';
+            return;
+          }
+          if (cardsSelected === 0 && takePlants < expectedInputSum) {
+            this.errorMessage = 'Too few options taken, number of affected tags ' + expectedInputSum;
+            return;
+          }
+
+          if (takePlants < 0) {
+            this.errorMessage = 'Number of plants can\'t be negative';
+            return;
+          }
+          inputParams[InputFlag.VIRAL_ENHANCERS_TAKE_PLANT.valueOf()] = [takePlants];
+
+          if (this.viralEnhancersTargetCards) {
+            const cardsInput = [];
+            this.viralEnhancersTargetCards.forEach(val => cardsInput.push(val));
+            if (takePlants + cardsSelected < expectedInputSum) {
+              const leftOvers = expectedInputSum - (takePlants + cardsSelected);
+              for (let i = 0; i < leftOvers; i++) {
+                cardsInput.push(this.viralEnhancersTargetCards[0]);
+              }
+            }
+            inputParams[InputFlag.VIRAL_ENHANCERS_PUT_RESOURCE.valueOf()] = cardsInput;
+          }
         }
 
         const payments = [new Payment(formGroup.value.mcPrice, PaymentType.MEGACREDITS)];

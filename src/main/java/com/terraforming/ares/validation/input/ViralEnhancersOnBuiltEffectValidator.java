@@ -40,7 +40,12 @@ public class ViralEnhancersOnBuiltEffectValidator implements OnBuiltEffectValida
         List<Integer> takePlantsInput = input.getOrDefault(VIRAL_ENHANCERS_TAKE_PLANT.getId(), List.of());
         List<Integer> microbeAnimalsInput = input.getOrDefault(InputFlag.VIRAL_ENHANCERS_PUT_RESOURCE.getId(), List.of());
 
-        int totalInputSize = (CollectionUtils.isEmpty(takePlantsInput) ? 0 : takePlantsInput.get(0))
+        int plantsInput = CollectionUtils.isEmpty(takePlantsInput) ? 0 : takePlantsInput.get(0);
+        if (plantsInput < 0) {
+            return "Invalid number of plants selected";
+        }
+
+        int totalInputSize = plantsInput
                 + (CollectionUtils.isEmpty(microbeAnimalsInput) ? 0 : microbeAnimalsInput.size());
 
         if (tagsCount != totalInputSize) {
@@ -50,7 +55,7 @@ public class ViralEnhancersOnBuiltEffectValidator implements OnBuiltEffectValida
 
         if (!CollectionUtils.isEmpty(microbeAnimalsInput)) {
             for (Integer cardId : microbeAnimalsInput) {
-                if (player.getPlayed().containsCard(cardId)) {
+                if (!player.getPlayed().containsCard(cardId) && card.getId() != cardId) {
                     return "Player doesn't have the selected card to add Animal/Microbe to";
                 }
 

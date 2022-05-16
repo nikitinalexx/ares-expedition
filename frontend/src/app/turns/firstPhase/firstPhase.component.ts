@@ -27,6 +27,7 @@ export class FirstPhaseComponent implements OnInit {
   onBuildMicrobeChoice = null;
   onBuildAnimalChoice = null;
   projectsToDiscard: number[];
+  viralEnhancersTargetCards: number[];
   @ViewChild(SellCardsComponent) sellCardsService;
 
   parentForm: FormGroup;
@@ -53,7 +54,8 @@ export class FirstPhaseComponent implements OnInit {
       marsUniversityDiscardLess: [false],
       takeMicrobes: 0,
       takeCards: 0,
-      restructuredResources: [false]
+      restructuredResources: [false],
+      viralEnhancersPlantInput: 0
     });
   }
 
@@ -87,6 +89,13 @@ export class FirstPhaseComponent implements OnInit {
 
   getAnimalPlayedCards(): Card[] {
     return this.game?.player.played.filter(card => card.cardResource === CardResource[CardResource.ANIMAL]);
+  }
+
+  getMicrobeAnimalPlayedCardsWithSelected(): Card[] {
+    const playedCopy = [this.selectedProject];
+    this.game?.player.played.forEach(e => playedCopy.push(e));
+    return playedCopy.filter(card => card.cardResource === CardResource[CardResource.ANIMAL]
+      || card.cardResource === CardResource[CardResource.MICROBE]);
   }
 
   expectsMicrobeOnBuildEffectInput(): boolean {
@@ -213,6 +222,14 @@ export class FirstPhaseComponent implements OnInit {
       && this.selectedProject.tags.some(tag => tag === Tag[Tag.SCIENCE]);
   }
 
+  viralEnhancersEffect(): boolean {
+    return (this.selectedProject.cardAction === CardAction[CardAction.VIRAL_ENHANCERS]
+      || this.game.player.played.some(card => card.cardAction === CardAction[CardAction.VIRAL_ENHANCERS]))
+      && this.selectedProject.tags.some(tag =>
+        tag === Tag[Tag.PLANT] || tag === Tag[Tag.MICROBE] || tag === Tag[Tag.ANIMAL]
+      );
+  }
+
   getPlayerHandWithoutSelectedCard(): Card[] {
     return this.game.player.hand.filter(
       card => card.id !== this.selectedProject.id
@@ -238,6 +255,25 @@ export class FirstPhaseComponent implements OnInit {
     return '';
   }
 
+  clickViralEnhancersTargetCard(card: Card) {
+    if (!this.viralEnhancersTargetCards) {
+      this.viralEnhancersTargetCards = [];
+    }
+    const index = this.viralEnhancersTargetCards.indexOf(card.id, 0);
+    if (index > -1) {
+      this.viralEnhancersTargetCards.splice(index, 1);
+    } else {
+      this.viralEnhancersTargetCards.push(card.id);
+    }
+  }
+
+  selectedViralEnhancersCardClass(card: Card): string {
+    if (this.viralEnhancersTargetCards && this.viralEnhancersTargetCards.some(element => element === card.id)) {
+      return 'clicked-card';
+    }
+    return '';
+  }
+
   expectsDecomposersInput(): boolean {
     return this.selectedProject.cardAction === CardAction[CardAction.DECOMPOSERS]
       ||
@@ -251,6 +287,7 @@ export class FirstPhaseComponent implements OnInit {
     this.selectedProject = null;
     this.onBuildMicrobeChoice = null;
     this.onBuildAnimalChoice = null;
+    this.viralEnhancersTargetCards = null;
   }
 
   submitForm(formGroup: FormGroup) {
@@ -313,9 +350,9 @@ export class FirstPhaseComponent implements OnInit {
         }
 
         if (this.expectsDecomposersInput()) {
-          const expectedInputSum = this.selectedProject.tags.some(
+          const expectedInputSum = this.selectedProject.tags.filter(
             tag => tag === Tag[Tag.ANIMAL] || tag === Tag[Tag.MICROBE] || tag === Tag[Tag.PLANT]
-          );
+          ).length;
           const takeMicrobes = this.parentForm.value.takeMicrobes ? this.parentForm.value.takeMicrobes : 0;
           const takeCards = this.parentForm.value.takeCards ? this.parentForm.value.takeCards : 0;
 
@@ -325,6 +362,41 @@ export class FirstPhaseComponent implements OnInit {
           }
           inputParams[InputFlag.DECOMPOSERS_TAKE_MICROBE.valueOf()] = [takeMicrobes];
           inputParams[InputFlag.DECOMPOSERS_TAKE_CARD.valueOf()] = [takeCards];
+        }
+
+        if (this.viralEnhancersEffect()) {
+          const expectedInputSum = this.selectedProject.tags.filter(
+            tag => tag === Tag[Tag.ANIMAL] || tag === Tag[Tag.MICROBE] || tag === Tag[Tag.PLANT]
+          ).length;
+          const takePlants = this.parentForm.value.viralEnhancersPlantInput ? this.parentForm.value.viralEnhancersPlantInput : 0;
+          const cardsSelected = this.viralEnhancersTargetCards ? this.viralEnhancersTargetCards.length : 0;
+          if (takePlants + cardsSelected > expectedInputSum) {
+            this.errorMessage = 'Only ' + expectedInputSum + ' choices available';
+            return;
+          }
+          if (cardsSelected === 0 && takePlants < expectedInputSum) {
+            this.errorMessage = 'Too few options taken, number of affected tags ' + expectedInputSum;
+            return;
+          }
+
+          if (takePlants < 0) {
+            this.errorMessage = 'Number of plants can\'t be negative';
+            return;
+          }
+          inputParams[InputFlag.VIRAL_ENHANCERS_TAKE_PLANT.valueOf()] = [takePlants];
+
+          if (this.viralEnhancersTargetCards) {
+            const cardsInput = [];
+            this.viralEnhancersTargetCards.forEach(val => cardsInput.push(val));
+            if (takePlants + cardsSelected < expectedInputSum) {
+              const leftOvers = expectedInputSum - (takePlants + cardsSelected);
+              for (let i = 0; i < leftOvers; i++) {
+                cardsInput.push(this.viralEnhancersTargetCards[0]);
+              }
+            }
+            inputParams[InputFlag.VIRAL_ENHANCERS_PUT_RESOURCE.valueOf()] = cardsInput;
+          }
+
         }
 
         const payments = [new Payment(formGroup.value.mcPrice, PaymentType.MEGACREDITS)];
@@ -346,7 +418,7 @@ export class FirstPhaseComponent implements OnInit {
 
         this.gameRepository.buildGreenProject(request).subscribe(data => {
           this.sendToParent(data);
-          this.selectedProject = null;
+          this.resetAllInputs();
         }, error => {
           this.errorMessage = error;
         });

@@ -9,12 +9,14 @@
 <form [formGroup]="parentForm" (submit)="submitForm(parentForm)" novalidate>
 
   <div *ngIf="buildBlueRedProjectTurn()" class="form-check">
-    <input id="blueRedProject" (click)="onValueClick()" type="radio" class="form-check-input" value="blueRedProject" formControlName="turn" [checked]="this.parentForm.value?.turn === 'blueRedProject'">
+    <input id="blueRedProject" (click)="resetAllInputs()" type="radio" class="form-check-input" value="blueRedProject"
+           formControlName="turn" [checked]="this.parentForm.value?.turn === 'blueRedProject'">
     <label class="custom-control-label text-white" for="blueRedProject">Build blue/red project</label>
 
     <div *ngIf="parentForm.value?.turn === 'blueRedProject'" class="card-container">
       <ul class="myUL">
-        <li *ngFor="let card of getBlueRedPlayerHand();" (click)="clickProjectToBuild(card)" [ngClass]="selectedProjectToBuildClass(card)" class="filterDiv automated display">
+        <li *ngFor="let card of getBlueRedPlayerHand();" (click)="clickProjectToBuild(card)"
+            [ngClass]="selectedProjectToBuildClass(card)" class="filterDiv automated display">
           <app-card-template [card]="card" [game]="game"></app-card-template>
         </li>
       </ul>
@@ -30,7 +32,8 @@
         <div class="form-row" *ngIf="anaerobicMicroorganismsCardAction()">
           <div class="col-sm-1">
             <label for="anaerobicMicroorganisms" class="text-white">Anaerobic Microorganisms</label>
-            <input type="checkbox" (change)="anaerobicMicroorganismsClicked($event)" class="custom-control-input" id="anaerobicMicroorganisms" formControlName="anaerobicMicroorganisms">
+            <input type="checkbox" (change)="anaerobicMicroorganismsClicked($event)" class="custom-control-input"
+                   id="anaerobicMicroorganisms" formControlName="anaerobicMicroorganisms">
           </div>
         </div>
 
@@ -53,7 +56,8 @@
           </ul>
 
           <label for="marsUniversityDiscardLess" class="text-white">Discard fewer cards</label>
-          <input type="checkbox" class="custom-control-input" id="marsUniversityDiscardLess" formControlName="marsUniversityDiscardLess">
+          <input type="checkbox" class="custom-control-input" id="marsUniversityDiscardLess"
+                 formControlName="marsUniversityDiscardLess">
 
         </div>
 
@@ -77,6 +81,29 @@
           </div>
         </div>
 
+        <div *ngIf="viralEnhancersEffect()" class="card-container">
+          <h1 class="text-white">Viral Enhancers choice: </h1>
+
+          <div class="form-group">
+            <div class="form-row">
+              <div class="col-sm-1">
+                <label for="plantsInput" class="text-white">Take plants</label>
+                <input type="number" class="form-control form-control-sm" id="plantsInput"
+                       formControlName="viralEnhancersPlantInput">
+              </div>
+            </div>
+
+            <h1 class="text-white">Take microbes and animals</h1>
+
+            <ul class="myUL">
+              <li *ngFor="let card of getMicrobeAnimalPlayedCardsWithSelected();" (click)="clickViralEnhancersTargetCard(card)"
+                  [ngClass]="selectedViralEnhancersCardClass(card)" class="filterDiv automated display">
+                <app-card-template [card]="card" [game]="game"></app-card-template>
+              </li>
+            </ul>
+
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -86,17 +113,21 @@
   </div>
 
   <div *ngIf="skipTurn()" class="form-check">
-    <input id="skipTurn" (click)="onValueClick()" type="radio" class="form-check-input" value="skipTurn" formControlName="turn" required [checked]="this.parentForm.value?.turn === 'skipTurn'">
+    <input id="skipTurn" (click)="resetAllInputs()" type="radio" class="form-check-input" value="skipTurn"
+           formControlName="turn" required [checked]="this.parentForm.value?.turn === 'skipTurn'">
     <label class="custom-control-label text-white" for="skipTurn">Skip turn</label>
   </div>
 
   <div *ngIf="discardCardsTurn()" class="form-check">
-    <input id="discardCards" (click)="onValueClick()" type="radio" class="form-check-input" value="discardCards" formControlName="turn" [checked]="this.parentForm.value?.turn === 'discardCards'">
-    <label class="custom-control-label text-white" for="discardCards">Discard {{game.player.nextTurn.size }} cards</label>
+    <input id="discardCards" (click)="resetAllInputs()" type="radio" class="form-check-input" value="discardCards"
+           formControlName="turn" [checked]="this.parentForm.value?.turn === 'discardCards'">
+    <label class="custom-control-label text-white" for="discardCards">Discard {{game.player.nextTurn.size }}
+      cards</label>
 
     <div *ngIf="parentForm.value?.turn === 'discardCards'" class="card-container">
       <ul class="myUL">
-        <li *ngFor="let card of getDiscardCards();" (click)="clickProjectToDiscard(card)" [ngClass]="selectedProjectToDiscardClass(card)" class="filterDiv automated display">
+        <li *ngFor="let card of getDiscardCards();" (click)="clickProjectToDiscard(card)"
+            [ngClass]="selectedProjectToDiscardClass(card)" class="filterDiv automated display">
           <app-card-template [card]="card" [game]="game"></app-card-template>
         </li>
       </ul>

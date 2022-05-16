@@ -140,6 +140,30 @@
             </li>
           </ul>
         </div>
+
+        <div *ngIf="viralEnhancersEffect()" class="card-container">
+          <h1 class="text-white">Viral Enhancers choice: </h1>
+
+          <div class="form-group">
+            <div class="form-row">
+              <div class="col-sm-1">
+                <label for="plantsInput" class="text-white">Take plants</label>
+                <input type="number" class="form-control form-control-sm" id="plantsInput" formControlName="viralEnhancersPlantInput">
+              </div>
+            </div>
+
+            <h1 class="text-white">Take microbes and animals</h1>
+
+            <ul class="myUL">
+              <li *ngFor="let card of getMicrobeAnimalPlayedCardsWithSelected();" (click)="clickViralEnhancersTargetCard(card)"
+                  [ngClass]="selectedViralEnhancersCardClass(card)" class="filterDiv automated display">
+                <app-card-template [card]="card" [game]="game"></app-card-template>
+              </li>
+            </ul>
+
+          </div>
+        </div>
+
       </div>
     </div>
 
