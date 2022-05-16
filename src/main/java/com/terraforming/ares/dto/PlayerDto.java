@@ -23,6 +23,7 @@ public class PlayerDto {
     private final TurnDto nextTurn;
     private final Map<Integer, Integer> cardResources;
     private List<Integer> activatedBlueCards;
+    private boolean activatedBlueActionTwice;
 
     private final int mc;
     private final int mcIncome;

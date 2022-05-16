@@ -22,6 +22,21 @@
       </ul>
     </div>
 
+    <div *ngIf="canPlayExtraBlueAction()">
+      <input id="extraBlueAction" (click)="clearInput()" type="radio" class="form-check-input" value="extraBlueAction"
+             formControlName="turn" [checked]="this.parentForm.value?.turn === 'extraBlueAction'">
+      <label class="custom-control-label text-white" for="extraBlueAction">Perform extra action</label>
+    </div>
+
+    <div *ngIf="parentForm.value?.turn === 'extraBlueAction'" class="card-container">
+      <ul class="myUL">
+        <li *ngFor="let card of getPlayedActiveCards();" (click)="selectProject(card)"
+            [ngClass]="selectedProjectClass(card)" class="filterDiv automated display">
+          <app-card-template [card]="card"></app-card-template>
+        </li>
+      </ul>
+    </div>
+
     <div *ngIf="expectsCardActionInput()" class="card-container">
       <h1 class="text-white">Choose card to apply the effect </h1>
 

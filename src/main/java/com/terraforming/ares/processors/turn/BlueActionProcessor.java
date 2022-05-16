@@ -50,8 +50,11 @@ public class BlueActionProcessor implements TurnProcessor<PerformBlueActionTurn>
         if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ASSEMBLY_LINES)) {
             player.setMc(player.getMc() + 1);
         }
-
-        player.getActivatedBlueCards().addCard(projectCard.getId());
+        if (player.getActivatedBlueCards().containsCard(projectCard.getId())) {
+            player.setActivatedBlueActionTwice(true);
+        } else {
+            player.getActivatedBlueCards().addCard(projectCard.getId());
+        }
 
         return response;
     }

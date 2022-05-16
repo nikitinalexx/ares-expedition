@@ -97,6 +97,7 @@ public class GameController {
                                 ))
                 )
                 .activatedBlueCards(player.getActivatedBlueCards().getCards())
+                .activatedBlueActionTwice(player.isActivatedBlueActionTwice())
                 .build();
     }
 

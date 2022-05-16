@@ -75,8 +75,8 @@ class AssetLiquidationFlowTest {
         firstPlayer.setMc(100);
         secondPlayer.setMc(100);
 
-        assertEquals(0, firstPlayer.getCanBuildInSecondPhase());
-        assertEquals(0, secondPlayer.getCanBuildInSecondPhase());
+        assertEquals(0, firstPlayer.getActionsInSecondPhase());
+        assertEquals(0, secondPlayer.getActionsInSecondPhase());
 
         assertTrue(
                 players.stream()
@@ -90,8 +90,8 @@ class AssetLiquidationFlowTest {
 
         gameProcessorService.asyncUpdate();
 
-        assertEquals(2, firstPlayer.getCanBuildInSecondPhase());
-        assertEquals(1, secondPlayer.getCanBuildInSecondPhase());
+        assertEquals(2, firstPlayer.getActionsInSecondPhase());
+        assertEquals(1, secondPlayer.getActionsInSecondPhase());
 
         assertTrue(
                 players.stream()
@@ -120,8 +120,8 @@ class AssetLiquidationFlowTest {
         assertFalse(playController.getPossibleTurns(firstPlayer.getUuid()).isEmpty());
         assertTrue(playController.getPossibleTurns(secondPlayer.getUuid()).isEmpty());
 
-        assertEquals(2, firstPlayer.getCanBuildInSecondPhase());
-        assertEquals(0, secondPlayer.getCanBuildInSecondPhase());
+        assertEquals(2, firstPlayer.getActionsInSecondPhase());
+        assertEquals(0, secondPlayer.getActionsInSecondPhase());
 
         playController.buildBlueRedProject(
                 BuildProjectRequest.builder()
@@ -133,7 +133,7 @@ class AssetLiquidationFlowTest {
 
         gameProcessorService.asyncUpdate();
 
-        assertEquals(1, firstPlayer.getCanBuildInSecondPhase());
+        assertEquals(1, firstPlayer.getActionsInSecondPhase());
 
         playController.buildBlueRedProject(
                 BuildProjectRequest.builder()
@@ -145,7 +145,7 @@ class AssetLiquidationFlowTest {
 
         gameProcessorService.asyncUpdate();
 
-        assertEquals(0, firstPlayer.getCanBuildInSecondPhase());
+        assertEquals(0, firstPlayer.getActionsInSecondPhase());
 
         assertTrue(
                 players.stream()

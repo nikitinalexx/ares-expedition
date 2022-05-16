@@ -26,7 +26,6 @@ export class CardTemplateComponent {
   }
 
   discountApplicable(card: Card): boolean {
-    console.log(this.showDiscount);
     if (!this.showDiscount) {
       return false;
     }

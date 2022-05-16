@@ -35,7 +35,7 @@ public class SpecialDesign implements BaseExpansionRedCard {
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
         player.setBuiltSpecialDesignLastTurn(true);
-        player.setCanBuildInSecondPhase(player.getCanBuildInSecondPhase() + 1);
+        player.setActionsInSecondPhase(player.getActionsInSecondPhase() + 1);
         return null;
     }
 

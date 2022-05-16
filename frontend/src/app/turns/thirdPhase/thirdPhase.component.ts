@@ -63,6 +63,10 @@ export class ThirdPhaseComponent implements OnInit {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.PERFORM_BLUE_ACTION])?.length > 0;
   }
 
+  canPlayExtraBlueAction(): boolean {
+    return this.game.player.phase === 3 && !this.game.player.activatedBlueActionTwice && this.game.player.activatedBlueCards?.length > 0;
+  }
+
   getPlayerHandForAction(): Card[] {
     if (this.selectedProject && this.selectedProject?.actionInputData.some(data =>
       data.type === ActionInputDataType[ActionInputDataType.DISCARD_CARD]
@@ -92,6 +96,12 @@ export class ThirdPhaseComponent implements OnInit {
     return this.game?.player.played.filter(
       card => card.active
         && !this.game.player.activatedBlueCards.find(abc => abc === card.id)
+    );
+  }
+
+  getPlayedActiveCards(): Card[] {
+    return this.game?.player.played.filter(card =>
+      card.active && this.game.player.activatedBlueCards?.find(playedCardId => playedCardId === card.id)
     );
   }
 
@@ -187,7 +197,7 @@ export class ThirdPhaseComponent implements OnInit {
       } else if (formGroup.value.turn === 'sellCards') {
         this.sellCardsService.sellCards(this.game);
         this.sendToParent(null);
-      } else if (formGroup.value.turn === 'blueAction') {
+      } else if (formGroup.value.turn === 'blueAction' || formGroup.value.turn === 'extraBlueAction') {
         if (!this.selectedProject) {
           this.errorMessage = 'Select a blue card with action';
           return;
@@ -260,9 +270,12 @@ export class ThirdPhaseComponent implements OnInit {
           inputParams
         );
 
+        console.log(request);
+
         this.gameRepository.blueAction(request).subscribe(data => {
           this.sendToParent(data);
           this.clearInput();
+          this.parentForm.value.turn = 'blueAction';
         }, error => {
           this.errorMessage = error;
         });

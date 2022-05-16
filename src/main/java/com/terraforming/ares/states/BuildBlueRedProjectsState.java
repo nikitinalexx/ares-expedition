@@ -4,6 +4,7 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.TurnType;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -21,21 +22,25 @@ public class BuildBlueRedProjectsState extends AbstractState {
         Player player = marsGame.getPlayerByUuid(playerUuid);
         if (player.getNextTurn() != null && player.getNextTurn().getType().isIntermediate()) {
             return List.of(player.getNextTurn().getType());
-        } else if (player.getNextTurn() != null || player.getCanBuildInSecondPhase() == 0) {
+        } else if (player.getNextTurn() != null || player.getActionsInSecondPhase() == 0) {
             return List.of();
         } else {
-            return List.of(
+            List<TurnType> actions = new ArrayList<>(List.of(
                     TurnType.BUILD_BLUE_RED_PROJECT,
                     TurnType.SELL_CARDS,
                     TurnType.SKIP_TURN
-            );
+            ));
+            if (player.getChosenPhase() == 2 && !player.isPickedCardInSecondPhase()) {
+                actions.add(TurnType.TAKE_CARD);
+            }
+            return actions;
         }
     }
 
     @Override
     public void updateState() {
         if (marsGame.getPlayerUuidToPlayer().values().stream().allMatch(
-                player -> player.getCanBuildInSecondPhase() == 0
+                player -> player.getActionsInSecondPhase() == 0
         )) {
             performStateTransferFromPhase(3);
         }

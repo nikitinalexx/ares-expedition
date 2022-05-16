@@ -23,11 +23,11 @@ public class BuildBlueRedProjectProcessor extends GenericBuildProjectProcessor<B
     protected void processTurnInternal(BuildBlueRedProjectTurn turn, MarsGame game) {
         Player player = game.getPlayerUuidToPlayer().get(turn.getPlayerUuid());
 
-        if (player.getCanBuildInSecondPhase() < 1) {
+        if (player.getActionsInSecondPhase() < 1) {
             throw new IllegalStateException("Can't build a project while project limit for this phase is < 1");
         }
 
-        player.setCanBuildInSecondPhase(player.getCanBuildInSecondPhase() - 1);
+        player.setActionsInSecondPhase(player.getActionsInSecondPhase() - 1);
         player.setBuiltSpecialDesignLastTurn(false);
         player.setBuiltWorkCrewsLastTurn(false);
     }

@@ -31,7 +31,7 @@ public class SkipTurnProcessor implements TurnProcessor<SkipTurn> {
         if (currentPhase == 1) {
             player.setCanBuildInFirstPhase(0);
         } else if (currentPhase == 2) {
-            player.setCanBuildInSecondPhase(0);
+            player.setActionsInSecondPhase(0);
         }
 
         player.setBuiltSpecialDesignLastTurn(false);

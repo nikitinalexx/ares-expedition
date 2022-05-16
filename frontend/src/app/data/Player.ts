@@ -15,6 +15,7 @@ export class Player {
               steelIncome: number,
               nextTurn: any,
               titaniumIncome: number,
+              activatedBlueActionTwice: boolean,
               cardResources: Map<number, number>,
               activatedBlueCards: number[],
               corporationId?: number,
@@ -41,5 +42,6 @@ export class Player {
   nextTurn: any;
   cardResources: Map<number, number>;
   activatedBlueCards: number[];
+  activatedBlueActionTwice: boolean;
 
 }

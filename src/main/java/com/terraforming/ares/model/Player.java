@@ -28,7 +28,8 @@ public class Player {
     private Map<Class<?>, Integer> cardResourcesCount = new HashMap<>();
     @Builder.Default
     private int terraformingRating = Constants.STARTING_RT;
-    private int canBuildInSecondPhase;
+    private int actionsInSecondPhase;
+    private boolean pickedCardInSecondPhase;
     private int canBuildInFirstPhase;
     private int forests;
     private boolean builtSpecialDesignLastTurn;
@@ -58,8 +59,9 @@ public class Player {
         chosenPhase = null;
         activatedBlueCards = Deck.builder().build();
         activatedBlueActionTwice = false;
-        canBuildInSecondPhase = 0;
+        actionsInSecondPhase = 0;
         canBuildInFirstPhase = 0;
+        pickedCardInSecondPhase = false;
     }
 
 }
