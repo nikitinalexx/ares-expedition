@@ -18,6 +18,8 @@ public enum TurnType {
     COLLECT_INCOME(true),
     DRAFT_CARDS(true),
     PICK_EXTRA_CARD(true),
+    PLANT_FOREST(false),
+    INCREASE_TEMPERATURE(false),
     DISCARD_CARDS(false, true);
 
     private final boolean isTerminal;

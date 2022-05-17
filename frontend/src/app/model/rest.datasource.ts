@@ -99,6 +99,18 @@ export class RestDataSource {
     );
   }
 
+  plantForest(playerUuid: string): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/turn/forest',
+      {'playerUuid': playerUuid}
+    );
+  }
+
+  increaseTemperature(playerUuid: string): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/turn/temperature',
+      {'playerUuid': playerUuid}
+    );
+  }
+
 
   private sendRequest<T>(verb: string, url: string, body?: any)
     : Observable<T> {

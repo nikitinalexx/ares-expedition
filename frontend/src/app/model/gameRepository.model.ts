@@ -49,6 +49,14 @@ export class GameRepository {
     return this.dataSource.draftCards(playerUuid);
   }
 
+  plantForest(playerUuid: string): Observable<any> {
+    return this.dataSource.plantForest(playerUuid);
+  }
+
+  increaseTemperature(playerUuid: string): Observable<any> {
+    return this.dataSource.increaseTemperature(playerUuid);
+  }
+
   nextAction(playerUuid: string): Observable<ActionDto> {
     return this.dataSource.nextAction(playerUuid);
   }

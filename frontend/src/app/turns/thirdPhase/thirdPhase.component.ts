@@ -63,6 +63,14 @@ export class ThirdPhaseComponent implements OnInit {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.PERFORM_BLUE_ACTION])?.length > 0;
   }
 
+  plantForestTurn(): boolean {
+    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.PLANT_FOREST])?.length > 0;
+  }
+
+  increaseTemperatureTurn(): boolean {
+    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.INCREASE_TEMPERATURE])?.length > 0;
+  }
+
   canPlayExtraBlueAction(): boolean {
     return this.game.player.phase === 3 && !this.game.player.activatedBlueActionTwice && this.game.player.activatedBlueCards?.length > 0;
   }
@@ -190,7 +198,15 @@ export class ThirdPhaseComponent implements OnInit {
       console.log('form invalid');
       return false;
     } else {
-      if (formGroup.value.turn === 'skipTurn') {
+      if (formGroup.value.turn === 'plantForest') {
+        this.gameRepository.plantForest(this.game.player.playerUuid).subscribe(
+          data => this.sendToParent(data)
+        );
+      } else if (formGroup.value.turn === 'increaseTemperature') {
+        this.gameRepository.increaseTemperature(this.game.player.playerUuid).subscribe(
+          data => this.sendToParent(data)
+        );
+      } else if (formGroup.value.turn === 'skipTurn') {
         this.gameRepository.skipTurn(this.game.player.playerUuid).subscribe(
           data => this.sendToParent(data)
         );

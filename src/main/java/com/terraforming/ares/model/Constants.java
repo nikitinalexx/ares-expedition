@@ -7,6 +7,8 @@ package com.terraforming.ares.model;
 public class Constants {
     public static final int MAX_OCEANS = 9;
     public static final int STARTING_RT = 5;
+    public static final int TEMPERATURE_HEAT_COST = 8;
+    public static final int FOREST_PLANT_COST = 8;
 
     public static final int DEFAULT_START_HAND_SIZE = 10;
 

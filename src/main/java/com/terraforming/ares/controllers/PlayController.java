@@ -101,4 +101,14 @@ public class PlayController {
         turnService.draftCards(playerUuidRequest.getPlayerUuid());
     }
 
+    @PostMapping("/turn/forest")
+    public void plantForest(@RequestBody PlayerUuidRequest playerUuidRequest) {
+        turnService.plantForest(playerUuidRequest.getPlayerUuid());
+    }
+
+    @PostMapping("/turn/temperature")
+    public void increaseTemperature(@RequestBody PlayerUuidRequest playerUuidRequest) {
+        turnService.increaseTemperature(playerUuidRequest.getPlayerUuid());
+    }
+
 }

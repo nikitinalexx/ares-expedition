@@ -115,6 +115,18 @@
 
   </div>
 
+  <div *ngIf="plantForestTurn()" class="form-check">
+    <input id="plantForest" (click)="clearInput()" type="radio" class="form-check-input" value="plantForest"
+           formControlName="turn" [checked]="this.parentForm.value?.turn === 'plantForest'">
+    <label class="custom-control-label text-white" for="plantForest">Plant forest(required)</label>
+  </div>
+
+  <div *ngIf="increaseTemperatureTurn()" class="form-check">
+    <input id="increaseTemperature" (click)="clearInput()" type="radio" class="form-check-input" value="increaseTemperature"
+           formControlName="turn" [checked]="this.parentForm.value?.turn === 'increaseTemperature'">
+    <label class="custom-control-label text-white" for="increaseTemperature">Increase temperature(required)</label>
+  </div>
+
   <div *ngIf="sellCardsTurn()" class="form-check">
     <app-sell-cards (click)="clearInput()" [game]="game" [parentForm]="parentForm"></app-sell-cards>
   </div>

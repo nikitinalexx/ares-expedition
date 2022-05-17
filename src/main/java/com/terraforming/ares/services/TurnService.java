@@ -2,6 +2,7 @@ package com.terraforming.ares.services;
 
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.GameUpdateResult;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
@@ -27,6 +28,7 @@ public class TurnService {
     private final CachingGameRepository gameRepository;
     private final GameProcessorService gameProcessorService;
     private final CardValidationService cardValidationService;
+    private final TerraformingService terraformingService;
 
     public void chooseCorporationTurn(ChooseCorporationRequest chooseCorporationRequest) {
         String playerUuid = chooseCorporationRequest.getPlayerUuid();
@@ -72,6 +74,34 @@ public class TurnService {
 
     public void draftCards(String playerUuid) {
         performSyncTurn(new DraftCardsTurn(playerUuid), playerUuid, game -> null);
+    }
+
+    public void plantForest(String playerUuid) {
+        performSyncTurn(new PlantForestTurn(playerUuid), playerUuid, game -> {
+            Player player = game.getPlayerByUuid(playerUuid);
+
+            if (player.getPlants() < Constants.FOREST_PLANT_COST) {
+                return "Not enough plants to create a forest";
+            }
+
+            return null;
+        });
+    }
+
+    public void increaseTemperature(String playerUuid) {
+        performSyncTurn(new IncreaseTemperatureTurn(playerUuid), playerUuid, game -> {
+            Player player = game.getPlayerByUuid(playerUuid);
+
+            if (player.getHeat() < Constants.TEMPERATURE_HEAT_COST) {
+                return "Not enough heat to raise temperature";
+            }
+
+            if (!terraformingService.canIncreaseTemperature(game)) {
+                return "Can't increase temperature anymore, already max";
+            }
+
+            return null;
+        });
     }
 
     public TurnResponse sellCards(String playerUuid, List<Integer> cards) {
