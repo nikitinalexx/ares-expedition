@@ -59,7 +59,7 @@ public class ArcticAlgae implements BlueCard {
 
     @Override
     public List<ParameterColor> getTemperatureRequirement() {
-        return Arrays.asList(ParameterColor.RED, ParameterColor.YELLOW, ParameterColor.WHITE);
+        return Arrays.asList(ParameterColor.R, ParameterColor.Y, ParameterColor.W);
     }
 
     @Override

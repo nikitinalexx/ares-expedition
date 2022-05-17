@@ -53,7 +53,7 @@ public class IceCapMelting implements BaseExpansionRedCard {
 
     @Override
     public List<ParameterColor> getTemperatureRequirement() {
-        return List.of(ParameterColor.WHITE);
+        return List.of(ParameterColor.W);
     }
 
     @Override

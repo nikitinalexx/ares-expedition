@@ -56,7 +56,17 @@
 
 </nav>
 
-<div class="surface"></div>
+<div class="surface">
+  <div class="tracker temperature_{{game? game.temperature : 0}}"></div>
+  <div class="tracker oxygen_{{game ? game.oxygen : 0}}"></div>
+
+  <div *ngFor="let ocean of game.oceans; let i = index" class="ocean-tracker ocean_{{i + 1}}">
+    <div style="margin-top: 8px;"></div>
+    <div *ngFor="let item of [].constructor(ocean.plants); let i = index" class="resource plant"></div>
+    <div *ngIf="ocean.mc" class="resource money">{{ocean.mc}}</div>
+    <div *ngIf="ocean.cards" class="resource card"></div>
+  </div>
+</div>
 
 <div class="bg-danger mt-2 p-2 text-center text-white"
      *ngIf="errorMessage != null">

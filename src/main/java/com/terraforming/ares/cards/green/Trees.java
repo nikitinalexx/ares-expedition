@@ -50,7 +50,7 @@ public class Trees implements BaseExpansionGreenCard {
 
     @Override
     public List<ParameterColor> getTemperatureRequirement() {
-        return List.of(ParameterColor.YELLOW, ParameterColor.WHITE);
+        return List.of(ParameterColor.Y, ParameterColor.W);
     }
 
     @Override

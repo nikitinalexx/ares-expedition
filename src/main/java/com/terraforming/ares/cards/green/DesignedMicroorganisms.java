@@ -48,7 +48,7 @@ public class DesignedMicroorganisms implements BaseExpansionGreenCard {
 
     @Override
     public List<ParameterColor> getTemperatureRequirement() {
-        return List.of(ParameterColor.PURPLE, ParameterColor.RED);
+        return List.of(ParameterColor.P, ParameterColor.R);
     }
 
     @Override

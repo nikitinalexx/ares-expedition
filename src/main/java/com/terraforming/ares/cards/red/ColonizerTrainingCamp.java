@@ -33,7 +33,7 @@ public class ColonizerTrainingCamp implements BaseExpansionRedCard {
 
     @Override
     public List<ParameterColor> getOxygenRequirement() {
-        return List.of(ParameterColor.PURPLE, ParameterColor.RED);
+        return List.of(ParameterColor.P, ParameterColor.R);
     }
 
     @Override

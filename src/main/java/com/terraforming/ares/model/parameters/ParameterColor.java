@@ -7,8 +7,8 @@ package com.terraforming.ares.model.parameters;
  * Creation date 25.04.2022
  */
 public enum ParameterColor {
-    PURPLE,
-    RED,
-    YELLOW,
-    WHITE
+    P,
+    R,
+    Y,
+    W
 }

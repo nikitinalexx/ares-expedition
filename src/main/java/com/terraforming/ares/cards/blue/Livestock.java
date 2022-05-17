@@ -60,7 +60,7 @@ public class Livestock implements BlueCard {
 
     @Override
     public List<ParameterColor> getOxygenRequirement() {
-        return List.of(ParameterColor.YELLOW, ParameterColor.WHITE);
+        return List.of(ParameterColor.Y, ParameterColor.W);
     }
 
     @Override

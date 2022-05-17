@@ -3,7 +3,6 @@ package com.terraforming.ares.model.parameters;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Value;
 
 /**
  * Created by oleksii.nikitin

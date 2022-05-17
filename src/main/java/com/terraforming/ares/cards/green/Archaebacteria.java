@@ -48,7 +48,7 @@ public class Archaebacteria implements BaseExpansionGreenCard {
 
     @Override
     public List<ParameterColor> getTemperatureRequirement() {
-        return List.of(ParameterColor.PURPLE);
+        return List.of(ParameterColor.P);
     }
 
     @Override

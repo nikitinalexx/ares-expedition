@@ -46,7 +46,7 @@ public class CaretakerContract implements BlueCard {
 
     @Override
     public List<ParameterColor> getTemperatureRequirement() {
-        return Arrays.asList(ParameterColor.YELLOW, ParameterColor.WHITE);
+        return Arrays.asList(ParameterColor.Y, ParameterColor.W);
     }
 
     @Override

@@ -129,12 +129,12 @@ public class CardValidationService {
     private List<ParameterColor> amplifyRequirement(List<ParameterColor> initialRequirement) {
         List<ParameterColor> resultRequirement = new ArrayList<>(initialRequirement);
         int minRequirement = initialRequirement.stream().mapToInt(Enum::ordinal).min().orElse(0);
-        int maxRequirement = initialRequirement.stream().mapToInt(Enum::ordinal).min().orElse(ParameterColor.WHITE.ordinal());
+        int maxRequirement = initialRequirement.stream().mapToInt(Enum::ordinal).min().orElse(ParameterColor.W.ordinal());
 
         if (minRequirement > 0) {
             resultRequirement.add(ParameterColor.values()[minRequirement - 1]);
         }
-        if (maxRequirement < ParameterColor.WHITE.ordinal()) {
+        if (maxRequirement < ParameterColor.W.ordinal()) {
             resultRequirement.add(ParameterColor.values()[maxRequirement + 1]);
         }
 
@@ -177,10 +177,10 @@ public class CardValidationService {
         );
     }
 
-    private Optional<String> validateTags(Player player, Card Card) {
+    private Optional<String> validateTags(Player player, Card card) {
         List<Integer> cards = player.getPlayed().getCards();
 
-        List<Tag> tagRequirements = new LinkedList<>(Card.getTagRequirements());
+        List<Tag> tagRequirements = new LinkedList<>(card.getTagRequirements());
 
         if (tagRequirements.isEmpty()) {
             return Optional.empty();

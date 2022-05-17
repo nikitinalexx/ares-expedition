@@ -614,19 +614,19 @@ export class CardTemplateComponent {
   }
 
   private getTemperatureOxygenClass(req: ParameterColor[]): string {
-    if (req.length === 3 && req[0] === ParameterColor.RED) {
+    if (req.length === 3 && req[0] === ParameterColor.R) {
       return 'requirements-ryw';
     }
-    if (req.length === 2 && req[0] === ParameterColor.YELLOW) {
+    if (req.length === 2 && req[0] === ParameterColor.Y) {
       return 'requirements-yw';
     }
-    if (req.length === 2 && req[0] === ParameterColor.PURPLE) {
+    if (req.length === 2 && req[0] === ParameterColor.P) {
       return 'requirements-pr';
     }
-    if (req.length === 1 && req[0] === ParameterColor.WHITE) {
+    if (req.length === 1 && req[0] === ParameterColor.W) {
       return 'requirements-w';
     }
-    if (req.length === 1 && req[0] === ParameterColor.PURPLE) {
+    if (req.length === 1 && req[0] === ParameterColor.P) {
       return 'requirements-p';
     }
   }

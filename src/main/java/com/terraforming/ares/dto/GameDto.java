@@ -15,4 +15,7 @@ public class GameDto {
     private PlayerDto player;
     private List<PlayerDto> otherPlayers;
     private Integer phase;
+    private int temperature;
+    private int oxygen;
+    private List<OceanDto> oceans;
 }

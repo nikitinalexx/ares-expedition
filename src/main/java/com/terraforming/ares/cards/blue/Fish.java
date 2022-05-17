@@ -73,7 +73,7 @@ public class Fish implements BlueCard {
 
     @Override
     public List<ParameterColor> getTemperatureRequirement() {
-        return List.of(ParameterColor.RED, ParameterColor.YELLOW, ParameterColor.WHITE);
+        return List.of(ParameterColor.R, ParameterColor.Y, ParameterColor.W);
     }
 
     @Override

@@ -63,7 +63,7 @@ public class Decomposers implements BlueCard {
 
     @Override
     public List<ParameterColor> getOxygenRequirement() {
-        return List.of(ParameterColor.RED, ParameterColor.YELLOW, ParameterColor.WHITE);
+        return List.of(ParameterColor.R, ParameterColor.Y, ParameterColor.W);
     }
 
     @Override

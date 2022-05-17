@@ -132,6 +132,242 @@
   text-align: center;
 }
 
+.tracker {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  background-image: url(../../assets/images/misc/tracker.png);
+  background-size: contain;
+}
+
+.ocean-tracker {
+  position: absolute;
+  width: 86px;
+  height: 74px;
+  background-image: url(../../assets/images/misc/oceanTracker.png);
+  background-size: contain;
+}
+
+.ocean_1 {
+  left: 124px;
+  bottom: 21px;
+}
+
+.ocean_2 {
+  left: 124px;
+  bottom: 109px;
+}
+
+.ocean_3 {
+  left: 200px;
+  bottom: 65px;
+}
+
+.ocean_4 {
+  left: 200px;
+  bottom: 154px;
+}
+
+.ocean_5 {
+  left: 431px;
+  bottom: 21px;
+}
+
+.ocean_6 {
+  left: 431px;
+  bottom: 109px;
+}
+
+.ocean_7 {
+  left: 354px;
+  bottom: 65px;
+}
+
+.ocean_8 {
+  left: 354px;
+  bottom: 153px;
+}
+
+.ocean_9 {
+  left: 277px;
+  bottom: 109px;
+}
+
+.temperature_-30 {
+  left: 26px;
+  bottom: 101px;
+}
+
+.temperature_-28 {
+  left: 48px;
+  bottom: 133px;
+}
+
+.temperature_-26 {
+  left: 72px;
+  bottom: 161px;
+}
+
+.temperature_-24 {
+  left: 98px;
+  bottom: 187px;
+}
+
+.temperature_-22 {
+  left: 126px;
+  bottom: 207px;
+}
+
+.temperature_-20 {
+  left: 156px;
+  bottom: 224px;
+}
+
+.temperature_-18 {
+  left: 188px;
+  bottom: 239px;
+}
+
+.temperature_-16 {
+  left: 221px;
+  bottom: 250px;
+}
+
+.temperature_-14 {
+  left: 254px;
+  bottom: 256px;
+}
+
+.temperature_-12 {
+  left: 288px;
+  bottom: 260px;
+}
+
+.temperature_-10 {
+  left: 321px;
+  bottom: 260px;
+}
+
+.temperature_-8 {
+  left: 356px;
+  bottom: 257px;
+}
+
+.temperature_-6 {
+  left: 389px;
+  bottom: 251px;
+}
+
+.temperature_-4 {
+  left: 423px;
+  bottom: 240px;
+}
+
+.temperature_-2 {
+  left: 454px;
+  bottom: 226px;
+}
+
+.temperature_0 {
+  left: 485px;
+  bottom: 208px;
+}
+
+.temperature_2 {
+  left: 513px;
+  bottom: 187px;
+}
+
+.temperature_4 {
+  left: 538px;
+  bottom: 163px;
+}
+
+.temperature_6 {
+  left: 563px;
+  bottom: 135px;
+}
+
+.temperature_8 {
+  left: 584px;
+  bottom: 103px;
+}
+
+.oxygen_0 {
+  left: 83px;
+  top: 94px;
+}
+
+.oxygen_1 {
+  left: 112px;
+  top: 78px;
+}
+
+.oxygen_2 {
+  left: 141px;
+  top: 61px;
+}
+
+.oxygen_3 {
+  left: 173px;
+  top: 48px;
+}
+
+.oxygen_4 {
+  left: 204px;
+  top: 39px;
+}
+
+.oxygen_5 {
+  left: 237px;
+  top: 31px;
+}
+
+.oxygen_6 {
+  left: 271px;
+  top: 27px;
+}
+
+.oxygen_7 {
+  left: 305px;
+  top: 26px;
+}
+
+.oxygen_8 {
+  left: 338px;
+  top: 26px;
+}
+
+.oxygen_9 {
+  left: 372px;
+  top: 30px;
+}
+
+.oxygen_10 {
+  left: 405px;
+  top: 38px;
+}
+
+.oxygen_11 {
+  left: 437px;
+  top: 48px;
+}
+
+.oxygen_12 {
+  left: 469px;
+  top: 61px;
+}
+
+.oxygen_13 {
+  left: 499px;
+  top: 77px;
+}
+
+.oxygen_14 {
+  left: 527px;
+  top: 95px;
+}
+
 .resource_icon--megacredits {
   background-image: url(../../assets/images/megacredits/megacredit.png);
 }

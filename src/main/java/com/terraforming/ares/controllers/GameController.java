@@ -57,6 +57,9 @@ public class GameController {
         return GameDto.builder()
                 .phase(game.getCurrentPhase())
                 .player(buildCurrentPlayer(game.getPlayerByUuid(playerUuid)))
+                .temperature(game.getPlanet().getTemperature())
+                .oxygen(game.getPlanet().getOxygen())
+                .oceans(game.getPlanet().getRevealedOceans().stream().map(OceanDto::of).collect(Collectors.toList()))
                 .otherPlayers(Collections.emptyList())//TODO
                 .build();
     }
