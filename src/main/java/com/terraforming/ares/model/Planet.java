@@ -1,11 +1,13 @@
 package com.terraforming.ares.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.terraforming.ares.model.parameters.MeasurableGlobalParameter;
 import com.terraforming.ares.model.parameters.Ocean;
 import com.terraforming.ares.model.parameters.OceanRequirement;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
@@ -18,9 +20,10 @@ import java.util.stream.Collectors;
  */
 @Builder
 @AllArgsConstructor
+@NoArgsConstructor
 public class Planet {
-    private final Map<GlobalParameter, MeasurableGlobalParameter> measurableGlobalParameters;
-    private final List<Ocean> oceans;
+    private Map<GlobalParameter, MeasurableGlobalParameter> measurableGlobalParameters;
+    private List<Ocean> oceans;
 
     public Planet(Planet copy) {
         this.measurableGlobalParameters =
@@ -35,22 +38,27 @@ public class Planet {
         return oceans.stream().allMatch(Ocean::isRevealed);
     }
 
+    @JsonIgnore
     public boolean isTemperatureMax() {
         return measurableGlobalParameters.get(GlobalParameter.TEMPERATURE).isMax();
     }
 
+    @JsonIgnore
     public boolean isOxygenMax() {
         return measurableGlobalParameters.get(GlobalParameter.OXYGEN).isMax();
     }
 
+    @JsonIgnore
     public boolean isValidTemperatute(List<ParameterColor> validParameters) {
         return isValidParameter(validParameters, GlobalParameter.TEMPERATURE);
     }
 
+    @JsonIgnore
     public boolean isValidOxygen(List<ParameterColor> validParameters) {
         return isValidParameter(validParameters, GlobalParameter.OXYGEN);
     }
 
+    @JsonIgnore
     public boolean isValidNumberOfOceans(OceanRequirement oceanRequirement) {
         if (oceanRequirement == null) {
             return true;

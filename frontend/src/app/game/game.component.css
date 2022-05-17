@@ -118,6 +118,20 @@
   background-size: 42px 33px !important;
 }
 
+.surface {
+  position: relative;
+  left: 25%;
+  width: 640px;
+  height: 371px;
+  background-image: url(../../assets/images/surface.png);
+  background-size: contain;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
 .resource_icon--megacredits {
   background-image: url(../../assets/images/megacredits/megacredit.png);
 }

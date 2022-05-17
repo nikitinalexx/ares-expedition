@@ -1,10 +1,12 @@
 package com.terraforming.ares.mars;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.terraforming.ares.model.Deck;
 import com.terraforming.ares.model.Planet;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateType;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
@@ -18,18 +20,21 @@ import java.util.stream.Stream;
  * Creation date 25.04.2022
  */
 @Getter
+@NoArgsConstructor
 public class MarsGame {
     private static final int INITIAL_CORPORATIONS_SIZE = 2;
 
-    private long id;
-    private final int playersCount;
-    private final Map<String, Player> playerUuidToPlayer;
+    private Long id;
+    private int playersCount;
+    private Map<String, Player> playerUuidToPlayer;
     private Deck projectsDeck;//TODO what if it gets empty
-    private final Deck corporationsDeck;
-    private final Planet planet;
+    private Deck corporationsDeck;
+    private Planet planet;
     private Planet planetAtTheStartOfThePhase;
     private StateType stateType;
     private int currentPhase = -1;
+    @JsonIgnore
+    private int updateCounter;
 
     public MarsGame(int playersCount, int playerHandSize, Deck projectsDeck, Deck corporationsDeck, Planet planet) {
         this.playersCount = playersCount;
@@ -92,4 +97,11 @@ public class MarsGame {
 
     }
 
+    public void iterateUpdateCounter() {
+        this.updateCounter++;
+    }
+
+    public boolean timeToSave() {
+        return this.updateCounter % 10 == 0;
+    }
 }

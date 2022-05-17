@@ -8,7 +8,7 @@ import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.turn.Turn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.processors.turn.TurnProcessor;
-import com.terraforming.ares.repositories.GameRepository;
+import com.terraforming.ares.repositories.caching.CachingGameRepository;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -25,13 +25,13 @@ import java.util.stream.Collectors;
  */
 @Service
 public class GameProcessorService {
-    private final GameRepository gameRepository;
+    private final CachingGameRepository gameRepository;
     private final StateFactory stateFactory;
     private final Map<TurnType, TurnProcessor<?>> turnProcessors;
     private final Queue<Long> gamesToProcess = new ArrayBlockingQueue<>(100);
 
     public GameProcessorService(List<TurnProcessor<?>> turnProcessor,
-                                GameRepository gameRepository,
+                                CachingGameRepository gameRepository,
                                 StateFactory stateFactory) {
         this.gameRepository = gameRepository;
         this.stateFactory = stateFactory;

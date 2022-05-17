@@ -8,7 +8,7 @@ import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.request.ChooseCorporationRequest;
 import com.terraforming.ares.model.turn.*;
-import com.terraforming.ares.repositories.GameRepository;
+import com.terraforming.ares.repositories.caching.CachingGameRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -24,7 +24,7 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 public class TurnService {
     private final StateFactory stateFactory;
-    private final GameRepository gameRepository;
+    private final CachingGameRepository gameRepository;
     private final GameProcessorService gameProcessorService;
     private final CardValidationService cardValidationService;
 

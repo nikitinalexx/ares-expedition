@@ -10,7 +10,7 @@ import com.terraforming.ares.model.payments.MegacreditsPayment;
 import com.terraforming.ares.model.request.BuildProjectRequest;
 import com.terraforming.ares.model.request.ChoosePhaseRequest;
 import com.terraforming.ares.model.turn.TurnType;
-import com.terraforming.ares.repositories.GameRepository;
+import com.terraforming.ares.repositories.caching.CachingGameRepository;
 import com.terraforming.ares.services.GameProcessorService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,7 +33,7 @@ class AssetLiquidationFlowTest {
     private PlayController playController;
 
     @Autowired
-    private GameRepository gameRepository;
+    private CachingGameRepository gameRepository;
 
     @Autowired
     private GameProcessorService gameProcessorService;
@@ -66,7 +66,7 @@ class AssetLiquidationFlowTest {
             secondPlayer = temp;
         }
 
-        gameRepository.save(marsGame);
+        gameRepository.newGame(marsGame);
     }
 
 

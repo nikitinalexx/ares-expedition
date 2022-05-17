@@ -1,7 +1,9 @@
 package com.terraforming.ares.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -13,6 +15,8 @@ import java.util.List;
  */
 @Builder
 @Getter
+@NoArgsConstructor
+@AllArgsConstructor
 public class Deck {
     @Builder.Default
     private final LinkedList<Integer> cards = new LinkedList<>();

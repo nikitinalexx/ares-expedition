@@ -5,7 +5,7 @@ import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.GameParameters;
 import com.terraforming.ares.model.turn.TurnType;
-import com.terraforming.ares.repositories.GameRepository;
+import com.terraforming.ares.repositories.caching.CachingGameRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,13 +19,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GameService {
     private final GameFactory gameFactory;
-    private final GameRepository gameRepository;
+    private final CachingGameRepository gameRepository;
     private final StateFactory stateFactory;
 
     public MarsGame startNewGame(GameParameters gameParameters) {
         MarsGame game = gameFactory.createMarsGame(gameParameters);
 
-        gameRepository.save(game);
+        gameRepository.newGame(game);
 
         return game;
     }

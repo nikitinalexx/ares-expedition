@@ -1,17 +1,21 @@
 package com.terraforming.ares.model.parameters;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 /**
  * Created by oleksii.nikitin
  * Creation date 25.04.2022
  */
 @Getter
+@NoArgsConstructor
+@AllArgsConstructor
 public class Ocean {
     private boolean revealed;
-    private final int cards;
-    private final int mc;
-    private final int plants;
+    private int cards;
+    private int mc;
+    private int plants;
 
     public Ocean(Ocean copy) {
         this.revealed = copy.revealed;
