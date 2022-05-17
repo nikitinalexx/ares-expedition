@@ -6,6 +6,7 @@ import {TurnType} from '../data/TurnType';
 import {ActionDto} from '../data/ActionDto';
 import {BuildProjectRequest} from "../data/BuildProjectRequest";
 import {BlueActionRequest} from "../data/BlueActionRequest";
+import {StandardProjectType} from "../data/StandardProjectType";
 
 @Injectable()
 export class GameRepository {
@@ -55,6 +56,10 @@ export class GameRepository {
 
   increaseTemperature(playerUuid: string): Observable<any> {
     return this.dataSource.increaseTemperature(playerUuid);
+  }
+
+  standardProject(playerUuid: string, type: StandardProjectType): Observable<any> {
+    return this.dataSource.standardProject(playerUuid, type);
   }
 
   nextAction(playerUuid: string): Observable<ActionDto> {

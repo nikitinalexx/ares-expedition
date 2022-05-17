@@ -2,10 +2,7 @@ package com.terraforming.ares.services;
 
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Constants;
-import com.terraforming.ares.model.GameUpdateResult;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.request.ChooseCorporationRequest;
 import com.terraforming.ares.model.turn.*;
@@ -29,6 +26,7 @@ public class TurnService {
     private final GameProcessorService gameProcessorService;
     private final CardValidationService cardValidationService;
     private final TerraformingService terraformingService;
+    private final StandardProjectService standardProjectService;
 
     public void chooseCorporationTurn(ChooseCorporationRequest chooseCorporationRequest) {
         String playerUuid = chooseCorporationRequest.getPlayerUuid();
@@ -101,6 +99,14 @@ public class TurnService {
             }
 
             return null;
+        });
+    }
+
+    public void standardProjectTurn(String playerUuid, StandardProjectType type) {
+        performSyncTurn(new StandardProjectTurn(playerUuid, type), playerUuid, game -> {
+            Player player = game.getPlayerByUuid(playerUuid);
+
+            return standardProjectService.validateStandardProject(game, player, type);
         });
     }
 

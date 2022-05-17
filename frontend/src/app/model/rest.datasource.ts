@@ -10,6 +10,7 @@ import {TurnType} from "../data/TurnType";
 import {ActionDto} from "../data/ActionDto";
 import {BuildProjectRequest} from "../data/BuildProjectRequest";
 import {BlueActionRequest} from "../data/BlueActionRequest";
+import {StandardProjectType} from "../data/StandardProjectType";
 
 export const REST_URL = new InjectionToken('rest_url');
 
@@ -108,6 +109,12 @@ export class RestDataSource {
   increaseTemperature(playerUuid: string): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/turn/temperature',
       {'playerUuid': playerUuid}
+    );
+  }
+
+  standardProject(playerUuid: string, type: StandardProjectType): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/turn/standard',
+      {'playerUuid': playerUuid, 'type': type.valueOf()}
     );
   }
 

@@ -127,6 +127,38 @@
     <label class="custom-control-label text-white" for="increaseTemperature">Increase temperature(required)</label>
   </div>
 
+  <div *ngIf="standardProjectTurn()" class="form-check">
+    <input id="standardProject" (click)="clearInput()" type="radio" class="form-check-input" value="standardProject"
+           formControlName="turn" [checked]="this.parentForm.value?.turn === 'standardProject'">
+    <label class="custom-control-label text-white" for="standardProject">Standard Project</label>
+
+    <div *ngIf="this.parentForm.value?.turn === 'standardProject'" class="form-group" style="margin-left: 20px">
+      <div class="form-row">
+        <div class="col-sm-1">
+          <input id="standardOcean" type="radio" class="form-check-input" value="ocean"
+                 formControlName="standardProject"
+                 [checked]="this.parentForm.value?.standardProject === 'ocean'"
+          >
+          <label class="custom-control-label text-white" for="standardOcean">Ocean (15mc)</label>
+        </div>
+        <div class="col-sm-1">
+          <input id="standardForest" type="radio" class="form-check-input" value="forest"
+                 formControlName="standardProject"
+                 [checked]="this.parentForm.value?.standardProject === 'forest'"
+          >
+          <label class="custom-control-label text-white" for="standardForest">Forest (20mc)</label>
+        </div>
+        <div class="col-sm-2">
+          <input id="standardTemperature" type="radio" class="form-check-input" value="temperature"
+                 formControlName="standardProject"
+                 [checked]="this.parentForm.value?.standardProject === 'temperature'"
+          >
+          <label class="custom-control-label text-white" for="standardTemperature">Temperature (14mc)</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div *ngIf="sellCardsTurn()" class="form-check">
     <app-sell-cards (click)="clearInput()" [game]="game" [parentForm]="parentForm"></app-sell-cards>
   </div>

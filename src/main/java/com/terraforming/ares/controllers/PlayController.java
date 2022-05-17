@@ -111,4 +111,9 @@ public class PlayController {
         turnService.increaseTemperature(playerUuidRequest.getPlayerUuid());
     }
 
+    @PostMapping("/turn/standard")
+    public void standardProject(@RequestBody StandardProjectRequest request) {
+        turnService.standardProjectTurn(request.getPlayerUuid(), request.getType());
+    }
+
 }

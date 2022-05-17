@@ -10,6 +10,10 @@ public class Constants {
     public static final int TEMPERATURE_HEAT_COST = 8;
     public static final int FOREST_PLANT_COST = 8;
 
+    public static final int FOREST_MC_COST = 20;
+    public static final int TEMPERATURE_MC_COST = 14;
+    public static final int OCEAN_MC_COST = 15;
+
     public static final int DEFAULT_START_HAND_SIZE = 10;
 
 

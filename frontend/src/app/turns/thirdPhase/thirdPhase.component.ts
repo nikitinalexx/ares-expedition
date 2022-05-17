@@ -11,6 +11,7 @@ import {ActionInputDataType} from '../../data/ActionInputDataType';
 import {CardResource} from '../../data/CardResource';
 import {CardAction} from '../../data/CardAction';
 import {InputFlag} from '../../data/InputFlag';
+import {StandardProjectType} from "../../data/StandardProjectType";
 
 @Component({
   selector: 'app-third-phase',
@@ -43,7 +44,8 @@ export class ThirdPhaseComponent implements OnInit {
       turn: ['', Validators.required],
       heatInput: [''],
       addOrUseMicrobe: ['addMicrobe'],
-      gainPlantOrMicrobe: ['gainPlant']
+      gainPlantOrMicrobe: ['gainPlant'],
+      standardProject: ['ocean']
     });
   }
 
@@ -69,6 +71,10 @@ export class ThirdPhaseComponent implements OnInit {
 
   increaseTemperatureTurn(): boolean {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.INCREASE_TEMPERATURE])?.length > 0;
+  }
+
+  standardProjectTurn(): boolean {
+    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.STANDARD_PROJECT])?.length > 0;
   }
 
   canPlayExtraBlueAction(): boolean {
@@ -198,7 +204,18 @@ export class ThirdPhaseComponent implements OnInit {
       console.log('form invalid');
       return false;
     } else {
-      if (formGroup.value.turn === 'plantForest') {
+      if (formGroup.value.turn === 'standardProject') {
+        if (!this.parentForm.value.standardProject) {
+          this.errorMessage = 'Select standard project';
+          return;
+        }
+        this.gameRepository.standardProject(
+          this.game.player.playerUuid,
+          StandardProjectType[this.parentForm.value.standardProject.toUpperCase()]
+        ).subscribe(data => this.sendToParent(data), error => {
+          this.errorMessage = error;
+        });
+      } else if (formGroup.value.turn === 'plantForest') {
         this.gameRepository.plantForest(this.game.player.playerUuid).subscribe(
           data => this.sendToParent(data)
         );
