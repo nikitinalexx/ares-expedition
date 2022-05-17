@@ -80,6 +80,9 @@ public class MarsGame {
             case DRAFT_CARDS:
                 currentPhase = 5;
                 break;
+            case SELL_EXTRA_CARDS:
+                currentPhase = 6;
+                break;
             default:
                 currentPhase = -1;
         }

@@ -1,0 +1,24 @@
+<div class="bg-danger mt-2 p-2 text-center text-white"
+     *ngIf="errorMessage != null">
+  {{errorMessage}}
+</div>
+
+<!-- Form starts -->
+<form [formGroup]="parentForm" (submit)="submitForm(parentForm)" novalidate>
+
+
+
+  <div *ngIf="sellCardsTurn()" class="form-check">
+    <h3 class="text-white">Max 10 cards can be left in hand</h3>
+    <app-sell-cards [game]="game" [parentForm]="parentForm"></app-sell-cards>
+  </div>
+
+  <div *ngIf="skipTurn()" class="form-check">
+    <input id="skipTurn" type="radio" class="form-check-input" value="skipTurn"
+           formControlName="turn" required [checked]="this.parentForm.value?.turn === 'skipTurn'">
+    <label class="custom-control-label text-white" for="skipTurn">Finish turn</label>
+  </div>
+
+  <!-- Submit Button -->
+  <button type="submit" class="btn btn-danger btn-lg btn-block">Select turn</button>
+</form><!-- Form ends -->

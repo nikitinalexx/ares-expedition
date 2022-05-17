@@ -27,7 +27,7 @@ public class SellExtraCardsState extends AbstractState {
         } else if (player.getHand().size() > 10) {
             return Collections.singletonList(TurnType.SELL_CARDS);
         } else {
-            return Arrays.asList(TurnType.SELL_CARDS, TurnType.SKIP_TURN);
+            return List.of(TurnType.SKIP_TURN);
         }
     }
 
