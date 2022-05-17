@@ -30,7 +30,6 @@ public class GameRepositoryImpl implements GameRepository {
     @Override
     @Transactional
     public long save(MarsGame game) {
-        System.out.println("Save by id");
         boolean newGame = (game.getId() == null);
         List<PlayerEntity> players = game.getPlayerUuidToPlayer().keySet()
                 .stream()
@@ -55,7 +54,6 @@ public class GameRepositoryImpl implements GameRepository {
     @Override
     @Transactional(readOnly = true)
     public MarsGame getGameById(long id) {
-        System.out.println("Get by id");
         GameEntity entity = gameRepository.findById(id);
         MarsGame marsGame = safeDeserialize(entity.getGameJson());
         marsGame.setId(entity.getId());
@@ -65,7 +63,6 @@ public class GameRepositoryImpl implements GameRepository {
     @Override
     @Transactional(readOnly = true)
     public long getGameIdByPlayerUuid(String playerUuid) {
-        System.out.println("Get player by id");
         return playerRepository.findByUuid(playerUuid).getGame().getId();
     }
 

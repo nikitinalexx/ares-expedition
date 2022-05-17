@@ -55,7 +55,7 @@ public class CachingGameRepositoryImpl implements CachingGameRepository {
 
         cache.compute(id, (key, game) -> {
             if (game == null) {
-                game = getGameById(key);
+                game = gameRepository.getGameById(key);
             }
 
             String validationError = stateChecker.apply(game);
