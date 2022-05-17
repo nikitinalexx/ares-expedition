@@ -17,6 +17,9 @@ export class Player {
               titaniumIncome: number,
               activatedBlueActionTwice: boolean,
               cardResources: Map<number, number>,
+              terraformingRating: number,
+              winPoints: number,
+              forests: number,
               activatedBlueCards: number[],
               corporationId?: number,
               phase?: number) {
@@ -43,5 +46,8 @@ export class Player {
   cardResources: Map<number, number>;
   activatedBlueCards: number[];
   activatedBlueActionTwice: boolean;
+  terraformingRating: number;
+  winPoints: number;
+  forests: number;
 
 }

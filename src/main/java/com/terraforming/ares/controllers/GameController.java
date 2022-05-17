@@ -9,6 +9,7 @@ import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardFactory;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.GameService;
+import com.terraforming.ares.services.WinPointsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -30,6 +31,7 @@ public class GameController {
     private final GameService gameService;
     private final CardFactory cardFactory;
     private final CardService cardService;
+    private final WinPointsService winPointsService;
 
     @PostMapping("/game/new")
     public PlayerUuidsDto startNewGame(@RequestBody GameParameters gameParameters) {
@@ -98,6 +100,9 @@ public class GameController {
                 )
                 .activatedBlueCards(player.getActivatedBlueCards().getCards())
                 .activatedBlueActionTwice(player.isActivatedBlueActionTwice())
+                .terraformingRating(player.getTerraformingRating())
+                .winPoints(winPointsService.countWinPoints(player))
+                .forests(player.getForests())
                 .build();
     }
 

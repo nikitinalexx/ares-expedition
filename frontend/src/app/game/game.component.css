@@ -29,6 +29,95 @@
   background-size: contain;
 }
 
+.player-info {
+  border-radius: 8px;
+}
+
+.player-info .player-tags {
+  display: flex;
+  flex-flow: row;
+  margin-left: 10px;
+}
+
+.player-info .player-tags .player-tags-main {
+  display: flex;
+  align-items: center;
+  margin-left: 0;
+}
+
+.tag-display {
+  display: flex;
+  flex-flow: column;
+  margin-right: 8px;
+}
+
+.tag-count {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(0, 0, 0, 0.3);
+  position: relative;
+  width: 40px;
+  height: 40px;
+  background-size: 42px 42px;
+  background-position: -1px -1px;
+  text-align: center;
+  border-radius: 50%;
+  background-color: white;
+  margin-top: -6px;
+  margin-left: 3px;
+  box-sizing: content-box;
+  z-index: 2;
+}
+
+.tag-vp {
+  background: linear-gradient(#cc8b00, #805700, #805700) !important;
+  background-position: 0px !important;
+}
+.tag-vp::after {
+  position: absolute;
+  content: "VP";
+  font-family: Prototype;
+  color: black;
+  font-size: 20px;
+  text-shadow: 0 0 5px darkorange;
+  text-align: center;
+  top: 3px;
+  left: 7px;
+}
+
+.tag-size-big {
+  margin-top: 0px;
+  margin-left: 0px;
+  background-position: -2px;
+}
+
+.tag-type-main {
+  border-radius: 4px;
+  border: none;
+  width: 40px;
+  height: 34px;
+  background-size: 40px 34px;
+}
+
+.tag-count-display {
+  color: #e8e8e8;
+  text-align: center;
+  font-size: 26px;
+  font-family: Prototype;
+  line-height: 1;
+  text-shadow: 0 1px 1px black;
+  margin-top: 11px;
+}
+
+.tag-tr {
+  background-image: url(../../assets/images/resources/tr.png);
+  background-size: 49px 38px !important;
+  background-position: -4px -2px !important;
+}
+
+.tag-forest {
+  background-image: url(../../assets/images/tags/forest.png);
+  background-size: 42px 33px !important;
+}
+
 .resource_icon--megacredits {
   background-image: url(../../assets/images/megacredits/megacredit.png);
 }

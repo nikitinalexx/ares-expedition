@@ -1,6 +1,8 @@
 <nav class="sticky-top navbar navbar-expand navbar-light bg-dark text-white">
   <div class="navbar-brand text-white" style="padding-left: 20px">You</div>
-  <div class="navbar-nav">
+
+  <div class="player-info navbar-nav">
+
     <div class="resource_item">
       <div class="resource_item_stock"><em class="resource_icon resource_icon--megacredits"></em>
         <div class="resource_item_stock_count">{{game?.player?.mc}}</div>
@@ -25,14 +27,33 @@
     </div>
     <div class="resource_item">
       <div class="resource_item_stock"><em class="resource_icon resource_icon--titanium"></em></div>
-      <div class="resource_item_prod"><span class="resource_item_prod_count">{{game?.player?.titaniumIncome}}</span></div>
+      <div class="resource_item_prod"><span class="resource_item_prod_count">{{game?.player?.titaniumIncome}}</span>
+      </div>
     </div>
     <div class="resource_item">
       <div class="resource_item_stock"><em class="resource_icon_card resource_icon--cards"></em>
       </div>
       <div class="resource_item_prod"><span class="resource_item_prod_count">{{game?.player?.cardIncome}}</span></div>
     </div>
+
+    <div class="player-tags">
+      <div class="player-tags-main">
+        <div class="tag-display">
+          <div class="tag-count tag-vp tag-size-big tag-type-main"></div>
+          <span class="tag-count-display">{{game?.player?.winPoints}}</span>
+        </div> <!---->
+        <div class="tag-display">
+          <div class="tag-count tag-tr tag-size-big tag-type-main"></div>
+          <span class="tag-count-display">{{game?.player?.terraformingRating}}</span>
+        </div>
+        <div class="tag-display">
+          <div class="tag-count tag-forest tag-size-big tag-type-main"></div>
+          <span class="tag-count-display">{{game?.player?.forests}}</span>
+        </div>
+      </div>
+    </div>
   </div>
+
 </nav>
 
 <div class="bg-danger mt-2 p-2 text-center text-white"
@@ -41,7 +62,8 @@
 </div>
 
 <div>
-  <app-pick-corporation *ngIf="pickCorporationTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"></app-pick-corporation>
+  <app-pick-corporation *ngIf="pickCorporationTurn()" (outputToParent)="GetOutputVal($event)"
+                        [game]="game"></app-pick-corporation>
 </div>
 
 <div>
@@ -49,27 +71,33 @@
 </div>
 
 <div>
-  <app-first-phase *ngIf="firstPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game" [nextTurns]="nextTurns"></app-first-phase>
+  <app-first-phase *ngIf="firstPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"
+                   [nextTurns]="nextTurns"></app-first-phase>
 </div>
 
 <div>
-  <app-second-phase *ngIf="secondPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game" [nextTurns]="nextTurns"></app-second-phase>
+  <app-second-phase *ngIf="secondPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"
+                    [nextTurns]="nextTurns"></app-second-phase>
 </div>
 
 <div>
-  <app-third-phase *ngIf="thirdPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game" [nextTurns]="nextTurns"></app-third-phase>
+  <app-third-phase *ngIf="thirdPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"
+                   [nextTurns]="nextTurns"></app-third-phase>
 </div>
 
 <div>
-  <app-fourth-phase *ngIf="fourthPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game" [nextTurns]="nextTurns"></app-fourth-phase>
+  <app-fourth-phase *ngIf="fourthPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"
+                    [nextTurns]="nextTurns"></app-fourth-phase>
 </div>
 
 <div>
-  <app-fifth-phase *ngIf="fifthPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game" [nextTurns]="nextTurns"></app-fifth-phase>
+  <app-fifth-phase *ngIf="fifthPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"
+                   [nextTurns]="nextTurns"></app-fifth-phase>
 </div>
 
 <div>
-  <app-end-round *ngIf="sixthPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game" [nextTurns]="nextTurns"></app-end-round>
+  <app-end-round *ngIf="sixthPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"
+                 [nextTurns]="nextTurns"></app-end-round>
 </div>
 
 <h2 class="text-white">Played</h2>
