@@ -177,10 +177,10 @@ public class CardValidationService {
         );
     }
 
-    private Optional<String> validateTags(Player player, Card card) {
+    private Optional<String> validateTags(Player player, Card inputCard) {
         List<Integer> cards = player.getPlayed().getCards();
 
-        List<Tag> tagRequirements = new LinkedList<>(card.getTagRequirements());
+        List<Tag> tagRequirements = new LinkedList<>(inputCard.getTagRequirements());
 
         if (tagRequirements.isEmpty()) {
             return Optional.empty();
