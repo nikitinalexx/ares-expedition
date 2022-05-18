@@ -1,16 +1,14 @@
 package com.terraforming.ares.cards.green;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.model.MarsContext;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.Tag;
-import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -47,6 +45,11 @@ public class IoMiningIndustries implements BaseExpansionGreenCard {
         player.setTitaniumIncome(player.getTitaniumIncome() + 2);
 
         return null;
+    }
+
+    @Override
+    public Set<SpecialEffect> getSpecialEffects() {
+        return Set.of(SpecialEffect.IO_MINING_INDUSTRIES);
     }
 
     @Override
