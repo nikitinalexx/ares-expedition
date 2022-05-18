@@ -34,7 +34,7 @@ public class CelestiorCorporation implements CorporationCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        marsContext.getPlayer().setMc(500);
+        marsContext.getPlayer().setMc(50);
         return null;
     }
 
