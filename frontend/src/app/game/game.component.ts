@@ -78,12 +78,51 @@ export class GameComponent {
     this.identifyNextAction();
   }
 
+  phaseChosenByAnyone(phase: number): boolean {
+    return this.game?.player.phase === phase ||
+      this.game?.otherPlayers?.some(p => p.phase === phase);
+  }
+
+  chosenPhases(): number[] {
+    const phases = [];
+    for (let i = 1; i <= 5; i++) {
+      if (this.phaseChosenByAnyone(i)) {
+        phases.push(i);
+      }
+    }
+    return phases;
+  }
+
+  currentPhase(phase: number): boolean {
+    return this.game?.phase === phase;
+  }
+
+  phaseDisplayStyles(phase: number): string {
+    let result = '';
+    if (!this.currentPhase(phase)) {
+      result += 'phase-transparent';
+    }
+
+    if (this.game?.player?.phase === phase) {
+      result += ' selectedPhase';
+    }
+
+    return result;
+  }
+
   identifyNextAction() {
     this.model.nextAction(this.playerUuid).subscribe(data => {
+      const previousAction = this.nextAction;
       this.nextAction = data.action;
       if (this.nextAction === 'TURN') {
         this.errorMessage = null;
         this.model.nextTurns(this.playerUuid).subscribe(turns => {
+          if (!this.nextTurns
+            && previousAction === 'WAIT'
+            && this.game.phase === 3
+            && turns.find(t => t === TurnType.PERFORM_BLUE_ACTION)) {
+            this.errorMessage = 'One of the global parameters reached maximum';
+          }
           this.nextTurns = turns;
           this.model.getGame(this.playerUuid).subscribe(game => {
             this.game = game;

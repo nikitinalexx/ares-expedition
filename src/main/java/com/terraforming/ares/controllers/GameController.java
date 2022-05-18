@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -65,7 +64,13 @@ public class GameController {
                 .phaseOxygen(phasePlanet != null ? phasePlanet.getOxygen() : null)
                 .oceans(game.getPlanet().getRevealedOceans().stream().map(OceanDto::of).collect(Collectors.toList()))
                 .phaseOceans(phasePlanet != null ? phasePlanet.getRevealedOceans().size() : null)
-                .otherPlayers(Collections.emptyList())//TODO
+                .otherPlayers(
+                        game.getPlayerUuidToPlayer().values()
+                                .stream()
+                                .filter(player -> !player.getUuid().equals(playerUuid))
+                                .map(this::buildAnotherPlayer)
+                                .collect(Collectors.toList())
+                )
                 .build();
     }
 
@@ -75,6 +80,12 @@ public class GameController {
                 .stream()
                 .map(CardDto::from)
                 .collect(Collectors.toList());
+    }
+
+    private AnotherPlayerDto buildAnotherPlayer(Player player) {
+        return AnotherPlayerDto.builder()
+                .phase(player.getChosenPhase())
+                .build();
     }
 
     private PlayerDto buildCurrentPlayer(Player player) {

@@ -59,6 +59,11 @@ public class Planet {
     }
 
     @JsonIgnore
+    public boolean isOceansMax() {
+        return oceans.stream().allMatch(Ocean::isRevealed);
+    }
+
+    @JsonIgnore
     public boolean isOxygenMax() {
         return measurableGlobalParameters.get(GlobalParameter.OXYGEN).isMax();
     }

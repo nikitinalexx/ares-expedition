@@ -59,7 +59,30 @@ public class GameProcessorService {
     }
 
     public GameUpdateResult<TurnResponse> syncPlayerUpdate(long gameId, Turn turn, Function<MarsGame, String> stateChecker) {
-        return gameRepository.updateMarsGame(gameId, stateChecker, game -> processTurn(turn, game));
+        return gameRepository.updateMarsGame(gameId, stateChecker, game -> {
+            boolean oxygenMaxBefore = game.getPlanet().isOxygenMax();
+            boolean temperatureMaxBefore = game.getPlanet().isTemperatureMax();
+            boolean oceansMaxBefore = game.getPlanet().isOceansMax();
+
+            TurnResponse turnResponse = processTurn(turn, game);
+
+            boolean oxygenMaxAfter = game.getPlanet().isOxygenMax();
+            boolean temperatureMaxAfter = game.getPlanet().isTemperatureMax();
+            boolean oceansMaxAfter = game.getPlanet().isOceansMax();
+
+            if (game.getCurrentPhase() == 3 &&
+                    (!oxygenMaxBefore && oxygenMaxAfter
+                            || !temperatureMaxBefore && temperatureMaxAfter
+                            || !oceansMaxBefore && oceansMaxAfter)) {
+                game.getPlayerUuidToPlayer()
+                        .values()
+                        .stream().filter(player -> !player.getUuid().equals(turn.getPlayerUuid()))
+                        .filter(player -> player.getNextTurn() != null && player.getNextTurn().getType() == TurnType.SKIP_TURN)
+                        .forEach(player -> player.setNextTurn(null));
+            }
+
+            return turnResponse;
+        });
     }
 
     private boolean processFinalTurns(MarsGame game) {

@@ -13,7 +13,7 @@ import java.util.List;
 @Builder
 public class GameDto {
     private PlayerDto player;
-    private List<PlayerDto> otherPlayers;
+    private List<AnotherPlayerDto> otherPlayers;
     private Integer phase;
     private int temperature;
     private int oxygen;

@@ -91,28 +91,54 @@ body {
   will-change: transform;
 }
 
-.phase-1 {
+.phaseDisplay {
+  cursor: pointer;
+  float: left;
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: none;
+  font-family: Prototype;
+  font-size: 18px;
+  margin: 15px;
+  margin-bottom: 10px;
+  border-top: 4px solid rgb(221, 221, 221);
+  border-left: 4px solid rgb(221, 221, 221);
+  border-bottom: 4px solid rgb(137, 137, 137);
+  border-right: 4px solid rgb(137, 137, 137);
+  border-radius: 20px;
+  box-shadow: 0 0 2px 1px black;
+  transition: transform 200ms ease-in-out;
+  will-change: transform;
+  background-size: contain;
+}
+
+
+.phase-size {
   height: 240px;
+}
+
+.phase-transparent {
+  opacity: 0.3;
+}
+
+.phase-1 {
   background-image: url("../images/phases/1.jpg");
 }
 
 .phase-2 {
-  height: 240px;
   background-image: url("../images/phases/2.jpg");
 }
 
 .phase-3 {
-  height: 240px;
   background-image: url("../images/phases/3.jpg");
 }
 
 .phase-4 {
-  height: 240px;
   background-image: url("../images/phases/4.jpg");
 }
 
 .phase-5 {
-  height: 240px;
   background-image: url("../images/phases/5.jpg");
 }
 
@@ -385,6 +411,10 @@ li.events::before {
 
 .display {
   display: block;
+}
+
+.selectedPhase {
+  border-color: green;
 }
 
 .container {
