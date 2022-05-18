@@ -29,6 +29,8 @@ public class StateFactory {
                 return new DraftCardsState(marsGame);
             case SELL_EXTRA_CARDS:
                 return new SellExtraCardsState(marsGame);
+            case GAME_END:
+                return new GameEndState(marsGame);
             default:
                 throw new IllegalArgumentException(String.format("State %s is not supported", marsGame.getStateType()));
         }

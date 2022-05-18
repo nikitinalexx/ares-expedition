@@ -1,8 +1,10 @@
 export class AnotherPlayer {
-  constructor(phase?: number) {
+  constructor(winPoints: number,
+              phase?: number) {
 
   }
 
+  winPoints: number;
   phase: number;
 
 }

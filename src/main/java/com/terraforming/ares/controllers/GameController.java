@@ -85,6 +85,7 @@ public class GameController {
     private AnotherPlayerDto buildAnotherPlayer(Player player) {
         return AnotherPlayerDto.builder()
                 .phase(player.getChosenPhase())
+                .winPoints(winPointsService.countWinPoints(player))
                 .build();
     }
 

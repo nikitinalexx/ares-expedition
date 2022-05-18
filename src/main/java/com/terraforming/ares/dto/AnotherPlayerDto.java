@@ -13,4 +13,5 @@ import lombok.Getter;
 @Getter
 public class AnotherPlayerDto {
     private final Integer phase;
+    private final int winPoints;
 }

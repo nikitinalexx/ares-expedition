@@ -129,6 +129,15 @@
                  [nextTurns]="nextTurns"></app-end-round>
 </div>
 
+<div *ngIf="gameEnd()" class="text-white" style="margin-left: 20px;">
+  <div style="font-size: 30px;">Game Finished</div>
+  <div>Your score: {{this.game.player.winPoints}}</div>
+  <div *ngFor="let player of this.game?.otherPlayers">
+    Another player score: {{player.winPoints}}
+  </div>
+</div>
+
+
 <h2 class="text-white">Played</h2>
 
 <div class="card-container">

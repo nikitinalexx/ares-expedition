@@ -74,6 +74,10 @@ export class GameComponent {
     return this.game && this.game.phase === 6 && this.nextAction === 'TURN';
   }
 
+  gameEnd(): boolean {
+    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.GAME_END])?.length > 0;
+  }
+
   GetOutputVal(newX) {
     this.identifyNextAction();
   }

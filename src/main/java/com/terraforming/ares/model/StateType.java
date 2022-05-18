@@ -12,5 +12,6 @@ public enum StateType {
     PERFORM_BLUE_ACTION,
     COLLECT_INCOME,
     DRAFT_CARDS,
-    SELL_EXTRA_CARDS
+    SELL_EXTRA_CARDS,
+    GAME_END
 }

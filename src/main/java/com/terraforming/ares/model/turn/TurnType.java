@@ -22,7 +22,8 @@ public enum TurnType {
     INCREASE_TEMPERATURE(false),
     STANDARD_PROJECT(false),
     EXCHANGE_HEAT(false),
-    DISCARD_CARDS(false, true);
+    DISCARD_CARDS(false, true),
+    GAME_END(true);
 
     private final boolean isTerminal;
     private final boolean isIntermediate;

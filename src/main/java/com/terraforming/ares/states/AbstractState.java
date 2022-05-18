@@ -28,6 +28,13 @@ public abstract class AbstractState implements State {
     }
 
     protected void performStateTransferFromPhase(int phaseNumber) {
+        if (marsGame.getPlanet().isOxygenMax() &&
+                marsGame.getPlanet().isTemperatureMax() &&
+                marsGame.getPlanet().isOceansMax()) {
+            marsGame.setStateType(StateType.GAME_END);
+            return;
+        }
+
         Set<Integer> pickedPhases = marsGame.getPlayerUuidToPlayer()
                 .values()
                 .stream()
