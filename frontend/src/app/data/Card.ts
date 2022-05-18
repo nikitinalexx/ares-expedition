@@ -1,4 +1,4 @@
-import {Tag} from './tag';
+import {Tag} from './Tag';
 import {CardColor} from './CardColor';
 import {SpecialEffect} from './SpecialEffect';
 import {CardAction} from './CardAction';
