@@ -34,7 +34,7 @@ public class PaymentValidationService {
             if (paymentValidator == null) {
                 throw new IllegalStateException("Payment validator not found for type " + payment.getType());
             }
-            String validationResult = paymentValidator.validate(player, payment);
+            String validationResult = paymentValidator.validate(card, player, payment);
             if (StringUtils.hasLength(validationResult)) {
                 return validationResult;
             }

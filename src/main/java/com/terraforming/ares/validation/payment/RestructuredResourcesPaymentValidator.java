@@ -1,5 +1,6 @@
 package com.terraforming.ares.validation.payment;
 
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.SpecialEffect;
 import com.terraforming.ares.model.payments.Payment;
@@ -23,7 +24,7 @@ public class RestructuredResourcesPaymentValidator implements PaymentValidator {
     }
 
     @Override
-    public String validate(Player player, Payment payment) {
+    public String validate(Card card, Player player, Payment payment) {
         if (!specialEffectsService.ownsSpecialEffect(player, SpecialEffect.RESTRUCTURED_RESOURCES)) {
             return "Type of payment not allowed " + PaymentType.RESTRUCTURED_RESOURCES;
         }

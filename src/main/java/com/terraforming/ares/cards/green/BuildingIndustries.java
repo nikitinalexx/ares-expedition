@@ -57,6 +57,11 @@ public class BuildingIndustries implements BaseExpansionGreenCard {
     }
 
     @Override
+    public int heatSpendOnBuild() {
+        return 4;
+    }
+
+    @Override
     public List<Tag> getTags() {
         return List.of(Tag.BUILDING);
     }

@@ -64,6 +64,11 @@ public class LocalHeatTrapping implements BaseExpansionRedCard {
     }
 
     @Override
+    public int heatSpendOnBuild() {
+        return 3;
+    }
+
+    @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
         player.setHeat(player.getHeat() - 3);

@@ -24,7 +24,7 @@ public class HeatPaymentValidator implements PaymentValidator {
     }
 
     @Override
-    public String validate(Player player, Payment payment) {
+    public String validate(Card card, Player player, Payment payment) {
         Card corporationCard = cardService.getCard(player.getSelectedCorporationCard());
         CardAction cardAction = corporationCard.getCardMetadata().getCardAction();
 
@@ -32,7 +32,7 @@ public class HeatPaymentValidator implements PaymentValidator {
             return "Only helion corporation may pay with heat";
         }
 
-        if (player.getHeat() < payment.getValue()) {
+        if (player.getHeat() < payment.getValue() + card.heatSpendOnBuild()) {
             return "Not enough HEAT to build the project";
         }
         return null;

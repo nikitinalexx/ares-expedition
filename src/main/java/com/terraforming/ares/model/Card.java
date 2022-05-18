@@ -90,4 +90,8 @@ public interface Card {
         return false;
     }
 
+    default int heatSpendOnBuild() {
+        return 0;
+    }
+
 }

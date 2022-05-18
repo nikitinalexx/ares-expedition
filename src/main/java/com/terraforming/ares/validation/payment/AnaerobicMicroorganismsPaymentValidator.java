@@ -1,6 +1,7 @@
 package com.terraforming.ares.validation.payment;
 
 import com.terraforming.ares.cards.blue.AnaerobicMicroorganisms;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.payments.PaymentType;
@@ -19,7 +20,7 @@ public class AnaerobicMicroorganismsPaymentValidator implements PaymentValidator
     }
 
     @Override
-    public String validate(Player player, Payment payment) {
+    public String validate(Card card, Player player, Payment payment) {
         if (payment.getValue() != 2) {
             return "Invalid payment: Anaerobic Microorganisms can be paid only with a value of 2";
         }
