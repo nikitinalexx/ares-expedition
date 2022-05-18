@@ -28,7 +28,8 @@ public class PerformBlueActionState extends AbstractState {
             List<TurnType> turns = new ArrayList<>(List.of(
                     TurnType.PERFORM_BLUE_ACTION,
                     TurnType.SELL_CARDS,
-                    TurnType.STANDARD_PROJECT
+                    TurnType.STANDARD_PROJECT,
+                    TurnType.EXCHANGE_HEAT
             ));
 
             if (player.getPlants() < Constants.FOREST_PLANT_COST && player.getHeat() < Constants.TEMPERATURE_HEAT_COST) {

@@ -116,4 +116,9 @@ public class PlayController {
         turnService.standardProjectTurn(request.getPlayerUuid(), request.getType());
     }
 
+    @PostMapping("/turn/heat-exchange")
+    public void exchangeHeatRequest(@RequestBody ExchangeHeatRequest request) {
+        turnService.exchangeHeatRequest(request.getPlayerUuid(), request.getValue());
+    }
+
 }

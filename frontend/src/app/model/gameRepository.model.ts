@@ -62,6 +62,10 @@ export class GameRepository {
     return this.dataSource.standardProject(playerUuid, type);
   }
 
+  exchangeHeat(playerUuid: string, value: number): Observable<any> {
+    return this.dataSource.exchangeHeat(playerUuid, value);
+  }
+
   nextAction(playerUuid: string): Observable<ActionDto> {
     return this.dataSource.nextAction(playerUuid);
   }

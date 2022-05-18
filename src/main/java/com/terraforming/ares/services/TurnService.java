@@ -1,5 +1,6 @@
 package com.terraforming.ares.services;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 
 /**
@@ -27,6 +29,7 @@ public class TurnService {
     private final CardValidationService cardValidationService;
     private final TerraformingService terraformingService;
     private final StandardProjectService standardProjectService;
+    private final CardService cardService;
 
     public void chooseCorporationTurn(ChooseCorporationRequest chooseCorporationRequest) {
         String playerUuid = chooseCorporationRequest.getPlayerUuid();
@@ -107,6 +110,35 @@ public class TurnService {
             Player player = game.getPlayerByUuid(playerUuid);
 
             return standardProjectService.validateStandardProject(game, player, type);
+        });
+    }
+
+    public void exchangeHeatRequest(String playerUuid, int value) {
+        performSyncTurn(new ExchangeHeatTurn(playerUuid, value), playerUuid, game -> {
+            Player player = game.getPlayerByUuid(playerUuid);
+
+            if (value <= 0) {
+                return "Incorrect heat value provided";
+            }
+
+            if (player.getHeat() < value) {
+                return "Not enough heat to perform exchange";
+            }
+
+            if (player.getPlayed()
+                    .getCards()
+                    .stream()
+                    .map(cardService::getCard)
+                    .map(Card::getCardMetadata)
+                    .filter(Objects::nonNull)
+                    .map(CardMetadata::getCardAction)
+                    .filter(Objects::nonNull)
+                    .noneMatch(CardAction.HELION_CORPORATION::equals)
+            ) {
+                return "Only Helion may perform heat exchange";
+            }
+
+            return null;
         });
     }
 

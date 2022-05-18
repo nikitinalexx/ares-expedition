@@ -21,6 +21,7 @@ public enum TurnType {
     PLANT_FOREST(false),
     INCREASE_TEMPERATURE(false),
     STANDARD_PROJECT(false),
+    EXCHANGE_HEAT(false),
     DISCARD_CARDS(false, true);
 
     private final boolean isTerminal;

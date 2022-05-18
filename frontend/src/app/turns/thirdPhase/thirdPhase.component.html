@@ -159,6 +159,20 @@
     </div>
   </div>
 
+  <div *ngIf="canExchangeHeat()" class="form-check">
+    <input id="heatExchange" (click)="clearInput()" type="radio" class="form-check-input" value="exchangeHeat"
+           formControlName="turn" [checked]="this.parentForm.value?.turn === 'exchangeHeat'">
+    <label class="custom-control-label text-white" for="heatExchange">Exchange heat</label>
+
+    <div *ngIf="this.parentForm.value?.turn === 'exchangeHeat'" class="form-group">
+      <div class="form-row">
+        <div class="col-sm-1">
+          <input type="number" class="form-control form-control-sm" id="heatExchangeInput" formControlName="heatExchangeInput">
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div *ngIf="sellCardsTurn()" class="form-check">
     <app-sell-cards (click)="clearInput()" [game]="game" [parentForm]="parentForm"></app-sell-cards>
   </div>

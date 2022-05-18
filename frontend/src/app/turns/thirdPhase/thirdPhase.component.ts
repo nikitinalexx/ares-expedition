@@ -45,7 +45,8 @@ export class ThirdPhaseComponent implements OnInit {
       heatInput: [''],
       addOrUseMicrobe: ['addMicrobe'],
       gainPlantOrMicrobe: ['gainPlant'],
-      standardProject: ['ocean']
+      standardProject: ['ocean'],
+      heatExchangeInput: 0
     });
   }
 
@@ -196,6 +197,13 @@ export class ThirdPhaseComponent implements OnInit {
     }
   }
 
+  canExchangeHeat(): boolean {
+    return this.game.player.played.some(card => card.cardAction === CardAction.HELION_CORPORATION)
+      && this.game.player.heat > 0
+      && this.nextTurns
+      && this.nextTurns.find(turn => turn === TurnType[TurnType.EXCHANGE_HEAT])?.length > 0;
+  }
+
 
   submitForm(formGroup: FormGroup) {
     this.errorMessage = null;
@@ -204,7 +212,21 @@ export class ThirdPhaseComponent implements OnInit {
       console.log('form invalid');
       return false;
     } else {
-      if (formGroup.value.turn === 'standardProject') {
+      if (formGroup.value.turn === 'exchangeHeat') {
+        if (!this.parentForm.value.heatExchangeInput) {
+          this.errorMessage = 'Input amount of heat to exchange';
+          return;
+        }
+        if (this.parentForm.value.heatExchangeInput < 0 || this.parentForm.value.heatExchangeInput > this.game.player.heat) {
+          this.errorMessage = 'Invalid amount of heat';
+          return;
+        }
+        this.gameRepository.exchangeHeat(
+          this.game.player.playerUuid, this.parentForm.value.heatExchangeInput
+        ).subscribe(data => this.sendToParent(data), error => {
+          this.errorMessage = error;
+        });
+      } else if (formGroup.value.turn === 'standardProject') {
         if (!this.parentForm.value.standardProject) {
           this.errorMessage = 'Select standard project';
           return;

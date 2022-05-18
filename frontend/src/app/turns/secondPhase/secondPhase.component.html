@@ -29,6 +29,13 @@
           </div>
         </div>
 
+        <div *ngIf="canPayWithHeat()" class="form-row">
+          <div class="col-sm-1">
+            <label for="heatInput" class="text-white">Heat</label>
+            <input type="number" class="form-control form-control-sm" id="heatInput" formControlName="heatPrice">
+          </div>
+        </div>
+
         <div class="form-row" *ngIf="anaerobicMicroorganismsCardAction()">
           <div class="col-sm-1">
             <label for="anaerobicMicroorganisms" class="text-white">Anaerobic Microorganisms</label>

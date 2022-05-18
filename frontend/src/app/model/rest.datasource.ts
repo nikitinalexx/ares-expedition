@@ -118,6 +118,12 @@ export class RestDataSource {
     );
   }
 
+  exchangeHeat(playerUuid: string, value: number): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/turn/heat-exchange',
+      {'playerUuid': playerUuid, 'value': value}
+    );
+  }
+
 
   private sendRequest<T>(verb: string, url: string, body?: any)
     : Observable<T> {

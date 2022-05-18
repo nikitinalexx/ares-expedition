@@ -48,6 +48,7 @@ export class FirstPhaseComponent implements OnInit {
     this.parentForm = this.formBuilder.group({
       turn: ['', Validators.required],
       mcPrice: [''],
+      heatPrice: 0,
       onBuildMicrobeEffectChoice: ['chooseMicrobe'],
       onBuildAnimalEffectChoice: ['chooseAnimal'],
       anaerobicMicroorganisms: [false],
@@ -274,6 +275,11 @@ export class FirstPhaseComponent implements OnInit {
     return '';
   }
 
+  canPayWithHeat(): boolean {
+    return this.game.player.played.some(card => card.cardAction === CardAction.HELION_CORPORATION)
+      && this.game.player.heat > 0;
+  }
+
   expectsDecomposersInput(): boolean {
     return this.selectedProject.cardAction === CardAction[CardAction.DECOMPOSERS]
       ||
@@ -400,6 +406,9 @@ export class FirstPhaseComponent implements OnInit {
         }
 
         const payments = [new Payment(formGroup.value.mcPrice, PaymentType.MEGACREDITS)];
+        if (this.canPayWithHeat() && formGroup.value.heatPrice > 0) {
+          payments.push(new Payment(formGroup.value.heatPrice, PaymentType.HEAT));
+        }
 
         if (this.parentForm.value.anaerobicMicroorganisms) {
           payments.push(new Payment(2, PaymentType.ANAEROBIC_MICROORGANISMS));
