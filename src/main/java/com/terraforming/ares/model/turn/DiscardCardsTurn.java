@@ -1,7 +1,9 @@
 package com.terraforming.ares.model.turn;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
@@ -14,11 +16,12 @@ import java.util.List;
  */
 @AllArgsConstructor
 @Getter
+@NoArgsConstructor
 public class DiscardCardsTurn implements Turn {
-    private final String playerUuid;
-    private final List<Integer> cards;
-    private final int size;
-    private final boolean onlyFromSelectedCards;
+    private String playerUuid;
+    private List<Integer> cards;
+    private int size;
+    private boolean onlyFromSelectedCards;
 
     @Override
     public TurnType getType() {

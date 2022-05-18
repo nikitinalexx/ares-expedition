@@ -1,5 +1,7 @@
 package com.terraforming.ares.model.turn;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.terraforming.ares.model.payments.Payment;
 
 import java.util.List;
@@ -11,7 +13,11 @@ import java.util.Map;
  */
 public class BuildGreenProjectTurn extends GenericBuildProjectTurn {
 
-    public BuildGreenProjectTurn(String playerUuid, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
+    @JsonCreator
+    public BuildGreenProjectTurn(@JsonProperty String playerUuid,//todo check if json property is needed
+                                 @JsonProperty int projectId,
+                                 @JsonProperty List<Payment> payments,
+                                 @JsonProperty Map<Integer, List<Integer>> inputParams) {
         super(playerUuid, projectId, payments, inputParams);
     }
 

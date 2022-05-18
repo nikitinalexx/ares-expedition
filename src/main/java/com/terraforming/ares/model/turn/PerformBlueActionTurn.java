@@ -1,5 +1,8 @@
 package com.terraforming.ares.model.turn;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.Value;
 
 import java.util.List;
@@ -8,11 +11,13 @@ import java.util.List;
  * Created by oleksii.nikitin
  * Creation date 05.05.2022
  */
-@Value
+@NoArgsConstructor
+@AllArgsConstructor
+@Data
 public class PerformBlueActionTurn implements Turn {
-    String playerUuid;
-    int projectId;
-    List<Integer> inputParams;
+    private String playerUuid;
+    private int projectId;
+    private List<Integer> inputParams;
 
     @Override
     public TurnType getType() {

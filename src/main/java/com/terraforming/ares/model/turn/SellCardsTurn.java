@@ -2,6 +2,7 @@ package com.terraforming.ares.model.turn;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
@@ -11,6 +12,7 @@ import java.util.List;
  */
 @AllArgsConstructor
 @Getter
+@NoArgsConstructor
 public class SellCardsTurn implements Turn {
     private String playerUuid;
     private List<Integer> cards;

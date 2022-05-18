@@ -2,6 +2,7 @@ package com.terraforming.ares.model.turn;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 /**
  * Created by oleksii.nikitin
@@ -9,9 +10,10 @@ import lombok.Getter;
  */
 @AllArgsConstructor
 @Getter
+@NoArgsConstructor
 public class PhaseChoiceTurn implements Turn {
-    private final String playerUuid;
-    private final int phaseId;
+    private String playerUuid;
+    private int phaseId;
 
     @Override
     public TurnType getType() {

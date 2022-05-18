@@ -1,12 +1,16 @@
 package com.terraforming.ares.model.turn;
 
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * Created by oleksii.nikitin
  * Creation date 05.05.2022
  */
-@Value
+@NoArgsConstructor
+@AllArgsConstructor
+@Data
 public class DraftCardsTurn implements Turn {
     String playerUuid;
 

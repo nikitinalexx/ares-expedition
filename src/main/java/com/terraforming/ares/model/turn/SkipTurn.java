@@ -2,6 +2,7 @@ package com.terraforming.ares.model.turn;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 /**
  * Created by oleksii.nikitin
@@ -9,6 +10,7 @@ import lombok.Getter;
  */
 @AllArgsConstructor
 @Getter
+@NoArgsConstructor
 public class SkipTurn implements Turn {
     private String playerUuid;
 
