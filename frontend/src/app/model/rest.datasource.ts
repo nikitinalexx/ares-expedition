@@ -1,4 +1,4 @@
-import {Inject, Injectable, InjectionToken} from '@angular/core';
+import {Injectable} from '@angular/core';
 import {HttpClient, HttpErrorResponse, HttpHeaders} from '@angular/common/http';
 import {Observable, throwError} from 'rxjs';
 import {catchError} from 'rxjs/operators';
@@ -6,18 +6,19 @@ import {Card} from '../data/Card';
 import {NewGame} from '../data/NewGame';
 import {NewGameRequest} from '../data/NewGameRequest';
 import {Game} from '../data/Game';
-import {TurnType} from "../data/TurnType";
-import {ActionDto} from "../data/ActionDto";
-import {BuildProjectRequest} from "../data/BuildProjectRequest";
-import {BlueActionRequest} from "../data/BlueActionRequest";
-import {StandardProjectType} from "../data/StandardProjectType";
+import {TurnType} from '../data/TurnType';
+import {ActionDto} from '../data/ActionDto';
+import {BuildProjectRequest} from '../data/BuildProjectRequest';
+import {BlueActionRequest} from '../data/BlueActionRequest';
+import {StandardProjectType} from '../data/StandardProjectType';
+import {environment} from '../../environments/environment';
 
-export const REST_URL = new InjectionToken('rest_url');
 
 @Injectable()
 export class RestDataSource {
-  constructor(private http: HttpClient,
-              @Inject(REST_URL) private url: string) {
+  url = environment.baseUrl;
+
+  constructor(private http: HttpClient) {
   }
 
   getData(): Observable<Card[]> {
@@ -34,31 +35,31 @@ export class RestDataSource {
 
   pickCorporation(playerUuid: string, corporationId: number): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/game/player/corporation',
-      {'playerUuid': playerUuid, 'corporationId': corporationId}
+      {playerUuid: playerUuid, corporationId: corporationId}
     );
   }
 
   pickPhase(playerUuid: string, phaseId: number): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/game/player/phase',
-      {'playerUuid': playerUuid, 'phaseId': phaseId}
+      {playerUuid: playerUuid, phaseId: phaseId}
     );
   }
 
   skipTurn(playerUuid: string): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/game/player/skip',
-      {'playerUuid': playerUuid}
+      {playerUuid: playerUuid}
     );
   }
 
   pickCard(playerUuid: string): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/turn/pick-card',
-      {'playerUuid': playerUuid}
+      {playerUuid: playerUuid}
     );
   }
 
   sellCards(playerUuid: string, cards: number[]): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/game/player/sell',
-      {'playerUuid': playerUuid, 'cards': cards}
+      {playerUuid: playerUuid, cards: cards}
     );
   }
 
@@ -84,43 +85,43 @@ export class RestDataSource {
 
   discardCards(playerUuid: string, cards: number[]): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/turn/cards/discard',
-      {'playerUuid': playerUuid, 'cards': cards}
+      {playerUuid: playerUuid, cards: cards}
     );
   }
 
   collectIncome(playerUuid: string): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/turn/collect-income',
-      {'playerUuid': playerUuid}
+      {playerUuid: playerUuid}
     );
   }
 
   draftCards(playerUuid: string): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/turn/draft-cards',
-      {'playerUuid': playerUuid}
+      {playerUuid: playerUuid}
     );
   }
 
   plantForest(playerUuid: string): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/turn/forest',
-      {'playerUuid': playerUuid}
+      {playerUuid: playerUuid}
     );
   }
 
   increaseTemperature(playerUuid: string): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/turn/temperature',
-      {'playerUuid': playerUuid}
+      {playerUuid: playerUuid}
     );
   }
 
   standardProject(playerUuid: string, type: StandardProjectType): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/turn/standard',
-      {'playerUuid': playerUuid, 'type': type.valueOf()}
+      {playerUuid: playerUuid, type: type.valueOf()}
     );
   }
 
   exchangeHeat(playerUuid: string, value: number): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/turn/heat-exchange',
-      {'playerUuid': playerUuid, 'value': value}
+      {playerUuid: playerUuid, value: value}
     );
   }
 
