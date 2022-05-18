@@ -63,17 +63,18 @@
   <div *ngIf="game?.phaseTemperature && game.phaseTemperature !== game.temperature"
        class="tracker tracker-transparent temperature_{{game? game.phaseTemperature : 0}}"></div>
 
-  <div *ngIf="game?.phaseOxygen && game.phaseOxygen !== game.oxygen"
+  <div *ngIf="game?.phaseOxygen !== undefined && game?.phaseOxygen !== game?.oxygen"
        class="tracker tracker-transparent oxygen_{{game ? game.phaseOxygen : 0}}"></div>
 
-  <div *ngIf="game?.phaseOceans && game.phaseOceans !== game.oceans.length && game.phase === 2"
+  <div *ngIf="game?.phaseOceans !== undefined && game?.phaseOceans !== game?.oceans.length
+      && game?.phase === 2"
        class="phase-ocean-tracker text-white"
   >
     {{game.oceans.length}}({{game.phaseOceans}}) <br/>
     <span style="font-size: 10px">(at phase start)</span>
   </div>
 
-  <div *ngFor="let ocean of game.oceans; let i = index" class="ocean-tracker ocean_{{i + 1}}">
+  <div *ngFor="let ocean of game?.oceans; let i = index" class="ocean-tracker ocean_{{i + 1}}">
     <div style="margin-top: 8px;"></div>
     <div *ngFor="let item of [].constructor(ocean.plants); let i = index" class="resource plant"></div>
     <div *ngIf="ocean.mc" class="resource money">{{ocean.mc}}</div>
