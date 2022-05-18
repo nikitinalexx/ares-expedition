@@ -140,6 +140,17 @@
   background-size: contain;
 }
 
+.phase-ocean-tracker {
+  position: absolute;
+  font-size: 15px;
+  left: 287px;
+  bottom: 16px;
+}
+
+.tracker-transparent {
+  opacity: 0.7;
+}
+
 .ocean-tracker {
   position: absolute;
   width: 86px;

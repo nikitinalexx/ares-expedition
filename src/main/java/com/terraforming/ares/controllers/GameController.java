@@ -54,12 +54,17 @@ public class GameController {
     public GameDto getGameByPlayerUuid(@PathVariable String playerUuid) {
         MarsGame game = gameService.getGame(playerUuid);
 
+        Planet phasePlanet = game.getPlanetAtTheStartOfThePhase();
+
         return GameDto.builder()
                 .phase(game.getCurrentPhase())
                 .player(buildCurrentPlayer(game.getPlayerByUuid(playerUuid)))
                 .temperature(game.getPlanet().getTemperature())
+                .phaseTemperature(phasePlanet != null ? phasePlanet.getTemperature() : null)
                 .oxygen(game.getPlanet().getOxygen())
+                .phaseOxygen(phasePlanet != null ? phasePlanet.getOxygen() : null)
                 .oceans(game.getPlanet().getRevealedOceans().stream().map(OceanDto::of).collect(Collectors.toList()))
+                .phaseOceans(phasePlanet != null ? phasePlanet.getRevealedOceans().size() : null)
                 .otherPlayers(Collections.emptyList())//TODO
                 .build();
     }

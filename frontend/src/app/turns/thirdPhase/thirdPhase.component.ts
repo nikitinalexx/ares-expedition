@@ -62,7 +62,7 @@ export class ThirdPhaseComponent implements OnInit {
   }
 
   blueActionTurn(): boolean {
-    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.PERFORM_BLUE_ACTION])?.length > 0;
+    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.PERFORM_BLUE_ACTION])?.length > 0 && this.getActiveCards()?.length > 0;
   }
 
   plantForestTurn(): boolean {

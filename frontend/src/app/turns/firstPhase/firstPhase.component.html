@@ -176,7 +176,7 @@
   <div *ngIf="skipTurn()" class="form-check">
     <input id="skipTurn" (click)="resetAllInputs()" type="radio" class="form-check-input" value="skipTurn"
            formControlName="turn" required [checked]="this.parentForm.value?.turn === 'skipTurn'">
-    <label class="custom-control-label text-white" for="skipTurn">Skip turn</label>
+    <label class="custom-control-label text-white" for="skipTurn">Finish turn</label>
   </div>
 
   <div *ngIf="isSubmitted && parentForm.invalid">

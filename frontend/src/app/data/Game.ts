@@ -7,6 +7,9 @@ export class Game {
               temperature: number,
               oxygen: number,
               oceans: Ocean[],
+              phaseTemperature?: number,
+              phaseOxygen?: number,
+              phaseOceans?: number,
               otherPlayers?: Player[]) {
   }
 
@@ -16,4 +19,7 @@ export class Game {
   temperature: number;
   oxygen: number;
   oceans: Ocean[];
+  phaseTemperature?: number;
+  phaseOxygen?: number;
+  phaseOceans?: number;
 }
