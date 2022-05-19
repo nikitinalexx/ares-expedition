@@ -29,7 +29,7 @@ export class EndRoundComponent implements OnInit {
 
   ngOnInit() {
     this.parentForm = this.formBuilder.group({
-      turn: ['', Validators.required]
+      turn: ['sellCards', Validators.required]
     });
   }
 
@@ -42,7 +42,9 @@ export class EndRoundComponent implements OnInit {
   }
 
   sellCardsTurn(): boolean {
-    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.SELL_CARDS])?.length > 0;
+    return this.nextTurns && this.nextTurns.find(
+      turn => turn === TurnType.SELL_CARDS || turn === TurnType.SELL_CARDS_LAST_ROUND
+    )?.length > 0;
   }
 
   submitForm(formGroup: FormGroup) {

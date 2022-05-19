@@ -57,6 +57,11 @@ public class PlayController {
         turnService.sellCards(sellCardsRequest.getPlayerUuid(), sellCardsRequest.getCards());
     }
 
+    @PostMapping("/game/player/sell/last")
+    public void sellCardsLastRoundTurn(@RequestBody SellCardsRequest sellCardsRequest) {
+        turnService.sellCardsLastRoundTurn(sellCardsRequest.getPlayerUuid(), sellCardsRequest.getCards());
+    }
+
     @PostMapping("/turn/build/green")
     public void buildGreenProject(@RequestBody BuildProjectRequest buildProjectRequest) {
         turnService.buildGreenProjectCard(

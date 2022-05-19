@@ -158,6 +158,26 @@ public class TurnService {
                 });
     }
 
+    public void sellCardsLastRoundTurn(String playerUuid, List<Integer> cards) {
+        performAsyncTurn(new SellCardsLastRoundTurn(playerUuid, cards),
+                playerUuid,
+                game -> {
+                    Player player = game.getPlayerByUuid(playerUuid);
+
+                    if (!player.getHand().getCards().containsAll(cards)) {
+                        return "Can't sell cards that you don't have";
+                    }
+
+                    if (player.getHand().size() - cards.size() > Constants.MAX_HAND_SIZE_LAST_ROUND) {
+                        return "You need to discard at least "
+                                + (player.getHand().size() - Constants.MAX_HAND_SIZE_LAST_ROUND)
+                                + " cards";
+                    }
+
+                    return null;
+                });
+    }
+
     public TurnResponse discardCards(String playerUuid, List<Integer> cards) {
         return performSyncTurn(
                 new DiscardCardsTurn(playerUuid, cards, cards.size(), false),

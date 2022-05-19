@@ -24,9 +24,9 @@ public class SellExtraCardsState extends AbstractState {
         if (player.getNextTurn() != null) {
             return Collections.emptyList();
         } else if (player.getHand().size() > 10) {
-            return Collections.singletonList(TurnType.SELL_CARDS);
+            return Collections.singletonList(TurnType.SELL_CARDS_LAST_ROUND);
         } else {
-            return List.of(TurnType.SKIP_TURN);
+            return List.of();
         }
     }
 

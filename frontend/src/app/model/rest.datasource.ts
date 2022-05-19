@@ -74,6 +74,12 @@ export class RestDataSource {
     );
   }
 
+  sellCardsFinalTurn(playerUuid: string, cards: number[]): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/game/player/sell/last',
+      {playerUuid: playerUuid, cards: cards}
+    );
+  }
+
   nextAction(playerUuid: string): Observable<ActionDto> {
     return this.sendRequest<ActionDto>('GET', this.url + '/action/next/' + playerUuid);
   }

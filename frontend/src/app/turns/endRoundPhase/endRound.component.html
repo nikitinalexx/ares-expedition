@@ -10,7 +10,7 @@
 
   <div *ngIf="sellCardsTurn()" class="form-check">
     <h3 class="text-white">Max 10 cards can be left in hand(Sell {{game.player.hand.length - 10}})</h3>
-    <app-sell-cards [game]="game" [parentForm]="parentForm"></app-sell-cards>
+    <app-sell-cards [game]="game" [parentForm]="parentForm" [finalTurn]="true"></app-sell-cards>
   </div>
 
   <div *ngIf="skipTurn()" class="form-check">

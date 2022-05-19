@@ -15,6 +15,7 @@ public class Constants {
     public static final int OCEAN_MC_COST = 15;
 
     public static final int DEFAULT_START_HAND_SIZE = 10;
+    public static final int MAX_HAND_SIZE_LAST_ROUND = 10;
 
 
     public static final int ADAPTATION_TECHNOLOGY_CARD_ID = 1;

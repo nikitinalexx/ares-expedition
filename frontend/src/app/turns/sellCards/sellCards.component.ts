@@ -9,12 +9,15 @@ import {FormGroup} from '@angular/forms';
   templateUrl: './sellCards.component.html'
 })
 export class SellCardsComponent {
+  public errorMessage: string;
   cardsToCell: number[];
 
   @Input()
   game: Game;
   @Input()
   parentForm: FormGroup;
+  @Input()
+  finalTurn: boolean;
 
   constructor(private gameRepository: GameRepository) {
 
@@ -50,10 +53,12 @@ export class SellCardsComponent {
   }
 
   sellCards(game: Game) {
-    this.gameRepository.sellCards(game.player.playerUuid, this.cardsToCell).subscribe(
+    const sellCardsFunc = this.finalTurn ? this.gameRepository.sellCardsFinalTurn : this.gameRepository.sellCards;
+    sellCardsFunc(game.player.playerUuid, this.cardsToCell).subscribe(
       data => {
         this.cardsToCell = [];
-      }
+      },
+      error => { this.errorMessage = error; }
     );
   }
 

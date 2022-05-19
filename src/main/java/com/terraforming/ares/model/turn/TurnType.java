@@ -12,6 +12,7 @@ public enum TurnType {
     PICK_PHASE(true),
     BUILD_GREEN_PROJECT(true),
     SELL_CARDS(false),
+    SELL_CARDS_LAST_ROUND(true),
     SKIP_TURN(true),
     BUILD_BLUE_RED_PROJECT(true),
     PERFORM_BLUE_ACTION(false),
