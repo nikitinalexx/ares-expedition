@@ -54,6 +54,11 @@ public class RecycledDetritus implements BlueCard {
     }
 
     @Override
+    public boolean onBuiltEffectApplicableToOther() {
+        return true;
+    }
+
+    @Override
     public int getWinningPoints() {
         return 1;
     }

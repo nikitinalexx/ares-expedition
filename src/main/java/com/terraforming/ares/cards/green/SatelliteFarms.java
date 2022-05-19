@@ -16,11 +16,11 @@ import java.util.Map;
  */
 @RequiredArgsConstructor
 @Getter
-public class SattelliteFarms implements BaseExpansionGreenCard {
+public class SatelliteFarms implements BaseExpansionGreenCard {
     private final int id;
     private final CardMetadata cardMetadata;
 
-    public SattelliteFarms(int id) {
+    public SatelliteFarms(int id) {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
                 .name("Sattellite Farms")

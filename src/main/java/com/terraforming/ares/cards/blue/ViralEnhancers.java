@@ -73,7 +73,6 @@ public class ViralEnhancers implements BlueCard {
 
     @Override
     public boolean onBuiltEffectApplicableToItself() {
-        //TODO test
         return true;
     }
 

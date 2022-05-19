@@ -44,6 +44,11 @@ public class AntiGravityTechnology implements BlueCard {
     }
 
     @Override
+    public boolean onBuiltEffectApplicableToOther() {
+        return true;
+    }
+
+    @Override
     public List<Tag> getTagRequirements() {
         return IntStream.range(0, 5).mapToObj(i -> Tag.SCIENCE).collect(Collectors.toList());
     }

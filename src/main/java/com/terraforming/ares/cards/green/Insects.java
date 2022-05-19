@@ -50,8 +50,6 @@ public class Insects implements BaseExpansionGreenCard {
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
 
-        //TODO consider corporations with PLANT tag
-
         int plantTagsCount = (int) player.getPlayed().getCards().stream().map(marsContext.getCardService()::getCard)
                 .flatMap(card -> card.getTags().stream())
                 .filter(Tag.PLANT::equals)

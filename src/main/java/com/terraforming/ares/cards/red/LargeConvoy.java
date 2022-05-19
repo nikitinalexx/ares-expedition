@@ -64,11 +64,6 @@ public class LargeConvoy implements BaseExpansionRedCard {
     }
 
     @Override
-    public boolean onBuiltEffectApplicableToOther() {
-        return false;
-    }
-
-    @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         TerraformingService terraformingService = marsContext.getTerraformingService();
 

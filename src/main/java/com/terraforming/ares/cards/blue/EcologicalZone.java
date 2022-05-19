@@ -43,13 +43,23 @@ public class EcologicalZone implements BlueCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        marsContext.getPlayer().getCardResourcesCount().put(EcologicalZone.class, 2);
+        marsContext.getPlayer().getCardResourcesCount().put(EcologicalZone.class, 0);
         return null;
     }
 
     @Override
     public CardCollectableResource getCollectableResource() {
         return CardCollectableResource.ANIMAL;
+    }
+
+    @Override
+    public boolean onBuiltEffectApplicableToItself() {
+        return true;
+    }
+
+    @Override
+    public boolean onBuiltEffectApplicableToOther() {
+        return true;
     }
 
     @Override

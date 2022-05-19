@@ -48,11 +48,6 @@ public class CeosFavoriteProject implements BaseExpansionRedCard {
     }
 
     @Override
-    public boolean onBuiltEffectApplicableToOther() {
-        return false;
-    }
-
-    @Override
     public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
         List<Integer> cardInput = inputParams.get(InputFlag.CEOS_FAVORITE_PUT_RESOURCES.getId());
 

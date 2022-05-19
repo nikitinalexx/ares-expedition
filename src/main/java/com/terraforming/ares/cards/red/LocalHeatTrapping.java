@@ -59,11 +59,6 @@ public class LocalHeatTrapping implements BaseExpansionRedCard {
     }
 
     @Override
-    public boolean onBuiltEffectApplicableToOther() {
-        return false;
-    }
-
-    @Override
     public int heatSpendOnBuild() {
         return 3;
     }

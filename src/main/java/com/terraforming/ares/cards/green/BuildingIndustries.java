@@ -42,18 +42,9 @@ public class BuildingIndustries implements BaseExpansionGreenCard {
         Player player = marsContext.getPlayer();
 
         player.setSteelIncome(player.getSteelIncome() + 2);
+        player.setHeat(player.getHeat() - 4);
 
         return null;
-    }
-
-    @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        player.setHeat(player.getHeat() - 4);
-    }
-
-    @Override
-    public boolean onBuiltEffectApplicableToItself() {
-        return true;
     }
 
     @Override

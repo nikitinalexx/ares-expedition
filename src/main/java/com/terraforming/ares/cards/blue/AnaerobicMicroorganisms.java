@@ -42,7 +42,7 @@ public class AnaerobicMicroorganisms implements BlueCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        marsContext.getPlayer().getCardResourcesCount().put(AnaerobicMicroorganisms.class, 1);
+        marsContext.getPlayer().getCardResourcesCount().put(AnaerobicMicroorganisms.class, 0);
         return null;
     }
 
@@ -54,6 +54,16 @@ public class AnaerobicMicroorganisms implements BlueCard {
     @Override
     public Expansion getExpansion() {
         return Expansion.BASE;
+    }
+
+    @Override
+    public boolean onBuiltEffectApplicableToItself() {
+        return true;
+    }
+
+    @Override
+    public boolean onBuiltEffectApplicableToOther() {
+        return true;
     }
 
     @Override

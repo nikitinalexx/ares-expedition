@@ -44,20 +44,11 @@ public class TropicalResort implements BaseExpansionGreenCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        player.setHeat(player.getHeat() - 5);
-    }
-
-    @Override
-    public boolean onBuiltEffectApplicableToItself() {
-        return true;
-    }
-
-    @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
 
         player.setMcIncome(player.getMcIncome() + 4);
+        player.setHeat(player.getHeat() - 5);
 
         return null;
     }

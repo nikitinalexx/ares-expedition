@@ -43,18 +43,9 @@ public class Moss implements BaseExpansionGreenCard {
         Player player = marsContext.getPlayer();
 
         player.setPlantsIncome(player.getPlantsIncome() + 1);
+        player.setPlants(player.getPlants() - 1);
 
         return null;
-    }
-
-    @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        player.setPlants(player.getPlants() - 1);
-    }
-
-    @Override
-    public boolean onBuiltEffectApplicableToItself() {
-        return true;
     }
 
     @Override

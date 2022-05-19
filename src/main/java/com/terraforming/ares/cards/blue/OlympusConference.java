@@ -55,7 +55,6 @@ public class OlympusConference implements BlueCard {
 
     @Override
     public boolean onBuiltEffectApplicableToItself() {
-        //TODO test self trigger
         return true;
     }
 

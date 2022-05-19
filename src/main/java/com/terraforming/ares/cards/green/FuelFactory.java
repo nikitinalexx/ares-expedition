@@ -46,6 +46,7 @@ public class FuelFactory implements BaseExpansionGreenCard {
 
         player.setMcIncome(player.getMcIncome() + 1);
         player.setTitaniumIncome(player.getTitaniumIncome() + 1);
+        player.setHeat(player.getHeat() - 3);
 
         return null;
     }
@@ -53,16 +54,6 @@ public class FuelFactory implements BaseExpansionGreenCard {
     @Override
     public int heatSpendOnBuild() {
         return 3;
-    }
-
-    @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        player.setHeat(player.getHeat() - 3);
-    }
-
-    @Override
-    public boolean onBuiltEffectApplicableToItself() {
-        return true;
     }
 
     @Override

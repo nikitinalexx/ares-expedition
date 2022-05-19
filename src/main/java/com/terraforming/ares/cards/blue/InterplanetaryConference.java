@@ -41,6 +41,16 @@ public class InterplanetaryConference implements BlueCard {
     }
 
     @Override
+    public boolean onBuiltEffectApplicableToItself() {
+        return false;
+    }
+
+    @Override
+    public boolean onBuiltEffectApplicableToOther() {
+        return true;
+    }
+
+    @Override
     public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
         int cardsToGiveCount = 0;
 

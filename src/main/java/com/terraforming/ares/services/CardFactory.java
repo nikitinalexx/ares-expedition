@@ -215,7 +215,7 @@ public class CardFactory {
                 new ProtectedValley(177),
                 new QuantumExtractor(178),
                 new RadSuits(179),
-                new SattelliteFarms(180),
+                new SatelliteFarms(180),
                 new Satellites(181),
                 new SlashAndBurnAgriculture(182),
                 new Smelting(183),

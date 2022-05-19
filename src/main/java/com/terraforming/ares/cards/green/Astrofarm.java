@@ -72,11 +72,6 @@ public class Astrofarm implements BaseExpansionGreenCard {
     }
 
     @Override
-    public boolean onBuiltEffectApplicableToOther() {
-        return false;
-    }
-
-    @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
 

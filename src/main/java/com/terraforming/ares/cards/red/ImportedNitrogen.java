@@ -63,11 +63,6 @@ public class ImportedNitrogen implements BaseExpansionRedCard {
     }
 
     @Override
-    public boolean onBuiltEffectApplicableToOther() {
-        return false;
-    }
-
-    @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
         player.setTerraformingRating(player.getTerraformingRating() + 1);

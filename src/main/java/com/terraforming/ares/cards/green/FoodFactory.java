@@ -38,22 +38,13 @@ public class FoodFactory implements BaseExpansionGreenCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        player.setPlants(player.getPlants() - 2);
-    }
-
-    @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
 
         player.setMcIncome(player.getMcIncome() + 4);
+        player.setPlants(player.getPlants() - 2);
 
         return null;
-    }
-
-    @Override
-    public boolean onBuiltEffectApplicableToItself() {
-        return true;
     }
 
     @Override
