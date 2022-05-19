@@ -1,5 +1,6 @@
 package com.terraforming.ares.model.payments;
 
+import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
@@ -9,6 +10,7 @@ import lombok.Setter;
  */
 @RequiredArgsConstructor
 @Setter
+@EqualsAndHashCode
 public abstract class GenericPayment implements Payment{
     private final int value;
 

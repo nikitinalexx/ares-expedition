@@ -12,6 +12,7 @@ import {BuildProjectRequest} from '../data/BuildProjectRequest';
 import {BlueActionRequest} from '../data/BlueActionRequest';
 import {StandardProjectType} from '../data/StandardProjectType';
 import {environment} from '../../environments/environment';
+import {GameShort} from "../data/GameShort";
 
 
 @Injectable()
@@ -31,6 +32,10 @@ export class RestDataSource {
 
   getGame(playerUuid: string): Observable<Game> {
     return this.sendRequest<Game>('GET', this.url + '/game/player/' + playerUuid);
+  }
+
+  getShortGame(playerUuid: string): Observable<GameShort> {
+    return this.sendRequest<GameShort>('GET', this.url + '/game/short/player/' + playerUuid);
   }
 
   pickCorporation(playerUuid: string, corporationId: number): Observable<any> {

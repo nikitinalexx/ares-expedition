@@ -3,6 +3,7 @@ package com.terraforming.ares.services;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardCollectableResource;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.winPoints.WinPointsInfo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -47,9 +48,15 @@ public class WinPointsService {
                         card -> {
                             WinPointsInfo winPointsInfo = card.getCardMetadata().getWinPointsInfo();
 
-                            int resources = winPointsInfo.getType() == CardCollectableResource.FOREST
-                                    ? player.getForests()
-                                    : player.getCardResourcesCount().get(card.getClass());
+                            int resources = (winPointsInfo.getType() == card.getCollectableResource())
+                                    ? player.getCardResourcesCount().get(card.getClass())
+                                    : 0;
+
+                            if (winPointsInfo.getType() == CardCollectableResource.FOREST) {
+                                resources = player.getForests();
+                            } else if (winPointsInfo.getType() == CardCollectableResource.JUPITER) {
+                                resources = cardService.countPlayedTags(player, Tag.JUPITER);
+                            }
 
                             if (winPointsInfo.getPoints() >= winPointsInfo.getResources()) {
                                 return resources * winPointsInfo.getPoints() / winPointsInfo.getResources();

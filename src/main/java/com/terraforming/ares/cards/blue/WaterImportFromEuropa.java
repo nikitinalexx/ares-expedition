@@ -2,8 +2,10 @@ package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.CardAction;
+import com.terraforming.ares.model.CardCollectableResource;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.model.winPoints.WinPointsInfo;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -25,6 +27,12 @@ public class WaterImportFromEuropa implements BlueCard {
                 .name("Water Import from Europa")
                 .description("Spend 12 MC to flip an ocean tile. Reduce this by 1 MC per titanium income you have. 1 VP per Jupiter you have.")
                 .cardAction(CardAction.WATER_IMPORT)
+                .winPointsInfo(WinPointsInfo.builder()
+                        .type(CardCollectableResource.JUPITER)
+                        .resources(1)
+                        .points(1)
+                        .build()
+                )
                 .build();
     }
 

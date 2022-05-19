@@ -10,5 +10,6 @@ public enum CardCollectableResource {
     ANIMAL,
     SCIENCE,
     FOREST,
+    JUPITER,
     ANY
 }

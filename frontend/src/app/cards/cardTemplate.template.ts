@@ -21,6 +21,8 @@ export class CardTemplateComponent {
   game: Game;
   @Input()
   showDiscount: boolean;
+  @Input()
+  showResources: boolean;
 
   constructor(private discountService: DiscountComponent) {
   }
@@ -555,6 +557,10 @@ export class CardTemplateComponent {
 
   actionFuelFactory(card: Card): boolean {
     return card.cardAction === CardAction.FUEL_FACTORY;
+  }
+
+  actionFoodFactory(card: Card): boolean {
+    return card.cardAction === CardAction.FOOD_FACTORY;
   }
 
   actionTallStation(card: Card): boolean {

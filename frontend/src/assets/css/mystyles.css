@@ -716,6 +716,10 @@ li.events::before {
   background-image: url(../images/resources/science.png);
 }
 
+.jupiter {
+  background-image: url("../images/resources/jupiter.png");
+}
+
 .forest {
   background-image: url(../images/tiles/greenery.png);
 }

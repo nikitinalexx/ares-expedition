@@ -3,7 +3,6 @@ package com.terraforming.ares.model.turn;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Value;
 
 import java.util.List;
 

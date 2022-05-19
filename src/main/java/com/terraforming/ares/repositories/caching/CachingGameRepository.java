@@ -21,4 +21,6 @@ public interface CachingGameRepository {
 
     <T> GameUpdateResult<T> updateMarsGame(long id, Function<MarsGame, String> stateChecker, Function<MarsGame, T> updater);
 
+    int evictGameCache();
+
 }

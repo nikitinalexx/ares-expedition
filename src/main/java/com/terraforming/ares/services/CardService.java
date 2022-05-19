@@ -4,6 +4,7 @@ import com.terraforming.ares.dto.CardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
 import com.terraforming.ares.model.*;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -60,6 +61,20 @@ public class CardService {
         }
 
         return resultBuilder.build();
+    }
+
+    public int countPlayedTags(Player player, Tag tag) {
+        if (player == null || player.getPlayed() == null || CollectionUtils.isEmpty(player.getPlayed().getCards())) {
+            return 0;
+        }
+
+        return (int) player.getPlayed()
+                .getCards()
+                .stream()
+                .map(this::getCard)
+                .flatMap(card -> card.getTags().stream())
+                .filter(tag::equals)
+                .count();
     }
 
 }

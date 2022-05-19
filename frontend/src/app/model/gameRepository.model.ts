@@ -7,6 +7,7 @@ import {ActionDto} from '../data/ActionDto';
 import {BuildProjectRequest} from "../data/BuildProjectRequest";
 import {BlueActionRequest} from "../data/BlueActionRequest";
 import {StandardProjectType} from "../data/StandardProjectType";
+import {GameShort} from "../data/GameShort";
 
 @Injectable()
 export class GameRepository {
@@ -16,6 +17,10 @@ export class GameRepository {
 
   getGame(playerUuid: string): Observable<Game> {
     return this.dataSource.getGame(playerUuid);
+  }
+
+  getShortGame(playerUuid: string): Observable<GameShort> {
+    return this.dataSource.getShortGame(playerUuid);
   }
 
   pickCorporation(playerUuid: string, corporationId: number): Observable<any> {

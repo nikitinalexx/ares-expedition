@@ -29,6 +29,7 @@ public class FoodFactory implements BaseExpansionGreenCard {
                 .description("Requires you to spend 2 plants. During the production phase, this produces 4 MC.")
                 .incomes(List.of(Gain.of(GainType.MC, 4)))
                 .bonuses(List.of(Gain.of(GainType.PLANT, -2)))
+                .cardAction(CardAction.FOOD_FACTORY)
                 .build();
     }
 

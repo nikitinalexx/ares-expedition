@@ -8,7 +8,6 @@ import com.terraforming.ares.model.StateType;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -47,10 +46,7 @@ public class MarsGame {
         playerUuidToPlayer = Stream.generate(
                 () -> Player.builder()
                         .uuid(UUID.randomUUID().toString())
-                        .hand(Deck.builder()
-                                .cards(new LinkedList<>(List.of(
-                                        5, 16
-                                ))).build())
+                        .hand(projectsDeck.dealCardsDeck(playerHandSize))
                         .corporations(corporationsDeck.dealCardsDeck(INITIAL_CORPORATIONS_SIZE))
                         .played(Deck.builder().build())
                         .build()
@@ -106,7 +102,7 @@ public class MarsGame {
     }
 
     public boolean timeToSave() {
-        return this.updateCounter % 10 == 0;
+        return gameEndCondition() || this.updateCounter % 10 == 0;
     }
 
     @JsonIgnore

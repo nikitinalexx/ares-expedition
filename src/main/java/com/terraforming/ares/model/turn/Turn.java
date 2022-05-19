@@ -1,5 +1,6 @@
 package com.terraforming.ares.model.turn;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
@@ -32,6 +33,7 @@ public interface Turn {
 
     String getPlayerUuid();
 
+    @JsonIgnore
     TurnType getType();
 
 }

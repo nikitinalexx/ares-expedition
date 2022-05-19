@@ -143,7 +143,7 @@
 <div class="card-container">
   <ul class="myUL">
     <li *ngFor="let card of getPlayerPlayedCards();" class="filterDiv automated display">
-      <app-card-template [card]="card" [game]="game"></app-card-template>
+      <app-card-template [card]="card" [game]="game" [showResources]="true"></app-card-template>
     </li>
   </ul>
 </div>

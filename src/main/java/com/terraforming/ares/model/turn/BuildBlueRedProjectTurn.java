@@ -14,10 +14,10 @@ import java.util.Map;
 public class BuildBlueRedProjectTurn extends GenericBuildProjectTurn {
 
     @JsonCreator
-    public BuildBlueRedProjectTurn(@JsonProperty String playerUuid,
-                                   @JsonProperty int projectId,
-                                   @JsonProperty List<Payment> payments,
-                                   @JsonProperty Map<Integer, List<Integer>> inputParams) {
+    public BuildBlueRedProjectTurn(@JsonProperty("playerUuid") String playerUuid,
+                                   @JsonProperty("projectId") int projectId,
+                                   @JsonProperty("payments") List<Payment> payments,
+                                   @JsonProperty("inputParams") Map<Integer, List<Integer>> inputParams) {
         super(playerUuid, projectId, payments, inputParams);
     }
 

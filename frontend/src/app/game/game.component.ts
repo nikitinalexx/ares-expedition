@@ -19,6 +19,7 @@ export class GameComponent {
   public game: Game;
   public nextTurns: TurnType[];
   private subscription: Subscription;
+  private thirdPhaseSubscription: Subscription;
 
   constructor(private route: ActivatedRoute, private model: GameRepository) {
     this.route.params.subscribe(playerUuid => {
@@ -114,6 +115,17 @@ export class GameComponent {
     return result;
   }
 
+  updateGameShort() {
+    this.model.getShortGame(this.playerUuid).subscribe(shortGame => {
+      this.game.temperature = shortGame.temperature;
+      this.game.phaseTemperature = shortGame.phaseTemperature;
+      this.game.phaseOxygen = shortGame.phaseOxygen;
+      this.game.oxygen = shortGame.oxygen;
+      this.game.oceans = shortGame.oceans;
+      this.game.phaseOceans = shortGame.phaseOceans;
+    });
+  }
+
   identifyNextAction() {
     this.model.nextAction(this.playerUuid).subscribe(data => {
       const previousAction = this.nextAction;
@@ -130,6 +142,13 @@ export class GameComponent {
           this.nextTurns = turns;
           this.model.getGame(this.playerUuid).subscribe(game => {
             this.game = game;
+            if (this.game.phase === 3 && (!this.thirdPhaseSubscription || this.thirdPhaseSubscription.closed)) {
+              this.thirdPhaseSubscription = timer(2000, 2000).subscribe(
+                val => this.updateGameShort()
+              );
+            } else if (this.game.phase !== 3 && this.thirdPhaseSubscription) {
+              this.thirdPhaseSubscription.unsubscribe();
+            }
           });
         });
         if (this.subscription) {

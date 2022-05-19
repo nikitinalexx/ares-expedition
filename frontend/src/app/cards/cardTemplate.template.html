@@ -140,7 +140,7 @@
     <div class="{{card.winPointsInfo.type.toString().toLowerCase()}} resource"></div>
   </div>
 
-  <div *ngIf="game?.player && card.cardResource" class="points-player">
+  <div *ngIf="game?.player && card.cardResource && showResources" class="points-player">
     <span class="points-counter">{{game.player.cardResources[card.id]}}</span>
     <span class="{{card.cardResource.toString().toLowerCase()}} resource player-resource"></span>
   </div>
@@ -692,6 +692,11 @@
   <div *ngIf="actionFuelFactory(card)">
     -3
     <div class="resource heat" style="margin-right:10px;"></div>
+  </div>
+
+  <div *ngIf="actionFoodFactory(card)">
+    -2
+    <div class="resource plant"></div>
   </div>
 
   <div *ngIf="actionTallStation(card)">

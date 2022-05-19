@@ -3,7 +3,7 @@
   {{errorMessage}}
 </div>
 
-<h1>Pick turn</h1>
+<h1 class="text-white">Action phase turn</h1>
 
 <!-- Form starts -->
 <form [formGroup]="parentForm" (submit)="submitForm(parentForm)" novalidate>
@@ -43,7 +43,7 @@
       <ul class="myUL">
         <li *ngFor="let card of getPlayerHandForAction();" (click)="addCardToActionTargetCards(card)"
             [ngClass]="getActionTargetCardClass(card)" class="filterDiv automated display">
-          <app-card-template [card]="card"></app-card-template>
+          <app-card-template [card]="card" [game]="game" [showResources]="true"></app-card-template>
         </li>
       </ul>
     </div>

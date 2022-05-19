@@ -189,7 +189,9 @@ public class CardValidationService {
         for (Integer card : cards) {
             Card builtProject = cardService.getCard(card);
 
-            tagRequirements.removeAll(builtProject.getTags());
+            for (Tag tag : builtProject.getTags()) {
+                tagRequirements.remove(tag);
+            }
 
             if (tagRequirements.isEmpty()) {
                 return Optional.empty();

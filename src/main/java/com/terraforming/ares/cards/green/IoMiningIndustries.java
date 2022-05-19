@@ -4,6 +4,7 @@ import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
+import com.terraforming.ares.model.winPoints.WinPointsInfo;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -29,6 +30,12 @@ public class IoMiningIndustries implements BaseExpansionGreenCard {
                         Gain.of(GainType.MC, 2),
                         Gain.of(GainType.TITANIUM, 2)
                 ))
+                .winPointsInfo(WinPointsInfo.builder()
+                        .type(CardCollectableResource.JUPITER)
+                        .resources(1)
+                        .points(1)
+                        .build()
+                )
                 .build();
     }
 

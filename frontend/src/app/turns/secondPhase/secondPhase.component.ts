@@ -70,7 +70,9 @@ export class SecondPhaseComponent implements OnInit {
   }
 
   buildBlueRedProjectTurn(): boolean {
-    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.BUILD_BLUE_RED_PROJECT])?.length > 0;
+    return this.nextTurns
+      && this.nextTurns.find(turn => turn === TurnType[TurnType.BUILD_BLUE_RED_PROJECT])?.length > 0
+      && this.game.player.hand.some(card => card.cardColor === CardColor.BLUE || card.cardColor === CardColor.RED);
   }
 
   discardCardsTurn(): boolean {
@@ -359,8 +361,7 @@ export class SecondPhaseComponent implements OnInit {
   getResourcePlayedCards(): Card[] {
     return this.game?.player.played.filter(card =>
       card.cardResource
-      && card.cardResource !== CardResource[CardResource.NONE]
-      && card.cardResource !== CardResource[CardResource.FOREST]
+      && (card.cardResource !== CardResource[CardResource.NONE])
     );
   }
 

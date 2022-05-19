@@ -1,7 +1,5 @@
 package com.terraforming.ares.repositories;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.terraforming.ares.entity.GameEntity;
@@ -23,7 +21,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class GameRepositoryImpl implements GameRepository {
-    private final ObjectMapper objectMapper = new ObjectMapper().setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+    private final ObjectMapper objectMapper;
     private final GameEntityRepository gameRepository;
     private final PlayerEntityRepository playerRepository;
 

@@ -4,16 +4,14 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardService;
+import lombok.EqualsAndHashCode;
 
 /**
  * Created by oleksii.nikitin
  * Creation date 03.05.2022
  */
+@EqualsAndHashCode(callSuper = true)
 public class RestructuredResourcesPayment extends GenericPayment {
-
-    public RestructuredResourcesPayment() {
-        super(1);
-    }
 
     @JsonCreator
     public RestructuredResourcesPayment(@JsonProperty("value") int value) {

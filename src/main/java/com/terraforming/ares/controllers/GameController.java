@@ -6,6 +6,7 @@ import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
 import com.terraforming.ares.model.turn.Turn;
 import com.terraforming.ares.model.turn.TurnType;
+import com.terraforming.ares.repositories.caching.CachingGameRepository;
 import com.terraforming.ares.services.CardFactory;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.GameService;
@@ -31,6 +32,7 @@ public class GameController {
     private final CardFactory cardFactory;
     private final CardService cardService;
     private final WinPointsService winPointsService;
+    private final CachingGameRepository cachingGameRepository;
 
     @PostMapping("/game/new")
     public PlayerUuidsDto startNewGame(@RequestBody GameParameters gameParameters) {
@@ -71,6 +73,27 @@ public class GameController {
                                 .map(this::buildAnotherPlayer)
                                 .collect(Collectors.toList())
                 )
+                .build();
+    }
+
+    @GetMapping("/cache/reset")
+    public int resetGameCache() {
+        return cachingGameRepository.evictGameCache();
+    }
+
+    @GetMapping("/game/short/player/{playerUuid}")
+    public GameDtoShort getShortGameByPlayerUuid(@PathVariable String playerUuid) {
+        MarsGame game = gameService.getGame(playerUuid);
+
+        Planet phasePlanet = game.getPlanetAtTheStartOfThePhase();
+
+        return GameDtoShort.builder()
+                .temperature(game.getPlanet().getTemperature())
+                .phaseTemperature(phasePlanet != null ? phasePlanet.getTemperature() : null)
+                .oxygen(game.getPlanet().getOxygen())
+                .phaseOxygen(phasePlanet != null ? phasePlanet.getOxygen() : null)
+                .oceans(game.getPlanet().getRevealedOceans().stream().map(OceanDto::of).collect(Collectors.toList()))
+                .phaseOceans(phasePlanet != null ? phasePlanet.getRevealedOceans().size() : null)
                 .build();
     }
 

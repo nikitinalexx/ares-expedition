@@ -65,7 +65,9 @@ export class FirstPhaseComponent implements OnInit {
   }
 
   buildGreenProjectTurn(): boolean {
-    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.BUILD_GREEN_PROJECT])?.length > 0;
+    return this.nextTurns
+      && this.nextTurns.find(turn => turn === TurnType[TurnType.BUILD_GREEN_PROJECT])?.length > 0
+      && this.game.player.hand.some(card => card.cardColor === CardColor.GREEN);
   }
 
   sellCardsTurn(): boolean {

@@ -1,5 +1,6 @@
 package com.terraforming.ares.model.payments;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.terraforming.ares.model.Player;
@@ -20,10 +21,12 @@ import com.terraforming.ares.services.CardService;
 
 })
 public interface Payment {
+    @JsonIgnore
     PaymentType getType();
 
     int getValue();
 
+    @JsonIgnore
     int getTotalValue();
 
     void pay(CardService deckService, Player player);

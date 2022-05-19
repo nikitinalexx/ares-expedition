@@ -19,7 +19,7 @@ import java.util.function.Function;
 public class CachingGameRepositoryImpl implements CachingGameRepository {
     private final GameRepository gameRepository;
 
-    private Map<Long, MarsGame> cache = new ConcurrentHashMap<>();
+    private final Map<Long, MarsGame> cache = new ConcurrentHashMap<>();
     //TODO eviction
     private Map<String, Long> playerToGameIdCache = new ConcurrentHashMap<>();
 
@@ -76,6 +76,13 @@ public class CachingGameRepositoryImpl implements CachingGameRepository {
         });
 
         return resultBuilder.build();
+    }
+
+    @Override
+    public int evictGameCache() {
+        int sizeBeforeEviction = cache.size();
+        cache.clear();
+        return sizeBeforeEviction;
     }
 
 }
