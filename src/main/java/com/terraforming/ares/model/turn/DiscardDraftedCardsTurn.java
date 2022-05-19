@@ -16,15 +16,13 @@ import java.util.List;
 @AllArgsConstructor
 @Getter
 @NoArgsConstructor
-public class DiscardCardsTurn implements Turn {
+public class DiscardDraftedCardsTurn implements Turn {
     private String playerUuid;
     private List<Integer> cards;
-    private int size;
-    private boolean onlyFromSelectedCards;
 
     @Override
     public TurnType getType() {
-        return TurnType.DISCARD_CARDS;
+        return TurnType.DISCARD_DRAFTED_CARDS;
     }
 
 }

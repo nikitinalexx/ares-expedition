@@ -3,6 +3,7 @@ import {Game} from '../../data/Game';
 import {GameRepository} from '../../model/gameRepository.model';
 import {Card} from '../../data/Card';
 import {FormGroup} from '@angular/forms';
+import {Observable} from "rxjs";
 
 @Component({
   selector: 'app-sell-cards',
@@ -52,11 +53,12 @@ export class SellCardsComponent {
     this.cardsToCell = [];
   }
 
-  sellCards(game: Game) {
+  sellCards(game: Game, next: (value: any) => void) {
     const sellCardsFunc = this.finalTurn ? this.gameRepository.sellCardsFinalTurn : this.gameRepository.sellCards;
     sellCardsFunc(game.player.playerUuid, this.cardsToCell).subscribe(
       data => {
         this.cardsToCell = [];
+        next(data);
       },
       error => { this.errorMessage = error; }
     );

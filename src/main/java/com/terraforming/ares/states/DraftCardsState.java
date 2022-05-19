@@ -4,7 +4,6 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.TurnType;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -17,17 +16,12 @@ public class DraftCardsState extends AbstractState {
         super(marsGame);
     }
 
-    @Override
     public List<TurnType> getPossibleTurns(String playerUuid) {
         Player player = marsGame.getPlayerByUuid(playerUuid);
-        if (player.getNextTurn() != null && player.getNextTurn().getType().isIntermediate()) {
-            return List.of(player.getNextTurn().getType());
-        } else if (player.getNextTurn() != null) {
-            return Collections.emptyList();
-        } else if (!player.isDraftedInFifthStage()) {
-            return Collections.singletonList(TurnType.DRAFT_CARDS);
+        if (player.getNextTurn() != null && player.getNextTurn().getType() == TurnType.DISCARD_CARDS) {
+            return List.of(TurnType.DISCARD_DRAFTED_CARDS);
         } else {
-            return Collections.singletonList(TurnType.SKIP_TURN);
+            return List.of();
         }
     }
 

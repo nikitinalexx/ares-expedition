@@ -3,7 +3,10 @@ package com.terraforming.ares.states;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateType;
+import com.terraforming.ares.model.turn.DraftCardsTurn;
+import com.terraforming.ares.model.turn.TurnType;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -49,6 +52,7 @@ public abstract class AbstractState implements State {
             marsGame.setStateType(StateType.COLLECT_INCOME);
         } else if (phaseNumber <= 5 && pickedPhases.contains(5)) {
             marsGame.setStateType(StateType.DRAFT_CARDS);
+            marsGame.getPlayerUuidToPlayer().values().forEach(player -> player.setNextTurn(new DraftCardsTurn(player.getUuid())));
         } else if (marsGame.getPlayerUuidToPlayer().values().stream().anyMatch(player -> player.getHand().size() > 10)) {
             marsGame.setStateType(StateType.SELL_EXTRA_CARDS);
         } else {

@@ -318,8 +318,7 @@ export class FirstPhaseComponent implements OnInit {
           data => this.sendToParent(data)
         );
       } else if (formGroup.value.turn === 'sellCards') {
-        this.sellCardsService.sellCards(this.game);
-        this.sendToParent(null);
+        this.sellCardsService.sellCards(this.game, data => this.sendToParent(data));
       } else if (formGroup.value.turn === 'greenProject' && formGroup.value.mcPrice !== null) {
         const inputParams = new Map<number, number[]>();
 

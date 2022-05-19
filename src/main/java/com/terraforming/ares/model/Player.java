@@ -39,7 +39,6 @@ public class Player {
     private boolean builtSpecialDesignLastTurn;
     private boolean builtWorkCrewsLastTurn;
     private boolean canBuildAnotherGreenWith9Discount;
-    private boolean draftedInFifthStage;
     private boolean confirmedGameEndThirdPhase;
 
     private Integer previousChosenPhase;
@@ -68,7 +67,6 @@ public class Player {
         actionsInSecondPhase = 0;
         canBuildInFirstPhase = 0;
         pickedCardInSecondPhase = false;
-        draftedInFifthStage = false;
     }
 
 }

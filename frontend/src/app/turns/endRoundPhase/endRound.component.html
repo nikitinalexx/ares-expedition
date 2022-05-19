@@ -13,12 +13,6 @@
     <app-sell-cards [game]="game" [parentForm]="parentForm" [finalTurn]="true"></app-sell-cards>
   </div>
 
-  <div *ngIf="skipTurn()" class="form-check">
-    <input id="skipTurn" type="radio" class="form-check-input" value="skipTurn"
-           formControlName="turn" required [checked]="this.parentForm.value?.turn === 'skipTurn'">
-    <label class="custom-control-label text-white" for="skipTurn">Finish turn</label>
-  </div>
-
   <!-- Submit Button -->
   <button type="submit" class="btn btn-danger btn-lg btn-block">Select turn</button>
 </form><!-- Form ends -->

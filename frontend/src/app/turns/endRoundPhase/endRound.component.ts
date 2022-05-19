@@ -37,10 +37,6 @@ export class EndRoundComponent implements OnInit {
     this.outputToParent.emit(data);
   }
 
-  skipTurn(): boolean {
-    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.SKIP_TURN])?.length > 0;
-  }
-
   sellCardsTurn(): boolean {
     return this.nextTurns && this.nextTurns.find(
       turn => turn === TurnType.SELL_CARDS || turn === TurnType.SELL_CARDS_LAST_ROUND
@@ -53,13 +49,8 @@ export class EndRoundComponent implements OnInit {
       console.log('form invalid');
       return false;
     } else {
-      if (formGroup.value.turn === 'skipTurn') {
-        this.gameRepository.skipTurn(this.game.player.playerUuid).subscribe(
-          data => this.sendToParent(data)
-        );
-      } else if (formGroup.value.turn === 'sellCards') {
-        this.sellCardsService.sellCards(this.game);
-        this.sendToParent(null);
+      if (formGroup.value.turn === 'sellCards') {
+        this.sellCardsService.sellCards(this.game, data => this.sendToParent(data));
       }
     }
   }

@@ -3,6 +3,7 @@ package com.terraforming.ares.states;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateType;
+import com.terraforming.ares.model.turn.Turn;
 import com.terraforming.ares.model.turn.TurnType;
 
 import java.util.Collections;
@@ -21,9 +22,7 @@ public class SellExtraCardsState extends AbstractState {
     @Override
     public List<TurnType> getPossibleTurns(String playerUuid) {
         Player player = marsGame.getPlayerByUuid(playerUuid);
-        if (player.getNextTurn() != null) {
-            return Collections.emptyList();
-        } else if (player.getHand().size() > 10) {
+        if (player.getNextTurn() == null && player.getHand().size() > 10) {
             return Collections.singletonList(TurnType.SELL_CARDS_LAST_ROUND);
         } else {
             return List.of();

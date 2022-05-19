@@ -66,8 +66,6 @@ public class DraftCardsTurnProcessor implements TurnProcessor<DraftCardsTurn> {
                 )
         );
 
-        player.setDraftedInFifthStage(true);
-
         return null;
     }
 }

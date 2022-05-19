@@ -381,8 +381,7 @@ export class SecondPhaseComponent implements OnInit {
           data => this.sendToParent(data)
         );
       } else if (formGroup.value.turn === 'sellCards') {
-        this.sellCardsService.sellCards(this.game);
-        this.sendToParent(null);
+        this.sellCardsService.sellCards(this.game, data => this.sendToParent(data));
       } else if (formGroup.value.turn === 'blueRedProject' && formGroup.value.mcPrice !== null) {
         const inputParams = new Map<number, number[]>();
         if (this.marsUniversityEffect()) {
@@ -504,7 +503,6 @@ export class SecondPhaseComponent implements OnInit {
         }
 
         if (this.localHeatTrappingEffect()) {
-          console.log(true);
           inputParams[InputFlag.LOCAL_HEAT_TRAPPING_PUT_RESOURCE.valueOf()] = [
             this.localHeatTrappingCard ? this.localHeatTrappingCard.id : InputFlag.SKIP_ACTION.valueOf()
           ];

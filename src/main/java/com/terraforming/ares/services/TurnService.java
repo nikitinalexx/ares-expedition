@@ -178,38 +178,40 @@ public class TurnService {
                 });
     }
 
-    public TurnResponse discardCards(String playerUuid, List<Integer> cards) {
-        return performSyncTurn(
-                new DiscardCardsTurn(playerUuid, cards, cards.size(), false),
-                playerUuid,
-                game -> {
-                    Player player = game.getPlayerByUuid(playerUuid);
+    public TurnResponse discardCards(Turn turn, String playerUuid, List<Integer> cards, boolean sync) {
+        Function<MarsGame, String> verifier = game -> {
+            Player player = game.getPlayerByUuid(playerUuid);
 
-                    if (player.getNextTurn().getType() != TurnType.DISCARD_CARDS) {
-                        return "Invalid next turn. Expected " + player.getNextTurn().getType();
+            if (player.getNextTurn().getType() != TurnType.DISCARD_CARDS) {
+                return "Invalid next turn. Expected " + player.getNextTurn().getType();
+            }
+
+            DiscardCardsTurn expectedTurn = (DiscardCardsTurn) player.getNextTurn();
+            if (expectedTurn.getSize() != cards.size()) {
+                return "Incorrect number of cards to discard, expected: " + expectedTurn.getSize();
+            }
+
+            if (!player.getHand().getCards().containsAll(cards)) {
+                return "Can't discard cards that you don't have";
+            }
+
+            if (expectedTurn.isOnlyFromSelectedCards()) {
+                List<Integer> expectedCardsToBeRemovedFrom = expectedTurn.getCards();
+                for (Integer card : cards) {
+                    if (!expectedCardsToBeRemovedFrom.contains(card)) {
+                        return "You can't discard cards other than from those that you received";
                     }
-
-                    DiscardCardsTurn expectedTurn = (DiscardCardsTurn) player.getNextTurn();
-                    if (expectedTurn.getSize() != cards.size()) {
-                        return "Incorrect number of cards to discard, expected: " + expectedTurn.getSize();
-                    }
-
-                    if (!player.getHand().getCards().containsAll(cards)) {
-                        return "Can't discard cards that you don't have";
-                    }
-
-                    if (expectedTurn.isOnlyFromSelectedCards()) {
-                        List<Integer> expectedCardsToBeRemovedFrom = expectedTurn.getCards();
-                        for (Integer card : cards) {
-                            if (!expectedCardsToBeRemovedFrom.contains(card)) {
-                                return "You can't discard cards other than from those that you received";
-                            }
-                        }
-                    }
-
-                    return null;
                 }
-        );
+            }
+
+            return null;
+        };
+        if (sync) {
+            return performSyncTurn(turn, playerUuid, verifier);
+        } else {
+            performAsyncTurn(turn, playerUuid, verifier);
+            return null;
+        }
     }
 
     public void buildGreenProjectCard(String playerUuid, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {

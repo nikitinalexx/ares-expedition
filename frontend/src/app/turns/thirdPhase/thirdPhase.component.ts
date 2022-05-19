@@ -261,8 +261,7 @@ export class ThirdPhaseComponent implements OnInit {
           }
         );
       } else if (formGroup.value.turn === 'sellCards') {
-        this.sellCardsService.sellCards(this.game);
-        this.sendToParent(null);
+        this.sellCardsService.sellCards(this.game, data => this.sendToParent(data));
       } else if (formGroup.value.turn === 'blueAction' || formGroup.value.turn === 'extraBlueAction') {
         if (!this.selectedProject) {
           this.errorMessage = 'Select a blue card with action';
@@ -335,8 +334,6 @@ export class ThirdPhaseComponent implements OnInit {
           this.selectedProject.id,
           inputParams
         );
-
-        console.log(request);
 
         this.gameRepository.blueAction(request).subscribe(data => {
           this.sendToParent(data);

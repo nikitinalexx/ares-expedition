@@ -19,12 +19,13 @@ public class SellCardsLastRoundTurnProcessor extends SellCardsGenericTurnProcess
         super(specialEffectsService);
     }
 
-
     @Override
     public TurnResponse processTurn(SellCardsLastRoundTurn turn, MarsGame game) {
         Player player = game.getPlayerUuidToPlayer().get(turn.getPlayerUuid());
 
         sell(player, turn.getCards());
+
+        player.setNextTurn(null);
 
         return null;
     }

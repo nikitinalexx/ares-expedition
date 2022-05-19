@@ -24,6 +24,7 @@ public enum TurnType {
     STANDARD_PROJECT(false),
     EXCHANGE_HEAT(false),
     DISCARD_CARDS(false, true),
+    DISCARD_DRAFTED_CARDS(true, true),
     GAME_END_CONFIRM(true),
     GAME_END(true);
 

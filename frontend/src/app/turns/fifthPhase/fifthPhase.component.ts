@@ -4,7 +4,6 @@ import {GameRepository} from '../../model/gameRepository.model';
 import {TurnType} from '../../data/TurnType';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {Card} from "../../data/Card";
-import {DiscardCardsTurn} from "../../data/DiscardCardsTurn";
 
 @Component({
   selector: 'app-fifth-phase',
@@ -13,7 +12,7 @@ import {DiscardCardsTurn} from "../../data/DiscardCardsTurn";
 export class FifthPhaseComponent implements OnInit {
   public errorMessage: string;
   isSubmitted = false;
-  projectsToDiscard: number[];
+  projectsToSelect: number[];
   parentForm: FormGroup;
 
   @Input()
@@ -29,7 +28,7 @@ export class FifthPhaseComponent implements OnInit {
 
   ngOnInit() {
     this.parentForm = this.formBuilder.group({
-      turn: ['', Validators.required]
+      turn: ['discardCards', Validators.required]
     });
   }
 
@@ -37,41 +36,28 @@ export class FifthPhaseComponent implements OnInit {
     this.outputToParent.emit(data);
   }
 
-  draftCardsTurn(): boolean {
-    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.DRAFT_CARDS])?.length > 0;
-  }
-
   discardCardsTurn(): boolean {
-    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.DISCARD_CARDS])?.length > 0;
-  }
-
-  skipTurn(): boolean {
-    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.SKIP_TURN])?.length > 0;
+    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.DISCARD_DRAFTED_CARDS])?.length > 0;
   }
 
   getDiscardCards(): Card[] {
-    const nextTurn = this.game.player.nextTurn as DiscardCardsTurn;
-    if (nextTurn.onlyFromSelectedCards) {
-      return this.game.player.nextTurn.cards;
-    } else {
-      return this.game.player?.hand;
-    }
+    return this.game.player.nextTurn?.cards;
   }
 
-  clickProjectToDiscard(card: Card) {
-    if (!this.projectsToDiscard) {
-      this.projectsToDiscard = [];
+  clickProjectToSelect(card: Card) {
+    if (!this.projectsToSelect) {
+      this.projectsToSelect = [];
     }
-    const index = this.projectsToDiscard.indexOf(card.id, 0);
+    const index = this.projectsToSelect.indexOf(card.id, 0);
     if (index > -1) {
-      this.projectsToDiscard.splice(index, 1);
+      this.projectsToSelect.splice(index, 1);
     } else {
-      this.projectsToDiscard.push(card.id);
+      this.projectsToSelect.push(card.id);
     }
   }
 
-  selectedProjectToDiscardClass(card: Card): string {
-    if (this.projectsToDiscard && this.projectsToDiscard.some(element => element === card.id)) {
+  selectedProjectToSelectClass(card: Card): string {
+    if (this.projectsToSelect && this.projectsToSelect.some(element => element === card.id)) {
       return 'clicked-card';
     }
     return '';
@@ -83,19 +69,18 @@ export class FifthPhaseComponent implements OnInit {
       console.log('form invalid');
       return false;
     } else {
-      if (formGroup.value.turn === 'skipTurn') {
-        this.gameRepository.skipTurn(this.game.player.playerUuid).subscribe(
-          data => this.sendToParent(data)
-        );
-      } else if (formGroup.value.turn === 'draftCards') {
-        this.gameRepository.draftCards(this.game.player.playerUuid).subscribe(
-          data => this.sendToParent(data)
-        );
-      } else if (formGroup.value.turn === 'discardCards') {
-        if (!this.projectsToDiscard || this.projectsToDiscard.length !== this.game.player.nextTurn.size) {
-          this.errorMessage = 'Invalid number of cards to discard';
+      if (formGroup.value.turn === 'discardCards') {
+        if (!this.projectsToSelect
+          || this.projectsToSelect.length !== (this.game.player.nextTurn.cards.length - this.game.player.nextTurn.size)) {
+          this.errorMessage = 'Invalid number of cards to take';
         } else {
-          this.gameRepository.discardCards(this.game.player.playerUuid, this.projectsToDiscard).subscribe(
+          const resultArray = [];
+          for (const card of this.game.player.nextTurn.cards) {
+            if (this.projectsToSelect.every(id => id !== card.id)) {
+              resultArray.push(card.id);
+            }
+          }
+          this.gameRepository.discardDraftedCards(this.game.player.playerUuid, resultArray).subscribe(
             data => {
               this.sendToParent(data);
               this.errorMessage = null;

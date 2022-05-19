@@ -1,6 +1,5 @@
 package com.terraforming.ares.processors.turn;
 
-import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;

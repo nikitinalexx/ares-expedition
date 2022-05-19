@@ -3,6 +3,8 @@ package com.terraforming.ares.controllers;
 import com.terraforming.ares.dto.ActionDto;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.request.*;
+import com.terraforming.ares.model.turn.DiscardCardsTurn;
+import com.terraforming.ares.model.turn.DiscardDraftedCardsTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.GameService;
 import com.terraforming.ares.services.TurnService;
@@ -93,7 +95,22 @@ public class PlayController {
 
     @PostMapping("/turn/cards/discard")
     public TurnResponse discardCards(@RequestBody DiscardCardsRequest request) {
-        return turnService.discardCards(request.getPlayerUuid(), request.getCards());
+        return turnService.discardCards(
+                new DiscardCardsTurn(request.getPlayerUuid(), request.getCards(), request.getCards().size(), false),
+                request.getPlayerUuid(),
+                request.getCards(),
+                true
+        );
+    }
+
+    @PostMapping("/turn/cards/discard/drafted")
+    public TurnResponse discardDraftedCards(@RequestBody DiscardCardsRequest request) {
+        return turnService.discardCards(
+                new DiscardDraftedCardsTurn(request.getPlayerUuid(), request.getCards()),
+                request.getPlayerUuid(),
+                request.getCards(),
+                false
+        );
     }
 
     @PostMapping("/turn/collect-income")

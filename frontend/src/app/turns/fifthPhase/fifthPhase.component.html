@@ -8,32 +8,21 @@
 <!-- Form starts -->
 <form [formGroup]="parentForm" (submit)="submitForm(parentForm)" novalidate>
 
-  <div *ngIf="draftCardsTurn()" class="form-check">
-    <input id="draftCards" type="radio" class="form-check-input" value="draftCards" formControlName="turn"
-           required [checked]="this.parentForm.value?.turn === 'draftCards'">
-    <label class="custom-control-label text-white" for="draftCards">Draft Cards</label>
-  </div>
-
   <div *ngIf="discardCardsTurn()" class="form-check">
     <input id="discardCards" type="radio" class="form-check-input" value="discardCards"
            formControlName="turn" [checked]="true">
-    <label class="custom-control-label text-white" for="discardCards">Discard {{game.player.nextTurn?.size }}
-      cards</label>
+    <label class="custom-control-label text-white" for="discardCards">
+      Take {{this.game.player.nextTurn.cards.length - this.game.player.nextTurn.size}} cards
+    </label>
 
     <div *ngIf="parentForm.value?.turn === 'discardCards'" class="card-container">
       <ul class="myUL">
-        <li *ngFor="let card of getDiscardCards();" (click)="clickProjectToDiscard(card)"
-            [ngClass]="selectedProjectToDiscardClass(card)" class="filterDiv automated display">
+        <li *ngFor="let card of getDiscardCards();" (click)="clickProjectToSelect(card)"
+            [ngClass]="selectedProjectToSelectClass(card)" class="filterDiv automated display">
           <app-card-template [card]="card" [game]="game"></app-card-template>
         </li>
       </ul>
     </div>
-  </div>
-
-  <div *ngIf="skipTurn()" class="form-check">
-    <input id="skipTurn" type="radio" class="form-check-input" value="skipTurn"
-           formControlName="turn" required [checked]="this.parentForm.value?.turn === 'skipTurn'">
-    <label class="custom-control-label text-white" for="skipTurn">Finish turn</label>
   </div>
 
   <!-- Submit Button -->

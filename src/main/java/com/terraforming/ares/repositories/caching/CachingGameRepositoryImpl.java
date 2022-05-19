@@ -51,7 +51,7 @@ public class CachingGameRepositoryImpl implements CachingGameRepository {
 
     @Override
     public <T> GameUpdateResult<T> updateMarsGame(long id, Function<MarsGame, String> stateChecker, Function<MarsGame, T> updater) {
-        GameUpdateResult.GameUpdateResultBuilder<T> resultBuilder = GameUpdateResult.<T>builder();
+        GameUpdateResult.GameUpdateResultBuilder<T> resultBuilder = GameUpdateResult.builder();
 
         cache.compute(id, (key, game) -> {
             if (game == null) {

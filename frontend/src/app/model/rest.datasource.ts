@@ -106,6 +106,12 @@ export class RestDataSource {
     );
   }
 
+  discardDraftedCards(playerUuid: string, cards: number[]): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/turn/cards/discard/drafted',
+      {playerUuid: playerUuid, cards: cards}
+    );
+  }
+
   collectIncome(playerUuid: string): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/turn/collect-income',
       {playerUuid: playerUuid}

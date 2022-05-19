@@ -50,7 +50,7 @@ public class GameProcessorService {
         Long gameId = gamesToProcess.poll();
 
         gameRepository.updateMarsGame(gameId, game -> null, game -> {
-            if (processFinalTurns(game)) {
+            while(processFinalTurns(game)) {
                 stateFactory.getCurrentState(game).updateState();
             }
 
