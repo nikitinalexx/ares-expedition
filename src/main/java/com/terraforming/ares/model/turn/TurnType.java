@@ -23,6 +23,7 @@ public enum TurnType {
     STANDARD_PROJECT(false),
     EXCHANGE_HEAT(false),
     DISCARD_CARDS(false, true),
+    GAME_END_CONFIRM(true),
     GAME_END(true);
 
     private final boolean isTerminal;

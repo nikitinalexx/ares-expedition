@@ -183,6 +183,12 @@
     <label class="custom-control-label text-white" for="skipTurn">Finish turn</label>
   </div>
 
+  <div *ngIf="confirmGameEndTurn()" class="form-check">
+    <input id="confirmGameEnd" (click)="clearInput()" type="radio" class="form-check-input" value="confirmGameEnd"
+           formControlName="turn" required [checked]="this.parentForm.value?.turn === 'confirmGameEnd'">
+    <label class="custom-control-label text-white" style="font-size: 20px" for="confirmGameEnd">Finish the game(sell all cards before!)</label>
+  </div>
+
   <div *ngIf="isSubmitted && parentForm.invalid">
     <p>Please select either value</p>
   </div>

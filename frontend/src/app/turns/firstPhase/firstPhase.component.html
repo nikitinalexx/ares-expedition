@@ -78,7 +78,7 @@
                        formControlName="takeMicrobes"
                 >
               </div>
-              <div class="col-sm-1">
+              <div *ngIf="decomposersCanTakeCard()" class="col-sm-1">
                 <label class="custom-control-label text-white" for="takeCards">Take cards</label>
                 <input id="takeCards" type="number" class="form-control form-control-sm"
                        formControlName="takeCards"

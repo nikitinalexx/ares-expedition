@@ -69,6 +69,10 @@ public class TurnService {
         performAsyncTurn(new SkipTurn(playerUuid), playerUuid, game -> null);
     }
 
+    public void confirmGameEnd(String playerUuid) {
+        performAsyncTurn(new GameEndConfirmTurn(playerUuid), playerUuid, game -> null);
+    }
+
     public void pickExtraCardTurn(String playerUuid) {
         performAsyncTurn(new PickExtraCardTurn(playerUuid), playerUuid, game -> null);
     }

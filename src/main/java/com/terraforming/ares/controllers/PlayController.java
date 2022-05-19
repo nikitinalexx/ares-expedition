@@ -47,6 +47,11 @@ public class PlayController {
         turnService.skipTurn(playerUuidRequest.getPlayerUuid());
     }
 
+    @PostMapping("/game/player/game-end/confirm")
+    public void confirmGameEnd(@RequestBody PlayerUuidRequest playerUuidRequest) {
+        turnService.confirmGameEnd(playerUuidRequest.getPlayerUuid());
+    }
+
     @PostMapping("/game/player/sell")
     public void sellCards(@RequestBody SellCardsRequest sellCardsRequest) {
         turnService.sellCards(sellCardsRequest.getPlayerUuid(), sellCardsRequest.getCards());

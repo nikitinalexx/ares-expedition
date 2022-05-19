@@ -40,6 +40,7 @@ public class Player {
     private boolean builtWorkCrewsLastTurn;
     private boolean canBuildAnotherGreenWith9Discount;
     private boolean draftedInFifthStage;
+    private boolean confirmedGameEndThirdPhase;
 
     private Integer previousChosenPhase;
     private Integer chosenPhase;

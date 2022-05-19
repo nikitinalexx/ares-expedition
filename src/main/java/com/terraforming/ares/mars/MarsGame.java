@@ -104,4 +104,9 @@ public class MarsGame {
     public boolean timeToSave() {
         return this.updateCounter % 10 == 0;
     }
+
+    @JsonIgnore
+    public boolean gameEndCondition() {
+        return planet.isOceansMax() && planet.isTemperatureMax() && planet.isOxygenMax();
+    }
 }

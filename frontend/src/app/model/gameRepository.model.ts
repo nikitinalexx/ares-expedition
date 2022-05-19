@@ -30,6 +30,10 @@ export class GameRepository {
     return this.dataSource.skipTurn(playerUuid);
   }
 
+  confirmGameEnd(playerUuid: string): Observable<any> {
+    return this.dataSource.confirmGameEnd(playerUuid);
+  }
+
   pickCard(playerUuid: string): Observable<any> {
     return this.dataSource.pickCard(playerUuid);
   }

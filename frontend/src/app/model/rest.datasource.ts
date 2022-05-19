@@ -51,6 +51,12 @@ export class RestDataSource {
     );
   }
 
+  confirmGameEnd(playerUuid: string): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/game/player/game-end/confirm',
+      {playerUuid: playerUuid}
+    );
+  }
+
   pickCard(playerUuid: string): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/turn/pick-card',
       {playerUuid: playerUuid}

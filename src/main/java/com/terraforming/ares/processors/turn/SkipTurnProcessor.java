@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class SkipTurnProcessor implements TurnProcessor<SkipTurn> {
-    private final StateFactory stateFactory;
 
     @Override
     public TurnType getType() {

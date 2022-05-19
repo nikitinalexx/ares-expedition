@@ -11,7 +11,7 @@ import {ActionInputDataType} from '../../data/ActionInputDataType';
 import {CardResource} from '../../data/CardResource';
 import {CardAction} from '../../data/CardAction';
 import {InputFlag} from '../../data/InputFlag';
-import {StandardProjectType} from "../../data/StandardProjectType";
+import {StandardProjectType} from '../../data/StandardProjectType';
 
 @Component({
   selector: 'app-third-phase',
@@ -62,8 +62,13 @@ export class ThirdPhaseComponent implements OnInit {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.SKIP_TURN])?.length > 0;
   }
 
+  confirmGameEndTurn(): boolean {
+    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.GAME_END_CONFIRM])?.length > 0;
+  }
+
   blueActionTurn(): boolean {
-    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.PERFORM_BLUE_ACTION])?.length > 0 && this.getActiveCards()?.length > 0;
+    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.PERFORM_BLUE_ACTION])?.length > 0
+      && this.getActiveCards()?.length > 0;
   }
 
   plantForestTurn(): boolean {
@@ -212,7 +217,11 @@ export class ThirdPhaseComponent implements OnInit {
       console.log('form invalid');
       return false;
     } else {
-      if (formGroup.value.turn === 'exchangeHeat') {
+      if (formGroup.value.turn === 'confirmGameEnd') {
+        this.gameRepository.confirmGameEnd(this.game.player.playerUuid).subscribe(
+          data => this.sendToParent(data)
+        );
+      } else if (formGroup.value.turn === 'exchangeHeat') {
         if (!this.parentForm.value.heatExchangeInput) {
           this.errorMessage = 'Input amount of heat to exchange';
           return;
@@ -247,7 +256,9 @@ export class ThirdPhaseComponent implements OnInit {
         );
       } else if (formGroup.value.turn === 'skipTurn') {
         this.gameRepository.skipTurn(this.game.player.playerUuid).subscribe(
-          data => this.sendToParent(data)
+          data => this.sendToParent(data), error => {
+            this.sendToParent(null);
+          }
         );
       } else if (formGroup.value.turn === 'sellCards') {
         this.sellCardsService.sellCards(this.game);

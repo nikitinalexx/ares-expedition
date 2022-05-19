@@ -28,9 +28,7 @@ public abstract class AbstractState implements State {
     }
 
     protected void performStateTransferFromPhase(int phaseNumber) {
-        if (marsGame.getPlanet().isOxygenMax() &&
-                marsGame.getPlanet().isTemperatureMax() &&
-                marsGame.getPlanet().isOceansMax()) {
+        if (marsGame.gameEndCondition()) {
             marsGame.setStateType(StateType.GAME_END);
             return;
         }

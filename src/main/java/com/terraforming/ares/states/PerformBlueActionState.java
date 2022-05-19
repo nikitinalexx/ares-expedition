@@ -32,15 +32,19 @@ public class PerformBlueActionState extends AbstractState {
                     TurnType.EXCHANGE_HEAT
             ));
 
-            if (player.getPlants() < Constants.FOREST_PLANT_COST && player.getHeat() < Constants.TEMPERATURE_HEAT_COST) {
+            if (player.getPlants() < Constants.FOREST_PLANT_COST && (player.getHeat() < Constants.TEMPERATURE_HEAT_COST || marsGame.getPlanetAtTheStartOfThePhase().isTemperatureMax())) {
                 turns.add(TurnType.SKIP_TURN);
             } else {
                 if (player.getPlants() >= Constants.FOREST_PLANT_COST) {
                     turns.add(TurnType.PLANT_FOREST);
                 }
-                if (player.getHeat() >= Constants.TEMPERATURE_HEAT_COST) {
+                if (player.getHeat() >= Constants.TEMPERATURE_HEAT_COST && !marsGame.getPlanetAtTheStartOfThePhase().isTemperatureMax()) {
                     turns.add(TurnType.INCREASE_TEMPERATURE);
                 }
+            }
+            if (marsGame.gameEndCondition()) {
+                turns.remove(TurnType.SKIP_TURN);
+                turns.add(TurnType.GAME_END_CONFIRM);
             }
 
             return turns;
@@ -49,6 +53,8 @@ public class PerformBlueActionState extends AbstractState {
 
     @Override
     public void updateState() {
-        performStateTransferFromPhase(4);
+        if (!marsGame.gameEndCondition() || marsGame.getPlayerUuidToPlayer().values().stream().allMatch(Player::isConfirmedGameEndThirdPhase)) {
+            performStateTransferFromPhase(4);
+        }
     }
 }

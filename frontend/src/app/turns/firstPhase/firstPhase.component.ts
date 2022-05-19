@@ -284,9 +284,17 @@ export class FirstPhaseComponent implements OnInit {
     return this.selectedProject.cardAction === CardAction[CardAction.DECOMPOSERS]
       ||
       this.game.player.played.some(card => card.cardAction === CardAction[CardAction.DECOMPOSERS])
-      && (this.game.player.played.some(card => card.tags.some(tag =>
-          tag === Tag[Tag.ANIMAL] || tag === Tag[Tag.MICROBE] || tag === Tag[Tag.PLANT]))
-      );
+      && (this.selectedProject.tags.some(tag =>
+        tag === Tag[Tag.ANIMAL] || tag === Tag[Tag.MICROBE] || tag === Tag[Tag.PLANT]));
+  }
+
+  decomposersCanTakeCard(): boolean {
+    const microbeCount = this.game.player.cardResources[this.game.player.played.find(
+      card => card.cardAction === CardAction[CardAction.DECOMPOSERS]
+    )?.id];
+    return this.selectedProject.tags.filter(tag =>
+      tag === Tag[Tag.ANIMAL] || tag === Tag[Tag.MICROBE] || tag === Tag[Tag.PLANT])?.length > 1
+      || (microbeCount && microbeCount >= 1);
   }
 
   resetAllInputs() {
