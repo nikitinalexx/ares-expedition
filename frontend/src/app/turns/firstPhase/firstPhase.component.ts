@@ -14,6 +14,7 @@ import {CardResource} from '../../data/CardResource';
 import {CardAction} from '../../data/CardAction';
 import {Tag} from '../../data/Tag';
 import {InputFlag} from '../../data/InputFlag';
+import {DiscardCardsTurn} from "../../data/DiscardCardsTurn";
 
 @Component({
   selector: 'app-first-phase',
@@ -78,6 +79,10 @@ export class FirstPhaseComponent implements OnInit {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.SKIP_TURN])?.length > 0;
   }
 
+  discardCardsTurn(): boolean {
+    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.DISCARD_CARDS])?.length > 0;
+  }
+
   getPlayerHand(): Card[] {
     return this.game?.player.hand;
   }
@@ -123,6 +128,15 @@ export class FirstPhaseComponent implements OnInit {
     return this.selectedProject?.resourcesOnBuild.find(resource =>
       resource.type === CardResource[CardResource.ANIMAL]
     ).paramId;
+  }
+
+  getDiscardCards(): Card[] {
+    const nextTurn = this.game.player.nextTurn as DiscardCardsTurn;
+    if (nextTurn.onlyFromSelectedCards) {
+      return this.game.player.nextTurn.cards;
+    } else {
+      return this.game.player?.hand;
+    }
   }
 
   clickProjectToBuild(card: Card) {
@@ -313,7 +327,22 @@ export class FirstPhaseComponent implements OnInit {
       console.log('form invalid');
       return false;
     } else {
-      if (formGroup.value.turn === 'skipTurn') {
+      if (formGroup.value.turn === 'discardCards') {
+        if (!this.projectsToDiscard || this.projectsToDiscard.length !== this.game.player.nextTurn.size) {
+          this.errorMessage = 'Invalid number of cards to discard';
+        } else {
+          this.gameRepository.discardCards(this.game.player.playerUuid, this.projectsToDiscard).subscribe(
+            data => {
+              this.sendToParent(data);
+              this.selectedProject = null;
+              this.errorMessage = null;
+            },
+            error => {
+              this.errorMessage = error;
+            }
+          );
+        }
+      } else if (formGroup.value.turn === 'skipTurn') {
         this.gameRepository.skipTurn(this.game.player.playerUuid).subscribe(
           data => this.sendToParent(data)
         );

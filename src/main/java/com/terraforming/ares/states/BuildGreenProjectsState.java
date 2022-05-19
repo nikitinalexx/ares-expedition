@@ -22,7 +22,9 @@ public class BuildGreenProjectsState extends AbstractState {
     public List<TurnType> getPossibleTurns(String playerUuid) {
         Player player = marsGame.getPlayerByUuid(playerUuid);
 
-        if (player.getNextTurn() != null || player.getCanBuildInFirstPhase() == 0) {
+        if (player.getNextTurn() != null && player.getNextTurn().getType().isIntermediate()) {
+            return List.of(player.getNextTurn().getType());
+        } else if (player.getNextTurn() != null || player.getCanBuildInFirstPhase() == 0) {
             return Collections.emptyList();
         } else {
             return Arrays.asList(
@@ -36,7 +38,7 @@ public class BuildGreenProjectsState extends AbstractState {
     @Override
     public void updateState() {
         if (marsGame.getPlayerUuidToPlayer().values().stream().allMatch(
-                player -> player.getCanBuildInFirstPhase() == 0
+                player -> player.getCanBuildInFirstPhase() == 0 && player.getNextTurn() == null
         )) {
             performStateTransferFromPhase(2);
         }

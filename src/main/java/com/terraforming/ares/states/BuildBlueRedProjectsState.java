@@ -40,7 +40,7 @@ public class BuildBlueRedProjectsState extends AbstractState {
     @Override
     public void updateState() {
         if (marsGame.getPlayerUuidToPlayer().values().stream().allMatch(
-                player -> player.getActionsInSecondPhase() == 0
+                player -> player.getActionsInSecondPhase() == 0 && player.getNextTurn() == null
         )) {
             performStateTransferFromPhase(3);
         }

@@ -81,6 +81,8 @@ public class GameProcessorService {
                         .forEach(player -> player.setNextTurn(null));
             }
 
+            registerAsyncGameUpdate(gameId);
+
             return turnResponse;
         });
     }
