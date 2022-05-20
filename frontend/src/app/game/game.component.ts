@@ -175,8 +175,8 @@ export class GameComponent implements OnInit {
             this.errorMessage = 'One of the global parameters reached maximum';
           }
           this.model.getGame(this.playerUuid).subscribe(game => {
-            this.nextTurns = turns;
             this.game = game;
+            this.nextTurns = turns;
             if (this.game.phase === 3 && (!this.thirdPhaseSubscription || this.thirdPhaseSubscription.closed)) {
               this.thirdPhaseSubscription = timer(2000, 2000).subscribe(
                 val => this.updateGameShort()
