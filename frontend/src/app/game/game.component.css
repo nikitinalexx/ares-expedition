@@ -535,8 +535,6 @@
   background-image: url(../../assets/images/mars.png);
   content: "";
   position: absolute;
-  width: 30px;
-  height: 30px;
   width: 240px;
   height: 310px;
   top: 0;
@@ -544,4 +542,12 @@
   background-position: -369px -11px;
   border-radius: 15px;
   filter: grayscale(1) brightness(1.9) contrast(0.6) hue-rotate(90deg);
+}
+
+.stack-hidden-area {
+  position: absolute;
+  width: 240px;
+  margin-top: 73px;
+  height: 237px;
+  z-index: 3;
 }
