@@ -39,6 +39,7 @@ public class Player {
     private boolean builtSpecialDesignLastTurn;
     private boolean builtWorkCrewsLastTurn;
     private boolean canBuildAnotherGreenWith9Discount;
+
     private boolean confirmedGameEndThirdPhase;
 
     private Integer previousChosenPhase;

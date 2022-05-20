@@ -36,7 +36,6 @@ public class BuildGreenProjectProcessor extends GenericBuildProjectProcessor<Bui
         }
 
         player.setCanBuildInFirstPhase(player.getCanBuildInFirstPhase() - 1);
-        player.setCanBuildAnotherGreenWith9Discount(false);
     }
 
     @Override

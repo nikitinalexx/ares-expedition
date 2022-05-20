@@ -88,7 +88,13 @@ export class FirstPhaseComponent implements OnInit {
   }
 
   getGreenPlayerHand(): Card[] {
-    return this.game?.player.hand.filter(card => card.cardColor === CardColor[CardColor.GREEN]);
+    if (this.game.player.canBuildAnotherGreenWith9Discount) {
+      return this.game?.player.hand.filter(card => {
+        return card.cardColor === CardColor[CardColor.GREEN] && card.price < 10;
+      });
+    } else {
+      return this.game?.player.hand.filter(card => card.cardColor === CardColor[CardColor.GREEN]);
+    }
   }
 
   getMicrobePlayedCards(): Card[] {

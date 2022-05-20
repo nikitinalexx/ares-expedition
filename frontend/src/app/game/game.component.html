@@ -137,6 +137,15 @@
   </div>
 </div>
 
+<h2 class="text-white">Hand</h2>
+
+<div class="card-container">
+  <ul class="myUL">
+    <li *ngFor="let card of getPlayerHand();" class="filterDiv automated display">
+      <app-card-template [card]="card"></app-card-template>
+    </li>
+  </ul>
+</div>
 
 <h2 class="text-white">Played</h2>
 
@@ -144,16 +153,6 @@
   <ul class="myUL">
     <li *ngFor="let card of getPlayerPlayedCards();" class="filterDiv automated display">
       <app-card-template [card]="card" [game]="game" [showResources]="true"></app-card-template>
-    </li>
-  </ul>
-</div>
-
-<h2 class="text-white">Hand</h2>
-
-<div class="card-container">
-  <ul class="myUL">
-    <li *ngFor="let card of getPlayerHand();" class="filterDiv automated display">
-      <app-card-template [card]="card"></app-card-template>
     </li>
   </ul>
 </div>

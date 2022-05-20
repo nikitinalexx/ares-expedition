@@ -146,6 +146,9 @@ public class GameController {
                 .terraformingRating(player.getTerraformingRating())
                 .winPoints(winPointsService.countWinPoints(player))
                 .forests(player.getForests())
+                .builtSpecialDesignLastTurn(player.isBuiltSpecialDesignLastTurn())
+                .builtWorkCrewsLastTurn(player.isBuiltWorkCrewsLastTurn())
+                .canBuildAnotherGreenWith9Discount(player.isCanBuildAnotherGreenWith9Discount())
                 .build();
     }
 

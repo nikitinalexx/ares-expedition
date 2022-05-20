@@ -1,10 +1,7 @@
 package com.terraforming.ares.cards.green;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.model.MarsContext;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.Tag;
-import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
 import lombok.Getter;
@@ -28,6 +25,7 @@ public class AutomatedFactories implements BaseExpansionGreenCard {
                 .name("Automated Factories")
                 .description("You may play a green card from your hand that has a printed cost of 9 MC or less without paying its MC cost. During the production phase, draw a card.")
                 .incomes(List.of(Gain.of(GainType.CARD, 1)))
+                .cardAction(CardAction.AUTOMATED_FACTORIES)
                 .build();
     }
 

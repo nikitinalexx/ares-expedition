@@ -567,6 +567,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.TALL_STATION;
   }
 
+  actionAutomatedFactories(card: Card): boolean {
+    return card.cardAction === CardAction.AUTOMATED_FACTORIES;
+  }
+
   actionTropicalIsland(card: Card): boolean {
     return card.cardAction === CardAction.TROPICAL_ISLAND;
   }

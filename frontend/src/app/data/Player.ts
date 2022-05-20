@@ -20,6 +20,9 @@ export class Player {
               terraformingRating: number,
               winPoints: number,
               forests: number,
+              builtSpecialDesignLastTurn: boolean,
+              builtWorkCrewsLastTurn: boolean,
+              canBuildAnotherGreenWith9Discount: boolean,
               activatedBlueCards: number[],
               corporationId?: number,
               phase?: number) {
@@ -49,5 +52,8 @@ export class Player {
   terraformingRating: number;
   winPoints: number;
   forests: number;
+  builtSpecialDesignLastTurn: boolean;
+  builtWorkCrewsLastTurn: boolean;
+  canBuildAnotherGreenWith9Discount: boolean;
 
 }

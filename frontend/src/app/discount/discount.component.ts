@@ -69,6 +69,14 @@ export class DiscountComponent {
       discount += 3;
     }
 
+    if (player.builtWorkCrewsLastTurn) {
+      discount += 11;
+    }
+
+    if (player.canBuildAnotherGreenWith9Discount && card.price < 10) {
+      discount += 9;
+    }
+
     return Math.min(card.price, discount);
   }
 

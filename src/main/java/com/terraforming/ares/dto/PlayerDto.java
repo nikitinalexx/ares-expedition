@@ -27,6 +27,9 @@ public class PlayerDto {
     private final int terraformingRating;
     private final int winPoints;
     private final int forests;
+    private final boolean builtSpecialDesignLastTurn;
+    private final boolean builtWorkCrewsLastTurn;
+    private final boolean canBuildAnotherGreenWith9Discount;
 
     private final int mc;
     private final int mcIncome;

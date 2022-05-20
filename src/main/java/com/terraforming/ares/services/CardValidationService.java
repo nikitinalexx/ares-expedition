@@ -70,7 +70,16 @@ public class CardValidationService {
                 .or(() -> validateTags(player, card))
                 .or(() -> validatePayments(card, player, payments))
                 .or(() -> validateInputParameters(card, player, inputParameters))
+                .or(() -> validateCustomCards(card, player))
                 .orElse(null);
+    }
+
+    private Optional<String> validateCustomCards(Card card, Player player) {
+        boolean canBuildAnotherGreenWith9Discount = player.isCanBuildAnotherGreenWith9Discount();
+
+        return Optional.ofNullable(
+                canBuildAnotherGreenWith9Discount && card.getPrice() >= 10 ? "You may only build a card with a price of 9 or less" : null
+        );
     }
 
     @SuppressWarnings("unchecked")

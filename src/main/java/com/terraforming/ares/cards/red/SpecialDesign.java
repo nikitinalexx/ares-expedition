@@ -21,6 +21,7 @@ public class SpecialDesign implements BaseExpansionRedCard {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
                 .name("Special Design")
+                //TODO reflect in ui
                 .description("You may play an additional blue or red card this phase. For the next card you play this phase, you may consider the oxygen or temperature one color higher or lower.")
                 .cardAction(CardAction.SPECIAL_DESIGN)
                 .build();

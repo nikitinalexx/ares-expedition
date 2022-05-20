@@ -114,12 +114,10 @@ public class PaymentValidationService {
             discount += 3;
         }
 
-        //todo add to frontend validation
         if (player.isBuiltWorkCrewsLastTurn()) {
             discount += 11;
         }
 
-        //todo add to frontend validation
         if (player.isCanBuildAnotherGreenWith9Discount() && card.getPrice() <= 9) {
             discount += 9;
         }
