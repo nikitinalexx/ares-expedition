@@ -14,7 +14,7 @@ import {CardResource} from '../../data/CardResource';
 import {CardAction} from '../../data/CardAction';
 import {Tag} from '../../data/Tag';
 import {InputFlag} from '../../data/InputFlag';
-import {DiscardCardsTurn} from "../../data/DiscardCardsTurn";
+import {DiscardCardsTurn} from '../../data/DiscardCardsTurn';
 
 @Component({
   selector: 'app-first-phase',

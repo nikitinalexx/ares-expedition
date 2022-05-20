@@ -174,8 +174,8 @@ export class GameComponent implements OnInit {
             && turns.find(t => t === TurnType.PERFORM_BLUE_ACTION)) {
             this.errorMessage = 'One of the global parameters reached maximum';
           }
-          this.nextTurns = turns;
           this.model.getGame(this.playerUuid).subscribe(game => {
+            this.nextTurns = turns;
             this.game = game;
             if (this.game.phase === 3 && (!this.thirdPhaseSubscription || this.thirdPhaseSubscription.closed)) {
               this.thirdPhaseSubscription = timer(2000, 2000).subscribe(
