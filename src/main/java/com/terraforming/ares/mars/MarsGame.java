@@ -47,7 +47,7 @@ public class MarsGame {
         playerUuidToPlayer = Stream.generate(
                 () -> Player.builder()
                         .uuid(UUID.randomUUID().toString())
-                        .hand(Deck.builder().cards(new LinkedList<>(List.of(69, 70, 71, 72, 73, 74, 163))).build())
+                        .hand(Deck.builder().cards(new LinkedList<>(List.of(69, 70, 71, 72, 73, 74, 102, 163))).build())
                         .corporations(corporationsDeck.dealCardsDeck(INITIAL_CORPORATIONS_SIZE))
                         .played(Deck.builder().build())
                         .build()

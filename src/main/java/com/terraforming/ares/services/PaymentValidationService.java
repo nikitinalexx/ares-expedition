@@ -46,9 +46,10 @@ public class PaymentValidationService {
 
 
         int discount = getDiscount(card, player);
+        discount += payments.stream().mapToInt(Payment::getDiscount).sum();
         int discountedPrice = Math.max(0, card.getPrice() - discount);
 
-        int totalPayment = payments.stream().mapToInt(Payment::getTotalValue).sum();
+        int totalPayment = payments.stream().mapToInt(Payment::getValue).sum();
 
         if (totalPayment < discountedPrice) {
             return "Total payment is not enough to cover the project price";

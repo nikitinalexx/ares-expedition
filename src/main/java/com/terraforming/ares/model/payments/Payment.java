@@ -27,7 +27,7 @@ public interface Payment {
     int getValue();
 
     @JsonIgnore
-    int getTotalValue();
+    int getDiscount();
 
     void pay(CardService deckService, Player player);
 }

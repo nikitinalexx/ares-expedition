@@ -20,8 +20,8 @@ public abstract class GenericPayment implements Payment{
     }
 
     @Override
-    public int getTotalValue() {
-        return value;
+    public int getDiscount() {
+        return 0;
     }
 
 

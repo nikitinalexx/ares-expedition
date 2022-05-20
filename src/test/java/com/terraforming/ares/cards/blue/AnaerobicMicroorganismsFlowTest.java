@@ -41,9 +41,7 @@ class AnaerobicMicroorganismsFlowTest {
         String errorMessage = paymentValidationService.validate(
                 new AiCentral(AI_CENTRAL_CARD_ID),
                 player,
-                Collections.singletonList(new AnaerobicMicroorganismsPayment(
-                        2
-                ))
+                Collections.singletonList(new AnaerobicMicroorganismsPayment())
         );
         assertEquals("Invalid payment: Anaerobic Microorganisms < 2", errorMessage);
     }
@@ -53,9 +51,7 @@ class AnaerobicMicroorganismsFlowTest {
         player.getCardResourcesCount().put(AnaerobicMicroorganisms.class, 3);
 
         String errorMessage = paymentValidationService.validate(
-                new AiCentral(AI_CENTRAL_CARD_ID), player, Collections.singletonList(new AnaerobicMicroorganismsPayment(
-                        2
-                ))
+                new AiCentral(AI_CENTRAL_CARD_ID), player, Collections.singletonList(new AnaerobicMicroorganismsPayment())
         );
         assertEquals("Total payment is not enough to cover the project price", errorMessage);
     }
@@ -69,7 +65,7 @@ class AnaerobicMicroorganismsFlowTest {
                 new AiCentral(AI_CENTRAL_CARD_ID),
                 player,
                 Arrays.asList(
-                        new AnaerobicMicroorganismsPayment(2),
+                        new AnaerobicMicroorganismsPayment(),
                         new MegacreditsPayment(12)
                 )
         );

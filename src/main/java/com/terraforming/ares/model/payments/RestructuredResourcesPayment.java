@@ -1,7 +1,6 @@
 package com.terraforming.ares.model.payments;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardService;
 import lombok.EqualsAndHashCode;
@@ -10,13 +9,9 @@ import lombok.EqualsAndHashCode;
  * Created by oleksii.nikitin
  * Creation date 03.05.2022
  */
-@EqualsAndHashCode(callSuper = true)
-public class RestructuredResourcesPayment extends GenericPayment {
+@EqualsAndHashCode()
+public class RestructuredResourcesPayment implements Payment {
 
-    @JsonCreator
-    public RestructuredResourcesPayment(@JsonProperty("value") int value) {
-        super(value);
-    }
 
     @Override
     public PaymentType getType() {
@@ -24,9 +19,16 @@ public class RestructuredResourcesPayment extends GenericPayment {
     }
 
     @Override
-    public int getTotalValue() {
+    public int getDiscount() {
         return 5;
     }
+
+    @Override
+    @JsonIgnore
+    public int getValue() {
+        return 0;
+    }
+
 
     @Override
     public void pay(CardService deckService, Player player) {

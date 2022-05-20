@@ -29,9 +29,9 @@ class TestTurnSerialization {
                 5,
                 List.of(
                         new MegacreditsPayment(5),
-                        new AnaerobicMicroorganismsPayment(1),
+                        new AnaerobicMicroorganismsPayment(),
                         new HeatPayment(6),
-                        new RestructuredResourcesPayment(3)
+                        new RestructuredResourcesPayment()
                 ),
                 Map.of(6, List.of(7, 8, 9))
         );
@@ -51,9 +51,9 @@ class TestTurnSerialization {
                 5,
                 List.of(
                         new MegacreditsPayment(5),
-                        new AnaerobicMicroorganismsPayment(1),
+                        new AnaerobicMicroorganismsPayment(),
                         new HeatPayment(6),
-                        new RestructuredResourcesPayment(3)
+                        new RestructuredResourcesPayment()
                 ),
                 Map.of(6, List.of(7, 8, 9))
         );

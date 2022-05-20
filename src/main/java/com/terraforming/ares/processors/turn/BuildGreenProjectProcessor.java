@@ -2,6 +2,7 @@ package com.terraforming.ares.processors.turn;
 
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.turn.BuildBlueRedProjectTurn;
 import com.terraforming.ares.model.turn.BuildGreenProjectTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
@@ -20,7 +21,14 @@ public class BuildGreenProjectProcessor extends GenericBuildProjectProcessor<Bui
     }
 
     @Override
-    protected void processTurnInternal(BuildGreenProjectTurn turn, MarsGame game) {
+    protected void processInternalBeforeBuild(BuildGreenProjectTurn turn, MarsGame game) {
+        Player player = game.getPlayerUuidToPlayer().get(turn.getPlayerUuid());
+
+        player.setCanBuildAnotherGreenWith9Discount(false);
+    }
+
+    @Override
+    protected void processInternalAfterBuild(BuildGreenProjectTurn turn, MarsGame game) {
         Player player = game.getPlayerUuidToPlayer().get(turn.getPlayerUuid());
 
         if (player.getCanBuildInFirstPhase() < 1) {

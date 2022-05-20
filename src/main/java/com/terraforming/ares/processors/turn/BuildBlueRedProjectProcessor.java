@@ -20,7 +20,15 @@ public class BuildBlueRedProjectProcessor extends GenericBuildProjectProcessor<B
     }
 
     @Override
-    protected void processTurnInternal(BuildBlueRedProjectTurn turn, MarsGame game) {
+    protected void processInternalBeforeBuild(BuildBlueRedProjectTurn turn, MarsGame game) {
+        Player player = game.getPlayerUuidToPlayer().get(turn.getPlayerUuid());
+
+        player.setBuiltSpecialDesignLastTurn(false);
+        player.setBuiltWorkCrewsLastTurn(false);
+    }
+
+    @Override
+    protected void processInternalAfterBuild(BuildBlueRedProjectTurn turn, MarsGame game) {
         Player player = game.getPlayerUuidToPlayer().get(turn.getPlayerUuid());
 
         if (player.getActionsInSecondPhase() < 1) {
@@ -28,8 +36,6 @@ public class BuildBlueRedProjectProcessor extends GenericBuildProjectProcessor<B
         }
 
         player.setActionsInSecondPhase(player.getActionsInSecondPhase() - 1);
-        player.setBuiltSpecialDesignLastTurn(false);
-        player.setBuiltWorkCrewsLastTurn(false);
     }
 
     @Override
