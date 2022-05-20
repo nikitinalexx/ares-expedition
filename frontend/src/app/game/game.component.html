@@ -56,43 +56,45 @@
     {{errorMessage}}
   </div>
 
-  <div>
-    <app-pick-corporation *ngIf="pickCorporationTurn()" (outputToParent)="GetOutputVal($event)"
-                          [game]="game"></app-pick-corporation>
-  </div>
+  <div *ngIf="nextTurns && nextTurns.length > 0">
+    <div>
+      <app-pick-corporation *ngIf="pickCorporationTurn()" (outputToParent)="GetOutputVal($event)"
+                            [game]="game"></app-pick-corporation>
+    </div>
 
-  <div>
-    <app-pick-phase *ngIf="pickPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"></app-pick-phase>
-  </div>
+    <div>
+      <app-pick-phase *ngIf="pickPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"></app-pick-phase>
+    </div>
 
-  <div>
-    <app-first-phase *ngIf="firstPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"
-                     [nextTurns]="nextTurns"></app-first-phase>
-  </div>
+    <div>
+      <app-first-phase *ngIf="firstPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"
+                       [nextTurns]="nextTurns"></app-first-phase>
+    </div>
 
-  <div>
-    <app-second-phase *ngIf="secondPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"
-                      [nextTurns]="nextTurns"></app-second-phase>
-  </div>
+    <div>
+      <app-second-phase *ngIf="secondPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"
+                        [nextTurns]="nextTurns"></app-second-phase>
+    </div>
 
-  <div>
-    <app-third-phase *ngIf="thirdPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"
-                     [nextTurns]="nextTurns"></app-third-phase>
-  </div>
+    <div>
+      <app-third-phase *ngIf="thirdPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"
+                       [nextTurns]="nextTurns"></app-third-phase>
+    </div>
 
-  <div>
-    <app-fourth-phase *ngIf="fourthPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"
-                      [nextTurns]="nextTurns"></app-fourth-phase>
-  </div>
+    <div>
+      <app-fourth-phase *ngIf="fourthPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"
+                        [nextTurns]="nextTurns"></app-fourth-phase>
+    </div>
 
-  <div>
-    <app-fifth-phase *ngIf="fifthPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"
-                     [nextTurns]="nextTurns"></app-fifth-phase>
-  </div>
+    <div>
+      <app-fifth-phase *ngIf="fifthPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"
+                       [nextTurns]="nextTurns"></app-fifth-phase>
+    </div>
 
-  <div>
-    <app-end-round *ngIf="sixthPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"
-                   [nextTurns]="nextTurns"></app-end-round>
+    <div>
+      <app-end-round *ngIf="sixthPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"
+                     [nextTurns]="nextTurns"></app-end-round>
+    </div>
   </div>
 
 </div>
