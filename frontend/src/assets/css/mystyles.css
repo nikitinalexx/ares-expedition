@@ -37,6 +37,16 @@ body {
   flex-direction: column;
 }
 
+.card-box {
+  display: inline-block;
+  vertical-align: top;
+}
+
+.card-box-container {
+  display: inline-table;
+  padding-left: 2rem;
+}
+
 .corporationLabel {
   float: left;
   position:absolute;

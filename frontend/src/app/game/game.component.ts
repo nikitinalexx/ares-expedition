@@ -7,6 +7,7 @@ import {TurnType} from '../data/TurnType';
 import {Subscription, timer} from 'rxjs';
 import {FormBuilder, FormGroup} from "@angular/forms";
 import {BasePlayer} from "../data/BasePlayer";
+import {CardColor} from "../data/CardColor";
 
 
 @Component({
@@ -52,6 +53,18 @@ export class GameComponent implements OnInit {
 
   getPlayerPlayedCards(player: BasePlayer): Card[] {
     return player?.played;
+  }
+
+  getPlayedBlueCardsWithCorporation(player: BasePlayer): Card[] {
+    return player?.played.filter(card => card.cardColor === CardColor.BLUE || card.cardColor === CardColor.CORPORATION);
+  }
+
+  getPlayedRedCards(player: BasePlayer): Card[] {
+    return player?.played.filter(card => card.cardColor === CardColor.RED);
+  }
+
+  getPlayedGreenCards(player: BasePlayer): Card[] {
+    return player?.played.filter(card => card.cardColor === CardColor.GREEN);
   }
 
   pickCorporationTurn(): boolean {

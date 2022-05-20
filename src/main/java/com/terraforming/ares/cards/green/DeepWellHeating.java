@@ -2,6 +2,7 @@ package com.terraforming.ares.cards.green;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.income.Gain;
@@ -39,9 +40,11 @@ public class DeepWellHeating implements BaseExpansionGreenCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
+        Player player = marsContext.getPlayer();
         TerraformingService terraformingService = marsContext.getTerraformingService();
 
-        terraformingService.increaseTemperature(marsContext.getGame(), marsContext.getPlayer());
+        terraformingService.increaseTemperature(marsContext.getGame(), player);
+        player.setHeatIncome(player.getHeatIncome() + 1);
 
         return null;
     }

@@ -98,7 +98,6 @@
 </div>
 
 
-
 <div *ngIf="gameEnd()" class="text-white" style="margin-left: 20px;">
   <div style="font-size: 30px;">Game Finished</div>
   <div>Your score: {{this.game.player.winPoints}}</div>
@@ -123,8 +122,35 @@
 
 <div class="card-container">
   <ul class="myUL">
-    <li *ngFor="let card of getPlayerPlayedCards(getPlayerToShow());" class="filterDiv automated display">
+    <li *ngFor="let card of getPlayedBlueCardsWithCorporation(getPlayerToShow());" class="filterDiv automated display">
       <app-card-template [card]="card" [game]="game" [showResources]="true"></app-card-template>
     </li>
   </ul>
+
+  <div class="card-box-container">
+    <div class="card-box">
+      <div *ngFor="let card of getPlayedGreenCards(getPlayerToShow()); let i = index;"
+           [ngClass]="i == 0 ? 'cards-stack-first': 'cards-stack'">
+
+        <div class="display stack">
+          <app-card-template [card]="card" [game]="game" [showResources]="true"></app-card-template>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-box">
+      <div *ngFor="let card of getPlayedRedCards(getPlayerToShow()); let i = index;"
+           [ngClass]="i == 0 ? 'cards-stack-first': 'cards-stack'">
+
+        <div class="display stack">
+          <app-card-template [card]="card" [game]="game" [showResources]="true"></app-card-template>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
+
+
+
+

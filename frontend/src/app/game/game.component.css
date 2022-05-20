@@ -492,3 +492,56 @@
   display: flex;
   justify-content: center;
 }
+
+.cards-stack {
+  position: relative;
+  margin-top: -256px;
+  filter: drop-shadow(0px -3px 3px black);
+  z-index: 1;
+}
+.cards-stack:hover {
+  z-index: 2;
+}
+
+.cards-stack-first {
+  position: relative;
+  z-index: 1;
+}
+
+.cards-stack-first:hover {
+  z-index: 2;
+}
+
+.stack {
+  position: relative;
+  width: 240px;
+  height: 310px;
+  font-family: Prototype;
+  font-size: 18px;
+  margin: 15px;
+  margin-bottom: 10px;
+  border-top: 4px solid rgb(221, 221, 221);
+  border-left: 4px solid rgb(221, 221, 221);
+  border-bottom: 4px solid rgb(137, 137, 137);
+  border-right: 4px solid rgb(137, 137, 137);
+  border-radius: 20px;
+  box-shadow: 0 0 2px 1px black;
+  transition: transform 200ms ease-in-out;
+  will-change: transform;
+}
+
+.stack::before {
+  background-size: 1000px;
+  background-image: url(../../assets/images/mars.png);
+  content: "";
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  width: 240px;
+  height: 310px;
+  top: 0;
+  left: 0;
+  background-position: -369px -11px;
+  border-radius: 15px;
+  filter: grayscale(1) brightness(1.9) contrast(0.6) hue-rotate(90deg);
+}
