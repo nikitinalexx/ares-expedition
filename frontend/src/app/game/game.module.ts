@@ -13,16 +13,17 @@ import {FourthPhaseComponent} from '../turns/fourthPhase/fourthPhase.component';
 import {ThirdPhaseComponent} from '../turns/thirdPhase/thirdPhase.component';
 import {FifthPhaseComponent} from '../turns/fifthPhase/fifthPhase.component';
 import {EndRoundComponent} from '../turns/endRoundPhase/endRound.component';
+import {NavbarComponent} from "../navbar/navbar.component";
 
 @NgModule({
   imports: [BrowserModule, ModelModule, ReactiveFormsModule, FormsModule, CardServiceModule],
   declarations: [GameComponent, PickCorporationComponent, PickPhaseComponent,
     FirstPhaseComponent, SecondPhaseComponent, SellCardsComponent, FourthPhaseComponent,
-    ThirdPhaseComponent, FifthPhaseComponent, EndRoundComponent
+    ThirdPhaseComponent, FifthPhaseComponent, EndRoundComponent, NavbarComponent
   ],
   exports: [GameComponent, PickCorporationComponent, PickPhaseComponent, ThirdPhaseComponent,
     FirstPhaseComponent, SecondPhaseComponent, SellCardsComponent, FourthPhaseComponent,
-    FifthPhaseComponent, EndRoundComponent],
+    FifthPhaseComponent, EndRoundComponent, NavbarComponent],
   providers: [SellCardsComponent]
 })
 export class GameModule {

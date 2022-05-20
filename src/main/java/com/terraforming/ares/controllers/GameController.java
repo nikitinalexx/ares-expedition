@@ -109,6 +109,19 @@ public class GameController {
         return AnotherPlayerDto.builder()
                 .phase(player.getChosenPhase())
                 .winPoints(winPointsService.countWinPoints(player))
+                .mc(player.getMc())
+                .mcIncome(player.getMcIncome())
+                .cardIncome(player.getCardIncome())
+                .heat(player.getHeat())
+                .heatIncome(player.getHeatIncome())
+                .plants(player.getPlants())
+                .plantsIncome(player.getPlantsIncome())
+                .steelIncome(player.getSteelIncome())
+                .titaniumIncome(player.getTitaniumIncome())
+                .terraformingRating(player.getTerraformingRating())
+                .forests(player.getForests())
+                .hand(player.getHand().getCards().stream().map(cardService::getCard).map(CardDto::from).collect(Collectors.toList()))
+                .played(player.getPlayed().getCards().stream().map(cardService::getCard).map(CardDto::from).collect(Collectors.toList()))
                 .build();
     }
 

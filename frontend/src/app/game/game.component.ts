@@ -1,10 +1,12 @@
-import {Component} from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
 import {GameRepository} from '../model/gameRepository.model';
 import {Game} from '../data/Game';
 import {Card} from '../data/Card';
 import {TurnType} from '../data/TurnType';
 import {Subscription, timer} from 'rxjs';
+import {FormBuilder, FormGroup} from "@angular/forms";
+import {BasePlayer} from "../data/BasePlayer";
 
 
 @Component({
@@ -12,7 +14,7 @@ import {Subscription, timer} from 'rxjs';
   templateUrl: './game.component.html',
   styleUrls: ['./game.component.css']
 })
-export class GameComponent {
+export class GameComponent implements OnInit {
   public errorMessage: string;
   private playerUuid: string;
   private nextAction: string;
@@ -20,8 +22,11 @@ export class GameComponent {
   public nextTurns: TurnType[];
   private subscription: Subscription;
   private thirdPhaseSubscription: Subscription;
+  parentForm: FormGroup;
 
-  constructor(private route: ActivatedRoute, private model: GameRepository) {
+  constructor(private route: ActivatedRoute,
+              private model: GameRepository,
+              private formBuilder: FormBuilder) {
     this.route.params.subscribe(playerUuid => {
       this.playerUuid = playerUuid.playerUuid;
       model.getGame(this.playerUuid).subscribe(data => {
@@ -31,16 +36,22 @@ export class GameComponent {
     });
   }
 
+  ngOnInit(): void {
+    this.parentForm = this.formBuilder.group({
+      player: 'You'
+    });
+  }
+
   getCorporationCards(): Card[] {
     return this.game?.player.corporations;
   }
 
-  getPlayerHand(): Card[] {
-    return this.game?.player.hand;
+  getPlayerHand(player: BasePlayer): Card[] {
+    return player?.hand;
   }
 
-  getPlayerPlayedCards(): Card[] {
-    return this.game?.player.played;
+  getPlayerPlayedCards(player: BasePlayer): Card[] {
+    return player?.played;
   }
 
   pickCorporationTurn(): boolean {
@@ -124,6 +135,17 @@ export class GameComponent {
       this.game.oceans = shortGame.oceans;
       this.game.phaseOceans = shortGame.phaseOceans;
     });
+  }
+
+  getPlayerToShow(): BasePlayer {
+    if (this.parentForm.value?.player === 'You') {
+      return this.game?.player;
+    } else {
+      const anotherPlayerId = this.parentForm.value.player as number;
+      const result = this.game?.otherPlayers[anotherPlayerId];
+      console.log(result);
+      return result;
+    }
   }
 
   identifyNextAction() {

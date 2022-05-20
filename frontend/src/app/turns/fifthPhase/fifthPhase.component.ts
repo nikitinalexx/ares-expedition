@@ -3,7 +3,7 @@ import {Game} from '../../data/Game';
 import {GameRepository} from '../../model/gameRepository.model';
 import {TurnType} from '../../data/TurnType';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
-import {Card} from "../../data/Card";
+import {Card} from '../../data/Card';
 
 @Component({
   selector: 'app-fifth-phase',

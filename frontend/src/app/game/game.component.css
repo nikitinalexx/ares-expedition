@@ -132,6 +132,17 @@
   text-align: center;
 }
 
+.view-choice {
+  position: absolute;
+  left: 5%;
+  top: 30%;
+
+  display: inline-table;
+  justify-content: center;
+  align-items: center;
+  text-align: left;
+}
+
 .tracker {
   position: absolute;
   width: 29px;
