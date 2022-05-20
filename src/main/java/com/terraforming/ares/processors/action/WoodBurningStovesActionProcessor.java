@@ -28,7 +28,7 @@ public class WoodBurningStovesActionProcessor implements BlueActionCardProcessor
 
         player.setPlants(player.getPlants() - price);
 
-        terraformingService.raiseOxygen(game, player);
+        terraformingService.increaseTemperature(game, player);
 
         return null;
     }

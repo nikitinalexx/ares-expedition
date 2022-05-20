@@ -63,10 +63,10 @@
   <div class="tracker temperature_{{game? game.temperature : 0}}"></div>
   <div class="tracker oxygen_{{game ? game.oxygen : 0}}"></div>
 
-  <div *ngIf="game?.phaseTemperature && game.phaseTemperature !== game.temperature"
+  <div *ngIf="game?.phaseTemperature && game.phaseTemperature !== game.temperature && game?.phase === 2"
        class="tracker tracker-transparent temperature_{{game? game.phaseTemperature : 0}}"></div>
 
-  <div *ngIf="game?.phaseOxygen !== null && game?.phaseOxygen !== game?.oxygen"
+  <div *ngIf="game?.phaseOxygen !== null && game?.phaseOxygen !== game?.oxygen && game?.phase === 2"
        class="tracker tracker-transparent oxygen_{{game ? game.phaseOxygen : 0}}"></div>
 
   <div *ngIf="game?.phaseOceans !== null && game?.phaseOceans !== game?.oceans.length

@@ -5,5 +5,8 @@ export enum CardResource {
   SCIENCE = 'SCIENCE',
   FOREST = 'FOREST',
   JUPITER = 'JUPITER',
+  BLUE_CARD = 'BLUE_CARD',
+  ANY_CARD = 'ANY_CARD',
+  EARTH = 'EARTH',
   ANY = 'ANY'
 }

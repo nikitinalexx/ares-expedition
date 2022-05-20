@@ -134,8 +134,8 @@
 
 .tracker {
   position: absolute;
-  width: 30px;
-  height: 30px;
+  width: 29px;
+  height: 29px;
   background-image: url(../../assets/images/misc/tracker.png);
   background-size: contain;
 }

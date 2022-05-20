@@ -11,5 +11,8 @@ public enum CardCollectableResource {
     SCIENCE,
     FOREST,
     JUPITER,
+    BLUE_CARD,
+    ANY_CARD,
+    EARTH,
     ANY
 }

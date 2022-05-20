@@ -1,14 +1,12 @@
 package com.terraforming.ares.services;
 
-import com.terraforming.ares.model.Card;
-import com.terraforming.ares.model.CardCollectableResource;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.winPoints.WinPointsInfo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -56,14 +54,24 @@ public class WinPointsService {
                                 resources = player.getForests();
                             } else if (winPointsInfo.getType() == CardCollectableResource.JUPITER) {
                                 resources = cardService.countPlayedTags(player, Tag.JUPITER);
+                            } else if (winPointsInfo.getType() == CardCollectableResource.BLUE_CARD) {
+                                resources = cardService.countPlayedCards(player, Set.of(CardColor.BLUE));
+                            } else if (winPointsInfo.getType() == CardCollectableResource.ANY_CARD) {
+                                resources = cardService.countPlayedCards(player, Set.of(CardColor.BLUE, CardColor.GREEN, CardColor.RED));
+                            } else if (winPointsInfo.getType() == CardCollectableResource.EARTH) {
+                                resources = cardService.countPlayedTags(player, Tag.EARTH);
                             }
 
-                            if (winPointsInfo.getPoints() >= winPointsInfo.getResources()) {
-                                return resources * winPointsInfo.getPoints() / winPointsInfo.getResources();
-                            } else {
-                                return winPointsInfo.getPoints() * (resources / winPointsInfo.getResources());
-                            }
+                            return getWinPoints(resources, winPointsInfo.getPoints(), winPointsInfo.getResources());
                         }
                 ).sum();
+    }
+
+    private int getWinPoints(int resources, int pointsRatio, int resourcesRatio) {
+        if (pointsRatio >= resourcesRatio) {
+            return resources * pointsRatio / resourcesRatio;
+        } else {
+            return pointsRatio * (resources / resourcesRatio);
+        }
     }
 }

@@ -1,12 +1,10 @@
 package com.terraforming.ares.cards.green;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.model.MarsContext;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.Tag;
-import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
+import com.terraforming.ares.model.winPoints.WinPointsInfo;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -28,6 +26,12 @@ public class ImmigrationShuttles implements BaseExpansionGreenCard {
                 .name("Immigration Shuttles")
                 .description("During the production phase, this produces 3 MC. 1 VP per 2 Earth tags you have.")
                 .incomes(List.of(Gain.of(GainType.MC, 3)))
+                .winPointsInfo(WinPointsInfo.builder()
+                        .type(CardCollectableResource.EARTH)
+                        .resources(2)
+                        .points(1)
+                        .build()
+                )
                 .build();
     }
 

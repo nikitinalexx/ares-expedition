@@ -720,6 +720,24 @@ li.events::before {
   background-image: url("../images/resources/jupiter.png");
 }
 
+.earth {
+  background-image: url("../images/resources/earth.png");
+}
+
+.blue_card {
+  width: 20px;
+  height: 28px;
+  background-size: 20px 28px;
+  background-image: url("../images/resources/blueCard.png");
+}
+
+.any_card {
+  width: 20px;
+  height: 28px;
+  background-size: 20px 28px;
+  background-image: url("../images/resources/card.png");
+}
+
 .forest {
   background-image: url(../images/tiles/greenery.png);
 }

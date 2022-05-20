@@ -9,6 +9,7 @@ import org.springframework.util.CollectionUtils;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -74,6 +75,20 @@ public class CardService {
                 .map(this::getCard)
                 .flatMap(card -> card.getTags().stream())
                 .filter(tag::equals)
+                .count();
+    }
+
+    public int countPlayedCards(Player player, Set<CardColor> colors) {
+        if (player == null || player.getPlayed() == null || CollectionUtils.isEmpty(player.getPlayed().getCards())) {
+            return 0;
+        }
+
+        return (int) player.getPlayed()
+                .getCards()
+                .stream()
+                .map(this::getCard)
+                .map(Card::getColor)
+                .filter(colors::contains)
                 .count();
     }
 

@@ -9,23 +9,28 @@
 <form [formGroup]="parentForm" (submit)="submitForm(parentForm)" novalidate>
 
   <div *ngIf="blueActionTurn()" class="form-check">
-    <input id="blueAction" (click)="clearInput()" type="radio" class="form-check-input" value="blueAction"
-           formControlName="turn" [checked]="this.parentForm.value?.turn === 'blueAction'">
-    <label class="custom-control-label text-white" for="blueAction">Perform action</label>
+
+    <div *ngIf="this.getActiveCards()?.length > 0 || canPlayExtraBlueAction()" style="display: inline-table; width: 500px">
+      <div *ngIf="this.getActiveCards()?.length > 0">
+        <input id="blueAction" (click)="clearInput()" type="radio" class="form-check-input" value="blueAction"
+               formControlName="turn" [checked]="this.parentForm.value?.turn === 'blueAction'">
+        <label class="custom-control-label text-white" for="blueAction">Perform action</label>
+      </div>
+
+      <div *ngIf="canPlayExtraBlueAction()" style="display: table-cell">
+        <input id="extraBlueAction" (click)="clearInput()" type="radio" class="form-check-input" value="extraBlueAction"
+               formControlName="turn" [checked]="this.parentForm.value?.turn === 'extraBlueAction'">
+        <label class="custom-control-label text-white" for="extraBlueAction">Perform extra action</label>
+      </div>
+    </div>
 
     <div *ngIf="parentForm.value?.turn === 'blueAction'" class="card-container">
       <ul class="myUL">
         <li *ngFor="let card of getActiveCards();" (click)="selectProject(card)"
             [ngClass]="selectedProjectClass(card)" class="filterDiv automated display">
-          <app-card-template [card]="card"></app-card-template>
+          <app-card-template [card]="card" [game]="game" [showResources]="true"></app-card-template>
         </li>
       </ul>
-    </div>
-
-    <div *ngIf="canPlayExtraBlueAction()">
-      <input id="extraBlueAction" (click)="clearInput()" type="radio" class="form-check-input" value="extraBlueAction"
-             formControlName="turn" [checked]="this.parentForm.value?.turn === 'extraBlueAction'">
-      <label class="custom-control-label text-white" for="extraBlueAction">Perform extra action</label>
     </div>
 
     <div *ngIf="parentForm.value?.turn === 'extraBlueAction'" class="card-container">
@@ -60,7 +65,7 @@
       </div>
     </div>
 
-    <div *ngIf="expectsAddDiscardMicrobeInput()">
+    <div *ngIf="expectsAddDiscardMicrobeInput()" style="margin-left: 20px">
       <div class="form-group">
         <div class="form-row">
           <div class="col-sm-1">

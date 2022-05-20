@@ -67,8 +67,7 @@ export class ThirdPhaseComponent implements OnInit {
   }
 
   blueActionTurn(): boolean {
-    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.PERFORM_BLUE_ACTION])?.length > 0
-      && this.getActiveCards()?.length > 0;
+    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.PERFORM_BLUE_ACTION])?.length > 0;
   }
 
   plantForestTurn(): boolean {
@@ -161,9 +160,11 @@ export class ThirdPhaseComponent implements OnInit {
 
   selectProject(card: Card) {
     if (this.selectedProject && this.selectedProject.id === card.id) {
+      console.log('selectProject clear input');
       this.clearInput();
     } else {
       this.selectedProject = card;
+      console.log('select project set = card');
     }
   }
 
@@ -176,6 +177,7 @@ export class ThirdPhaseComponent implements OnInit {
 
   clearInput() {
     this.selectedProject = null;
+    console.log('set null');
     this.actionTargetCards = [];
     this.errorMessage = null;
   }
@@ -338,7 +340,8 @@ export class ThirdPhaseComponent implements OnInit {
         this.gameRepository.blueAction(request).subscribe(data => {
           this.sendToParent(data);
           this.clearInput();
-          this.parentForm.value.turn = 'blueAction';
+
+          this.parentForm.get('turn').setValue('blueAction');
         }, error => {
           this.errorMessage = error;
         });

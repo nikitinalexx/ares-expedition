@@ -2,8 +2,10 @@ package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.CardAction;
+import com.terraforming.ares.model.CardCollectableResource;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.model.winPoints.WinPointsInfo;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -25,6 +27,12 @@ public class ThinkTank implements BlueCard {
                 .name("Think Tank")
                 .description("Action: Spend 2 MC to draw a card. 1 VP per 3 blue cards you have in play.")
                 .cardAction(CardAction.THINKTANK)
+                .winPointsInfo(WinPointsInfo.builder()
+                        .type(CardCollectableResource.BLUE_CARD)
+                        .resources(3)
+                        .points(1)
+                        .build()
+                )
                 .build();
     }
 
