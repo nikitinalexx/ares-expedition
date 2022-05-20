@@ -1,6 +1,7 @@
 import {Component, Input} from '@angular/core';
 import {BasePlayer} from '../data/BasePlayer';
 import {Game} from '../data/Game';
+import {Tag} from "../data/Tag";
 
 @Component({
   selector: 'app-navbar',
@@ -44,6 +45,16 @@ export class NavbarComponent {
     }
 
     return result;
+  }
+
+  getUniqueTags() {
+    const tags = this.player?.played.map(card => card.tags).reduce((acc, val) => acc.concat(val), []);
+    if (!tags) {
+      return [];
+    }
+
+    const result = tags?.reduce((a, c) => (a.set(c, (a.get(c) || 0) + 1), a), new Map<Tag, number>());
+    return Array.from(result?.entries());
   }
 
   currentPhase(phase: number): boolean {

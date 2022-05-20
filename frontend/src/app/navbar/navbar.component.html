@@ -54,9 +54,19 @@
         </div>
       </div>
 
-      <div *ngFor="let item of chosenPhases()" class="phaseDisplay display phase-{{item}}"
-           [ngClass]="phaseDisplayStyles(item)"></div>
+      <div class="player-tags-secondary">
+
+        <div *ngFor="let entry of getUniqueTags();" class="tag-count-container">
+          <div class="tag-and-discount"><!----> <!---->
+            <div class="tag-display">
+              <div class="tag-count tag-{{entry[0].toLowerCase()}} tag-size-big tag-type-secondary"></div>
+              <span class="tag-count-display">{{entry[1]}}</span></div>
+          </div>
+        </div>
+
+      </div>
     </div>
+
   </div>
 
 </nav>

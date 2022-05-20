@@ -91,28 +91,6 @@ body {
   will-change: transform;
 }
 
-.phaseDisplay {
-  cursor: pointer;
-  float: left;
-  position: relative;
-  width: 40px;
-  height: 40px;
-  display: none;
-  font-family: Prototype;
-  font-size: 18px;
-  margin: 15px;
-  margin-bottom: 10px;
-  border-top: 4px solid rgb(221, 221, 221);
-  border-left: 4px solid rgb(221, 221, 221);
-  border-bottom: 4px solid rgb(137, 137, 137);
-  border-right: 4px solid rgb(137, 137, 137);
-  border-radius: 20px;
-  box-shadow: 0 0 2px 1px black;
-  transition: transform 200ms ease-in-out;
-  will-change: transform;
-  background-size: contain;
-}
-
 
 .phase-size {
   height: 240px;

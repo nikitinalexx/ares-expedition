@@ -18,6 +18,12 @@
   </div>
 </form>
 
+<div class="display-phase-container">
+  <div *ngFor="let item of chosenPhases()" class="phaseDisplay display phase-{{item}}"
+       [ngClass]="phaseDisplayStyles(item)"></div>
+</div>
+
+
 <div class="surface">
   <div class="tracker temperature_{{game? game.temperature : 0}}"></div>
   <div class="tracker oxygen_{{game ? game.oxygen : 0}}"></div>

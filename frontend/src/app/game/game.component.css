@@ -45,6 +45,18 @@
   margin-left: 0;
 }
 
+.tag-and-discount {
+  position: relative;
+}
+
+.player-info .player-tags .player-tags-secondary {
+  display: flex;
+  flex-flow: row;
+  align-items: center;
+  position: relative;
+  margin-left: 5px;
+}
+
 .tag-display {
   display: flex;
   flex-flow: column;
@@ -71,6 +83,7 @@
   background: linear-gradient(#cc8b00, #805700, #805700) !important;
   background-position: 0px !important;
 }
+
 .tag-vp::after {
   position: absolute;
   content: "VP";
@@ -95,6 +108,12 @@
   width: 40px;
   height: 34px;
   background-size: 40px 34px;
+}
+
+.tag-type-secondary {
+  width: 34px;
+  height: 34px;
+  background-size: 38px;
 }
 
 .tag-count-display {
@@ -406,11 +425,11 @@
   background-image: url(../../assets/images/resources/plant.png);
 }
 
-.resource_icon--steel{
+.resource_icon--steel {
   background-image: url(../../assets/images/resources/steel.png);
 }
 
-.resource_icon--titanium{
+.resource_icon--titanium {
   background-image: url(../../assets/images/resources/titanium.png);
 }
 
@@ -441,6 +460,35 @@
   min-width: 40px;
   text-align: center;
 }
+
 .resource_item_prod_count {
   display: inline-block;
+}
+
+
+.phaseDisplay {
+  float: left;
+  width: 40px;
+  height: 40px;
+  font-family: Prototype;
+  font-size: 18px;
+  margin: 5px;
+  border-top: 4px solid rgb(221, 221, 221);
+  border-left: 4px solid rgb(221, 221, 221);
+  border-bottom: 4px solid rgb(137, 137, 137);
+  border-right: 4px solid rgb(137, 137, 137);
+  border-radius: 20px;
+  box-shadow: 0 0 2px 1px black;
+  will-change: transform;
+  background-size: contain;
+}
+
+.display-phase-container {
+  position: absolute;
+  left: 2%;
+  top: 65%;
+  width: 250px;
+  height: 40px;
+  display: flex;
+  justify-content: center;
 }
