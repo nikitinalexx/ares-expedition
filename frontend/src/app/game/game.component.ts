@@ -155,9 +155,7 @@ export class GameComponent implements OnInit {
       return this.game?.player;
     } else {
       const anotherPlayerId = this.parentForm.value.player as number;
-      const result = this.game?.otherPlayers[anotherPlayerId];
-      console.log(result);
-      return result;
+      return this.game?.otherPlayers[anotherPlayerId];
     }
   }
 
@@ -166,17 +164,20 @@ export class GameComponent implements OnInit {
       const previousAction = this.nextAction;
       this.nextAction = data.action;
       if (this.nextAction === 'TURN') {
-        this.errorMessage = null;
         this.model.nextTurns(this.playerUuid).subscribe(turns => {
-          if (!this.nextTurns
+          const globalParamReachedMax = !this.nextTurns
             && previousAction === 'WAIT'
             && this.game.phase === 3
-            && turns.find(t => t === TurnType.PERFORM_BLUE_ACTION)) {
+            && turns.find(t => t === TurnType.PERFORM_BLUE_ACTION);
+          if (globalParamReachedMax) {
             this.errorMessage = 'One of the global parameters reached maximum';
           }
           this.model.getGame(this.playerUuid).subscribe(game => {
-            this.game = game;
             this.nextTurns = turns;
+            this.game = game;
+            if (!globalParamReachedMax) {
+              this.errorMessage = null;
+            }
             if (this.game.phase === 3 && (!this.thirdPhaseSubscription || this.thirdPhaseSubscription.closed)) {
               this.thirdPhaseSubscription = timer(2000, 2000).subscribe(
                 val => this.updateGameShort()
