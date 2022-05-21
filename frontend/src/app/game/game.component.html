@@ -148,6 +148,9 @@
            [ngClass]="i == 0 ? 'cards-stack-first': 'cards-stack'">
 
         <div class="display stack">
+          <div class="stack-hidden-area" onmouseenter="this.parentElement.parentElement.style.zIndex = '1';"
+               onmouseleave="this.parentElement.parentElement.style.zIndex = null;"
+          ></div>
           <app-card-template [card]="card" [game]="game" [showResources]="true"></app-card-template>
         </div>
       </div>
