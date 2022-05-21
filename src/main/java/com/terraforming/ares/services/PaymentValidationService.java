@@ -114,6 +114,10 @@ public class PaymentValidationService {
             discount += 3;
         }
 
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.TORGATE_ENERGY_DISCOUNT) && card.getTags().contains(Tag.ENERGY)) {
+            discount += 3;
+        }
+
         if (player.isBuiltWorkCrewsLastTurn()) {
             discount += 11;
         }

@@ -591,6 +591,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.LAUNCH_STAR_CORPORATION;
   }
 
+  isThorgateCorporation(card: Card): boolean {
+    return card.cardAction === CardAction.THORGATE_CORPORATION;
+  }
+
   hasTagRequirements(card: Card): boolean {
     return card.tagReq.length !== 0;
   }

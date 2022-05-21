@@ -1,10 +1,7 @@
 package com.terraforming.ares.services;
 
 import com.terraforming.ares.cards.blue.*;
-import com.terraforming.ares.cards.corporations.CelestiorCorporation;
-import com.terraforming.ares.cards.corporations.DevTechs;
-import com.terraforming.ares.cards.corporations.HelionCorporation;
-import com.terraforming.ares.cards.corporations.LaunchStarIncorporated;
+import com.terraforming.ares.cards.corporations.*;
 import com.terraforming.ares.cards.green.*;
 import com.terraforming.ares.cards.red.*;
 import com.terraforming.ares.model.Card;
@@ -28,7 +25,8 @@ public class CardFactory {
             new HelionCorporation(10000),
             new CelestiorCorporation(10001),
             new DevTechs(10002),
-            new LaunchStarIncorporated(10003)
+            new LaunchStarIncorporated(10003),
+            new ThorgateCorporation(10004)
     ).stream().collect(Collectors.toMap(Card::getId, Function.identity()));
 
     private final Map<Integer, ProjectCard> inmemoryProjectCards;

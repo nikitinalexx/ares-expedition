@@ -55,6 +55,10 @@ export class DiscountComponent {
       discount += 5;
     }
 
+    if (this.cardHasTag(card, Tag.ENERGY) && this.ownsSpecialEffect(player, SpecialEffect.TORGATE_ENERGY_DISCOUNT)) {
+      discount += 3;
+    }
+
     if (this.ownsSpecialEffect(player, SpecialEffect.RESEARCH_OUTPOST_DISCOUNT_1)) {
       discount += 1;
     }

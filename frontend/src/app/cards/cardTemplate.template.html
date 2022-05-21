@@ -64,6 +64,19 @@
         (Effect: When you play a blue card, you pay 3 MC less for it.)
       </div>
     </div>
+
+    <div *ngIf="isThorgateCorporation(card)">
+      <div class="corporationEffectBoxLabel">EFFECT</div>
+
+      <div class="resource-tag tag-energy"></div>
+      :
+      <div class=" money resource ">-3</div>
+
+      <div class="description" style="text-align:center;margin-top:0px;">
+        (Effect: When you play an Energy tag, you pay 3 MC less for it.)
+      </div>
+    </div>
+
   </div>
 
   <div *ngIf="isHelionCorporation(card)">
@@ -129,6 +142,19 @@
     </div>
   </div>
 
+  <div *ngIf="isThorgateCorporation(card)">
+    <div class="corporation-name">
+      thorgate
+    </div>
+    <br/>
+    <div class="resource money" style="margin-left:55px;">45</div>
+    <div class="production-box production-box-size1a" style="margin-left:20px;margin-top:-50px;">
+      <div class="production heat"></div>
+    </div>
+    <div class="description" style="text-align:center;">
+      (You start with 45 MC and 1 heat production.)
+    </div>
+  </div>
 </div>
 
 <div *ngIf="!card.corporation" class="content ">
