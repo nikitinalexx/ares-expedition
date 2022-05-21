@@ -26,7 +26,8 @@ public class CardFactory {
             new CelestiorCorporation(10001),
             new DevTechs(10002),
             new LaunchStarIncorporated(10003),
-            new ThorgateCorporation(10004)
+            new ThorgateCorporation(10004),
+            new TeractorCorporation(10005)
     ).stream().collect(Collectors.toMap(Card::getId, Function.identity()));
 
     private final Map<Integer, ProjectCard> inmemoryProjectCards;

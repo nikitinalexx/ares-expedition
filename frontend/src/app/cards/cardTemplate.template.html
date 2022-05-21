@@ -77,6 +77,18 @@
       </div>
     </div>
 
+    <div *ngIf="isTeractorCorporation(card)">
+      <div class="corporationEffectBoxLabel">EFFECT</div>
+
+      <div class="resource-tag tag-earth"></div>
+      :
+      <div class=" money resource ">-3</div>
+
+      <div class="description" style="text-align:center;margin-top:0px;">
+        (Effect: When you play an Earth tag, you pay 3 MC less for it.)
+      </div>
+    </div>
+
   </div>
 
   <div *ngIf="isHelionCorporation(card)">
@@ -155,6 +167,18 @@
       (You start with 45 MC and 1 heat production.)
     </div>
   </div>
+
+  <div *ngIf="isTeractorCorporation(card)">
+    <div class="corporation-name">
+      teractor
+    </div>
+    <br/>
+    <div class="resource money" style="margin-left: 92px;">51</div>
+    <div class="description" style="text-align:center; margin-left: 53px;">
+      (You start with 51 MC.)
+    </div>
+  </div>
+
 </div>
 
 <div *ngIf="!card.corporation" class="content ">

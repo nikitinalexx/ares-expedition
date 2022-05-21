@@ -59,6 +59,10 @@ export class DiscountComponent {
       discount += 3;
     }
 
+    if (this.cardHasTag(card, Tag.EARTH) && this.ownsSpecialEffect(player, SpecialEffect.TERACTOR_EARTH_DISCOUNT)) {
+      discount += 3;
+    }
+
     if (this.ownsSpecialEffect(player, SpecialEffect.RESEARCH_OUTPOST_DISCOUNT_1)) {
       discount += 1;
     }

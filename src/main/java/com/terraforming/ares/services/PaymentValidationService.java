@@ -118,6 +118,10 @@ public class PaymentValidationService {
             discount += 3;
         }
 
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.TERACTOR_EARTH_DISCOUNT) && card.getTags().contains(Tag.EARTH)) {
+            discount += 3;
+        }
+
         if (player.isBuiltWorkCrewsLastTurn()) {
             discount += 11;
         }

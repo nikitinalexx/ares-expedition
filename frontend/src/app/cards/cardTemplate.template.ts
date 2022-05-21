@@ -595,6 +595,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.THORGATE_CORPORATION;
   }
 
+  isTeractorCorporation(card: Card): boolean {
+    return card.cardAction === CardAction.TERACTOR_CORPORATION;
+  }
+
   hasTagRequirements(card: Card): boolean {
     return card.tagReq.length !== 0;
   }
