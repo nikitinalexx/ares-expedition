@@ -1,7 +1,8 @@
 import {Card} from "./Card";
 
 export class BasePlayer {
-  constructor(winPoints: number,
+  constructor(name: string,
+              winPoints: number,
               mc: number,
               hand: Card[],
               played: Card[],
@@ -19,6 +20,7 @@ export class BasePlayer {
 
   }
 
+  name: string;
   winPoints: number;
   mc: number;
   heat: number;

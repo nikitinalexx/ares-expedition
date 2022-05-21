@@ -2,16 +2,27 @@
      *ngIf="errorMessage != null">
   {{errorMessage}}
 </div>
-<form #form="ngForm" (ngSubmit)="createNewGame(form)">
-  <div class="d-grid gap-2 col-6 mx-auto" style="margin-top: 200px;">
-    <label for="playerCount" class="form-label p-1 mb-2 bg-warning text-dark">Player count (2)</label>
-    <input type="number" class="form-control" id="playerCount" name="playerCount" [(ngModel)]="playerCount">
+<form [formGroup]="parentForm" (submit)="submitForm(parentForm)" novalidate>
+  <div class="d-grid gap-2 col-6 mx-auto" style="margin-top: 100px;">
+    <label for="playerCount" class="form-label bg-warning text-dark">1 Player</label>
+    <input id="playerCount" type="radio" class="form-check-input" value="1" formControlName="playerCount"
+           [checked]="this.parentForm.value?.playerCount === '1'"
+    >
+
+    <label for="playerCount2" class="form-label p-1 mb-2 bg-warning text-dark">2 Players</label>
+    <input id="playerCount2" type="radio" class="form-check-input" value="2" formControlName="playerCount">
+
+    <div *ngFor="let item of getPlayerCountArray(); let i = index">
+          <label for="playerName" class="form-label p-1 mb-2 bg-warning text-dark">Player {{item}} name</label>
+          <input type="text" class="form-control" id="playerName" [formControlName]="'playerName' + item">
+    </div>
+
     <button type="submit" class="btn btn-warning btn-lg">Create</button>
   </div>
 </form>
 
 <div *ngIf="playersPresent()" class="d-grid gap-2 col-6 mx-auto" style="margin-top: 10px;">
   <div *ngFor="let player of players" class="bg-warning">
-    <a href="{{getPlayerLink(player)}}" class="link-primary">{{getPlayerLink(player)}}</a>
+    <a href="{{getPlayerLink(player.uuid)}}" class="link-primary">{{player.name}}</a>
   </div>
 </div>

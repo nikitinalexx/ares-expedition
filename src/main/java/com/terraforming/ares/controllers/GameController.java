@@ -16,8 +16,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -37,14 +38,29 @@ public class GameController {
     @PostMapping("/game/new")
     public PlayerUuidsDto startNewGame(@RequestBody GameParameters gameParameters) {
         try {
-            if (gameParameters.getPlayersCount() != 2 && gameParameters.getPlayersCount() != 1) {
+            int playersCount = gameParameters.getPlayerNames().size();
+            if (playersCount != 2 && playersCount != 1) {
                 throw new IllegalArgumentException("Only one/two players are supported so far");
             }
 
             MarsGame marsGame = gameService.startNewGame(gameParameters);
 
+            Map<String, Player> playerNameToPlayer = marsGame.getPlayerUuidToPlayer().values().stream()
+                    .collect(Collectors.toMap(
+                            Player::getName, Function.identity()
+                    ));
+
+
             return PlayerUuidsDto.builder()
-                    .players(new ArrayList<>(marsGame.getPlayerUuidToPlayer().keySet()))
+                    .players(gameParameters.getPlayerNames().stream()
+                            .map(
+                                    playerName -> PlayerReference.builder()
+                                            .name(playerName)
+                                            .uuid(playerNameToPlayer.get(playerName).getUuid())
+                                            .build()
+                            )
+                            .collect(Collectors.toList())
+                    )
                     .build();
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
@@ -107,6 +123,7 @@ public class GameController {
 
     private AnotherPlayerDto buildAnotherPlayer(Player player) {
         return AnotherPlayerDto.builder()
+                .name(player.getName())
                 .phase(player.getChosenPhase())
                 .winPoints(winPointsService.countWinPoints(player))
                 .mc(player.getMc())
@@ -130,6 +147,7 @@ public class GameController {
 
         return PlayerDto.builder()
                 .playerUuid(player.getUuid())
+                .name(player.getName())
                 .corporations(corporations.getCards().stream().map(cardService::getCard).map(CardDto::from).collect(Collectors.toList()))
                 .hand(player.getHand().getCards().stream().map(cardService::getCard).map(CardDto::from).collect(Collectors.toList()))
                 .played(player.getPlayed().getCards().stream().map(cardService::getCard).map(CardDto::from).collect(Collectors.toList()))

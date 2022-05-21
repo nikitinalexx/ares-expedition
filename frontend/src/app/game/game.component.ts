@@ -5,9 +5,10 @@ import {Game} from '../data/Game';
 import {Card} from '../data/Card';
 import {TurnType} from '../data/TurnType';
 import {Subscription, timer} from 'rxjs';
-import {FormBuilder, FormGroup} from "@angular/forms";
-import {BasePlayer} from "../data/BasePlayer";
-import {CardColor} from "../data/CardColor";
+import {FormBuilder, FormGroup} from '@angular/forms';
+import {BasePlayer} from '../data/BasePlayer';
+import {CardColor} from '../data/CardColor';
+import {Tag} from '../data/Tag';
 
 
 @Component({
@@ -157,6 +158,16 @@ export class GameComponent implements OnInit {
       const anotherPlayerId = this.parentForm.value.player as number;
       return this.game?.otherPlayers[anotherPlayerId];
     }
+  }
+
+  getUniqueTags(player: BasePlayer) {
+    const tags = player?.played.map(card => card.tags).reduce((acc, val) => acc.concat(val), []);
+    if (!tags) {
+      return [];
+    }
+
+    const result = tags?.reduce((a, c) => (a.set(c, (a.get(c) || 0) + 1), a), new Map<Tag, number>());
+    return Array.from(result?.entries());
   }
 
   identifyNextAction() {

@@ -48,7 +48,7 @@ class AssetLiquidationFlowTest {
     @BeforeEach
     public void setUp() {
         MarsGame marsGame = new MarsGame(
-                2,
+                List.of("First", "Second"),
                 3,
                 buildProjectsDeck(),
                 buildCorporationsDeck(),

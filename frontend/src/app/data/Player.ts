@@ -2,7 +2,8 @@ import {Card} from './Card';
 import {BasePlayer} from './BasePlayer';
 
 export class Player extends BasePlayer {
-  constructor(playerUuid: string,
+  constructor(name: string,
+              playerUuid: string,
               corporations: Card[],
               hand: Card[],
               played: Card[],
@@ -28,7 +29,7 @@ export class Player extends BasePlayer {
               activatedBlueCards: number[],
               corporationId?: number,
               phase?: number) {
-    super(winPoints, mc, hand, played, heat, plants, mcIncome, heatIncome, plantsIncome,
+    super(name, winPoints, mc, hand, played, heat, plants, mcIncome, heatIncome, plantsIncome,
       steelIncome, titaniumIncome, cardIncome, terraformingRating, forests, phase);
   }
 

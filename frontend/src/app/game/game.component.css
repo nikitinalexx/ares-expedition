@@ -33,6 +33,11 @@
   border-radius: 8px;
 }
 
+.another-player-info {
+  display: flex;
+  flex-flow: row;
+}
+
 .player-info .player-tags {
   display: flex;
   flex-flow: row;
@@ -485,8 +490,8 @@
 
 .display-phase-container {
   position: absolute;
-  left: 2%;
-  top: 65%;
+  left: 2rem;
+  top: 25rem;
   width: 250px;
   height: 40px;
   display: flex;
@@ -550,4 +555,11 @@
   margin-top: 73px;
   height: 237px;
   z-index: 3;
+}
+
+.shrink{
+  -webkit-transform:scale(0.3);
+  -moz-transform:scale(0.3);
+  -ms-transform:scale(0.3);
+  transform:scale(0.3);
 }

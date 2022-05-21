@@ -2,6 +2,8 @@ package com.terraforming.ares.model;
 
 import lombok.*;
 
+import java.util.List;
+
 /**
  * Created by oleksii.nikitin
  * Creation date 25.04.2022
@@ -11,5 +13,5 @@ import lombok.*;
 @AllArgsConstructor
 @Getter
 public class GameParameters {
-    private int playersCount;
+    private List<String> playerNames;
 }

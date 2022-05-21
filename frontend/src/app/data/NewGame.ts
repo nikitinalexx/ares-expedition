@@ -1,7 +1,9 @@
+import {PlayerReference} from './PlayerReference';
+
 export class NewGame {
-  constructor(players: string[]) {
+  constructor(players: PlayerReference[]) {
   }
 
-  players: string[];
+  players: PlayerReference[];
 
 }

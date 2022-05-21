@@ -17,8 +17,8 @@ export class NewGameRepository {
     return this.projects;
   }
 
-  createNewGame(playersCount: number): Observable<NewGame> {
-    return this.dataSource.createGame(new NewGameRequest(playersCount));
+  createNewGame(request: NewGameRequest): Observable<NewGame> {
+    return this.dataSource.createGame(request);
   }
 
 }

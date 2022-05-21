@@ -31,7 +31,7 @@ public class DefaultGameFactory implements GameFactory {
         Planet mars = planetFactory.createMars(gameParameters);
 
         return new MarsGame(
-                gameParameters.getPlayersCount(),
+                gameParameters.getPlayerNames(),
                 Constants.DEFAULT_START_HAND_SIZE,
                 projectsDeck,
                 corporationsDeck,

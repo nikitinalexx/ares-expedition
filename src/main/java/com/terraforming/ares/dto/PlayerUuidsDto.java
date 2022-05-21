@@ -12,5 +12,5 @@ import java.util.List;
 @Data
 @Builder
 public class PlayerUuidsDto {
-    private List<String> players;
+    private List<PlayerReference> players;
 }

@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Created by oleksii.nikitin
@@ -25,7 +24,6 @@ public class MarsGame {
     private static final int INITIAL_CORPORATIONS_SIZE = 2;
 
     private Long id;
-    private int playersCount;
     private Map<String, Player> playerUuidToPlayer;
     private Deck projectsDeck;//TODO what if it gets empty
     private Deck corporationsDeck;
@@ -36,23 +34,21 @@ public class MarsGame {
     @JsonIgnore
     private int updateCounter;
 
-    public MarsGame(int playersCount, int playerHandSize, Deck projectsDeck, Deck corporationsDeck, Planet planet) {
-        this.playersCount = playersCount;
+    public MarsGame(List<String> playerNames, int playerHandSize, Deck projectsDeck, Deck corporationsDeck, Planet planet) {
         this.projectsDeck = projectsDeck;
         this.corporationsDeck = corporationsDeck;
         this.planet = planet;
         this.stateType = StateType.PICK_CORPORATIONS;
 
-        playerUuidToPlayer = Stream.generate(
-                () -> Player.builder()
+        playerUuidToPlayer = playerNames.stream().map(playerName ->
+                Player.builder()
                         .uuid(UUID.randomUUID().toString())
+                        .name(playerName)
                         .hand(projectsDeck.dealCardsDeck(playerHandSize))
                         .corporations(corporationsDeck.dealCardsDeck(INITIAL_CORPORATIONS_SIZE))
                         .played(Deck.builder().build())
-                        .build()
-        )
-                .limit(playersCount)
-                .collect(Collectors.toMap(Player::getUuid, Function.identity()));
+                        .build()).collect(Collectors.toMap(Player::getUuid, Function.identity())
+        );
     }
 
     public Player getPlayerByUuid(String playerUuid) {

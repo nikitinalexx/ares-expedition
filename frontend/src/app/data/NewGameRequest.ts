@@ -1,7 +1,7 @@
 export class NewGameRequest {
-  constructor(playersCount: number) {
-    this.playersCount = playersCount;
+  constructor(playerNames: string[]) {
+    this.playerNames = playerNames;
   }
 
-  playersCount: number;
+  playerNames: string[];
 }

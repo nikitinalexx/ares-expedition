@@ -1,6 +1,8 @@
-import {Component, Inject, InjectionToken} from '@angular/core';
+import {Component, Inject, InjectionToken, OnInit} from '@angular/core';
 import {NewGameRepository} from '../model/newGameRepository.model';
-import {NgForm} from '@angular/forms';
+import {FormBuilder, FormGroup, Validators} from '@angular/forms';
+import {NewGameRequest} from '../data/NewGameRequest';
+import {PlayerReference} from '../data/PlayerReference';
 
 
 export const BASE_URL = new InjectionToken('rest_url');
@@ -9,17 +11,38 @@ export const BASE_URL = new InjectionToken('rest_url');
   selector: 'app-new-game',
   templateUrl: './newGame.component.html'
 })
-export class NewGameComponent {
+export class NewGameComponent implements OnInit {
   public playerCount: number;
   public errorMessage: string;
-  public players: string[];
+  public players: PlayerReference[];
 
-  constructor(private model: NewGameRepository, @Inject(BASE_URL) private url: string) {
+  parentForm: FormGroup;
+
+  constructor(private model: NewGameRepository,
+              private formBuilder: FormBuilder,
+              @Inject(BASE_URL) private url: string) {
   }
 
-  createNewGame(form: NgForm) {
-    if (form.valid) {
-      this.model.createNewGame(this.playerCount)
+  ngOnInit(): void {
+    this.parentForm = this.formBuilder.group({
+      playerCount: ['2', Validators.required],
+      playerName1: '',
+      playerName2: ''
+    });
+  }
+
+  submitForm(formGroup: FormGroup) {
+    if (formGroup.valid) {
+      const names = [];
+      for (let i = 1; i <= this.parentForm.value.playerCount; i++) {
+        const name = this.parentForm.get('playerName' + i)?.value;
+        if (!name) {
+          this.errorMessage = 'Invalid names';
+          return;
+        }
+        names.push(name);
+      }
+      this.model.createNewGame(new NewGameRequest(names))
         .subscribe(response => {
           if (response) {
             this.errorMessage = null;
@@ -41,6 +64,14 @@ export class NewGameComponent {
 
   playersPresent(): boolean {
     return this.players && this.players.length !== 0;
+  }
+
+  getPlayerCountArray(): number[] {
+    const arr = [];
+    for (let i = 1; i <= this.parentForm.value.playerCount; i++) {
+      arr.push(i);
+    }
+    return arr;
   }
 
 }

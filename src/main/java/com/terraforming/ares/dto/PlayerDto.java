@@ -14,6 +14,7 @@ import java.util.Map;
 @Getter
 public class PlayerDto {
     private final String playerUuid;
+    private final String name;
     private final List<CardDto> corporations;
     private final List<CardDto> hand;
     private final List<CardDto> played;

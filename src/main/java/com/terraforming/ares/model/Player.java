@@ -20,6 +20,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class Player {
     private String uuid;
+    private String name;
     private Deck hand;
     @Builder.Default
     private Deck played = Deck.builder().build();
