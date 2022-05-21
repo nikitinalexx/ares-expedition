@@ -12,6 +12,9 @@
     <label for="playerCount2" class="form-label p-1 mb-2 bg-warning text-dark">2 Players</label>
     <input id="playerCount2" type="radio" class="form-check-input" value="2" formControlName="playerCount">
 
+    <label for="playerCount3" class="form-label p-1 mb-2 bg-warning text-dark">3 Players</label>
+    <input id="playerCount3" type="radio" class="form-check-input" value="3" formControlName="playerCount">
+
     <div *ngFor="let item of getPlayerCountArray(); let i = index">
           <label for="playerName" class="form-label p-1 mb-2 bg-warning text-dark">Player {{item}} name</label>
           <input type="text" class="form-control" id="playerName" [formControlName]="'playerName' + item">

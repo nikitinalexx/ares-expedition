@@ -498,6 +498,10 @@
   justify-content: center;
 }
 
+.display-phase-container .selectedPhase {
+  border-color: green;
+}
+
 .cards-stack {
   position: relative;
   margin-top: -256px;

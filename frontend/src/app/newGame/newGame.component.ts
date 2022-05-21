@@ -27,7 +27,8 @@ export class NewGameComponent implements OnInit {
     this.parentForm = this.formBuilder.group({
       playerCount: ['2', Validators.required],
       playerName1: '',
-      playerName2: ''
+      playerName2: '',
+      playerName3: ''
     });
   }
 

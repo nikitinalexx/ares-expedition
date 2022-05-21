@@ -127,14 +127,14 @@ export class GameComponent implements OnInit {
     return this.game?.phase === phase;
   }
 
-  phaseDisplayStyles(phase: number): string {
-    let result = '';
+  phaseDisplayStyles(phase: number): string[] {
+    const result = [];
     if (!this.currentPhase(phase)) {
-      result += 'phase-transparent';
+      result.push('phase-transparent');
     }
 
     if (this.game?.player?.phase === phase) {
-      result += ' selectedPhase';
+      result.push('selectedPhase');
     }
 
     return result;

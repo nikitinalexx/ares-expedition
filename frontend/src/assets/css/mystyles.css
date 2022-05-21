@@ -401,9 +401,6 @@ li.events::before {
   display: block;
 }
 
-.selectedPhase {
-  border-color: green;
-}
 
 .container {
   margin-top: 20px;

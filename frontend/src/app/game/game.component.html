@@ -19,8 +19,8 @@
 </form>
 
 <div class="display-phase-container">
-  <div *ngFor="let item of chosenPhases()" class="phaseDisplay display phase-{{item}}"
-       [ngClass]="phaseDisplayStyles(item)"></div>
+  <div *ngFor="let item of chosenPhases()" [ngClass]="phaseDisplayStyles(item)"
+       class="phaseDisplay display phase-{{item}}"></div>
 </div>
 
 
@@ -103,7 +103,7 @@
           <span class="tag-count-display">{{player?.forests}}</span>
         </div>
 
-        <ul class="myUL" style="height: 103px; width: 144px;">
+        <ul class="myUL" style="height: 87px; width: 144px;">
           <li *ngIf="player?.played.length > 0" class="filterDiv automated display shrink"
               style="margin-left: -100px; margin-top: -106px;"
           >
