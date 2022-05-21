@@ -31,6 +31,10 @@ public class LocalHeatTrappingOnBuiltEffectValidator implements OnBuiltEffectVal
 
     @Override
     public String validate(Card card, Player player, Map<Integer, List<Integer>> input) {
+        if (player.getHeat() < 3) {
+            return "Not enough heat";
+        }
+
         List<Integer> cardInput = input.get(InputFlag.LOCAL_HEAT_TRAPPING_PUT_RESOURCE.getId());
 
         if (CollectionUtils.isEmpty(cardInput)) {
