@@ -66,13 +66,14 @@ public class PaymentValidationService {
         List<Tag> tags = card.getTags();
 
         boolean playerOwnsAdvancedAlloys = specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ADVANCED_ALLOYS);
+        boolean playerOwnsPhobolog = specialEffectsService.ownsSpecialEffect(player, SpecialEffect.PHOBOLOG);
 
         if (tags.contains(Tag.BUILDING) && player.getSteelIncome() != 0) {
             discount += player.getSteelIncome() * (2 + (playerOwnsAdvancedAlloys ? 1 : 0));
         }
 
         if (tags.contains(Tag.SPACE) && player.getTitaniumIncome() != 0) {
-            discount += player.getTitaniumIncome() * (3 + (playerOwnsAdvancedAlloys ? 1 : 0));
+            discount += player.getTitaniumIncome() * (3 + (playerOwnsAdvancedAlloys ? 1 : 0) + (playerOwnsPhobolog ? 1 : 0));
         }
 
         if (card.getColor() == CardColor.GREEN && player.getChosenPhase() == 1) {

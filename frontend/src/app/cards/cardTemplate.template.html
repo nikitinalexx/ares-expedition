@@ -138,6 +138,18 @@
       </div>
     </div>
 
+    <div *ngIf="isPhobologCorporation(card)" style="margin-top: 10px;">
+      <div class="corporationEffectBoxLabel">EFFECT</div>
+
+      <div class="resource titanium"></div>
+      : +
+      <div class="resource money">1</div>
+
+      <div class="description" style="text-align:center;margin-top:0px;">
+        (Effect: Each Titanium you have is worth 1 MC extra.)
+      </div>
+    </div>
+
   </div>
 
   <div *ngIf="isHelionCorporation(card)">
@@ -258,6 +270,20 @@
     <div class="resource money" style="margin-left: 92px;">43</div>
     <div class="description" style="text-align:center; margin-left: 53px;">
       (You start with 43 MC.)
+    </div>
+  </div>
+
+  <div *ngIf="isPhobologCorporation(card)">
+    <div class="corporation-name">
+      phobolog
+    </div>
+    <br/>
+    <div class="resource money" style="margin-left:55px;">20</div>
+    <div class="production-box production-box-size1a" style="margin-left:20px;margin-top:-50px;">
+      <div class="production titanium"></div>
+    </div>
+    <div class="description" style="text-align:center;">
+      (You start with 20 MC and 1 titanium production.)
     </div>
   </div>
 

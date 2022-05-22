@@ -30,7 +30,8 @@ public class CardFactory {
             new TeractorCorporation(10005),
             new TharsisCorporation(10006),
             new CredicorCorporation(10007),
-            new ArclightCorporation(10008)
+            new ArclightCorporation(10008),
+            new PhobologCorporation(10009)
     ).stream().collect(Collectors.toMap(Card::getId, Function.identity()));
 
     private final Map<Integer, ProjectCard> inmemoryProjectCards;

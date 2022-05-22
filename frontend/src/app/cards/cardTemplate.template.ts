@@ -603,6 +603,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.ARCLIGHT_CORPORATION;
   }
 
+  isPhobologCorporation(card: Card): boolean {
+    return card.cardAction === CardAction.PHOBOLOG_CORPORATION;
+  }
+
   isCredicorCorporation(card: Card): boolean {
     return card.cardAction === CardAction.CREDICOR_CORPORATION;
   }

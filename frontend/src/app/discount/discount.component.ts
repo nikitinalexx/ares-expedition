@@ -21,13 +21,14 @@ export class DiscountComponent {
     let discount = 0;
 
     const ownsAdvancedAlloys = this.ownsSpecialEffect(player, SpecialEffect.ADVANCED_ALLOYS);
+    const ownsPhobolog = this.ownsSpecialEffect(player, SpecialEffect.PHOBOLOG);
 
     if (this.cardHasTag(card, Tag.BUILDING)) {
       discount += player.steelIncome * (2 + (ownsAdvancedAlloys ? 1 : 0));
     }
 
     if (this.cardHasTag(card, Tag.SPACE)) {
-      discount += player.titaniumIncome * (3 + (ownsAdvancedAlloys ? 1 : 0));
+      discount += player.titaniumIncome * (3 + (ownsAdvancedAlloys ? 1 : 0) + (ownsPhobolog ? 1 : 0));
     }
 
     if (card.cardColor === CardColor.GREEN && player.phase === 1) {
