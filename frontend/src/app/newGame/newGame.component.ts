@@ -28,7 +28,8 @@ export class NewGameComponent implements OnInit {
       playerCount: ['2', Validators.required],
       playerName1: '',
       playerName2: '',
-      playerName3: ''
+      playerName3: '',
+      playerName4: ''
     });
   }
 

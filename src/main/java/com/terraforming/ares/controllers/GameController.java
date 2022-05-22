@@ -39,8 +39,8 @@ public class GameController {
     public PlayerUuidsDto startNewGame(@RequestBody GameParameters gameParameters) {
         try {
             int playersCount = gameParameters.getPlayerNames().size();
-            if (playersCount == 0 || playersCount > 3) {
-                throw new IllegalArgumentException("Only 1 to 3 players are supported so far");
+            if (playersCount == 0 || playersCount > 4) {
+                throw new IllegalArgumentException("Only 1 to 4 players are supported so far");
             }
 
             MarsGame marsGame = gameService.startNewGame(gameParameters);
