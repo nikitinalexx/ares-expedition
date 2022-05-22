@@ -14,6 +14,17 @@
 <div *ngIf="!card.corporation" class="number">#{{getFormattedId(card)}}</div>
 
 <div *ngIf="card.corporation" class="contentCorporation">
+  <div *ngIf="card.winPointsInfo" class="points" style="font-size: 26px; margin-top: 258px;">
+    {{card.winPointsInfo.points + '/' +
+  (card.winPointsInfo.points >= card.winPointsInfo.resources ? '' : card.winPointsInfo.resources) }}
+    <div class="{{card.winPointsInfo.type.toString().toLowerCase()}} resource"></div>
+  </div>
+
+  <div *ngIf="game?.player && card.cardResource && showResources" class="points-player" style="margin-top: 263px;">
+    <span class="points-counter">{{game.player.cardResources[card.id]}}</span>
+    <span class="{{card.cardResource.toString().toLowerCase()}} resource player-resource"></span>
+  </div>
+
   <div class="corporationEffectBox">
     <div *ngIf="isHelionCorporation(card)">
       <div class="corporationEffectBoxLabel">EFFECT</div>
@@ -110,6 +121,20 @@
 
       <div class="description" style="text-align:center;margin-top:0px;">
         (Effect: When you play a card with a printed cost of 20 or more, get a 4 MC discount.)
+      </div>
+    </div>
+
+    <div *ngIf="isArclightCorporation(card)">
+      <div class="corporationEffectBoxLabel">EFFECT</div>
+
+      <div class="tag-animal resource-tag"></div>
+      /
+      <div class="tag-plant resource-tag"></div>
+      :
+      <div class="animal resource"></div>
+
+      <div class="description" style="text-align:center;margin-top:0px;">
+        (Effect: When you play an Animal or Plant tag including this, add an Animal to this card. 1 VP for 2 animals on this card.)
       </div>
     </div>
 
@@ -222,6 +247,17 @@
     <div class="resource money" style="margin-left: 93px;">48</div>
     <div class="description" style="text-align:center; margin-left: 42px;">
       (You start with 48 MC.)
+    </div>
+  </div>
+
+  <div *ngIf="isArclightCorporation(card)">
+    <div class="corporation-name" style="margin-left: -7px;">
+      arclight
+    </div>
+    <br/>
+    <div class="resource money" style="margin-left: 92px;">43</div>
+    <div class="description" style="text-align:center; margin-left: 53px;">
+      (You start with 43 MC.)
     </div>
   </div>
 
