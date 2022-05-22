@@ -3,24 +3,36 @@
   {{errorMessage}}
 </div>
 <form [formGroup]="parentForm" (submit)="submitForm(parentForm)" novalidate>
-  <div class="d-grid gap-2 col-6 mx-auto" style="margin-top: 100px;">
-    <label for="playerCount" class="form-label bg-warning text-dark">1 Player</label>
-    <input id="playerCount" type="radio" class="form-check-input" value="1" formControlName="playerCount"
-           [checked]="this.parentForm.value?.playerCount === '1'"
-    >
+  <div class="form-group col-6 mx-auto" style="margin-top: 100px;">
 
-    <label for="playerCount2" class="form-label p-1 mb-2 bg-warning text-dark">2 Players</label>
-    <input id="playerCount2" type="radio" class="form-check-input" value="2" formControlName="playerCount">
+    <label for="choices" class="form-label bg-warning text-dark" style="border-radius: 5px; font-size: 20px;">Players</label>
 
-    <label for="playerCount3" class="form-label p-1 mb-2 bg-warning text-dark">3 Players</label>
-    <input id="playerCount3" type="radio" class="form-check-input" value="3" formControlName="playerCount">
+    <div id="choices">
+      <div class="form-check form-check-inline bg-warning" style="border-radius: 5px;">
+        <label for="playerCount" class="form-label text-dark">1</label>
+        <input id="playerCount" type="radio" class="form-check-input" value="1" formControlName="playerCount"
+               [checked]="this.parentForm.value?.playerCount === '1'"
+        >
+      </div>
 
-    <div *ngFor="let item of getPlayerCountArray(); let i = index">
-          <label for="playerName" class="form-label p-1 mb-2 bg-warning text-dark">Player {{item}} name</label>
+      <div class="form-check form-check-inline bg-warning" style="border-radius: 5px;">
+        <label for="playerCount2" class="form-label text-dark">2</label>
+        <input id="playerCount2" type="radio" class="form-check-input" value="2" formControlName="playerCount">
+      </div>
+
+      <div class="form-check form-check-inline bg-warning" style="border-radius: 5px;">
+        <label for="playerCount3" class="form-label text-dark">3</label>
+        <input id="playerCount3" type="radio" class="form-check-input" value="3" formControlName="playerCount">
+      </div>
+    </div>
+
+
+    <div *ngFor="let item of getPlayerCountArray(); let i = index" style="margin-top: 15px;">
+          <label for="playerName" class="form-label p-1 mb-2 bg-warning text-dark" style="border-radius: 5px;">Player {{item}} name</label>
           <input type="text" class="form-control" id="playerName" [formControlName]="'playerName' + item">
     </div>
 
-    <button type="submit" class="btn btn-warning btn-lg">Create</button>
+    <button type="submit" class="btn btn-warning btn-lg" style="margin-top: 10px">Create</button>
   </div>
 </form>
 
