@@ -52,6 +52,11 @@ public class DraftCardsTurnProcessor implements TurnProcessor<DraftCardsTurn> {
             cardsToTake++;
         }
 
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.THARSIS_REPUBLIC)) {
+            cardsToDraft++;
+            cardsToTake++;
+        }
+
         cardsToTake = Math.min(cardsToTake, cardsToDraft);
 
         List<Integer> draftedCards = game.dealCards(cardsToDraft);

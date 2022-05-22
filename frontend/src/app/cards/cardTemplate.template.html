@@ -89,6 +89,30 @@
       </div>
     </div>
 
+    <div *ngIf="isTharsisCorporation(card)">
+      <div class="corporationEffectBoxLabel">EFFECT</div>
+
+      <div class="tile globals-box" style="height: 20px;">Research</div>
+      :<br/> Draw +<span class="card resource "></span>Keep +<span class="card resource "></span>
+
+      <div class="description" style="text-align:center;margin-top:0px;">
+        (Effect: During the research phase, draw and keep one additional card.)
+      </div>
+    </div>
+
+    <div *ngIf="isCredicorCorporation(card)">
+      <div class="corporationEffectBoxLabel">EFFECT</div>
+
+      <div class="resource card"></div>
+      <div class="money resource ">20</div>+
+      :
+      <div class="money resource ">-4</div>
+
+      <div class="description" style="text-align:center;margin-top:0px;">
+        (Effect: When you play a card with a printed cost of 20 or more, get a 4 MC discount.)
+      </div>
+    </div>
+
   </div>
 
   <div *ngIf="isHelionCorporation(card)">
@@ -176,6 +200,28 @@
     <div class="resource money" style="margin-left: 92px;">51</div>
     <div class="description" style="text-align:center; margin-left: 53px;">
       (You start with 51 MC.)
+    </div>
+  </div>
+
+  <div *ngIf="isTharsisCorporation(card)">
+    <div class="corporation-name" style="margin-left: 33px">
+      tharsis
+    </div>
+    <br/>
+    <div class="resource money" style="margin-left: 93px;">40</div>
+    <div class="description" style="text-align:center; margin-left: 42px;">
+      (You start with 40 MC.)
+    </div>
+  </div>
+
+  <div *ngIf="isCredicorCorporation(card)">
+    <div class="corporation-name" style="margin-left: 33px">
+      credicor
+    </div>
+    <br/>
+    <div class="resource money" style="margin-left: 93px;">48</div>
+    <div class="description" style="text-align:center; margin-left: 42px;">
+      (You start with 48 MC.)
     </div>
   </div>
 

@@ -122,6 +122,10 @@ public class PaymentValidationService {
             discount += 3;
         }
 
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.CREDICOR_DISCOUNT) && card.getPrice() >= 20) {
+            discount += 4;
+        }
+
         if (player.isBuiltWorkCrewsLastTurn()) {
             discount += 11;
         }

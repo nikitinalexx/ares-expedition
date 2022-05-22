@@ -595,6 +595,14 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.THORGATE_CORPORATION;
   }
 
+  isTharsisCorporation(card: Card): boolean {
+    return card.cardAction === CardAction.THARSIS_CORPORATION;
+  }
+
+  isCredicorCorporation(card: Card): boolean {
+    return card.cardAction === CardAction.CREDICOR_CORPORATION;
+  }
+
   isTeractorCorporation(card: Card): boolean {
     return card.cardAction === CardAction.TERACTOR_CORPORATION;
   }

@@ -77,6 +77,10 @@ export class DiscountComponent {
       discount += 3;
     }
 
+    if (this.ownsSpecialEffect(player, SpecialEffect.CREDICOR_DISCOUNT) && card.price >= 20) {
+      discount += 4;
+    }
+
     if (player.builtWorkCrewsLastTurn) {
       discount += 11;
     }
