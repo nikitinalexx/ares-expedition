@@ -36,7 +36,7 @@ class TestTurnSerialization {
                 Map.of(6, List.of(7, 8, 9))
         );
 
-        BuildBlueRedProjectTurn actualTurn = serializeDeserialize(expectedTurn);
+        BuildBlueRedProjectTurn actualTurn = (BuildBlueRedProjectTurn) serializeDeserialize(expectedTurn);
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
         assertEquals(expectedTurn.getProjectId(), actualTurn.getProjectId());
@@ -58,7 +58,7 @@ class TestTurnSerialization {
                 Map.of(6, List.of(7, 8, 9))
         );
 
-        BuildGreenProjectTurn actualTurn = serializeDeserialize(expectedTurn);
+        BuildGreenProjectTurn actualTurn = (BuildGreenProjectTurn) serializeDeserialize(expectedTurn);
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
         assertEquals(expectedTurn.getProjectId(), actualTurn.getProjectId());
@@ -69,7 +69,7 @@ class TestTurnSerialization {
     @Test
     void testCollectIncomeTurn() throws Exception {
         CollectIncomeTurn expectedTurn = new CollectIncomeTurn("uuid");
-        CollectIncomeTurn actualTurn = serializeDeserialize(expectedTurn);
+        CollectIncomeTurn actualTurn = (CollectIncomeTurn) serializeDeserialize(expectedTurn);
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
     }
@@ -77,7 +77,7 @@ class TestTurnSerialization {
     @Test
     void testCorporationChoiceTurn() throws Exception {
         CorporationChoiceTurn expectedTurn = new CorporationChoiceTurn("uuid", 5);
-        CorporationChoiceTurn actualTurn = serializeDeserialize(expectedTurn);
+        CorporationChoiceTurn actualTurn = (CorporationChoiceTurn) serializeDeserialize(expectedTurn);
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
         assertEquals(expectedTurn.getCorporationCardId(), actualTurn.getCorporationCardId());
@@ -92,7 +92,7 @@ class TestTurnSerialization {
                 true
         );
 
-        DiscardCardsTurn actualTurn = serializeDeserialize(expectedTurn);
+        DiscardCardsTurn actualTurn = (DiscardCardsTurn) serializeDeserialize(expectedTurn);
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
         assertEquals(expectedTurn.getCards(), actualTurn.getCards());
@@ -103,7 +103,7 @@ class TestTurnSerialization {
     @Test
     void testDraftCardsTurn() throws Exception {
         DraftCardsTurn expectedTurn = new DraftCardsTurn("uuid");
-        DraftCardsTurn actualTurn = serializeDeserialize(expectedTurn);
+        DraftCardsTurn actualTurn = (DraftCardsTurn) serializeDeserialize(expectedTurn);
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
     }
@@ -111,7 +111,7 @@ class TestTurnSerialization {
     @Test
     void testExchangeHeatTurn() throws Exception {
         ExchangeHeatTurn expectedTurn = new ExchangeHeatTurn("uuid", 10);
-        ExchangeHeatTurn actualTurn = serializeDeserialize(expectedTurn);
+        ExchangeHeatTurn actualTurn = (ExchangeHeatTurn) serializeDeserialize(expectedTurn);
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
         assertEquals(expectedTurn.getValue(), actualTurn.getValue());
@@ -120,7 +120,7 @@ class TestTurnSerialization {
     @Test
     void testGameEndConfirmTurn() throws Exception {
         GameEndConfirmTurn expectedTurn = new GameEndConfirmTurn("uuid");
-        GameEndConfirmTurn actualTurn = serializeDeserialize(expectedTurn);
+        GameEndConfirmTurn actualTurn = (GameEndConfirmTurn) serializeDeserialize(expectedTurn);
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
     }
@@ -128,7 +128,7 @@ class TestTurnSerialization {
     @Test
     void testIncreaseTemperatureTurn() throws Exception {
         IncreaseTemperatureTurn expectedTurn = new IncreaseTemperatureTurn("uuid");
-        IncreaseTemperatureTurn actualTurn = serializeDeserialize(expectedTurn);
+        IncreaseTemperatureTurn actualTurn = (IncreaseTemperatureTurn) serializeDeserialize(expectedTurn);
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
     }
@@ -141,7 +141,7 @@ class TestTurnSerialization {
                 List.of(7, 8)
 
         );
-        PerformBlueActionTurn actualTurn = serializeDeserialize(expectedTurn);
+        PerformBlueActionTurn actualTurn = (PerformBlueActionTurn) serializeDeserialize(expectedTurn);
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
         assertEquals(expectedTurn.getProjectId(), actualTurn.getProjectId());
@@ -155,7 +155,7 @@ class TestTurnSerialization {
                 20
 
         );
-        PhaseChoiceTurn actualTurn = serializeDeserialize(expectedTurn);
+        PhaseChoiceTurn actualTurn = (PhaseChoiceTurn) serializeDeserialize(expectedTurn);
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
         assertEquals(expectedTurn.getPhaseId(), actualTurn.getPhaseId());
@@ -164,7 +164,7 @@ class TestTurnSerialization {
     @Test
     void testPickExtraCardTurn() throws Exception {
         PickExtraCardTurn expectedTurn = new PickExtraCardTurn("uuid");
-        PickExtraCardTurn actualTurn = serializeDeserialize(expectedTurn);
+        PickExtraCardTurn actualTurn = (PickExtraCardTurn) serializeDeserialize(expectedTurn);
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
     }
@@ -172,7 +172,7 @@ class TestTurnSerialization {
     @Test
     void testPlantForestTurn() throws Exception {
         PlantForestTurn expectedTurn = new PlantForestTurn("uuid");
-        PlantForestTurn actualTurn = serializeDeserialize(expectedTurn);
+        PlantForestTurn actualTurn = (PlantForestTurn) serializeDeserialize(expectedTurn);
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
     }
@@ -183,7 +183,19 @@ class TestTurnSerialization {
                 "uuid",
                 List.of(100, 101, 102)
         );
-        SellCardsTurn actualTurn = serializeDeserialize(expectedTurn);
+        SellCardsTurn actualTurn = (SellCardsTurn) serializeDeserialize(expectedTurn);
+
+        assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
+        assertEquals(expectedTurn.getCards(), actualTurn.getCards());
+    }
+
+    @Test
+    void testSellCardsLastRoundTurn() throws Exception {
+        SellCardsLastRoundTurn expectedTurn = new SellCardsLastRoundTurn(
+                "uuid",
+                List.of(100, 101, 102)
+        );
+        SellCardsLastRoundTurn actualTurn = (SellCardsLastRoundTurn) serializeDeserialize(expectedTurn);
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
         assertEquals(expectedTurn.getCards(), actualTurn.getCards());
@@ -192,7 +204,7 @@ class TestTurnSerialization {
     @Test
     void testSkipTurn() throws Exception {
         SkipTurn expectedTurn = new SkipTurn("uuid");
-        SkipTurn actualTurn = serializeDeserialize(expectedTurn);
+        SkipTurn actualTurn = (SkipTurn) serializeDeserialize(expectedTurn);
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
     }
@@ -203,15 +215,15 @@ class TestTurnSerialization {
                 "uuid",
                 StandardProjectType.FOREST
         );
-        StandardProjectTurn actualTurn = serializeDeserialize(expectedTurn);
+        StandardProjectTurn actualTurn = (StandardProjectTurn) serializeDeserialize(expectedTurn);
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
         assertEquals(expectedTurn.getProjectType(), actualTurn.getProjectType());
     }
 
     @SuppressWarnings("unchecked")
-    private <T> T serializeDeserialize(T t) throws Exception {
+    private <T> Turn serializeDeserialize(T t) throws Exception {
         String json = objectMapper.writeValueAsString(t);
-        return (T) objectMapper.readValue(json, t.getClass());
+        return objectMapper.readValue(json, Turn.class);
     }
 }

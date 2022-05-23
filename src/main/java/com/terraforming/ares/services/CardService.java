@@ -18,11 +18,10 @@ import java.util.Set;
  * Creation date 25.04.2022
  */
 @Service
-@NoArgsConstructor
 public class CardService {
-    private ShuffleService shuffleService;
-    private Map<Integer, ProjectCard> projects;
-    private Map<Integer, CorporationCard> corporations;
+    private final ShuffleService shuffleService;
+    private final Map<Integer, ProjectCard> projects;
+    private final Map<Integer, CorporationCard> corporations;
 
     public CardService(CardFactory cardFactory, ShuffleService shuffleService) {
         this.shuffleService = shuffleService;

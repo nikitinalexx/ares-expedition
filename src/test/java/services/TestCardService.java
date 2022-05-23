@@ -4,10 +4,13 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Deck;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.services.CardFactory;
 import com.terraforming.ares.services.CardService;
+import org.checkerframework.checker.units.qual.C;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -24,11 +27,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 @ExtendWith(MockitoExtension.class)
 class TestCardService {
-    @Spy
     private CardService cardService;
+
+    @Mock
+    CardFactory cardFactory;
 
     @BeforeEach
     public void setUp() {
+        cardService = Mockito.spy(new CardService(cardFactory, null));
+
         Mockito.doReturn(
                 Deck.builder()
                         .cards(new LinkedList<>(List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)))
