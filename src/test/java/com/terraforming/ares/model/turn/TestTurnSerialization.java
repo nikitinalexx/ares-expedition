@@ -190,6 +190,18 @@ class TestTurnSerialization {
     }
 
     @Test
+    void testDiscardDraftedCardsTurn() throws Exception {
+        DiscardDraftedCardsTurn expectedTurn = new DiscardDraftedCardsTurn(
+                "uuid",
+                List.of(100, 101, 102)
+        );
+        DiscardDraftedCardsTurn actualTurn = (DiscardDraftedCardsTurn) serializeDeserialize(expectedTurn);
+
+        assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
+        assertEquals(expectedTurn.getCards(), actualTurn.getCards());
+    }
+
+    @Test
     void testSellCardsLastRoundTurn() throws Exception {
         SellCardsLastRoundTurn expectedTurn = new SellCardsLastRoundTurn(
                 "uuid",
