@@ -38,7 +38,7 @@ public class TerraformingService {
         player.setPlants(player.getPlants() + ocean.getPlants());
 
         if (ocean.getCards() != 0) {
-            for (Integer card : game.dealCards(ocean.getCards())) {
+            for (Integer card : cardService.dealCards(game, ocean.getCards())) {
                 player.getHand().addCard(card);
             }
         }

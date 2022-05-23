@@ -7,6 +7,7 @@ import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
 import com.terraforming.ares.model.turn.DraftCardsTurn;
 import com.terraforming.ares.model.turn.TurnType;
+import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.SpecialEffectsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DraftCardsTurnProcessor implements TurnProcessor<DraftCardsTurn> {
     private final SpecialEffectsService specialEffectsService;
+    private final CardService cardService;
 
     @Override
     public TurnType getType() {
@@ -59,7 +61,7 @@ public class DraftCardsTurnProcessor implements TurnProcessor<DraftCardsTurn> {
 
         cardsToTake = Math.min(cardsToTake, cardsToDraft);
 
-        List<Integer> draftedCards = game.dealCards(cardsToDraft);
+        List<Integer> draftedCards = cardService.dealCards(game, cardsToDraft);
         player.getHand().addCards(draftedCards);
 
         player.setNextTurn(

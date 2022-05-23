@@ -8,6 +8,7 @@ import com.terraforming.ares.model.StateType;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -25,7 +26,7 @@ public class MarsGame {
 
     private Long id;
     private Map<String, Player> playerUuidToPlayer;
-    private Deck projectsDeck;//TODO what if it gets empty
+    private Deck projectsDeck;
     private Deck corporationsDeck;
     private Planet planet;
     private Planet planetAtTheStartOfThePhase;
@@ -61,6 +62,19 @@ public class MarsGame {
 
     public List<Integer> dealCards(int count) {
         return projectsDeck.dealCards(count);
+    }
+
+    public void mergeDeck(Deck newDeck) {
+        LinkedList<Integer> cards = newDeck.getCards();
+
+        cards.removeAll(projectsDeck.getCards());
+
+        playerUuidToPlayer.values().forEach(player -> {
+            cards.removeAll(player.getPlayed().getCards());
+            cards.removeAll(player.getHand().getCards());
+        });
+
+        projectsDeck.addCards(cards);
     }
 
     public void setStateType(StateType stateType) {

@@ -38,7 +38,7 @@ public class BusinessContracts implements BaseExpansionRedCard {
     public TurnResponse buildProject(MarsContext marsContext) {
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 
-        for (Integer card : marsContext.getGame().dealCards(4)) {
+        for (Integer card : marsContext.getCardService().dealCards(marsContext.getGame(), 4)) {
             marsContext.getPlayer().getHand().addCard(card);
 
             Card projectCard = marsContext.getCardService().getCard(card);

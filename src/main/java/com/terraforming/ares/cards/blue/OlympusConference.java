@@ -42,7 +42,7 @@ public class OlympusConference implements BlueCard {
             return;
         }
 
-        for (Integer card : game.dealCards(scienceTags)) {
+        for (Integer card : cardService.dealCards(game, scienceTags)) {
             player.getHand().addCard(card);
         }
 

@@ -31,7 +31,7 @@ public class ThinkTankActionProcessor implements BlueActionCardProcessor<ThinkTa
 
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 
-        for (Integer card : game.dealCards(1)) {
+        for (Integer card : cardService.dealCards(game, 1)) {
             player.getHand().addCard(card);
 
             Card projectCard = cardService.getCard(card);

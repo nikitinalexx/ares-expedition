@@ -5,6 +5,7 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.turn.PickExtraCardTurn;
 import com.terraforming.ares.model.turn.TurnType;
+import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +18,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class PickExtraCardTurnProcessor implements TurnProcessor<PickExtraCardTurn> {
+    private final CardService cardService;
 
     @Override
     public TurnType getType() {
@@ -27,7 +29,7 @@ public class PickExtraCardTurnProcessor implements TurnProcessor<PickExtraCardTu
     public TurnResponse processTurn(PickExtraCardTurn turn, MarsGame game) {
         Player player = game.getPlayerByUuid(turn.getPlayerUuid());
 
-        List<Integer> cards = game.dealCards(1);
+        List<Integer> cards = cardService.dealCards(game, 1);
 
         for (Integer card : cards) {
             player.getHand().addCard(card);

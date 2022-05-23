@@ -48,7 +48,7 @@ public class LaunchStarIncorporated implements CorporationCard {
         player.setMc(36);
 
         while (true) {
-            List<Integer> cards = marsContext.getGame().dealCards(1);
+            List<Integer> cards = marsContext.getCardService().dealCards(marsContext.getGame(), 1);
             if (CollectionUtils.isEmpty(cards)) {
                 break;
             }

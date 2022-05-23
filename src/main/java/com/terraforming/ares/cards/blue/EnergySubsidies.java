@@ -56,7 +56,7 @@ public class EnergySubsidies implements BlueCard {
             return;
         }
 
-        for (Integer cardId : game.dealCards(1)) {
+        for (Integer cardId : cardService.dealCards(game, 1)) {
             player.getHand().addCard(cardId);
         }
     }

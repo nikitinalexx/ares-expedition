@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class CircuitBoardFactoryActionProcessor implements BlueActionCardProcessor<CircuitBoardFactory> {
-    private final CardService deckService;
+    private final CardService cardService;
 
     @Override
     public Class<CircuitBoardFactory> getType() {
@@ -29,10 +29,10 @@ public class CircuitBoardFactoryActionProcessor implements BlueActionCardProcess
     public TurnResponse process(MarsGame game, Player player) {
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 
-        for (Integer card : game.dealCards(1)) {
+        for (Integer card : cardService.dealCards(game, 1)) {
             player.getHand().addCard(card);
 
-            Card projectCard = deckService.getCard(card);
+            Card projectCard = cardService.getCard(card);
             resultBuilder.takenCard(CardDto.from(projectCard));
         }
 

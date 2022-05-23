@@ -17,7 +17,7 @@ import java.util.Collections;
  * Creation date 05.05.2022
  */
 @ExtendWith(MockitoExtension.class)
-public class TestCardValidationService {
+class TestCardValidationService {
     private CardValidationService cardValidationService;
 
     @Mock

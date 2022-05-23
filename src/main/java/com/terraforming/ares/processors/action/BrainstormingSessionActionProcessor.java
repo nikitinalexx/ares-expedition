@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class BrainstormingSessionActionProcessor implements BlueActionCardProcessor<BrainstormingSession> {
-    private final CardService deckService;
+    private final CardService cardService;
 
     @Override
     public Class<BrainstormingSession> getType() {
@@ -30,8 +30,8 @@ public class BrainstormingSessionActionProcessor implements BlueActionCardProces
     public TurnResponse process(MarsGame game, Player player) {
         AutoPickDiscardCardsAction.AutoPickDiscardCardsActionBuilder resultBuilder = AutoPickDiscardCardsAction.builder();
 
-        for (Integer card : game.dealCards(1)) {
-            Card projectCard = deckService.getCard(card);
+        for (Integer card : cardService.dealCards(game, 1)) {
+            Card projectCard = cardService.getCard(card);
             if (projectCard.getColor() == CardColor.GREEN) {
                 player.setMc(player.getMc() + 1);
                 resultBuilder.discardedCard(CardDto.from(projectCard));

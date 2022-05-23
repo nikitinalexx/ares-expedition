@@ -23,7 +23,7 @@ public class MarsContext {
     public AutoPickCardsAction dealCards(int count) {
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 
-        for (Integer card : game.dealCards(count)) {
+        for (Integer card : cardService.dealCards(game, count)) {
             player.getHand().addCard(card);
             resultBuilder.takenCard(CardDto.from(cardService.getCard(card)));
         }

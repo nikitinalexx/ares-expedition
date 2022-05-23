@@ -2,7 +2,9 @@ package com.terraforming.ares.services;
 
 import com.terraforming.ares.dto.CardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -16,33 +18,40 @@ import java.util.Set;
  * Creation date 25.04.2022
  */
 @Service
+@NoArgsConstructor
 public class CardService {
-    private final Map<Integer, ProjectCard> projects;
-    private final Map<Integer, CorporationCard> corporations;
+    private ShuffleService shuffleService;
+    private Map<Integer, ProjectCard> projects;
+    private Map<Integer, CorporationCard> corporations;
 
-    public CardService(CardFactory cardFactory) {
+    public CardService(CardFactory cardFactory, ShuffleService shuffleService) {
+        this.shuffleService = shuffleService;
         projects = cardFactory.createProjects();
         corporations = cardFactory.createCorporations();
     }
 
     public Deck createProjectsDeck(List<Expansion> expansions) {
-        if (expansions.stream().anyMatch(Expansion.BASE::equals)) {
-            return Deck.builder()
-                    .cards(new LinkedList<>(projects.keySet()))
-                    .build();
-        } else {
-            return Deck.builder().build();
+        if (expansions.contains(Expansion.BASE)) {
+            return createAndShuffleDeck(projects.keySet());
         }
+
+        return Deck.builder().build();
     }
 
     public Deck createCorporationsDeck(List<Expansion> expansions) {
-        if (expansions.stream().anyMatch(Expansion.BASE::equals)) {
-            return Deck.builder()
-                    .cards(new LinkedList<>(corporations.keySet()))
-                    .build();
-        } else {
-            return Deck.builder().build();
+        if (expansions.contains(Expansion.BASE)) {
+            return createAndShuffleDeck(corporations.keySet());
         }
+
+        return Deck.builder().build();
+    }
+
+    private Deck createAndShuffleDeck(Set<Integer> cards) {
+        LinkedList<Integer> cardsList = new LinkedList<>(cards);
+
+        shuffleService.shuffle(cardsList);
+
+        return Deck.builder().cards(cardsList).build();
     }
 
     public Card getCard(int id) {
@@ -90,6 +99,15 @@ public class CardService {
                 .map(Card::getColor)
                 .filter(colors::contains)
                 .count();
+    }
+
+    public List<Integer> dealCards(MarsGame game, int count) {
+        int size = game.getProjectsDeck().size();
+        if (size < count) {
+            Deck newProjectsDeck = createProjectsDeck(List.of(Expansion.BASE));
+            game.mergeDeck(newProjectsDeck);
+        }
+        return game.dealCards(count);
     }
 
 }

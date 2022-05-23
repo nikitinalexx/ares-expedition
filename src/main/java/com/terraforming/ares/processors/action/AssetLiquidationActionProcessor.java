@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class AssetLiquidationActionProcessor implements BlueActionCardProcessor<AssetLiquidation> {
-    private final CardService deckService;
+    private final CardService cardService;
 
     @Override
     public Class<AssetLiquidation> getType() {
@@ -30,9 +30,9 @@ public class AssetLiquidationActionProcessor implements BlueActionCardProcessor<
 
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 
-        for (Integer card : game.dealCards(3)) {
+        for (Integer card : cardService.dealCards(game, 3)) {
             player.getHand().addCard(card);
-            resultBuilder.takenCard(CardDto.from(deckService.getCard(card)));
+            resultBuilder.takenCard(CardDto.from(cardService.getCard(card)));
         }
 
         return resultBuilder.build();

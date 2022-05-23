@@ -47,7 +47,7 @@ public class TechnologyDemonstration implements BaseExpansionRedCard {
 
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 
-        for (Integer card : marsContext.getGame().dealCards(2)) {
+        for (Integer card : marsContext.getCardService().dealCards(marsContext.getGame(), 2)) {
             marsContext.getPlayer().getHand().addCard(card);
 
             Card projectCard = marsContext.getCardService().getCard(card);

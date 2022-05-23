@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class AdvancedScreeningTechnologyActionProcessor implements BlueActionCardProcessor<AdvancedScreeningTechnology> {
-    private final CardService deckService;
+    private final CardService cardService;
 
     @Override
     public Class<AdvancedScreeningTechnology> getType() {
@@ -30,8 +30,8 @@ public class AdvancedScreeningTechnologyActionProcessor implements BlueActionCar
     public TurnResponse process(MarsGame game, Player player) {
         AutoPickDiscardCardsAction.AutoPickDiscardCardsActionBuilder resultBuilder = AutoPickDiscardCardsAction.builder();
 
-        for (Integer card : game.dealCards(3)) {
-            Card projectCard = deckService.getCard(card);
+        for (Integer card : cardService.dealCards(game, 3)) {
+            Card projectCard = cardService.getCard(card);
             if (projectCard.getTags().contains(Tag.SCIENCE) || projectCard.getTags().contains(Tag.PLANT)) {
                 player.getHand().addCard(card);
                 resultBuilder.takenCard(CardDto.from(projectCard));

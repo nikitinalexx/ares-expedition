@@ -66,12 +66,13 @@ public class LargeConvoy implements BaseExpansionRedCard {
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         TerraformingService terraformingService = marsContext.getTerraformingService();
+        MarsGame game = marsContext.getGame();
 
-        terraformingService.revealOcean(marsContext.getGame(), marsContext.getPlayer());
+        terraformingService.revealOcean(game, marsContext.getPlayer());
 
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 
-        for (Integer card : marsContext.getGame().dealCards(2)) {
+        for (Integer card : marsContext.getCardService().dealCards(game, 2)) {
             marsContext.getPlayer().getHand().addCard(card);
             resultBuilder.takenCard(CardDto.from(marsContext.getCardService().getCard(card)));
         }

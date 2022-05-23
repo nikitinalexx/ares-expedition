@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class CelestiorCorporationActionProcessor implements BlueActionCardProcessor<CelestiorCorporation> {
-    private final CardService deckService;
+    private final CardService cardService;
 
     @Override
     public Class<CelestiorCorporation> getType() {
@@ -30,8 +30,8 @@ public class CelestiorCorporationActionProcessor implements BlueActionCardProces
     public TurnResponse process(MarsGame game, Player player) {
         AutoPickDiscardCardsAction.AutoPickDiscardCardsActionBuilder resultBuilder = AutoPickDiscardCardsAction.builder();
 
-        for (Integer card : game.dealCards(3)) {
-            Card projectCard = deckService.getCard(card);
+        for (Integer card : cardService.dealCards(game, 3)) {
+            Card projectCard = cardService.getCard(card);
             if (projectCard.getTags().contains(Tag.EVENT)) {
                 player.getHand().addCard(card);
                 resultBuilder.takenCard(CardDto.from(projectCard));

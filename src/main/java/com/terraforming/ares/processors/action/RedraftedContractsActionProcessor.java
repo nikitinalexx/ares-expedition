@@ -33,7 +33,7 @@ public class RedraftedContractsActionProcessor implements BlueActionCardProcesso
 
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 
-        for (Integer card : game.dealCards(inputParameters.size())) {
+        for (Integer card : cardService.dealCards(game, inputParameters.size())) {
             player.getHand().addCard(card);
 
             Card projectCard = cardService.getCard(card);

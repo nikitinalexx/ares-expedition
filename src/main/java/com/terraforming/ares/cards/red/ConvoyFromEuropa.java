@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.red;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
@@ -37,9 +38,10 @@ public class ConvoyFromEuropa implements BaseExpansionRedCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        marsContext.getTerraformingService().revealOcean(marsContext.getGame(), marsContext.getPlayer());
+        MarsGame game = marsContext.getGame();
+        marsContext.getTerraformingService().revealOcean(game, marsContext.getPlayer());
 
-        for (Integer card : marsContext.getGame().dealCards(1)) {
+        for (Integer card : marsContext.getCardService().dealCards(game, 1)) {
             marsContext.getPlayer().getHand().addCard(card);
         }
 

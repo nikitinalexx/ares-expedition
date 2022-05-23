@@ -39,7 +39,7 @@ public class InventionContest implements BaseExpansionRedCard {
     public TurnResponse buildProject(MarsContext marsContext) {
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 
-        List<Integer> cards = marsContext.getGame().dealCards(3);
+        List<Integer> cards = marsContext.getCardService().dealCards(marsContext.getGame(), 3);
 
         for (Integer card : cards) {
             marsContext.getPlayer().getHand().addCard(card);

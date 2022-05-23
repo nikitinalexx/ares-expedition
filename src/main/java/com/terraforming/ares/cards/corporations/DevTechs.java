@@ -43,7 +43,7 @@ public class DevTechs implements CorporationCard {
         Player player = marsContext.getPlayer();
         player.setMc(40);
 
-        List<Integer> cards = marsContext.getGame().dealCards(5);
+        List<Integer> cards = marsContext.getCardService().dealCards(marsContext.getGame(), 5);
         for (Integer card : cards) {
             if (marsContext.getCardService().getCard(card).getColor() == CardColor.GREEN) {
                 player.getHand().addCard(card);

@@ -29,7 +29,7 @@ public class AiCentralActionProcessor implements BlueActionCardProcessor<AiCentr
     public TurnResponse process(MarsGame game, Player player) {
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 
-        for (Integer card : game.dealCards(2)) {
+        for (Integer card : deckService.dealCards(game, 2)) {
             player.getHand().addCard(card);
 
             Card projectCard = deckService.getCard(card);
