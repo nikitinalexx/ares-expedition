@@ -22,16 +22,17 @@ import java.util.stream.Stream;
 @Service
 public class CardFactory {
     private final Map<Integer, CorporationCard> inmemoryCorporationsStorage = List.of(
-            new HelionCorporation(10000),
-            new CelestiorCorporation(10001),
-            new DevTechs(10002),
-            new LaunchStarIncorporated(10003),
-            new ThorgateCorporation(10004),
-            new TeractorCorporation(10005),
-            new TharsisCorporation(10006),
-            new CredicorCorporation(10007),
-            new ArclightCorporation(10008),
-            new PhobologCorporation(10009)
+//            new HelionCorporation(10000),
+//            new CelestiorCorporation(10001),
+//            new DevTechs(10002),
+//            new LaunchStarIncorporated(10003),
+//            new ThorgateCorporation(10004),
+//            new TeractorCorporation(10005),
+//            new TharsisCorporation(10006),
+//            new CredicorCorporation(10007),
+//            new ArclightCorporation(10008),
+            new PhobologCorporation(10009),
+            new MiningGuildCorporation(10010)
     ).stream().collect(Collectors.toMap(Card::getId, Function.identity()));
 
     private final Map<Integer, ProjectCard> inmemoryProjectCards;

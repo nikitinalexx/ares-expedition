@@ -150,6 +150,20 @@
       </div>
     </div>
 
+    <div *ngIf="isMiningGuildCorporation(card)" style="margin-top: 10px;">
+      <div class="corporationEffectBoxLabel">EFFECT</div>
+
+      <div class="production-box production-box-size1a" style="margin-left:20px;margin-top:-50px;">
+        <div class="production steel"></div>
+      </div>
+      : +
+      <div class="rating tile "></div>
+
+      <div class="description" style="text-align:center;margin-top:0px;">
+        (Effect: Each time you play a card with Steel income, excluding this, get 1 TR.)
+      </div>
+    </div>
+
   </div>
 
   <div *ngIf="isHelionCorporation(card)">
@@ -284,6 +298,20 @@
     </div>
     <div class="description" style="text-align:center;">
       (You start with 20 MC and 1 titanium production.)
+    </div>
+  </div>
+
+  <div *ngIf="isMiningGuildCorporation(card)">
+    <div class="corporation-name" style="margin-left: -5px;">
+      mining
+    </div>
+    <br/>
+    <div class="resource money" style="margin-left:55px;">27</div>
+    <div class="production-box production-box-size1a" style="margin-left:20px;margin-top:-50px;">
+      <div class="production steel"></div>
+    </div>
+    <div class="description" style="text-align:center;">
+      (You start with 27 MC and 1 steel production.)
     </div>
   </div>
 
