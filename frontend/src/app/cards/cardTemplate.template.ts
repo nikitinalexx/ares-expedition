@@ -591,6 +591,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.MINING_GUILD_CORPORATION;
   }
 
+  isSaturnSystemsCorporation(card: Card): boolean {
+    return card.cardAction === CardAction.SATURN_SYSTEMS_CORPORATION;
+  }
+
   isLaunchStarCorporation(card: Card): boolean {
     return card.cardAction === CardAction.LAUNCH_STAR_CORPORATION;
   }

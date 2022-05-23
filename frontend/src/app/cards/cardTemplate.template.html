@@ -164,6 +164,18 @@
       </div>
     </div>
 
+    <div *ngIf="isSaturnSystemsCorporation(card)" style="margin-top: 10px;">
+      <div class="corporationEffectBoxLabel">EFFECT</div>
+
+      <div class="resource-tag tag-jupiter"></div>
+      : +
+      <div class="rating tile "></div>
+
+      <div class="description" style="text-align:center;margin-top:0px;">
+        (Effect: Each time you play a card with Jupiter tag, excluding this, get 1 TR.)
+      </div>
+    </div>
+
   </div>
 
   <div *ngIf="isHelionCorporation(card)">
@@ -312,6 +324,20 @@
     </div>
     <div class="description" style="text-align:center;">
       (You start with 27 MC and 1 steel production.)
+    </div>
+  </div>
+
+  <div *ngIf="isSaturnSystemsCorporation(card)">
+    <div class="corporation-name" style="margin-left: -5px;">
+      saturn
+    </div>
+    <br/>
+    <div class="resource money" style="margin-left:55px;">24</div>
+    <div class="production-box production-box-size1a" style="margin-left:20px;margin-top:-50px;">
+      <div class="production titanium"></div>
+    </div>
+    <div class="description" style="text-align:center;">
+      (You start with 24 MC and 1 titanium production.)
     </div>
   </div>
 
