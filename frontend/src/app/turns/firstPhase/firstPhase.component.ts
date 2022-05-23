@@ -47,7 +47,7 @@ export class FirstPhaseComponent implements OnInit {
 
   ngOnInit() {
     this.parentForm = this.formBuilder.group({
-      turn: ['', Validators.required],
+      turn: ['greenProject', Validators.required],
       mcPrice: [''],
       heatPrice: 0,
       onBuildMicrobeEffectChoice: ['chooseMicrobe'],

@@ -4,7 +4,6 @@ import com.terraforming.ares.dto.CardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
-import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -20,8 +19,8 @@ import java.util.Set;
 @Service
 public class CardService {
     private final ShuffleService shuffleService;
-    private final Map<Integer, ProjectCard> projects;
-    private final Map<Integer, CorporationCard> corporations;
+    private final Map<Integer, Card> projects;
+    private final Map<Integer, Card> corporations;
 
     public CardService(CardFactory cardFactory, ShuffleService shuffleService) {
         this.shuffleService = shuffleService;
@@ -54,7 +53,7 @@ public class CardService {
     }
 
     public Card getCard(int id) {
-        ProjectCard projectCard = projects.get(id);
+        Card projectCard = projects.get(id);
         if (projectCard != null) {
             return projectCard;
         }

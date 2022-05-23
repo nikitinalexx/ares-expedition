@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by oleksii.nikitin
@@ -115,8 +116,11 @@ public class GameController {
 
     @GetMapping("/projects")
     public List<CardDto> getAllProjectCards() {
-        return cardFactory.getAllProjects()
-                .stream()
+        List<Card> corporations = cardFactory.getAllCorporations();
+        List<Card> projects = cardFactory.getAllProjects();
+
+        return Stream.of(corporations, projects)
+                .flatMap(List::stream)
                 .map(CardDto::from)
                 .collect(Collectors.toList());
     }

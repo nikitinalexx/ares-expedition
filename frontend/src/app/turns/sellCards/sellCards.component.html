@@ -9,7 +9,7 @@
 
 
 <div [formGroup]="parentForm">
-  <input id="sellCards" (click)="onValueClick()"  type="radio" class="form-check-input" value="sellCards" [formControlName]="'turn'" [checked]="this.parentForm.value?.turn === 'sellCards'">
+  <input id="sellCards" type="radio" class="form-check-input" value="sellCards" formControlName="turn">
   <label class="custom-control-label text-white" for="sellCards">Sell cards</label>
 
   <div *ngIf="this.parentForm.value?.turn === 'sellCards'" class="card-container">

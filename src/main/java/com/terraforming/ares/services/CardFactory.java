@@ -5,15 +5,12 @@ import com.terraforming.ares.cards.corporations.*;
 import com.terraforming.ares.cards.green.*;
 import com.terraforming.ares.cards.red.*;
 import com.terraforming.ares.model.Card;
-import com.terraforming.ares.model.CorporationCard;
-import com.terraforming.ares.model.ProjectCard;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Created by oleksii.nikitin
@@ -21,26 +18,14 @@ import java.util.stream.Stream;
  */
 @Service
 public class CardFactory {
-    private final Map<Integer, CorporationCard> inmemoryCorporationsStorage = List.of(
-            new HelionCorporation(10000),
-            new CelestiorCorporation(10001),
-            new DevTechs(10002),
-            new LaunchStarIncorporated(10003),
-            new ThorgateCorporation(10004),
-            new TeractorCorporation(10005),
-            new TharsisCorporation(10006),
-            new CredicorCorporation(10007),
-            new ArclightCorporation(10008),
-            new PhobologCorporation(10009),
-            new MiningGuildCorporation(10010),
-            new SaturnSystemsCorporation(10011)
-    ).stream().collect(Collectors.toMap(Card::getId, Function.identity()));
+    private final Map<Integer, Card> inmemoryCorporationsStorage;
+    private final List<Card> sortedCorporations;
 
-    private final Map<Integer, ProjectCard> inmemoryProjectCards;
-    private final List<ProjectCard> sortedProjects;
+    private final Map<Integer, Card> inmemoryProjectCards;
+    private final List<Card> sortedProjects;
 
     public CardFactory() {
-        sortedProjects = Stream.of(
+        sortedProjects = List.of(
                 new AdaptationTechnology(1),
                 new AdvancedAlloys(2),
                 new AdvancedScreeningTechnology(3),
@@ -249,20 +234,42 @@ public class CardFactory {
                 new Windmills(206),
                 new Worms(207),
                 new Zeppelins(208)
-        ).collect(Collectors.toList());
+        );
 
-        inmemoryProjectCards = sortedProjects.stream().collect(Collectors.toMap(ProjectCard::getId, Function.identity()));
+
+        sortedCorporations = List.of(
+                new HelionCorporation(10000),
+                new CelestiorCorporation(10001),
+                new DevTechs(10002),
+                new LaunchStarIncorporated(10003),
+                new ThorgateCorporation(10004),
+                new TeractorCorporation(10005),
+                new TharsisCorporation(10006),
+                new CredicorCorporation(10007),
+                new ArclightCorporation(10008),
+                new PhobologCorporation(10009),
+                new MiningGuildCorporation(10010),
+                new SaturnSystemsCorporation(10011)
+        );
+
+
+        inmemoryProjectCards = sortedProjects.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
+        inmemoryCorporationsStorage = sortedCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
     }
 
-    public Map<Integer, CorporationCard> createCorporations() {
+    public Map<Integer, Card> createCorporations() {
         return inmemoryCorporationsStorage;
     }
 
-    public Map<Integer, ProjectCard> createProjects() {
+    public Map<Integer, Card> createProjects() {
         return inmemoryProjectCards;
     }
 
-    public List<ProjectCard> getAllProjects() {
+    public List<Card> getAllProjects() {
         return sortedProjects;
+    }
+
+    public List<Card> getAllCorporations() {
+        return sortedCorporations;
     }
 }

@@ -160,11 +160,9 @@ export class ThirdPhaseComponent implements OnInit {
 
   selectProject(card: Card) {
     if (this.selectedProject && this.selectedProject.id === card.id) {
-      console.log('selectProject clear input');
       this.clearInput();
     } else {
       this.selectedProject = card;
-      console.log('select project set = card');
     }
   }
 
@@ -177,7 +175,6 @@ export class ThirdPhaseComponent implements OnInit {
 
   clearInput() {
     this.selectedProject = null;
-    console.log('set null');
     this.actionTargetCards = [];
     this.errorMessage = null;
   }

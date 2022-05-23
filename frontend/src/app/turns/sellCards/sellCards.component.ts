@@ -1,15 +1,14 @@
-import {Component, Input} from '@angular/core';
+import {Component, Input, OnInit} from '@angular/core';
 import {Game} from '../../data/Game';
 import {GameRepository} from '../../model/gameRepository.model';
 import {Card} from '../../data/Card';
 import {FormGroup} from '@angular/forms';
-import {Observable} from "rxjs";
 
 @Component({
   selector: 'app-sell-cards',
   templateUrl: './sellCards.component.html'
 })
-export class SellCardsComponent {
+export class SellCardsComponent implements OnInit {
   public errorMessage: string;
   cardsToCell: number[];
 
@@ -22,6 +21,12 @@ export class SellCardsComponent {
 
   constructor(private gameRepository: GameRepository) {
 
+  }
+
+  ngOnInit(): void {
+    this.parentForm.valueChanges.subscribe(val => {
+      this.parentForm.patchValue(val, {emitEvent: false});
+    });
   }
 
   getPlayerHand(): Card[] {
@@ -60,7 +65,9 @@ export class SellCardsComponent {
         this.cardsToCell = [];
         next(data);
       },
-      error => { this.errorMessage = error; }
+      error => {
+        this.errorMessage = error;
+      }
     );
   }
 

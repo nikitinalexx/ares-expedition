@@ -182,13 +182,13 @@
 
   <div *ngIf="skipTurn()" class="form-check">
     <input id="skipTurn" (click)="resetAllInputs()" type="radio" class="form-check-input" value="skipTurn"
-           formControlName="turn" required [checked]="this.parentForm.value?.turn === 'skipTurn'">
+           formControlName="turn">
     <label class="custom-control-label text-white" for="skipTurn">Finish turn</label>
   </div>
 
   <div *ngIf="discardCardsTurn()" class="form-check">
     <input id="discardCards" (click)="resetAllInputs()" type="radio" class="form-check-input" value="discardCards"
-           formControlName="turn" [checked]="this.parentForm.value?.turn === 'discardCards'">
+           formControlName="turn">
     <label class="custom-control-label text-white" for="discardCards">Discard {{game.player.nextTurn.size }}
       cards</label>
 
