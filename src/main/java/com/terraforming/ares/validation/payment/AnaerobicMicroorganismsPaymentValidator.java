@@ -21,10 +21,6 @@ public class AnaerobicMicroorganismsPaymentValidator implements PaymentValidator
 
     @Override
     public String validate(Card card, Player player, Payment payment) {
-        if (payment.getValue() != 2) {
-            return "Invalid payment: Anaerobic Microorganisms can be paid only with a value of 2";
-        }
-
         Integer resources = player.getCardResourcesCount().get(AnaerobicMicroorganisms.class);
         if (resources == null || resources < 2) {
             return "Invalid payment: Anaerobic Microorganisms < 2";
