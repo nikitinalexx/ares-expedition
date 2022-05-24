@@ -1,7 +1,7 @@
 import {Component, Input} from '@angular/core';
 import {BasePlayer} from '../data/BasePlayer';
 import {Game} from '../data/Game';
-import {Tag} from "../data/Tag";
+import {Tag} from '../data/Tag';
 
 @Component({
   selector: 'app-navbar',
