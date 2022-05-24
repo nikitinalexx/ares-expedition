@@ -30,7 +30,7 @@ export class Player extends BasePlayer {
               corporationId?: number,
               phase?: number) {
     super(name, winPoints, mc, hand, played, heat, plants, mcIncome, heatIncome, plantsIncome,
-      steelIncome, titaniumIncome, cardIncome, terraformingRating, forests, phase);
+      steelIncome, titaniumIncome, cardIncome, terraformingRating, forests, cardResources, phase);
   }
 
   playerUuid: string;
@@ -38,7 +38,6 @@ export class Player extends BasePlayer {
   corporationId: number;
   previousPhase: number;
   nextTurn: any;
-  cardResources: Map<number, number>;
   activatedBlueCards: number[];
   activatedBlueActionTwice: boolean;
   builtSpecialDesignLastTurn: boolean;

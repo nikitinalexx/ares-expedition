@@ -65,4 +65,9 @@ public class FuelFactory implements BaseExpansionGreenCard {
     public int getPrice() {
         return 9;
     }
+
+    @Override
+    public boolean onBuiltEffectApplicableToItself() {
+        return true;
+    }
 }

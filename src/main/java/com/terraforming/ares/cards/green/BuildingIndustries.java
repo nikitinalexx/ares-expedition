@@ -38,6 +38,11 @@ public class BuildingIndustries implements BaseExpansionGreenCard {
     }
 
     @Override
+    public boolean onBuiltEffectApplicableToItself() {
+        return true;
+    }
+
+    @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
 

@@ -10,7 +10,7 @@
 
   <div *ngIf="buildBlueRedProjectTurn()" class="form-check">
     <input id="blueRedProject" (click)="resetAllInputs()" type="radio" class="form-check-input" value="blueRedProject"
-           formControlName="turn" [checked]="this.parentForm.value?.turn === 'blueRedProject'">
+           formControlName="turn">
     <label class="custom-control-label text-white" for="blueRedProject">Build blue/red project</label>
 
     <div *ngIf="parentForm.value?.turn === 'blueRedProject'" class="card-container">
@@ -213,7 +213,7 @@
 
   <div *ngIf="pickExtraCardTurn()" class="form-check">
     <input id="pickExtraCard" (click)="resetAllInputs()" type="radio" class="form-check-input" value="pickExtraCard"
-           formControlName="turn" required [checked]="this.parentForm.value?.turn === 'pickExtraCard'">
+           formControlName="turn">
     <label class="custom-control-label text-white" for="pickExtraCard">Take card</label>
   </div>
 
@@ -223,13 +223,13 @@
 
   <div *ngIf="skipTurn()" class="form-check">
     <input id="skipTurn" (click)="resetAllInputs()" type="radio" class="form-check-input" value="skipTurn"
-           formControlName="turn" required [checked]="this.parentForm.value?.turn === 'skipTurn'">
+           formControlName="turn">
     <label class="custom-control-label text-white" for="skipTurn">Finish turn</label>
   </div>
 
   <div *ngIf="discardCardsTurn()" class="form-check">
     <input id="discardCards" (click)="resetAllInputs()" type="radio" class="form-check-input" value="discardCards"
-           formControlName="turn" [checked]="this.parentForm.value?.turn === 'discardCards'">
+           formControlName="turn">
     <label class="custom-control-label text-white" for="discardCards">Discard {{game.player.nextTurn.size }}
       cards</label>
 

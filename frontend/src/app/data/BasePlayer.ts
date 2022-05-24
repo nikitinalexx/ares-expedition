@@ -1,4 +1,4 @@
-import {Card} from "./Card";
+import {Card} from './Card';
 
 export class BasePlayer {
   constructor(name: string,
@@ -16,6 +16,7 @@ export class BasePlayer {
               cardIncome: number,
               terraformingRating: number,
               forests: number,
+              cardResources: Map<number, number>,
               phase?: number) {
 
   }
@@ -36,5 +37,6 @@ export class BasePlayer {
   hand: Card[];
   played: Card[];
   phase?: number;
+  cardResources: Map<number, number>;
 
 }

@@ -62,6 +62,13 @@ public class Player {
     private int steelIncome;
     private int titaniumIncome;
 
+    public void setActionsInSecondPhase(int actionsInSecondPhase) {
+        if (this.actionsInSecondPhase == 1) {
+            setPickedCardInSecondPhase(true);
+        }
+        this.actionsInSecondPhase = actionsInSecondPhase;
+    }
+
     public void clearRoundResults() {
         chosenPhase = null;
         activatedBlueCards = Deck.builder().build();

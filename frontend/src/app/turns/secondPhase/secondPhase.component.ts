@@ -14,7 +14,7 @@ import {CardAction} from '../../data/CardAction';
 import {Tag} from '../../data/Tag';
 import {InputFlag} from '../../data/InputFlag';
 import {CardResource} from '../../data/CardResource';
-import {DiscardCardsTurn} from "../../data/DiscardCardsTurn";
+import {DiscardCardsTurn} from '../../data/DiscardCardsTurn';
 
 @Component({
   selector: 'app-second-phase',
@@ -51,7 +51,7 @@ export class SecondPhaseComponent implements OnInit {
 
   ngOnInit() {
     this.parentForm = this.formBuilder.group({
-      turn: ['', Validators.required],
+      turn: ['blueRedProject', Validators.required],
       mcPrice: [''],
       heatPrice: 0,
       anaerobicMicroorganisms: [false],

@@ -34,6 +34,11 @@ public class TropicalResort implements BaseExpansionGreenCard {
     }
 
     @Override
+    public boolean onBuiltEffectApplicableToItself() {
+        return true;
+    }
+
+    @Override
     public CardMetadata getCardMetadata() {
         return cardMetadata;
     }

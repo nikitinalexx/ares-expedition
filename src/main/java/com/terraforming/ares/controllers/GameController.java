@@ -143,6 +143,7 @@ public class GameController {
                 .forests(player.getForests())
                 .hand(player.getHand().getCards().stream().map(cardService::getCard).map(CardDto::from).collect(Collectors.toList()))
                 .played(player.getPlayed().getCards().stream().map(cardService::getCard).map(CardDto::from).collect(Collectors.toList()))
+                .cardResources(getPlayerCardResources(player))
                 .build();
     }
 
@@ -168,14 +169,7 @@ public class GameController {
                 .steelIncome(player.getSteelIncome())
                 .titaniumIncome(player.getTitaniumIncome())
                 .nextTurn(buildTurnDto(player.getNextTurn()))
-                .cardResources(
-                        player.getPlayed().getCards().stream().map(cardService::getCard)
-                                .filter(card -> card.getCollectableResource() != CardCollectableResource.NONE)
-                                .collect(Collectors.toMap(
-                                        Card::getId,
-                                        card -> player.getCardResourcesCount().get(card.getClass())
-                                ))
-                )
+                .cardResources(getPlayerCardResources(player))
                 .activatedBlueCards(player.getActivatedBlueCards().getCards())
                 .activatedBlueActionTwice(player.isActivatedBlueActionTwice())
                 .terraformingRating(player.getTerraformingRating())
@@ -185,6 +179,15 @@ public class GameController {
                 .builtWorkCrewsLastTurn(player.isBuiltWorkCrewsLastTurn())
                 .canBuildAnotherGreenWith9Discount(player.isCanBuildAnotherGreenWith9Discount())
                 .build();
+    }
+
+    private Map<Integer, Integer> getPlayerCardResources(Player player) {
+        return player.getPlayed().getCards().stream().map(cardService::getCard)
+                .filter(card -> card.getCollectableResource() != CardCollectableResource.NONE)
+                .collect(Collectors.toMap(
+                        Card::getId,
+                        card -> player.getCardResourcesCount().get(card.getClass())
+                ));
     }
 
     private TurnDto buildTurnDto(Turn turn) {

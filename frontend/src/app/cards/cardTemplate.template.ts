@@ -7,7 +7,7 @@ import {Gain} from '../data/Gain';
 import {CardAction} from '../data/CardAction';
 import {ParameterColor} from '../data/ParameterColor';
 import {Game} from '../data/Game';
-import {DiscountComponent} from "../discount/discount.component";
+import {DiscountComponent} from '../discount/discount.component';
 
 @Component({
   selector: 'app-card-template',

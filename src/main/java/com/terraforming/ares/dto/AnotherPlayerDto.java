@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Your opponent
@@ -19,6 +20,7 @@ public class AnotherPlayerDto {
     private final int winPoints;
     private final List<CardDto> hand;
     private final List<CardDto> played;
+    private final Map<Integer, Integer> cardResources;
 
     private final int terraformingRating;
     private final int forests;
