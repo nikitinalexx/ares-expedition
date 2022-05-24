@@ -178,7 +178,7 @@ export class GameComponent implements OnInit {
       const previousAction = this.nextAction;
       this.nextAction = data.action;
       if (this.nextAction === 'TURN') {
-        if (previousAction && previousAction === 'WAIT' && document.hidden && this.waitingFor && (Date.now() - this.waitingFor) > 3000) {
+        if (previousAction && previousAction === 'WAIT' && document.hidden && this.waitingFor && (Date.now() - this.waitingFor) > 2000) {
           this.audio.play();
         }
         this.waitingFor = null;

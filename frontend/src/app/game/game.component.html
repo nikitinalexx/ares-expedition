@@ -110,15 +110,13 @@
             <li *ngIf="player?.played.length > 0" class="filterDiv automated display shrink"
                 style="margin-left: -100px; margin-top: -106px;"
             >
-              <app-card-template [card]="player.played[player.played.length - 1]"
-                                 [game]="game" [showResources]="true"></app-card-template>
+              <app-card-template [card]="player.played[player.played.length - 1]"></app-card-template>
             </li>
 
             <li *ngIf="player?.played.length > 1" class="filterDiv automated display shrink"
                 style="margin-left: -20px; margin-top: -328px;"
             >
-              <app-card-template [card]="player.played[player.played.length - 2]"
-                                 [game]="game" [showResources]="true"></app-card-template>
+              <app-card-template [card]="player.played[player.played.length - 2]"></app-card-template>
             </li>
 
           </ul>
@@ -219,7 +217,7 @@
 <div class="card-container">
   <ul class="myUL">
     <li *ngFor="let card of getPlayedBlueCardsWithCorporation(getPlayerToShow());" class="filterDiv automated display">
-      <app-card-template [card]="card" [game]="game" [showResources]="true"></app-card-template>
+      <app-card-template [card]="card" [player]="getPlayerToShow()" [showResources]="true"></app-card-template>
     </li>
   </ul>
 
@@ -232,7 +230,7 @@
           <div class="stack-hidden-area" onmouseenter="this.parentElement.parentElement.style.zIndex = '1';"
                onmouseleave="this.parentElement.parentElement.style.zIndex = null;"
           ></div>
-          <app-card-template [card]="card" [game]="game" [showResources]="true"></app-card-template>
+          <app-card-template [card]="card" [player]="getPlayerToShow()" [showResources]="true"></app-card-template>
         </div>
       </div>
     </div>
@@ -245,7 +243,7 @@
           <div class="stack-hidden-area" onmouseenter="this.parentElement.parentElement.style.zIndex = '1';"
                onmouseleave="this.parentElement.parentElement.style.zIndex = null;"
           ></div>
-          <app-card-template [card]="card" [game]="game" [showResources]="true"></app-card-template>
+          <app-card-template [card]="card" [player]="getPlayerToShow()"></app-card-template>
         </div>
       </div>
     </div>

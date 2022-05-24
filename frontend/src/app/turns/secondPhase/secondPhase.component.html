@@ -17,7 +17,7 @@
       <ul class="myUL">
         <li *ngFor="let card of getBlueRedPlayerHand();" (click)="clickProjectToBuild(card)"
             [ngClass]="selectedProjectToBuildClass(card)" class="filterDiv automated display">
-          <app-card-template [card]="card" [game]="game" [showDiscount]="true"></app-card-template>
+          <app-card-template [card]="card" [player]="game?.player" [showDiscount]="true"></app-card-template>
         </li>
       </ul>
 
@@ -58,7 +58,7 @@
           <ul class="myUL">
             <li *ngFor="let card of getPlayerHandWithoutSelectedCard();" (click)="clickProjectToDiscard(card)"
                 [ngClass]="selectedProjectToDiscardClass(card)" class="filterDiv automated display">
-              <app-card-template [card]="card" [game]="game"></app-card-template>
+              <app-card-template [card]="card" [player]="game?.player"></app-card-template>
             </li>
           </ul>
 
@@ -106,7 +106,7 @@
               <li *ngFor="let card of getMicrobeAnimalPlayedCardsWithSelected();"
                   (click)="clickViralEnhancersTargetCard(card)"
                   [ngClass]="selectedViralEnhancersCardClass(card)" class="filterDiv automated display">
-                <app-card-template [card]="card" [game]="game"></app-card-template>
+                <app-card-template [card]="card" [player]="game?.player"></app-card-template>
               </li>
             </ul>
 
@@ -120,7 +120,7 @@
             <li *ngFor="let card of getResourcePlayedCards();" (click)="onBuildResourceChoice = card"
                 [ngClass]="onBuildResourceChoice && onBuildResourceChoice.id == card.id ? 'clicked-card': ''"
                 class="filterDiv automated display">
-              <app-card-template [card]="card" [game]="game"></app-card-template>
+              <app-card-template [card]="card" [player]="game?.player"></app-card-template>
             </li>
           </ul>
         </div>
@@ -146,7 +146,7 @@
               <li *ngFor="let card of getMicrobeAnimalPlayedCards();" (click)="importedHydrogenMicrobeAnimal = card"
                   [ngClass]="importedHydrogenMicrobeAnimal && importedHydrogenMicrobeAnimal.id == card.id ? 'clicked-card': ''"
                   class="filterDiv automated display">
-                <app-card-template [card]="card" [game]="game"></app-card-template>
+                <app-card-template [card]="card" [player]="game?.player"></app-card-template>
               </li>
             </ul>
 
@@ -160,7 +160,7 @@
               <li *ngFor="let card of getMicrobeAnimalPlayedCards();" (click)="importedNitrogenClick(card)"
                   [ngClass]="importedNitrogenCardClass(card)"
                   class="filterDiv automated display">
-                <app-card-template [card]="card" [game]="game"></app-card-template>
+                <app-card-template [card]="card" [player]="game?.player"></app-card-template>
               </li>
             </ul>
           </div>
@@ -187,7 +187,7 @@
               <li *ngFor="let card of getAnimalPlayedCards();" (click)="largeConvoyAnimalCard = card"
                   [ngClass]="largeConvoyAnimalCard && largeConvoyAnimalCard.id == card.id ? 'clicked-card': ''"
                   class="filterDiv automated display">
-                <app-card-template [card]="card" [game]="game"></app-card-template>
+                <app-card-template [card]="card" [player]="game?.player"></app-card-template>
               </li>
             </ul>
 
@@ -201,7 +201,7 @@
               <li *ngFor="let card of getMicrobeAnimalPlayedCards();" (click)="localHeatTrappingCard = card"
                   [ngClass]="localHeatTrappingCard && localHeatTrappingCard.id == card.id ? 'clicked-card': ''"
                   class="filterDiv automated display">
-                <app-card-template [card]="card" [game]="game"></app-card-template>
+                <app-card-template [card]="card" [player]="game?.player"></app-card-template>
               </li>
             </ul>
 
@@ -237,7 +237,7 @@
       <ul class="myUL">
         <li *ngFor="let card of getDiscardCards();" (click)="clickProjectToDiscard(card)"
             [ngClass]="selectedProjectToDiscardClass(card)" class="filterDiv automated display">
-          <app-card-template [card]="card" [game]="game"></app-card-template>
+          <app-card-template [card]="card" [player]="game?.player"></app-card-template>
         </li>
       </ul>
     </div>

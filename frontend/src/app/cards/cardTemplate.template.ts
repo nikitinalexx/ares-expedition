@@ -6,8 +6,9 @@ import {GainType} from '../data/GainType';
 import {Gain} from '../data/Gain';
 import {CardAction} from '../data/CardAction';
 import {ParameterColor} from '../data/ParameterColor';
-import {Game} from '../data/Game';
 import {DiscountComponent} from '../discount/discount.component';
+import {BasePlayer} from '../data/BasePlayer';
+import {Player} from '../data/Player';
 
 @Component({
   selector: 'app-card-template',
@@ -18,7 +19,7 @@ export class CardTemplateComponent {
   @Input()
   card: Card;
   @Input()
-  game: Game;
+  player: BasePlayer;
   @Input()
   showDiscount: boolean;
   @Input()
@@ -31,11 +32,11 @@ export class CardTemplateComponent {
     if (!this.showDiscount) {
       return false;
     }
-    return this.discountService.isDiscountApplicable(card, this.game);
+    return this.discountService.isDiscountApplicable(card, this.player as Player);
   }
 
   getDiscount(card: Card): number {
-    return this.discountService.getDiscount(card, this.game);
+    return this.discountService.getDiscount(card, this.player as Player);
   }
 
   getTagClasses(card: Card, tagNumber: number): string {

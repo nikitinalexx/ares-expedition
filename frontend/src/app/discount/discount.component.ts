@@ -1,6 +1,5 @@
 import {Injectable} from '@angular/core';
 import {Card} from '../data/Card';
-import {Game} from '../data/Game';
 import {SpecialEffect} from '../data/SpecialEffect';
 import {Player} from '../data/Player';
 import {Tag} from '../data/Tag';
@@ -9,15 +8,14 @@ import {CardColor} from '../data/CardColor';
 @Injectable()
 export class DiscountComponent {
 
-  isDiscountApplicable(card: Card, game: Game): boolean {
-    if (!game) {
+  isDiscountApplicable(card: Card, player: Player): boolean {
+    if (!player) {
       return false;
     }
-    return this.getDiscount(card, game) > 0;
+    return this.getDiscount(card, player) > 0;
   }
 
-  getDiscount(card: Card, game: Game): number {
-    const player = game.player;
+  getDiscount(card: Card, player: Player): number {
     let discount = 0;
 
     const ownsAdvancedAlloys = this.ownsSpecialEffect(player, SpecialEffect.ADVANCED_ALLOYS);

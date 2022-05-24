@@ -28,7 +28,7 @@
       <ul class="myUL">
         <li *ngFor="let card of getActiveCards();" (click)="selectProject(card)"
             [ngClass]="selectedProjectClass(card)" class="filterDiv automated display">
-          <app-card-template [card]="card" [game]="game" [showResources]="true"></app-card-template>
+          <app-card-template [card]="card" [player]="game?.player" [showResources]="true"></app-card-template>
         </li>
       </ul>
     </div>
@@ -37,7 +37,7 @@
       <ul class="myUL">
         <li *ngFor="let card of getPlayedActiveCards();" (click)="selectProject(card)"
             [ngClass]="selectedProjectClass(card)" class="filterDiv automated display">
-          <app-card-template [card]="card"></app-card-template>
+          <app-card-template [card]="card" [player]="game?.player" [showResources]="true"></app-card-template>
         </li>
       </ul>
     </div>
@@ -48,7 +48,7 @@
       <ul class="myUL">
         <li *ngFor="let card of getPlayerHandForAction();" (click)="addCardToActionTargetCards(card)"
             [ngClass]="getActionTargetCardClass(card)" class="filterDiv automated display">
-          <app-card-template [card]="card" [game]="game" [showResources]="true"></app-card-template>
+          <app-card-template [card]="card" [player]="game?.player"></app-card-template>
         </li>
       </ul>
     </div>
