@@ -233,7 +233,8 @@ public class CardFactory {
                 new WavePower(205),
                 new Windmills(206),
                 new Worms(207),
-                new Zeppelins(208)
+                new Zeppelins(208),
+                new CommercialImports(210)
         );
 
 
