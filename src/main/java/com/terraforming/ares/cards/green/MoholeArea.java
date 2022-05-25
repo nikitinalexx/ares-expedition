@@ -40,7 +40,7 @@ public class MoholeArea implements BaseExpansionGreenCard {
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
 
-        player.setHeatIncome(player.getHeatIncome() + 1);
+        player.setHeatIncome(player.getHeatIncome() + 4);
 
         return null;
     }
