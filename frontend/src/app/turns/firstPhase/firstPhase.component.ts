@@ -207,7 +207,7 @@ export class FirstPhaseComponent implements OnInit {
 
   getDiscountedMcPriceOfSelectedProject(): number {
     if (this.selectedProject) {
-      return this.selectedProject.price - this.discountService.getDiscount(this.selectedProject, this.game);
+      return this.selectedProject.price - this.discountService.getDiscount(this.selectedProject, this.game?.player);
     } else {
       return 0;
     }
