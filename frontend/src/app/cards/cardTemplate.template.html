@@ -685,6 +685,13 @@
     <div class="tile oxygen-tile"></div>
   </div>
 
+  <div *ngIf="actionProgressivePolicies(card)" style="margin-left: -13px;">
+    <span class="money resource ">10</span>
+    (<div class="money resource ">-5</div>: 4<div class="resource-tag tag-event"></div>)
+    <div class="red-arrow "></div>
+    <div class="tile oxygen-tile"></div>
+  </div>
+
   <div *ngIf="actionLivestock(card)">
     <div class="tile temperature-tile "></div>
     :
@@ -838,6 +845,18 @@
   <div *ngIf="actionUnitedPlanetary(card)">
     <div class="tile globals-box" style="height: 20px;">Research</div>
     :<br/> Draw +<span class="card resource "></span>Keep +<span class="card resource "></span>
+  </div>
+
+  <div *ngIf="actionProcessedMetals(card)">
+    <div class="card resource"></div>
+    /
+    <div class="resource-tag tag-energy"></div>
+  </div>
+
+  <div *ngIf="actionProcessingPlant(card)">
+    <div class="card resource ">
+      <div class="card-icon tag-building"></div>
+    </div>
   </div>
 
   <div *ngIf="actionViralEnhancers(card)">
@@ -1039,7 +1058,7 @@
   </div>
 
   <div *ngIf="actionMc2BuildingIncome(card)">
-    <div class="production-box production-box-size2a">
+    <div class="production-box production-box-size3 text-white">
       <div class="production money">1</div>
       / 2
       <div class="resource-tag production-tag tag-building"></div>

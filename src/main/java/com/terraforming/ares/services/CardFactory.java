@@ -237,7 +237,10 @@ public class CardFactory {
                 new CommercialImports(210),
                 new DiverseHabitats(211),
                 new Laboratories(212),
-                new MatterGenerator(213)
+                new MatterGenerator(213),
+                new ProcessedMetals(214),
+                new ProcessingPlant(215),
+                new ProgressivePolicies(216)
         );
 
 
