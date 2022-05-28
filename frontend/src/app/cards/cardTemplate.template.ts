@@ -312,6 +312,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.FARMING_COOPS;
   }
 
+  actionMatterGenerator(card: Card): boolean {
+    return card.cardAction === CardAction.MATTER_GENERATOR;
+  }
+
   actionFish(card: Card): boolean {
     return card.cardAction === CardAction.FISH;
   }

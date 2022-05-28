@@ -1,6 +1,6 @@
 package com.terraforming.ares.validation.action;
 
-import com.terraforming.ares.cards.blue.FarmingCoops;
+import com.terraforming.ares.cards.blue.MatterGenerator;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
 import org.springframework.stereotype.Component;
@@ -13,23 +13,23 @@ import java.util.List;
  * Creation date 07.05.2022
  */
 @Component
-public class FarmingCoopsActionValidator implements ActionValidator<FarmingCoops> {
+public class MatterGeneratorActionValidator implements ActionValidator<MatterGenerator> {
 
     @Override
-    public Class<FarmingCoops> getType() {
-        return FarmingCoops.class;
+    public Class<MatterGenerator> getType() {
+        return MatterGenerator.class;
     }
 
     @Override
     public String validate(MarsGame game, Player player, List<Integer> inputParameters) {
         if (CollectionUtils.isEmpty(inputParameters)) {
-            return "Farming coops expects a card to sell for 3 plants";
+            return "Matter Generator expects a card to sell for 6 MC";
         }
 
         Integer cardIdToSell = inputParameters.get(0);
 
         if (!player.getHand().containsCard(cardIdToSell)) {
-            return "Player doesn't have a selected card to sell for 3 plants";
+            return "Player doesn't have a selected card to sell for 6 MC";
         }
 
         return null;

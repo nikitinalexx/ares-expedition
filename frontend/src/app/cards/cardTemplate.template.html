@@ -604,6 +604,17 @@
     <div class="resource plant"></div>
   </div>
 
+  <div *ngIf="actionMatterGenerator(card)">
+    <div class="card resource "></div>
+    <div class="red-arrow "></div>
+    <div class=" money resource ">6</div>
+    <div></div>
+    <span style="font-size:12px; ">{{card.description.substring(card.description.indexOf('.') + 1)}}</span>
+    <div></div>
+    <div class="resource card"></div>
+    <div class="resource card"></div>
+  </div>
+
   <div *ngIf="actionFish(card)">
     <div class="tile ocean-tile "></div>
     :
