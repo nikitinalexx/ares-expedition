@@ -35,7 +35,7 @@ public class ProgressivePoliciesActionValidator implements ActionValidator<Progr
         int eventTags = cardService.countPlayedTags(player, Set.of(Tag.EVENT));
         int price = (eventTags >= 4) ? 5 : 10;
 
-        if (player.getMc() < 5) {
+        if (player.getMc() < price) {
             return "Not enough MC to perform the action";
         }
 
