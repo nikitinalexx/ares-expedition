@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -16,16 +17,16 @@ import java.util.Map;
  */
 @RequiredArgsConstructor
 @Getter
-public class Cartel implements BaseExpansionGreenCard {
+public class Laboratories implements BaseExpansionGreenCard {
     private final int id;
     private final CardMetadata cardMetadata;
 
-    public Cartel(int id) {
+    public Laboratories(int id) {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
-                .name("Cartel")
-                .description("During the production phase, this produces 1 MC per Earth tag you have, including this.")
-                .cardAction(CardAction.MC_EARTH_INCOME)
+                .name("Laboratories")
+                .description("During the production phase, draw a card for every 3 Science tags you have, including this.")
+                .cardAction(CardAction.CARD_SCIENCE_INCOME)
                 .build();
     }
 
@@ -36,21 +37,27 @@ public class Cartel implements BaseExpansionGreenCard {
 
     @Override
     public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        int earthTags = (int) project.getTags().stream().filter(Tag.EARTH::equals).count();
+        int projectTagsCount = (int) project.getTags().stream().filter(Tag.SCIENCE::equals).count();
 
-        player.setMcIncome(player.getMcIncome() + earthTags);
+        int tagsPlayedBefore = cardService.countPlayedTags(player, Set.of(Tag.SCIENCE));
+        int tagsPlayedAfter = tagsPlayedBefore + projectTagsCount;
+
+        int incomeBefore = tagsPlayedBefore / 3;
+        int incomeAfter = tagsPlayedAfter / 3;
+
+        if (incomeAfter > incomeBefore) {
+            player.setCardIncome(player.getCardIncome() + (incomeAfter - incomeBefore));
+        }
     }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        int earthTagCount = (int) marsContext.getPlayer()
-                .getPlayed()
-                .getCards().stream()
-                .map(marsContext.getCardService()::getCard)
-                .flatMap(card -> card.getTags().stream())
-                .filter(Tag.EARTH::equals).count();
+        Player player = marsContext.getPlayer();
+        int tagsPlayed = 1 + marsContext.getCardService().countPlayedTags(player, Set.of(Tag.SCIENCE));
 
-        marsContext.getPlayer().setMcIncome(marsContext.getPlayer().getMcIncome() + earthTagCount + 1);
+        if (tagsPlayed >= 3) {
+            player.setCardIncome(player.getCardIncome() + (tagsPlayed / 3));
+        }
 
         return null;
     }
@@ -62,11 +69,11 @@ public class Cartel implements BaseExpansionGreenCard {
 
     @Override
     public List<Tag> getTags() {
-        return List.of(Tag.EARTH);
+        return List.of(Tag.SCIENCE);
     }
 
     @Override
     public int getPrice() {
-        return 6;
+        return 8;
     }
 }

@@ -657,7 +657,7 @@ li.events::before {
   line-height: 28px;
   box-shadow: 0 0 0 1px rgba(0,0,0,0.6), 0 0 0 2px rgba(0,0,0,0.3);
   vertical-align: middle;
-  margin-bottom: 5px;
+  margin: 2px;
   filter: brightness(0.9);
 }
 

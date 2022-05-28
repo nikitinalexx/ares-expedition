@@ -35,7 +35,7 @@ public class MirandaResort implements BaseExpansionGreenCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
+    public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
         int earthTags = (int) project.getTags().stream().filter(Tag.EARTH::equals).count();
 
         player.setMcIncome(player.getMcIncome() + earthTags);

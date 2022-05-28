@@ -51,7 +51,7 @@ public class InterplanetaryConference implements BlueCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
+    public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
         int cardsToGiveCount = 0;
 
         if (project.getTags().contains(Tag.EARTH)) {

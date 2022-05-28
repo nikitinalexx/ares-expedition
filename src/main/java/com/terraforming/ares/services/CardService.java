@@ -71,7 +71,7 @@ public class CardService {
         return resultBuilder.build();
     }
 
-    public int countPlayedTags(Player player, Tag tag) {
+    public int countPlayedTags(Player player, Set<Tag> tags) {
         if (player == null || player.getPlayed() == null || CollectionUtils.isEmpty(player.getPlayed().getCards())) {
             return 0;
         }
@@ -81,7 +81,7 @@ public class CardService {
                 .stream()
                 .map(this::getCard)
                 .flatMap(card -> card.getTags().stream())
-                .filter(tag::equals)
+                .filter(tags::contains)
                 .count();
     }
 

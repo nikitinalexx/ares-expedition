@@ -61,7 +61,7 @@ public interface Card {
         return null;
     }
 
-    default void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
+    default void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
     }
 
     default void onOceanFlippedEffect(Player player) {

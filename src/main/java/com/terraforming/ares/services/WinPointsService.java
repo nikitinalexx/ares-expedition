@@ -53,13 +53,13 @@ public class WinPointsService {
                             if (winPointsInfo.getType() == CardCollectableResource.FOREST) {
                                 resources = player.getForests();
                             } else if (winPointsInfo.getType() == CardCollectableResource.JUPITER) {
-                                resources = cardService.countPlayedTags(player, Tag.JUPITER);
+                                resources = cardService.countPlayedTags(player, Set.of(Tag.JUPITER));
                             } else if (winPointsInfo.getType() == CardCollectableResource.BLUE_CARD) {
                                 resources = cardService.countPlayedCards(player, Set.of(CardColor.BLUE));
                             } else if (winPointsInfo.getType() == CardCollectableResource.ANY_CARD) {
                                 resources = cardService.countPlayedCards(player, Set.of(CardColor.BLUE, CardColor.GREEN, CardColor.RED));
                             } else if (winPointsInfo.getType() == CardCollectableResource.EARTH) {
-                                resources = cardService.countPlayedTags(player, Tag.EARTH);
+                                resources = cardService.countPlayedTags(player, Set.of(Tag.EARTH));
                             }
 
                             return getWinPoints(resources, winPointsInfo.getPoints(), winPointsInfo.getResources());

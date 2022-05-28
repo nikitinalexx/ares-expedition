@@ -35,7 +35,7 @@ public class VentureCapitalism implements BaseExpansionGreenCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
+    public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
         int eventTagCount = (int) project.getTags().stream().filter(Tag.EVENT::equals).count();
 
         player.setMcIncome(player.getMcIncome() + eventTagCount);

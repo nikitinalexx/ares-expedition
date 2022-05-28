@@ -42,7 +42,7 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
         for (Integer previouslyPlayedCardId : player.getPlayed().getCards()) {
             Card previouslyPlayedCard = cardService.getCard(previouslyPlayedCardId);
             if (previouslyPlayedCard.onBuiltEffectApplicableToOther()) {
-                previouslyPlayedCard.onProjectBuiltEffect(cardService, game, player, card, turn.getInputParams());
+                previouslyPlayedCard.postProjectBuiltEffect(cardService, game, player, card, turn.getInputParams());
             }
         }
 
@@ -52,7 +52,7 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
         processInternalAfterBuild(turn, game);
 
         if (card.onBuiltEffectApplicableToItself()) {
-            card.onProjectBuiltEffect(cardService, game, player, card, turn.getInputParams());
+            card.postProjectBuiltEffect(cardService, game, player, card, turn.getInputParams());
         }
 
         return response;

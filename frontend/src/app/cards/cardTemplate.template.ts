@@ -496,6 +496,14 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.HEAT_EARTH_INCOME;
   }
 
+  actionMcAnimalPlantIncome(card: Card): boolean {
+    return card.cardAction === CardAction.MC_ANIMAL_PLANT_INCOME;
+  }
+
+  actionCardScienceIncome(card: Card): boolean {
+    return card.cardAction === CardAction.CARD_SCIENCE_INCOME;
+  }
+
   actionMcEarthIncome(card: Card): boolean {
     return card.cardAction === CardAction.MC_EARTH_INCOME;
   }

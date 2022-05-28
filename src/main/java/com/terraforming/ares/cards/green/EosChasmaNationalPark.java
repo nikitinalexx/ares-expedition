@@ -48,7 +48,7 @@ public class EosChasmaNationalPark implements BaseExpansionGreenCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> input) {
+    public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> input) {
         List<Integer> cardInput = input.get(InputFlag.EOS_CHASMA_PUT_RESOURCE.getId());
 
 

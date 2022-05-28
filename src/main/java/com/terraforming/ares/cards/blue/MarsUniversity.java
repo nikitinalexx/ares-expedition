@@ -45,7 +45,7 @@ public class MarsUniversity implements BlueCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card card, Map<Integer, List<Integer>> inputParams) {
+    public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card card, Map<Integer, List<Integer>> inputParams) {
         long scienceTagsCount = card.getTags()
                 .stream()
                 .filter(Tag.SCIENCE::equals)

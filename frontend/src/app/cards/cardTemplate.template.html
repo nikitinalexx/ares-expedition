@@ -965,6 +965,7 @@
               {{income.value > 1 && income.type !== 'MC' ? income.value : ''}}
               <span class="production"
                     [ngClass]="getIncomeClass(income)">{{income.type === 'MC' ? income.value : ''}}</span>
+              <br *ngIf="income.type === 'CARD'"/>
             </span>
   </div>
 
@@ -979,6 +980,26 @@
       <div class="production heat"></div>
       /
       <div class="resource-tag production-tag tag-earth"></div>
+    </div>
+  </div>
+
+  <div *ngIf="actionMcAnimalPlantIncome(card)">
+    <div class="production-box production-box-size2a">
+      <div class="production money">1</div>
+      /
+      <div class="resource-tag production-tag tag-animal"></div>
+      <br/>
+      <div class="production money">1</div>
+      /
+      <div class="resource-tag production-tag tag-plant"></div>
+    </div>
+  </div>
+
+  <div *ngIf="actionCardScienceIncome(card)">
+    <div class="production-box production-box-size3 text-white">
+      <div class="production card"></div>
+      / 3
+      <div class="resource-tag production-tag tag-science"></div>
     </div>
   </div>
 

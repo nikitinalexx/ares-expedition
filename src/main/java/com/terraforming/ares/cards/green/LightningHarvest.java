@@ -35,7 +35,7 @@ public class LightningHarvest implements BaseExpansionGreenCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
+    public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
         int scienceTagsCount = (int) project.getTags().stream()
                 .filter(Tag.SCIENCE::equals)
                 .count();

@@ -36,7 +36,7 @@ public class MiningGuildCorporation implements CorporationCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
+    public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
         CardMetadata metadata = project.getCardMetadata();
         if (metadata == null) {
             return;

@@ -234,7 +234,9 @@ public class CardFactory {
                 new Windmills(206),
                 new Worms(207),
                 new Zeppelins(208),
-                new CommercialImports(210)
+                new CommercialImports(210),
+                new DiverseHabitats(211),
+                new Laboratories(212)
         );
 
 

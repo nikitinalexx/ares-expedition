@@ -57,7 +57,7 @@ public class ArclightCorporation implements CorporationCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame marsGame, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
+    public void postProjectBuiltEffect(CardService cardService, MarsGame marsGame, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
         int affectedTagsCount = (int) project.getTags().stream().filter(tag ->
                 tag == Tag.ANIMAL || tag == Tag.PLANT
         ).count();

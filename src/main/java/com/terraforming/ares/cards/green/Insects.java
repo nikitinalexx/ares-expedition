@@ -35,7 +35,7 @@ public class Insects implements BaseExpansionGreenCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
+    public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
         int plantTagsCount = (int) project.getTags().stream().filter(Tag.PLANT::equals).count();
 
         player.setPlantsIncome(player.getPlantsIncome() + plantTagsCount);
