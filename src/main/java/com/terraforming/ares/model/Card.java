@@ -94,4 +94,7 @@ public interface Card {
         return 0;
     }
 
+    default void revertPlayedTags(CardService cardService, List<Tag> tags, Player player) {
+    }
+
 }

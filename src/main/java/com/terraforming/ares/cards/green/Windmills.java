@@ -56,6 +56,12 @@ public class Windmills implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void revertPlayedTags(CardService cardService, List<Tag> tags, Player player) {
+        int energyTagCount = (int) tags.stream().map(Tag.ENERGY::equals).count();
+        player.setHeatIncome(player.getHeatIncome() - energyTagCount);
+    }
+
+    @Override
     public boolean onBuiltEffectApplicableToOther() {
         return true;
     }

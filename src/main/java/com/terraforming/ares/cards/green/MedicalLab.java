@@ -73,6 +73,25 @@ public class MedicalLab implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void revertPlayedTags(CardService cardService, List<Tag> tags, Player player) {
+        int buildingTagCountBefore = (int) player
+                .getPlayed()
+                .getCards().stream()
+                .map(cardService::getCard)
+                .flatMap(card -> card.getTags().stream())
+                .filter(Tag.BUILDING::equals).count();
+
+        int buildingTagCountAfter = buildingTagCountBefore -
+                (int) tags.stream().map(Tag.BUILDING::equals).count();
+
+        int mcIncomeDifference = (buildingTagCountBefore / 2) - (buildingTagCountAfter / 2);
+
+        if (mcIncomeDifference > 0) {
+            player.setMcIncome(player.getMcIncome() - mcIncomeDifference);
+        }
+    }
+
+    @Override
     public int getWinningPoints() {
         return 1;
     }

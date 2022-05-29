@@ -243,7 +243,8 @@ public class CardFactory {
                 new ProcessedMetals(214),
                 new ProcessingPlant(215),
                 new ProgressivePolicies(216),
-                new FilterFeeders(217)
+                new FilterFeeders(217),
+                new SyntheticCatastrophe(218)
         );
 
 

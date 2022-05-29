@@ -62,6 +62,12 @@ public class Insects implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void revertPlayedTags(CardService cardService, List<Tag> tags, Player player) {
+        int plantTagCount = (int) tags.stream().map(Tag.PLANT::equals).count();
+        player.setPlantsIncome(player.getPlantsIncome() - plantTagCount);
+    }
+
+    @Override
     public List<Tag> getTags() {
         return List.of(Tag.MICROBE);
     }

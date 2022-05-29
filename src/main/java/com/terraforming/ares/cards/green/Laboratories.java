@@ -51,6 +51,21 @@ public class Laboratories implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void revertPlayedTags(CardService cardService, List<Tag> tags, Player player) {
+        int scienceTagCount = (int) tags.stream().map(Tag.SCIENCE::equals).count();
+
+        int tagsPlayedBefore = cardService.countPlayedTags(player, Set.of(Tag.SCIENCE));
+        int tagsPlayedAfter = tagsPlayedBefore - scienceTagCount;
+
+        int incomeBefore = tagsPlayedBefore / 3;
+        int incomeAfter = tagsPlayedAfter / 3;
+
+        if (incomeAfter < incomeBefore) {
+            player.setCardIncome(player.getCardIncome() - (incomeBefore - incomeAfter));
+        }
+    }
+
+    @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
         int tagsPlayed = 1 + marsContext.getCardService().countPlayedTags(player, Set.of(Tag.SCIENCE));

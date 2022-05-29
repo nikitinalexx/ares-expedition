@@ -464,8 +464,9 @@ export class CardTemplateComponent {
         return card.cardAction === CardAction.WOOD_BURNING_STOVES;
     }
 
-    actionCapitalizeDescription(card: Card): boolean {
-        return card.cardAction === CardAction.CAPITALISE_DESCRIPTION;
+    capitalizeDescription(card: Card): boolean {
+        return card.cardAction === CardAction.CAPITALISE_DESCRIPTION ||
+            card.cardAction === CardAction.SYNTHETIC_CATASTROPHE;
     }
 
     actionImportedHydrogen(card: Card): boolean {

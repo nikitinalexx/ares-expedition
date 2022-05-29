@@ -56,6 +56,12 @@ public class VentureCapitalism implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void revertPlayedTags(CardService cardService, List<Tag> tags, Player player) {
+        int eventTagCount = (int) tags.stream().map(Tag.EVENT::equals).count();
+        player.setMcIncome(player.getMcIncome() - eventTagCount);
+    }
+
+    @Override
     public boolean onBuiltEffectApplicableToOther() {
         return true;
     }

@@ -111,6 +111,12 @@ export class SecondPhaseComponent implements OnInit {
     );
   }
 
+  getRedPlayedCards(): Card[] {
+    return this.game.player.played.filter(
+      card => card.cardColor === CardColor.RED
+    );
+  }
+
   getMicrobeAnimalPlayedCardsWithSelected(): Card[] {
     const playedCopy = [this.selectedProject];
     this.game?.player.played.forEach(e => playedCopy.push(e));
@@ -316,6 +322,10 @@ export class SecondPhaseComponent implements OnInit {
       && this.selectedProject.tags.some(tag => tag === Tag[Tag.SCIENCE]);
   }
 
+  syntheticCatastropheEffect(): boolean {
+    return (this.selectedProject.cardAction === CardAction[CardAction.SYNTHETIC_CATASTROPHE]);
+  }
+
   viralEnhancersEffect(): boolean {
     return (this.selectedProject.cardAction === CardAction[CardAction.VIRAL_ENHANCERS]
       || this.game.player.played.some(card => card.cardAction === CardAction[CardAction.VIRAL_ENHANCERS]))
@@ -412,6 +422,14 @@ export class SecondPhaseComponent implements OnInit {
           } else {
             inputParams[InputFlag.MARS_UNIVERSITY_CARD.valueOf()] = this.projectsToDiscard;
           }
+        }
+
+        if (this.syntheticCatastropheEffect()) {
+          if (!this.projectsToDiscard || this.projectsToDiscard.length !== 1) {
+            this.errorMessage = 'Synthetic Catastrophe may retrieve only 1 card';
+            return;
+          }
+          inputParams[InputFlag.SYNTHETIC_CATASTROPHE_CARD.valueOf()] = this.projectsToDiscard;
         }
 
         if (this.expectsDecomposersInput()) {

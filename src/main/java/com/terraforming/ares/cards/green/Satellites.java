@@ -56,6 +56,12 @@ public class Satellites implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void revertPlayedTags(CardService cardService, List<Tag> tags, Player player) {
+        int spaceTagCount = (int) tags.stream().map(Tag.SPACE::equals).count();
+        player.setMcIncome(player.getMcIncome() - spaceTagCount);
+    }
+
+    @Override
     public boolean onBuiltEffectApplicableToOther() {
         return true;
     }

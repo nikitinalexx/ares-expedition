@@ -53,6 +53,12 @@ public class DiverseHabitats implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void revertPlayedTags(CardService cardService, List<Tag> tags, Player player) {
+        int animalPlantTagCount = (int) tags.stream().map(tag -> tag == Tag.ANIMAL || tag == Tag.PLANT).count();
+        player.setMcIncome(player.getMcIncome() - animalPlantTagCount);
+    }
+
+    @Override
     public boolean onBuiltEffectApplicableToOther() {
         return true;
     }

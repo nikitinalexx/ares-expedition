@@ -57,6 +57,12 @@ public class Worms implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void revertPlayedTags(CardService cardService, List<Tag> tags, Player player) {
+        int microbeTagCount = (int) tags.stream().map(Tag.MICROBE::equals).count();
+        player.setPlantsIncome(player.getPlantsIncome() - microbeTagCount);
+    }
+
+    @Override
     public boolean onBuiltEffectApplicableToOther() {
         return true;
     }

@@ -901,7 +901,7 @@
     <span style="font-size:12px; ">{{card.description.substring(card.description.indexOf('.') + 1)}}</span><br/>
   </div>
 
-  <div *ngIf="actionCapitalizeDescription(card)">
+  <div *ngIf="capitalizeDescription(card)">
     <span style="font-size:14px; ">{{card.description}}</span>
   </div>
 
@@ -1170,7 +1170,7 @@
     *
   </div>
 
-  <div class="description ">
+  <div *ngIf="!capitalizeDescription(card)" class="description ">
     ({{ card.description }})
   </div>
 </div>

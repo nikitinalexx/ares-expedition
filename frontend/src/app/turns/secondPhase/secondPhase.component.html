@@ -68,6 +68,17 @@
 
         </div>
 
+        <div *ngIf="syntheticCatastropheEffect()" class="card-container">
+          <h1 class="text-white">Synthetic Catastrophe Retrieve Card: </h1>
+
+          <ul class="myUL">
+            <li *ngFor="let card of getRedPlayedCards();" (click)="clickProjectToDiscard(card)"
+                [ngClass]="selectedProjectToDiscardClass(card)" class="filterDiv automated display">
+              <app-card-template [card]="card" [player]="game?.player"></app-card-template>
+            </li>
+          </ul>
+        </div>
+
         <div *ngIf="expectsDecomposersInput()">
           <h1 class="text-white">Decomposers effect: </h1>
           <div class="form-group">
