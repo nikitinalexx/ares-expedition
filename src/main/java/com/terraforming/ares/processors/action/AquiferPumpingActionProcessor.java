@@ -2,6 +2,7 @@ package com.terraforming.ares.processors.action;
 
 import com.terraforming.ares.cards.blue.AquiferPumping;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.services.TerraformingService;
@@ -23,7 +24,7 @@ public class AquiferPumpingActionProcessor implements BlueActionCardProcessor<Aq
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player) {
+    public TurnResponse process(MarsGame game, Player player, Card actionCard) {
         player.setMc(player.getMc() - (10 - player.getSteelIncome() * 2));
 
         terraformingService.revealOcean(game, player);

@@ -26,14 +26,12 @@ public class DecomposingFungusActionProcessor implements BlueActionCardProcessor
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player, List<Integer> inputParameters) {
+    public TurnResponse process(MarsGame game, Player player, Card actionCard, List<Integer> inputParameters) {
         Integer cardIdToRemoveFrom = inputParameters.get(0);
 
         Card project = cardService.getCard(cardIdToRemoveFrom);
 
-        Integer currentResourceCount = player.getCardResourcesCount().get(project.getClass());
-
-        player.getCardResourcesCount().put(project.getClass(), currentResourceCount - 1);
+        player.addResources(project, -1);
 
         player.setPlants(player.getPlants() + 3);
 

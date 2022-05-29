@@ -2,6 +2,7 @@ package com.terraforming.ares.processors.action;
 
 import com.terraforming.ares.cards.blue.RegolithEaters;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.services.TerraformingService;
@@ -25,15 +26,13 @@ public class RegolithEatersActionProcessor implements BlueActionCardProcessor<Re
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player, List<Integer> inputParameters) {
+    public TurnResponse process(MarsGame game, Player player, Card actionCard, List<Integer> inputParameters) {
         Integer input = inputParameters.get(0);
 
-        Integer currentMicrobeNumber = player.getCardResourcesCount().get(RegolithEaters.class);
-
         if (input == 1) {
-            player.getCardResourcesCount().put(RegolithEaters.class, currentMicrobeNumber + 1);
+            player.addResources(actionCard, 1);
         } else if (input == 2) {
-            player.getCardResourcesCount().put(RegolithEaters.class, currentMicrobeNumber - 2);
+            player.addResources(actionCard, -2);
 
             terraformingService.raiseOxygen(game, player);
         }

@@ -244,6 +244,10 @@ export class CardTemplateComponent {
         return card.cardAction === CardAction.ADD_ANIMAL;
     }
 
+    actionFilterFeeders(card: Card): boolean {
+        return card.cardAction === CardAction.FILTER_FEEDERS;
+    }
+
     actionBrainstormingSession(card: Card): boolean {
         return card.cardAction === CardAction.BRAINSTORMING_SESSION;
     }

@@ -28,15 +28,15 @@ public class RedraftedContractsActionProcessor implements BlueActionCardProcesso
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player, List<Integer> inputParameters) {
+    public TurnResponse process(MarsGame game, Player player, Card actionCard, List<Integer> inputParameters) {
         player.getHand().removeCards(inputParameters);
 
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 
-        for (Integer card : cardService.dealCards(game, inputParameters.size())) {
-            player.getHand().addCard(card);
+        for (Integer cardId : cardService.dealCards(game, inputParameters.size())) {
+            player.getHand().addCard(cardId);
 
-            Card projectCard = cardService.getCard(card);
+            Card projectCard = cardService.getCard(cardId);
             resultBuilder.takenCard(CardDto.from(projectCard));
         }
 

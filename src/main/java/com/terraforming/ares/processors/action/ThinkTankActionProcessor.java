@@ -26,7 +26,7 @@ public class ThinkTankActionProcessor implements BlueActionCardProcessor<ThinkTa
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player) {
+    public TurnResponse process(MarsGame game, Player player, Card actionCard) {
         player.setMc(player.getMc() - 2);
 
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();

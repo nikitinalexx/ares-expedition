@@ -26,7 +26,7 @@ public class DevelopmentCenterActionCardProcessor implements BlueActionCardProce
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player) {
+    public TurnResponse process(MarsGame game, Player player, Card actionCard) {
         player.setHeat(player.getHeat() - 2);
 
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();

@@ -24,19 +24,17 @@ public class ExtremeColdFungusActionProcessor implements BlueActionCardProcessor
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player, List<Integer> inputParameters) {
+    public TurnResponse process(MarsGame game, Player player, Card actionCard, List<Integer> inputParameters) {
         Integer choiceType = inputParameters.get(0);
 
         if (choiceType == InputFlag.EXTEME_COLD_FUNGUS_PICK_PLANT.getId()) {
             player.setPlants(player.getPlants() + 1);
         } else {
-            Integer cardToAddTo = inputParameters.get(1);
+            Integer cardToAddToId = inputParameters.get(1);
 
-            Card card = cardService.getCard(cardToAddTo);
+            Card cardToAddTo = cardService.getCard(cardToAddToId);
 
-            Integer currentResourceCount = player.getCardResourcesCount().get(card.getClass());
-
-            player.getCardResourcesCount().put(card.getClass(), currentResourceCount + 1);
+            player.addResources(cardToAddTo, 1);
         }
 
         return null;

@@ -26,14 +26,11 @@ public class ConservedBiomeActionProcessor implements BlueActionCardProcessor<Co
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player, List<Integer> inputParameters) {
+    public TurnResponse process(MarsGame game, Player player, Card actionCard, List<Integer> inputParameters) {
         Integer cardIdToAddTo = inputParameters.get(0);
 
         Card project = cardService.getCard(cardIdToAddTo);
-
-        Integer currentResourceCount = player.getCardResourcesCount().get(project.getClass());
-
-        player.getCardResourcesCount().put(project.getClass(), currentResourceCount + 1);
+        player.addResources(project, 1);
 
         return null;
     }

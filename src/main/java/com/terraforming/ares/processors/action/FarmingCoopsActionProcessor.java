@@ -2,6 +2,7 @@ package com.terraforming.ares.processors.action;
 
 import com.terraforming.ares.cards.blue.FarmingCoops;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import org.springframework.stereotype.Component;
@@ -21,7 +22,7 @@ public class FarmingCoopsActionProcessor implements BlueActionCardProcessor<Farm
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player, List<Integer> inputParameters) {
+    public TurnResponse process(MarsGame game, Player player, Card actionCard, List<Integer> inputParameters) {
         Integer cardToSell = inputParameters.get(0);
 
         player.getHand().removeCards(List.of(cardToSell));

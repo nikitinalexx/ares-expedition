@@ -456,6 +456,12 @@
     <div class="resource animal"></div>
   </div>
 
+  <div *ngIf="actionFilterFeeders(card)">
+    <div class="resource microbe"></div>
+    * :
+    <div class="resource animal"></div>
+  </div>
+
   <div *ngIf="actionBrainstormingSession(card)">
     <div class="red-arrow"></div>
 

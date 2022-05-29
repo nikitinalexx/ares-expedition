@@ -48,7 +48,7 @@
       <ul class="myUL">
         <li *ngFor="let card of getPlayerHandForAction();" (click)="addCardToActionTargetCards(card)"
             [ngClass]="getActionTargetCardClass(card)" class="filterDiv automated display">
-          <app-card-template [card]="card" [player]="game?.player"></app-card-template>
+          <app-card-template [card]="card" [player]="game?.player" [showResources]="true"></app-card-template>
         </li>
       </ul>
     </div>

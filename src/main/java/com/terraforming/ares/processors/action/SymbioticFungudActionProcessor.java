@@ -26,15 +26,12 @@ public class SymbioticFungudActionProcessor implements BlueActionCardProcessor<S
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player, List<Integer> inputParameters) {
+    public TurnResponse process(MarsGame game, Player player, Card actionCard, List<Integer> inputParameters) {
         Integer cardIdToPutMicrobeOn = inputParameters.get(0);
 
         Card projectCard = cardService.getCard(cardIdToPutMicrobeOn);
 
-        player.getCardResourcesCount().put(
-                projectCard.getClass(),
-                player.getCardResourcesCount().get(projectCard.getClass()) + 1
-        );
+        player.addResources(projectCard, 1);
 
         return null;
     }

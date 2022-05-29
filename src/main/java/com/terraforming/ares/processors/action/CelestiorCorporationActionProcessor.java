@@ -27,7 +27,7 @@ public class CelestiorCorporationActionProcessor implements BlueActionCardProces
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player) {
+    public TurnResponse process(MarsGame game, Player player, Card actionCard) {
         AutoPickDiscardCardsAction.AutoPickDiscardCardsActionBuilder resultBuilder = AutoPickDiscardCardsAction.builder();
 
         for (Integer card : cardService.dealCards(game, 3)) {

@@ -2,6 +2,7 @@ package com.terraforming.ares.processors.action;
 
 import com.terraforming.ares.cards.blue.ProgressivePolicies;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
@@ -28,7 +29,7 @@ public class ProgressivePoliciesActionProcessor implements BlueActionCardProcess
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player) {
+    public TurnResponse process(MarsGame game, Player player, Card actionCard) {
         int eventTags = cardService.countPlayedTags(player, Set.of(Tag.EVENT));
         int price = (eventTags >= 4) ? 5 : 10;
 

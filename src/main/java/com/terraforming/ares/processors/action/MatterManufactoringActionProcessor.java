@@ -26,7 +26,7 @@ public class MatterManufactoringActionProcessor implements BlueActionCardProcess
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player) {
+    public TurnResponse process(MarsGame game, Player player, Card actionCard) {
         player.setMc(player.getMc() - 1);
 
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();

@@ -45,7 +45,7 @@ public class BlueActionProcessor implements TurnProcessor<PerformBlueActionTurn>
 
         BlueActionCardProcessor<ProjectCard> blueActionCardProcessor = (BlueActionCardProcessor<ProjectCard>) blueActionProcessors.get(projectCard.getClass());
 
-        TurnResponse response = blueActionCardProcessor.process(game, player, turn.getInputParams());
+        TurnResponse response = blueActionCardProcessor.process(game, player, projectCard, turn.getInputParams());
 
         if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ASSEMBLY_LINES)) {
             player.setMc(player.getMc() + 1);

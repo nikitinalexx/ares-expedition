@@ -27,7 +27,7 @@ public class DevelopedInfrastructureActionProcessor implements BlueActionCardPro
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player) {
+    public TurnResponse process(MarsGame game, Player player, Card actionCard) {
         long minFiveBlueCards = player.getPlayed().getCards().stream()
                 .map(cardService::getCard)
                 .map(Card::getColor)

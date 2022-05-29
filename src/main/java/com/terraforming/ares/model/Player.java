@@ -1,5 +1,6 @@
 package com.terraforming.ares.model;
 
+import com.terraforming.ares.cards.blue.FilterFeeders;
 import com.terraforming.ares.model.turn.Turn;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -76,6 +77,9 @@ public class Player {
                 toCard.getClass(),
                 this.cardResourcesCount.get(toCard.getClass()) + count
         );
+        if (count > 0 && toCard.getCollectableResource() == CardCollectableResource.MICROBE) {
+            this.cardResourcesCount.put(FilterFeeders.class, this.cardResourcesCount.get(FilterFeeders.class) + 1);
+        }
     }
 
     public void initResources(Card toCard) {

@@ -15,12 +15,12 @@ public interface BlueActionCardProcessor<T extends Card> {
 
     Class<T> getType();
 
-    default TurnResponse process(MarsGame game, Player player) {
+    default TurnResponse process(MarsGame game, Player player, Card actionCard) {
         return null;
     }
 
-    default TurnResponse process(MarsGame game, Player player, List<Integer> inputParameters) {
-        return process(game, player);
+    default TurnResponse process(MarsGame game, Player player, Card actionCard, List<Integer> inputParameters) {
+        return process(game, player, actionCard);
     }
 
 }

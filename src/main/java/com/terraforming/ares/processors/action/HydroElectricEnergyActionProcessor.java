@@ -2,6 +2,7 @@ package com.terraforming.ares.processors.action;
 
 import com.terraforming.ares.cards.blue.HydroElectricEnergy;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import org.springframework.stereotype.Component;
@@ -18,7 +19,7 @@ public class HydroElectricEnergyActionProcessor implements BlueActionCardProcess
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player) {
+    public TurnResponse process(MarsGame game, Player player, Card actionCard) {
         player.setMc(player.getMc() - 1);
         player.setHeat(player.getHeat() + 2 + (player.getChosenPhase() == 3 ? 1 : 0));
 
