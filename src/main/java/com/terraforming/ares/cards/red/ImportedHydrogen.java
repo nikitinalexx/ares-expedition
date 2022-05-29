@@ -67,10 +67,7 @@ public class ImportedHydrogen implements BaseExpansionRedCard {
             resourcedToAdd = 3;
         }
 
-        player.getCardResourcesCount().put(
-                inputCard.getClass(),
-                player.getCardResourcesCount().get(inputCard.getClass()) + resourcedToAdd
-        );
+        player.addResources(inputCard, resourcedToAdd);
     }
 
     @Override

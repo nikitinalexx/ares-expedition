@@ -5,7 +5,6 @@ import com.terraforming.ares.cards.blue.AnaerobicMicroorganisms;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardService;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
 /**
  * Created by oleksii.nikitin

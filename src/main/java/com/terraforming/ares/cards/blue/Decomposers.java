@@ -42,7 +42,7 @@ public class Decomposers implements BlueCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        marsContext.getPlayer().getCardResourcesCount().put(Decomposers.class, 0);
+        marsContext.getPlayer().initResources(this);
         return null;
     }
 
@@ -100,18 +100,12 @@ public class Decomposers implements BlueCard {
         }
 
         if (inputParams.containsKey(DECOMPOSERS_TAKE_MICROBE.getId()) && !CollectionUtils.isEmpty(inputParams.get(DECOMPOSERS_TAKE_MICROBE.getId()))) {
-            player.getCardResourcesCount().put(
-                    Decomposers.class,
-                    player.getCardResourcesCount().get(Decomposers.class) + inputParams.get(DECOMPOSERS_TAKE_MICROBE.getId()).get(0)
-            );
+            player.addResources(this, inputParams.get(DECOMPOSERS_TAKE_MICROBE.getId()).get(0));
         }
 
         if (inputParams.containsKey(DECOMPOSERS_TAKE_CARD.getId()) && !CollectionUtils.isEmpty(inputParams.get(DECOMPOSERS_TAKE_CARD.getId()))) {
             Integer takeCardsCount = inputParams.get(DECOMPOSERS_TAKE_CARD.getId()).get(0);
-            player.getCardResourcesCount().put(
-                    Decomposers.class,
-                    player.getCardResourcesCount().get(Decomposers.class) - takeCardsCount
-            );
+            player.addResources(this, -takeCardsCount);
 
             for (Integer cardId : cardService.dealCards(game, takeCardsCount)) {
                 player.getHand().addCard(cardId);

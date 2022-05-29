@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.payments.AnaerobicMicroorganismsPayment;
 import com.terraforming.ares.model.payments.MegacreditsPayment;
@@ -28,16 +29,19 @@ class AnaerobicMicroorganismsFlowTest {
     private PaymentValidationService paymentValidationService;
 
     private Player player;
+    private Card card;
 
     @BeforeEach
     public void setUp() {
         player = Player.builder().build();
         player.getPlayed().addCard(ANAEROBIC_MICROORGANISMS_CARD_ID);
+        card = new AnaerobicMicroorganisms(ANAEROBIC_MICROORGANISMS_CARD_ID);
+        player.initResources(card);
     }
 
     @Test
     void testNotEnoughResources() {
-        player.getCardResourcesCount().put(AnaerobicMicroorganisms.class, 1);
+        player.addResources(card, 1);
         String errorMessage = paymentValidationService.validate(
                 new AiCentral(AI_CENTRAL_CARD_ID),
                 player,
@@ -48,7 +52,7 @@ class AnaerobicMicroorganismsFlowTest {
 
     @Test
     void testNotEnoughTotalMcToPay() {
-        player.getCardResourcesCount().put(AnaerobicMicroorganisms.class, 3);
+        player.addResources(card, 3);
 
         String errorMessage = paymentValidationService.validate(
                 new AiCentral(AI_CENTRAL_CARD_ID), player, Collections.singletonList(new AnaerobicMicroorganismsPayment())
@@ -58,7 +62,7 @@ class AnaerobicMicroorganismsFlowTest {
 
     @Test
     void testEnoughResources() {
-        player.getCardResourcesCount().put(AnaerobicMicroorganisms.class, 3);
+        player.addResources(card, 3);
         player.setMc(100);
 
         String errorMessage = paymentValidationService.validate(

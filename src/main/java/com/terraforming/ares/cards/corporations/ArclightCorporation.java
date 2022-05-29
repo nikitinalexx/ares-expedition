@@ -1,7 +1,6 @@
 package com.terraforming.ares.cards.corporations;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.cards.blue.AnaerobicMicroorganisms;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.winPoints.WinPointsInfo;
@@ -62,21 +61,15 @@ public class ArclightCorporation implements CorporationCard {
                 tag == Tag.ANIMAL || tag == Tag.PLANT
         ).count();
 
-        player.getCardResourcesCount().compute(
-                ArclightCorporation.class, (key, value) -> {
-                    if (value == null) {
-                        value = 0;
-                    }
-                    return value + affectedTagsCount;
-                }
-        );
+        player.addResources(this, affectedTagsCount);
     }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
         player.setMc(43);
-        player.getCardResourcesCount().put(ArclightCorporation.class, 2);
+        player.initResources(this);
+        player.addResources(this, 2);
         return null;
     }
 

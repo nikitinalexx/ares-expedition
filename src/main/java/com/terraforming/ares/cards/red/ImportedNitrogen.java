@@ -48,12 +48,12 @@ public class ImportedNitrogen implements BaseExpansionRedCard {
 
         if (animalsCardId != InputFlag.SKIP_ACTION.getId()) {
             Card animalsCard = cardService.getCard(animalsCardId);
-            player.getCardResourcesCount().put(animalsCard.getClass(), player.getCardResourcesCount().get(animalsCard.getClass()) + 2);
+            player.addResources(animalsCard, 2);
         }
 
         if (microbesCardId != InputFlag.SKIP_ACTION.getId()) {
             Card microbeCard = cardService.getCard(microbesCardId);
-            player.getCardResourcesCount().put(microbeCard.getClass(), player.getCardResourcesCount().get(microbeCard.getClass()) + 3);
+            player.addResources(microbeCard, 3);
         }
     }
 

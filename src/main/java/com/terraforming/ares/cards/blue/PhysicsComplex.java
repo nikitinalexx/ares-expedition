@@ -40,7 +40,7 @@ public class PhysicsComplex implements BlueCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        marsContext.getPlayer().getCardResourcesCount().put(PhysicsComplex.class, 0);
+        marsContext.getPlayer().initResources(this);
         return null;
     }
 
@@ -56,7 +56,7 @@ public class PhysicsComplex implements BlueCard {
 
     @Override
     public void onTemperatureChangedEffect(Player player) {
-        player.getCardResourcesCount().put(PhysicsComplex.class, player.getCardResourcesCount().get(PhysicsComplex.class) + 1);
+        player.addResources(this, 1);
     }
 
     @Override

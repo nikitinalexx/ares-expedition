@@ -242,7 +242,8 @@ public class CardFactory {
                 new MatterGenerator(213),
                 new ProcessedMetals(214),
                 new ProcessingPlant(215),
-                new ProgressivePolicies(216)
+                new ProgressivePolicies(216),
+                new FilterFeeders(217)
         );
 
 

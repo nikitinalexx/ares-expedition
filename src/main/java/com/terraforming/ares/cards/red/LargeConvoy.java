@@ -57,10 +57,7 @@ public class LargeConvoy implements BaseExpansionRedCard {
 
         Card animalsCard = cardService.getCard(animalsCardId);
 
-        player.getCardResourcesCount().put(
-                animalsCard.getClass(),
-                player.getCardResourcesCount().get(animalsCard.getClass()) + 3
-        );
+        player.addResources(animalsCard, 3);
     }
 
     @Override

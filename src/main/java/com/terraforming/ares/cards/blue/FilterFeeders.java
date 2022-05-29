@@ -2,7 +2,7 @@ package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
-import com.terraforming.ares.model.parameters.ParameterColor;
+import com.terraforming.ares.model.parameters.OceanRequirement;
 import com.terraforming.ares.model.winPoints.WinPointsInfo;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -16,19 +16,19 @@ import java.util.List;
  */
 @RequiredArgsConstructor
 @Getter
-public class Birds implements BlueCard {
+public class FilterFeeders implements BlueCard {
     private final int id;
     private final CardMetadata cardMetadata;
 
-    public Birds(int id) {
+    public FilterFeeders(int id) {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
-                .name("Birds")
-                .description("Requires white oxygen. Add an animal to this card. 1 VP per animal on this card.")
-                .cardAction(CardAction.ADD_ANIMAL)
+                .name("Filter Feeders")
+                .description("When you add any number of microbes to ANOTHER* card, add an animal to this card. 1 VP per 3 animals on this card.")
+                .cardAction(CardAction.FILTER_FEEDERS)
                 .winPointsInfo(WinPointsInfo.builder()
                         .type(CardCollectableResource.ANIMAL)
-                        .resources(1)
+                        .resources(3)
                         .points(1)
                         .build()
                 )
@@ -43,6 +43,11 @@ public class Birds implements BlueCard {
     @Override
     public CardCollectableResource getCollectableResource() {
         return CardCollectableResource.ANIMAL;
+    }
+
+    @Override
+    public boolean isActiveCard() {
+        return false;
     }
 
     @Override
@@ -62,17 +67,12 @@ public class Birds implements BlueCard {
     }
 
     @Override
-    public boolean isActiveCard() {
-        return true;
-    }
-
-    @Override
-    public List<ParameterColor> getOxygenRequirement() {
-        return Collections.singletonList(ParameterColor.W);
+    public OceanRequirement getOceanRequirement() {
+        return OceanRequirement.builder().minValue(2).maxValue(Constants.MAX_OCEANS).build();
     }
 
     @Override
     public int getPrice() {
-        return 15;
+        return 9;
     }
 }

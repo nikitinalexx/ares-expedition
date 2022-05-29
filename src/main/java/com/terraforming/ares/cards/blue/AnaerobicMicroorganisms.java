@@ -42,7 +42,7 @@ public class AnaerobicMicroorganisms implements BlueCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        marsContext.getPlayer().getCardResourcesCount().put(AnaerobicMicroorganisms.class, 0);
+        marsContext.getPlayer().initResources(this);
         return null;
     }
 
@@ -72,14 +72,7 @@ public class AnaerobicMicroorganisms implements BlueCard {
                 tag == Tag.ANIMAL || tag == Tag.MICROBE || tag == Tag.PLANT
         ).count();
 
-        player.getCardResourcesCount().compute(
-                AnaerobicMicroorganisms.class, (key, value) -> {
-                    if (value == null) {
-                        value = 0;
-                    }
-                    return value + affectedTagsCount;
-                }
-        );
+        player.addResources(this, affectedTagsCount);
     }
 
     @Override

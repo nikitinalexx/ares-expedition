@@ -52,10 +52,7 @@ public class LocalHeatTrapping implements BaseExpansionRedCard {
 
         Card inputCard = cardService.getCard(cardId);
 
-        player.getCardResourcesCount().put(
-                inputCard.getClass(),
-                player.getCardResourcesCount().get(inputCard.getClass()) + 2
-        );
+        player.addResources(inputCard, 2);
     }
 
     @Override

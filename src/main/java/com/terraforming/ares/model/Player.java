@@ -71,6 +71,17 @@ public class Player {
         this.actionsInSecondPhase = actionsInSecondPhase;
     }
 
+    public void addResources(Card toCard, int count) {
+        this.cardResourcesCount.put(
+                toCard.getClass(),
+                this.cardResourcesCount.get(toCard.getClass()) + count
+        );
+    }
+
+    public void initResources(Card toCard) {
+        this.cardResourcesCount.put(toCard.getClass(), 0);
+    }
+
     public void clearRoundResults() {
         chosenPhase = null;
         activatedBlueCards = Deck.builder().build();

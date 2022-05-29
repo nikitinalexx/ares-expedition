@@ -46,7 +46,7 @@ public class SmallAnimals implements BlueCard {
 
     @Override
     public void onForestBuiltEffect(Player player) {
-        player.getCardResourcesCount().put(SmallAnimals.class, player.getCardResourcesCount().get(SmallAnimals.class) + 1);
+        player.addResources(this, 1);
     }
 
     @Override
@@ -61,7 +61,7 @@ public class SmallAnimals implements BlueCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        marsContext.getPlayer().getCardResourcesCount().put(SmallAnimals.class, 0);
+        marsContext.getPlayer().initResources(this);
         return null;
     }
 

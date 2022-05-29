@@ -55,7 +55,7 @@ public class CeosFavoriteProject implements BaseExpansionRedCard {
 
         Card targetCard = cardService.getCard(targetCardId);
 
-        player.getCardResourcesCount().put(targetCard.getClass(), player.getCardResourcesCount().get(targetCard.getClass()) + 2);
+        player.addResources(targetCard, 2);
     }
 
     @Override

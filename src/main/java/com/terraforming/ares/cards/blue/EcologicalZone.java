@@ -43,7 +43,7 @@ public class EcologicalZone implements BlueCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        marsContext.getPlayer().getCardResourcesCount().put(EcologicalZone.class, 0);
+        marsContext.getPlayer().initResources(this);
         return null;
     }
 
@@ -70,7 +70,7 @@ public class EcologicalZone implements BlueCard {
             return;
         }
 
-        player.getCardResourcesCount().put(EcologicalZone.class, player.getCardResourcesCount().get(EcologicalZone.class) + (int) animalsToAddCount);
+        player.addResources(this, (int) animalsToAddCount);
     }
 
     @Override

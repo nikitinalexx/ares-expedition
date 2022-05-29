@@ -47,7 +47,8 @@ public class DecomposingFungus implements BlueCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        marsContext.getPlayer().getCardResourcesCount().put(DecomposingFungus.class, 2);
+        marsContext.getPlayer().initResources(this);
+        marsContext.getPlayer().addResources(this, 2);
         return null;
     }
 

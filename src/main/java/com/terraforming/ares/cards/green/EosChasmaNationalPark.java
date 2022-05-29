@@ -60,10 +60,7 @@ public class EosChasmaNationalPark implements BaseExpansionGreenCard {
 
         Card inputCard = cardService.getCard(cardId);
 
-        player.getCardResourcesCount().put(
-                inputCard.getClass(),
-                player.getCardResourcesCount().get(inputCard.getClass()) + 1
-        );
+        player.addResources(inputCard, 1);
     }
 
     @Override
