@@ -58,12 +58,12 @@ export class SellCardsComponent implements OnInit {
     this.cardsToCell = [];
   }
 
-  sellCards(game: Game, next: (value: any) => void) {
+  sellCards(game: Game, callback: (value: any) => void) {
     const sellCardsFunc = this.finalTurn ? this.gameRepository.sellCardsFinalTurn : this.gameRepository.sellCards;
     sellCardsFunc(game.player.playerUuid, this.cardsToCell).subscribe(
       data => {
         this.cardsToCell = [];
-        next(data);
+        callback(data);
       },
       error => {
         this.errorMessage = error;

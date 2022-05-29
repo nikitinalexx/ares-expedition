@@ -22,16 +22,21 @@ public class BuildBlueRedProjectsState extends AbstractState {
         Player player = marsGame.getPlayerByUuid(playerUuid);
         if (player.getNextTurn() != null && player.getNextTurn().getType().isIntermediate()) {
             return List.of(player.getNextTurn().getType());
-        } else if (player.getNextTurn() != null || player.getActionsInSecondPhase() == 0) {
+        } else if (player.getNextTurn() != null || (player.getActionsInSecondPhase() == 0 && player.getCanBuildInFirstPhase() == 0)) {
             return List.of();
         } else {
             List<TurnType> actions = new ArrayList<>(List.of(
-                    TurnType.BUILD_BLUE_RED_PROJECT,
                     TurnType.SELL_CARDS,
                     TurnType.SKIP_TURN
             ));
             if (player.getChosenPhase() == 2 && !player.isPickedCardInSecondPhase()) {
                 actions.add(TurnType.PICK_EXTRA_CARD);
+            }
+            if (player.isAssortedEnterprisesGreenAvailable() || player.getCanBuildInFirstPhase() > 0) {
+                actions.add(TurnType.BUILD_GREEN_PROJECT);
+            }
+            if (player.getActionsInSecondPhase() > 0) {
+                actions.add(TurnType.BUILD_BLUE_RED_PROJECT);
             }
             return actions;
         }
@@ -40,7 +45,7 @@ public class BuildBlueRedProjectsState extends AbstractState {
     @Override
     public void updateState() {
         if (marsGame.getPlayerUuidToPlayer().values().stream().allMatch(
-                player -> player.getActionsInSecondPhase() == 0 && player.getNextTurn() == null
+                player -> player.getActionsInSecondPhase() == 0 && player.getCanBuildInFirstPhase() == 0 && player.getNextTurn() == null
         )) {
             performStateTransferFromPhase(3);
         }

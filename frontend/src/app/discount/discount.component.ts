@@ -88,6 +88,10 @@ export class DiscountComponent {
       discount += 9;
     }
 
+    if (player.assortedEnterprisesDiscount) {
+      discount += 2;
+    }
+
     return Math.min(card.price, discount);
   }
 

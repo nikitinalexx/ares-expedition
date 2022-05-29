@@ -4,9 +4,7 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.model.turn.DraftCardsTurn;
-import com.terraforming.ares.model.turn.TurnType;
 
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -43,8 +41,10 @@ public abstract class AbstractState implements State {
                 .collect(Collectors.toSet());
 
         if (phaseNumber <= 1 && pickedPhases.contains(1)) {
+            marsGame.getPlayerUuidToPlayer().values().forEach(player -> player.setCanBuildInFirstPhase(1));
             marsGame.setStateType(StateType.BUILD_GREEN_PROJECTS);
         } else if (phaseNumber <= 2 && pickedPhases.contains(2)) {
+            marsGame.getPlayerUuidToPlayer().values().forEach(player -> player.setActionsInSecondPhase(player.getChosenPhase() == 2 ? 2 : 1));
             marsGame.setStateType(StateType.BUILD_BLUE_RED_PROJECTS);
         } else if (phaseNumber <= 3 && pickedPhases.contains(3)) {
             marsGame.setStateType(StateType.PERFORM_BLUE_ACTION);

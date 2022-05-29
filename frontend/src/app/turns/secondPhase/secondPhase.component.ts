@@ -15,6 +15,7 @@ import {Tag} from '../../data/Tag';
 import {InputFlag} from '../../data/InputFlag';
 import {CardResource} from '../../data/CardResource';
 import {DiscardCardsTurn} from '../../data/DiscardCardsTurn';
+import {BuildGreenComponent} from '../greenProject/buildGreen.component';
 
 @Component({
   selector: 'app-second-phase',
@@ -34,6 +35,7 @@ export class SecondPhaseComponent implements OnInit {
   largeConvoyAnimalCard = null;
   localHeatTrappingCard = null;
   @ViewChild(SellCardsComponent) sellCardsService;
+  @ViewChild(BuildGreenComponent) buildGreenService;
 
   parentForm: FormGroup;
 
@@ -54,6 +56,8 @@ export class SecondPhaseComponent implements OnInit {
       turn: ['blueRedProject', Validators.required],
       mcPrice: [''],
       heatPrice: 0,
+      onBuildMicrobeEffectChoice: ['chooseMicrobe'],
+      onBuildAnimalEffectChoice: ['chooseAnimal'],
       anaerobicMicroorganisms: [false],
       marsUniversityDiscardLess: [false],
       takeMicrobes: 0,
@@ -73,6 +77,12 @@ export class SecondPhaseComponent implements OnInit {
     return this.nextTurns
       && this.nextTurns.find(turn => turn === TurnType[TurnType.BUILD_BLUE_RED_PROJECT])?.length > 0
       && this.game.player.hand.some(card => card.cardColor === CardColor.BLUE || card.cardColor === CardColor.RED);
+  }
+
+  buildGreenProjectTurn(): boolean {
+    return this.nextTurns
+      && this.nextTurns.find(turn => turn === TurnType[TurnType.BUILD_GREEN_PROJECT])?.length > 0
+      && this.game.player.hand.some(card => card.cardColor === CardColor.GREEN);
   }
 
   discardCardsTurn(): boolean {
@@ -372,7 +382,9 @@ export class SecondPhaseComponent implements OnInit {
       console.log('form invalid');
       return false;
     } else {
-      if (formGroup.value.turn === 'skipTurn') {
+      if (formGroup.value.turn === 'greenProject' && formGroup.value.mcPrice !== null) {
+        this.buildGreenService.buildGreenProject(data => this.sendToParent(data));
+      } else if (formGroup.value.turn === 'skipTurn') {
         this.gameRepository.skipTurn(this.game.player.playerUuid).subscribe(
           data => this.sendToParent(data)
         );

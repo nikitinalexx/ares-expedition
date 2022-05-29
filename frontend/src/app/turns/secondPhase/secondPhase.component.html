@@ -211,6 +211,10 @@
     </div>
   </div>
 
+  <div *ngIf="buildGreenProjectTurn()" class="form-check">
+    <app-build-green [game]="game" [parentForm]="parentForm"></app-build-green>
+  </div>
+
   <div *ngIf="pickExtraCardTurn()" class="form-check">
     <input id="pickExtraCard" (click)="resetAllInputs()" type="radio" class="form-check-input" value="pickExtraCard"
            formControlName="turn">

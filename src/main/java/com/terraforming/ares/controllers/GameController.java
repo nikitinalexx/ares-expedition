@@ -178,6 +178,7 @@ public class GameController {
                 .builtSpecialDesignLastTurn(player.isBuiltSpecialDesignLastTurn())
                 .builtWorkCrewsLastTurn(player.isBuiltWorkCrewsLastTurn())
                 .canBuildAnotherGreenWith9Discount(player.isCanBuildAnotherGreenWith9Discount())
+                .assortedEnterprisesDiscount(player.isAssortedEnterprisesDiscount())
                 .build();
     }
 

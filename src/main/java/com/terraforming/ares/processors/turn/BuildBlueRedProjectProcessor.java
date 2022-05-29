@@ -25,6 +25,7 @@ public class BuildBlueRedProjectProcessor extends GenericBuildProjectProcessor<B
 
         player.setBuiltSpecialDesignLastTurn(false);
         player.setBuiltWorkCrewsLastTurn(false);
+        player.setAssortedEnterprisesDiscount(false);
     }
 
     @Override

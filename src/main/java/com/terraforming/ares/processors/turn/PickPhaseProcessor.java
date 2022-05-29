@@ -22,9 +22,6 @@ public class PickPhaseProcessor implements TurnProcessor<PhaseChoiceTurn> {
         player.setPreviousChosenPhase(turn.getPhaseId());
         player.setChosenPhase(turn.getPhaseId());
 
-        player.setCanBuildInFirstPhase(1);
-        player.setActionsInSecondPhase(turn.getPhaseId() == 2 ? 2 : 1);
-
         return null;
     }
 

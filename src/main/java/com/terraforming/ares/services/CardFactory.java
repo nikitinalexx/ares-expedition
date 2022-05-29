@@ -7,6 +7,7 @@ import com.terraforming.ares.cards.red.*;
 import com.terraforming.ares.model.Card;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -234,6 +235,7 @@ public class CardFactory {
                 new Windmills(206),
                 new Worms(207),
                 new Zeppelins(208),
+                new AssortedEnterprises(209),
                 new CommercialImports(210),
                 new DiverseHabitats(211),
                 new Laboratories(212),
@@ -273,7 +275,9 @@ public class CardFactory {
     }
 
     public List<Card> getAllProjects() {
-        return sortedProjects;
+        return sortedProjects.stream().sorted(Comparator.comparingInt(
+                card -> card.getColor().ordinal()
+        )).collect(Collectors.toList());
     }
 
     public List<Card> getAllCorporations() {

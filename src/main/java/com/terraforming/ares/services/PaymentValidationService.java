@@ -40,7 +40,9 @@ public class PaymentValidationService {
             }
         }
 
-        if (player.isCanBuildAnotherGreenWith9Discount() && card.getPrice() > 9) {
+        if (player.isCanBuildAnotherGreenWith9Discount()
+                && card.getPrice() > 9
+                && card.getColor() == CardColor.GREEN) {
             return "Can only build a second building with print price of 9 or less";
         }
 
@@ -133,6 +135,10 @@ public class PaymentValidationService {
 
         if (player.isCanBuildAnotherGreenWith9Discount() && card.getPrice() <= 9) {
             discount += 9;
+        }
+
+        if (player.isAssortedEnterprisesDiscount()) {
+            discount += 2;
         }
 
         return discount;
