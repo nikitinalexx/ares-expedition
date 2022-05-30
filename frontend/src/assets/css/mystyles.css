@@ -780,6 +780,31 @@ li.events::before {
   box-shadow: 0 0 0 1px rgba(0,0,0,0.3);
 }
 
+.tag-icon {
+  position: absolute;
+  margin-left: 20px;
+  margin-top: -10px;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  background-size: 18px 18px;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.3);
+}
+
+.forest-tag-icon {
+  margin-left: 30px;
+}
+
+.tag-icon-first {
+  margin-left: -3px;
+}
+
+.card-tag-icon {
+  width: 13px;
+  height: 18px;
+  background-size: 13px 18px;
+}
+
 /************** Extras ************/
 .red-arrow {
   background-image: url(../images/misc/arrow.png);

@@ -34,6 +34,7 @@ public class MarsGame {
     private int currentPhase = -1;
     @JsonIgnore
     private int updateCounter;
+    private int turns;
 
     public MarsGame(List<String> playerNames, int playerHandSize, Deck projectsDeck, Deck corporationsDeck, Planet planet) {
         this.projectsDeck = projectsDeck;
@@ -81,6 +82,10 @@ public class MarsGame {
     public void setStateType(StateType stateType) {
         this.stateType = stateType;
         switch (stateType) {
+            case PICK_PHASE:
+                currentPhase = -1;
+                turns++;
+                break;
             case BUILD_GREEN_PROJECTS:
                 currentPhase = 1;
                 break;

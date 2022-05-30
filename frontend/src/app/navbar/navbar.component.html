@@ -58,7 +58,9 @@
           <span class="tag-count-display">{{player?.terraformingRating}}</span>
         </div>
         <div class="tag-display">
-          <div class="tag-count tag-forest tag-size-big tag-type-main"></div>
+          <div class="tag-count tag-forest tag-size-big tag-type-main">
+            <div *ngIf="hasMcForestIncome()" class="tag-icon forest-tag-icon money">1</div>
+          </div>
           <span class="tag-count-display">{{player?.forests}}</span>
         </div>
       </div>
@@ -68,7 +70,30 @@
         <div *ngFor="let entry of getUniqueTags();" class="tag-count-container">
           <div class="tag-and-discount"><!----> <!---->
             <div class="tag-display">
-              <div class="tag-count tag-{{entry[0].toLowerCase()}} tag-size-big tag-type-secondary"></div>
+              <div class="tag-count tag-{{entry[0].toLowerCase()}} tag-size-big tag-type-secondary">
+                <div *ngIf="entry[0].toLowerCase() == 'earth' && hasHeatEarthIncome()" class="tag-icon tag-icon-first heat"></div>
+                <div *ngIf="entry[0].toLowerCase() == 'earth' && hasMcEarthIncome()" class="tag-icon money">{{countMcEarthIncome()}}</div>
+
+                <div *ngIf="entry[0].toLowerCase() == 'science' && hasCardScienceIncome()" class="tag-icon card-tag-icon card tag-icon-first"></div>
+                <div *ngIf="entry[0].toLowerCase() == 'science' && hasMcScienceIncome()" class="tag-icon money">1</div>
+
+                <div *ngIf="entry[0].toLowerCase() == 'energy' && hasHeatEnergyIncome()" class="tag-icon tag-icon-first heat"></div>
+                <div *ngIf="entry[0].toLowerCase() == 'energy' && hasMcEnergyIncome()" class="tag-icon money">1</div>
+
+                <div *ngIf="entry[0].toLowerCase() == 'space' && hasHeatSpaceIncome()" class="tag-icon tag-icon-first heat"></div>
+                <div *ngIf="entry[0].toLowerCase() == 'space' && hasMcSpaceIncome()" class="tag-icon money">1</div>
+
+                <div *ngIf="entry[0].toLowerCase() == 'event' && hasMcEventIncome()" class="tag-icon money">1</div>
+
+                <div *ngIf="entry[0].toLowerCase() == 'plant' && hasPlantPlantIncome()" class="tag-icon tag-icon-first plant"></div>
+
+                <div *ngIf="entry[0].toLowerCase() == 'plant' && hasMcPlantIncome()" class="tag-icon money">1</div>
+                <div *ngIf="entry[0].toLowerCase() == 'animal' && hasAnimalPlantIncome()" class="tag-icon money">1</div>
+
+                <div *ngIf="entry[0].toLowerCase() == 'microbe' && hasPlantMicrobeIncome()" class="tag-icon plant"></div>
+
+                <div *ngIf="entry[0].toLowerCase() == 'building' && hasMcBuildingIncome()" class="tag-icon money" style="font-size: 10px">1/2</div>
+              </div>
               <span class="tag-count-display">{{entry[1]}}</span></div>
           </div>
         </div>
