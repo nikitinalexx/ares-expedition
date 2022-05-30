@@ -109,7 +109,7 @@
           <li *ngFor="let card of getMicrobePlayedCards();" (click)="onBuildMicrobeChoice = card"
               [ngClass]="onBuildMicrobeChoice && onBuildMicrobeChoice.id == card.id ? 'clicked-card': ''"
               class="filterDiv automated display">
-            <app-card-template [card]="card" [player]="game?.player"></app-card-template>
+            <app-card-template [card]="card" [player]="game?.player" [showResources]="true"></app-card-template>
           </li>
         </ul>
       </div>
@@ -139,7 +139,7 @@
           <li *ngFor="let card of getAnimalPlayedCards();" (click)="onBuildAnimalChoice = card"
               [ngClass]="onBuildAnimalChoice && onBuildAnimalChoice.id == card.id ? 'clicked-card': ''"
               class="filterDiv automated display">
-            <app-card-template [card]="card" [player]="game?.player"></app-card-template>
+            <app-card-template [card]="card" [player]="game?.player" [showResources]="true"></app-card-template>
           </li>
         </ul>
       </div>

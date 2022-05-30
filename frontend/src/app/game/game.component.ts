@@ -25,7 +25,6 @@ export class GameComponent implements OnInit {
   private subscription: Subscription;
   private thirdPhaseSubscription: Subscription;
   private audio: HTMLAudioElement;
-  private waitingFor: number;
   parentForm: FormGroup;
 
   constructor(private route: ActivatedRoute,
@@ -179,10 +178,9 @@ export class GameComponent implements OnInit {
       const previousAction = this.nextAction;
       this.nextAction = data.action;
       if (this.nextAction === 'TURN') {
-        if (previousAction && previousAction === 'WAIT' && document.hidden && this.waitingFor && (Date.now() - this.waitingFor) > 2000) {
+        if (previousAction && previousAction === 'WAIT' && document.hidden) {
           this.audio.play();
         }
-        this.waitingFor = null;
         this.model.nextTurns(this.playerUuid).subscribe(turns => {
           const globalParamReachedMax = !this.nextTurns
             && previousAction === 'WAIT'
@@ -210,9 +208,6 @@ export class GameComponent implements OnInit {
           this.subscription.unsubscribe();
         }
       } else if (this.nextAction === 'WAIT') {
-        if (!this.waitingFor) {
-          this.waitingFor = Date.now();
-        }
         this.errorMessage = 'Waiting for the other player';
         this.nextTurns = null;
         if (!this.subscription || this.subscription.closed) {
