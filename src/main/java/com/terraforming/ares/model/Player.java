@@ -77,7 +77,7 @@ public class Player {
                 toCard.getClass(),
                 this.cardResourcesCount.get(toCard.getClass()) + count
         );
-        if (count > 0 && toCard.getCollectableResource() == CardCollectableResource.MICROBE) {
+        if (count > 0 && toCard.getCollectableResource() == CardCollectableResource.MICROBE && this.cardResourcesCount.containsKey(FilterFeeders.class)) {
             this.cardResourcesCount.put(FilterFeeders.class, this.cardResourcesCount.get(FilterFeeders.class) + 1);
         }
     }
