@@ -92,6 +92,10 @@ export class DiscountComponent {
       discount += 2;
     }
 
+    if (player.selfReplicatingDiscount) {
+      discount += 25;
+    }
+
     return Math.min(card.price, discount);
   }
 

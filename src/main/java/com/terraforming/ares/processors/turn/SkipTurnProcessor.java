@@ -37,6 +37,7 @@ public class SkipTurnProcessor implements TurnProcessor<SkipTurn> {
         player.setBuiltWorkCrewsLastTurn(false);
         player.setCanBuildAnotherGreenWith9Discount(false);
         player.setAssortedEnterprisesDiscount(false);
+        player.setSelfReplicatingDiscount(false);
         player.setAssortedEnterprisesGreenAvailable(false);
 
         return null;

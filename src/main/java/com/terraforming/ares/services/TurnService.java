@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Created by oleksii.nikitin
@@ -23,6 +24,9 @@ import java.util.function.Function;
 @Service
 @RequiredArgsConstructor
 public class TurnService {
+    private static final Predicate<MarsGame> ASYNC_TURN = game -> false;
+    private static final Predicate<MarsGame> SYNC_TURN = game -> true;
+
     private final StateFactory stateFactory;
     private final CachingGameRepository gameRepository;
     private final GameProcessorService gameProcessorService;
@@ -34,7 +38,7 @@ public class TurnService {
     public void chooseCorporationTurn(ChooseCorporationRequest chooseCorporationRequest) {
         String playerUuid = chooseCorporationRequest.getPlayerUuid();
         Integer corporationCardId = chooseCorporationRequest.getCorporationId();
-        performAsyncTurn(
+        performTurn(
                 new CorporationChoiceTurn(playerUuid, corporationCardId),
                 playerUuid,
                 game -> {
@@ -42,112 +46,144 @@ public class TurnService {
                         return "Can't pick corporation that is not in your choice deck";
                     }
                     return null;
-                }
+                },
+                ASYNC_TURN
         );
     }
 
     public void choosePhaseTurn(String playerUuid, int phaseId) {
-        performAsyncTurn(new PhaseChoiceTurn(playerUuid, phaseId), playerUuid, game -> {
-            if (phaseId < 1 || phaseId > 5) {
-                return "Phase is not within [1..5] range";
-            }
+        performTurn(
+                new PhaseChoiceTurn(playerUuid, phaseId),
+                playerUuid,
+                game -> {
+                    if (phaseId < 1 || phaseId > 5) {
+                        return "Phase is not within [1..5] range";
+                    }
 
-            Player player = game.getPlayerByUuid(playerUuid);
-            if (player.getPreviousChosenPhase() != null && player.getPreviousChosenPhase() == phaseId) {
-                return "This phase already picked in previous round";
-            }
+                    Player player = game.getPlayerByUuid(playerUuid);
+                    if (player.getPreviousChosenPhase() != null && player.getPreviousChosenPhase() == phaseId) {
+                        return "This phase already picked in previous round";
+                    }
 
-            return null;
-        });
+                    return null;
+                },
+                ASYNC_TURN
+        );
     }
 
     public void collectIncomeTurn(String playerUuid) {
-        performAsyncTurn(new CollectIncomeTurn(playerUuid), playerUuid, game -> null);
+        performTurn(new CollectIncomeTurn(playerUuid), playerUuid, game -> null, ASYNC_TURN);
     }
 
     public void skipTurn(String playerUuid) {
-        performAsyncTurn(new SkipTurn(playerUuid), playerUuid, game -> null);
+        performTurn(new SkipTurn(playerUuid), playerUuid, game -> null, ASYNC_TURN);
     }
 
     public void confirmGameEnd(String playerUuid) {
-        performAsyncTurn(new GameEndConfirmTurn(playerUuid), playerUuid, game -> null);
+        performTurn(new GameEndConfirmTurn(playerUuid), playerUuid, game -> null, ASYNC_TURN);
     }
 
     public void pickExtraCardTurn(String playerUuid) {
-        performAsyncTurn(new PickExtraCardTurn(playerUuid), playerUuid, game -> null);
+        performTurn(new PickExtraCardTurn(playerUuid), playerUuid, game -> null, ASYNC_TURN);
     }
 
     public void draftCards(String playerUuid) {
-        performSyncTurn(new DraftCardsTurn(playerUuid), playerUuid, game -> null);
+        performTurn(
+                new DraftCardsTurn(playerUuid),
+                playerUuid,
+                game -> null,
+                SYNC_TURN
+        );
     }
 
     public void plantForest(String playerUuid) {
-        performSyncTurn(new PlantForestTurn(playerUuid), playerUuid, game -> {
-            Player player = game.getPlayerByUuid(playerUuid);
+        performTurn(
+                new PlantForestTurn(playerUuid),
+                playerUuid,
+                game -> {
+                    Player player = game.getPlayerByUuid(playerUuid);
 
-            if (player.getPlants() < Constants.FOREST_PLANT_COST) {
-                return "Not enough plants to create a forest";
-            }
+                    if (player.getPlants() < Constants.FOREST_PLANT_COST) {
+                        return "Not enough plants to create a forest";
+                    }
 
-            return null;
-        });
+                    return null;
+                },
+                SYNC_TURN
+        );
     }
 
     public void increaseTemperature(String playerUuid) {
-        performSyncTurn(new IncreaseTemperatureTurn(playerUuid), playerUuid, game -> {
-            Player player = game.getPlayerByUuid(playerUuid);
+        performTurn(
+                new IncreaseTemperatureTurn(playerUuid),
+                playerUuid,
+                game -> {
+                    Player player = game.getPlayerByUuid(playerUuid);
 
-            if (player.getHeat() < Constants.TEMPERATURE_HEAT_COST) {
-                return "Not enough heat to raise temperature";
-            }
+                    if (player.getHeat() < Constants.TEMPERATURE_HEAT_COST) {
+                        return "Not enough heat to raise temperature";
+                    }
 
-            if (!terraformingService.canIncreaseTemperature(game)) {
-                return "Can't increase temperature anymore, already max";
-            }
+                    if (!terraformingService.canIncreaseTemperature(game)) {
+                        return "Can't increase temperature anymore, already max";
+                    }
 
-            return null;
-        });
+                    return null;
+                },
+                SYNC_TURN
+        );
     }
 
     public void standardProjectTurn(String playerUuid, StandardProjectType type) {
-        performSyncTurn(new StandardProjectTurn(playerUuid, type), playerUuid, game -> {
-            Player player = game.getPlayerByUuid(playerUuid);
+        performTurn(
+                new StandardProjectTurn(playerUuid, type),
+                playerUuid,
+                game -> {
+                    Player player = game.getPlayerByUuid(playerUuid);
 
-            return standardProjectService.validateStandardProject(game, player, type);
-        });
+                    return standardProjectService.validateStandardProject(game, player, type);
+                },
+                SYNC_TURN
+        );
     }
 
     public void exchangeHeatRequest(String playerUuid, int value) {
-        performSyncTurn(new ExchangeHeatTurn(playerUuid, value), playerUuid, game -> {
-            Player player = game.getPlayerByUuid(playerUuid);
+        performTurn(
+                new ExchangeHeatTurn(playerUuid, value),
+                playerUuid,
+                game -> {
+                    Player player = game.getPlayerByUuid(playerUuid);
 
-            if (value <= 0) {
-                return "Incorrect heat value provided";
-            }
+                    if (value <= 0) {
+                        return "Incorrect heat value provided";
+                    }
 
-            if (player.getHeat() < value) {
-                return "Not enough heat to perform exchange";
-            }
+                    if (player.getHeat() < value) {
+                        return "Not enough heat to perform exchange";
+                    }
 
-            if (player.getPlayed()
-                    .getCards()
-                    .stream()
-                    .map(cardService::getCard)
-                    .map(Card::getCardMetadata)
-                    .filter(Objects::nonNull)
-                    .map(CardMetadata::getCardAction)
-                    .filter(Objects::nonNull)
-                    .noneMatch(CardAction.HELION_CORPORATION::equals)
-            ) {
-                return "Only Helion may perform heat exchange";
-            }
+                    if (player.getPlayed()
+                            .getCards()
+                            .stream()
+                            .map(cardService::getCard)
+                            .map(Card::getCardMetadata)
+                            .filter(Objects::nonNull)
+                            .map(CardMetadata::getCardAction)
+                            .filter(Objects::nonNull)
+                            .noneMatch(CardAction.HELION_CORPORATION::equals)
+                    ) {
+                        return "Only Helion may perform heat exchange";
+                    }
 
-            return null;
-        });
+                    return null;
+                },
+                SYNC_TURN
+        );
     }
 
     public TurnResponse sellCards(String playerUuid, List<Integer> cards) {
-        return performSyncTurn(new SellCardsTurn(playerUuid, cards),
+        return performTurn(
+                new SellCardsTurn(playerUuid, cards),
                 playerUuid,
                 game -> {
                     if (!game.getPlayerByUuid(playerUuid).getHand().getCards().containsAll(cards)) {
@@ -155,11 +191,14 @@ public class TurnService {
                     }
 
                     return null;
-                });
+                },
+                SYNC_TURN
+        );
     }
 
     public void sellCardsLastRoundTurn(String playerUuid, List<Integer> cards) {
-        performAsyncTurn(new SellCardsLastRoundTurn(playerUuid, cards),
+        performTurn(
+                new SellCardsLastRoundTurn(playerUuid, cards),
                 playerUuid,
                 game -> {
                     Player player = game.getPlayerByUuid(playerUuid);
@@ -175,7 +214,9 @@ public class TurnService {
                     }
 
                     return null;
-                });
+                },
+                ASYNC_TURN
+        );
     }
 
     public TurnResponse discardCards(Turn turn, String playerUuid, List<Integer> cards, boolean sync) {
@@ -206,53 +247,59 @@ public class TurnService {
 
             return null;
         };
-        if (sync) {
-            return performSyncTurn(turn, playerUuid, verifier);
-        } else {
-            performAsyncTurn(turn, playerUuid, verifier);
-            return null;
-        }
+
+        return performTurn(turn, playerUuid, verifier, game -> sync);
     }
 
-    public void buildGreenProjectCard(String playerUuid, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
-        performAsyncTurn(
+    public TurnResponse buildGreenProjectCard(String playerUuid, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
+        return performTurn(
                 new BuildGreenProjectTurn(playerUuid, projectId, payments, inputParams),
                 playerUuid,
                 game -> {
                     Player player = game.getPlayerByUuid(playerUuid);
 
                     return cardValidationService.validateCard(player, game, projectId, payments, inputParams);
-                });
+                },
+                game -> game.getCurrentPhase() == 3
+        );
     }
 
-    public void buildBlueRedProjectCard(String playerUuid, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
-        performAsyncTurn(
+    public TurnResponse buildBlueRedProjectCard(String playerUuid, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
+        return performTurn(
                 new BuildBlueRedProjectTurn(playerUuid, projectId, payments, inputParams),
                 playerUuid,
                 game -> {
                     Player player = game.getPlayerByUuid(playerUuid);
 
                     return cardValidationService.validateCard(player, game, projectId, payments, inputParams);
-                });
+                },
+                game -> game.getCurrentPhase() == 3
+        );
     }
 
     public TurnResponse performBlueAction(String playerUuid, int projectId, List<Integer> inputParams) {
-        return performSyncTurn(
+        return performTurn(
                 new PerformBlueActionTurn(playerUuid, projectId, inputParams),
                 playerUuid,
                 game -> {
                     Player player = game.getPlayerByUuid(playerUuid);
 
                     return cardValidationService.validateBlueAction(player, game, projectId, inputParams);
-                }
+                },
+                SYNC_TURN
         );
     }
 
-    private void performAsyncTurn(Turn turn, String playerUuid, Function<MarsGame, String> turnSpecificValidations) {
+    private TurnResponse performTurn(Turn turn,
+                                     String playerUuid,
+                                     Function<MarsGame, String> turnSpecificValidations,
+                                     Predicate<MarsGame> syncTurnDecider) {
         long gameId = gameRepository.getGameIdByPlayerUuid(playerUuid);
 
-        GameUpdateResult<?> updateResult = gameRepository.updateMarsGame(
+        GameUpdateResult<TurnResponse> updateResult = gameProcessorService.performTurn(
                 gameId,
+                turn,
+                playerUuid,
                 game -> {
                     if (!stateFactory.getCurrentState(game).getPossibleTurns(playerUuid).contains(turn.getType())) {
                         return "Incorrect game state for a turn " + turn.getType();
@@ -260,31 +307,7 @@ public class TurnService {
 
                     return turnSpecificValidations.apply(game);
                 },
-                game -> {
-                    game.getPlayerByUuid(playerUuid).setNextTurn(turn);
-                    return null;
-                }
-        );
-
-        if (updateResult.finishedWithError()) {
-            throw new IllegalStateException(updateResult.getError());
-        }
-
-        gameProcessorService.registerAsyncGameUpdate(gameId);
-    }
-
-    private TurnResponse performSyncTurn(Turn turn, String playerUuid, Function<MarsGame, String> turnSpecificValidations) {
-        long gameId = gameRepository.getGameIdByPlayerUuid(playerUuid);
-
-        GameUpdateResult<TurnResponse> updateResult = gameProcessorService.syncPlayerUpdate(gameId,
-                turn,
-                game -> {
-                    if (!stateFactory.getCurrentState(game).getPossibleTurns(playerUuid).contains(turn.getType())) {
-                        return "Incorrect game state for a turn " + turn.getType();
-                    }
-
-                    return turnSpecificValidations.apply(game);
-                }
+                syncTurnDecider
         );
 
         if (updateResult.finishedWithError()) {

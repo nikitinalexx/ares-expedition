@@ -6,7 +6,6 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.TurnType;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -22,10 +21,25 @@ public class PerformBlueActionState extends AbstractState {
     @Override
     public List<TurnType> getPossibleTurns(String playerUuid) {
         Player player = marsGame.getPlayerByUuid(playerUuid);
-        if (player.getNextTurn() != null) {
-            return Collections.emptyList();
+
+        if (player.getNextTurn() != null && player.getNextTurn().getType().isIntermediate()) {
+            return List.of(player.getNextTurn().getType());
+        } else if (player.getNextTurn() != null) {
+            return List.of();
         } else {
             List<TurnType> turns = new ArrayList<>(List.of(
+                    TurnType.PERFORM_BLUE_ACTION
+            ));
+
+            if (player.getActionsInSecondPhase() > 0) {
+                turns.add(TurnType.BUILD_BLUE_RED_PROJECT);
+            }
+
+            if (player.getCanBuildInFirstPhase() > 0 || player.isAssortedEnterprisesGreenAvailable()) {
+                turns.add(TurnType.BUILD_GREEN_PROJECT);
+            }
+
+            turns.addAll(List.of(
                     TurnType.PERFORM_BLUE_ACTION,
                     TurnType.SELL_CARDS,
                     TurnType.STANDARD_PROJECT,
@@ -53,7 +67,13 @@ public class PerformBlueActionState extends AbstractState {
 
     @Override
     public void updateState() {
-        if (!marsGame.gameEndCondition() || marsGame.getPlayerUuidToPlayer().values().stream().allMatch(Player::isConfirmedGameEndThirdPhase)) {
+        boolean gameNotEndedOrPlayersConfirmedEnd = !marsGame.gameEndCondition() || marsGame.getPlayerUuidToPlayer().values().stream().allMatch(Player::isConfirmedGameEndThirdPhase);
+        boolean noPendingTurns = marsGame.getPlayerUuidToPlayer()
+                .values().stream().allMatch(
+                        player -> player.getNextTurn() == null
+                );
+
+        if (gameNotEndedOrPlayersConfirmedEnd && noPendingTurns) {
             performStateTransferFromPhase(4);
         }
     }

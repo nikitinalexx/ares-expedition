@@ -743,6 +743,16 @@
     <div class="microbe resource "></div>
   </div>
 
+  <div *ngIf="actionSelfReplicatingBacteria(card)">
+    <div class="red-arrow "></div>
+    <div class="microbe resource "></div>
+    <br>
+    OR 5
+    <div class="microbe resource "></div>
+    <div class="red-arrow "></div>
+    : <span class="money resource ">-25</span>
+  </div>
+
   <div *ngIf="actionOlympusConference(card)">
     <div class="resource-tag tag-science"></div>
     :

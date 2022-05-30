@@ -12,6 +12,9 @@ import {CardResource} from '../../data/CardResource';
 import {CardAction} from '../../data/CardAction';
 import {InputFlag} from '../../data/InputFlag';
 import {StandardProjectType} from '../../data/StandardProjectType';
+import {CardColor} from '../../data/CardColor';
+import {BuildGreenComponent} from '../greenProject/buildGreen.component';
+import {BuildBlueRedComponent} from '../blueProject/buildBlueRed.component';
 
 @Component({
   selector: 'app-third-phase',
@@ -24,6 +27,8 @@ export class ThirdPhaseComponent implements OnInit {
   selectedProject: Card;
   actionTargetCards = [];
   @ViewChild(SellCardsComponent) sellCardsService;
+  @ViewChild(BuildGreenComponent) buildGreenService;
+  @ViewChild(BuildBlueRedComponent) buildBlueRedService;
 
   parentForm: FormGroup;
 
@@ -46,12 +51,38 @@ export class ThirdPhaseComponent implements OnInit {
       addOrUseMicrobe: ['addMicrobe'],
       gainPlantOrMicrobe: ['gainPlant'],
       standardProject: ['ocean'],
-      heatExchangeInput: 0
+      heatExchangeInput: 0,
+
+      // build green-blue-red projects params
+      mcPrice: [''],
+      heatPrice: 0,
+      onBuildMicrobeEffectChoice: ['chooseMicrobe'],
+      onBuildAnimalEffectChoice: ['chooseAnimal'],
+      anaerobicMicroorganisms: [false],
+      marsUniversityDiscardLess: [false],
+      takeMicrobes: 0,
+      takeCards: 0,
+      restructuredResources: [false],
+      viralEnhancersPlantInput: 0,
+      importedHydrogenForm: 'plants',
+      largeConvoyForm: 'plants'
     });
   }
 
   sendToParent(data: any) {
     this.outputToParent.emit(data);
+  }
+
+  buildBlueRedProjectTurn(): boolean {
+    return this.nextTurns
+      && this.nextTurns.find(turn => turn === TurnType[TurnType.BUILD_BLUE_RED_PROJECT])?.length > 0
+      && this.game.player.hand.some(card => card.cardColor === CardColor.BLUE || card.cardColor === CardColor.RED);
+  }
+
+  buildGreenProjectTurn(): boolean {
+    return this.nextTurns
+      && this.nextTurns.find(turn => turn === TurnType[TurnType.BUILD_GREEN_PROJECT])?.length > 0
+      && this.game.player.hand.some(card => card.cardColor === CardColor.GREEN);
   }
 
   sellCardsTurn(): boolean {
@@ -160,7 +191,7 @@ export class ThirdPhaseComponent implements OnInit {
 
   selectProject(card: Card) {
     if (this.selectedProject && this.selectedProject.id === card.id) {
-      this.clearInput();
+      this.resetAllInputs();
     } else {
       this.selectedProject = card;
     }
@@ -173,10 +204,16 @@ export class ThirdPhaseComponent implements OnInit {
     return '';
   }
 
-  clearInput() {
+  resetAllInputs() {
     this.selectedProject = null;
     this.actionTargetCards = [];
     this.errorMessage = null;
+    if (this.buildGreenService) {
+      this.buildGreenService.resetAllInputs();
+    }
+    if (this.buildBlueRedService) {
+      this.buildBlueRedService.resetAllInputs();
+    }
   }
 
   addCardToActionTargetCards(card: Card) {
@@ -216,7 +253,11 @@ export class ThirdPhaseComponent implements OnInit {
       console.log('form invalid');
       return false;
     } else {
-      if (formGroup.value.turn === 'confirmGameEnd') {
+      if (formGroup.value.turn === 'blueRedProject' && formGroup.value.mcPrice !== null) {
+        this.buildBlueRedService.buildBlueRedProject(data => this.sendToParent(data));
+      } else if (formGroup.value.turn === 'greenProject' && formGroup.value.mcPrice !== null) {
+        this.buildGreenService.buildGreenProject(data => this.sendToParent(data));
+      } else if (formGroup.value.turn === 'confirmGameEnd') {
         this.gameRepository.confirmGameEnd(this.game.player.playerUuid).subscribe(
           data => this.sendToParent(data)
         );
@@ -336,7 +377,7 @@ export class ThirdPhaseComponent implements OnInit {
 
         this.gameRepository.blueAction(request).subscribe(data => {
           this.sendToParent(data);
-          this.clearInput();
+          this.resetAllInputs();
 
           this.parentForm.get('turn').setValue('blueAction');
         }, error => {

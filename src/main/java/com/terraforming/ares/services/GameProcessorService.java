@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -50,7 +51,7 @@ public class GameProcessorService {
         Long gameId = gamesToProcess.poll();
 
         gameRepository.updateMarsGame(gameId, game -> null, game -> {
-            while(processFinalTurns(game)) {
+            while (processFinalTurns(game)) {
                 stateFactory.getCurrentState(game).updateState();
             }
 
@@ -58,8 +59,36 @@ public class GameProcessorService {
         });
     }
 
-    public GameUpdateResult<TurnResponse> syncPlayerUpdate(long gameId, Turn turn, Function<MarsGame, String> stateChecker) {
+    public GameUpdateResult<TurnResponse> performTurn(long gameId,
+                                                      Turn turn,
+                                                      String playerUuid,
+                                                      Function<MarsGame, String> stateChecker,
+                                                      Predicate<MarsGame> syncTurnDecider) {
         return gameRepository.updateMarsGame(gameId, stateChecker, game -> {
+            boolean isSyncTurn = syncTurnDecider.test(game);
+
+            return (isSyncTurn
+                    ? getSyncGameUpdate(turn)
+                    : getAsyncGameUpdate(turn, playerUuid)
+            )
+                    .apply(game);
+        });
+    }
+
+    public GameUpdateResult<TurnResponse> syncPlayerUpdate(long gameId, Turn turn, Function<MarsGame, String> stateChecker) {
+        return gameRepository.updateMarsGame(gameId, stateChecker, getSyncGameUpdate(turn));
+    }
+
+    private Function<MarsGame, TurnResponse> getAsyncGameUpdate(Turn turn, String playerUuid) {
+        return game -> {
+            game.getPlayerByUuid(playerUuid).setNextTurn(turn);
+            registerAsyncGameUpdate(game.getId());
+            return null;
+        };
+    }
+
+    private Function<MarsGame, TurnResponse> getSyncGameUpdate(Turn turn) {
+        return game -> {
             boolean oxygenMaxBefore = game.getPlanet().isOxygenMax();
             boolean temperatureMaxBefore = game.getPlanet().isTemperatureMax();
             boolean oceansMaxBefore = game.getPlanet().isOceansMax();
@@ -81,10 +110,10 @@ public class GameProcessorService {
                         .forEach(player -> player.setNextTurn(null));
             }
 
-            registerAsyncGameUpdate(gameId);
+            registerAsyncGameUpdate(game.getId());
 
             return turnResponse;
-        });
+        };
     }
 
     private boolean processFinalTurns(MarsGame game) {

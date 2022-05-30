@@ -244,7 +244,8 @@ public class CardFactory {
                 new ProcessingPlant(215),
                 new ProgressivePolicies(216),
                 new FilterFeeders(217),
-                new SyntheticCatastrophe(218)
+                new SyntheticCatastrophe(218),
+                new SelfReplicatingBacteria(219)
         );
 
 

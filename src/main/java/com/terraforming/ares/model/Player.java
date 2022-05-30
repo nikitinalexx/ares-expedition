@@ -43,6 +43,7 @@ public class Player {
     private boolean canBuildAnotherGreenWith9Discount;
     private boolean assortedEnterprisesDiscount;
     private boolean assortedEnterprisesGreenAvailable;
+    private boolean selfReplicatingDiscount;
 
     private boolean confirmedGameEndThirdPhase;
 
@@ -94,6 +95,7 @@ public class Player {
         canBuildInFirstPhase = 0;
         pickedCardInSecondPhase = false;
         assortedEnterprisesDiscount = false;
+        selfReplicatingDiscount = false;
         assortedEnterprisesGreenAvailable = false;
     }
 

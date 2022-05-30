@@ -26,6 +26,11 @@ public class BuildBlueRedProjectProcessor extends GenericBuildProjectProcessor<B
         player.setBuiltSpecialDesignLastTurn(false);
         player.setBuiltWorkCrewsLastTurn(false);
         player.setAssortedEnterprisesDiscount(false);
+        player.setSelfReplicatingDiscount(false);
+
+        if (game.getCurrentPhase() == 3) {
+            player.setAssortedEnterprisesGreenAvailable(false);
+        }
     }
 
     @Override
@@ -37,6 +42,10 @@ public class BuildBlueRedProjectProcessor extends GenericBuildProjectProcessor<B
         }
 
         player.setActionsInSecondPhase(player.getActionsInSecondPhase() - 1);
+
+        if (game.getCurrentPhase() == 3 && player.getCanBuildInFirstPhase() > 0) {
+            player.setCanBuildInFirstPhase(player.getCanBuildInFirstPhase() - 1);
+        }
     }
 
     @Override

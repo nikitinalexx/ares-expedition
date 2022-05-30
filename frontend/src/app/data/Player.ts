@@ -27,6 +27,7 @@ export class Player extends BasePlayer {
               builtWorkCrewsLastTurn: boolean,
               canBuildAnotherGreenWith9Discount: boolean,
               assortedEnterprisesDiscount: boolean,
+              selfReplicatingDiscount: boolean,
               activatedBlueCards: number[],
               corporationId?: number,
               phase?: number) {
@@ -45,5 +46,6 @@ export class Player extends BasePlayer {
   builtWorkCrewsLastTurn: boolean;
   canBuildAnotherGreenWith9Discount: boolean;
   assortedEnterprisesDiscount: boolean;
+  selfReplicatingDiscount: boolean;
 
 }

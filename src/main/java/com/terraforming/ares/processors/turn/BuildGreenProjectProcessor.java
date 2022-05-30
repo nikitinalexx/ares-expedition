@@ -25,6 +25,7 @@ public class BuildGreenProjectProcessor extends GenericBuildProjectProcessor<Bui
 
         player.setCanBuildAnotherGreenWith9Discount(false);
         player.setAssortedEnterprisesDiscount(false);
+        player.setSelfReplicatingDiscount(false);
     }
 
     @Override
@@ -35,11 +36,14 @@ public class BuildGreenProjectProcessor extends GenericBuildProjectProcessor<Bui
             throw new IllegalStateException("Can't build a project while project limit for this phase is < 1");
         }
 
-        if (player.isAssortedEnterprisesGreenAvailable()) {
+        if (player.getCanBuildInFirstPhase() >= 1) {
+            player.setCanBuildInFirstPhase(player.getCanBuildInFirstPhase() - 1);
+            if (game.getCurrentPhase() == 3 && player.getActionsInSecondPhase() == 1) {
+                player.setActionsInSecondPhase(0);
+            }
+        } else if (player.isAssortedEnterprisesGreenAvailable()) {
             player.setAssortedEnterprisesGreenAvailable(false);
             player.setActionsInSecondPhase(player.getActionsInSecondPhase() - 1);
-        } else {
-            player.setCanBuildInFirstPhase(player.getCanBuildInFirstPhase() - 1);
         }
     }
 

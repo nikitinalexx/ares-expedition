@@ -65,8 +65,8 @@ public class PlayController {
     }
 
     @PostMapping("/turn/build/green")
-    public void buildGreenProject(@RequestBody BuildProjectRequest buildProjectRequest) {
-        turnService.buildGreenProjectCard(
+    public TurnResponse buildGreenProject(@RequestBody BuildProjectRequest buildProjectRequest) {
+        return turnService.buildGreenProjectCard(
                 buildProjectRequest.getPlayerUuid(),
                 buildProjectRequest.getCardId(),
                 buildProjectRequest.getPayments(),
@@ -75,8 +75,8 @@ public class PlayController {
     }
 
     @PostMapping("/turn/build/blue-red")
-    public void buildBlueRedProject(@RequestBody BuildProjectRequest buildProjectRequest) {
-        turnService.buildBlueRedProjectCard(
+    public TurnResponse buildBlueRedProject(@RequestBody BuildProjectRequest buildProjectRequest) {
+        return turnService.buildBlueRedProjectCard(
                 buildProjectRequest.getPlayerUuid(),
                 buildProjectRequest.getCardId(),
                 buildProjectRequest.getPayments(),

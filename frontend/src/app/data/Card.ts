@@ -54,5 +54,5 @@ export class Card {
   resourcesOnBuild: PutResourceOnBuild[];
   active: boolean;
   actionInputData: ActionInputData[];
-  corporation: boolean
+  corporation: boolean;
 }

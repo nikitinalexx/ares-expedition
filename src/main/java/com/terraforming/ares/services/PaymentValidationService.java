@@ -141,6 +141,10 @@ public class PaymentValidationService {
             discount += 2;
         }
 
+        if (player.isSelfReplicatingDiscount()) {
+            discount += 25;
+        }
+
         return discount;
     }
 }

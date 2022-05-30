@@ -8,17 +8,25 @@
 <!-- Form starts -->
 <form [formGroup]="parentForm" (submit)="submitForm(parentForm)" novalidate>
 
+  <div *ngIf="buildBlueRedProjectTurn()" class="form-check">
+    <app-build-blue-red [game]="game" [parentForm]="parentForm"></app-build-blue-red>
+  </div>
+
+  <div *ngIf="buildGreenProjectTurn()" class="form-check">
+    <app-build-green [game]="game" [parentForm]="parentForm"></app-build-green>
+  </div>
+
   <div *ngIf="blueActionTurn()" class="form-check">
 
     <div *ngIf="this.getActiveCards()?.length > 0 || canPlayExtraBlueAction()" style="display: inline-table; width: 500px">
       <div *ngIf="this.getActiveCards()?.length > 0">
-        <input id="blueAction" (click)="clearInput()" type="radio" class="form-check-input" value="blueAction"
+        <input id="blueAction" (click)="resetAllInputs()" type="radio" class="form-check-input" value="blueAction"
                formControlName="turn" [checked]="this.parentForm.value?.turn === 'blueAction'">
         <label class="custom-control-label text-white" for="blueAction">Perform action</label>
       </div>
 
       <div *ngIf="canPlayExtraBlueAction()" style="display: table-cell">
-        <input id="extraBlueAction" (click)="clearInput()" type="radio" class="form-check-input" value="extraBlueAction"
+        <input id="extraBlueAction" (click)="resetAllInputs()" type="radio" class="form-check-input" value="extraBlueAction"
                formControlName="turn" [checked]="this.parentForm.value?.turn === 'extraBlueAction'">
         <label class="custom-control-label text-white" for="extraBlueAction">Perform extra action</label>
       </div>
@@ -121,19 +129,19 @@
   </div>
 
   <div *ngIf="plantForestTurn()" class="form-check">
-    <input id="plantForest" (click)="clearInput()" type="radio" class="form-check-input" value="plantForest"
+    <input id="plantForest" (click)="resetAllInputs()" type="radio" class="form-check-input" value="plantForest"
            formControlName="turn" [checked]="this.parentForm.value?.turn === 'plantForest'">
     <label class="custom-control-label text-white" for="plantForest">Plant forest(required)</label>
   </div>
 
   <div *ngIf="increaseTemperatureTurn()" class="form-check">
-    <input id="increaseTemperature" (click)="clearInput()" type="radio" class="form-check-input" value="increaseTemperature"
+    <input id="increaseTemperature" (click)="resetAllInputs()" type="radio" class="form-check-input" value="increaseTemperature"
            formControlName="turn" [checked]="this.parentForm.value?.turn === 'increaseTemperature'">
     <label class="custom-control-label text-white" for="increaseTemperature">Increase temperature(required)</label>
   </div>
 
   <div *ngIf="standardProjectTurn()" class="form-check">
-    <input id="standardProject" (click)="clearInput()" type="radio" class="form-check-input" value="standardProject"
+    <input id="standardProject" (click)="resetAllInputs()" type="radio" class="form-check-input" value="standardProject"
            formControlName="turn" [checked]="this.parentForm.value?.turn === 'standardProject'">
     <label class="custom-control-label text-white" for="standardProject">Standard Project</label>
 
@@ -165,7 +173,7 @@
   </div>
 
   <div *ngIf="canExchangeHeat()" class="form-check">
-    <input id="heatExchange" (click)="clearInput()" type="radio" class="form-check-input" value="exchangeHeat"
+    <input id="heatExchange" (click)="resetAllInputs()" type="radio" class="form-check-input" value="exchangeHeat"
            formControlName="turn" [checked]="this.parentForm.value?.turn === 'exchangeHeat'">
     <label class="custom-control-label text-white" for="heatExchange">Exchange heat</label>
 
@@ -179,17 +187,17 @@
   </div>
 
   <div *ngIf="sellCardsTurn()" class="form-check">
-    <app-sell-cards (click)="clearInput()" [game]="game" [parentForm]="parentForm"></app-sell-cards>
+    <app-sell-cards (click)="resetAllInputs()" [game]="game" [parentForm]="parentForm"></app-sell-cards>
   </div>
 
   <div *ngIf="skipTurn()" class="form-check">
-    <input id="skipTurn" (click)="clearInput()" type="radio" class="form-check-input" value="skipTurn"
+    <input id="skipTurn" (click)="resetAllInputs()" type="radio" class="form-check-input" value="skipTurn"
            formControlName="turn" required [checked]="this.parentForm.value?.turn === 'skipTurn'">
     <label class="custom-control-label text-white" for="skipTurn">Finish turn</label>
   </div>
 
   <div *ngIf="confirmGameEndTurn()" class="form-check">
-    <input id="confirmGameEnd" (click)="clearInput()" type="radio" class="form-check-input" value="confirmGameEnd"
+    <input id="confirmGameEnd" (click)="resetAllInputs()" type="radio" class="form-check-input" value="confirmGameEnd"
            formControlName="turn" required [checked]="this.parentForm.value?.turn === 'confirmGameEnd'">
     <label class="custom-control-label text-white" style="font-size: 20px" for="confirmGameEnd">Finish the game(sell all cards before!)</label>
   </div>

@@ -179,6 +179,7 @@ public class GameController {
                 .builtWorkCrewsLastTurn(player.isBuiltWorkCrewsLastTurn())
                 .canBuildAnotherGreenWith9Discount(player.isCanBuildAnotherGreenWith9Discount())
                 .assortedEnterprisesDiscount(player.isAssortedEnterprisesDiscount())
+                .selfReplicatingDiscount(player.isSelfReplicatingDiscount())
                 .build();
     }
 

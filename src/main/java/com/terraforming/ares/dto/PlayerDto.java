@@ -32,6 +32,7 @@ public class PlayerDto {
     private final boolean builtWorkCrewsLastTurn;
     private final boolean canBuildAnotherGreenWith9Discount;
     private final boolean assortedEnterprisesDiscount;
+    private final boolean selfReplicatingDiscount;
 
     private final int mc;
     private final int mcIncome;
