@@ -104,7 +104,9 @@ export class FirstPhaseComponent implements OnInit {
 
   resetAllInputs() {
     this.selectedProject = null;
-    this.buildGreenService.resetAllInputs();
+    if (this.buildGreenService) {
+      this.buildGreenService.resetAllInputs();
+    }
   }
 
   submitForm(formGroup: FormGroup) {

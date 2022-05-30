@@ -120,8 +120,12 @@ export class SecondPhaseComponent implements OnInit {
 
   resetAllInputs() {
     this.selectedProject = null;
-    this.buildGreenService.resetAllInputs();
-    this.buildBlueRedService.resetAllInputs();
+    if (this.buildGreenService) {
+      this.buildGreenService.resetAllInputs();
+    }
+    if (this.buildBlueRedService) {
+      this.buildBlueRedService.resetAllInputs();
+    }
   }
 
   submitForm(formGroup: FormGroup) {
