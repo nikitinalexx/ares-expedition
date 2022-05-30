@@ -21,4 +21,5 @@ public class GameDto {
     private Integer phaseOxygen;
     private Integer phaseOceans;
     private List<OceanDto> oceans;
+    private int turns;
 }

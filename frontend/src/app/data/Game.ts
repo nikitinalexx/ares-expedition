@@ -3,7 +3,8 @@ import {Ocean} from './Ocean';
 import {BasePlayer} from './BasePlayer';
 
 export class Game {
-  constructor(player: Player,
+  constructor(turns: number,
+              player: Player,
               phase: number,
               temperature: number,
               oxygen: number,
@@ -14,6 +15,7 @@ export class Game {
               otherPlayers?: BasePlayer[]) {
   }
 
+  turns: number;
   player: Player;
   phase: number;
   otherPlayers: BasePlayer[];

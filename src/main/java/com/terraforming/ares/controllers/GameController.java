@@ -84,6 +84,7 @@ public class GameController {
                 .oceans(game.getPlanet().getRevealedOceans().stream().map(OceanDto::of).collect(Collectors.toList()))
                 .phaseOceans(phasePlanet != null ? phasePlanet.getRevealedOceans().size() : null)
                 .otherPlayers(buildOtherPlayers(game, playerUuid))
+                .turns(game.getTurns())
                 .build();
     }
 

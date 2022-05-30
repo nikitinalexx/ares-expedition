@@ -259,7 +259,8 @@ export class ThirdPhaseComponent implements OnInit {
         this.buildGreenService.buildGreenProject(data => this.sendToParent(data));
       } else if (formGroup.value.turn === 'confirmGameEnd') {
         this.gameRepository.confirmGameEnd(this.game.player.playerUuid).subscribe(
-          data => this.sendToParent(data)
+          data => this.sendToParent(data),
+          error => this.errorMessage = error
         );
       } else if (formGroup.value.turn === 'exchangeHeat') {
         if (!this.parentForm.value.heatExchangeInput) {

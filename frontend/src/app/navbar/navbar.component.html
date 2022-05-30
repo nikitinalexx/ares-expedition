@@ -1,7 +1,16 @@
 <nav class="fixed-top navbar navbar-expand navbar-light bg-dark text-white">
-  <div class="navbar-brand text-white" style="padding-left: 20px; width: 35px;">
-    {{this.game?.player === this.player ? 'You' : 'Opp'}}
+
+  <div class="tm-box">
+    <div class="text-white" style="margin-left: 27px; width: 35px;">
+      {{this.game?.player === this.player ? 'You' : 'Opp'}}
+    </div>
+
+    <div title="Generation Marker" class="tm text-white">
+      <div class="gen-text">GEN</div>
+      <div class="gen-marker">{{this.game.turns}}</div>
+    </div>
   </div>
+
 
   <div class="player-info navbar-nav">
 

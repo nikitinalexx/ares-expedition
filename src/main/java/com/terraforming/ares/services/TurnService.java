@@ -80,7 +80,20 @@ public class TurnService {
     }
 
     public void confirmGameEnd(String playerUuid) {
-        performTurn(new GameEndConfirmTurn(playerUuid), playerUuid, game -> null, ASYNC_TURN);
+        performTurn(new GameEndConfirmTurn(playerUuid), playerUuid, game -> {
+            Player player = game.getPlayerUuidToPlayer().get(playerUuid);
+            if (player.getHand().size() != 0) {
+                return "This is the last turn, sell all cards";
+            }
+
+            String validationResult = standardProjectService.validateStandardProjectAvailability(game, player);
+
+            if (validationResult != null) {
+                return validationResult;
+            }
+
+            return null;
+        }, ASYNC_TURN);
     }
 
     public void pickExtraCardTurn(String playerUuid) {
