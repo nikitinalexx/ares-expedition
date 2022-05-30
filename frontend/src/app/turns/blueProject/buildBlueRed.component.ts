@@ -1,21 +1,17 @@
-import {Component, EventEmitter, Input, OnInit, Output, ViewChild} from '@angular/core';
+import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
 import {Game} from '../../data/Game';
 import {GameRepository} from '../../model/gameRepository.model';
-import {TurnType} from '../../data/TurnType';
-import {FormBuilder, FormGroup, Validators} from '@angular/forms';
+import {FormGroup} from '@angular/forms';
 import {Card} from '../../data/Card';
 import {CardColor} from '../../data/CardColor';
 import {DiscountComponent} from '../../discount/discount.component';
 import {BuildProjectRequest} from '../../data/BuildProjectRequest';
 import {Payment} from '../../data/Payment';
 import {PaymentType} from '../../data/PaymentType';
-import {SellCardsComponent} from '../sellCards/sellCards.component';
 import {CardAction} from '../../data/CardAction';
 import {Tag} from '../../data/Tag';
 import {InputFlag} from '../../data/InputFlag';
 import {CardResource} from '../../data/CardResource';
-import {DiscardCardsTurn} from '../../data/DiscardCardsTurn';
-import {BuildGreenComponent} from '../greenProject/buildGreen.component';
 
 @Component({
   selector: 'app-build-blue-red',

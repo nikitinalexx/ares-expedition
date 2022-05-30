@@ -83,13 +83,7 @@ public class GameController {
                 .phaseOxygen(phasePlanet != null ? phasePlanet.getOxygen() : null)
                 .oceans(game.getPlanet().getRevealedOceans().stream().map(OceanDto::of).collect(Collectors.toList()))
                 .phaseOceans(phasePlanet != null ? phasePlanet.getRevealedOceans().size() : null)
-                .otherPlayers(
-                        game.getPlayerUuidToPlayer().values()
-                                .stream()
-                                .filter(player -> !player.getUuid().equals(playerUuid))
-                                .map(this::buildAnotherPlayer)
-                                .collect(Collectors.toList())
-                )
+                .otherPlayers(buildOtherPlayers(game, playerUuid))
                 .build();
     }
 
@@ -111,6 +105,7 @@ public class GameController {
                 .phaseOxygen(phasePlanet != null ? phasePlanet.getOxygen() : null)
                 .oceans(game.getPlanet().getRevealedOceans().stream().map(OceanDto::of).collect(Collectors.toList()))
                 .phaseOceans(phasePlanet != null ? phasePlanet.getRevealedOceans().size() : null)
+                .otherPlayers(buildOtherPlayers(game, playerUuid))
                 .build();
     }
 
@@ -122,6 +117,14 @@ public class GameController {
         return Stream.of(corporations, projects)
                 .flatMap(List::stream)
                 .map(CardDto::from)
+                .collect(Collectors.toList());
+    }
+
+    private List<AnotherPlayerDto> buildOtherPlayers(MarsGame game, String currentPlayerUuid) {
+        return game.getPlayerUuidToPlayer().values()
+                .stream()
+                .filter(player -> !player.getUuid().equals(currentPlayerUuid))
+                .map(this::buildAnotherPlayer)
                 .collect(Collectors.toList());
     }
 

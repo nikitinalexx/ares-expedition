@@ -151,6 +151,7 @@ export class GameComponent implements OnInit {
       this.game.oxygen = shortGame.oxygen;
       this.game.oceans = shortGame.oceans;
       this.game.phaseOceans = shortGame.phaseOceans;
+      this.game.otherPlayers = shortGame.otherPlayers;
     });
   }
 
