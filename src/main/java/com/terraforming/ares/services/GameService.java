@@ -1,11 +1,14 @@
 package com.terraforming.ares.services;
 
+import com.terraforming.ares.dto.ActionsDto;
 import com.terraforming.ares.factories.GameFactory;
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.GameParameters;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.repositories.caching.CachingGameRepository;
+import com.terraforming.ares.states.State;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -34,10 +37,22 @@ public class GameService {
         return gameRepository.getGameByPlayerUuid(playerUuid);
     }
 
-    public String getNextAction(String playerUuid) {
+    public ActionsDto getNextActions(String playerUuid) {
         MarsGame game = gameRepository.getGameByPlayerUuid(playerUuid);
+        State currentState = stateFactory.getCurrentState(game);
 
-        return stateFactory.getCurrentState(game).nextAction(playerUuid).name();
+        ActionsDto.ActionsDtoBuilder builder = ActionsDto.builder();
+
+        builder.playersToNextAction(playerUuid, currentState.nextAction(playerUuid).name());
+
+        game.getPlayerUuidToPlayer()
+                .values()
+                .stream()
+                .map(Player::getUuid)
+                .filter(uuid -> !uuid.equals(playerUuid))
+                .forEach(uuid -> builder.playersToNextAction(uuid, currentState.nextAction(uuid).name()));
+
+        return builder.build();
     }
 
     public List<TurnType> getPossibleTurns(String playerUuid) {

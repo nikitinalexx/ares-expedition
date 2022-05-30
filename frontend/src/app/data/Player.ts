@@ -31,11 +31,10 @@ export class Player extends BasePlayer {
               activatedBlueCards: number[],
               corporationId?: number,
               phase?: number) {
-    super(name, winPoints, mc, hand, played, heat, plants, mcIncome, heatIncome, plantsIncome,
+    super(playerUuid, name, winPoints, mc, hand, played, heat, plants, mcIncome, heatIncome, plantsIncome,
       steelIncome, titaniumIncome, cardIncome, terraformingRating, forests, cardResources, phase);
   }
 
-  playerUuid: string;
   corporations: Card[];
   corporationId: number;
   previousPhase: number;

@@ -130,6 +130,7 @@ public class GameController {
 
     private AnotherPlayerDto buildAnotherPlayer(Player player) {
         return AnotherPlayerDto.builder()
+                .playerUuid(player.getUuid())
                 .name(player.getName())
                 .phase(player.getChosenPhase())
                 .winPoints(winPointsService.countWinPoints(player))

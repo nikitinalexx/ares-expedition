@@ -5,20 +5,54 @@
 </div>
 
 <form [formGroup]="parentForm" class="view-choice">
-  <div class="form-check">
-    <input id="you" type="radio" class="form-check-input" value="You" formControlName="player" [checked]="true">
-    <label class="custom-control-label text-white" for="you">
-      You
-    </label>
-  </div>
+  <table>
+    <tbody>
+    <tr>
+      <td id="heyhey">
+        <div class="form-check">
+          <input id="you" type="radio" class="form-check-input" value="You" formControlName="player" [checked]="true">
+          <label class="custom-control-label text-white" for="you">
+            You
+          </label>
+        </div>
+      </td>
+      <td>
+        <div class="form-check">
+          <input id="turnInfo" type="checkbox" class="custom-control-input btn-check" [checked]="true"
+                 onclick="this.checked=!this.checked;"/>
+          <label class="btn" [ngClass]="yourTurnInfo() ? 'btn-outline-success' : 'btn-outline-danger'" for="turnInfo"
+                 style="font-size: 10px">
+            {{yourTurnInfo() ? 'WAIT' : 'TURN'}}
+          </label>
+        </div>
+      </td>
+    </tr>
 
-  <div *ngFor="let otherPlayer of game?.otherPlayers; let i = index" class="form-check">
-    <input id="opponent" type="radio" class="form-check-input" value="{{i}}"
-           formControlName="player">
-    <label class="custom-control-label text-white" for="opponent">
-      Opponent {{i + 1}}
-    </label>
-  </div>
+    <tr *ngFor="let otherPlayer of game?.otherPlayers; let i = index">
+      <td>
+        <div class="form-check">
+          <input id="opponent" type="radio" class="form-check-input" value="{{i}}"
+                 formControlName="player">
+          <label class="custom-control-label text-white" for="opponent">
+            {{otherPlayer.name}}
+          </label>
+        </div>
+      </td>
+      <td>
+        <div class="form-check">
+          <input id="otherTurnInfo" type="checkbox" class="custom-control-input btn-check" [checked]="true"
+                 onclick="this.checked=!this.checked;"/>
+          <label class="btn" [ngClass]="otherPlayerTurnInfo(otherPlayer) ? 'btn-outline-success' : 'btn-outline-danger'"
+                 for="otherTurnInfo" style="font-size: 10px">
+            {{otherPlayerTurnInfo(otherPlayer) ? 'WAIT' : 'TURN'}}
+          </label>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+
+
 </form>
 
 <div class="display-phase-container">

@@ -7,7 +7,7 @@ import {NewGame} from '../data/NewGame';
 import {NewGameRequest} from '../data/NewGameRequest';
 import {Game} from '../data/Game';
 import {TurnType} from '../data/TurnType';
-import {ActionDto} from '../data/ActionDto';
+import {ActionsDto} from '../data/ActionsDto';
 import {BuildProjectRequest} from '../data/BuildProjectRequest';
 import {BlueActionRequest} from '../data/BlueActionRequest';
 import {StandardProjectType} from '../data/StandardProjectType';
@@ -80,8 +80,8 @@ export class RestDataSource {
     );
   }
 
-  nextAction(playerUuid: string): Observable<ActionDto> {
-    return this.sendRequest<ActionDto>('GET', this.url + '/action/next/' + playerUuid);
+  nextActions(playerUuid: string): Observable<ActionsDto> {
+    return this.sendRequest<ActionsDto>('GET', this.url + '/action/next/' + playerUuid);
   }
 
   nextTurns(playerUuid: string): Observable<TurnType[]> {

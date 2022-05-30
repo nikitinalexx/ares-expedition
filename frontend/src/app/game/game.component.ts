@@ -19,7 +19,7 @@ import {Tag} from '../data/Tag';
 export class GameComponent implements OnInit {
   public errorMessage: string;
   private playerUuid: string;
-  private nextAction: string;
+  private playersToNextActions: Map<string, string>;
   public game: Game;
   public nextTurns: TurnType[];
   private subscription: Subscription;
@@ -44,6 +44,33 @@ export class GameComponent implements OnInit {
     this.parentForm = this.formBuilder.group({
       player: 'You'
     });
+  }
+
+  yourTurnInfo(): boolean {
+    if (!this.playersToNextActions) {
+      return true;
+    }
+    const playerUuid = this.game.player.playerUuid;
+    if (this.playersToNextActions[playerUuid] === 'TURN') {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  otherPlayerTurnInfo(anotherPlayer: BasePlayer): boolean {
+    if (!this.playersToNextActions) {
+      return true;
+    }
+    const currentPlayer = this.game.player.playerUuid;
+    if (this.playersToNextActions[currentPlayer] === 'TURN') {
+      return false;
+    }
+    if (this.playersToNextActions[anotherPlayer.playerUuid] === 'TURN') {
+      return false;
+    } else {
+      return true;
+    }
   }
 
   getCorporationCards(): Card[] {
@@ -79,27 +106,27 @@ export class GameComponent implements OnInit {
   }
 
   firstPhaseTurn(): boolean {
-    return this.game && this.game.phase === 1 && this.nextAction === 'TURN';
+    return this.game && this.game.phase === 1 && this.playersToNextActions[this.game.player.playerUuid] === 'TURN';
   }
 
   secondPhaseTurn(): boolean {
-    return this.game && this.game.phase === 2 && this.nextAction === 'TURN';
+    return this.game && this.game.phase === 2 && this.playersToNextActions[this.game.player.playerUuid] === 'TURN';
   }
 
   thirdPhaseTurn(): boolean {
-    return this.game && this.game.phase === 3 && this.nextAction === 'TURN';
+    return this.game && this.game.phase === 3 && this.playersToNextActions[this.game.player.playerUuid] === 'TURN';
   }
 
   fourthPhaseTurn(): boolean {
-    return this.game && this.game.phase === 4 && this.nextAction === 'TURN';
+    return this.game && this.game.phase === 4 && this.playersToNextActions[this.game.player.playerUuid] === 'TURN';
   }
 
   fifthPhaseTurn(): boolean {
-    return this.game && this.game.phase === 5 && this.nextAction === 'TURN';
+    return this.game && this.game.phase === 5 && this.playersToNextActions[this.game.player.playerUuid] === 'TURN';
   }
 
   sixthPhaseTurn(): boolean {
-    return this.game && this.game.phase === 6 && this.nextAction === 'TURN';
+    return this.game && this.game.phase === 6 && this.playersToNextActions[this.game.player.playerUuid] === 'TURN';
   }
 
   gameEnd(): boolean {
@@ -174,10 +201,12 @@ export class GameComponent implements OnInit {
   }
 
   identifyNextAction() {
-    this.model.nextAction(this.playerUuid).subscribe(data => {
-      const previousAction = this.nextAction;
-      this.nextAction = data.action;
-      if (this.nextAction === 'TURN') {
+    this.model.nextActions(this.playerUuid).subscribe(data => {
+      const previousAction = this.playersToNextActions
+        ? this.playersToNextActions[this.game.player.playerUuid]
+        : null;
+      this.playersToNextActions = data.playersToNextActions;
+      if (this.playersToNextActions[this.game.player.playerUuid] === 'TURN') {
         if (previousAction && previousAction === 'WAIT' && document.hidden) {
           this.audio.play();
         }
@@ -207,7 +236,7 @@ export class GameComponent implements OnInit {
         if (this.subscription) {
           this.subscription.unsubscribe();
         }
-      } else if (this.nextAction === 'WAIT') {
+      } else if (this.playersToNextActions[this.game.player.playerUuid] === 'WAIT') {
         this.errorMessage = 'Waiting for the other player';
         this.nextTurns = null;
         if (!this.subscription || this.subscription.closed) {

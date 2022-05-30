@@ -1,6 +1,6 @@
 package com.terraforming.ares.controllers;
 
-import com.terraforming.ares.dto.ActionDto;
+import com.terraforming.ares.dto.ActionsDto;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.request.*;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
@@ -25,8 +25,8 @@ public class PlayController {
     private final TurnService turnService;
 
     @GetMapping("/action/next/{playerUuid}")
-    public ActionDto getNextAction(@PathVariable String playerUuid) {
-        return new ActionDto(gameService.getNextAction(playerUuid));
+    public ActionsDto getNextAction(@PathVariable String playerUuid) {
+        return gameService.getNextActions(playerUuid);
     }
 
     @GetMapping("/turns/next/{playerUuid}")

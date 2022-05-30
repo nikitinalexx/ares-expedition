@@ -15,6 +15,7 @@ import java.util.Map;
 @Builder
 @Getter
 public class AnotherPlayerDto {
+    private final String playerUuid;
     private final Integer phase;
     private final String name;
     private final int winPoints;

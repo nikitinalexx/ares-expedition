@@ -3,7 +3,7 @@ import {RestDataSource} from './rest.datasource';
 import {Game} from '../data/Game';
 import {Observable} from 'rxjs';
 import {TurnType} from '../data/TurnType';
-import {ActionDto} from '../data/ActionDto';
+import {ActionsDto} from '../data/ActionsDto';
 import {BuildProjectRequest} from "../data/BuildProjectRequest";
 import {BlueActionRequest} from "../data/BlueActionRequest";
 import {StandardProjectType} from "../data/StandardProjectType";
@@ -87,8 +87,8 @@ export class GameRepository {
     return this.dataSource.exchangeHeat(playerUuid, value);
   }
 
-  nextAction(playerUuid: string): Observable<ActionDto> {
-    return this.dataSource.nextAction(playerUuid);
+  nextActions(playerUuid: string): Observable<ActionsDto> {
+    return this.dataSource.nextActions(playerUuid);
   }
 
   nextTurns(playerUuid: string): Observable<TurnType[]> {
