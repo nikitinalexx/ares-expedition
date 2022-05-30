@@ -28,7 +28,7 @@ export class FourthPhaseComponent implements OnInit {
 
   ngOnInit() {
     this.parentForm = this.formBuilder.group({
-      turn: ['', Validators.required]
+      turn: ['collectIncome', Validators.required]
     });
   }
 

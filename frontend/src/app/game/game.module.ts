@@ -15,16 +15,19 @@ import {FifthPhaseComponent} from '../turns/fifthPhase/fifthPhase.component';
 import {EndRoundComponent} from '../turns/endRoundPhase/endRound.component';
 import {NavbarComponent} from '../navbar/navbar.component';
 import {BuildGreenComponent} from '../turns/greenProject/buildGreen.component';
+import {BuildBlueRedComponent} from '../turns/blueProject/buildBlueRed.component';
 
 @NgModule({
   imports: [BrowserModule, ModelModule, ReactiveFormsModule, FormsModule, CardServiceModule],
   declarations: [GameComponent, PickCorporationComponent, PickPhaseComponent,
     FirstPhaseComponent, SecondPhaseComponent, SellCardsComponent, FourthPhaseComponent,
-    ThirdPhaseComponent, FifthPhaseComponent, EndRoundComponent, NavbarComponent, BuildGreenComponent
+    ThirdPhaseComponent, FifthPhaseComponent, EndRoundComponent, NavbarComponent, BuildGreenComponent,
+    BuildBlueRedComponent
   ],
   exports: [GameComponent, PickCorporationComponent, PickPhaseComponent, ThirdPhaseComponent,
     FirstPhaseComponent, SecondPhaseComponent, SellCardsComponent, FourthPhaseComponent,
-    FifthPhaseComponent, EndRoundComponent, NavbarComponent, BuildGreenComponent
+    FifthPhaseComponent, EndRoundComponent, NavbarComponent, BuildGreenComponent,
+    BuildBlueRedComponent
   ],
   providers: [SellCardsComponent]
 })
