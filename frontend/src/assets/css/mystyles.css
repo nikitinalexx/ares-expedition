@@ -789,6 +789,19 @@ li.events::before {
   line-height: 18px;
   background-size: 18px 18px;
   box-shadow: 0 0 0 1px rgba(0,0,0,0.3);
+  font-size: 15px;
+}
+
+.discount-icon {
+  position: absolute;
+  margin-left: 20px;
+  margin-top: 20px;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  background-size: 18px 18px;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.3);
+  font-size: 15px;
 }
 
 .forest-tag-icon {

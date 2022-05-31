@@ -80,6 +80,58 @@ export class NavbarComponent {
     return this.hasCardAction(CardAction.MC_SCIENCE_INCOME);
   }
 
+  hasEnergyDiscount(): boolean {
+    return this.hasCardAction(CardAction.THORGATE_CORPORATION) || this.hasCardAction(CardAction.ENERGY_SUBSIDIES);
+  }
+
+  hasEarthDiscount(): boolean {
+    return this.hasCardAction(CardAction.TERACTOR_CORPORATION) || this.hasCardAction(CardAction.INTERPLANETARY_CONFERENCE);
+  }
+
+  hasJupiterDiscount(): boolean {
+    return this.hasCardAction(CardAction.INTERPLANETARY_CONFERENCE);
+  }
+
+  hasEventDiscount(): boolean {
+    return this.hasCardAction(CardAction.MEDIA_GROUP);
+  }
+
+  getEnergyDiscount(): number {
+    let discount = 0;
+    if (this.hasCardAction(CardAction.THORGATE_CORPORATION)) {
+      discount -= 3;
+    }
+    if (this.hasCardAction(CardAction.ENERGY_SUBSIDIES)) {
+      discount -= 4;
+    }
+    return discount;
+  }
+
+  getEarthDiscount(): number {
+    let discount = 0;
+    if (this.hasCardAction(CardAction.TERACTOR_CORPORATION)) {
+      discount -= 3;
+    }
+    if (this.hasCardAction(CardAction.INTERPLANETARY_CONFERENCE)) {
+      discount -= 3;
+    }
+    return discount;
+  }
+
+  getJupiterDiscount(): number {
+    if (this.hasCardAction(CardAction.INTERPLANETARY_CONFERENCE)) {
+      return -3;
+    }
+    return 0;
+  }
+
+  getEventDiscount(): number {
+    if (this.hasCardAction(CardAction.MEDIA_GROUP)) {
+      return -5;
+    }
+    return 0;
+  }
+
   countMcEarthIncome(): number {
     return this.player.played.filter(
       card => card.cardAction && card.cardAction === CardAction.MC_EARTH_INCOME

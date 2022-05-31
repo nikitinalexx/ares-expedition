@@ -93,6 +93,12 @@
                 <div *ngIf="entry[0].toLowerCase() == 'microbe' && hasPlantMicrobeIncome()" class="tag-icon plant"></div>
 
                 <div *ngIf="entry[0].toLowerCase() == 'building' && hasMcBuildingIncome()" class="tag-icon money" style="font-size: 10px">1/2</div>
+
+                <div *ngIf="entry[0].toLowerCase() == 'energy' && hasEnergyDiscount()" class="discount-icon money">{{getEnergyDiscount()}}</div>
+                <div *ngIf="entry[0].toLowerCase() == 'earth' && hasEarthDiscount()" class="discount-icon money">{{getEarthDiscount()}}</div>
+                <div *ngIf="entry[0].toLowerCase() == 'jupiter' && hasJupiterDiscount()" class="discount-icon money">{{getJupiterDiscount()}}</div>
+                <div *ngIf="entry[0].toLowerCase() == 'event' && hasEventDiscount()" class="discount-icon money">{{getEventDiscount()}}</div>
+
               </div>
               <span class="tag-count-display">{{entry[1]}}</span></div>
           </div>
