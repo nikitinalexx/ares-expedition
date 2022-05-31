@@ -1,6 +1,7 @@
 package com.terraforming.ares.states;
 
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.StateContext;
 import com.terraforming.ares.model.turn.TurnType;
 
 import java.util.Collections;
@@ -17,8 +18,8 @@ public class CollectIncomeState extends AbstractState {
     }
 
     @Override
-    public List<TurnType> getPossibleTurns(String playerUuid) {
-        if (marsGame.getPlayerByUuid(playerUuid).getNextTurn() != null) {
+    public List<TurnType> getPossibleTurns(StateContext stateContext) {
+        if (marsGame.getPlayerByUuid(stateContext.getPlayerUuid()).getNextTurn() != null) {
             return Collections.emptyList();
         } else {
             return Collections.singletonList(TurnType.COLLECT_INCOME);

@@ -4,6 +4,7 @@ import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.GameUpdateResult;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.StateContext;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.turn.Turn;
 import com.terraforming.ares.model.turn.TurnType;
@@ -28,14 +29,17 @@ import java.util.stream.Collectors;
 public class GameProcessorService {
     private final CachingGameRepository gameRepository;
     private final StateFactory stateFactory;
+    private final PaymentValidationService paymentValidationService;
     private final Map<TurnType, TurnProcessor<?>> turnProcessors;
     private final Queue<Long> gamesToProcess = new ArrayBlockingQueue<>(100);
 
     public GameProcessorService(List<TurnProcessor<?>> turnProcessor,
                                 CachingGameRepository gameRepository,
+                                PaymentValidationService paymentValidationService,
                                 StateFactory stateFactory) {
         this.gameRepository = gameRepository;
         this.stateFactory = stateFactory;
+        this.paymentValidationService = paymentValidationService;
 
         turnProcessors = turnProcessor.stream().collect(Collectors.toMap(
                 TurnProcessor::getType, Function.identity()
@@ -121,7 +125,7 @@ public class GameProcessorService {
                 .values()
                 .stream()
                 .allMatch(player -> player.getNextTurn() != null && player.getNextTurn().getType().isTerminal()
-                        || player.getNextTurn() == null && stateFactory.getCurrentState(game).getPossibleTurns(player.getUuid()).isEmpty()
+                        || player.getNextTurn() == null && stateFactory.getCurrentState(game).getPossibleTurns(new StateContext(player.getUuid(), paymentValidationService)).isEmpty()
                 );
 
         if (!allTurnsReadyAndAllTerminal) {

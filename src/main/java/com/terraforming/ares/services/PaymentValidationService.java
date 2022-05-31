@@ -28,6 +28,16 @@ public class PaymentValidationService {
         ));
     }
 
+    public int forestPriceInPlants(Player player) {
+        int plantsCost = Constants.FOREST_PLANT_COST;
+
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ECOLINE_DISCOUNT)) {
+            plantsCost--;
+        }
+
+        return plantsCost;
+    }
+
     public String validate(Card card, Player player, List<Payment> payments) {
         for (Payment payment : payments) {
             PaymentValidator paymentValidator = validators.get(payment.getType());

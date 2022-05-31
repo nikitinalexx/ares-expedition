@@ -3,6 +3,7 @@ package com.terraforming.ares.states;
 
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.StateContext;
 import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.model.turn.TurnType;
 
@@ -20,8 +21,8 @@ public class PickCorporationsState extends AbstractState {
     }
 
     @Override
-    public List<TurnType> getPossibleTurns(String playerUuid) {
-        Player player = marsGame.getPlayerByUuid(playerUuid);
+    public List<TurnType> getPossibleTurns(StateContext stateContext) {
+        Player player = marsGame.getPlayerByUuid(stateContext.getPlayerUuid());
         if (player.getNextTurn() != null) {
             if (player.getNextTurn().getType() == TurnType.DISCARD_CARDS) {
                 return List.of(TurnType.DISCARD_DRAFTED_CARDS);

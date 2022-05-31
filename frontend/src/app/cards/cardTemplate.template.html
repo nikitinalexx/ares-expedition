@@ -1,4 +1,5 @@
-<div *ngIf="!card.corporation" [ngClass]="getBackgroundColorClass(card)" class="title" [ngStyle]="getNameStyle(card)">{{ card.name }}</div>
+<div *ngIf="!card.corporation" [ngClass]="getBackgroundColorClass(card)" class="title"
+     [ngStyle]="getNameStyle(card)">{{ card.name }}</div>
 <div class="price" *ngIf="!card.corporation"> {{card.price}}</div>
 
 <div *ngIf="discountApplicable(card)">
@@ -10,7 +11,7 @@
 <div *ngIf="card.tags[1]" [ngClass]="getTagClasses(card, 1)" class="tag tag2 "></div>
 <div *ngIf="card.tags[2]" [ngClass]="getTagClasses(card, 2)" class="tag tag3 "></div>
 
-<div *ngIf="card.corporation" class="corporationLabel" >CORPORATION</div>
+<div *ngIf="card.corporation" class="corporationLabel">CORPORATION</div>
 <div *ngIf="!card.corporation" class="number">#{{getFormattedId(card)}}</div>
 
 <div *ngIf="card.corporation" class="contentCorporation">
@@ -48,7 +49,8 @@
       <span class="card resource"></span>
 
       <div class="description" style="text-align:center;margin-top:0px;">
-        (Action: Reveal the top 3 cards of the deck. Place the cards with an Event tag into your hand. Discard the rest.)
+        (Action: Reveal the top 3 cards of the deck. Place the cards with an Event tag into your hand. Discard the
+        rest.)
       </div>
     </div>
 
@@ -87,6 +89,19 @@
 
       <div class="description" style="text-align:center;margin-top:0px;">
         (Effect: When you flip an ocean tile, gain 2 mc and 2 plants.)
+      </div>
+    </div>
+
+    <div *ngIf="isEcolineCorporation(card)">
+      <div class="corporationEffectBoxLabel">EFFECT</div>
+
+      7
+      <div class="resource plant "></div>
+      :
+      <div class="tile forest-tile"></div>
+
+      <div class="description" style="text-align:center;margin-top:0px;">
+        (Effect: When you trade plants for forest, pay 1 plant less.)
       </div>
     </div>
 
@@ -129,7 +144,8 @@
       <div class="corporationEffectBoxLabel">EFFECT</div>
 
       <div class="resource card"></div>
-      <div class="money resource ">20</div>+
+      <div class="money resource ">20</div>
+      +
       :
       <div class="money resource ">-4</div>
 
@@ -148,7 +164,8 @@
       <div class="animal resource"></div>
 
       <div class="description" style="text-align:center;margin-top:0px;">
-        (Effect: When you play an Animal or Plant tag including this, add an Animal to this card. 1 VP for 2 animals on this card.)
+        (Effect: When you play an Animal or Plant tag including this, add an Animal to this card. 1 VP for 2 animals on
+        this card.)
       </div>
     </div>
 
@@ -256,6 +273,22 @@
 
     <div class="description" style="text-align: center">
       (You start with 43 MC. Draw 5 cards, then discard 4.)
+    </div>
+  </div>
+
+  <div *ngIf="isEcolineCorporation(card)">
+    <div class="corporation-name">
+      ecoline
+    </div>
+    <br/>
+
+    <div class="resource money" style="margin-left:55px;">27</div>
+    <div class="production-box production-box-size1a" style="margin-left:20px;margin-top:-50px;">
+      <div class="production plant"></div>
+    </div>
+
+    <div class="description" style="text-align: center; margin-left: 7px">
+      (You start with 27 MC. 1 plant production.)
     </div>
   </div>
 
@@ -578,7 +611,11 @@
 
   <div *ngIf="actionDevelopedInfrastructure(card)">
     <div class="money resource ">10</div>
-    (<div class="money resource ">-5</div>:5<div class="resource card-blue"></div>)
+    (
+    <div class="money resource ">-5</div>
+    :5
+    <div class="resource card-blue"></div>
+    )
     <div class="red-arrow "></div>
     <div class="tile temperature-tile "></div>
   </div>
@@ -727,7 +764,11 @@
 
   <div *ngIf="actionProgressivePolicies(card)" style="margin-left: -13px;">
     <span class="money resource ">10</span>
-    (<div class="money resource ">-5</div>: 4<div class="resource-tag tag-event"></div>)
+    (
+    <div class="money resource ">-5</div>
+    : 4
+    <div class="resource-tag tag-event"></div>
+    )
     <div class="red-arrow "></div>
     <div class="tile oxygen-tile"></div>
   </div>

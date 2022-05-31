@@ -637,6 +637,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.ZETACELL_CORPORATION;
   }
 
+  isEcolineCorporation(card: Card): boolean {
+    return card.cardAction === CardAction.ECOLINE_CORPORATION;
+  }
+
   isThorgateCorporation(card: Card): boolean {
     return card.cardAction === CardAction.THORGATE_CORPORATION;
   }

@@ -2,6 +2,7 @@ package com.terraforming.ares.states;
 
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.StateContext;
 import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.model.turn.DraftCardsTurn;
 
@@ -20,8 +21,8 @@ public abstract class AbstractState implements State {
     }
 
     @Override
-    public Action nextAction(String playerUuid) {
-        if (getPossibleTurns(playerUuid).isEmpty()) {
+    public Action nextAction(StateContext stateContext) {
+        if (getPossibleTurns(stateContext).isEmpty()) {
             return Action.WAIT;
         } else {
             return Action.TURN;

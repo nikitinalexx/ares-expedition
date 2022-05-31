@@ -3,6 +3,7 @@ package com.terraforming.ares.states;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.StateContext;
 import com.terraforming.ares.model.turn.TurnType;
 
 import java.util.ArrayList;
@@ -19,8 +20,8 @@ public class PerformBlueActionState extends AbstractState {
     }
 
     @Override
-    public List<TurnType> getPossibleTurns(String playerUuid) {
-        Player player = marsGame.getPlayerByUuid(playerUuid);
+    public List<TurnType> getPossibleTurns(StateContext stateContext) {
+        Player player = marsGame.getPlayerByUuid(stateContext.getPlayerUuid());
 
         if (player.getNextTurn() != null && player.getNextTurn().getType().isIntermediate()) {
             return List.of(player.getNextTurn().getType());
@@ -46,10 +47,12 @@ public class PerformBlueActionState extends AbstractState {
                     TurnType.EXCHANGE_HEAT
             ));
 
-            if (player.getPlants() < Constants.FOREST_PLANT_COST && (player.getHeat() < Constants.TEMPERATURE_HEAT_COST || marsGame.getPlanetAtTheStartOfThePhase().isTemperatureMax())) {
+            int forestPlantCost = stateContext.getPaymentValidationService().forestPriceInPlants(player);
+
+            if (player.getPlants() < forestPlantCost && (player.getHeat() < Constants.TEMPERATURE_HEAT_COST || marsGame.getPlanetAtTheStartOfThePhase().isTemperatureMax())) {
                 turns.add(TurnType.SKIP_TURN);
             } else {
-                if (player.getPlants() >= Constants.FOREST_PLANT_COST) {
+                if (player.getPlants() >= forestPlantCost) {
                     turns.add(TurnType.PLANT_FOREST);
                 }
                 if (player.getHeat() >= Constants.TEMPERATURE_HEAT_COST && !marsGame.getPlanetAtTheStartOfThePhase().isTemperatureMax()) {

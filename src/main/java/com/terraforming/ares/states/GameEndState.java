@@ -1,6 +1,7 @@
 package com.terraforming.ares.states;
 
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.StateContext;
 import com.terraforming.ares.model.turn.TurnType;
 
 import java.util.List;
@@ -16,7 +17,7 @@ public class GameEndState extends AbstractState {
     }
 
     @Override
-    public List<TurnType> getPossibleTurns(String playerUuid) {
+    public List<TurnType> getPossibleTurns(StateContext stateContext) {
         return List.of(TurnType.GAME_END);
     }
 

@@ -34,6 +34,7 @@ public class TurnService {
     private final TerraformingService terraformingService;
     private final StandardProjectService standardProjectService;
     private final CardService cardService;
+    private final PaymentValidationService paymentValidationService;
 
     public void chooseCorporationTurn(ChooseCorporationRequest chooseCorporationRequest) {
         String playerUuid = chooseCorporationRequest.getPlayerUuid();
@@ -116,7 +117,7 @@ public class TurnService {
                 game -> {
                     Player player = game.getPlayerByUuid(playerUuid);
 
-                    if (player.getPlants() < Constants.FOREST_PLANT_COST) {
+                    if (player.getPlants() < paymentValidationService.forestPriceInPlants(player)) {
                         return "Not enough plants to create a forest";
                     }
 
@@ -314,7 +315,7 @@ public class TurnService {
                 turn,
                 playerUuid,
                 game -> {
-                    if (!stateFactory.getCurrentState(game).getPossibleTurns(playerUuid).contains(turn.getType())) {
+                    if (!stateFactory.getCurrentState(game).getPossibleTurns(new StateContext(playerUuid, paymentValidationService)).contains(turn.getType())) {
                         return "Incorrect game state for a turn " + turn.getType();
                     }
 
