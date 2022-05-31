@@ -15,7 +15,7 @@ import {StandardProjectType} from '../../data/StandardProjectType';
 import {CardColor} from '../../data/CardColor';
 import {BuildGreenComponent} from '../greenProject/buildGreen.component';
 import {BuildBlueRedComponent} from '../blueProject/buildBlueRed.component';
-import {DiscardCardsTurn} from "../../data/DiscardCardsTurn";
+import {DiscardCardsTurn} from '../../data/DiscardCardsTurn';
 
 @Component({
   selector: 'app-third-phase',
@@ -275,6 +275,9 @@ export class ThirdPhaseComponent implements OnInit {
       && this.nextTurns.find(turn => turn === TurnType[TurnType.EXCHANGE_HEAT])?.length > 0;
   }
 
+  hasStandardTechnology(): boolean {
+    return this.game.player.played.some(card => card.cardAction === CardAction.STANDARD_TECHNOLOGY);
+  }
 
   submitForm(formGroup: FormGroup) {
     this.errorMessage = null;

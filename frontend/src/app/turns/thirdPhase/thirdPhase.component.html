@@ -169,21 +169,21 @@
                  formControlName="standardProject"
                  [checked]="this.parentForm.value?.standardProject === 'ocean'"
           >
-          <label class="custom-control-label text-white" for="standardOcean">Ocean (15mc)</label>
+          <label class="custom-control-label text-white" for="standardOcean">Ocean ({{hasStandardTechnology() ? 11 : 15}}mc)</label>
         </div>
         <div class="col-sm-1">
           <input id="standardForest" type="radio" class="form-check-input" value="forest"
                  formControlName="standardProject"
                  [checked]="this.parentForm.value?.standardProject === 'forest'"
           >
-          <label class="custom-control-label text-white" for="standardForest">Forest (20mc)</label>
+          <label class="custom-control-label text-white" for="standardForest">Forest ({{hasStandardTechnology() ? 16 : 20}}mc)</label>
         </div>
         <div class="col-sm-2">
           <input id="standardTemperature" type="radio" class="form-check-input" value="temperature"
                  formControlName="standardProject"
                  [checked]="this.parentForm.value?.standardProject === 'temperature'"
           >
-          <label class="custom-control-label text-white" for="standardTemperature">Temperature (14mc)</label>
+          <label class="custom-control-label text-white" for="standardTemperature">Temperature ({{hasStandardTechnology() ? 10 : 14}}mc)</label>
         </div>
       </div>
     </div>
