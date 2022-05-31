@@ -188,7 +188,7 @@
   <div *ngIf="nextTurns && nextTurns.length > 0">
     <div>
       <app-pick-corporation *ngIf="pickCorporationTurn()" (outputToParent)="GetOutputVal($event)"
-                            [game]="game"></app-pick-corporation>
+                            [game]="game" [nextTurns]="this.nextTurns"></app-pick-corporation>
     </div>
 
     <div>

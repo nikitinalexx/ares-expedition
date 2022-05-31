@@ -261,7 +261,8 @@ public class CardFactory {
                 new ArclightCorporation(10008),
                 new PhobologCorporation(10009),
                 new MiningGuildCorporation(10010),
-                new SaturnSystemsCorporation(10011)
+                new SaturnSystemsCorporation(10011),
+                new ZetacellCorporation(10012)
         );
 
 

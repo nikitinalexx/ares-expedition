@@ -633,6 +633,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.LAUNCH_STAR_CORPORATION;
   }
 
+  isZetacellCorporation(card: Card): boolean {
+    return card.cardAction === CardAction.ZETACELL_CORPORATION;
+  }
+
   isThorgateCorporation(card: Card): boolean {
     return card.cardAction === CardAction.THORGATE_CORPORATION;
   }

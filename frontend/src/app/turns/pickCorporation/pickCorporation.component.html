@@ -3,17 +3,39 @@
   {{errorMessage}}
 </div>
 
-<h1>Choose corporation</h1>
 
-<div class="card-container">
-  <ul class="myUL">
-    <li *ngFor="let card of getCorporationCards();" (click)="clickCorporation(card)" class="filterDiv automated display" [ngClass]="isSelectedCard(card)">
-      <app-card-template [card]="card"></app-card-template>
-    </li>
-  </ul>
-  <form>
-    <div class="form-group d-grid gap-2 col-6 mx-auto">
-      <button type="submit" class="btn btn-warning btn-lg" (click)="chooseCorporation(corporationInput)">Confirm</button>
+
+<form [formGroup]="parentForm" (submit)="submitForm(parentForm)" novalidate>
+
+  <div *ngIf="pickCorporationTurn()" class="card-container">
+    <h1>Choose corporation</h1>
+
+    <ul class="myUL">
+      <li *ngFor="let card of getCorporationCards();" (click)="clickCorporation(card)" class="filterDiv automated display" [ngClass]="isSelectedCard(card)">
+        <app-card-template [card]="card"></app-card-template>
+      </li>
+    </ul>
+  </div>
+
+  <div *ngIf="discardCardsTurn()" class="form-check">
+    <input id="discardCards" type="radio" class="form-check-input" value="discardCards" formControlName="turn">
+    <label class="custom-control-label text-white" for="discardCards">Discard {{game.player.nextTurn.size }}
+      cards</label>
+
+    <div *ngIf="parentForm.value?.turn === 'discardCards'" class="card-container">
+      <ul class="myUL">
+        <li *ngFor="let card of getDiscardCards();" (click)="clickProjectToDiscard(card)"
+            [ngClass]="selectedProjectToDiscardClass(card)" class="filterDiv automated display">
+          <app-card-template [card]="card" [player]="game?.player"></app-card-template>
+        </li>
+      </ul>
     </div>
-  </form>
-</div>
+  </div>
+
+  <div class="form-group d-grid gap-2 col-6 mx-auto">
+    <button type="submit" class="btn btn-warning btn-lg">Confirm</button>
+  </div>
+
+</form>
+
+

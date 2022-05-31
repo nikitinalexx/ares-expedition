@@ -40,7 +40,8 @@ public class MarsGame {
         this.projectsDeck = projectsDeck;
         this.corporationsDeck = corporationsDeck;
         this.planet = planet;
-        this.stateType = StateType.PICK_CORPORATIONS;
+
+        setStateType(StateType.PICK_CORPORATIONS);
 
         playerUuidToPlayer = playerNames.stream().map(playerName ->
                 Player.builder()
@@ -82,6 +83,9 @@ public class MarsGame {
     public void setStateType(StateType stateType) {
         this.stateType = stateType;
         switch (stateType) {
+            case PICK_CORPORATIONS:
+                currentPhase = 7;
+                break;
             case PICK_PHASE:
                 currentPhase = -1;
                 turns++;

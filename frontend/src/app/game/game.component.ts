@@ -98,7 +98,7 @@ export class GameComponent implements OnInit {
   }
 
   pickCorporationTurn(): boolean {
-    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.PICK_CORPORATION])?.length > 0;
+    return this.game && this.game.phase === 7;
   }
 
   pickPhaseTurn(): boolean {

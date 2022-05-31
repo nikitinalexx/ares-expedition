@@ -76,6 +76,20 @@
       </div>
     </div>
 
+    <div *ngIf="isZetacellCorporation(card)">
+      <div class="corporationEffectBoxLabel">EFFECT</div>
+
+      <div class="tile ocean-tile"></div>
+      :
+      <div class="resource money ">2</div>
+      <div class="resource plant "></div>
+      <div class="resource plant "></div>
+
+      <div class="description" style="text-align:center;margin-top:0px;">
+        (Effect: When you flip an ocean tile, gain 2 mc and 2 plants.)
+      </div>
+    </div>
+
     <div *ngIf="isThorgateCorporation(card)">
       <div class="corporationEffectBoxLabel">EFFECT</div>
 
@@ -222,6 +236,26 @@
 
     <div class="description">
       (You start with 40 MC. Draw 5 cards from the deck and take all Green. Discard other.)
+    </div>
+  </div>
+
+  <div *ngIf="isZetacellCorporation(card)">
+    <div class="corporation-name">
+      zetacell
+    </div>
+    <br/>
+
+    <div style="margin-top: -20px; margin-left: 35px;">
+      <div class="resource money">43</div>
+
+      +5
+      <div class="resource card"></div>
+      : -4
+      <div class="resource card"></div>
+    </div>
+
+    <div class="description" style="text-align: center">
+      (You start with 43 MC. Draw 5 cards, then discard 4.)
     </div>
   </div>
 
