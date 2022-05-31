@@ -263,7 +263,8 @@ public class CardFactory {
                 new MiningGuildCorporation(10010),
                 new SaturnSystemsCorporation(10011),
                 new ZetacellCorporation(10012),
-                new EcolineCorporation(10013)
+                new EcolineCorporation(10013),
+                new Inventrix(10014)
         );
 
 

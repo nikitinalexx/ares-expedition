@@ -641,6 +641,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.ECOLINE_CORPORATION;
   }
 
+  isInventrixCorporation(card: Card): boolean {
+    return card.cardAction === CardAction.INVENTRIX_CORPORATION;
+  }
+
   isThorgateCorporation(card: Card): boolean {
     return card.cardAction === CardAction.THORGATE_CORPORATION;
   }

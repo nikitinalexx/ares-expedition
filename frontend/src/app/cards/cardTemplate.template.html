@@ -105,6 +105,18 @@
       </div>
     </div>
 
+    <div *ngIf="isInventrixCorporation(card)">
+      <div class="corporationEffectBoxLabel">EFFECT</div>
+
+      <div class="tile globals-box">Temperature Oxygen</div>
+      : +/- 1 Color
+
+      <div class="description" style="text-align:center">
+        (Effect: When playing a card with requirements, you may consider the oxygen or temperature one color higher or
+        lower. This cannot be modified futher by other effects.)
+      </div>
+    </div>
+
     <div *ngIf="isThorgateCorporation(card)">
       <div class="corporationEffectBoxLabel">EFFECT</div>
 
@@ -289,6 +301,25 @@
 
     <div class="description" style="text-align: center; margin-left: 7px">
       (You start with 27 MC. 1 plant production.)
+    </div>
+  </div>
+
+  <div *ngIf="isInventrixCorporation(card)">
+    <div class="corporation-name">
+      inventrix
+    </div>
+    <br/>
+
+    <div style="margin-top: -10px; margin-left: 35px;">
+      <div class="resource money">33</div>
+
+      <div class="resource card"></div>
+      <div class="resource card"></div>
+      <div class="resource card"></div>
+    </div>
+
+    <div class="description" style="text-align: center; margin-left: 20px">
+      (You start with 33 MC. Take 3 cards.)
     </div>
   </div>
 

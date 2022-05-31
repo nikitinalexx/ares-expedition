@@ -2,6 +2,7 @@ package com.terraforming.ares.cards.green;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.income.Gain;
@@ -41,8 +42,10 @@ public class AirborneRadiation implements BaseExpansionGreenCard {
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         TerraformingService terraformingService = marsContext.getTerraformingService();
+        Player player = marsContext.getPlayer();
 
-        terraformingService.raiseOxygen(marsContext.getGame(), marsContext.getPlayer());
+        terraformingService.raiseOxygen(marsContext.getGame(), player);
+        player.setHeatIncome(player.getHeatIncome() + 2);
 
         return null;
     }
