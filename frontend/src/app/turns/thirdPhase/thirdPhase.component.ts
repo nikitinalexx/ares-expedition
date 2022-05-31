@@ -15,6 +15,7 @@ import {StandardProjectType} from '../../data/StandardProjectType';
 import {CardColor} from '../../data/CardColor';
 import {BuildGreenComponent} from '../greenProject/buildGreen.component';
 import {BuildBlueRedComponent} from '../blueProject/buildBlueRed.component';
+import {DiscardCardsTurn} from "../../data/DiscardCardsTurn";
 
 @Component({
   selector: 'app-third-phase',
@@ -26,6 +27,7 @@ export class ThirdPhaseComponent implements OnInit {
   isSubmitted = false;
   selectedProject: Card;
   actionTargetCards = [];
+  projectsToDiscard: number[];
   @ViewChild(SellCardsComponent) sellCardsService;
   @ViewChild(BuildGreenComponent) buildGreenService;
   @ViewChild(BuildBlueRedComponent) buildBlueRedService;
@@ -46,7 +48,7 @@ export class ThirdPhaseComponent implements OnInit {
 
   ngOnInit() {
     this.parentForm = this.formBuilder.group({
-      turn: ['', Validators.required],
+      turn: ['blueAction', Validators.required],
       heatInput: [''],
       addOrUseMicrobe: ['addMicrobe'],
       gainPlantOrMicrobe: ['gainPlant'],
@@ -71,6 +73,10 @@ export class ThirdPhaseComponent implements OnInit {
 
   sendToParent(data: any) {
     this.outputToParent.emit(data);
+  }
+
+  discardCardsTurn(): boolean {
+    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.DISCARD_CARDS])?.length > 0;
   }
 
   buildBlueRedProjectTurn(): boolean {
@@ -186,7 +192,12 @@ export class ThirdPhaseComponent implements OnInit {
   }
 
   getDiscardCards(): Card[] {
-    return this.game.player.nextTurn.cards;
+    const nextTurn = this.game.player.nextTurn as DiscardCardsTurn;
+    if (nextTurn.onlyFromSelectedCards) {
+      return this.game.player.nextTurn.cards;
+    } else {
+      return this.game.player?.hand;
+    }
   }
 
   selectProject(card: Card) {
@@ -238,6 +249,25 @@ export class ThirdPhaseComponent implements OnInit {
     }
   }
 
+  clickProjectToDiscard(card: Card) {
+    if (!this.projectsToDiscard) {
+      this.projectsToDiscard = [];
+    }
+    const index = this.projectsToDiscard.indexOf(card.id, 0);
+    if (index > -1) {
+      this.projectsToDiscard.splice(index, 1);
+    } else {
+      this.projectsToDiscard.push(card.id);
+    }
+  }
+
+  selectedProjectToDiscardClass(card: Card): string {
+    if (this.projectsToDiscard && this.projectsToDiscard.some(element => element === card.id)) {
+      return 'clicked-card';
+    }
+    return '';
+  }
+
   canExchangeHeat(): boolean {
     return this.game.player.played.some(card => card.cardAction === CardAction.HELION_CORPORATION)
       && this.game.player.heat > 0
@@ -253,7 +283,22 @@ export class ThirdPhaseComponent implements OnInit {
       console.log('form invalid');
       return false;
     } else {
-      if (formGroup.value.turn === 'blueRedProject' && formGroup.value.mcPrice !== null) {
+      if (formGroup.value.turn === 'discardCards') {
+        if (!this.projectsToDiscard || this.projectsToDiscard.length !== this.game.player.nextTurn.size) {
+          this.errorMessage = 'Invalid number of cards to discard';
+        } else {
+          this.gameRepository.discardCards(this.game.player.playerUuid, this.projectsToDiscard).subscribe(
+            data => {
+              this.sendToParent(data);
+              this.selectedProject = null;
+              this.errorMessage = null;
+            },
+            error => {
+              this.errorMessage = error;
+            }
+          );
+        }
+      } else if (formGroup.value.turn === 'blueRedProject' && formGroup.value.mcPrice !== null) {
         this.buildBlueRedService.buildBlueRedProject(data => this.sendToParent(data));
       } else if (formGroup.value.turn === 'greenProject' && formGroup.value.mcPrice !== null) {
         this.buildGreenService.buildGreenProject(data => this.sendToParent(data));

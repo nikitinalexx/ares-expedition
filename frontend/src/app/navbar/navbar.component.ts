@@ -87,7 +87,7 @@ export class NavbarComponent {
   }
 
   hasCardAction(type: CardAction): boolean {
-    return this.player.played.some(
+    return this.player?.played.some(
       card => card.cardAction && card.cardAction === type
     );
   }

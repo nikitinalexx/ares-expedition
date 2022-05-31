@@ -128,6 +128,23 @@
 
   </div>
 
+  <div *ngIf="discardCardsTurn()" class="form-check">
+    <input id="discardCards" (click)="resetAllInputs()" type="radio" class="form-check-input" value="discardCards"
+           formControlName="turn">
+    <label class="custom-control-label text-white" for="discardCards">Discard {{game.player.nextTurn.size }}
+      cards</label>
+
+    <div *ngIf="parentForm.value?.turn === 'discardCards'" class="card-container">
+      <ul class="myUL">
+        <li *ngFor="let card of getDiscardCards();" (click)="clickProjectToDiscard(card)"
+            [ngClass]="selectedProjectToDiscardClass(card)" class="filterDiv automated display">
+          <app-card-template [card]="card" [player]="game?.player"></app-card-template>
+        </li>
+      </ul>
+    </div>
+
+  </div>
+
   <div *ngIf="plantForestTurn()" class="form-check">
     <input id="plantForest" (click)="resetAllInputs()" type="radio" class="form-check-input" value="plantForest"
            formControlName="turn" [checked]="this.parentForm.value?.turn === 'plantForest'">
