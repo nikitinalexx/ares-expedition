@@ -29,8 +29,10 @@ public class PickCorporationsState extends AbstractState {
             } else {
                 return List.of();
             }
-        } else {
+        } else if (player.getSelectedCorporationCard() == null) {
             return Collections.singletonList(TurnType.PICK_CORPORATION);
+        } else {
+            return List.of();
         }
     }
 
