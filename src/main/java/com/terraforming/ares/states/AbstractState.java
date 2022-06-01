@@ -53,7 +53,7 @@ public abstract class AbstractState implements State {
             marsGame.setStateType(StateType.COLLECT_INCOME);
         } else if (phaseNumber <= 5 && pickedPhases.contains(5)) {
             marsGame.setStateType(StateType.DRAFT_CARDS);
-            marsGame.getPlayerUuidToPlayer().values().forEach(player -> player.setNextTurn(new DraftCardsTurn(player.getUuid())));
+            marsGame.getPlayerUuidToPlayer().values().forEach(player -> player.addNextTurn(new DraftCardsTurn(player.getUuid())));
         } else if (marsGame.getPlayerUuidToPlayer().values().stream().anyMatch(player -> player.getHand().size() > 10)) {
             marsGame.setStateType(StateType.SELL_EXTRA_CARDS);
         } else {

@@ -35,7 +35,7 @@ public class ZetacellCorporation implements CorporationCard {
         Player player = marsContext.getPlayer();
         player.setMc(43);
         marsContext.dealCards(5);
-        player.setNextTurn(
+        player.addNextTurn(
                 new DiscardCardsTurn(
                         player.getUuid(),
                         List.of(),

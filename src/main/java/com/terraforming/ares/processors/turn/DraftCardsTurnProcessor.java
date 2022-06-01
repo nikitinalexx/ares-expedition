@@ -64,7 +64,7 @@ public class DraftCardsTurnProcessor implements TurnProcessor<DraftCardsTurn> {
         List<Integer> draftedCards = cardService.dealCards(game, cardsToDraft);
         player.getHand().addCards(draftedCards);
 
-        player.setNextTurn(
+        player.addNextTurn(
                 new DiscardCardsTurn(
                         player.getUuid(),
                         draftedCards,

@@ -1,13 +1,17 @@
 package com.terraforming.ares.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.terraforming.ares.cards.blue.FilterFeeders;
 import com.terraforming.ares.model.turn.Turn;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.util.CollectionUtils;
 
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 
@@ -50,7 +54,29 @@ public class Player {
     private Integer previousChosenPhase;
     private Integer chosenPhase;
 
-    private Turn nextTurn;
+    private List<Turn> nextTurns;
+
+    public void addNextTurn(Turn turn) {
+        if (CollectionUtils.isEmpty(nextTurns)) {
+            nextTurns = new LinkedList<>();
+        }
+        nextTurns.add(turn);
+    }
+
+    @JsonIgnore//todo is it needed
+    public Turn getNextTurn() {
+        if (CollectionUtils.isEmpty(nextTurns)) {
+            return null;
+        } else {
+            return nextTurns.get(0);
+        }
+    }
+
+    public void removeNextTurn() {
+        if (!CollectionUtils.isEmpty(nextTurns)) {
+            nextTurns.remove(0);
+        }
+    }
 
     private int mc;
     private int mcIncome;

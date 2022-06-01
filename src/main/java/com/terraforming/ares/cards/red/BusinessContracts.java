@@ -45,7 +45,7 @@ public class BusinessContracts implements BaseExpansionRedCard {
             resultBuilder.takenCard(CardDto.from(projectCard));
         }
 
-        marsContext.getPlayer().setNextTurn(
+        marsContext.getPlayer().addNextTurn(
                 new DiscardCardsTurn(
                         marsContext.getPlayer().getUuid(),
                         List.of(),

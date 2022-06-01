@@ -41,7 +41,7 @@ public class Microprocessors implements BaseExpansionGreenCard {
 
         player.setHeatIncome(player.getHeatIncome() + 3);
 
-        player.setNextTurn(
+        player.addNextTurn(
                 new DiscardCardsTurn(
                         player.getUuid(),
                         List.of(),

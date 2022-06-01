@@ -81,13 +81,13 @@ public class GameProcessorService {
         });
     }
 
-    public GameUpdateResult<TurnResponse> syncPlayerUpdate(long gameId, Turn turn, Function<MarsGame, String> stateChecker) {
-        return gameRepository.updateMarsGame(gameId, stateChecker, getSyncGameUpdate(turn));
-    }
-
     private Function<MarsGame, TurnResponse> getAsyncGameUpdate(Turn turn, String playerUuid) {
         return game -> {
-            game.getPlayerByUuid(playerUuid).setNextTurn(turn);
+            Player player = game.getPlayerByUuid(playerUuid);
+            if (player.getNextTurn() != null && player.getNextTurn().expectedAsNextTurn()) {
+                player.removeNextTurn();
+            }
+            player.addNextTurn(turn);
             registerAsyncGameUpdate(game.getId());
             return null;
         };
@@ -95,6 +95,11 @@ public class GameProcessorService {
 
     private Function<MarsGame, TurnResponse> getSyncGameUpdate(Turn turn) {
         return game -> {
+            Player player = game.getPlayerByUuid(turn.getPlayerUuid());
+            if (player.getNextTurn() != null && player.getNextTurn().expectedAsNextTurn()) {
+                player.removeNextTurn();
+            }
+
             boolean oxygenMaxBefore = game.getPlanet().isOxygenMax();
             boolean temperatureMaxBefore = game.getPlanet().isTemperatureMax();
             boolean oceansMaxBefore = game.getPlanet().isOceansMax();
@@ -111,9 +116,9 @@ public class GameProcessorService {
                             || !oceansMaxBefore && oceansMaxAfter)) {
                 game.getPlayerUuidToPlayer()
                         .values()
-                        .stream().filter(player -> !player.getUuid().equals(turn.getPlayerUuid()))
-                        .filter(player -> player.getNextTurn() != null && player.getNextTurn().getType() == TurnType.SKIP_TURN)
-                        .forEach(player -> player.setNextTurn(null));
+                        .stream().filter(p -> !p.getUuid().equals(turn.getPlayerUuid()))
+                        .filter(p -> p.getNextTurn() != null && player.getNextTurn().getType() == TurnType.SKIP_TURN)
+                        .forEach(Player::removeNextTurn);
             }
 
             registerAsyncGameUpdate(game.getId());
@@ -141,7 +146,7 @@ public class GameProcessorService {
 
     private void processNextTurn(Player player, MarsGame game) {
         Turn turnToProcess = player.getNextTurn();
-        player.setNextTurn(null);
+        player.removeNextTurn();
 
         processTurn(turnToProcess, game);
     }
