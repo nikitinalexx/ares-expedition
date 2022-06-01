@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Created by oleksii.nikitin
@@ -42,6 +42,7 @@ class TestTurnSerialization {
         assertEquals(expectedTurn.getProjectId(), actualTurn.getProjectId());
         assertEquals(expectedTurn.getPayments(), actualTurn.getPayments());
         assertEquals(expectedTurn.getInputParams(), actualTurn.getInputParams());
+        assertFalse(expectedTurn.expectedAsNextTurn());
     }
 
     @Test
@@ -64,6 +65,7 @@ class TestTurnSerialization {
         assertEquals(expectedTurn.getProjectId(), actualTurn.getProjectId());
         assertEquals(expectedTurn.getPayments(), actualTurn.getPayments());
         assertEquals(expectedTurn.getInputParams(), actualTurn.getInputParams());
+        assertFalse(expectedTurn.expectedAsNextTurn());
     }
 
     @Test
@@ -72,6 +74,7 @@ class TestTurnSerialization {
         CollectIncomeTurn actualTurn = (CollectIncomeTurn) serializeDeserialize(expectedTurn);
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
+        assertFalse(expectedTurn.expectedAsNextTurn());
     }
 
     @Test
@@ -81,6 +84,7 @@ class TestTurnSerialization {
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
         assertEquals(expectedTurn.getCorporationCardId(), actualTurn.getCorporationCardId());
+        assertFalse(expectedTurn.expectedAsNextTurn());
     }
 
     @Test
@@ -89,6 +93,7 @@ class TestTurnSerialization {
                 "uuid",
                 List.of(1, 2, 3, 4, 5),
                 3,
+                true,
                 true
         );
 
@@ -98,6 +103,7 @@ class TestTurnSerialization {
         assertEquals(expectedTurn.getCards(), actualTurn.getCards());
         assertEquals(expectedTurn.getSize(), actualTurn.getSize());
         assertEquals(expectedTurn.isOnlyFromSelectedCards(), actualTurn.isOnlyFromSelectedCards());
+        assertTrue(expectedTurn.expectedAsNextTurn());
     }
 
     @Test
@@ -106,6 +112,7 @@ class TestTurnSerialization {
         DraftCardsTurn actualTurn = (DraftCardsTurn) serializeDeserialize(expectedTurn);
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
+        assertFalse(expectedTurn.expectedAsNextTurn());
     }
 
     @Test
@@ -115,6 +122,7 @@ class TestTurnSerialization {
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
         assertEquals(expectedTurn.getValue(), actualTurn.getValue());
+        assertFalse(expectedTurn.expectedAsNextTurn());
     }
 
     @Test
@@ -123,6 +131,7 @@ class TestTurnSerialization {
         GameEndConfirmTurn actualTurn = (GameEndConfirmTurn) serializeDeserialize(expectedTurn);
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
+        assertFalse(expectedTurn.expectedAsNextTurn());
     }
 
     @Test
@@ -131,6 +140,7 @@ class TestTurnSerialization {
         IncreaseTemperatureTurn actualTurn = (IncreaseTemperatureTurn) serializeDeserialize(expectedTurn);
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
+        assertFalse(expectedTurn.expectedAsNextTurn());
     }
 
     @Test
@@ -146,6 +156,7 @@ class TestTurnSerialization {
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
         assertEquals(expectedTurn.getProjectId(), actualTurn.getProjectId());
         assertEquals(expectedTurn.getInputParams(), actualTurn.getInputParams());
+        assertFalse(expectedTurn.expectedAsNextTurn());
     }
 
     @Test
@@ -159,6 +170,7 @@ class TestTurnSerialization {
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
         assertEquals(expectedTurn.getPhaseId(), actualTurn.getPhaseId());
+        assertFalse(expectedTurn.expectedAsNextTurn());
     }
 
     @Test
@@ -167,6 +179,7 @@ class TestTurnSerialization {
         PickExtraCardTurn actualTurn = (PickExtraCardTurn) serializeDeserialize(expectedTurn);
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
+        assertFalse(expectedTurn.expectedAsNextTurn());
     }
 
     @Test
@@ -175,6 +188,7 @@ class TestTurnSerialization {
         PlantForestTurn actualTurn = (PlantForestTurn) serializeDeserialize(expectedTurn);
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
+        assertFalse(expectedTurn.expectedAsNextTurn());
     }
 
     @Test
@@ -187,18 +201,7 @@ class TestTurnSerialization {
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
         assertEquals(expectedTurn.getCards(), actualTurn.getCards());
-    }
-
-    @Test
-    void testDiscardDraftedCardsTurn() throws Exception {
-        DiscardDraftedCardsTurn expectedTurn = new DiscardDraftedCardsTurn(
-                "uuid",
-                List.of(100, 101, 102)
-        );
-        DiscardDraftedCardsTurn actualTurn = (DiscardDraftedCardsTurn) serializeDeserialize(expectedTurn);
-
-        assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
-        assertEquals(expectedTurn.getCards(), actualTurn.getCards());
+        assertFalse(expectedTurn.expectedAsNextTurn());
     }
 
     @Test
@@ -211,6 +214,7 @@ class TestTurnSerialization {
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
         assertEquals(expectedTurn.getCards(), actualTurn.getCards());
+        assertFalse(expectedTurn.expectedAsNextTurn());
     }
 
     @Test
@@ -219,6 +223,7 @@ class TestTurnSerialization {
         SkipTurn actualTurn = (SkipTurn) serializeDeserialize(expectedTurn);
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
+        assertFalse(expectedTurn.expectedAsNextTurn());
     }
 
     @Test
@@ -231,6 +236,7 @@ class TestTurnSerialization {
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
         assertEquals(expectedTurn.getProjectType(), actualTurn.getProjectType());
+        assertFalse(expectedTurn.expectedAsNextTurn());
     }
 
     @SuppressWarnings("unchecked")

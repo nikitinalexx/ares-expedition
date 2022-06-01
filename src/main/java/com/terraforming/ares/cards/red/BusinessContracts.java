@@ -50,7 +50,8 @@ public class BusinessContracts implements BaseExpansionRedCard {
                         marsContext.getPlayer().getUuid(),
                         List.of(),
                         2,
-                        false
+                        false,
+                        true
                 )
         );
 

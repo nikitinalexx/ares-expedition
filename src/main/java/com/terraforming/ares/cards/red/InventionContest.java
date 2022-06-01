@@ -53,6 +53,7 @@ public class InventionContest implements BaseExpansionRedCard {
                         marsContext.getPlayer().getUuid(),
                         new ArrayList<>(cards),
                         2,
+                        true,
                         true
                 )
         );

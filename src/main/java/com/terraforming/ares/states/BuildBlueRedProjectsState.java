@@ -21,7 +21,7 @@ public class BuildBlueRedProjectsState extends AbstractState {
     @Override
     public List<TurnType> getPossibleTurns(StateContext stateContext) {
         Player player = marsGame.getPlayerByUuid(stateContext.getPlayerUuid());
-        if (player.getNextTurn() != null && player.getNextTurn().getType().isIntermediate()) {
+        if (player.getNextTurn() != null && stateContext.getTurnTypeService().isIntermediate(player.getNextTurn().getType())) {
             return List.of(player.getNextTurn().getType());
         } else if (player.getNextTurn() != null || (player.getActionsInSecondPhase() == 0 && player.getCanBuildInFirstPhase() == 0)) {
             return List.of();

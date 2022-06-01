@@ -59,10 +59,6 @@ export class GameRepository {
     return this.dataSource.discardCards(playerUuid, cards);
   }
 
-  discardDraftedCards(playerUuid: string, cards: number[]): Observable<any> {
-    return this.dataSource.discardDraftedCards(playerUuid, cards);
-  }
-
   collectIncome(playerUuid: string): Observable<any> {
     return this.dataSource.collectIncome(playerUuid);
   }

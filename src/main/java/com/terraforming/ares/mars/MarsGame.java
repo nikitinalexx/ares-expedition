@@ -1,10 +1,7 @@
 package com.terraforming.ares.mars;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.terraforming.ares.model.Deck;
-import com.terraforming.ares.model.Planet;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.StateType;
+import com.terraforming.ares.model.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -84,29 +81,29 @@ public class MarsGame {
         this.stateType = stateType;
         switch (stateType) {
             case PICK_CORPORATIONS:
-                currentPhase = 7;
+                currentPhase = Constants.PICK_CORPORATIONS_PHASE;
                 break;
             case PICK_PHASE:
                 currentPhase = -1;
                 turns++;
                 break;
             case BUILD_GREEN_PROJECTS:
-                currentPhase = 1;
+                currentPhase = Constants.BUILD_GREEN_PROJECTS_PHASE;
                 break;
             case BUILD_BLUE_RED_PROJECTS:
-                currentPhase = 2;
+                currentPhase = Constants.BUILD_BLUE_RED_PROJECTS_PHASE;
                 break;
             case PERFORM_BLUE_ACTION:
-                currentPhase = 3;
+                currentPhase = Constants.PERFORM_BLUE_ACTION_PHASE;
                 break;
             case COLLECT_INCOME:
-                currentPhase = 4;
+                currentPhase = Constants.COLLECT_INCOME_PHASE;
                 break;
             case DRAFT_CARDS:
-                currentPhase = 5;
+                currentPhase = Constants.DRAFT_CARDS_PHASE;
                 break;
             case SELL_EXTRA_CARDS:
-                currentPhase = 6;
+                currentPhase = Constants.SELL_EXTRA_CARDS_PHASE;
                 break;
             default:
                 currentPhase = -1;

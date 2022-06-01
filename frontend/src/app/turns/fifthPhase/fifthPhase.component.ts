@@ -37,7 +37,7 @@ export class FifthPhaseComponent implements OnInit {
   }
 
   discardCardsTurn(): boolean {
-    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.DISCARD_DRAFTED_CARDS])?.length > 0;
+    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.DISCARD_CARDS])?.length > 0;
   }
 
   getDiscardCards(): Card[] {
@@ -80,7 +80,7 @@ export class FifthPhaseComponent implements OnInit {
               resultArray.push(card.id);
             }
           }
-          this.gameRepository.discardDraftedCards(this.game.player.playerUuid, resultArray).subscribe(
+          this.gameRepository.discardCards(this.game.player.playerUuid, resultArray).subscribe(
             data => {
               this.sendToParent(data);
               this.errorMessage = null;

@@ -29,6 +29,17 @@ public class Constants {
     public static final int ASSET_LIQUIDATION_CARD_ID = 11;
 
 
+    public static final int BUILD_GREEN_PROJECTS_PHASE = 1;
+    public static final int BUILD_BLUE_RED_PROJECTS_PHASE = 2;
+    public static final int PERFORM_BLUE_ACTION_PHASE = 3;
+    public static final int COLLECT_INCOME_PHASE = 4;
+    public static final int DRAFT_CARDS_PHASE = 5;
+    public static final int SELL_EXTRA_CARDS_PHASE = 6;
+    public static final int PICK_CORPORATIONS_PHASE = 7;
+
+
+
+
     private Constants() {}
 
 }

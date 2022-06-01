@@ -6,39 +6,23 @@ import lombok.Getter;
  * Created by oleksii.nikitin
  * Creation date 25.04.2022
  */
-@Getter
 public enum TurnType {
-    PICK_CORPORATION(true),
-    PICK_PHASE(true),
-    BUILD_GREEN_PROJECT(true),
-    SELL_CARDS(false),
-    SELL_CARDS_LAST_ROUND(true),
-    SKIP_TURN(true),
-    BUILD_BLUE_RED_PROJECT(true),
-    PERFORM_BLUE_ACTION(false),
-    COLLECT_INCOME(true),
-    DRAFT_CARDS(true),
-    PICK_EXTRA_CARD(true),
-    PLANT_FOREST(false),
-    INCREASE_TEMPERATURE(false),
-    STANDARD_PROJECT(false),
-    EXCHANGE_HEAT(false),
-    DISCARD_CARDS(false, true),
-    DISCARD_DRAFTED_CARDS(true, true),
-    GAME_END_CONFIRM(true),
-    GAME_END(true);
-
-    private final boolean isTerminal;
-    private final boolean isIntermediate;
-
-    TurnType(boolean isTerminal) {
-        this.isTerminal = isTerminal;
-        this.isIntermediate = false;
-    }
-
-    TurnType(boolean isTerminal, boolean isIntermediate) {
-        this.isTerminal = isTerminal;
-        this.isIntermediate = isIntermediate;
-    }
-
+    PICK_CORPORATION,
+    PICK_PHASE,
+    BUILD_GREEN_PROJECT,
+    SELL_CARDS,
+    SELL_CARDS_LAST_ROUND,
+    SKIP_TURN,
+    BUILD_BLUE_RED_PROJECT,
+    PERFORM_BLUE_ACTION,
+    COLLECT_INCOME,
+    DRAFT_CARDS,
+    PICK_EXTRA_CARD,
+    PLANT_FOREST,
+    INCREASE_TEMPERATURE,
+    STANDARD_PROJECT,
+    EXCHANGE_HEAT,
+    DISCARD_CARDS,
+    GAME_END_CONFIRM,
+    GAME_END
 }

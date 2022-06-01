@@ -78,7 +78,7 @@ export class PickCorporationComponent implements OnInit {
   }
 
   discardCardsTurn(): boolean {
-    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.DISCARD_DRAFTED_CARDS])?.length > 0;
+    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.DISCARD_CARDS])?.length > 0;
   }
 
   getDiscardCards(): Card[] {
@@ -107,7 +107,7 @@ export class PickCorporationComponent implements OnInit {
         if (!this.projectsToDiscard || this.projectsToDiscard.length !== this.game.player.nextTurn.size) {
           this.errorMessage = 'Invalid number of cards to discard';
         } else {
-          this.gameRepository.discardDraftedCards(this.game.player.playerUuid, this.projectsToDiscard).subscribe(
+          this.gameRepository.discardCards(this.game.player.playerUuid, this.projectsToDiscard).subscribe(
             data => {
               this.sendToParent(data);
               this.errorMessage = null;

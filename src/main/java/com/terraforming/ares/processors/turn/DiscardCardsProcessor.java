@@ -22,8 +22,6 @@ public class DiscardCardsProcessor implements TurnProcessor<DiscardCardsTurn> {
 
         player.getHand().removeCards(turn.getCards());
 
-        player.setNextTurn(null);
-
         return null;
     }
 

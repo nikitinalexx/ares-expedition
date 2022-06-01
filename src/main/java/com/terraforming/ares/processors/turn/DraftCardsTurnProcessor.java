@@ -69,6 +69,7 @@ public class DraftCardsTurnProcessor implements TurnProcessor<DraftCardsTurn> {
                         player.getUuid(),
                         draftedCards,
                         cardsToDraft - cardsToTake,
+                        true,
                         true
                 )
         );

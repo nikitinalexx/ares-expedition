@@ -40,7 +40,8 @@ public class ZetacellCorporation implements CorporationCard {
                         player.getUuid(),
                         List.of(),
                         4,
-                        false
+                        false,
+                        true
                 )
         );
         return null;

@@ -46,7 +46,8 @@ public class Microprocessors implements BaseExpansionGreenCard {
                         player.getUuid(),
                         List.of(),
                         1,
-                        false
+                        false,
+                        true
                 )
         );
 

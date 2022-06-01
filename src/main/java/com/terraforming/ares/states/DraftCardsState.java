@@ -19,8 +19,8 @@ public class DraftCardsState extends AbstractState {
 
     public List<TurnType> getPossibleTurns(StateContext stateContext) {
         Player player = marsGame.getPlayerByUuid(stateContext.getPlayerUuid());
-        if (player.getNextTurn() != null && player.getNextTurn().getType() == TurnType.DISCARD_CARDS) {
-            return List.of(TurnType.DISCARD_DRAFTED_CARDS);
+        if (player.getNextTurn() != null && player.getNextTurn().expectedAsNextTurn()) {
+            return List.of(player.getNextTurn().getType());
         } else {
             return List.of();
         }

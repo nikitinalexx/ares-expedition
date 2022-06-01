@@ -35,6 +35,8 @@ public class TurnService {
     private final StandardProjectService standardProjectService;
     private final CardService cardService;
     private final PaymentValidationService paymentValidationService;
+    private final StateContextProvider stateContextProvider;
+    private final TurnTypeService turnTypeService;
 
     public void chooseCorporationTurn(ChooseCorporationRequest chooseCorporationRequest) {
         String playerUuid = chooseCorporationRequest.getPlayerUuid();
@@ -233,7 +235,7 @@ public class TurnService {
         );
     }
 
-    public TurnResponse discardCards(Turn turn, String playerUuid, List<Integer> cards, boolean sync) {
+    public TurnResponse discardCards(Turn turn, String playerUuid, List<Integer> cards) {
         Function<MarsGame, String> verifier = game -> {
             Player player = game.getPlayerByUuid(playerUuid);
 
@@ -262,7 +264,7 @@ public class TurnService {
             return null;
         };
 
-        return performTurn(turn, playerUuid, verifier, game -> sync);
+        return performTurn(turn, playerUuid, verifier, game -> !turnTypeService.isTerminal(turn.getType(), game));
     }
 
     public TurnResponse buildGreenProjectCard(String playerUuid, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
@@ -315,7 +317,7 @@ public class TurnService {
                 turn,
                 playerUuid,
                 game -> {
-                    if (!stateFactory.getCurrentState(game).getPossibleTurns(new StateContext(playerUuid, paymentValidationService)).contains(turn.getType())) {
+                    if (!stateFactory.getCurrentState(game).getPossibleTurns(stateContextProvider.createStateContext(playerUuid)).contains(turn.getType())) {
                         return "Incorrect game state for a turn " + turn.getType();
                     }
 

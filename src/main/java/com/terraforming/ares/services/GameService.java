@@ -6,7 +6,6 @@ import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.GameParameters;
 import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.StateContext;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.repositories.caching.CachingGameRepository;
 import com.terraforming.ares.states.State;
@@ -25,7 +24,7 @@ public class GameService {
     private final GameFactory gameFactory;
     private final CachingGameRepository gameRepository;
     private final StateFactory stateFactory;
-    private final PaymentValidationService paymentValidationService;
+    private final StateContextProvider stateContextProvider;
 
     public MarsGame startNewGame(GameParameters gameParameters) {
         MarsGame game = gameFactory.createMarsGame(gameParameters);
@@ -45,14 +44,14 @@ public class GameService {
 
         ActionsDto.ActionsDtoBuilder builder = ActionsDto.builder();
 
-        builder.playersToNextAction(playerUuid, currentState.nextAction(new StateContext(playerUuid, paymentValidationService)).name());
+        builder.playersToNextAction(playerUuid, currentState.nextAction(stateContextProvider.createStateContext(playerUuid)).name());
 
         game.getPlayerUuidToPlayer()
                 .values()
                 .stream()
                 .map(Player::getUuid)
                 .filter(uuid -> !uuid.equals(playerUuid))
-                .forEach(uuid -> builder.playersToNextAction(uuid, currentState.nextAction(new StateContext(uuid, paymentValidationService)).name()));
+                .forEach(uuid -> builder.playersToNextAction(uuid, currentState.nextAction(stateContextProvider.createStateContext(uuid)).name()));
 
         return builder.build();
     }
@@ -60,7 +59,7 @@ public class GameService {
     public List<TurnType> getPossibleTurns(String playerUuid) {
         MarsGame game = gameRepository.getGameByPlayerUuid(playerUuid);
 
-        return stateFactory.getCurrentState(game).getPossibleTurns(new StateContext(playerUuid, paymentValidationService));
+        return stateFactory.getCurrentState(game).getPossibleTurns(stateContextProvider.createStateContext(playerUuid));
     }
 
 }
