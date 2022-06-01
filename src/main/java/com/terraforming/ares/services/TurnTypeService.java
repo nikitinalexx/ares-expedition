@@ -42,10 +42,6 @@ public class TurnTypeService {
     }
 
     public boolean isIntermediate(TurnType turnType) {
-        if (TurnType.DISCARD_CARDS == turnType) {
-            return true;
-        }
-
-        return false;
+        return TurnType.DISCARD_CARDS == turnType;
     }
 }
