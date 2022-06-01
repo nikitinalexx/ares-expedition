@@ -64,7 +64,7 @@ public class LightningHarvest implements BaseExpansionGreenCard {
 
     @Override
     public void revertPlayedTags(CardService cardService, List<Tag> tags, Player player) {
-        int scienceTagCount = (int) tags.stream().map(Tag.SCIENCE::equals).count();
+        int scienceTagCount = (int) tags.stream().filter(Tag.SCIENCE::equals).count();
         player.setMcIncome(player.getMcIncome() - scienceTagCount);
     }
 

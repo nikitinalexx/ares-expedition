@@ -62,7 +62,7 @@ public class AtmosphericInsulators implements BaseExpansionGreenCard {
 
     @Override
     public void revertPlayedTags(CardService cardService, List<Tag> tags, Player player) {
-        int earthTagCount = (int) tags.stream().map(Tag.EARTH::equals).count();
+        int earthTagCount = (int) tags.stream().filter(Tag.EARTH::equals).count();
         player.setHeatIncome(player.getHeatIncome() - earthTagCount);
     }
 

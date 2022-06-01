@@ -57,7 +57,7 @@ public class SatelliteFarms implements BaseExpansionGreenCard {
 
     @Override
     public void revertPlayedTags(CardService cardService, List<Tag> tags, Player player) {
-        int spaceTagCount = (int) tags.stream().map(Tag.SPACE::equals).count();
+        int spaceTagCount = (int) tags.stream().filter(Tag.SPACE::equals).count();
         player.setHeatIncome(player.getHeatIncome() - spaceTagCount);
     }
 

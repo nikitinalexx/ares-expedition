@@ -64,7 +64,7 @@ public class PowerGrid implements BaseExpansionGreenCard {
 
     @Override
     public void revertPlayedTags(CardService cardService, List<Tag> tags, Player player) {
-        int energyTagCount = (int) tags.stream().map(Tag.ENERGY::equals).count();
+        int energyTagCount = (int) tags.stream().filter(Tag.ENERGY::equals).count();
         player.setMcIncome(player.getMcIncome() - energyTagCount);
     }
 

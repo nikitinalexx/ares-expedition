@@ -82,7 +82,7 @@ public class MedicalLab implements BaseExpansionGreenCard {
                 .filter(Tag.BUILDING::equals).count();
 
         int buildingTagCountAfter = buildingTagCountBefore -
-                (int) tags.stream().map(Tag.BUILDING::equals).count();
+                (int) tags.stream().filter(Tag.BUILDING::equals).count();
 
         int mcIncomeDifference = (buildingTagCountBefore / 2) - (buildingTagCountAfter / 2);
 
