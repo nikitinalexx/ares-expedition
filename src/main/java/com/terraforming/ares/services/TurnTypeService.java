@@ -34,12 +34,8 @@ public class TurnTypeService {
             case EXCHANGE_HEAT:
                 return false;
             case DISCARD_CARDS:
-                if (game.getCurrentPhase() == Constants.PICK_CORPORATIONS_PHASE ||
-                        game.getCurrentPhase() == Constants.DRAFT_CARDS_PHASE) {
-                    return true;
-                } else {
-                    return false;
-                }
+                return game.getCurrentPhase() == Constants.PICK_CORPORATIONS_PHASE ||
+                        game.getCurrentPhase() == Constants.DRAFT_CARDS_PHASE;
             default:
                 throw new IllegalStateException("Unknown turn type " + turnType);
         }

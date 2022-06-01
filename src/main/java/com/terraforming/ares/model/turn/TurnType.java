@@ -1,7 +1,5 @@
 package com.terraforming.ares.model.turn;
 
-import lombok.Getter;
-
 /**
  * Created by oleksii.nikitin
  * Creation date 25.04.2022
