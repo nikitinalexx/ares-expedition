@@ -38,8 +38,6 @@ public class MarsGame {
         this.corporationsDeck = corporationsDeck;
         this.planet = planet;
 
-        setStateType(StateType.PICK_CORPORATIONS);
-
         playerUuidToPlayer = playerNames.stream().map(playerName ->
                 Player.builder()
                         .uuid(UUID.randomUUID().toString())
@@ -50,6 +48,8 @@ public class MarsGame {
                         .played(Deck.builder().build())
                         .build()).collect(Collectors.toMap(Player::getUuid, Function.identity())
         );
+
+        setStateType(StateType.PICK_CORPORATIONS);
     }
 
     public Player getPlayerByUuid(String playerUuid) {
@@ -78,6 +78,8 @@ public class MarsGame {
     }
 
     public void setStateType(StateType stateType) {
+        playerUuidToPlayer.values().forEach(Player::clearPhaseResults);
+
         this.stateType = stateType;
         switch (stateType) {
             case PICK_CORPORATIONS:

@@ -147,4 +147,17 @@ public class Player {
         didUnmiAction = false;
     }
 
+    public void clearPhaseResults() {
+        hasUnmiAction = false;
+        didUnmiAction = false;
+
+        builtSpecialDesignLastTurn = false;
+        builtWorkCrewsLastTurn = false;
+        canBuildAnotherGreenWith9Discount = false;
+        assortedEnterprisesDiscount = false;
+        selfReplicatingDiscount = false;
+        mayNiDiscount = false;
+        assortedEnterprisesGreenAvailable = false;
+    }
+
 }
