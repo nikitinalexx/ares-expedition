@@ -43,6 +43,10 @@ export class GameRepository {
     return this.dataSource.pickCard(playerUuid);
   }
 
+  raiseUnmiRt(playerUuid: string): Observable<any> {
+    return this.dataSource.raiseUnmiRt(playerUuid);
+  }
+
   /*
   sellCards(playerUuid: string, cards: number[]): Observable<any> {
     return this.dataSource.sellCards(playerUuid, cards);

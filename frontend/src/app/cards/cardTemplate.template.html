@@ -66,6 +66,18 @@
       </div>
     </div>
 
+    <div *ngIf="isUnmiCorporation(card)">
+      <div class="corporationEffectBoxLabel">EFFECT</div>
+
+      +<div class="rating tile "></div>:
+      <div class=" money resource ">6</div>
+      : 1 <div class="rating tile "></div>
+
+      <div class="description" style="text-align:center;margin-top:0px;">
+        (Effect: When you first raise RT during the phase, you may spend 6 MC to get 1 extra RT.)
+      </div>
+    </div>
+
     <div *ngIf="isLaunchStarCorporation(card)">
       <div class="corporationEffectBoxLabel">EFFECT</div>
 
@@ -258,6 +270,17 @@
     <div class="resource money" style="margin-left:96px;">50</div>
     <div class="description" style="text-align:right; margin-left: 54px;">
       (You start with 50 MC.)
+    </div>
+  </div>
+
+  <div *ngIf="isUnmiCorporation(card)">
+    <div class="corporation-name">
+      unmi
+    </div>
+    <br/>
+    <div class="resource money" style="margin-left:96px;">35</div>
+    <div class="description" style="text-align:right; margin-left: 54px;">
+      (You start with 35 MC.)
     </div>
   </div>
 

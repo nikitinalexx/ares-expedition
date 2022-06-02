@@ -59,9 +59,14 @@ public class PerformBlueActionState extends AbstractState {
                     turns.add(TurnType.INCREASE_TEMPERATURE);
                 }
             }
+
             if (marsGame.gameEndCondition()) {
                 turns.remove(TurnType.SKIP_TURN);
                 turns.add(TurnType.GAME_END_CONFIRM);
+            }
+
+            if (player.isUnmiCorporation() && player.isHasUnmiAction()) {
+                turns.add(TurnType.UNMI_RT);
             }
 
             return turns;

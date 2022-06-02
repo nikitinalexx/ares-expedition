@@ -73,6 +73,10 @@ export class FirstPhaseComponent implements OnInit {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.DISCARD_CARDS])?.length > 0;
   }
 
+  unmiRtTurn(): boolean {
+    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.UNMI_RT])?.length > 0;
+  }
+
   getDiscardCards(): Card[] {
     const nextTurn = this.game.player.nextTurn as DiscardCardsTurn;
     if (nextTurn.onlyFromSelectedCards) {
@@ -132,6 +136,10 @@ export class FirstPhaseComponent implements OnInit {
             }
           );
         }
+      } else if (formGroup.value.turn === 'unmiRaiseRt') {
+        this.gameRepository.raiseUnmiRt(this.game.player.playerUuid).subscribe(
+          data => this.sendToParent(data)
+        );
       } else if (formGroup.value.turn === 'skipTurn') {
         this.gameRepository.skipTurn(this.game.player.playerUuid).subscribe(
           data => this.sendToParent(data)

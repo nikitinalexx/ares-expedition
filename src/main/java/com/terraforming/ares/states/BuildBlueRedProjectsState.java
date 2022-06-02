@@ -23,7 +23,12 @@ public class BuildBlueRedProjectsState extends AbstractState {
         Player player = marsGame.getPlayerByUuid(stateContext.getPlayerUuid());
         if (player.getNextTurn() != null && stateContext.getTurnTypeService().isIntermediate(player.getNextTurn().getType())) {
             return List.of(player.getNextTurn().getType());
-        } else if (player.getNextTurn() != null || (player.getActionsInSecondPhase() == 0 && player.getCanBuildInFirstPhase() == 0)) {
+        } else if (player.getNextTurn() != null) {
+            return List.of();
+        } else if ((player.getActionsInSecondPhase() == 0 && player.getCanBuildInFirstPhase() == 0)) {
+            if (player.isUnmiCorporation() && player.isHasUnmiAction()) {
+                return List.of(TurnType.UNMI_RT, TurnType.SKIP_TURN);
+            }
             return List.of();
         } else {
             List<TurnType> actions = new ArrayList<>(List.of(
@@ -39,6 +44,9 @@ public class BuildBlueRedProjectsState extends AbstractState {
             if (player.getActionsInSecondPhase() > 0) {
                 actions.add(TurnType.BUILD_BLUE_RED_PROJECT);
             }
+            if (player.isUnmiCorporation() && player.isHasUnmiAction()) {
+                actions.add(TurnType.UNMI_RT);
+            }
             return actions;
         }
     }
@@ -46,7 +54,10 @@ public class BuildBlueRedProjectsState extends AbstractState {
     @Override
     public void updateState() {
         if (marsGame.getPlayerUuidToPlayer().values().stream().allMatch(
-                player -> player.getActionsInSecondPhase() == 0 && player.getCanBuildInFirstPhase() == 0 && player.getNextTurn() == null
+                player -> player.getActionsInSecondPhase() == 0
+                        && player.getCanBuildInFirstPhase() == 0
+                        && player.getNextTurn() == null
+                        && !player.isHasUnmiAction()
         )) {
             performStateTransferFromPhase(3);
         }

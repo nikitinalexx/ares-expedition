@@ -49,6 +49,9 @@ public class Player {
     private boolean assortedEnterprisesGreenAvailable;
     private boolean selfReplicatingDiscount;
     private boolean mayNiDiscount;
+    private boolean unmiCorporation;
+    private boolean hasUnmiAction;
+    private boolean didUnmiAction;
 
     private boolean confirmedGameEndThirdPhase;
 
@@ -57,6 +60,13 @@ public class Player {
     private Integer chosenPhase = -1;
 
     private List<Turn> nextTurns;
+
+    public void setTerraformingRating(int terraformingRating) {
+        if (terraformingRating > this.terraformingRating && unmiCorporation && !didUnmiAction) {
+            hasUnmiAction = true;
+        }
+        this.terraformingRating = terraformingRating;
+    }
 
     public void addNextTurn(Turn turn) {
         if (CollectionUtils.isEmpty(nextTurns)) {
@@ -133,6 +143,8 @@ public class Player {
         selfReplicatingDiscount = false;
         mayNiDiscount = false;
         assortedEnterprisesGreenAvailable = false;
+        hasUnmiAction = false;
+        didUnmiAction = false;
     }
 
 }

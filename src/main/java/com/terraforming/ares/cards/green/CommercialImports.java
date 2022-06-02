@@ -2,6 +2,7 @@ package com.terraforming.ares.cards.green;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.MarsContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.income.Gain;
@@ -43,6 +44,12 @@ public class CommercialImports implements BaseExpansionGreenCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
+        Player player = marsContext.getPlayer();
+
+        player.setCardIncome(player.getCardIncome() + 1);
+        player.setHeatIncome(player.getHeatIncome() + 2);
+        player.setPlantsIncome(player.getPlantsIncome() + 2);
+
         return null;
     }
 

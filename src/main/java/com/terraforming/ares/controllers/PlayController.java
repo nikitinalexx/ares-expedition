@@ -101,6 +101,11 @@ public class PlayController {
         );
     }
 
+    @PostMapping("/turn/unmi/rt")
+    public TurnResponse unmiRtCorporationTurn(@RequestBody PlayerUuidRequest playerUuidRequest) {
+        return turnService.unmiRtCorporationTurn(playerUuidRequest.getPlayerUuid());
+    }
+
     @PostMapping("/turn/collect-income")
     public void collectIncome(@RequestBody PlayerUuidRequest playerUuidRequest) {
         turnService.collectIncomeTurn(playerUuidRequest.getPlayerUuid());

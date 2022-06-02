@@ -32,6 +32,7 @@ public class TurnTypeService {
             case INCREASE_TEMPERATURE:
             case STANDARD_PROJECT:
             case EXCHANGE_HEAT:
+            case UNMI_RT:
                 return false;
             case DISCARD_CARDS:
                 return game.getCurrentPhase() == Constants.PICK_CORPORATIONS_PHASE ||

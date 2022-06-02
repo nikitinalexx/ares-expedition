@@ -135,6 +135,15 @@ class TestTurnSerialization {
     }
 
     @Test
+    void testUnmiRtTurn() throws Exception {
+        UnmiRtTurn expectedTurn = new UnmiRtTurn("uuid");
+        UnmiRtTurn actualTurn = (UnmiRtTurn) serializeDeserialize(expectedTurn);
+
+        assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
+        assertFalse(expectedTurn.expectedAsNextTurn());
+    }
+
+    @Test
     void testIncreaseTemperatureTurn() throws Exception {
         IncreaseTemperatureTurn expectedTurn = new IncreaseTemperatureTurn("uuid");
         IncreaseTemperatureTurn actualTurn = (IncreaseTemperatureTurn) serializeDeserialize(expectedTurn);

@@ -95,6 +95,10 @@ export class ThirdPhaseComponent implements OnInit {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.SELL_CARDS])?.length > 0;
   }
 
+  unmiRtTurn(): boolean {
+    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.UNMI_RT])?.length > 0;
+  }
+
   skipTurn(): boolean {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.SKIP_TURN])?.length > 0;
   }
@@ -349,6 +353,10 @@ export class ThirdPhaseComponent implements OnInit {
           data => this.sendToParent(data), error => {
             this.sendToParent(null);
           }
+        );
+      } else if (formGroup.value.turn === 'unmiRaiseRt') {
+        this.gameRepository.raiseUnmiRt(this.game.player.playerUuid).subscribe(
+          data => this.sendToParent(data)
         );
       } else if (formGroup.value.turn === 'sellCards') {
         this.sellCardsService.sellCards(this.game, data => this.sendToParent(data));

@@ -267,6 +267,23 @@ public class TurnService {
         return performTurn(turn, playerUuid, verifier, game -> !turnTypeService.isTerminal(turn.getType(), game));
     }
 
+    public TurnResponse unmiRtCorporationTurn(String playerUuid) {
+        return performTurn(
+                new UnmiRtTurn(playerUuid),
+                playerUuid,
+                game -> {
+                    Player player = game.getPlayerByUuid(playerUuid);
+
+                    if (player.getMc() < 6) {
+                        return "Not enough MC to perform the action";
+                    }
+
+                    return null;
+                },
+                game -> !turnTypeService.isTerminal(TurnType.UNMI_RT, game)
+        );
+    }
+
     public TurnResponse buildGreenProjectCard(String playerUuid, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
         return performTurn(
                 new BuildGreenProjectTurn(playerUuid, projectId, payments, inputParams),

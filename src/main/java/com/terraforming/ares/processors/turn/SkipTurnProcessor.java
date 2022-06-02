@@ -44,6 +44,8 @@ public class SkipTurnProcessor implements TurnProcessor<SkipTurn> {
         player.setSelfReplicatingDiscount(false);
         player.setMayNiDiscount(false);
         player.setAssortedEnterprisesGreenAvailable(false);
+        player.setHasUnmiAction(false);
+        player.setDidUnmiAction(false);
 
         return null;
     }

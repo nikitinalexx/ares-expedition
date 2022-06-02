@@ -26,6 +26,12 @@
     <app-sell-cards [game]="game" [parentForm]="parentForm"></app-sell-cards>
   </div>
 
+  <div *ngIf="unmiRtTurn()" class="form-check">
+    <input id="unmiRtTurn" (click)="resetAllInputs()" type="radio" class="form-check-input" value="unmiRaiseRt"
+           formControlName="turn">
+    <label class="custom-control-label text-white" for="unmiRtTurn">UNMI raise RT (6MC)</label>
+  </div>
+
   <div *ngIf="skipTurn()" class="form-check">
     <input id="skipTurn" (click)="resetAllInputs()" type="radio" class="form-check-input" value="skipTurn"
            formControlName="turn">

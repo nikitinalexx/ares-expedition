@@ -22,5 +22,6 @@ public enum TurnType {
     EXCHANGE_HEAT,
     DISCARD_CARDS,
     GAME_END_CONFIRM,
-    GAME_END
+    GAME_END,
+    UNMI_RT
 }
