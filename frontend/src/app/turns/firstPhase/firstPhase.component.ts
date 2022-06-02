@@ -124,6 +124,7 @@ export class FirstPhaseComponent implements OnInit {
             data => {
               this.sendToParent(data);
               this.selectedProject = null;
+              this.projectsToDiscard = [];
               this.errorMessage = null;
             },
             error => {

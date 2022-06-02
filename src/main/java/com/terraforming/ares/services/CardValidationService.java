@@ -75,10 +75,13 @@ public class CardValidationService {
 
     private Optional<String> validateCustomCards(Card card, Player player) {
         boolean canBuildAnotherGreenWith9Discount = player.isCanBuildAnotherGreenWith9Discount();
+        boolean mayNiDiscount = player.isMayNiDiscount();
 
         return Optional.ofNullable(
                 card.getColor() == CardColor.GREEN && canBuildAnotherGreenWith9Discount && card.getPrice() >= 10 ? "You may only build a card with a price of 9 or less" : null
-        );
+        ).or(() -> Optional.ofNullable(
+                mayNiDiscount && card.getPrice() > 12 ? "You may only build a card with a price of 12 or less" : null
+        ));
     }
 
     @SuppressWarnings("unchecked")

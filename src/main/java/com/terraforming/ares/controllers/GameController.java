@@ -185,6 +185,7 @@ public class GameController {
                 .canBuildAnotherGreenWith9Discount(player.isCanBuildAnotherGreenWith9Discount())
                 .assortedEnterprisesDiscount(player.isAssortedEnterprisesDiscount())
                 .selfReplicatingDiscount(player.isSelfReplicatingDiscount())
+                .mayNiDiscount(player.isMayNiDiscount())
                 .build();
     }
 

@@ -96,6 +96,10 @@ export class DiscountComponent {
       discount += 25;
     }
 
+    if (player.mayNiDiscount) {
+      discount += 12;
+    }
+
     return Math.min(card.price, discount);
   }
 

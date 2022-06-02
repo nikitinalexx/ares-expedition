@@ -48,11 +48,13 @@ public class Player {
     private boolean assortedEnterprisesDiscount;
     private boolean assortedEnterprisesGreenAvailable;
     private boolean selfReplicatingDiscount;
+    private boolean mayNiDiscount;
 
     private boolean confirmedGameEndThirdPhase;
 
     private Integer previousChosenPhase;
-    private Integer chosenPhase;
+    @Builder.Default
+    private Integer chosenPhase = -1;
 
     private List<Turn> nextTurns;
 
@@ -61,6 +63,13 @@ public class Player {
             nextTurns = new LinkedList<>();
         }
         nextTurns.add(turn);
+    }
+
+    public void addFirstTurn(Turn turn) {
+        if (CollectionUtils.isEmpty(nextTurns)) {
+            nextTurns = new LinkedList<>();
+        }
+        nextTurns.add(0, turn);
     }
 
     @JsonIgnore//todo is it needed
@@ -122,6 +131,7 @@ public class Player {
         pickedCardInSecondPhase = false;
         assortedEnterprisesDiscount = false;
         selfReplicatingDiscount = false;
+        mayNiDiscount = false;
         assortedEnterprisesGreenAvailable = false;
     }
 

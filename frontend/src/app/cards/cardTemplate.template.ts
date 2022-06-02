@@ -645,6 +645,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.INVENTRIX_CORPORATION;
   }
 
+  isMayNiProductionsCorporation(card: Card): boolean {
+    return card.cardAction === CardAction.MAY_NI_PRODUCTIONS_CORPORATION;
+  }
+
   isThorgateCorporation(card: Card): boolean {
     return card.cardAction === CardAction.THORGATE_CORPORATION;
   }

@@ -1,10 +1,13 @@
-import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
+import {Component, EventEmitter, Input, OnInit, Output, ViewChild} from '@angular/core';
 import {Game} from '../../data/Game';
 import {Card} from '../../data/Card';
 import {GameRepository} from '../../model/gameRepository.model';
 import {FormBuilder, FormGroup, Validators} from "@angular/forms";
 import {TurnType} from "../../data/TurnType";
 import {DiscardCardsTurn} from "../../data/DiscardCardsTurn";
+import {CardColor} from "../../data/CardColor";
+import {BuildGreenComponent} from "../greenProject/buildGreen.component";
+import {BuildBlueRedComponent} from "../blueProject/buildBlueRed.component";
 
 @Component({
   selector: 'app-pick-corporation',
@@ -15,6 +18,8 @@ export class PickCorporationComponent implements OnInit {
   public errorMessage: string;
   projectsToDiscard: number[];
 
+  @ViewChild(BuildGreenComponent) buildGreenService;
+  @ViewChild(BuildBlueRedComponent) buildBlueRedService;
   parentForm: FormGroup;
 
 
@@ -31,7 +36,21 @@ export class PickCorporationComponent implements OnInit {
 
   ngOnInit() {
     this.parentForm = this.formBuilder.group({
-      turn: ['pickCorporation', Validators.required]
+      turn: ['pickCorporation', Validators.required],
+
+      // build green-blue-red projects params
+      mcPrice: [''],
+      heatPrice: 0,
+      onBuildMicrobeEffectChoice: ['chooseMicrobe'],
+      onBuildAnimalEffectChoice: ['chooseAnimal'],
+      anaerobicMicroorganisms: [false],
+      marsUniversityDiscardLess: [false],
+      takeMicrobes: 0,
+      takeCards: 0,
+      restructuredResources: [false],
+      viralEnhancersPlantInput: 0,
+      importedHydrogenForm: 'plants',
+      largeConvoyForm: 'plants'
     });
 
     if (this.discardCardsTurn()) {
@@ -81,6 +100,31 @@ export class PickCorporationComponent implements OnInit {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.DISCARD_CARDS])?.length > 0;
   }
 
+  buildBlueRedProjectTurn(): boolean {
+    return this.nextTurns
+      && this.nextTurns.find(turn => turn === TurnType[TurnType.BUILD_BLUE_RED_PROJECT])?.length > 0
+      && this.game.player.hand.some(card => card.cardColor === CardColor.BLUE || card.cardColor === CardColor.RED);
+  }
+
+  buildGreenProjectTurn(): boolean {
+    return this.nextTurns
+      && this.nextTurns.find(turn => turn === TurnType[TurnType.BUILD_GREEN_PROJECT])?.length > 0
+      && this.game.player.hand.some(card => card.cardColor === CardColor.GREEN);
+  }
+
+  skipTurn(): boolean {
+    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.SKIP_TURN])?.length > 0;
+  }
+
+  resetAllInputs() {
+    if (this.buildGreenService) {
+      this.buildGreenService.resetAllInputs();
+    }
+    if (this.buildBlueRedService) {
+      this.buildBlueRedService.resetAllInputs();
+    }
+  }
+
   getDiscardCards(): Card[] {
     const nextTurn = this.game.player.nextTurn as DiscardCardsTurn;
     if (nextTurn.onlyFromSelectedCards) {
@@ -110,6 +154,7 @@ export class PickCorporationComponent implements OnInit {
           this.gameRepository.discardCards(this.game.player.playerUuid, this.projectsToDiscard).subscribe(
             data => {
               this.sendToParent(data);
+              this.projectsToDiscard = [];
               this.errorMessage = null;
             },
             error => {
@@ -117,6 +162,14 @@ export class PickCorporationComponent implements OnInit {
             }
           );
         }
+      } else if (formGroup.value.turn === 'greenProject' && formGroup.value.mcPrice !== null) {
+        this.buildGreenService.buildGreenProject(data => this.sendToParent(data));
+      } else if (formGroup.value.turn === 'blueRedProject' && formGroup.value.mcPrice !== null) {
+        this.buildBlueRedService.buildBlueRedProject(data => this.sendToParent(data));
+      } else if (formGroup.value.turn === 'skipTurn') {
+        this.gameRepository.skipTurn(this.game.player.playerUuid).subscribe(
+          data => this.sendToParent(data)
+        );
       }
     }
   }

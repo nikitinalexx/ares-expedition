@@ -264,7 +264,8 @@ public class CardFactory {
                 new SaturnSystemsCorporation(10011),
                 new ZetacellCorporation(10012),
                 new EcolineCorporation(10013),
-                new Inventrix(10014)
+                new Inventrix(10014),
+                new MayNiProductionsCorporation(10015)
         );
 
 

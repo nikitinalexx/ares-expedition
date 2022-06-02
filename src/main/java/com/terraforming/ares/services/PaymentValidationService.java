@@ -155,6 +155,10 @@ public class PaymentValidationService {
             discount += 25;
         }
 
+        if (player.isMayNiDiscount()) {
+            discount += 12;
+        }
+
         return discount;
     }
 }

@@ -1,6 +1,7 @@
 package com.terraforming.ares.processors.turn;
 
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.BuildBlueRedProjectTurn;
 import com.terraforming.ares.model.turn.TurnType;
@@ -27,6 +28,7 @@ public class BuildBlueRedProjectProcessor extends GenericBuildProjectProcessor<B
         player.setBuiltWorkCrewsLastTurn(false);
         player.setAssortedEnterprisesDiscount(false);
         player.setSelfReplicatingDiscount(false);
+        player.setMayNiDiscount(false);
 
         if (game.getCurrentPhase() == 3) {
             player.setAssortedEnterprisesGreenAvailable(false);
@@ -43,7 +45,9 @@ public class BuildBlueRedProjectProcessor extends GenericBuildProjectProcessor<B
 
         player.setActionsInSecondPhase(player.getActionsInSecondPhase() - 1);
 
-        if (game.getCurrentPhase() == 3 && player.getCanBuildInFirstPhase() > 0) {
+        if ((game.getCurrentPhase() == Constants.PERFORM_BLUE_ACTION_PHASE
+                || game.getCurrentPhase() == Constants.PICK_CORPORATIONS_PHASE)
+                && player.getCanBuildInFirstPhase() > 0) {
             player.setCanBuildInFirstPhase(player.getCanBuildInFirstPhase() - 1);
         }
     }

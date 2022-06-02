@@ -1,6 +1,7 @@
 package com.terraforming.ares.processors.turn;
 
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.turn.SkipTurn;
@@ -28,9 +29,12 @@ public class SkipTurnProcessor implements TurnProcessor<SkipTurn> {
 
         if (currentPhase == 1) {
             player.setCanBuildInFirstPhase(0);
-        } else if (currentPhase == 2) {
+        } else if (currentPhase == Constants.BUILD_BLUE_RED_PROJECTS_PHASE
+                || currentPhase == Constants.PERFORM_BLUE_ACTION_PHASE
+                || currentPhase == Constants.PICK_CORPORATIONS_PHASE) {
             player.setActionsInSecondPhase(0);
             player.setPickedCardInSecondPhase(true);
+            player.setCanBuildInFirstPhase(0);
         }
 
         player.setBuiltSpecialDesignLastTurn(false);
@@ -38,6 +42,7 @@ public class SkipTurnProcessor implements TurnProcessor<SkipTurn> {
         player.setCanBuildAnotherGreenWith9Discount(false);
         player.setAssortedEnterprisesDiscount(false);
         player.setSelfReplicatingDiscount(false);
+        player.setMayNiDiscount(false);
         player.setAssortedEnterprisesGreenAvailable(false);
 
         return null;

@@ -7,6 +7,7 @@ import com.terraforming.ares.model.StateContext;
 import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.model.turn.TurnType;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -23,23 +24,35 @@ public class PickCorporationsState extends AbstractState {
     @Override
     public List<TurnType> getPossibleTurns(StateContext stateContext) {
         Player player = marsGame.getPlayerByUuid(stateContext.getPlayerUuid());
-        if (player.getNextTurn() != null) {
-            if (player.getNextTurn().expectedAsNextTurn()) {
-                return List.of(player.getNextTurn().getType());
-            } else {
-                return List.of();
-            }
+        if (player.getNextTurn() != null && player.getNextTurn().expectedAsNextTurn()) {
+            return List.of(player.getNextTurn().getType());
+        } else if (player.getNextTurn() != null) {
+            return List.of();
         } else if (player.getSelectedCorporationCard() == null) {
             return Collections.singletonList(TurnType.PICK_CORPORATION);
         } else {
-            return List.of();
+            List<TurnType> turns = new ArrayList<>();
+
+            if (player.getActionsInSecondPhase() > 0) {
+                turns.add(TurnType.BUILD_BLUE_RED_PROJECT);
+            }
+
+            if (player.isAssortedEnterprisesGreenAvailable() || player.getCanBuildInFirstPhase() > 0) {
+                turns.add(TurnType.BUILD_GREEN_PROJECT);
+            }
+
+            if (!turns.isEmpty()) {
+                turns.add(TurnType.SKIP_TURN);
+            }
+
+            return turns;
         }
     }
 
     @Override
     public void updateState() {
         if (marsGame.getPlayerUuidToPlayer().values().stream().allMatch(
-                player -> player.getNextTurn() == null
+                player -> player.getActionsInSecondPhase() == 0 && player.getCanBuildInFirstPhase() == 0 && player.getNextTurn() == null
         )) {
             marsGame.setStateType(StateType.PICK_PHASE);
         }

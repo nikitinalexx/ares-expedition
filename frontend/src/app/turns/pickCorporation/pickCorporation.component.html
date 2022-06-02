@@ -7,6 +7,20 @@
 
 <form [formGroup]="parentForm" (submit)="submitForm(parentForm)" novalidate>
 
+  <div *ngIf="buildBlueRedProjectTurn()" class="form-check">
+    <app-build-blue-red [game]="game" [parentForm]="parentForm"></app-build-blue-red>
+  </div>
+
+  <div *ngIf="buildGreenProjectTurn()" class="form-check">
+    <app-build-green [game]="game" [parentForm]="parentForm"></app-build-green>
+  </div>
+
+  <div *ngIf="skipTurn()" class="form-check">
+    <input id="skipTurn" (click)="resetAllInputs()" type="radio" class="form-check-input" value="skipTurn"
+           formControlName="turn">
+    <label class="custom-control-label text-white" for="skipTurn">Finish turn</label>
+  </div>
+
   <div *ngIf="pickCorporationTurn()" class="card-container">
     <h1>Choose corporation</h1>
 

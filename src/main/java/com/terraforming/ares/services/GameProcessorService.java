@@ -87,7 +87,7 @@ public class GameProcessorService {
             if (player.getNextTurn() != null && player.getNextTurn().expectedAsNextTurn()) {
                 player.removeNextTurn();
             }
-            player.addNextTurn(turn);
+            player.addFirstTurn(turn);
             registerAsyncGameUpdate(game.getId());
             return null;
         };
