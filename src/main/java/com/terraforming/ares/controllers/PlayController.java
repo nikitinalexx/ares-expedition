@@ -54,12 +54,17 @@ public class PlayController {
     }
 
     @PostMapping("/game/player/sell")
-    public void sellCards(@RequestBody SellCardsRequest sellCardsRequest) {
+    public void sellCards(@RequestBody CardsRequest sellCardsRequest) {
         turnService.sellCards(sellCardsRequest.getPlayerUuid(), sellCardsRequest.getCards());
     }
 
+    @PostMapping("/game/player/mulligan")
+    public void mulliganCards(@RequestBody CardsRequest mulliganCardsRequest) {
+        turnService.mulliganCards(mulliganCardsRequest.getPlayerUuid(), mulliganCardsRequest.getCards());
+    }
+
     @PostMapping("/game/player/sell/last")
-    public void sellCardsLastRoundTurn(@RequestBody SellCardsRequest sellCardsRequest) {
+    public void sellCardsLastRoundTurn(@RequestBody CardsRequest sellCardsRequest) {
         turnService.sellCardsLastRoundTurn(sellCardsRequest.getPlayerUuid(), sellCardsRequest.getCards());
     }
 

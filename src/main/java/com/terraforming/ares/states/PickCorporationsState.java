@@ -8,7 +8,6 @@ import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.model.turn.TurnType;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -29,7 +28,10 @@ public class PickCorporationsState extends AbstractState {
         } else if (player.getNextTurn() != null) {
             return List.of();
         } else if (player.getSelectedCorporationCard() == null) {
-            return Collections.singletonList(TurnType.PICK_CORPORATION);
+            if (player.isMulligan()) {
+                return List.of(TurnType.PICK_CORPORATION, TurnType.MULLIGAN);
+            }
+            return List.of(TurnType.PICK_CORPORATION);
         } else {
             List<TurnType> turns = new ArrayList<>();
 

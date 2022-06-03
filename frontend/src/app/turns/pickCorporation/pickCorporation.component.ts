@@ -2,12 +2,13 @@ import {Component, EventEmitter, Input, OnInit, Output, ViewChild} from '@angula
 import {Game} from '../../data/Game';
 import {Card} from '../../data/Card';
 import {GameRepository} from '../../model/gameRepository.model';
-import {FormBuilder, FormGroup, Validators} from "@angular/forms";
-import {TurnType} from "../../data/TurnType";
-import {DiscardCardsTurn} from "../../data/DiscardCardsTurn";
-import {CardColor} from "../../data/CardColor";
-import {BuildGreenComponent} from "../greenProject/buildGreen.component";
-import {BuildBlueRedComponent} from "../blueProject/buildBlueRed.component";
+import {FormBuilder, FormGroup, Validators} from '@angular/forms';
+import {TurnType} from '../../data/TurnType';
+import {DiscardCardsTurn} from '../../data/DiscardCardsTurn';
+import {CardColor} from '../../data/CardColor';
+import {BuildGreenComponent} from '../greenProject/buildGreen.component';
+import {BuildBlueRedComponent} from '../blueProject/buildBlueRed.component';
+import {SellCardsComponent} from '../sellCards/sellCards.component';
 
 @Component({
   selector: 'app-pick-corporation',
@@ -20,6 +21,7 @@ export class PickCorporationComponent implements OnInit {
 
   @ViewChild(BuildGreenComponent) buildGreenService;
   @ViewChild(BuildBlueRedComponent) buildBlueRedService;
+  @ViewChild(SellCardsComponent) sellCardsService;
   parentForm: FormGroup;
 
 
@@ -67,7 +69,7 @@ export class PickCorporationComponent implements OnInit {
   }
 
   clickCorporation(card: Card) {
-    if (!this.game.player.corporationId) {
+    if (this.parentForm.value?.turn === 'pickCorporation' && !this.game.player.corporationId) {
       this.corporationInput = card.id;
       this.errorMessage = null;
     }
@@ -112,6 +114,10 @@ export class PickCorporationComponent implements OnInit {
       && this.game.player.hand.some(card => card.cardColor === CardColor.GREEN);
   }
 
+  mulliganTurn(): boolean {
+    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.MULLIGAN])?.length > 0;
+  }
+
   skipTurn(): boolean {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.SKIP_TURN])?.length > 0;
   }
@@ -122,6 +128,9 @@ export class PickCorporationComponent implements OnInit {
     }
     if (this.buildBlueRedService) {
       this.buildBlueRedService.resetAllInputs();
+    }
+    if (this.sellCardsService) {
+      this.sellCardsService.resetAllInputs();
     }
   }
 
@@ -170,6 +179,14 @@ export class PickCorporationComponent implements OnInit {
         this.gameRepository.skipTurn(this.game.player.playerUuid).subscribe(
           data => this.sendToParent(data)
         );
+      } else if (formGroup.value.turn === 'sellCards') {
+        // mulligan
+        this.sellCardsService.sellCards(this.game, data => {
+          this.sendToParent(data);
+          this.parentForm.patchValue({
+            turn: 'pickCorporation'
+          });
+        });
       }
     }
   }

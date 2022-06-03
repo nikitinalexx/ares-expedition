@@ -52,7 +52,8 @@ class AssetLiquidationFlowTest {
                 3,
                 buildProjectsDeck(),
                 buildCorporationsDeck(),
-                planetFactory.createMars(null)
+                planetFactory.createMars(null),
+                false
         );
         marsGame.setStateType(StateType.PICK_PHASE);
 

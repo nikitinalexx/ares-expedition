@@ -18,6 +18,8 @@ export class SellCardsComponent implements OnInit {
   parentForm: FormGroup;
   @Input()
   finalTurn: boolean;
+  @Input()
+  mulliganTurn: boolean;
 
   constructor(private gameRepository: GameRepository) {
 
@@ -54,12 +56,18 @@ export class SellCardsComponent implements OnInit {
     return '';
   }
 
-  onValueClick() {
+  resetAllInputs() {
     this.cardsToCell = [];
   }
 
   sellCards(game: Game, callback: (value: any) => void) {
-    const sellCardsFunc = this.finalTurn ? this.gameRepository.sellCardsFinalTurn : this.gameRepository.sellCards;
+    let sellCardsFunc = this.gameRepository.sellCards;
+    if (this.finalTurn) {
+      sellCardsFunc = this.gameRepository.sellCardsFinalTurn;
+    }
+    if (this.mulliganTurn) {
+      sellCardsFunc = this.gameRepository.mulliganCards;
+    }
     sellCardsFunc(game.player.playerUuid, this.cardsToCell).subscribe(
       data => {
         this.cardsToCell = [];

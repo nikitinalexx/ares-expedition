@@ -21,14 +21,22 @@
     <label class="custom-control-label text-white" for="skipTurn">Finish turn</label>
   </div>
 
-  <div *ngIf="pickCorporationTurn()" class="card-container">
-    <h1>Choose corporation</h1>
+  <div *ngIf="mulliganTurn()" class="form-check">
+    <app-sell-cards [game]="game" [parentForm]="parentForm" [mulliganTurn]="true"></app-sell-cards>
+  </div>
 
-    <ul class="myUL">
-      <li *ngFor="let card of getCorporationCards();" (click)="clickCorporation(card)" class="filterDiv automated display" [ngClass]="isSelectedCard(card)">
-        <app-card-template [card]="card"></app-card-template>
-      </li>
-    </ul>
+  <div *ngIf="pickCorporationTurn()" class="form-check">
+    <input id="pickCorporation" (click)="resetAllInputs()" type="radio" class="form-check-input" value="pickCorporation"
+           formControlName="turn">
+    <label class="custom-control-label text-white" for="skipTurn">Choose corporation</label>
+
+    <div class="card-container">
+      <ul class="myUL">
+        <li *ngFor="let card of getCorporationCards();" (click)="clickCorporation(card)" class="filterDiv automated display" [ngClass]="isSelectedCard(card)">
+          <app-card-template [card]="card"></app-card-template>
+        </li>
+      </ul>
+    </div>
   </div>
 
   <div *ngIf="discardCardsTurn()" class="form-check">

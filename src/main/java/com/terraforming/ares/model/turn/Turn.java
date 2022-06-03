@@ -29,7 +29,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
         @JsonSubTypes.Type(value = StandardProjectTurn.class, name = "STANDARD_PROJECT"),
         @JsonSubTypes.Type(value = GameEndConfirmTurn.class, name = "GAME_END_CONFIRM"),
         @JsonSubTypes.Type(value = SellCardsLastRoundTurn.class, name = "SELL_CARDS_LAST_ROUND"),
-        @JsonSubTypes.Type(value = UnmiRtTurn.class, name = "UNMI_RT")
+        @JsonSubTypes.Type(value = UnmiRtTurn.class, name = "UNMI_RT"),
+        @JsonSubTypes.Type(value = MulliganTurn.class, name = "MULLIGAN")
 })
 public interface Turn {
 

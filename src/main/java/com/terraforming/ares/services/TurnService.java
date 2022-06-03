@@ -212,6 +212,21 @@ public class TurnService {
         );
     }
 
+    public TurnResponse mulliganCards(String playerUuid, List<Integer> cards) {
+        return performTurn(
+                new MulliganTurn(playerUuid, cards),
+                playerUuid,
+                game -> {
+                    if (!game.getPlayerByUuid(playerUuid).getHand().getCards().containsAll(cards)) {
+                        return "Can't mulligan cards that you don't have";
+                    }
+
+                    return null;
+                },
+                SYNC_TURN
+        );
+    }
+
     public void sellCardsLastRoundTurn(String playerUuid, List<Integer> cards) {
         performTurn(
                 new SellCardsLastRoundTurn(playerUuid, cards),

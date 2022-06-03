@@ -23,5 +23,6 @@ public enum TurnType {
     DISCARD_CARDS,
     GAME_END_CONFIRM,
     GAME_END,
-    UNMI_RT
+    UNMI_RT,
+    MULLIGAN
 }

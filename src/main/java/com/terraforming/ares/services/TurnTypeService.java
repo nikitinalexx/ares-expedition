@@ -27,6 +27,7 @@ public class TurnTypeService {
             case GAME_END:
                 return true;
             case SELL_CARDS:
+            case MULLIGAN:
             case PERFORM_BLUE_ACTION:
             case PLANT_FOREST:
             case INCREASE_TEMPERATURE:

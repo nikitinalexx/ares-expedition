@@ -33,7 +33,7 @@ public class MarsGame {
     private int updateCounter;
     private int turns;
 
-    public MarsGame(List<String> playerNames, int playerHandSize, Deck projectsDeck, Deck corporationsDeck, Planet planet) {
+    public MarsGame(List<String> playerNames, int playerHandSize, Deck projectsDeck, Deck corporationsDeck, Planet planet, boolean mulligan) {
         this.projectsDeck = projectsDeck;
         this.corporationsDeck = corporationsDeck;
         this.planet = planet;
@@ -46,6 +46,7 @@ public class MarsGame {
                         .hand(projectsDeck.dealCardsDeck(playerHandSize))
                         .corporations(corporationsDeck.dealCardsDeck(INITIAL_CORPORATIONS_SIZE))
                         .played(Deck.builder().build())
+                        .mulligan(mulligan)
                         .build()).collect(Collectors.toMap(Player::getUuid, Function.identity())
         );
 

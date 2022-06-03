@@ -9,7 +9,8 @@ export const BASE_URL = new InjectionToken('rest_url');
 
 @Component({
   selector: 'app-new-game',
-  templateUrl: './newGame.component.html'
+  templateUrl: './newGame.component.html',
+  styleUrls: ['./newGame.component.css']
 })
 export class NewGameComponent implements OnInit {
   public playerCount: number;
@@ -29,7 +30,8 @@ export class NewGameComponent implements OnInit {
       playerName1: '',
       playerName2: '',
       playerName3: '',
-      playerName4: ''
+      playerName4: '',
+      mulligan: false
     });
   }
 
@@ -44,7 +46,7 @@ export class NewGameComponent implements OnInit {
         }
         names.push(name);
       }
-      this.model.createNewGame(new NewGameRequest(names))
+      this.model.createNewGame(new NewGameRequest(names, this.parentForm.value.mulligan))
         .subscribe(response => {
           if (response) {
             this.errorMessage = null;
