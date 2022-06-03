@@ -39,6 +39,16 @@
       </div>
     </div>
 
+    <div *ngIf="isInterplanetaryCinematics(card)">
+      <div class="resource-tag tag-event"></div>
+      :
+      <div class="money resource ">-2</div>
+
+      <div class="description" style="text-align:center;margin-top:0px;">
+        (Effect: When you play an Event, you pay 2 MC less for it.)
+      </div>
+    </div>
+
     <div *ngIf="isCelestiorCorporation(card)">
       <div class="corporationEffectBoxLabel">ACTION</div>
 
@@ -281,6 +291,20 @@
     <div class="resource money" style="margin-left:96px;">35</div>
     <div class="description" style="text-align:right; margin-left: 54px;">
       (You start with 35 MC.)
+    </div>
+  </div>
+
+  <div *ngIf="isInterplanetaryCinematics(card)">
+    <div class="corporation-name">
+      cinematics
+    </div>
+    <br/>
+    <div class="resource money" style="margin-left:55px;">46</div>
+    <div class="production-box production-box-size1a" style="margin-left:20px;margin-top:-50px;">
+      <div class="production steel"></div>
+    </div>
+    <div class="description" style="text-align:center;">
+      (You start with 46 MC and 1 steel production.)
     </div>
   </div>
 

@@ -625,6 +625,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.UNMI_CORPORATION;
   }
 
+  isInterplanetaryCinematics(card: Card): boolean {
+    return card.cardAction === CardAction.INTERPLANETARY_CINEMATICS;
+  }
+
   isMiningGuildCorporation(card: Card): boolean {
     return card.cardAction === CardAction.MINING_GUILD_CORPORATION;
   }

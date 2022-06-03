@@ -266,7 +266,8 @@ public class CardFactory {
                 new EcolineCorporation(10013),
                 new Inventrix(10014),
                 new MayNiProductionsCorporation(10015),
-                new UnmiCorporation(10016)
+                new UnmiCorporation(10016),
+                new InterplanetaryCinematics(10017)
         );
 
 
