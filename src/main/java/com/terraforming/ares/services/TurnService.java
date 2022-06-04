@@ -89,13 +89,8 @@ public class TurnService {
                 return "This is the last turn, sell all cards";
             }
 
-            String validationResult = standardProjectService.validateStandardProjectAvailability(game, player);
+            return standardProjectService.validateStandardProjectAvailability(game, player);
 
-            if (validationResult != null) {
-                return validationResult;
-            }
-
-            return null;
         }, ASYNC_TURN);
     }
 

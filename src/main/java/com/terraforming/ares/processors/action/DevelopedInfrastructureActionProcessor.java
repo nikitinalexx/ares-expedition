@@ -37,8 +37,6 @@ public class DevelopedInfrastructureActionProcessor implements BlueActionCardPro
 
         player.setMc(player.getMc() - (10 - ((minFiveBlueCards == 5) ? 5 : 0)));
 
-        player.setTerraformingRating(player.getTerraformingRating() + 1);
-
         terraformingService.increaseTemperature(game, player);
 
         return null;
