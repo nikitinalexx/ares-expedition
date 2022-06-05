@@ -14,7 +14,7 @@ export class EndRoundComponent implements OnInit {
   public errorMessage: string;
   isSubmitted = false;
   parentForm: FormGroup;
-  hidden = true;
+  hideCardsTooltip = true;
 
   @ViewChild(SellCardsComponent) sellCardsService;
 
@@ -26,7 +26,7 @@ export class EndRoundComponent implements OnInit {
 
   @HostListener('window:scroll', [])
   onWindowScroll() {
-    this.hidden = window.scrollY < 250;
+    this.hideCardsTooltip = window.scrollY < 250;
   }
 
 
@@ -54,7 +54,7 @@ export class EndRoundComponent implements OnInit {
     const enoughCards = this.selectedEnoughCardsToDiscard();
     classes.push(enoughCards ? 'bg-success' : 'bg-warning');
     classes.push(enoughCards ? 'text-white' : 'text-black');
-    if (this.hidden) {
+    if (this.hideCardsTooltip || this.isSubmitted) {
       classes.push('hidden');
     }
     return classes;
@@ -73,7 +73,6 @@ export class EndRoundComponent implements OnInit {
   submitForm(formGroup: FormGroup) {
     this.isSubmitted = true;
     if (!formGroup.valid) {
-      console.log('form invalid');
       return false;
     } else {
       if (formGroup.value.turn === 'sellCards') {

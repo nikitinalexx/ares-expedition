@@ -204,7 +204,7 @@
   </div>
 
   <div *ngIf="sellCardsTurn()" class="form-check">
-    <app-sell-cards (click)="resetAllInputs()" [game]="game" [parentForm]="parentForm"></app-sell-cards>
+    <app-sell-cards [game]="game" [parentForm]="parentForm"></app-sell-cards>
   </div>
 
   <div *ngIf="unmiRtTurn()" class="form-check">

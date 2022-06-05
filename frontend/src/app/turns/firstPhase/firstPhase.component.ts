@@ -113,6 +113,7 @@ export class FirstPhaseComponent implements OnInit {
     if (this.buildGreenService) {
       this.buildGreenService.resetAllInputs();
     }
+    this.scrollService.scrollToPlayerChoice();
   }
 
   submitForm(formGroup: FormGroup) {

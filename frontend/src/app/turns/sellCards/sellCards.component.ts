@@ -3,7 +3,7 @@ import {Game} from '../../data/Game';
 import {GameRepository} from '../../model/gameRepository.model';
 import {Card} from '../../data/Card';
 import {FormGroup} from '@angular/forms';
-import {ScrollComponent} from "../../scroll/scroll.component";
+import {ScrollComponent} from '../../scroll/scroll.component';
 
 @Component({
   selector: 'app-sell-cards',
@@ -60,6 +60,7 @@ export class SellCardsComponent implements OnInit {
 
   resetAllInputs() {
     this.cardsToCell = [];
+    this.scrollService.scrollToPlayerChoice();
   }
 
   sellCards(game: Game, callback: (value: any) => void) {
