@@ -28,7 +28,7 @@ public class BuildGreenProjectsState extends AbstractState {
             return Collections.emptyList();
         } else if (player.getCanBuildInFirstPhase() == 0) {
             if (player.isUnmiCorporation() && player.isHasUnmiAction()) {
-                return List.of(TurnType.UNMI_RT, TurnType.SKIP_TURN);
+                return List.of(TurnType.UNMI_RT, TurnType.SELL_CARDS, TurnType.SKIP_TURN);
             }
             return List.of();
         } else {

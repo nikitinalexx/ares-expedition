@@ -27,7 +27,7 @@ public class BuildBlueRedProjectsState extends AbstractState {
             return List.of();
         } else if ((player.getActionsInSecondPhase() == 0 && player.getCanBuildInFirstPhase() == 0)) {
             if (player.isUnmiCorporation() && player.isHasUnmiAction()) {
-                return List.of(TurnType.UNMI_RT, TurnType.SKIP_TURN);
+                return List.of(TurnType.UNMI_RT, TurnType.SELL_CARDS, TurnType.SKIP_TURN);
             }
             return List.of();
         } else {
