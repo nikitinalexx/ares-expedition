@@ -445,7 +445,11 @@ export class ThirdPhaseComponent implements OnInit {
           this.errorMessage = error;
         });
       }
-      this.scrollService.scrollToPlayerChoice();
+      if (formGroup.value.turn !== 'plantForest'
+        && formGroup.value.turn !== 'increaseTemperature'
+        && formGroup.value.turn !== 'standardProject') {
+        this.scrollService.scrollToPlayerChoice();
+      }
     }
   }
 
