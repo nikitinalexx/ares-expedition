@@ -8,6 +8,7 @@ import {CardColor} from '../../data/CardColor';
 import {SellCardsComponent} from '../sellCards/sellCards.component';
 import {DiscardCardsTurn} from '../../data/DiscardCardsTurn';
 import {BuildGreenComponent} from '../greenProject/buildGreen.component';
+import {ScrollComponent} from "../../scroll/scroll.component";
 
 @Component({
   selector: 'app-first-phase',
@@ -31,7 +32,8 @@ export class FirstPhaseComponent implements OnInit {
   @Output() outputToParent = new EventEmitter<any>();
 
   constructor(private gameRepository: GameRepository,
-              private formBuilder: FormBuilder) {
+              private formBuilder: FormBuilder,
+              private scrollService: ScrollComponent) {
 
   }
 
@@ -149,6 +151,7 @@ export class FirstPhaseComponent implements OnInit {
       } else if (formGroup.value.turn === 'greenProject' && formGroup.value.mcPrice !== null) {
         this.buildGreenService.buildGreenProject(data => this.sendToParent(data));
       }
+      this.scrollService.scrollToPlayerChoice();
     }
   }
 

@@ -55,7 +55,7 @@
 
 </form>
 
-<div class="display-phase-container">
+<div id="displayPhaseContainer" class="display-phase-container">
   <div *ngFor="let item of chosenPhases()" [ngClass]="phaseDisplayStyles(item)"
        class="phaseDisplay display phase-{{item}}"></div>
 </div>

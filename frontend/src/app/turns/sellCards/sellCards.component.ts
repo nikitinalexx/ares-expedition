@@ -3,6 +3,7 @@ import {Game} from '../../data/Game';
 import {GameRepository} from '../../model/gameRepository.model';
 import {Card} from '../../data/Card';
 import {FormGroup} from '@angular/forms';
+import {ScrollComponent} from "../../scroll/scroll.component";
 
 @Component({
   selector: 'app-sell-cards',
@@ -21,7 +22,8 @@ export class SellCardsComponent implements OnInit {
   @Input()
   mulliganTurn: boolean;
 
-  constructor(private gameRepository: GameRepository) {
+  constructor(private gameRepository: GameRepository,
+              private scrollService: ScrollComponent) {
 
   }
 
@@ -70,8 +72,9 @@ export class SellCardsComponent implements OnInit {
     }
     sellCardsFunc(game.player.playerUuid, this.cardsToCell).subscribe(
       data => {
-        this.cardsToCell = [];
         callback(data);
+        this.cardsToCell = [];
+        this.scrollService.scrollToPlayerChoice();
       },
       error => {
         this.errorMessage = error;

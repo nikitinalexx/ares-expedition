@@ -16,6 +16,7 @@ import {CardColor} from '../../data/CardColor';
 import {BuildGreenComponent} from '../greenProject/buildGreen.component';
 import {BuildBlueRedComponent} from '../blueProject/buildBlueRed.component';
 import {DiscardCardsTurn} from '../../data/DiscardCardsTurn';
+import {ScrollComponent} from "../../scroll/scroll.component";
 
 @Component({
   selector: 'app-third-phase',
@@ -42,7 +43,8 @@ export class ThirdPhaseComponent implements OnInit {
 
   constructor(private gameRepository: GameRepository,
               private discountService: DiscountComponent,
-              private formBuilder: FormBuilder) {
+              private formBuilder: FormBuilder,
+              private scrollService: ScrollComponent) {
 
   }
 
@@ -229,6 +231,7 @@ export class ThirdPhaseComponent implements OnInit {
     if (this.buildBlueRedService) {
       this.buildBlueRedService.resetAllInputs();
     }
+    this.scrollService.scrollToPlayerChoice();
   }
 
   addCardToActionTargetCards(card: Card) {
@@ -442,6 +445,7 @@ export class ThirdPhaseComponent implements OnInit {
           this.errorMessage = error;
         });
       }
+      this.scrollService.scrollToPlayerChoice();
     }
   }
 

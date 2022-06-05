@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, OnInit, Output, ViewChild} from '@angular/core';
+import {Component, EventEmitter, HostListener, Input, OnInit, Output, ViewChild} from '@angular/core';
 import {Game} from '../../data/Game';
 import {GameRepository} from '../../model/gameRepository.model';
 import {TurnType} from '../../data/TurnType';
@@ -7,20 +7,28 @@ import {SellCardsComponent} from '../sellCards/sellCards.component';
 
 @Component({
   selector: 'app-end-round',
-  templateUrl: './endRound.component.html'
+  templateUrl: './endRound.component.html',
+  styleUrls: ['endRound.component.css']
 })
 export class EndRoundComponent implements OnInit {
   public errorMessage: string;
   isSubmitted = false;
-  projectsToDiscard: number[];
   parentForm: FormGroup;
+  hidden = true;
+
+  @ViewChild(SellCardsComponent) sellCardsService;
 
   @Input()
   game: Game;
   @Input()
   nextTurns: TurnType[];
   @Output() outputToParent = new EventEmitter<any>();
-  @ViewChild(SellCardsComponent) sellCardsService;
+
+  @HostListener('window:scroll', [])
+  onWindowScroll() {
+    this.hidden = window.scrollY < 250;
+  }
+
 
   constructor(private gameRepository: GameRepository,
               private formBuilder: FormBuilder) {
@@ -31,6 +39,25 @@ export class EndRoundComponent implements OnInit {
     this.parentForm = this.formBuilder.group({
       turn: ['sellCards', Validators.required]
     });
+  }
+
+  selectedEnoughCardsToDiscard(): boolean {
+    if (!this.sellCardsService?.cardsToCell) {
+      return false;
+    }
+
+    return this.sellCardsService.cardsToCell.length >= (this.game.player.hand.length - 10);
+  }
+
+  dynamicClasses(): string[] {
+    const classes = [];
+    const enoughCards = this.selectedEnoughCardsToDiscard();
+    classes.push(enoughCards ? 'bg-success' : 'bg-warning');
+    classes.push(enoughCards ? 'text-white' : 'text-black');
+    if (this.hidden) {
+      classes.push('hidden');
+    }
+    return classes;
   }
 
   sendToParent(data: any) {

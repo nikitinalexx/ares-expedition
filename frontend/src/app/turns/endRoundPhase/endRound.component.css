@@ -1,0 +1,13 @@
+.sell-cards-display {
+  position: sticky;
+  top: 50%;
+  width: 50px;
+  z-index: 1;
+  margin-top: -25px;
+  text-align: center;
+  font-family: Prototype;
+}
+
+.hidden {
+  display: none;
+}
