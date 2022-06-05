@@ -27,7 +27,7 @@ public class PickCorporationProcessor implements TurnProcessor<CorporationChoice
         player.getPlayed().addCard(turn.getCorporationCardId());
 
         Card card = carsService.getCard(turn.getCorporationCardId());
-        return card.buildProject(
+        TurnResponse turnResponse = card.buildProject(
                 MarsContext.builder()
                         .game(game)
                         .player(player)
@@ -35,6 +35,8 @@ public class PickCorporationProcessor implements TurnProcessor<CorporationChoice
                         .cardService(carsService)
                         .build()
         );
+        player.setMc(999);
+        return turnResponse;
     }
 
     @Override
