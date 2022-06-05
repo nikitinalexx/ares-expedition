@@ -50,82 +50,83 @@
       </ul>
     </div>
 
-    <div *ngIf="expectsCardActionInput()" class="card-container">
-      <h1 class="text-white">Choose card to apply the effect </h1>
-
-      <ul class="myUL">
-        <li *ngFor="let card of getPlayerHandForAction();" (click)="addCardToActionTargetCards(card)"
-            [ngClass]="getActionTargetCardClass(card)" class="filterDiv automated display">
-          <app-card-template [card]="card" [player]="game?.player" [showResources]="true"></app-card-template>
-        </li>
-      </ul>
-    </div>
-
-    <div *ngIf="expectsHeatActionInput()" class="card-container">
-      <h1 class="text-white">How much heat to discard </h1>
-
-      <div class="form-group">
-        <div class="form-row">
-          <div class="col-sm-1">
-            <input type="number" class="form-control form-control-sm" id="heatInput" formControlName="heatInput">
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div *ngIf="expectsAddDiscardMicrobeInput()" style="margin-left: 20px">
-      <div class="form-group">
-        <div class="form-row">
-          <div class="col-sm-1">
-            <input id="addMicrobe" type="radio" class="form-check-input" value="addMicrobe"
-                   formControlName="addOrUseMicrobe"
-                   [checked]="this.parentForm.value?.addOrUseMicrobe === 'addMicrobe'"
-            >
-            <label class="custom-control-label text-white" for="addMicrobe">Add microbe</label>
-          </div>
-          <div class="col-sm-1">
-            <input id="useMicrobe" type="radio" class="form-check-input" value="useMicrobe"
-                   formControlName="addOrUseMicrobe"
-                   [checked]="this.parentForm.value?.addOrUseMicrobe === 'useMicrobe'"
-            >
-            <label class="custom-control-label text-white" for="useMicrobe">Use microbe</label>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div *ngIf="expectsExtremeColdFungusInput()">
-      <div class="form-group">
-        <div class="form-row">
-          <div class="col-sm-1">
-            <input id="gainPlant" type="radio" class="form-check-input" value="gainPlant"
-                   formControlName="gainPlantOrMicrobe"
-                   [checked]="this.parentForm.value?.gainPlantOrMicrobe === 'gainPlant'"
-            >
-            <label class="custom-control-label text-white" for="gainPlant">Gain plant</label>
-          </div>
-          <div class="col-sm-1">
-            <input id="gainMicrobe" type="radio" class="form-check-input" value="gainMicrobe"
-                   formControlName="gainPlantOrMicrobe"
-                   [checked]="this.parentForm.value?.gainPlantOrMicrobe === 'gainMicrobe'"
-            >
-            <label class="custom-control-label text-white" for="gainMicrobe">Gain microbe</label>
-          </div>
-        </div>
-      </div>
-
-      <div *ngIf="this.parentForm.value?.gainPlantOrMicrobe === 'gainMicrobe'" class="card-container">
-        <h1 class="text-white">Put microbe on</h1>
+    <div *ngIf="parentForm.value?.turn === 'blueAction' || parentForm.value?.turn === 'extraBlueAction'">
+      <div *ngIf="expectsCardActionInput()" class="card-container">
+        <h1 class="text-white">Choose card to apply the effect </h1>
 
         <ul class="myUL">
           <li *ngFor="let card of getPlayerHandForAction();" (click)="addCardToActionTargetCards(card)"
               [ngClass]="getActionTargetCardClass(card)" class="filterDiv automated display">
-            <app-card-template [card]="card"></app-card-template>
+            <app-card-template [card]="card" [player]="game?.player" [showResources]="true"></app-card-template>
           </li>
         </ul>
       </div>
-    </div>
 
+      <div *ngIf="expectsHeatActionInput()" class="card-container">
+        <h1 class="text-white">How much heat to discard </h1>
+
+        <div class="form-group">
+          <div class="form-row">
+            <div class="col-sm-1">
+              <input type="number" class="form-control form-control-sm" id="heatInput" formControlName="heatInput">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="expectsAddDiscardMicrobeInput()" style="margin-left: 20px">
+        <div class="form-group">
+          <div class="form-row">
+            <div class="col-sm-1">
+              <input id="addMicrobe" type="radio" class="form-check-input" value="addMicrobe"
+                     formControlName="addOrUseMicrobe"
+                     [checked]="this.parentForm.value?.addOrUseMicrobe === 'addMicrobe'"
+              >
+              <label class="custom-control-label text-white" for="addMicrobe">Add microbe</label>
+            </div>
+            <div class="col-sm-1">
+              <input id="useMicrobe" type="radio" class="form-check-input" value="useMicrobe"
+                     formControlName="addOrUseMicrobe"
+                     [checked]="this.parentForm.value?.addOrUseMicrobe === 'useMicrobe'"
+              >
+              <label class="custom-control-label text-white" for="useMicrobe">Use microbe</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="expectsExtremeColdFungusInput()">
+        <div class="form-group">
+          <div class="form-row">
+            <div class="col-sm-1">
+              <input id="gainPlant" type="radio" class="form-check-input" value="gainPlant"
+                     formControlName="gainPlantOrMicrobe"
+                     [checked]="this.parentForm.value?.gainPlantOrMicrobe === 'gainPlant'"
+              >
+              <label class="custom-control-label text-white" for="gainPlant">Gain plant</label>
+            </div>
+            <div class="col-sm-1">
+              <input id="gainMicrobe" type="radio" class="form-check-input" value="gainMicrobe"
+                     formControlName="gainPlantOrMicrobe"
+                     [checked]="this.parentForm.value?.gainPlantOrMicrobe === 'gainMicrobe'"
+              >
+              <label class="custom-control-label text-white" for="gainMicrobe">Gain microbe</label>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="this.parentForm.value?.gainPlantOrMicrobe === 'gainMicrobe'" class="card-container">
+          <h1 class="text-white">Put microbe on</h1>
+
+          <ul class="myUL">
+            <li *ngFor="let card of getPlayerHandForAction();" (click)="addCardToActionTargetCards(card)"
+                [ngClass]="getActionTargetCardClass(card)" class="filterDiv automated display">
+              <app-card-template [card]="card"></app-card-template>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div *ngIf="discardCardsTurn()" class="form-check">
