@@ -16,6 +16,7 @@ export class Card {
               price: number,
               winPoints: number,
               description: string,
+              actionDescription: string,
               cardColor: CardColor,
               cardAction: CardAction,
               bonuses: Gain[],
@@ -39,6 +40,7 @@ export class Card {
   price: number;
   winPoints: number;
   description: string;
+  actionDescription: string;
   cardColor: CardColor;
   cardAction: CardAction;
   bonuses: Gain[];

@@ -24,6 +24,7 @@ public class CardDto {
     int winPoints;
     List<Tag> tags;
     String description;
+    String actionDescription;
     List<Gain> incomes;
     CardColor cardColor;
     List<SpecialEffect> specialEffects;
@@ -48,6 +49,7 @@ public class CardDto {
                 card.getWinningPoints(),
                 card.getTags(),
                 card.getCardMetadata().getDescription(),
+                card.getCardMetadata().getActionDescription(),
                 card.getCardMetadata().getIncomes(),
                 card.getColor(),
                 card.getSpecialEffects().isEmpty() ? List.of() : new ArrayList<>(card.getSpecialEffects()),

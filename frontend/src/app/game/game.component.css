@@ -504,7 +504,7 @@
 
 .cards-stack {
   position: relative;
-  margin-top: -256px;
+  margin-left: -207px;
   filter: drop-shadow(0px -3px 3px black);
   z-index: 1;
 }
@@ -555,9 +555,9 @@
 
 .stack-hidden-area {
   position: absolute;
-  width: 240px;
-  margin-top: 73px;
-  height: 237px;
+  width: 174px;
+  margin-left: 70px;
+  height: 310px;
   z-index: 3;
 }
 
