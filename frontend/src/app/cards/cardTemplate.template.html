@@ -22,13 +22,13 @@
 <div *ngIf="!card.corporation" class="number">#{{getFormattedId(card)}}</div>
 
 <div *ngIf="card.corporation" class="contentCorporation">
-  <div *ngIf="card.winPointsInfo" class="points" style="font-size: 26px; margin-bottom: -126px; margin-left: 65px">
+  <div *ngIf="card.winPointsInfo" class="points" style="font-size: 26px; margin-bottom: -131px; margin-left: 65px">
     {{card.winPointsInfo.points + '/' +
   (card.winPointsInfo.points >= card.winPointsInfo.resources ? '' : card.winPointsInfo.resources) }}
     <div class="{{card.winPointsInfo.type.toString().toLowerCase()}} resource"></div>
   </div>
 
-  <div *ngIf="player && card.cardResource && showResources" class="points-player" style="margin-top: 263px; margin-left: 165px">
+  <div *ngIf="player && card.cardResource && showResources" class="points-player" style="margin-top: 258px; margin-left: 165px">
     <span class="points-counter">{{player.cardResources[card.id]}}</span>
     <span class="{{card.cardResource.toString().toLowerCase()}} resource player-resource"></span>
   </div>
@@ -216,16 +216,19 @@
     <div *ngIf="isArclightCorporation(card)">
       <div class="corporationEffectBoxLabel">EFFECT</div>
 
-      <div class="tag-animal resource-tag"></div>
-      /
-      <div class="tag-plant resource-tag"></div>
-      :
-      <div class="animal resource"></div>
+      <div style="margin-top: -12px">
+        <div class="tag-animal resource-tag"></div>
+        /
+        <div class="tag-plant resource-tag"></div>
+        :
+        <div class="animal resource"></div>
 
-      <div class="description" style="text-align:center;margin-top:0px;">
-        (Effect: When you play an Animal or Plant tag including this, add an Animal to this card. 1 VP for 2 animals on
-        this card.)
+        <div class="description" style="text-align:center;">
+          (Effect: When you play an Animal or Plant tag including this, add an Animal to this card. 1 VP for 2 animals on
+          this card.)
+        </div>
       </div>
+
     </div>
 
     <div *ngIf="isPhobologCorporation(card)" style="margin-top: 10px;">
