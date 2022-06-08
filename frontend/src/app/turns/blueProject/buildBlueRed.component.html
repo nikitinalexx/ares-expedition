@@ -115,7 +115,7 @@
             <li *ngFor="let card of getMicrobeAnimalPlayedCardsWithSelected();"
                 (click)="clickViralEnhancersTargetCard(card)"
                 [ngClass]="selectedViralEnhancersCardClass(card)" class="filterDiv automated display">
-              <app-card-template [card]="card" [player]="game?.player"></app-card-template>
+              <app-card-template [card]="card" [player]="game?.player" [showResources]="true"></app-card-template>
             </li>
           </ul>
 
@@ -155,7 +155,7 @@
             <li *ngFor="let card of getMicrobeAnimalPlayedCards();" (click)="importedHydrogenMicrobeAnimal = card"
                 [ngClass]="importedHydrogenMicrobeAnimal && importedHydrogenMicrobeAnimal.id == card.id ? 'clicked-card': ''"
                 class="filterDiv automated display">
-              <app-card-template [card]="card" [player]="game?.player" [showDiscount]="true"></app-card-template>
+              <app-card-template [card]="card" [player]="game?.player"></app-card-template>
             </li>
           </ul>
 
@@ -169,7 +169,7 @@
             <li *ngFor="let card of getMicrobeAnimalPlayedCards();" (click)="importedNitrogenClick(card)"
                 [ngClass]="importedNitrogenCardClass(card)"
                 class="filterDiv automated display">
-              <app-card-template [card]="card" [player]="game?.player"></app-card-template>
+              <app-card-template [card]="card" [player]="game?.player" [showResources]="true"></app-card-template>
             </li>
           </ul>
         </div>

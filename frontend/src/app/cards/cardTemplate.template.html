@@ -535,6 +535,11 @@
 
 </div>
 
+<div *ngIf="!card.corporation && player && card.cardResource && showResources" class="points-player">
+  <span class="points-counter">{{player.cardResources[card.id]}}</span>
+  <span class="{{card.cardResource.toString().toLowerCase()}} resource player-resource"></span>
+</div>
+
 <div *ngIf="!card.corporation" class="content ">
   <div class="title">
     {{ card.name }}
@@ -547,10 +552,7 @@
     <div class="{{card.winPointsInfo.type.toString().toLowerCase()}} resource small"></div>
   </div>
 
-  <div *ngIf="player && card.cardResource && showResources" class="points-player">
-    <span class="points-counter">{{player.cardResources[card.id]}}</span>
-    <span class="{{card.cardResource.toString().toLowerCase()}} resource player-resource"></span>
-  </div>
+
 
   <div *ngIf="hasTagRequirements(card)" class="requirements">{{getTagRequirements(card)}}</div>
 
@@ -587,7 +589,7 @@
     <span class="card resource"></span>
   </div>
 
-  <div *ngIf="actionAnaerobicOrganisms(card)">
+  <div *ngIf="actionAnaerobicOrganisms(card)" style="margin-top: -10px">
     <div class="tag-animal resource-tag"></div>
     /
     <div class="tag-plant resource-tag"></div>
@@ -595,8 +597,8 @@
     <div class="tag-microbe resource-tag"></div>
     :
     <div class="microbe resource"></div>
-    <div></div>
-    <span class="card resource"></span> : <br/>-
+    <br/>
+    <span class="card resource"></span>:-
     <div class="microbe resource "></div>
     <div class="microbe resource "></div>
     =

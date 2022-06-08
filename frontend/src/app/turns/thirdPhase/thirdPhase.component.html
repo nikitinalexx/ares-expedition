@@ -95,7 +95,7 @@
         </div>
       </div>
 
-      <div *ngIf="expectsExtremeColdFungusInput()">
+      <div *ngIf="expectsExtremeColdFungusInput()" class="form-check">
         <div class="form-group">
           <div class="form-row">
             <div class="col-sm-1">
@@ -121,11 +121,12 @@
           <ul class="myUL">
             <li *ngFor="let card of getPlayerHandForAction();" (click)="addCardToActionTargetCards(card)"
                 [ngClass]="getActionTargetCardClass(card)" class="filterDiv automated display">
-              <app-card-template [card]="card"></app-card-template>
+              <app-card-template [card]="card" [player]="this.game?.player" [showResources]="true"></app-card-template>
             </li>
           </ul>
         </div>
       </div>
+
     </div>
   </div>
 
