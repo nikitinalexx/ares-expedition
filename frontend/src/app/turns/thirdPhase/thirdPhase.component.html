@@ -164,7 +164,7 @@
 
     <div *ngIf="this.parentForm.value?.turn === 'standardProject'" class="form-group" style="margin-left: 20px">
       <div class="form-row">
-        <div class="col-sm-1">
+        <div *ngIf="standardOceanAvailable()" class="col-sm-1">
           <input id="standardOcean" type="radio" class="form-check-input" value="ocean"
                  formControlName="standardProject"
                  [checked]="this.parentForm.value?.standardProject === 'ocean'"
@@ -178,7 +178,7 @@
           >
           <label class="custom-control-label text-white" for="standardForest">Forest ({{hasStandardTechnology() ? 16 : 20}}mc)</label>
         </div>
-        <div class="col-sm-2">
+        <div *ngIf="standardTemperatureAvailable()" class = "col-sm-2">
           <input id="standardTemperature" type="radio" class="form-check-input" value="temperature"
                  formControlName="standardProject"
                  [checked]="this.parentForm.value?.standardProject === 'temperature'"
