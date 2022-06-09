@@ -4,6 +4,7 @@ import {GameRepository} from '../../model/gameRepository.model';
 import {TurnType} from '../../data/TurnType';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {Card} from '../../data/Card';
+import {ScrollComponent} from "../../scroll/scroll.component";
 
 @Component({
   selector: 'app-fifth-phase',
@@ -22,7 +23,8 @@ export class FifthPhaseComponent implements OnInit {
   @Output() outputToParent = new EventEmitter<any>();
 
   constructor(private gameRepository: GameRepository,
-              private formBuilder: FormBuilder) {
+              private formBuilder: FormBuilder,
+              private scrollService: ScrollComponent) {
 
   }
 
@@ -91,6 +93,7 @@ export class FifthPhaseComponent implements OnInit {
           );
         }
       }
+      this.scrollService.scrollToPlayerChoice();
     }
   }
 

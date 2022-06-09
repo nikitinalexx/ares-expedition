@@ -3,6 +3,7 @@ import {Game} from '../../data/Game';
 import {GameRepository} from '../../model/gameRepository.model';
 import {Card} from '../../data/Card';
 import {FormGroup} from '@angular/forms';
+import {ScrollComponent} from '../../scroll/scroll.component';
 
 @Component({
   selector: 'app-sell-cards',
@@ -18,8 +19,11 @@ export class SellCardsComponent implements OnInit {
   parentForm: FormGroup;
   @Input()
   finalTurn: boolean;
+  @Input()
+  mulliganTurn: boolean;
 
-  constructor(private gameRepository: GameRepository) {
+  constructor(private gameRepository: GameRepository,
+              private scrollService: ScrollComponent) {
 
   }
 
@@ -54,16 +58,24 @@ export class SellCardsComponent implements OnInit {
     return '';
   }
 
-  onValueClick() {
+  resetAllInputs() {
     this.cardsToCell = [];
+    this.scrollService.scrollToPlayerChoice();
   }
 
   sellCards(game: Game, callback: (value: any) => void) {
-    const sellCardsFunc = this.finalTurn ? this.gameRepository.sellCardsFinalTurn : this.gameRepository.sellCards;
+    let sellCardsFunc = this.gameRepository.sellCards;
+    if (this.finalTurn) {
+      sellCardsFunc = this.gameRepository.sellCardsFinalTurn;
+    }
+    if (this.mulliganTurn) {
+      sellCardsFunc = this.gameRepository.mulliganCards;
+    }
     sellCardsFunc(game.player.playerUuid, this.cardsToCell).subscribe(
       data => {
-        this.cardsToCell = [];
         callback(data);
+        this.cardsToCell = [];
+        this.scrollService.scrollToPlayerChoice();
       },
       error => {
         this.errorMessage = error;

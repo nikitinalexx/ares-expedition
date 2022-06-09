@@ -1,6 +1,7 @@
 import {Component, EventEmitter, Input, Output} from '@angular/core';
 import {Game} from '../../data/Game';
 import {GameRepository} from '../../model/gameRepository.model';
+import {ScrollComponent} from "../../scroll/scroll.component";
 
 @Component({
   selector: 'app-pick-phase',
@@ -15,7 +16,8 @@ export class PickPhaseComponent {
   game: Game;
   @Output() outputToParent = new EventEmitter<any>();
 
-  constructor(private gameRepository: GameRepository) {
+  constructor(private gameRepository: GameRepository,
+              private scrollService: ScrollComponent) {
 
   }
 
@@ -40,6 +42,7 @@ export class PickPhaseComponent {
       this.gameRepository.pickPhase(this.game.player.playerUuid, this.phaseInput)
         .subscribe(data => this.sendToParent(data));
     }
+    this.scrollService.scrollToPlayerChoice();
   }
 
   sendToParent(data: any) {

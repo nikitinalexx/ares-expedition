@@ -50,7 +50,8 @@ class TestCardService {
                 2,
                 Deck.builder().cards(new LinkedList<>(List.of(1, 2, 3, 4, 5))).build(),
                 Deck.builder().cards(new LinkedList<>(List.of(100, 101, 102, 103))).build(),
-                null
+                null,
+                false
         );
 
         List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());

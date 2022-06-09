@@ -23,6 +23,7 @@ public class PickCorporationProcessor implements TurnProcessor<CorporationChoice
     public TurnResponse processTurn(CorporationChoiceTurn turn, MarsGame game) {
         Player player = game.getPlayerUuidToPlayer().get(turn.getPlayerUuid());
         player.setSelectedCorporationCard(turn.getCorporationCardId());
+        player.setMulligan(false);
         player.getPlayed().addCard(turn.getCorporationCardId());
 
         Card card = carsService.getCard(turn.getCorporationCardId());

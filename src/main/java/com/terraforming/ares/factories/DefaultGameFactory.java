@@ -30,7 +30,8 @@ public class DefaultGameFactory implements GameFactory {
                 Constants.DEFAULT_START_HAND_SIZE,
                 projectsDeck,
                 corporationsDeck,
-                mars
+                mars,
+                gameParameters.isMulligan()
         );
 
     }

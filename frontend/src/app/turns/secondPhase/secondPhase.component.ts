@@ -10,6 +10,7 @@ import {SellCardsComponent} from '../sellCards/sellCards.component';
 import {DiscardCardsTurn} from '../../data/DiscardCardsTurn';
 import {BuildGreenComponent} from '../greenProject/buildGreen.component';
 import {BuildBlueRedComponent} from '../blueProject/buildBlueRed.component';
+import {ScrollComponent} from "../../scroll/scroll.component";
 
 @Component({
   selector: 'app-second-phase',
@@ -36,7 +37,8 @@ export class SecondPhaseComponent implements OnInit {
 
   constructor(private gameRepository: GameRepository,
               private discountService: DiscountComponent,
-              private formBuilder: FormBuilder) {
+              private formBuilder: FormBuilder,
+              private scrollService: ScrollComponent) {
 
   }
 
@@ -130,6 +132,7 @@ export class SecondPhaseComponent implements OnInit {
     if (this.buildBlueRedService) {
       this.buildBlueRedService.resetAllInputs();
     }
+    this.scrollService.scrollToPlayerChoice();
   }
 
   submitForm(formGroup: FormGroup) {
@@ -174,6 +177,7 @@ export class SecondPhaseComponent implements OnInit {
           );
         }
       }
+      this.scrollService.scrollToPlayerChoice();
     }
   }
 

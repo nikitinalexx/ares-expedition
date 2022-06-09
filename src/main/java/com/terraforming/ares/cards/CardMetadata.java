@@ -20,6 +20,7 @@ import java.util.List;
 public class CardMetadata {
     String name;
     String description;
+    String actionDescription;
     @Builder.Default
     List<Gain> incomes = List.of();
     @Builder.Default

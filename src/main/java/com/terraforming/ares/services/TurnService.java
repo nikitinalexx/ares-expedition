@@ -89,13 +89,8 @@ public class TurnService {
                 return "This is the last turn, sell all cards";
             }
 
-            String validationResult = standardProjectService.validateStandardProjectAvailability(game, player);
+            return standardProjectService.validateStandardProjectAvailability(game, player);
 
-            if (validationResult != null) {
-                return validationResult;
-            }
-
-            return null;
         }, ASYNC_TURN);
     }
 
@@ -204,6 +199,21 @@ public class TurnService {
                 game -> {
                     if (!game.getPlayerByUuid(playerUuid).getHand().getCards().containsAll(cards)) {
                         return "Can't sell cards that you don't have";
+                    }
+
+                    return null;
+                },
+                SYNC_TURN
+        );
+    }
+
+    public TurnResponse mulliganCards(String playerUuid, List<Integer> cards) {
+        return performTurn(
+                new MulliganTurn(playerUuid, cards),
+                playerUuid,
+                game -> {
+                    if (!game.getPlayerByUuid(playerUuid).getHand().getCards().containsAll(cards)) {
+                        return "Can't mulligan cards that you don't have";
                     }
 
                     return null;

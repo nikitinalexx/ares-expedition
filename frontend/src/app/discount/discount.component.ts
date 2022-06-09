@@ -54,6 +54,10 @@ export class DiscountComponent {
       discount += 5;
     }
 
+    if (this.cardHasTag(card, Tag.EVENT) && this.ownsSpecialEffect(player, SpecialEffect.INTERPLANETARY_CINEMATICS_DISCOUNT)) {
+      discount += 2;
+    }
+
     if (this.cardHasTag(card, Tag.ENERGY) && this.ownsSpecialEffect(player, SpecialEffect.TORGATE_ENERGY_DISCOUNT)) {
       discount += 3;
     }

@@ -14,7 +14,7 @@ public class Constants {
     public static final int TEMPERATURE_MC_COST = 14;
     public static final int OCEAN_MC_COST = 15;
 
-    public static final int DEFAULT_START_HAND_SIZE = 10;
+    public static final int DEFAULT_START_HAND_SIZE = 8;
     public static final int MAX_HAND_SIZE_LAST_ROUND = 10;
 
 

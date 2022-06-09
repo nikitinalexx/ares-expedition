@@ -16,6 +16,7 @@ import {EndRoundComponent} from '../turns/endRoundPhase/endRound.component';
 import {NavbarComponent} from '../navbar/navbar.component';
 import {BuildGreenComponent} from '../turns/greenProject/buildGreen.component';
 import {BuildBlueRedComponent} from '../turns/blueProject/buildBlueRed.component';
+import {ScrollComponent} from '../scroll/scroll.component';
 
 @NgModule({
   imports: [BrowserModule, ModelModule, ReactiveFormsModule, FormsModule, CardServiceModule],
@@ -29,7 +30,7 @@ import {BuildBlueRedComponent} from '../turns/blueProject/buildBlueRed.component
     FifthPhaseComponent, EndRoundComponent, NavbarComponent, BuildGreenComponent,
     BuildBlueRedComponent
   ],
-  providers: [SellCardsComponent]
+  providers: [SellCardsComponent, ScrollComponent]
 })
 export class GameModule {
 

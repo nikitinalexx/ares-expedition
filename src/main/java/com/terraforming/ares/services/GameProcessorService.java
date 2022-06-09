@@ -117,7 +117,7 @@ public class GameProcessorService {
                 game.getPlayerUuidToPlayer()
                         .values()
                         .stream().filter(p -> !p.getUuid().equals(turn.getPlayerUuid()))
-                        .filter(p -> p.getNextTurn() != null && player.getNextTurn().getType() == TurnType.SKIP_TURN)
+                        .filter(p -> p.getNextTurn() != null && p.getNextTurn().getType() == TurnType.SKIP_TURN)
                         .forEach(Player::removeNextTurn);
             }
 

@@ -52,6 +52,7 @@ public class Player {
     private boolean unmiCorporation;
     private boolean hasUnmiAction;
     private boolean didUnmiAction;
+    private boolean mulligan;
 
     private boolean confirmedGameEndThirdPhase;
 
@@ -145,6 +146,7 @@ public class Player {
         assortedEnterprisesGreenAvailable = false;
         hasUnmiAction = false;
         didUnmiAction = false;
+        mulligan = true;
     }
 
     public void clearPhaseResults() {

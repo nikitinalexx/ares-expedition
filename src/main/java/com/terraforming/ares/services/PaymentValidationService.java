@@ -135,6 +135,10 @@ public class PaymentValidationService {
             discount += 3;
         }
 
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.INTERPLANETARY_CINEMATICS_DISCOUNT) && card.getTags().contains(Tag.EVENT)) {
+            discount += 2;
+        }
+
         if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.CREDICOR_DISCOUNT) && card.getPrice() >= 20) {
             discount += 4;
         }

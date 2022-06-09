@@ -46,6 +46,9 @@ export class CardTemplateComponent {
   }
 
   getBackgroundColorClass(card: Card): string {
+    if (card.name === 'Processing Plant') {
+      console.log(card.cardColor);
+    }
     switch (card.cardColor) {
       case CardColor.BLUE:
         return 'background-color-active';
@@ -189,8 +192,8 @@ export class CardTemplateComponent {
   }
 
   getNameStyle(card: Card): { 'font-size.px': number } {
-    if (card.name.length > 22) {
-      const proportion = card.name.length / 22;
+    if (card.name.length > 14) {
+      const proportion = card.name.length / 14;
       return {'font-size.px': 16 / proportion};
     }
     return;
@@ -623,6 +626,10 @@ export class CardTemplateComponent {
 
   isUnmiCorporation(card: Card): boolean {
     return card.cardAction === CardAction.UNMI_CORPORATION;
+  }
+
+  isInterplanetaryCinematics(card: Card): boolean {
+    return card.cardAction === CardAction.INTERPLANETARY_CINEMATICS;
   }
 
   isMiningGuildCorporation(card: Card): boolean {

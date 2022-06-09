@@ -47,16 +47,16 @@ export class GameRepository {
     return this.dataSource.raiseUnmiRt(playerUuid);
   }
 
-  /*
-  sellCards(playerUuid: string, cards: number[]): Observable<any> {
-    return this.dataSource.sellCards(playerUuid, cards);
-  }*/
   sellCards = (playerUuid: string, cards: number[]) => {
     return this.dataSource.sellCards(playerUuid, cards);
   }
 
   sellCardsFinalTurn = (playerUuid: string, cards: number[]) => {
     return this.dataSource.sellCardsFinalTurn(playerUuid, cards);
+  }
+
+  mulliganCards = (playerUuid: string, cards: number[]) => {
+    return this.dataSource.mulliganCards(playerUuid, cards);
   }
 
   discardCards(playerUuid: string, cards: number[]): Observable<any> {

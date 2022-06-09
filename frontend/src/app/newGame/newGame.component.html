@@ -5,8 +5,16 @@
 <form [formGroup]="parentForm" (submit)="submitForm(parentForm)" novalidate>
   <div class="form-group col-6 mx-auto" style="margin-top: 100px;">
 
-    <label for="choices" class="form-label bg-warning text-dark"
-           style="border-radius: 5px; font-size: 20px;">Players</label>
+
+    <div class="bg-warning text-dark new-game-label" style="width: 100px; border-radius: 5px;">
+      <label title="You may discard any number of initial cards to get the same amount of cards" for="mulliganChoice"
+             class="form-label">Mulligan</label>
+      <input type="checkbox" class="form-check-input" id="mulliganChoice" style="margin-left: 10px;"
+             formControlName="mulligan">
+    </div>
+    <br/>
+
+    <label for="choices" class="form-label bg-warning text-dark new-game-label text-big">Players</label>
 
     <div id="choices">
       <div class="form-check form-check-inline bg-warning" style="border-radius: 5px;">
@@ -39,6 +47,7 @@
 
     <button type="submit" class="btn btn-warning btn-lg" style="margin-top: 10px">Create</button>
   </div>
+
 </form>
 
 <div *ngIf="playersPresent()" class="d-grid gap-2 col-6 mx-auto" style="margin-top: 10px;">

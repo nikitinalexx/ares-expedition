@@ -3,9 +3,12 @@
   {{errorMessage}}
 </div>
 
+<div class="sell-cards-display" [ngClass]="this.dynamicClasses()">
+  {{sellCardsService?.cardsToCell ? sellCardsService?.cardsToCell.length : 0}} / {{game.player.hand.length - 10}}
+</div>
+
 <!-- Form starts -->
 <form [formGroup]="parentForm" (submit)="submitForm(parentForm)" novalidate>
-
 
 
   <div *ngIf="sellCardsTurn()" class="form-check">

@@ -23,6 +23,7 @@ public class DiscardCardsTurn implements Turn {
     private boolean onlyFromSelectedCards;
     private boolean expectedAsNextTurn;
 
+    @Override
     public boolean expectedAsNextTurn() {
         return expectedAsNextTurn;
     }

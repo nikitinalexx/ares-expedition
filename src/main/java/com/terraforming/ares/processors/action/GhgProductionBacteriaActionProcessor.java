@@ -38,8 +38,6 @@ public class GhgProductionBacteriaActionProcessor implements BlueActionCardProce
 
             terraformingService.increaseTemperature(game, player);
 
-            player.setTerraformingRating(player.getTerraformingRating() + 1);
-
             player.getPlayed().getCards().stream().map(cardService::getCard).forEach(
                     projectCard -> projectCard.onTemperatureChangedEffect(player)
             );
