@@ -88,25 +88,25 @@ export class RestDataSource {
 
   skipTurn(playerUuid: string): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/game/player/skip',
-      {playerUuid: playerUuid}
+      {player: playerUuid}
     );
   }
 
   confirmGameEnd(playerUuid: string): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/game/player/game-end/confirm',
-      {playerUuid: playerUuid}
+      {player: playerUuid}
     );
   }
 
   pickCard(playerUuid: string): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/turn/pick-card',
-      {playerUuid: playerUuid}
+      {player: playerUuid}
     );
   }
 
   raiseUnmiRt(playerUuid: string): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/turn/unmi/rt',
-      {playerUuid: playerUuid}
+      {player: playerUuid}
     );
   }
 
@@ -156,25 +156,25 @@ export class RestDataSource {
 
   collectIncome(playerUuid: string): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/turn/collect-income',
-      {playerUuid: playerUuid}
+      {player: playerUuid}
     );
   }
 
   draftCards(playerUuid: string): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/turn/draft-cards',
-      {playerUuid: playerUuid}
+      {player: playerUuid}
     );
   }
 
   plantForest(playerUuid: string): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/turn/forest',
-      {playerUuid: playerUuid}
+      {player: playerUuid}
     );
   }
 
   increaseTemperature(playerUuid: string): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/turn/temperature',
-      {playerUuid: playerUuid}
+      {player: playerUuid}
     );
   }
 
