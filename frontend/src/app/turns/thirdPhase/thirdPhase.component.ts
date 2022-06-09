@@ -125,6 +125,14 @@ export class ThirdPhaseComponent implements OnInit {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.STANDARD_PROJECT])?.length > 0;
   }
 
+  standardOceanAvailable(): boolean {
+    return this.game.phaseOceans <9  && this.nextTurns.find(turn => turn === TurnType[TurnType.STANDARD_PROJECT])?.length > 0;
+  }
+
+  standardTemperatureAvailable(): boolean {
+    return this.game.phaseTemperature < 8  && this.nextTurns.find(turn => turn === TurnType[TurnType.STANDARD_PROJECT])?.length > 0;
+  }
+
   canPlayExtraBlueAction(): boolean {
     return this.game.player.phase === 3 && !this.game.player.activatedBlueActionTwice && this.game.player.activatedBlueCards?.length > 0;
   }
