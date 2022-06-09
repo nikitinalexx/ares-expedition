@@ -17,6 +17,11 @@
   </div>
 </div>
 
+<div *ngIf="card.corporation">
+  <div *ngIf="card.tags[0]" [ngClass]="getTagClasses(card, 0)" class="corporation-tag corporation-tag1 "></div>
+  <div *ngIf="card.tags[1]" [ngClass]="getTagClasses(card, 1)" class="corporation-tag corporation-tag2 "></div>
+  <div *ngIf="card.tags[2]" [ngClass]="getTagClasses(card, 2)" class="corporation-tag corporation-tag3 "></div>
+</div>
 
 <div *ngIf="card.corporation" class="corporationLabel">CORPORATION</div>
 <div *ngIf="!card.corporation" class="number">#{{getFormattedId(card)}}</div>
