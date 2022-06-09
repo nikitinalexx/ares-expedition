@@ -177,7 +177,7 @@
           >
           <label class="custom-control-label text-white" for="standardForest">Forest ({{hasStandardTechnology() ? 16 : 20}}mc)</label>
         </div>
-        <div *ngIf="standardOceanAvailable()" class = "col-sm-2">
+        <div *ngIf="standardTemperatureAvailable()" class = "col-sm-2">
           <input id="standardTemperature" type="radio" class="form-check-input" value="temperature"
                  formControlName="standardProject">
           <label class="custom-control-label text-white" for="standardTemperature">Temperature ({{hasStandardTechnology() ? 10 : 14}}mc)</label>
