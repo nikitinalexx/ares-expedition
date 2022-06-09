@@ -7,12 +7,12 @@ import lombok.NoArgsConstructor;
 
 /**
  * Created by oleksii.nikitin
- * Creation date 12.05.2022
+ * Creation date 07.06.2022
  */
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-public class PlayerUuidRequest {
-    private String playerUuid;
+public class JoinLobbyRequest {
+    private String nickname;
 }

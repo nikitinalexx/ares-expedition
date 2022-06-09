@@ -7,7 +7,7 @@ export class CardRepository {
   private projects: Card[] = new Array<Card>();
 
   constructor(private dataSource: RestDataSource) {
-    this.dataSource.getData().subscribe(data => this.projects = data);
+    this.dataSource.getCards().subscribe(data => this.projects = data);
   }
 
   getProjectCards(): Card[] {

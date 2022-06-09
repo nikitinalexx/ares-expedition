@@ -37,7 +37,10 @@ public class Constants {
     public static final int SELL_EXTRA_CARDS_PHASE = 6;
     public static final int PICK_CORPORATIONS_PHASE = 7;
 
+    public static final int MAX_PLAYERS = 4;
 
+    public static final int REMOVE_GAMES_FROM_LOBBY_AFTER_SECONDS = 300;
+    public static final int REMOVE_PLAYERS_FROM_LOBBY_AFTER_SECONDS = 10;
 
 
     private Constants() {}

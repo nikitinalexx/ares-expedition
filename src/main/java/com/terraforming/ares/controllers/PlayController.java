@@ -44,13 +44,13 @@ public class PlayController {
     }
 
     @PostMapping("/game/player/skip")
-    public void skipTurn(@RequestBody PlayerUuidRequest playerUuidRequest) {
-        turnService.skipTurn(playerUuidRequest.getPlayerUuid());
+    public void skipTurn(@RequestBody PlayerRequest playerUuidRequest) {
+        turnService.skipTurn(playerUuidRequest.getPlayer());
     }
 
     @PostMapping("/game/player/game-end/confirm")
-    public void confirmGameEnd(@RequestBody PlayerUuidRequest playerUuidRequest) {
-        turnService.confirmGameEnd(playerUuidRequest.getPlayerUuid());
+    public void confirmGameEnd(@RequestBody PlayerRequest playerUuidRequest) {
+        turnService.confirmGameEnd(playerUuidRequest.getPlayer());
     }
 
     @PostMapping("/game/player/sell")
@@ -107,33 +107,33 @@ public class PlayController {
     }
 
     @PostMapping("/turn/unmi/rt")
-    public TurnResponse unmiRtCorporationTurn(@RequestBody PlayerUuidRequest playerUuidRequest) {
-        return turnService.unmiRtCorporationTurn(playerUuidRequest.getPlayerUuid());
+    public TurnResponse unmiRtCorporationTurn(@RequestBody PlayerRequest playerUuidRequest) {
+        return turnService.unmiRtCorporationTurn(playerUuidRequest.getPlayer());
     }
 
     @PostMapping("/turn/collect-income")
-    public void collectIncome(@RequestBody PlayerUuidRequest playerUuidRequest) {
-        turnService.collectIncomeTurn(playerUuidRequest.getPlayerUuid());
+    public void collectIncome(@RequestBody PlayerRequest playerUuidRequest) {
+        turnService.collectIncomeTurn(playerUuidRequest.getPlayer());
     }
 
     @PostMapping("/turn/pick-card")
-    public void pickExtraCardTurn(@RequestBody PlayerUuidRequest playerUuidRequest) {
-        turnService.pickExtraCardTurn(playerUuidRequest.getPlayerUuid());
+    public void pickExtraCardTurn(@RequestBody PlayerRequest playerUuidRequest) {
+        turnService.pickExtraCardTurn(playerUuidRequest.getPlayer());
     }
 
     @PostMapping("/turn/draft-cards")
-    public void draftCards(@RequestBody PlayerUuidRequest playerUuidRequest) {
-        turnService.draftCards(playerUuidRequest.getPlayerUuid());
+    public void draftCards(@RequestBody PlayerRequest playerUuidRequest) {
+        turnService.draftCards(playerUuidRequest.getPlayer());
     }
 
     @PostMapping("/turn/forest")
-    public void plantForest(@RequestBody PlayerUuidRequest playerUuidRequest) {
-        turnService.plantForest(playerUuidRequest.getPlayerUuid());
+    public void plantForest(@RequestBody PlayerRequest playerUuidRequest) {
+        turnService.plantForest(playerUuidRequest.getPlayer());
     }
 
     @PostMapping("/turn/temperature")
-    public void increaseTemperature(@RequestBody PlayerUuidRequest playerUuidRequest) {
-        turnService.increaseTemperature(playerUuidRequest.getPlayerUuid());
+    public void increaseTemperature(@RequestBody PlayerRequest playerUuidRequest) {
+        turnService.increaseTemperature(playerUuidRequest.getPlayer());
     }
 
     @PostMapping("/turn/standard")

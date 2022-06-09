@@ -1,0 +1,26 @@
+.lobby-data {
+  display: table;
+  width: 100%;
+  margin-top: 3%
+}
+
+.scrollit {
+  overflow: scroll;
+  height: 200px;
+  overflow-x: hidden;
+}
+
+.players-table {
+  display: table-cell;
+}
+
+.game-table {
+  display: table-cell;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.current-game {
+  width: 50%;
+  margin-left: 25%;
+}

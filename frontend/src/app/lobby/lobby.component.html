@@ -1,0 +1,116 @@
+<div class="bg-danger mt-2 p-2 text-center text-white"
+     *ngIf="errorMessage != null">
+  {{errorMessage}}
+</div>
+
+<form *ngIf="!nickname" [formGroup]="nicknameForm" (submit)="submitLobbyForm(nicknameForm)" novalidate>
+  <div class="form-group col-6 mx-auto" style="margin-top: 100px;">
+
+    <label for="playerName" class="form-label p-1 mb-2 bg-warning text-dark"
+           style="border-radius: 5px;">Nickname (max 10 symbols)</label>
+    <input type="text" class="form-control" id="playerName" formControlName="nickname">
+
+    <button type="submit" class="btn btn-warning btn-lg" style="margin-top: 10px">Join</button>
+  </div>
+</form>
+
+<div *ngIf="lobby" class="lobby-data">
+  <div style="width: 50px;"></div>
+  <div class="table-responsive players-table scrollit bg-warning">
+    <table class="table table-bordered">
+      <thead>
+      <tr>
+        <th scope="col">#</th>
+        <th scope="col">Nickname</th>
+      </tr>
+      </thead>
+
+      <tbody>
+      <tr *ngFor="let player of lobby?.players; let i = index">
+        <th scope="row">{{i + 1}}</th>
+        <td>{{player}}</td>
+      </tr>
+      </tbody>
+
+    </table>
+  </div>
+
+  <div style="width: 50px;"></div>
+
+  <div class="table-responsive game-table scrollit bg-warning">
+    <table class="table table-bordered">
+      <thead>
+      <tr>
+        <th scope="col" style="min-width: 100px">Name</th>
+        <th scope="col">Mulligan</th>
+        <th scope="col">Players</th>
+        <th scope="col" style="width: 50px">Action</th>
+      </tr>
+      </thead>
+
+      <tbody>
+      <tr *ngFor="let game of lobby?.games; let i = index">
+        <td>{{game.name}}</td>
+        <td>{{game.mulligan}}</td>
+        <td>{{getLength(game.playerToStartConfirm)}}</td>
+        <td style="width: 50px">
+          <button *ngIf="displayJoinButton(game)" (click)="joinGame(game)" class="btn btn-primary btn-sm">Join</button>
+          <button *ngIf="displayLeaveButton(game)" (click)="leaveGame(game)" class="btn btn-danger btn-sm">Leave
+          </button>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+  <div style="width: 50px;"></div>
+</div>
+
+<div *ngIf="lobby?.playerGame" class="current-game">
+  <h3>Current Game</h3>
+  <table class="table table-bordered bg-warning">
+    <thead>
+    <tr>
+      <th scope="col">Nickname</th>
+      <th scope="col">Ready</th>
+    </tr>
+    </thead>
+    <tbody>
+
+    <tr *ngFor="let entry of lobby.playerGame.playerToStartConfirm | keyvalue;">
+      <td>{{entry.key}}</td>
+      <td>{{entry.value}}</td>
+    </tr>
+    </tbody>
+  </table>
+
+  <button *ngIf="lobby.playerGame.playerToStartConfirm[nickname] === false" (click)="confirmGameStart(lobby.playerGame)"
+          class="btn btn-primary btn-lg"
+          style="float: right">Ready
+  </button>
+
+  <a *ngIf="playerLinkAvailable()" href="{{getPlayerLink()}}" class="btn btn-primary btn-lg">Play</a>
+
+  <button *ngIf="playerLinkAvailable()" (click)="leaveGame(lobby.playerGame)"
+          class="btn btn-danger btn-lg"
+          style="float: right">Leave
+  </button>
+
+</div>
+
+
+<form *ngIf="lobby && !lobby.playerGame" [formGroup]="createLobbyGameForm"
+      (submit)="submitNewLobbyGameForm(createLobbyGameForm)" novalidate>
+  <div class="form-group col-6 mx-auto" style="margin-top: 100px;">
+
+
+    <div class="bg-warning text-dark new-game-label" style="width: 100px; border-radius: 5px;">
+      <label title="You may discard any number of initial cards to get the same amount of cards" for="mulliganChoice"
+             class="form-label">Mulligan</label>
+      <input type="checkbox" class="form-check-input" id="mulliganChoice" style="margin-left: 10px;"
+             formControlName="mulligan">
+    </div>
+
+    <button type="submit" class="btn btn-warning btn-lg" style="margin-top: 10px">Create game</button>
+  </div>
+
+</form>

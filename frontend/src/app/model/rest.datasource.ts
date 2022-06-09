@@ -13,6 +13,8 @@ import {BlueActionRequest} from '../data/BlueActionRequest';
 import {StandardProjectType} from '../data/StandardProjectType';
 import {environment} from '../../environments/environment';
 import {GameShort} from "../data/GameShort";
+import {Lobby} from "../data/Lobby";
+import {PlayerReference} from "../data/PlayerReference";
 
 
 @Injectable()
@@ -22,12 +24,46 @@ export class RestDataSource {
   constructor(private http: HttpClient) {
   }
 
-  getData(): Observable<Card[]> {
+  getCards(): Observable<Card[]> {
     return this.sendRequest<Card[]>('GET', this.url + '/projects');
+  }
+
+  getLobby(nickname: string): Observable<Lobby> {
+    return this.sendRequest<Lobby>('GET', this.url + '/lobby/' + nickname);
   }
 
   createGame(requestBody: NewGameRequest): Observable<NewGame> {
     return this.sendRequest<NewGame>('POST', this.url + '/game/new', requestBody);
+  }
+
+  createLobbyGame(host: string, mulligan: boolean): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/lobby/game/new',
+      {host: host, mulligan: mulligan}
+    );
+  }
+
+  joinLobbyGame(player: string, gameId: number): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/lobby/game/join',
+      {player: player, gameId: gameId}
+    );
+  }
+
+  leaveLobbyGame(player: string, gameId: number): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/lobby/game/leave',
+      {player: player, gameId: gameId}
+    );
+  }
+
+  getLobbyGamePlayerUuid(player: string, gameId: number): Observable<PlayerReference> {
+    return this.sendRequest<PlayerReference>('POST', this.url + '/lobby/game/uuid',
+      {player: player, gameId: gameId}
+    );
+  }
+
+  confirmGameStart(player: string, gameId: number): Observable<any> {
+    return this.sendRequest<NewGame>('POST', this.url + '/lobby/game/confirm',
+      {player: player, gameId: gameId}
+    );
   }
 
   getGame(playerUuid: string): Observable<Game> {

@@ -40,7 +40,7 @@ public class GameController {
     public PlayerUuidsDto startNewGame(@RequestBody GameParameters gameParameters) {
         try {
             int playersCount = gameParameters.getPlayerNames().size();
-            if (playersCount == 0 || playersCount > 4) {
+            if (playersCount == 0 || playersCount > Constants.MAX_PLAYERS) {
                 throw new IllegalArgumentException("Only 1 to 4 players are supported so far");
             }
 
