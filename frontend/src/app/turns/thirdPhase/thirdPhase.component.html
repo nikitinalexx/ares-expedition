@@ -182,8 +182,7 @@
         <div *ngIf="standardTemperatureAvailable()" class = "col-sm-2">
           <input id="standardTemperature" type="radio" class="form-check-input" value="temperature"
                  formControlName="standardProject"
-                 [checked]="this.parentForm.value?.standardProject === 'temperature'"
-          >
+                 [checked]="this.parentForm.value?.standardProject === 'temperature'">
           <label class="custom-control-label text-white" for="standardTemperature">Temperature ({{hasStandardTechnology() ? 10 : 14}}mc)</label>
         </div>
       </div>
