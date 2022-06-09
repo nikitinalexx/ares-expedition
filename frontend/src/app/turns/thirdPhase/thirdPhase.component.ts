@@ -126,11 +126,11 @@ export class ThirdPhaseComponent implements OnInit {
   }
 
   standardOceanAvailable(): boolean {
-    return this.game.phaseOceans <9  && this.nextTurns.find(turn => turn === TurnType[TurnType.STANDARD_PROJECT])?.length > 0;
+    return this.game.phaseOceans < 9 && this.nextTurns.find(turn => turn === TurnType[TurnType.STANDARD_PROJECT])?.length > 0;
   }
 
   standardTemperatureAvailable(): boolean {
-    return this.game.phaseTemperature < 8  && this.nextTurns.find(turn => turn === TurnType[TurnType.STANDARD_PROJECT])?.length > 0;
+    return this.game.phaseTemperature < 8 && this.nextTurns.find(turn => turn === TurnType[TurnType.STANDARD_PROJECT])?.length > 0;
   }
 
   canPlayExtraBlueAction(): boolean {
@@ -229,7 +229,7 @@ export class ThirdPhaseComponent implements OnInit {
     return '';
   }
 
-  resetAllInputs() {
+  resetAllInputs(scroll: boolean = true) {
     this.selectedProject = null;
     this.actionTargetCards = [];
     this.errorMessage = null;
@@ -239,7 +239,9 @@ export class ThirdPhaseComponent implements OnInit {
     if (this.buildBlueRedService) {
       this.buildBlueRedService.resetAllInputs();
     }
-    this.scrollService.scrollToPlayerChoice();
+    if (scroll) {
+      this.scrollService.scrollToPlayerChoice();
+    }
   }
 
   addCardToActionTargetCards(card: Card) {
@@ -446,7 +448,7 @@ export class ThirdPhaseComponent implements OnInit {
 
         this.gameRepository.blueAction(request).subscribe(data => {
           this.sendToParent(data);
-          this.resetAllInputs();
+          this.resetAllInputs(false);
 
           this.parentForm.get('turn').setValue('blueAction');
         }, error => {
@@ -455,7 +457,9 @@ export class ThirdPhaseComponent implements OnInit {
       }
       if (formGroup.value.turn !== 'plantForest'
         && formGroup.value.turn !== 'increaseTemperature'
-        && formGroup.value.turn !== 'standardProject') {
+        && formGroup.value.turn !== 'standardProject'
+        && formGroup.value.turn !== 'blueAction'
+        && formGroup.value.turn !== 'extraBlueAction') {
         this.scrollService.scrollToPlayerChoice();
       }
     }
