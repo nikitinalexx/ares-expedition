@@ -72,7 +72,7 @@ public class LobbyService {
                 playerToLobbyGameId.remove(player);
                 LobbyGame lobbyGame = games.get(lobbyGameId);
 
-                if (lobbyGame != null && lobbyGame.getPlayerToStartConfirm().containsKey(player) && !lobbyGame.getPlayerToStartConfirm().get(player)) {
+                if (lobbyGame != null && Boolean.FALSE.equals(lobbyGame.getPlayerToStartConfirm().get(player))) {
                     lobbyGame.getPlayerToStartConfirm().remove(player);
 
                     if (lobbyGame.getPlayerToStartConfirm().isEmpty()) {
