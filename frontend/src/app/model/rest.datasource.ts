@@ -15,6 +15,7 @@ import {environment} from '../../environments/environment';
 import {GameShort} from "../data/GameShort";
 import {Lobby} from "../data/Lobby";
 import {PlayerReference} from "../data/PlayerReference";
+import {Expansion} from "../data/Expansion";
 
 
 @Injectable()
@@ -24,8 +25,10 @@ export class RestDataSource {
   constructor(private http: HttpClient) {
   }
 
-  getCards(): Observable<Card[]> {
-    return this.sendRequest<Card[]>('GET', this.url + '/projects');
+  getCards(expansions: Expansion[]): Observable<Card[]> {
+    return this.sendRequest<Card[]>('POST', this.url + '/projects',
+      { expansions: expansions }
+    );
   }
 
   getLobby(nickname: string): Observable<Lobby> {

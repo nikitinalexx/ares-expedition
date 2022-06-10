@@ -3,6 +3,7 @@ package com.terraforming.ares.controllers;
 import com.terraforming.ares.dto.*;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.request.AllProjectsRequest;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
 import com.terraforming.ares.model.turn.Turn;
 import com.terraforming.ares.model.turn.TurnType;
@@ -110,9 +111,9 @@ public class GameController {
                 .build();
     }
 
-    @GetMapping("/projects")
-    public List<CardDto> getAllProjectCards() {
-        List<Card> corporations = cardFactory.getAllCorporations();
+    @PostMapping("/projects")
+    public List<CardDto> getAllProjectCards(@RequestBody AllProjectsRequest request) {
+        List<Card> corporations = cardFactory.getAllCorporations(request.getExpansions());
         List<Card> projects = cardFactory.getAllProjects();
 
         return Stream.of(corporations, projects)

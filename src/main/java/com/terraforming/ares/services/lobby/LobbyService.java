@@ -5,6 +5,7 @@ import com.terraforming.ares.dto.LobbyGameDto;
 import com.terraforming.ares.dto.PlayerReference;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Constants;
+import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.GameParameters;
 import com.terraforming.ares.model.LobbyGame;
 import com.terraforming.ares.model.request.NewLobbyGameRequest;
@@ -234,6 +235,7 @@ public class LobbyService {
             MarsGame marsGame = gameService.startNewGame(
                     GameParameters.builder()
                             .mulligan(mulligan)
+                            .expansions(List.of(Expansion.BASE))
                             .playerNames(new ArrayList<>(game.getPlayerToStartConfirm().keySet()))
                             .build()
             );

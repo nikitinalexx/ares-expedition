@@ -7,10 +7,8 @@ import com.terraforming.ares.model.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by oleksii.nikitin
@@ -20,12 +18,16 @@ import java.util.Set;
 public class CardService {
     private final ShuffleService shuffleService;
     private final Map<Integer, Card> projects;
-    private final Map<Integer, Card> corporations;
+    private final Map<Integer, Card> baseCorporations;
+    private final Map<Integer, Card> buffedCorporations;
+    private final Map<Integer, Card> buffedCorporationsMapping;
 
     public CardService(CardFactory cardFactory, ShuffleService shuffleService) {
         this.shuffleService = shuffleService;
         projects = cardFactory.createProjects();
-        corporations = cardFactory.createCorporations();
+        baseCorporations = cardFactory.createCorporations();
+        buffedCorporations = cardFactory.createBuffedCorporations();
+        buffedCorporationsMapping = cardFactory.getBuffedCorporationsMapping();
     }
 
     public Deck createProjectsDeck(List<Expansion> expansions) {
@@ -37,11 +39,19 @@ public class CardService {
     }
 
     public Deck createCorporationsDeck(List<Expansion> expansions) {
+        Map<Integer, Card> corporations = new HashMap<>();
         if (expansions.contains(Expansion.BASE)) {
-            return createAndShuffleDeck(corporations.keySet());
+            corporations.putAll(this.baseCorporations);
         }
 
-        return Deck.builder().build();
+        if (expansions.contains(Expansion.BUFFED_CORPORATION)) {
+            corporations.putAll(this.buffedCorporationsMapping);
+        }
+
+
+        return createAndShuffleDeck(
+                corporations.values().stream().map(Card::getId).collect(Collectors.toSet())
+        );
     }
 
     private Deck createAndShuffleDeck(Set<Integer> cards) {
@@ -53,11 +63,15 @@ public class CardService {
     }
 
     public Card getCard(int id) {
-        Card projectCard = projects.get(id);
-        if (projectCard != null) {
-            return projectCard;
+        Card card = projects.get(id);
+        if (card != null) {
+            return card;
         }
-        return corporations.get(id);
+        card = baseCorporations.get(id);
+        if (card != null) {
+            return card;
+        }
+        return buffedCorporations.get(id);
     }
 
     public AutoPickCardsAction dealCards(Deck deck, Player player) {
@@ -106,6 +120,21 @@ public class CardService {
             game.mergeDeck(newProjectsDeck);
         }
         return game.dealCards(count);
+    }
+
+    public Integer dealCardWithTag(Tag tag, MarsGame game) {
+        while (true) {
+            List<Integer> cards = dealCards(game, 1);
+            if (CollectionUtils.isEmpty(cards)) {
+                break;
+            }
+            Integer cardId = cards.get(0);
+
+            if (getCard(cardId).getTags().contains(tag)) {
+                return cardId;
+            }
+        }
+        throw new IllegalStateException("Unable to find a card with tag");
     }
 
 }

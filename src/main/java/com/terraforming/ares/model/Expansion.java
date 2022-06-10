@@ -5,5 +5,6 @@ package com.terraforming.ares.model;
  * Creation date 27.04.2022
  */
 public enum Expansion {
-    BASE
+    BASE,
+    BUFFED_CORPORATION
 }

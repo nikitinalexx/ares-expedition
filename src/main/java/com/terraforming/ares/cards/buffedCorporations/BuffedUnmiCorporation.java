@@ -1,12 +1,9 @@
-package com.terraforming.ares.cards.corporations;
+package com.terraforming.ares.cards.buffedCorporations;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Created by oleksii.nikitin
@@ -14,42 +11,40 @@ import java.util.List;
  */
 @RequiredArgsConstructor
 @Getter
-public class CelestiorCorporation implements CorporationCard {
+public class BuffedUnmiCorporation implements CorporationCard {
     private final int id;
     private final CardMetadata cardMetadata;
 
-    public CelestiorCorporation(int id) {
+    public BuffedUnmiCorporation(int id) {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
-                .name("Celestior Corporation")
-                .description("50 Mc. Blue action bonus that is not implemented yet")
-                .cardAction(CardAction.CELESTIOR_CORPORATION)
+                .name("Unmi")
+                .description("45 Mc. When you first raise RT during the phase, you may spend 6 MC to get 1 extra RT.")
+                .cardAction(CardAction.UNMI_CORPORATION)
                 .build();
     }
 
     @Override
     public boolean isActiveCard() {
-        return true;
+        return false;
     }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        marsContext.getPlayer().setMc(50);
+        Player player = marsContext.getPlayer();
+        player.setMc(45);
+        player.setUnmiCorporation(true);
         return null;
     }
 
     @Override
-    public List<Tag> getTags() {
-        return Collections.singletonList(Tag.SPACE);
-    }
-
-    @Override
     public Expansion getExpansion() {
-        return Expansion.BASE;
+        return Expansion.BUFFED_CORPORATION;
     }
 
     @Override
     public int getPrice() {
-        return 50;
+        return 45;
     }
+
 }

@@ -1,12 +1,13 @@
 package com.terraforming.ares.factories;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.Constants;
+import com.terraforming.ares.model.Deck;
+import com.terraforming.ares.model.GameParameters;
+import com.terraforming.ares.model.Planet;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.util.Collections;
 
 /**
  * Created by oleksii.nikitin
@@ -15,13 +16,13 @@ import java.util.Collections;
 @Service
 @RequiredArgsConstructor
 public class DefaultGameFactory implements GameFactory {
-    private final CardService marsDeckService;
+    private final CardService cardService;
     private final PlanetFactory planetFactory;
 
     @Override
     public MarsGame createMarsGame(GameParameters gameParameters) {
-        Deck projectsDeck = marsDeckService.createProjectsDeck(Collections.singletonList(Expansion.BASE));
-        Deck corporationsDeck = marsDeckService.createCorporationsDeck(Collections.singletonList(Expansion.BASE));
+        Deck projectsDeck = cardService.createProjectsDeck(gameParameters.getExpansions());
+        Deck corporationsDeck = cardService.createCorporationsDeck(gameParameters.getExpansions());
 
         Planet mars = planetFactory.createMars(gameParameters);
 

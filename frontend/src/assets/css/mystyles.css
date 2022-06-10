@@ -615,6 +615,10 @@ li.events::before {
   background-size: cover;
 }
 
+.production-box-size0b {
+  width: 50px;
+}
+
 .production-box-size1a {
   width: 66px;
 }

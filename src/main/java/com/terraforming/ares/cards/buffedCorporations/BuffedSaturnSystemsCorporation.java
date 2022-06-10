@@ -1,4 +1,4 @@
-package com.terraforming.ares.cards.corporations;
+package com.terraforming.ares.cards.buffedCorporations;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
@@ -14,7 +14,7 @@ import java.util.Map;
  * Creation date 27.04.2022
  */
 @Getter
-public class SaturnSystemsCorporation implements CorporationCard {
+public class BuffedSaturnSystemsCorporation implements CorporationCard {
     private final int id;
     private final CardMetadata cardMetadata;
 
@@ -23,11 +23,11 @@ public class SaturnSystemsCorporation implements CorporationCard {
         return List.of(Tag.JUPITER);
     }
 
-    public SaturnSystemsCorporation(int id) {
+    public BuffedSaturnSystemsCorporation(int id) {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
                 .name("Saturn Systems")
-                .description("24 Mc. 1 Titanium income. Whenever you play a Jupiter tag, excluding this, gain 1 TR.")
+                .description("28 Mc. 1 Titanium income. 1 Space card. Whenever you play a Jupiter tag, excluding this, gain 1 TR.")
                 .cardAction(CardAction.SATURN_SYSTEMS_CORPORATION)
                 .build();
     }
@@ -53,19 +53,24 @@ public class SaturnSystemsCorporation implements CorporationCard {
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
-        player.setMc(24);
+        player.setMc(28);
         player.setTitaniumIncome(player.getTitaniumIncome() + 1);
+
+        player.getHand().addCard(
+                marsContext.getCardService().dealCardWithTag(Tag.SPACE, marsContext.getGame())
+        );
+
         return null;
     }
 
     @Override
     public Expansion getExpansion() {
-        return Expansion.BASE;
+        return Expansion.BUFFED_CORPORATION;
     }
 
     @Override
     public int getPrice() {
-        return 24;
+        return 28;
     }
 
 }

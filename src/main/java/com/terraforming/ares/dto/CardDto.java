@@ -40,6 +40,7 @@ public class CardDto {
     boolean isActive;
     List<ActionInputData> actionInputData;
     boolean corporation;
+    Expansion expansion;
 
     public static CardDto from(Card card) {
         return new CardDto(
@@ -64,7 +65,8 @@ public class CardDto {
                 card.getCardMetadata().getResourcesOnBuild(),
                 card.isActiveCard(),
                 card.getCardMetadata().getActionsInputData(),
-                card.isCorporation()
+                card.isCorporation(),
+                card.getExpansion()
         );
     }
 

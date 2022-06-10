@@ -1,35 +1,32 @@
-package com.terraforming.ares.cards.corporations;
+package com.terraforming.ares.cards.buffedCorporations;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
- * Creation date 29.04.2022
+ * Creation date 27.04.2022
  */
-@RequiredArgsConstructor
 @Getter
-public class Inventrix implements CorporationCard {
+public class BuffedEcolineCorporation implements CorporationCard {
     private final int id;
     private final CardMetadata cardMetadata;
 
     @Override
     public Set<SpecialEffect> getSpecialEffects() {
-        return Set.of(SpecialEffect.AMPLIFY_GLOBAL_REQUIREMENT);
+        return Set.of(SpecialEffect.ECOLINE_DISCOUNT);
     }
 
-    public Inventrix(int id) {
+    public BuffedEcolineCorporation(int id) {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
-                .name("Inventrix")
-                .description("33 Mc. Take 3 cards. When playing a card with requirements, you may consider the oxygen or temperature one color higher or lower. This cannot be modified futher by other effects.")
-                .cardAction(CardAction.INVENTRIX_CORPORATION)
+                .name("Ecoline")
+                .description("42 Mc. 1 plant production. 1 Plant card. When you exchange plants for forest, pay 1 plant less.")
+                .cardAction(CardAction.ECOLINE_CORPORATION)
                 .build();
     }
 
@@ -41,23 +38,29 @@ public class Inventrix implements CorporationCard {
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
-        player.setMc(33);
-        marsContext.dealCards(3);
+        player.setMc(42);
+        player.setPlantsIncome(1);
+
+        player.getHand().addCard(
+                marsContext.getCardService().dealCardWithTag(Tag.PLANT, marsContext.getGame())
+        );
+
         return null;
     }
 
     @Override
     public List<Tag> getTags() {
-        return Collections.singletonList(Tag.SCIENCE);
+        return List.of(Tag.PLANT);
     }
 
     @Override
     public Expansion getExpansion() {
-        return Expansion.BASE;
+        return Expansion.BUFFED_CORPORATION;
     }
 
     @Override
     public int getPrice() {
-        return 33;
+        return 42;
     }
+
 }

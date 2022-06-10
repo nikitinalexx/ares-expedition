@@ -15,4 +15,5 @@ import java.util.List;
 public class GameParameters {
     private List<String> playerNames;
     private boolean mulligan;
+    private List<Expansion> expansions;
 }

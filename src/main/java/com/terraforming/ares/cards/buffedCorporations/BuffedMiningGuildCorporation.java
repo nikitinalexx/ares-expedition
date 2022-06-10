@@ -1,4 +1,4 @@
-package com.terraforming.ares.cards.corporations;
+package com.terraforming.ares.cards.buffedCorporations;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
@@ -17,7 +17,7 @@ import java.util.Map;
  * Creation date 27.04.2022
  */
 @Getter
-public class MiningGuildCorporation implements CorporationCard {
+public class BuffedMiningGuildCorporation implements CorporationCard {
     private final int id;
     private final CardMetadata cardMetadata;
 
@@ -26,11 +26,11 @@ public class MiningGuildCorporation implements CorporationCard {
         return List.of(Tag.BUILDING, Tag.BUILDING);
     }
 
-    public MiningGuildCorporation(int id) {
+    public BuffedMiningGuildCorporation(int id) {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
                 .name("Mining Guild")
-                .description("27 Mc. 1 Steel income. Whenever you play a card that increases Steel income, gain 1 TR.")
+                .description("37 Mc. 1 Steel income. 1 card with Building tag. Whenever you play a card that increases Steel income, gain 1 TR.")
                 .cardAction(CardAction.MINING_GUILD_CORPORATION)
                 .build();
     }
@@ -64,19 +64,24 @@ public class MiningGuildCorporation implements CorporationCard {
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
-        player.setMc(27);
+        player.setMc(37);
         player.setSteelIncome(player.getSteelIncome() + 1);
+
+        player.getHand().addCard(
+                marsContext.getCardService().dealCardWithTag(Tag.BUILDING, marsContext.getGame())
+        );
+
         return null;
     }
 
     @Override
     public Expansion getExpansion() {
-        return Expansion.BASE;
+        return Expansion.BUFFED_CORPORATION;
     }
 
     @Override
     public int getPrice() {
-        return 27;
+        return 37;
     }
 
 }

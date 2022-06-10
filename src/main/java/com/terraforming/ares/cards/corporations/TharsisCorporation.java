@@ -46,4 +46,9 @@ public class TharsisCorporation implements CorporationCard {
         return Expansion.BASE;
     }
 
+    @Override
+    public int getPrice() {
+        return 40;
+    }
+
 }

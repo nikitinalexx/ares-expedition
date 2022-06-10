@@ -3,6 +3,7 @@ import {NewGameRepository} from '../model/newGameRepository.model';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {NewGameRequest} from '../data/NewGameRequest';
 import {PlayerReference} from '../data/PlayerReference';
+import {Expansion} from '../data/Expansion';
 
 
 export const BASE_URL = new InjectionToken('rest_url');
@@ -31,7 +32,8 @@ export class NewGameComponent implements OnInit {
       playerName2: '',
       playerName3: '',
       playerName4: '',
-      mulligan: false
+      mulligan: false,
+      improveWeakCorp: false
     });
   }
 
@@ -46,7 +48,11 @@ export class NewGameComponent implements OnInit {
         }
         names.push(name);
       }
-      this.model.createNewGame(new NewGameRequest(names, this.parentForm.value.mulligan))
+      const expansions = [Expansion.BASE];
+      if (this.parentForm.value.improveWeakCorp) {
+        expansions.push(Expansion.BUFFED_CORPORATION);
+      }
+      this.model.createNewGame(new NewGameRequest(names, this.parentForm.value.mulligan, expansions))
         .subscribe(response => {
           if (response) {
             this.errorMessage = null;

@@ -9,6 +9,7 @@ import {ParameterColor} from '../data/ParameterColor';
 import {DiscountComponent} from '../discount/discount.component';
 import {BasePlayer} from '../data/BasePlayer';
 import {Player} from '../data/Player';
+import {Expansion} from "../data/Expansion";
 
 @Component({
   selector: 'app-card-template',
@@ -732,6 +733,10 @@ export class CardTemplateComponent {
     if (req.length === 1 && req[0] === ParameterColor.P) {
       return 'requirements-p';
     }
+  }
+
+  isBuffedCorporation(card: Card): boolean {
+    return card.expansion === Expansion.BUFFED_CORPORATION;
   }
 
   getTagRequirements(card: Card): string {

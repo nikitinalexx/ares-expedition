@@ -1,4 +1,4 @@
-package com.terraforming.ares.cards.corporations;
+package com.terraforming.ares.cards.buffedCorporations;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
@@ -12,15 +12,15 @@ import java.util.List;
  * Creation date 27.04.2022
  */
 @Getter
-public class ZetacellCorporation implements CorporationCard {
+public class BuffedZetacellCorporation implements CorporationCard {
     private final int id;
     private final CardMetadata cardMetadata;
 
-    public ZetacellCorporation(int id) {
+    public BuffedZetacellCorporation(int id) {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
                 .name("Zetacell")
-                .description("43 Mc. Take 5 card and then discard 4. When you flip an ocean, get 2 MC and 2 Plants.")
+                .description("47 Mc. Take 5 card and then discard 4. When you flip an ocean, get 2 MC and 2 Plants.")
                 .cardAction(CardAction.ZETACELL_CORPORATION)
                 .build();
     }
@@ -33,7 +33,7 @@ public class ZetacellCorporation implements CorporationCard {
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
-        player.setMc(43);
+        player.setMc(47);
         marsContext.dealCards(5);
         player.addNextTurn(
                 new DiscardCardsTurn(
@@ -55,12 +55,12 @@ public class ZetacellCorporation implements CorporationCard {
 
     @Override
     public Expansion getExpansion() {
-        return Expansion.BASE;
+        return Expansion.BUFFED_CORPORATION;
     }
 
     @Override
     public int getPrice() {
-        return 43;
+        return 47;
     }
 
 }

@@ -55,4 +55,8 @@ public class InterplanetaryCinematics implements CorporationCard {
         return Expansion.BASE;
     }
 
+    @Override
+    public int getPrice() {
+        return 46;
+    }
 }

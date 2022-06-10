@@ -1,4 +1,4 @@
-package com.terraforming.ares.cards.corporations;
+package com.terraforming.ares.cards.buffedCorporations;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
@@ -15,7 +15,7 @@ import java.util.Set;
  */
 @RequiredArgsConstructor
 @Getter
-public class Inventrix implements CorporationCard {
+public class BuffedInventrix implements CorporationCard {
     private final int id;
     private final CardMetadata cardMetadata;
 
@@ -24,11 +24,11 @@ public class Inventrix implements CorporationCard {
         return Set.of(SpecialEffect.AMPLIFY_GLOBAL_REQUIREMENT);
     }
 
-    public Inventrix(int id) {
+    public BuffedInventrix(int id) {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
                 .name("Inventrix")
-                .description("33 Mc. Take 3 cards. When playing a card with requirements, you may consider the oxygen or temperature one color higher or lower. This cannot be modified futher by other effects.")
+                .description("39 Mc. Take 3 cards. When playing a card with requirements, you may consider the oxygen or temperature one color higher or lower. This cannot be modified futher by other effects.")
                 .cardAction(CardAction.INVENTRIX_CORPORATION)
                 .build();
     }
@@ -41,7 +41,7 @@ public class Inventrix implements CorporationCard {
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
-        player.setMc(33);
+        player.setMc(39);
         marsContext.dealCards(3);
         return null;
     }
@@ -53,11 +53,11 @@ public class Inventrix implements CorporationCard {
 
     @Override
     public Expansion getExpansion() {
-        return Expansion.BASE;
+        return Expansion.BUFFED_CORPORATION;
     }
 
     @Override
     public int getPrice() {
-        return 33;
+        return 39;
     }
 }
