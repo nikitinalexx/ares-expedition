@@ -55,6 +55,10 @@ export class PickCorporationComponent implements OnInit {
       largeConvoyForm: 'plants'
     });
 
+    if (this.mulliganTurn()) {
+      this.parentForm.controls.turn.setValue('sellCards');
+    }
+
     if (this.discardCardsTurn()) {
       this.parentForm.controls.turn.setValue('discardCards');
     }
