@@ -9,6 +9,8 @@ import {FormBuilder, FormGroup} from '@angular/forms';
 import {BasePlayer} from '../data/BasePlayer';
 import {CardColor} from '../data/CardColor';
 import {Tag} from '../data/Tag';
+import {Player} from "../data/Player";
+import {DiscardCardsTurn} from "../data/DiscardCardsTurn";
 
 
 @Component({
@@ -77,8 +79,16 @@ export class GameComponent implements OnInit {
     return this.game?.player.corporations;
   }
 
-  getPlayerHand(player: BasePlayer): Card[] {
-    return player?.hand;
+  getPlayerHand(player: Player): Card[] {
+    if (!player) {
+      return [];
+    }
+    const nextTurn = player.nextTurn as DiscardCardsTurn;
+    if (nextTurn && nextTurn.cards) {
+      return player.hand.filter(card => !nextTurn.cards.some(c => c.id === card.id));
+    } else {
+      return player.hand;
+    }
   }
 
   getPlayerPlayedCards(player: BasePlayer): Card[] {
