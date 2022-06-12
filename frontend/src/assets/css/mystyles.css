@@ -179,8 +179,12 @@ li.events::before {
 }
 
 .clicked-card {
-  box-shadow: 0 0 1px 1px #444, 0 0 15px 5px white !important;
-  filter: grayscale(1);
+  box-shadow: 0 0 1px 1px #444, 0 0 15px 15px springgreen !important;
+  filter: brightness(90%);
+}
+
+.unavailable-card {
+  filter: grayscale(80%);
 }
 
 * {

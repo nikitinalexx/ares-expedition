@@ -1,6 +1,8 @@
 export enum ParameterColor {
-  P = 'P',
-  R = 'R',
-  Y = 'Y',
-  W = 'W'
+  P = 0,
+  R = 1,
+  Y = 2,
+  W = 3
 }
+
+export const PARAMETER_COLORS = Object.values(ParameterColor);

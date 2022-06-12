@@ -44,13 +44,23 @@ public class Planet {
     }
 
     @JsonIgnore
-    public int getTemperature() {
+    public int getTemperatureValue() {
         return measurableGlobalParameters.get(GlobalParameter.TEMPERATURE).getCurrentValue();
     }
 
     @JsonIgnore
-    public int getOxygen() {
+    public int getOxygenValue() {
         return measurableGlobalParameters.get(GlobalParameter.OXYGEN).getCurrentValue();
+    }
+
+    @JsonIgnore
+    public ParameterColor getTemperatureColor() {
+        return measurableGlobalParameters.get(GlobalParameter.TEMPERATURE).getCurrentColor();
+    }
+
+    @JsonIgnore
+    public ParameterColor getOxygenColor() {
+        return measurableGlobalParameters.get(GlobalParameter.OXYGEN).getCurrentColor();
     }
 
     @JsonIgnore

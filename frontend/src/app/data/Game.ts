@@ -1,6 +1,7 @@
 import {Player} from './Player';
 import {Ocean} from './Ocean';
 import {BasePlayer} from './BasePlayer';
+import {ParameterColor} from "./ParameterColor";
 
 export class Game {
   constructor(turns: number,
@@ -9,6 +10,8 @@ export class Game {
               temperature: number,
               oxygen: number,
               oceans: Ocean[],
+              phaseTemperatureColor: ParameterColor,
+              phaseOxygenColor: ParameterColor,
               phaseTemperature?: number,
               phaseOxygen?: number,
               phaseOceans?: number,
@@ -22,6 +25,8 @@ export class Game {
   temperature: number;
   oxygen: number;
   oceans: Ocean[];
+  phaseTemperatureColor: ParameterColor;
+  phaseOxygenColor: ParameterColor;
   phaseTemperature?: number;
   phaseOxygen?: number;
   phaseOceans?: number;
