@@ -23,12 +23,22 @@ export class RequirementsComponent {
       } else if (!canBuildA && canBuildB) {
         return 1;
       }
+      const enoughRequirements = canBuildA || canBuildB;
+
       const enoughMoneyA = this.enoughMoney(a, player);
       const enoughMoneyB = this.enoughMoney(b, player);
       if (!enoughMoneyA && enoughMoneyB) {
-        return -1;
+        if (enoughRequirements) {
+          return 1;
+        } else {
+          return -1;
+        }
       } else if (enoughMoneyA && !enoughMoneyB) {
-        return 1;
+        if (enoughRequirements) {
+          return -1;
+        } else {
+          return 1;
+        }
       }
       return 0;
     });
