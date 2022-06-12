@@ -82,20 +82,11 @@ export class BuildBlueRedComponent implements OnInit {
   }
 
   getBlueRedPlayerHand(): Card[] {
-    const cards = this.game?.player.hand.filter(
+    const cards = this.game.player.hand.filter(
       card => card.cardColor === CardColor[CardColor.BLUE] || card.cardColor === CardColor[CardColor.RED]
     );
 
-    cards.sort((a, b) => {
-      const canBuildA = this.requirementsService.canBuildCard(a, this.game.player, this.game);
-      const canBuildB = this.requirementsService.canBuildCard(b, this.game.player, this.game);
-      if (canBuildA && !canBuildB) {
-        return -1;
-      } else if (!canBuildA && canBuildB) {
-        return 1;
-      }
-      return 0;
-    });
+    this.requirementsService.sortCardsForBuilding(cards, this.game.player, this.game);
 
     return cards;
   }

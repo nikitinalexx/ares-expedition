@@ -4,8 +4,8 @@ import {SpecialEffect} from '../data/SpecialEffect';
 import {Player} from '../data/Player';
 import {Tag} from '../data/Tag';
 import {DiscountComponent} from '../discount/discount.component';
-import {PARAMETER_COLORS, ParameterColor} from "../data/ParameterColor";
-import {Game} from "../data/Game";
+import {PARAMETER_COLORS, ParameterColor} from '../data/ParameterColor';
+import {Game} from '../data/Game';
 
 @Injectable()
 export class RequirementsComponent {
@@ -14,13 +14,33 @@ export class RequirementsComponent {
 
   }
 
-  canBuildCard(card: Card, player: Player, game: Game): boolean {
+  sortCardsForBuilding(cards: Card[], player: Player, game: Game) {
+    cards.sort((a, b) => {
+      const canBuildA = this.enoughRequirements(a, player, game);
+      const canBuildB = this.enoughRequirements(b, player, game);
+      if (canBuildA && !canBuildB) {
+        return -1;
+      } else if (!canBuildA && canBuildB) {
+        return 1;
+      }
+      const enoughMoneyA = this.enoughMoney(a, player);
+      const enoughMoneyB = this.enoughMoney(b, player);
+      if (!enoughMoneyA && enoughMoneyB) {
+        return -1;
+      } else if (enoughMoneyA && !enoughMoneyB) {
+        return 1;
+      }
+      return 0;
+    });
+  }
+
+  enoughMoney(card: Card, player: Player): boolean {
     const discount = this.discountService.getDiscount(card, player);
 
-    if (player.mc < card.price - discount) {
-      return false;
-    }
+    return player.mc >= card.price - discount;
+  }
 
+  enoughRequirements(card: Card, player: Player, game: Game): boolean {
     if (card.tagReq) {
       const allTags = player.played.map(c => c.tags).reduce((acc, val) => acc.concat(val), []);
 
@@ -61,6 +81,14 @@ export class RequirementsComponent {
     }
 
     return true;
+  }
+
+  canBuildCard(card: Card, player: Player, game: Game): boolean {
+    if (!this.enoughMoney(card, player)) {
+      return false;
+    }
+
+    return this.enoughRequirements(card, player, game);
   }
 
   getDiscount(card: Card, player: Player): number {

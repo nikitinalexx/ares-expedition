@@ -5,7 +5,7 @@ import {SpecialEffect} from '../data/SpecialEffect';
 import {GainType} from '../data/GainType';
 import {Gain} from '../data/Gain';
 import {CardAction} from '../data/CardAction';
-import {ParameterColor} from '../data/ParameterColor';
+import {PARAMETER_COLORS, ParameterColor} from '../data/ParameterColor';
 import {DiscountComponent} from '../discount/discount.component';
 import {BasePlayer} from '../data/BasePlayer';
 import {Player} from '../data/Player';
@@ -718,19 +718,19 @@ export class CardTemplateComponent {
   }
 
   private getTemperatureOxygenClass(req: ParameterColor[]): string {
-    if (req.length === 3 && req[0] === ParameterColor.R) {
+    if (req.length === 3 && req[0] === PARAMETER_COLORS[ParameterColor.R]) {
       return 'requirements-ryw';
     }
-    if (req.length === 2 && req[0] === ParameterColor.Y) {
+    if (req.length === 2 && req[0] === PARAMETER_COLORS[ParameterColor.Y]) {
       return 'requirements-yw';
     }
-    if (req.length === 2 && req[0] === ParameterColor.P) {
+    if (req.length === 2 && req[0] === PARAMETER_COLORS[ParameterColor.P]) {
       return 'requirements-pr';
     }
-    if (req.length === 1 && req[0] === ParameterColor.W) {
+    if (req.length === 1 && req[0] === PARAMETER_COLORS[ParameterColor.W]) {
       return 'requirements-w';
     }
-    if (req.length === 1 && req[0] === ParameterColor.P) {
+    if (req.length === 1 && req[0] === PARAMETER_COLORS[ParameterColor.P]) {
       return 'requirements-p';
     }
   }
