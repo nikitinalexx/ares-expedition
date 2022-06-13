@@ -426,13 +426,14 @@ li.events::before {
   text-align: center;
   font-weight: normal;
   font-size: 15px;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 1.2), 0 0 0 2px rgba(0, 0, 0, 0.3);
   background: linear-gradient(to right, #fa2525, #fb7272, #fb7272, #fa2525);
   background-image: url(../images/requisites/min_big.png);
   background-size: 147px 38px;
   background-position: -15px -4px;
   height: 25px;
   line-height: 25px;
+  border-radius: 5%;
 }
 
 .requirements-max {
