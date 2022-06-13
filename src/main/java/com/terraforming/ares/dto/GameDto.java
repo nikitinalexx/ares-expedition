@@ -25,4 +25,6 @@ public class GameDto {
     private ParameterColor phaseOxygenColor;
     private List<OceanDto> oceans;
     private int turns;
+    private List<AwardDto> awards;
+    private List<MilestoneDto> milestones;
 }

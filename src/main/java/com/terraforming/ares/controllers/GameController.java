@@ -77,7 +77,7 @@ public class GameController {
 
         return GameDto.builder()
                 .phase(game.getCurrentPhase())
-                .player(buildCurrentPlayer(game.getPlayerByUuid(playerUuid)))
+                .player(buildCurrentPlayer(game.getPlayerByUuid(playerUuid), game))
                 .temperature(game.getPlanet().getTemperatureValue())
                 .phaseTemperature(phasePlanet != null ? phasePlanet.getTemperatureValue() : null)
                 .phaseTemperatureColor(phasePlanet != null ? phasePlanet.getTemperatureColor() : null)
@@ -88,6 +88,8 @@ public class GameController {
                 .phaseOceans(phasePlanet != null ? phasePlanet.getRevealedOceans().size() : null)
                 .otherPlayers(buildOtherPlayers(game, playerUuid))
                 .turns(game.getTurns())
+                .awards(game.getAwards().stream().map(AwardDto::from).collect(Collectors.toList()))
+                .milestones(game.getMilestones().stream().map(MilestoneDto::from).collect(Collectors.toList()))
                 .build();
     }
 
@@ -128,16 +130,16 @@ public class GameController {
         return game.getPlayerUuidToPlayer().values()
                 .stream()
                 .filter(player -> !player.getUuid().equals(currentPlayerUuid))
-                .map(this::buildAnotherPlayer)
+                .map(player -> buildAnotherPlayer(player, game))
                 .collect(Collectors.toList());
     }
 
-    private AnotherPlayerDto buildAnotherPlayer(Player player) {
+    private AnotherPlayerDto buildAnotherPlayer(Player player, MarsGame game) {
         return AnotherPlayerDto.builder()
                 .playerUuid(player.getUuid())
                 .name(player.getName())
                 .phase(player.getChosenPhase())
-                .winPoints(winPointsService.countWinPoints(player))
+                .winPoints(winPointsService.countWinPoints(player, game))
                 .mc(player.getMc())
                 .mcIncome(player.getMcIncome())
                 .cardIncome(player.getCardIncome())
@@ -155,7 +157,7 @@ public class GameController {
                 .build();
     }
 
-    private PlayerDto buildCurrentPlayer(Player player) {
+    private PlayerDto buildCurrentPlayer(Player player, MarsGame game) {
         Deck corporations = player.getCorporations();
 
         return PlayerDto.builder()
@@ -181,7 +183,7 @@ public class GameController {
                 .activatedBlueCards(player.getActivatedBlueCards().getCards())
                 .activatedBlueActionTwice(player.isActivatedBlueActionTwice())
                 .terraformingRating(player.getTerraformingRating())
-                .winPoints(winPointsService.countWinPoints(player))
+                .winPoints(winPointsService.countWinPoints(player, game))
                 .forests(player.getForests())
                 .builtSpecialDesignLastTurn(player.isBuiltSpecialDesignLastTurn())
                 .builtWorkCrewsLastTurn(player.isBuiltWorkCrewsLastTurn())

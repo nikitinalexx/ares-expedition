@@ -11,6 +11,10 @@ import {CardColor} from '../data/CardColor';
 import {Tag} from '../data/Tag';
 import {Player} from "../data/Player";
 import {DiscardCardsTurn} from "../data/DiscardCardsTurn";
+import {Award} from "../data/Award";
+import {AwardType} from "../data/AwardType";
+import {Milestone} from "../data/Milestone";
+import {MilestoneType} from "../data/MilestoneType";
 
 
 @Component({
@@ -179,6 +183,70 @@ export class GameComponent implements OnInit {
     return result;
   }
 
+  milestoneMagnate(milestone: Milestone): boolean {
+    return milestone.type === MilestoneType.MAGNATE;
+  }
+
+  milestoneTerraformer(milestone: Milestone): boolean {
+    return milestone.type === MilestoneType.TERRAFORMER;
+  }
+
+  milestoneBuilder(milestone: Milestone): boolean {
+    return milestone.type === MilestoneType.BUILDER;
+  }
+
+  milestoneSpaceBaron(milestone: Milestone): boolean {
+    return milestone.type === MilestoneType.SPACE_BARON;
+  }
+
+  milestoneEnergizer(milestone: Milestone): boolean {
+    return milestone.type === MilestoneType.ENERGIZER;
+  }
+
+  milestoneFarmer(milestone: Milestone): boolean {
+    return milestone.type === MilestoneType.FARMER;
+  }
+
+  milestoneTycoon(milestone: Milestone): boolean {
+    return milestone.type === MilestoneType.TYCOON;
+  }
+
+  milestonePlanner(milestone: Milestone): boolean {
+    return milestone.type === MilestoneType.PLANNER;
+  }
+
+  milestoneDiversifier(milestone: Milestone): boolean {
+    return milestone.type === MilestoneType.DIVERSIFIER;
+  }
+
+  milestoneLegend(milestone: Milestone): boolean {
+    return milestone.type === MilestoneType.LEGEND;
+  }
+
+  awardTypeIndustrialist(award: Award): boolean {
+    return award.type === AwardType.INDUSTRIALIST;
+  }
+
+  awardTypeProjectManager(award: Award): boolean {
+    return award.type === AwardType.PROJECT_MANAGER;
+  }
+
+  awardTypeGenerator(award: Award): boolean {
+    return award.type === AwardType.GENERATOR;
+  }
+
+  awardTypeCelebrity(award: Award): boolean {
+    return award.type === AwardType.CELEBRITY;
+  }
+
+  awardTypeCollector(award: Award): boolean {
+    return award.type === AwardType.COLLECTOR;
+  }
+
+  awardTypeResearcher(award: Award): boolean {
+    return award.type === AwardType.RESEARCHER;
+  }
+
   updateGameShort() {
     this.model.getShortGame(this.playerUuid).subscribe(shortGame => {
       this.game.temperature = shortGame.temperature;
@@ -256,4 +324,11 @@ export class GameComponent implements OnInit {
     });
   }
 
+  milestoneClass(milestone: Milestone): string {
+    if (Array.from(milestone.players.values()).length === 0) {
+      return '';
+    } else {
+      return 'achieved-milestone';
+    }
+  }
 }

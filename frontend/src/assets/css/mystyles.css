@@ -560,6 +560,13 @@ li.events::before {
   background-size: 50px 40px;
 }
 
+.small-rating {
+  background-image: url(../images/resources/tr.png);
+  width: 20px;
+  height: 20px;
+  background-size: 20px 20px;
+  margin: 0 0 0 2px;
+}
 /************** Style the Content ************/
 .content {
   position: relative;

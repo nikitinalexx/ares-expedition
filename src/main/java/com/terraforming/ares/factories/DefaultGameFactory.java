@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 public class DefaultGameFactory implements GameFactory {
     private final CardService cardService;
     private final PlanetFactory planetFactory;
+    private final AchievementsFactory achievementsFactory;
 
     @Override
     public MarsGame createMarsGame(GameParameters gameParameters) {
@@ -32,7 +33,9 @@ public class DefaultGameFactory implements GameFactory {
                 projectsDeck,
                 corporationsDeck,
                 mars,
-                gameParameters.isMulligan()
+                gameParameters.isMulligan(),
+                achievementsFactory.createAwards(Constants.ACHIEVEMENTS_SIZE),
+                achievementsFactory.createMilestones(Constants.ACHIEVEMENTS_SIZE)
         );
 
     }

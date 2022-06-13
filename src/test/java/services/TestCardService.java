@@ -6,13 +6,11 @@ import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardFactory;
 import com.terraforming.ares.services.CardService;
-import org.checkerframework.checker.units.qual.C;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
@@ -51,7 +49,9 @@ class TestCardService {
                 Deck.builder().cards(new LinkedList<>(List.of(1, 2, 3, 4, 5))).build(),
                 Deck.builder().cards(new LinkedList<>(List.of(100, 101, 102, 103))).build(),
                 null,
-                false
+                false,
+                null,
+                null
         );
 
         List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
