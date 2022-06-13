@@ -576,7 +576,13 @@
 
 
 
-  <div *ngIf="hasTagRequirements(card)" class="requirements">{{getTagRequirements(card)}}</div>
+  <div *ngIf="hasAtLeastFourTagRequirements(card)" class="requirements">
+    {{card.tagReq.length}} <span class="small-tag resource-tag tag-{{card.tagReq[0].toLowerCase()}}"></span>
+  </div>
+
+  <div *ngIf="hasOneToThreeTagRequirements(card)" class="requirements">
+    <span *ngFor="let tag of card.tagReq" class="small-tag resource-tag tag-{{tag.toLowerCase()}}"></span>
+  </div>
 
   <div *ngIf="hasTempRequirements(card)" [ngClass]="getTemperatureClass(card)" class="requirements">Temperature</div>
   <div *ngIf="hasOxygenRequirements(card)" [ngClass]="getOxygenClass(card)" class="requirements">Oxygen</div>

@@ -689,6 +689,14 @@ export class CardTemplateComponent {
     return card.tagReq.length !== 0;
   }
 
+  hasAtLeastFourTagRequirements(card: Card): boolean {
+    return card.tagReq.length >= 4;
+  }
+
+  hasOneToThreeTagRequirements(card: Card): boolean {
+    return card.tagReq.length >= 1 && card.tagReq.length <= 3;
+  }
+
   hasTempRequirements(card: Card): boolean {
     return card.tempReq && card.tempReq.length !== 0;
   }
