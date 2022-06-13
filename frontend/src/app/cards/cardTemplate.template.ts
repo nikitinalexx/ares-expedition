@@ -697,6 +697,29 @@ export class CardTemplateComponent {
     return card.tagReq.length >= 1 && card.tagReq.length <= 3;
   }
 
+  displayOceanRequirementAsNumber(card: Card): boolean {
+    return card.oceanRequirement.minValue === 0 && card.oceanRequirement.maxValue > 3
+      || card.oceanRequirement.maxValue === 9 && card.oceanRequirement.minValue > 3;
+  }
+
+  getOceanDisplayNumber(card: Card): number {
+    if (card.oceanRequirement.minValue === 0) {
+      return card.oceanRequirement.maxValue;
+    } else {
+      return card.oceanRequirement.minValue;
+    }
+  }
+
+  getOceanRequirementNumber(card: Card): number {
+    if (this.displayOceanRequirementAsNumber(card)) {
+      return 1;
+    } else if (card.oceanRequirement.minValue === 0) {
+      return card.oceanRequirement.maxValue;
+    } else {
+      return card.oceanRequirement.minValue;
+    }
+  }
+
   hasTempRequirements(card: Card): boolean {
     return card.tempReq && card.tempReq.length !== 0;
   }

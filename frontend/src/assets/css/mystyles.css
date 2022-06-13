@@ -507,6 +507,13 @@ li.events::before {
   background-image: url(../images/tiles/empty.png);
 }
 
+.small-tile {
+  width: 20px;
+  height: 23px;
+  background-size: 20px 23px;
+  margin: 0 0 0 2px;
+}
+
 .temperature-tile {
   background-image: url(../images/global-parameters/temperature.png);
   width: 14px;

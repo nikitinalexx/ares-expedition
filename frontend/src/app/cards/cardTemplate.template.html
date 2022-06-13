@@ -586,7 +586,10 @@
 
   <div *ngIf="hasTempRequirements(card)" [ngClass]="getTemperatureClass(card)" class="requirements">Temperature</div>
   <div *ngIf="hasOxygenRequirements(card)" [ngClass]="getOxygenClass(card)" class="requirements">Oxygen</div>
-  <div *ngIf="hasOceanRequirement(card)" class="requirements">{{getOceanRequirementValue(card)}} Oceans</div>
+  <div *ngIf="hasOceanRequirement(card)" class="requirements">
+    {{card.oceanRequirement.minValue === 0 ? 'Max' : 'Min'}} {{displayOceanRequirementAsNumber(card) ? getOceanDisplayNumber(card) : ''}}
+    <div *ngFor="let item of [].constructor(getOceanRequirementNumber(card)); let i = index" class="ocean-tile tile small-tile"></div>
+  </div>
 
   <div *ngIf="hasAmplifyGlobalRequirements(card) || actionSpecialDesign(card)">
     <div class="tile globals-box">Temperature Oxygen</div>
