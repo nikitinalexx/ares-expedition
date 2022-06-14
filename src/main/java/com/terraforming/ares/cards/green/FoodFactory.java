@@ -1,13 +1,16 @@
 package com.terraforming.ares.cards.green;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
+import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by oleksii.nikitin
@@ -40,9 +43,18 @@ public class FoodFactory implements BaseExpansionGreenCard {
         Player player = marsContext.getPlayer();
 
         player.setMcIncome(player.getMcIncome() + 4);
-        player.setPlants(player.getPlants() - 2);
 
         return null;
+    }
+
+    @Override
+    public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
+        player.setPlants(player.getPlants() - 2);
+    }
+
+    @Override
+    public boolean onBuiltEffectApplicableToItself() {
+        return true;
     }
 
     @Override

@@ -599,6 +599,9 @@ export class CardTemplateComponent {
   actionFoodFactory(card: Card): boolean {
     return card.cardAction === CardAction.FOOD_FACTORY;
   }
+  actionMoss(card: Card): boolean {
+    return card.cardAction === CardAction.MOSS;
+  }
 
   actionTallStation(card: Card): boolean {
     return card.cardAction === CardAction.TALL_STATION;

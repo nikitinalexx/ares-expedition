@@ -179,7 +179,7 @@ export class NavbarComponent {
     }
 
     const result = tags?.reduce((a, c) => (a.set(c, (a.get(c) || 0) + 1), a), new Map<Tag, number>());
-    return Array.from(result?.entries());
+    return Array.from(result?.entries()).sort((a, b) => b[1] - a[1]);
   }
 
   currentPhase(phase: number): boolean {

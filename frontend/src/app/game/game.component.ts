@@ -51,11 +51,7 @@ export class GameComponent implements OnInit {
       return true;
     }
     const playerUuid = this.game.player.playerUuid;
-    if (this.playersToNextActions[playerUuid] === 'TURN') {
-      return false;
-    } else {
-      return true;
-    }
+    return this.playersToNextActions[playerUuid] !== 'TURN';
   }
 
   otherPlayerTurnInfo(anotherPlayer: BasePlayer): boolean {
