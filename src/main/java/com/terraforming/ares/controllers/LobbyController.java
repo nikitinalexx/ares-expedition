@@ -1,11 +1,9 @@
 package com.terraforming.ares.controllers;
 
+import com.terraforming.ares.dto.LobbyDto;
 import com.terraforming.ares.dto.PlayerReference;
 import com.terraforming.ares.model.request.LobbyGameRequest;
-import com.terraforming.ares.dto.LobbyDto;
 import com.terraforming.ares.model.request.NewLobbyGameRequest;
-import com.terraforming.ares.model.request.JoinLobbyRequest;
-import com.terraforming.ares.model.request.PlayerRequest;
 import com.terraforming.ares.services.lobby.LobbyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.StringUtils;

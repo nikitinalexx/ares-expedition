@@ -12,7 +12,7 @@
   <div *ngIf="parentForm.value?.turn === 'greenProject'" class="card-container">
     <ul class="myUL">
       <li *ngFor="let card of getGreenPlayerHand();" (click)="clickProjectToBuild(card)"
-          [ngClass]="selectedProjectToBuildClass(card)" class="filterDiv automated display">
+          [ngClass]="greenCardClass(card)" class="filterDiv automated display">
         <app-card-template [card]="card" [player]="game?.player" [showDiscount]="true"></app-card-template>
       </li>
     </ul>

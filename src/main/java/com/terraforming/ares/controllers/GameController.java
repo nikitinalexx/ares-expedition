@@ -3,6 +3,7 @@ package com.terraforming.ares.controllers;
 import com.terraforming.ares.dto.*;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.request.AllProjectsRequest;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
 import com.terraforming.ares.model.turn.Turn;
 import com.terraforming.ares.model.turn.TurnType;
@@ -76,15 +77,19 @@ public class GameController {
 
         return GameDto.builder()
                 .phase(game.getCurrentPhase())
-                .player(buildCurrentPlayer(game.getPlayerByUuid(playerUuid)))
-                .temperature(game.getPlanet().getTemperature())
-                .phaseTemperature(phasePlanet != null ? phasePlanet.getTemperature() : null)
-                .oxygen(game.getPlanet().getOxygen())
-                .phaseOxygen(phasePlanet != null ? phasePlanet.getOxygen() : null)
+                .player(buildCurrentPlayer(game.getPlayerByUuid(playerUuid), game))
+                .temperature(game.getPlanet().getTemperatureValue())
+                .phaseTemperature(phasePlanet != null ? phasePlanet.getTemperatureValue() : null)
+                .phaseTemperatureColor(phasePlanet != null ? phasePlanet.getTemperatureColor() : null)
+                .oxygen(game.getPlanet().getOxygenValue())
+                .phaseOxygen(phasePlanet != null ? phasePlanet.getOxygenValue() : null)
+                .phaseOxygenColor(phasePlanet != null ? phasePlanet.getOxygenColor() : null)
                 .oceans(game.getPlanet().getRevealedOceans().stream().map(OceanDto::of).collect(Collectors.toList()))
                 .phaseOceans(phasePlanet != null ? phasePlanet.getRevealedOceans().size() : null)
                 .otherPlayers(buildOtherPlayers(game, playerUuid))
                 .turns(game.getTurns())
+                .awards(game.getAwards().stream().map(AwardDto::from).collect(Collectors.toList()))
+                .milestones(game.getMilestones().stream().map(MilestoneDto::from).collect(Collectors.toList()))
                 .build();
     }
 
@@ -100,19 +105,19 @@ public class GameController {
         Planet phasePlanet = game.getPlanetAtTheStartOfThePhase();
 
         return GameDtoShort.builder()
-                .temperature(game.getPlanet().getTemperature())
-                .phaseTemperature(phasePlanet != null ? phasePlanet.getTemperature() : null)
-                .oxygen(game.getPlanet().getOxygen())
-                .phaseOxygen(phasePlanet != null ? phasePlanet.getOxygen() : null)
+                .temperature(game.getPlanet().getTemperatureValue())
+                .phaseTemperature(phasePlanet != null ? phasePlanet.getTemperatureValue() : null)
+                .oxygen(game.getPlanet().getOxygenValue())
+                .phaseOxygen(phasePlanet != null ? phasePlanet.getOxygenValue() : null)
                 .oceans(game.getPlanet().getRevealedOceans().stream().map(OceanDto::of).collect(Collectors.toList()))
                 .phaseOceans(phasePlanet != null ? phasePlanet.getRevealedOceans().size() : null)
                 .otherPlayers(buildOtherPlayers(game, playerUuid))
                 .build();
     }
 
-    @GetMapping("/projects")
-    public List<CardDto> getAllProjectCards() {
-        List<Card> corporations = cardFactory.getAllCorporations();
+    @PostMapping("/projects")
+    public List<CardDto> getAllProjectCards(@RequestBody AllProjectsRequest request) {
+        List<Card> corporations = cardFactory.getAllCorporations(request.getExpansions());
         List<Card> projects = cardFactory.getAllProjects();
 
         return Stream.of(corporations, projects)
@@ -125,16 +130,16 @@ public class GameController {
         return game.getPlayerUuidToPlayer().values()
                 .stream()
                 .filter(player -> !player.getUuid().equals(currentPlayerUuid))
-                .map(this::buildAnotherPlayer)
+                .map(player -> buildAnotherPlayer(player, game))
                 .collect(Collectors.toList());
     }
 
-    private AnotherPlayerDto buildAnotherPlayer(Player player) {
+    private AnotherPlayerDto buildAnotherPlayer(Player player, MarsGame game) {
         return AnotherPlayerDto.builder()
                 .playerUuid(player.getUuid())
                 .name(player.getName())
                 .phase(player.getChosenPhase())
-                .winPoints(winPointsService.countWinPoints(player))
+                .winPoints(winPointsService.countWinPoints(player, game))
                 .mc(player.getMc())
                 .mcIncome(player.getMcIncome())
                 .cardIncome(player.getCardIncome())
@@ -152,7 +157,7 @@ public class GameController {
                 .build();
     }
 
-    private PlayerDto buildCurrentPlayer(Player player) {
+    private PlayerDto buildCurrentPlayer(Player player, MarsGame game) {
         Deck corporations = player.getCorporations();
 
         return PlayerDto.builder()
@@ -178,7 +183,7 @@ public class GameController {
                 .activatedBlueCards(player.getActivatedBlueCards().getCards())
                 .activatedBlueActionTwice(player.isActivatedBlueActionTwice())
                 .terraformingRating(player.getTerraformingRating())
-                .winPoints(winPointsService.countWinPoints(player))
+                .winPoints(winPointsService.countWinPoints(player, game))
                 .forests(player.getForests())
                 .builtSpecialDesignLastTurn(player.isBuiltSpecialDesignLastTurn())
                 .builtWorkCrewsLastTurn(player.isBuiltWorkCrewsLastTurn())

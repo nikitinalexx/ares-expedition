@@ -596,3 +596,33 @@
   background-position: -26px -20px;
   margin-left: 10px;
 }
+
+
+.award {
+  background: url(../../assets/images/award.png);
+}
+
+.milestone {
+  background: url(../../assets/images/milestone.png);
+}
+
+.achievement {
+  position: absolute;
+  width: 135px;
+  height: 85px;
+  background-size: contain;
+  border-radius: 10px;
+}
+
+.achievement-title {
+  text-align: center;
+  width: 135px;
+  text-transform: uppercase;
+  font-family: Prototype;
+  font-size: 14px;
+  margin-top: 42px;
+}
+
+.achieved-milestone {
+  filter: grayscale(100%);
+}

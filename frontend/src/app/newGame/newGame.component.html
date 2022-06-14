@@ -5,8 +5,13 @@
 <form [formGroup]="parentForm" (submit)="submitForm(parentForm)" novalidate>
   <div class="form-group col-6 mx-auto" style="margin-top: 100px;">
 
-
-    <div class="bg-warning text-dark new-game-label" style="width: 100px; border-radius: 5px;">
+    <div class="bg-warning text-dark new-game-label" style="width: 250px; border-radius: 5px;">
+      <label title="You may discard any number of initial cards to get the same amount of cards" for="improveWeakCorp"
+             class="form-label">Improve weak corporations</label>
+      <input type="checkbox" class="form-check-input" id="improveWeakCorp" style="margin-left: 10px;"
+             formControlName="improveWeakCorp">
+    </div>
+    <div class="bg-warning text-dark new-game-label" style="width: 100px; border-radius: 5px; margin-top: 10px;">
       <label title="You may discard any number of initial cards to get the same amount of cards" for="mulliganChoice"
              class="form-label">Mulligan</label>
       <input type="checkbox" class="form-check-input" id="mulliganChoice" style="margin-left: 10px;"

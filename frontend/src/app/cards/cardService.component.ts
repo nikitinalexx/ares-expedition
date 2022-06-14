@@ -15,4 +15,8 @@ export class CardServiceComponent {
     return this.model.getProjectCards();
   }
 
+  improvedCorporationsClicked($event: any) {
+    this.model.improvedCorporationsFlagChanged($event.target.checked);
+  }
+
 }

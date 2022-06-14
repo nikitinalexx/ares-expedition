@@ -55,4 +55,9 @@ public class Inventrix implements CorporationCard {
     public Expansion getExpansion() {
         return Expansion.BASE;
     }
+
+    @Override
+    public int getPrice() {
+        return 33;
+    }
 }

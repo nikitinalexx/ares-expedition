@@ -2,8 +2,8 @@ import {Component, Inject, InjectionToken, OnInit} from '@angular/core';
 import {FormBuilder, FormGroup} from '@angular/forms';
 import {LobbyRepository} from '../model/lobbyRepository.model';
 import {Lobby} from '../data/Lobby';
-import {Subscription, timer} from 'rxjs';
-import {LobbyGame} from "../data/LobbyGame";
+import {interval, Subscription} from 'rxjs';
+import {LobbyGame} from '../data/LobbyGame';
 
 
 export const BASE_URL = new InjectionToken('rest_url');
@@ -91,9 +91,7 @@ export class LobbyComponent implements OnInit {
             this.nickname = formGroup.value.nickname;
             this.lobby = response;
             this.loadGameLinkIfAvailable();
-            this.lobbySubscription = timer(5000, 5000).subscribe(
-              val => this.updateLobby()
-            );
+            this.lobbySubscription = interval(5000).pipe().subscribe(val => this.updateLobby());
           } else {
             this.errorMessage = 'Couldn\'t join the lobby';
           }

@@ -8,11 +8,6 @@ package com.terraforming.ares.model;
 public interface CorporationCard extends Card {
 
     @Override
-    default int getPrice() {
-        return 0;
-    }
-
-    @Override
     default CardColor getColor() {
         return CardColor.CORPORATION;
     }

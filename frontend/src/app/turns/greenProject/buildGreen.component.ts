@@ -12,6 +12,7 @@ import {CardResource} from '../../data/CardResource';
 import {CardAction} from '../../data/CardAction';
 import {Tag} from '../../data/Tag';
 import {InputFlag} from '../../data/InputFlag';
+import {RequirementsComponent} from "../../requirements/requirements.component";
 
 @Component({
   selector: 'app-build-green',
@@ -33,7 +34,8 @@ export class BuildGreenComponent implements OnInit {
   @Output() outputToParent = new EventEmitter<any>();
 
   constructor(private gameRepository: GameRepository,
-              private discountService: DiscountComponent) {
+              private discountService: DiscountComponent,
+              private requirementsService: RequirementsComponent) {
 
   }
 
@@ -48,13 +50,22 @@ export class BuildGreenComponent implements OnInit {
   }
 
   getGreenPlayerHand(): Card[] {
+    let cards;
     if (this.game.player.canBuildAnotherGreenWith9Discount) {
-      return this.game?.player.hand.filter(card => {
+      cards = this.game?.player.hand.filter(card => {
         return card.cardColor === CardColor[CardColor.GREEN] && card.price < 10;
       });
     } else {
-      return this.game?.player.hand.filter(card => card.cardColor === CardColor[CardColor.GREEN]);
+      cards = this.game?.player.hand.filter(card => card.cardColor === CardColor[CardColor.GREEN]);
     }
+
+    this.requirementsService.sortCardsForBuilding(cards, this.game.player, this.game);
+
+    return cards;
+  }
+
+  canBuildCard(card: Card) {
+    return this.requirementsService.canBuildCard(card, this.game.player, this.game);
   }
 
   getMicrobePlayedCards(): Card[] {
@@ -149,9 +160,12 @@ export class BuildGreenComponent implements OnInit {
     );
   }
 
-  selectedProjectToBuildClass(card: Card): string {
+  greenCardClass(card: Card): string {
     if (this.selectedProject && this.selectedProject.id === card.id) {
       return 'clicked-card';
+    }
+    if (!this.canBuildCard(card)) {
+      return 'unavailable-card';
     }
     return '';
   }

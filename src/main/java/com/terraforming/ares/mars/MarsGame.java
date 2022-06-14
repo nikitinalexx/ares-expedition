@@ -2,8 +2,12 @@ package com.terraforming.ares.mars;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.awards.BaseAward;
+import com.terraforming.ares.model.milestones.Milestone;
+import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -32,11 +36,24 @@ public class MarsGame {
     @JsonIgnore
     private int updateCounter;
     private int turns;
+    @Setter
+    private List<BaseAward> awards;
+    @Setter
+    private List<Milestone> milestones;
 
-    public MarsGame(List<String> playerNames, int playerHandSize, Deck projectsDeck, Deck corporationsDeck, Planet planet, boolean mulligan) {
+    public MarsGame(List<String> playerNames,
+                    int playerHandSize,
+                    Deck projectsDeck,
+                    Deck corporationsDeck,
+                    Planet planet,
+                    boolean mulligan,
+                    List<BaseAward> awards,
+                    List<Milestone> milestones) {
         this.projectsDeck = projectsDeck;
         this.corporationsDeck = corporationsDeck;
         this.planet = planet;
+        this.awards = awards;
+        this.milestones = milestones;
 
         playerUuidToPlayer = playerNames.stream().map(playerName ->
                 Player.builder()
@@ -50,7 +67,9 @@ public class MarsGame {
                         .build()).collect(Collectors.toMap(Player::getUuid, Function.identity())
         );
 
-        setStateType(StateType.PICK_CORPORATIONS);
+        this.stateType = StateType.PICK_CORPORATIONS;
+        this.currentPhase = Constants.PICK_CORPORATIONS_PHASE;
+        this.planetAtTheStartOfThePhase = new Planet(planet);
     }
 
     public Player getPlayerByUuid(String playerUuid) {
@@ -78,8 +97,13 @@ public class MarsGame {
         projectsDeck.addCards(cards);
     }
 
-    public void setStateType(StateType stateType) {
+    public void setStateType(StateType stateType, CardService cardService) {
         playerUuidToPlayer.values().forEach(Player::clearPhaseResults);
+        assignMilestones(cardService);
+        if (stateType == StateType.GAME_END) {
+            assignAwards(cardService);
+        }
+
 
         this.stateType = stateType;
         switch (stateType) {
@@ -115,6 +139,21 @@ public class MarsGame {
             planetAtTheStartOfThePhase = new Planet(planet);
         }
 
+    }
+
+    private void assignAwards(CardService cardService) {
+        awards.forEach(award -> award.assignWinners(playerUuidToPlayer.values(), cardService));
+    }
+
+    private void assignMilestones(CardService cardService) {
+        milestones.stream()
+                .filter(achievement -> !achievement.isAchieved())
+                .forEach(achievement ->
+                        playerUuidToPlayer.values()
+                                .stream()
+                                .filter(player -> achievement.isAchievable(player, cardService))
+                                .forEach(achievement::setAchieved)
+                );
     }
 
     public void iterateUpdateCounter() {

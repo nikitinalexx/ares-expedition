@@ -179,8 +179,12 @@ li.events::before {
 }
 
 .clicked-card {
-  box-shadow: 0 0 1px 1px #444, 0 0 15px 5px white !important;
-  filter: grayscale(1);
+  box-shadow: 0 0 1px 1px #444, 0 0 15px 15px springgreen !important;
+  filter: brightness(90%);
+}
+
+.unavailable-card {
+  filter: grayscale(80%);
 }
 
 * {
@@ -245,6 +249,36 @@ li.events::before {
 
 .tag3 {
   top: 175px;
+}
+
+.corporation-tag {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(0, 0, 0, 0.3);
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  background-size: 50px;
+  background-position: -5px;
+  text-align: center;
+  border-radius: 50%;
+  border-top: 2px solid rgb(221, 221, 221);
+  border-left: 2px solid rgb(221, 221, 221);
+  border-bottom: 2px solid rgb(137, 137, 137);
+  border-right: 2px solid rgb(137, 137, 137);
+  background-color: white;
+  margin-top: -6px;
+  filter: brightness(0.9);
+}
+
+.corporation-tag1 {
+  margin-left: 200px;
+}
+
+.corporation-tag2 {
+  margin-left: 152px;
+}
+
+.corporation-tag3 {
+  margin-left: 104px;
 }
 
 .standard-icon:after {
@@ -392,13 +426,14 @@ li.events::before {
   text-align: center;
   font-weight: normal;
   font-size: 15px;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 1.2), 0 0 0 2px rgba(0, 0, 0, 0.3);
   background: linear-gradient(to right, #fa2525, #fb7272, #fb7272, #fa2525);
   background-image: url(../images/requisites/min_big.png);
   background-size: 147px 38px;
   background-position: -15px -4px;
   height: 25px;
   line-height: 25px;
+  border-radius: 5%;
 }
 
 .requirements-max {
@@ -473,6 +508,13 @@ li.events::before {
   background-image: url(../images/tiles/empty.png);
 }
 
+.small-tile {
+  width: 20px;
+  height: 23px;
+  background-size: 20px 23px;
+  margin: 0 0 0 2px;
+}
+
 .temperature-tile {
   background-image: url(../images/global-parameters/temperature.png);
   width: 14px;
@@ -518,6 +560,13 @@ li.events::before {
   background-size: 50px 40px;
 }
 
+.small-rating {
+  background-image: url(../images/resources/tr.png);
+  width: 20px;
+  height: 20px;
+  background-size: 20px 20px;
+  margin: 0 0 0 2px;
+}
 /************** Style the Content ************/
 .content {
   position: relative;
@@ -583,6 +632,10 @@ li.events::before {
   line-height: 32px;
   background-image: url(../images/misc/production.png);
   background-size: cover;
+}
+
+.production-box-size0b {
+  width: 50px;
 }
 
 .production-box-size1a {
@@ -704,6 +757,13 @@ li.events::before {
   vertical-align: middle;
   margin: 2px;
   filter: brightness(0.9);
+}
+
+.small-tag {
+  background-size: 24px;
+  background-position: -1px -1px;
+  width: 22px;
+  height: 22px;
 }
 
 .money {

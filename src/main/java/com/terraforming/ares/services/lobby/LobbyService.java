@@ -5,6 +5,7 @@ import com.terraforming.ares.dto.LobbyGameDto;
 import com.terraforming.ares.dto.PlayerReference;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Constants;
+import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.GameParameters;
 import com.terraforming.ares.model.LobbyGame;
 import com.terraforming.ares.model.request.NewLobbyGameRequest;
@@ -71,7 +72,7 @@ public class LobbyService {
                 playerToLobbyGameId.remove(player);
                 LobbyGame lobbyGame = games.get(lobbyGameId);
 
-                if (lobbyGame != null && lobbyGame.getPlayerToStartConfirm().containsKey(player) && !lobbyGame.getPlayerToStartConfirm().get(player)) {
+                if (lobbyGame != null && Boolean.FALSE.equals(lobbyGame.getPlayerToStartConfirm().get(player))) {
                     lobbyGame.getPlayerToStartConfirm().remove(player);
 
                     if (lobbyGame.getPlayerToStartConfirm().isEmpty()) {
@@ -234,6 +235,7 @@ public class LobbyService {
             MarsGame marsGame = gameService.startNewGame(
                     GameParameters.builder()
                             .mulligan(mulligan)
+                            .expansions(List.of(Expansion.BASE))
                             .playerNames(new ArrayList<>(game.getPlayerToStartConfirm().keySet()))
                             .build()
             );

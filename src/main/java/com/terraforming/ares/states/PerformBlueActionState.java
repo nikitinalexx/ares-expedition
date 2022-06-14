@@ -5,6 +5,7 @@ import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateContext;
 import com.terraforming.ares.model.turn.TurnType;
+import com.terraforming.ares.services.CardService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,8 +16,8 @@ import java.util.List;
  */
 public class PerformBlueActionState extends AbstractState {
 
-    public PerformBlueActionState(MarsGame marsGame) {
-        super(marsGame);
+    public PerformBlueActionState(MarsGame marsGame, CardService cardService) {
+        super(marsGame, cardService);
     }
 
     @Override

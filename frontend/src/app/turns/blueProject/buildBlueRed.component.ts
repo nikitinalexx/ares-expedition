@@ -12,6 +12,7 @@ import {CardAction} from '../../data/CardAction';
 import {Tag} from '../../data/Tag';
 import {InputFlag} from '../../data/InputFlag';
 import {CardResource} from '../../data/CardResource';
+import {RequirementsComponent} from "../../requirements/requirements.component";
 
 @Component({
   selector: 'app-build-blue-red',
@@ -37,7 +38,8 @@ export class BuildBlueRedComponent implements OnInit {
   @Output() outputToParent = new EventEmitter<any>();
 
   constructor(private gameRepository: GameRepository,
-              private discountService: DiscountComponent) {
+              private discountService: DiscountComponent,
+              private requirementsService: RequirementsComponent) {
 
   }
 
@@ -80,9 +82,13 @@ export class BuildBlueRedComponent implements OnInit {
   }
 
   getBlueRedPlayerHand(): Card[] {
-    return this.game?.player.hand.filter(
+    const cards = this.game.player.hand.filter(
       card => card.cardColor === CardColor[CardColor.BLUE] || card.cardColor === CardColor[CardColor.RED]
     );
+
+    this.requirementsService.sortCardsForBuilding(cards, this.game.player, this.game);
+
+    return cards;
   }
 
   clickProjectToBuild(card: Card) {
@@ -164,9 +170,16 @@ export class BuildBlueRedComponent implements OnInit {
     );
   }
 
-  selectedProjectToBuildClass(card: Card): string {
+  canBuildCard(card: Card) {
+    return this.requirementsService.canBuildCard(card, this.game.player, this.game);
+  }
+
+  blueRedCardClass(card: Card): string {
     if (this.selectedProject && this.selectedProject.id === card.id) {
       return 'clicked-card';
+    }
+    if (!this.canBuildCard(card)) {
+      return 'unavailable-card';
     }
     return '';
   }

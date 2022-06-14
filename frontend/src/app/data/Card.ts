@@ -9,6 +9,7 @@ import {WinPointsInfo} from './WinPointsInfo';
 import {CardResource} from './CardResource';
 import {PutResourceOnBuild} from './PutResourceOnBuild';
 import {ActionInputData} from './ActionInputData';
+import {Expansion} from "./Expansion";
 
 export class Card {
   constructor(id: number,
@@ -27,6 +28,7 @@ export class Card {
               resourcesOnBuild: PutResourceOnBuild[],
               active: boolean,
               corporation: boolean,
+              expansion: Expansion,
               actionInputData?: ActionInputData[],
               winPointsInfo?: WinPointsInfo,
               oceanRequirement?: OceanRequirement,
@@ -57,4 +59,5 @@ export class Card {
   active: boolean;
   actionInputData: ActionInputData[];
   corporation: boolean;
+  expansion: Expansion;
 }

@@ -1,5 +1,6 @@
 package com.terraforming.ares.dto;
 
+import com.terraforming.ares.model.parameters.ParameterColor;
 import lombok.Builder;
 import lombok.Data;
 
@@ -20,6 +21,10 @@ public class GameDto {
     private Integer phaseTemperature;
     private Integer phaseOxygen;
     private Integer phaseOceans;
+    private ParameterColor phaseTemperatureColor;
+    private ParameterColor phaseOxygenColor;
     private List<OceanDto> oceans;
     private int turns;
+    private List<AwardDto> awards;
+    private List<MilestoneDto> milestones;
 }

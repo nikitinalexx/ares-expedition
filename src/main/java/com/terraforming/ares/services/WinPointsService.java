@@ -1,5 +1,6 @@
 package com.terraforming.ares.services;
 
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.winPoints.WinPointsInfo;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +19,7 @@ import java.util.stream.Collectors;
 public class WinPointsService {
     private final CardService cardService;
 
-    public int countWinPoints(Player player) {
+    public int countWinPoints(Player player, MarsGame game) {
         int winPoints = player.getTerraformingRating();
 
         winPoints += player.getForests();
@@ -36,7 +37,19 @@ public class WinPointsService {
 
         winPoints += getWinPointsFromResourceCards(player, cards);
 
+        winPoints += milestonesWinPoints(player, game);
+
+        winPoints += awardsWinPoints(player, game);
+
         return winPoints;
+    }
+
+    private int milestonesWinPoints(Player player, MarsGame game) {
+        return (int) game.getMilestones().stream().filter(milestone -> milestone.isAchieved(player)).count() * 3;
+    }
+
+    private int awardsWinPoints(Player player, MarsGame game) {
+        return game.getAwards().stream().mapToInt(award -> award.getPlayerWinPoints(player)).sum();
     }
 
     private int getWinPointsFromResourceCards(Player player, List<Card> cards) {

@@ -21,14 +21,12 @@
     <label class="custom-control-label text-white" for="skipTurn">Finish turn</label>
   </div>
 
-  <div *ngIf="mulliganTurn()" class="form-check">
-    <app-sell-cards [game]="game" [parentForm]="parentForm" [mulliganTurn]="true"></app-sell-cards>
-  </div>
-
   <div *ngIf="pickCorporationTurn()" class="form-check">
-    <input id="pickCorporation" (click)="resetAllInputs()" type="radio" class="form-check-input" value="pickCorporation"
-           formControlName="turn">
-    <label class="custom-control-label text-white" for="skipTurn">Choose corporation</label>
+    <div *ngIf="!mulliganTurn()">
+      <input id="pickCorporation" (click)="resetAllInputs()" type="radio" class="form-check-input" value="pickCorporation"
+             formControlName="turn">
+      <label class="custom-control-label text-white" for="skipTurn">Choose corporation</label>
+    </div>
 
     <div class="card-container">
       <ul class="myUL">
@@ -37,6 +35,10 @@
         </li>
       </ul>
     </div>
+  </div>
+
+  <div *ngIf="mulliganTurn()" class="form-check">
+    <app-sell-cards [game]="game" [parentForm]="parentForm" [mulliganTurn]="true"></app-sell-cards>
   </div>
 
   <div *ngIf="discardCardsTurn()" class="form-check">

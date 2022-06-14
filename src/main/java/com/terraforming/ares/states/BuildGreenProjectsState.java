@@ -4,6 +4,7 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateContext;
 import com.terraforming.ares.model.turn.TurnType;
+import com.terraforming.ares.services.CardService;
 
 import java.util.Collections;
 import java.util.List;
@@ -14,8 +15,8 @@ import java.util.List;
  */
 public class BuildGreenProjectsState extends AbstractState {
 
-    public BuildGreenProjectsState(MarsGame marsGame) {
-        super(marsGame);
+    public BuildGreenProjectsState(MarsGame marsGame, CardService cardService) {
+        super(marsGame, cardService);
     }
 
     @Override

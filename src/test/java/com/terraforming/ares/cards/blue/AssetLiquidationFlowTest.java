@@ -53,9 +53,11 @@ class AssetLiquidationFlowTest {
                 buildProjectsDeck(),
                 buildCorporationsDeck(),
                 planetFactory.createMars(null),
-                false
+                false,
+                null,
+                null
         );
-        marsGame.setStateType(StateType.PICK_PHASE);
+        marsGame.setStateType(StateType.PICK_PHASE, null);
 
         players = new ArrayList<>(marsGame.getPlayerUuidToPlayer().values());
         firstPlayer = players.get(0);

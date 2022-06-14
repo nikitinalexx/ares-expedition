@@ -42,6 +42,8 @@ public class Constants {
     public static final int REMOVE_GAMES_FROM_LOBBY_AFTER_SECONDS = 300;
     public static final int REMOVE_PLAYERS_FROM_LOBBY_AFTER_SECONDS = 10;
 
+    public static final int ACHIEVEMENTS_SIZE = 3;
+
 
     private Constants() {}
 

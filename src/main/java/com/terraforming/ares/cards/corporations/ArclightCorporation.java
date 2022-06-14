@@ -78,4 +78,9 @@ public class ArclightCorporation implements CorporationCard {
         return Expansion.BASE;
     }
 
+    @Override
+    public int getPrice() {
+        return 43;
+    }
+
 }

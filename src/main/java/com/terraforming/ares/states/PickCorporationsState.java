@@ -6,6 +6,7 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateContext;
 import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.model.turn.TurnType;
+import com.terraforming.ares.services.CardService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,8 +17,8 @@ import java.util.List;
  */
 public class PickCorporationsState extends AbstractState {
 
-    public PickCorporationsState(MarsGame marsGame) {
-        super(marsGame);
+    public PickCorporationsState(MarsGame marsGame, CardService cardService) {
+        super(marsGame, cardService);
     }
 
     @Override
@@ -56,7 +57,7 @@ public class PickCorporationsState extends AbstractState {
         if (marsGame.getPlayerUuidToPlayer().values().stream().allMatch(
                 player -> player.getActionsInSecondPhase() == 0 && player.getCanBuildInFirstPhase() == 0 && player.getNextTurn() == null
         )) {
-            marsGame.setStateType(StateType.PICK_PHASE);
+            marsGame.setStateType(StateType.PICK_PHASE, cardService);
         }
     }
 

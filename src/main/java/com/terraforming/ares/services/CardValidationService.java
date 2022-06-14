@@ -140,7 +140,7 @@ public class CardValidationService {
     private List<ParameterColor> amplifyRequirement(List<ParameterColor> initialRequirement) {
         List<ParameterColor> resultRequirement = new ArrayList<>(initialRequirement);
         int minRequirement = initialRequirement.stream().mapToInt(Enum::ordinal).min().orElse(0);
-        int maxRequirement = initialRequirement.stream().mapToInt(Enum::ordinal).min().orElse(ParameterColor.W.ordinal());
+        int maxRequirement = initialRequirement.stream().mapToInt(Enum::ordinal).max().orElse(ParameterColor.W.ordinal());
 
         if (minRequirement > 0) {
             resultRequirement.add(ParameterColor.values()[minRequirement - 1]);

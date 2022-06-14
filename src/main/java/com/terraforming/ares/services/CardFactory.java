@@ -1,15 +1,15 @@
 package com.terraforming.ares.services;
 
 import com.terraforming.ares.cards.blue.*;
+import com.terraforming.ares.cards.buffedCorporations.*;
 import com.terraforming.ares.cards.corporations.*;
 import com.terraforming.ares.cards.green.*;
 import com.terraforming.ares.cards.red.*;
 import com.terraforming.ares.model.Card;
+import com.terraforming.ares.model.Expansion;
 import org.springframework.stereotype.Service;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -19,8 +19,11 @@ import java.util.stream.Collectors;
  */
 @Service
 public class CardFactory {
-    private final Map<Integer, Card> inmemoryCorporationsStorage;
+    private final Map<Integer, Card> corporationsStorage;
+    private final Map<Integer, Card> buffedCorporationsStorage;
+    private final Map<Integer, Card> buffedCorporationsMapping;
     private final List<Card> sortedCorporations;
+    private final List<Card> buffedCorporations;
 
     private final Map<Integer, Card> inmemoryProjectCards;
     private final List<Card> sortedProjects;
@@ -270,13 +273,35 @@ public class CardFactory {
                 new InterplanetaryCinematics(10017)
         );
 
+        buffedCorporationsMapping = Map.of(
+                10000, new BuffedHelionCorporation(10100),
+                10008, new BuffedArclightCorporation(10101),
+                10009, new BuffedPhobologCorporation(10102),
+                10010, new BuffedMiningGuildCorporation(10103),
+                10011, new BuffedSaturnSystemsCorporation(10104),
+                10012, new BuffedZetacellCorporation(10105),
+                10013, new BuffedEcolineCorporation(10106),
+                10014, new BuffedInventrix(10107),
+                10016, new BuffedUnmiCorporation(10108)
+        );
+
+        buffedCorporations = new ArrayList<>(buffedCorporationsMapping.values());
 
         inmemoryProjectCards = sortedProjects.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
-        inmemoryCorporationsStorage = sortedCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
+        corporationsStorage = sortedCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
+        buffedCorporationsStorage = buffedCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
     }
 
     public Map<Integer, Card> createCorporations() {
-        return inmemoryCorporationsStorage;
+        return corporationsStorage;
+    }
+
+    public Map<Integer, Card> createBuffedCorporations() {
+        return buffedCorporationsStorage;
+    }
+
+    public Map<Integer, Card> getBuffedCorporationsMapping() {
+        return buffedCorporationsMapping;
     }
 
     public Map<Integer, Card> createProjects() {
@@ -289,7 +314,18 @@ public class CardFactory {
         )).collect(Collectors.toList());
     }
 
-    public List<Card> getAllCorporations() {
-        return sortedCorporations;
+    public List<Card> getAllCorporations(List<Expansion> expansions) {
+        Map<Integer, Card> corporations = new HashMap<>();
+
+        if (expansions.contains(Expansion.BASE)) {
+            corporations.putAll(corporationsStorage);
+        }
+
+        if (expansions.contains(Expansion.BUFFED_CORPORATION)) {
+            corporations.putAll(buffedCorporationsMapping);
+        }
+
+        return new ArrayList<>(corporations.values());
     }
+
 }

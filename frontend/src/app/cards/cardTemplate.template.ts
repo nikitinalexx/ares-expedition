@@ -5,10 +5,11 @@ import {SpecialEffect} from '../data/SpecialEffect';
 import {GainType} from '../data/GainType';
 import {Gain} from '../data/Gain';
 import {CardAction} from '../data/CardAction';
-import {ParameterColor} from '../data/ParameterColor';
+import {PARAMETER_COLORS, ParameterColor} from '../data/ParameterColor';
 import {DiscountComponent} from '../discount/discount.component';
 import {BasePlayer} from '../data/BasePlayer';
 import {Player} from '../data/Player';
+import {Expansion} from "../data/Expansion";
 
 @Component({
   selector: 'app-card-template',
@@ -691,6 +692,37 @@ export class CardTemplateComponent {
     return card.tagReq.length !== 0;
   }
 
+  hasAtLeastFourTagRequirements(card: Card): boolean {
+    return card.tagReq.length >= 4;
+  }
+
+  hasOneToThreeTagRequirements(card: Card): boolean {
+    return card.tagReq.length >= 1 && card.tagReq.length <= 3;
+  }
+
+  displayOceanRequirementAsNumber(card: Card): boolean {
+    return card.oceanRequirement.minValue === 0 && card.oceanRequirement.maxValue > 3
+      || card.oceanRequirement.maxValue === 9 && card.oceanRequirement.minValue > 3;
+  }
+
+  getOceanDisplayNumber(card: Card): number {
+    if (card.oceanRequirement.minValue === 0) {
+      return card.oceanRequirement.maxValue;
+    } else {
+      return card.oceanRequirement.minValue;
+    }
+  }
+
+  getOceanRequirementNumber(card: Card): number {
+    if (this.displayOceanRequirementAsNumber(card)) {
+      return 1;
+    } else if (card.oceanRequirement.minValue === 0) {
+      return card.oceanRequirement.maxValue;
+    } else {
+      return card.oceanRequirement.minValue;
+    }
+  }
+
   hasTempRequirements(card: Card): boolean {
     return card.tempReq && card.tempReq.length !== 0;
   }
@@ -720,21 +752,25 @@ export class CardTemplateComponent {
   }
 
   private getTemperatureOxygenClass(req: ParameterColor[]): string {
-    if (req.length === 3 && req[0] === ParameterColor.R) {
+    if (req.length === 3 && req[0] === PARAMETER_COLORS[ParameterColor.R]) {
       return 'requirements-ryw';
     }
-    if (req.length === 2 && req[0] === ParameterColor.Y) {
+    if (req.length === 2 && req[0] === PARAMETER_COLORS[ParameterColor.Y]) {
       return 'requirements-yw';
     }
-    if (req.length === 2 && req[0] === ParameterColor.P) {
+    if (req.length === 2 && req[0] === PARAMETER_COLORS[ParameterColor.P]) {
       return 'requirements-pr';
     }
-    if (req.length === 1 && req[0] === ParameterColor.W) {
+    if (req.length === 1 && req[0] === PARAMETER_COLORS[ParameterColor.W]) {
       return 'requirements-w';
     }
-    if (req.length === 1 && req[0] === ParameterColor.P) {
+    if (req.length === 1 && req[0] === PARAMETER_COLORS[ParameterColor.P]) {
       return 'requirements-p';
     }
+  }
+
+  isBuffedCorporation(card: Card): boolean {
+    return card.expansion === Expansion.BUFFED_CORPORATION;
   }
 
   getTagRequirements(card: Card): string {

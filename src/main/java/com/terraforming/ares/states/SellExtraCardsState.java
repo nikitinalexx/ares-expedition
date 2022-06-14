@@ -5,6 +5,7 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateContext;
 import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.model.turn.TurnType;
+import com.terraforming.ares.services.CardService;
 
 import java.util.Collections;
 import java.util.List;
@@ -15,8 +16,8 @@ import java.util.List;
  */
 public class SellExtraCardsState extends AbstractState {
 
-    public SellExtraCardsState(MarsGame marsGame) {
-        super(marsGame);
+    public SellExtraCardsState(MarsGame marsGame, CardService cardService) {
+        super(marsGame, cardService);
     }
 
     @Override
@@ -31,6 +32,6 @@ public class SellExtraCardsState extends AbstractState {
 
     @Override
     public void updateState() {
-        marsGame.setStateType(StateType.PICK_PHASE);
+        marsGame.setStateType(StateType.PICK_PHASE, cardService);
     }
 }
