@@ -87,7 +87,7 @@
   </div>
 
   <div *ngFor="let milestone of game?.milestones; let i = index" class="milestone achievement"
-       [ngStyle]="{'left.px': 650, 'top.px': 17 + 100 * i}"
+       [ngStyle]="{'left.px': 650, 'top.px': 17 + 120 * i}"
        [ngClass]="milestoneClass(milestone)">
     <div class="achievement-title">{{milestone.type.replace('\_', ' ')}}</div>
 
@@ -117,7 +117,7 @@
   </div>
 
   <div *ngFor="let award of game?.awards; let i = index" class="award achievement"
-       [ngStyle]="{'left.px': 795, 'top.px': 17 + 100 * i}">
+       [ngStyle]="{'left.px': 795, 'top.px': 17 + 120 * i}">
     <div class="achievement-title">{{award.type.replace('\_', ' ')}}</div>
 
     <div *ngIf="awardTypeIndustrialist(award)" style="margin-top: -5px">

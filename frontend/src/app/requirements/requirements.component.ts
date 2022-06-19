@@ -6,6 +6,7 @@ import {Tag} from '../data/Tag';
 import {DiscountComponent} from '../discount/discount.component';
 import {PARAMETER_COLORS, ParameterColor} from '../data/ParameterColor';
 import {Game} from '../data/Game';
+import {CardAction} from '../data/CardAction';
 
 @Injectable()
 export class RequirementsComponent {
@@ -88,6 +89,10 @@ export class RequirementsComponent {
       if (game.phaseOceans > card.oceanRequirement.maxValue) {
         return false;
       }
+    }
+
+    if (card.cardAction && card.cardAction === CardAction.ENERGY_STORAGE && player.terraformingRating < 7) {
+      return false;
     }
 
     return true;
