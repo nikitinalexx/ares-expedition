@@ -48,21 +48,19 @@ public class GameProcessorService {
         ));
     }
 
-    @Scheduled(fixedRate = 1000)
+    @Scheduled(fixedRate = 200)
     public void asyncUpdate() {
-        if (gamesToProcess.isEmpty()) {
-            return;
+        while (!gamesToProcess.isEmpty()) {
+            Long gameId = gamesToProcess.poll();
+
+            gameRepository.updateMarsGame(gameId, game -> null, game -> {
+                while (processFinalTurns(game)) {
+                    stateFactory.getCurrentState(game).updateState();
+                }
+
+                return null;
+            });
         }
-
-        Long gameId = gamesToProcess.poll();
-
-        gameRepository.updateMarsGame(gameId, game -> null, game -> {
-            while (processFinalTurns(game)) {
-                stateFactory.getCurrentState(game).updateState();
-            }
-
-            return null;
-        });
     }
 
     public GameUpdateResult<TurnResponse> performTurn(long gameId,
