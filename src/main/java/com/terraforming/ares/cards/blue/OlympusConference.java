@@ -36,7 +36,7 @@ public class OlympusConference implements BlueCard {
 
     @Override
     public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        int scienceTags = (int) project.getTags().stream().map(Tag.SCIENCE::equals).count();
+        int scienceTags = (int) project.getTags().stream().filter(Tag.SCIENCE::equals).count();
 
         if (scienceTags == 0) {
             return;
