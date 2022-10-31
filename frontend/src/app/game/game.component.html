@@ -1,7 +1,12 @@
 <app-navbar [game]="game" [player]="getPlayerToShow()"></app-navbar>
 
-<div style="padding-top: 100px;">
+<div style="padding-top: 100px;"></div>
 
+<div class="form-check bg-primary" style="width: 200px; position: absolute; border-radius: 5px; margin: 5px">
+  <input class="form-check-input" style="margin-left: -20px" type="checkbox" id="alert" (change)="alertCheckEvent($event)" [checked]="this.isAlertAlwaysOn()">
+  <label class="form-check-label" for="alert">
+    Turn alert always ON
+  </label>
 </div>
 
 <form [formGroup]="parentForm" class="view-choice">

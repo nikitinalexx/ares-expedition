@@ -31,6 +31,7 @@ export class GameComponent implements OnInit {
   private subscription: Subscription;
   private thirdPhaseSubscription: Subscription;
   private audio: HTMLAudioElement;
+  private alertAlwaysOn: boolean;
   parentForm: FormGroup;
 
   constructor(private route: ActivatedRoute,
@@ -281,7 +282,7 @@ export class GameComponent implements OnInit {
         : null;
       this.playersToNextActions = data.playersToNextActions;
       if (this.playersToNextActions[this.game.player.playerUuid] === 'TURN') {
-        if (previousAction && previousAction === 'WAIT' && document.hidden) {
+        if (previousAction && previousAction === 'WAIT' && (document.hidden || this.isAlertAlwaysOn())) {
           this.audio.play();
         }
         this.model.nextTurns(this.playerUuid).subscribe(turns => {
@@ -326,5 +327,13 @@ export class GameComponent implements OnInit {
     } else {
       return 'achieved-milestone';
     }
+  }
+
+  alertCheckEvent($event: any) {
+    localStorage.setItem('alertAlwaysOn', $event.target.checked ? 'yes' : 'no');
+  }
+
+  isAlertAlwaysOn(): boolean {
+    return localStorage.getItem('alertAlwaysOn') === 'yes';
   }
 }
