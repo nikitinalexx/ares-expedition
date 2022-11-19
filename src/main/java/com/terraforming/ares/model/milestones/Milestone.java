@@ -6,10 +6,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardService;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -33,9 +30,14 @@ import java.util.concurrent.ConcurrentHashMap;
 })
 public abstract class Milestone {
     private final Set<String> achievedByPlayers = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final Map<String, Integer> playerToValue = new ConcurrentHashMap<>();
 
     public Set<String> getAchievedByPlayers() {
         return achievedByPlayers;
+    }
+
+    public Map<String, Integer> getPlayerToValue() {
+        return playerToValue;
     }
 
     @JsonIgnore
@@ -52,8 +54,13 @@ public abstract class Milestone {
         achievedByPlayers.add(player.getUuid());
     }
 
+    public void setValue(Player player, int milestoneValue) {
+        playerToValue.put(player.getUuid(), milestoneValue);
+    }
+
     @JsonIgnore
     public abstract MilestoneType getType();
 
     public abstract boolean isAchievable(Player player, CardService cardService);
+    public abstract int getValue(Player player, CardService cardService);
 }

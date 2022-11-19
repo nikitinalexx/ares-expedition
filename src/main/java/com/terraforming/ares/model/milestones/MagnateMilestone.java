@@ -18,6 +18,11 @@ public class MagnateMilestone extends Milestone {
     }
 
     @Override
+    public int getValue(Player player, CardService cardService) {
+        return Math.min(cardService.countPlayedCards(player, Set.of(CardColor.GREEN)), 8);
+    }
+
+    @Override
     public MilestoneType getType() {
         return MilestoneType.MAGNATE;
     }

@@ -15,6 +15,11 @@ public class TerraformerMilestone extends Milestone {
     }
 
     @Override
+    public int getValue(Player player, CardService cardService) {
+        return Math.min(player.getTerraformingRating(), 15);
+    }
+
+    @Override
     public MilestoneType getType() {
         return MilestoneType.TERRAFORMER;
     }

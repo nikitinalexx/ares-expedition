@@ -15,6 +15,11 @@ public class EnergizerMilestone extends Milestone {
     }
 
     @Override
+    public int getValue(Player player, CardService cardService) {
+        return Math.min(player.getHeatIncome(), 10);
+    }
+
+    @Override
     public MilestoneType getType() {
         return MilestoneType.ENERGIZER;
     }

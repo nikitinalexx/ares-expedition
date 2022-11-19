@@ -18,6 +18,11 @@ public class PlannerMilestone extends Milestone {
     }
 
     @Override
+    public int getValue(Player player, CardService cardService) {
+        return Math.min(cardService.countPlayedCards(player, Set.of(CardColor.RED, CardColor.BLUE, CardColor.GREEN)), 12);
+    }
+
+    @Override
     public MilestoneType getType() {
         return MilestoneType.PLANNER;
     }

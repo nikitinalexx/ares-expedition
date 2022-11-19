@@ -14,14 +14,23 @@ public class DiversifierMilestone extends Milestone {
 
     @Override
     public boolean isAchievable(Player player, CardService cardService) {
-        return player.getPlayed()
+        return countUniqueTags(player, cardService) >= 9;
+    }
+
+    @Override
+    public int getValue(Player player, CardService cardService) {
+        return Math.min(countUniqueTags(player, cardService), 9);
+    }
+
+    private int countUniqueTags(Player player, CardService cardService) {
+        return (int) player.getPlayed()
                 .getCards()
                 .stream()
                 .map(cardService::getCard)
                 .map(Card::getTags)
                 .flatMap(Collection::stream)
                 .distinct()
-                .count() >= 9;
+                .count();
     }
 
     @Override

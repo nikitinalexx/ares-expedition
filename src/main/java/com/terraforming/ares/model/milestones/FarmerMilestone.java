@@ -15,6 +15,11 @@ public class FarmerMilestone extends Milestone {
     }
 
     @Override
+    public int getValue(Player player, CardService cardService) {
+        return Math.min(player.getPlantsIncome(), 5);
+    }
+
+    @Override
     public MilestoneType getType() {
         return MilestoneType.FARMER;
     }

@@ -19,7 +19,6 @@ export class BasePlayer {
               forests: number,
               cardResources: Map<number, number>,
               phase?: number) {
-
   }
 
   playerUuid: string;

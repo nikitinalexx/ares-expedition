@@ -18,6 +18,11 @@ public class TycoonMilestone extends Milestone {
     }
 
     @Override
+    public int getValue(Player player, CardService cardService) {
+        return Math.min(cardService.countPlayedCards(player, Set.of(CardColor.BLUE)), 6);
+    }
+
+    @Override
     public MilestoneType getType() {
         return MilestoneType.TYCOON;
     }

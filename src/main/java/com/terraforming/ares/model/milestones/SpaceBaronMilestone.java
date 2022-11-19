@@ -18,6 +18,11 @@ public class SpaceBaronMilestone extends Milestone {
     }
 
     @Override
+    public int getValue(Player player, CardService cardService) {
+        return Math.min(cardService.countPlayedTags(player, Set.of(Tag.SPACE)), 7);
+    }
+
+    @Override
     public MilestoneType getType() {
         return MilestoneType.SPACE_BARON;
     }

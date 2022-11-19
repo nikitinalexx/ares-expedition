@@ -100,6 +100,10 @@ export class GameComponent implements OnInit {
     return player?.played.filter(card => card.cardColor === CardColor.BLUE || card.cardColor === CardColor.CORPORATION);
   }
 
+  getPlayedBlueCards(player: BasePlayer): Card[] {
+    return player?.played.filter(card => card.cardColor === CardColor.BLUE);
+  }
+
   getPlayedRedCards(player: BasePlayer): Card[] {
     return player?.played.filter(card => card.cardColor === CardColor.RED);
   }
@@ -336,4 +340,77 @@ export class GameComponent implements OnInit {
   isAlertAlwaysOn(): boolean {
     return localStorage.getItem('alertAlwaysOn') === 'yes';
   }
+
+  otherPlayerBackgroundClass(index: number): string {
+    if (index === 0) {
+      return 'bg-warning';
+    } else if (index === 1) {
+      return 'bg-info';
+    } else {
+      return 'bg-primary';
+    }
+  }
+
+  milestoneValue(playerIndex: number, milestone: Milestone): number {
+    const player = (playerIndex === 0 ? this.game.player : this.game.otherPlayers[playerIndex - 1]);
+
+    if (Array.from(milestone.players.values()).length !== 0) {
+      return milestone.playerToValue[player.playerUuid];
+    }
+
+    switch (milestone.type) {
+      case MilestoneType.MAGNATE:
+        return this.getPlayedGreenCards(player)?.length;
+      case MilestoneType.TERRAFORMER:
+        return player.terraformingRating;
+      case MilestoneType.BUILDER:
+        return this.countPlayedTags(player, Tag.BUILDING);
+      case MilestoneType.SPACE_BARON:
+        return this.countPlayedTags(player, Tag.SPACE);
+      case MilestoneType.ENERGIZER:
+        return player.heatIncome;
+      case MilestoneType.FARMER:
+        return player.plantsIncome;
+      case MilestoneType.TYCOON:
+        return this.getPlayedBlueCards(player)?.length;
+      case MilestoneType.PLANNER:
+        return player.played.length === 0 ? 0 : player.played.length - 1;
+      case MilestoneType.DIVERSIFIER:
+        return this.countDistinctTags(player);
+      case MilestoneType.LEGEND:
+        return this.getPlayedRedCards(player)?.length;
+    }
+
+    return 0;
+  }
+
+  awardValue(playerIndex: number, award: Award): number {
+    const player = (playerIndex === 0 ? this.game.player : this.game.otherPlayers[playerIndex - 1]);
+
+    switch (award.type) {
+      case AwardType.INDUSTRIALIST:
+        return player.steelIncome + player.titaniumIncome;
+      case AwardType.PROJECT_MANAGER:
+        return player.played.length === 0 ? 0 : player.played.length - 1;
+      case AwardType.GENERATOR:
+        return player.heatIncome;
+      case AwardType.CELEBRITY:
+        return player.mcIncome;
+      case AwardType.COLLECTOR:
+        return Object.values(player.cardResources).reduce((acc, val) => acc + val, 0);
+      case AwardType.RESEARCHER:
+        return player?.played.map(card => card.tags).reduce((acc, val) => acc.concat(val), [])?.filter(tag => tag === Tag.SCIENCE).length;
+    }
+
+    return 0;
+  }
+
+  countPlayedTags(player: BasePlayer, tag: Tag): number {
+    return player?.played.map(card => card.tags).reduce((acc, val) => acc.concat(val), [])?.filter(t => t === tag).length;
+  }
+
+  countDistinctTags(player: BasePlayer): number {
+    return [...new Set(player?.played.map(card => card.tags).reduce((acc, val) => acc.concat(val), []))].length;
+  }
+
 }

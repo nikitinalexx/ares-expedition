@@ -626,3 +626,12 @@
 .achieved-milestone {
   filter: grayscale(100%);
 }
+
+.achievement-player-value {
+  position: absolute;
+  height: 25px;
+  width: 25px;
+  display: inline;
+  background-size: contain;
+  border-radius: 3px;
+}

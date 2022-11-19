@@ -148,11 +148,16 @@ public class MarsGame {
     private void assignMilestones(CardService cardService) {
         milestones.stream()
                 .filter(achievement -> !achievement.isAchieved())
-                .forEach(achievement ->
-                        playerUuidToPlayer.values()
-                                .stream()
-                                .filter(player -> achievement.isAchievable(player, cardService))
-                                .forEach(achievement::setAchieved)
+                .forEach(achievement -> {
+                            playerUuidToPlayer.values()
+                                    .stream()
+                                    .filter(player -> achievement.isAchievable(player, cardService))
+                                    .forEach(achievement::setAchieved);
+                            if (achievement.isAchieved()) {
+                                playerUuidToPlayer.values()
+                                        .forEach(player -> achievement.setValue(player, achievement.getValue(player, cardService)));
+                            }
+                        }
                 );
     }
 

@@ -5,6 +5,7 @@ import com.terraforming.ares.model.milestones.MilestoneType;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -16,11 +17,13 @@ import java.util.Set;
 public class MilestoneDto {
     private final MilestoneType type;
     private final Set<String> players;
+    private final Map<String, Integer> playerToValue;
 
     public static MilestoneDto from(Milestone milestone) {
         return MilestoneDto.builder()
                 .type(milestone.getType())
                 .players(milestone.getAchievedByPlayers())
+                .playerToValue(milestone.getPlayerToValue())
                 .build();
     }
 }

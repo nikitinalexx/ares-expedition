@@ -18,6 +18,11 @@ public class BuilderMilestone extends Milestone {
     }
 
     @Override
+    public int getValue(Player player, CardService cardService) {
+        return Math.min(cardService.countPlayedTags(player, Set.of(Tag.BUILDING)), 8);
+    }
+
+    @Override
     public MilestoneType getType() {
         return MilestoneType.BUILDER;
     }
