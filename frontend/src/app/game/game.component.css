@@ -635,3 +635,15 @@
   background-size: contain;
   border-radius: 3px;
 }
+
+.achievement-border {
+  position: absolute;
+  width: 135px;
+  height: 85px;
+  background-size: contain;
+  border-radius: 15px;
+}
+
+.achievement-success {
+  margin-top: -4px;
+}

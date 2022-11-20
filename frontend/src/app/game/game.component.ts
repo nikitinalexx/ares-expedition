@@ -413,4 +413,30 @@ export class GameComponent implements OnInit {
     return [...new Set(player?.played.map(card => card.tags).reduce((acc, val) => acc.concat(val), []))].length;
   }
 
+  milestoneSuccessClass(milestone: Milestone): string {
+    if (Array.from(milestone.players.values()).length !== 0) {
+      if (milestone.playerToValue[this.game.player.playerUuid]) {
+        return 'achievement-success border border-success border-5';
+      } else {
+        return '';
+      }
+    }
+    const maxValue = this.milestoneValue(0, milestone);
+    for (let i = 0; i < this.game.otherPlayers.length; i++) {
+      if (this.milestoneValue(i + 1, milestone) > maxValue) {
+        return '';
+      }
+    }
+    return 'achievement-success border border-success border-5';
+  }
+
+  awardSuccessClass(award: Award): string {
+    const maxValue = this.awardValue(0, award);
+    for (let i = 0; i < this.game.otherPlayers.length; i++) {
+      if (this.awardValue(i + 1, award) > maxValue) {
+        return '';
+      }
+    }
+    return 'achievement-success border border-success border-5';
+  }
 }

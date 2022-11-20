@@ -91,100 +91,110 @@
     <div *ngIf="ocean.cards" class="resource card"></div>
   </div>
 
-  <div *ngFor="let milestone of game?.milestones; let awardIndex = index" class="milestone achievement"
+  <div *ngFor="let milestone of game?.milestones; let awardIndex = index" class="achievement-border"
+       [ngClass]="milestoneSuccessClass(milestone)"
        [ngStyle]="{'left.px': 650, 'top.px': 17 + 120 * awardIndex}"
-       [ngClass]="milestoneClass(milestone)">
+  >
+    <div class="milestone achievement" [ngClass]="milestoneClass(milestone)">
 
-    <div class="achievement-player-value bg-dark text-white" style="left: 10px"
-         [ngStyle]="{'top.px': 88}">
-      {{milestoneValue(0, milestone)}}
+      <div class="achievement-player-value bg-dark text-white" style="left: 10px"
+           [ngStyle]="{'top.px': 88}">
+        {{milestoneValue(0, milestone)}}
+      </div>
+
+      <div *ngFor="let player of this.game?.otherPlayers; let otherPlayerIndex = index;" class="achievement-player-value text-white"
+           [ngClass]="otherPlayerBackgroundClass(otherPlayerIndex)"
+           [ngStyle]="{'left.px': 40 + 30 * otherPlayerIndex, 'top.px': 88}"
+      >
+        {{milestoneValue(otherPlayerIndex + 1, milestone)}}
+      </div>
+
+      <div class="achievement-title">{{milestone.type.replace('\_', ' ')}}</div>
+
+      <div style="margin-top: -4px">
+        <div *ngIf="milestoneMagnate(milestone)">8 green cards</div>
+        <div *ngIf="milestoneTerraformer(milestone)">
+          15
+          <div class="tile small-rating"></div>
+        </div>
+        <div *ngIf="milestoneBuilder(milestone)">
+          8
+          <div class="resource-tag tag-building small-tag"></div>
+        </div>
+        <div *ngIf="milestoneSpaceBaron(milestone)">
+          7
+          <div class="resource-tag tag-space small-tag"></div>
+        </div>
+        <div *ngIf="milestoneEnergizer(milestone)">
+          10 prod
+          <div class="resource heat small"></div>
+        </div>
+        <div *ngIf="milestoneFarmer(milestone)">
+          5 prod
+          <div class="resource plant small"></div>
+        </div>
+        <div *ngIf="milestoneTycoon(milestone)">6 blue cards</div>
+        <div *ngIf="milestonePlanner(milestone)">12 cards played</div>
+        <div *ngIf="milestoneDiversifier(milestone)">9 unique tags</div>
+        <div *ngIf="milestoneLegend(milestone)">6 red cards</div>
+
+      </div>
+
     </div>
 
-    <div *ngFor="let player of this.game?.otherPlayers; let otherPlayerIndex = index;" class="achievement-player-value text-white"
-         [ngClass]="otherPlayerBackgroundClass(otherPlayerIndex)"
-         [ngStyle]="{'left.px': 40 + 30 * otherPlayerIndex, 'top.px': 88}"
-    >
-      {{milestoneValue(otherPlayerIndex + 1, milestone)}}
-    </div>
+  </div>
 
-    <div class="achievement-title">{{milestone.type.replace('\_', ' ')}}</div>
+  <div *ngFor="let award of game?.awards; let awardIndex = index" class="achievement-border"
+       [ngClass]="awardSuccessClass(award)"
+       [ngStyle]="{'left.px': 795, 'top.px': 17 + 120 * awardIndex}"
+  >
+    <div class="award achievement">
+      <div class="achievement-player-value bg-dark text-white" style="left: 10px"
+           [ngStyle]="{'top.px': 88}">
+        {{awardValue(0, award)}}
+      </div>
 
-    <div style="margin-top: -4px">
-      <div *ngIf="milestoneMagnate(milestone)">8 green cards</div>
-      <div *ngIf="milestoneTerraformer(milestone)">
-        15
-        <div class="tile small-rating"></div>
+      <div *ngFor="let player of this.game?.otherPlayers; let otherPlayerIndex = index;" class="achievement-player-value text-white"
+           [ngClass]="otherPlayerBackgroundClass(otherPlayerIndex)"
+           [ngStyle]="{'left.px': 40 + 30 * otherPlayerIndex, 'top.px': 88}"
+      >
+        {{awardValue(otherPlayerIndex + 1, award)}}
       </div>
-      <div *ngIf="milestoneBuilder(milestone)">
-        8
-        <div class="resource-tag tag-building small-tag"></div>
+
+      <div class="achievement-title">{{award.type.replace('\_', ' ')}}</div>
+
+      <div *ngIf="awardTypeIndustrialist(award)" style="margin-top: -5px">
+        Most
+        <div class="resource steel small"></div>
+        /
+        <div class="resource titanium small"></div>
       </div>
-      <div *ngIf="milestoneSpaceBaron(milestone)">
-        7
-        <div class="resource-tag tag-space small-tag"></div>
+      <div *ngIf="awardTypeProjectManager(award)">
+        Most cards played
       </div>
-      <div *ngIf="milestoneEnergizer(milestone)">
-        10 prod
+
+      <div *ngIf="awardTypeGenerator(award)" style="margin-top: -5px">
+        Production
         <div class="resource heat small"></div>
       </div>
-      <div *ngIf="milestoneFarmer(milestone)">
-        5 prod
-        <div class="resource plant small"></div>
+      <div *ngIf="awardTypeCelebrity(award)" style="margin-top: -5px">
+        Production
+        <div class="resource money small">
+          <div style="margin-top: -6px">€</div>
+        </div>
       </div>
-      <div *ngIf="milestoneTycoon(milestone)">6 blue cards</div>
-      <div *ngIf="milestonePlanner(milestone)">12 cards played</div>
-      <div *ngIf="milestoneDiversifier(milestone)">9 unique tags</div>
-      <div *ngIf="milestoneLegend(milestone)">6 red cards</div>
+      <div *ngIf="awardTypeCollector(award)">
+        Most resources
+      </div>
+      <div *ngIf="awardTypeResearcher(award)">
+        Most
+        <div class="resource-tag tag-science small-tag"></div>
+      </div>
 
     </div>
-
   </div>
 
-  <div *ngFor="let award of game?.awards; let awardIndex = index" class="award achievement"
-       [ngStyle]="{'left.px': 795, 'top.px': 17 + 120 * awardIndex}">
-    <div class="achievement-player-value bg-dark text-white" style="left: 10px"
-         [ngStyle]="{'top.px': 88}">
-      {{awardValue(0, award)}}
-    </div>
 
-    <div *ngFor="let player of this.game?.otherPlayers; let otherPlayerIndex = index;" class="achievement-player-value text-white"
-         [ngClass]="otherPlayerBackgroundClass(otherPlayerIndex)"
-         [ngStyle]="{'left.px': 40 + 30 * otherPlayerIndex, 'top.px': 88}"
-    >
-      {{awardValue(otherPlayerIndex + 1, award)}}
-    </div>
-
-    <div class="achievement-title">{{award.type.replace('\_', ' ')}}</div>
-
-    <div *ngIf="awardTypeIndustrialist(award)" style="margin-top: -5px">
-      Most
-      <div class="resource steel small"></div>
-      /
-      <div class="resource titanium small"></div>
-    </div>
-    <div *ngIf="awardTypeProjectManager(award)">
-      Most cards played
-    </div>
-
-    <div *ngIf="awardTypeGenerator(award)" style="margin-top: -5px">
-      Production
-      <div class="resource heat small"></div>
-    </div>
-    <div *ngIf="awardTypeCelebrity(award)" style="margin-top: -5px">
-      Production
-      <div class="resource money small">
-        <div style="margin-top: -6px">€</div>
-      </div>
-    </div>
-    <div *ngIf="awardTypeCollector(award)">
-      Most resources
-    </div>
-    <div *ngIf="awardTypeResearcher(award)">
-      Most
-      <div class="resource-tag tag-science small-tag"></div>
-    </div>
-
-  </div>
 </div>
 
 <div *ngIf="this.parentForm.value?.player === 'You'">
