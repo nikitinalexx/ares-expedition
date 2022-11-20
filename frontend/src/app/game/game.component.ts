@@ -415,7 +415,13 @@ export class GameComponent implements OnInit {
 
   milestoneSuccessClass(milestone: Milestone): string {
     if (Array.from(milestone.players.values()).length !== 0) {
-      if (milestone.playerToValue[this.game.player.playerUuid]) {
+      const playerValue = milestone.playerToValue[this.game.player.playerUuid];
+      for (const otherPlayer of this.game.otherPlayers) {
+        if (milestone.playerToValue[otherPlayer.playerUuid] > playerValue) {
+          return '';
+        }
+      }
+      if (milestone.playerToValue[this.game.player.playerUuid] !== undefined) {
         return 'achievement-success border border-success border-5';
       } else {
         return '';
