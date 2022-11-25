@@ -60,7 +60,7 @@ public class CachingGameRepositoryImpl implements CachingGameRepository {
 
             String validationError = stateChecker.apply(game);
 
-            resultBuilder.error(stateChecker.apply(game));
+            resultBuilder.error(validationError);
 
             if (validationError == null) {
                 T updateResult = updater.apply(game);

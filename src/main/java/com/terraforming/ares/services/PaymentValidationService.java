@@ -72,7 +72,7 @@ public class PaymentValidationService {
         }
     }
 
-    private int getDiscount(Card card, Player player) {
+    public int getDiscount(Card card, Player player) {
         int discount = 0;
 
         List<Tag> tags = card.getTags();

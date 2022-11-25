@@ -55,6 +55,7 @@ class AssetLiquidationFlowTest {
                 planetFactory.createMars(null),
                 false,
                 null,
+                null,
                 null
         );
         marsGame.setStateType(StateType.PICK_PHASE, null);

@@ -47,7 +47,7 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
         }
 
         player.getHand().removeCards(Collections.singletonList(turn.getProjectId()));
-        player.getPlayed().addCard(turn.getProjectId());
+        player.getPlayed().addCard(turn.getProjectId(), game.getTurns());
 
         processInternalAfterBuild(turn, game);
 

@@ -7,16 +7,16 @@ import com.terraforming.ares.model.request.AllProjectsRequest;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
 import com.terraforming.ares.model.turn.Turn;
 import com.terraforming.ares.model.turn.TurnType;
+import com.terraforming.ares.repositories.GameRepositoryImpl;
 import com.terraforming.ares.repositories.caching.CachingGameRepository;
-import com.terraforming.ares.services.CardFactory;
-import com.terraforming.ares.services.CardService;
-import com.terraforming.ares.services.GameService;
-import com.terraforming.ares.services.WinPointsService;
+import com.terraforming.ares.services.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -36,16 +36,31 @@ public class GameController {
     private final CardService cardService;
     private final WinPointsService winPointsService;
     private final CachingGameRepository cachingGameRepository;
+    private final TurnService turnService;
+    private final GameRepositoryImpl gameRepository;
 
     @PostMapping("/game/new")
     public PlayerUuidsDto startNewGame(@RequestBody GameParameters gameParameters) {
         try {
+            int aiPlayerCount = (int) gameParameters.getComputers().stream().filter(item -> item).count();
             int playersCount = gameParameters.getPlayerNames().size();
             if (playersCount == 0 || playersCount > Constants.MAX_PLAYERS) {
                 throw new IllegalArgumentException("Only 1 to 4 players are supported so far");
             }
 
+//            for (int i = 0; i < 1000; i++) {
+//                MarsGame marsGame = gameService.startNewGame(gameParameters);
+//
+//                if (aiPlayerCount == playersCount) {
+//                    turnService.pushGame(marsGame.getId());
+//                }
+//            }
+
             MarsGame marsGame = gameService.startNewGame(gameParameters);
+
+            if (aiPlayerCount == playersCount) {
+                turnService.pushGame(marsGame.getId());
+            }
 
             Map<String, Player> playerNameToPlayer = marsGame.getPlayerUuidToPlayer().values().stream()
                     .collect(Collectors.toMap(
@@ -67,6 +82,91 @@ public class GameController {
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
+    }
+
+    @GetMapping("/statistics")
+    public void statistics() {
+        List<Integer> winCardOccurenceBeforeHalf = new ArrayList<>();
+        List<Integer> winCardOccurenceAfterHalf = new ArrayList<>();
+
+        List<Integer> occurenceBeforeHalf = new ArrayList<>();
+        List<Integer> occurenceAfterHalf = new ArrayList<>();
+
+        long totalTurnsCount = 0;
+
+
+        for (int i = 0; i < 220; i++) {
+            winCardOccurenceBeforeHalf.add(0);
+            winCardOccurenceAfterHalf.add(0);
+            occurenceBeforeHalf.add(0);
+            occurenceAfterHalf.add(0);
+        }
+
+        List<MarsGame> finishedGames = gameRepository.getAllGames().stream()
+                .filter(MarsGame::gameEndCondition)
+                .filter(game -> game.getPlayerUuidToPlayer().size() == 2)
+                .collect(Collectors.toList());
+
+        System.out.println("Games count: " + finishedGames.size());
+
+        for (int i = 0; i < finishedGames.size(); i++) {
+            MarsGame game = finishedGames.get(i);
+
+            int totalTurns = game.getTurns();
+
+            totalTurnsCount += totalTurns;
+
+            game.getPlayerUuidToPlayer().values().forEach(
+                    player -> {
+                        for (Integer playedCard : player.getPlayed().getCards()) {
+                            if (playedCard < 250) {
+                                if (playedCard < 250) {
+                                    if (player.getPlayed().getCardToTurn().get(playedCard) <= totalTurns / 2) {
+                                        occurenceBeforeHalf.set(playedCard, occurenceBeforeHalf.get(playedCard) + 1);
+                                    } else {
+                                        occurenceAfterHalf.set(playedCard, occurenceAfterHalf.get(playedCard) + 1);
+                                    }
+                                }
+                            }
+                        }
+                    }
+            );
+
+
+            List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
+            Player firstPlayer = players.get(0);
+            Player secondPlayer = players.get(1);
+
+            int firstPlayerPoints = winPointsService.countWinPoints(firstPlayer, game);
+            int secondPlayerPoints = winPointsService.countWinPoints(secondPlayer, game);
+
+            if (firstPlayerPoints != secondPlayerPoints) {
+                Player winCardsPlayer = (firstPlayerPoints > secondPlayerPoints ? firstPlayer : secondPlayer);
+
+                for (Integer playedCard : winCardsPlayer.getPlayed().getCards()) {
+                    if (playedCard < 250) {
+                        if (winCardsPlayer.getPlayed().getCardToTurn().get(playedCard) <= totalTurns / 2) {
+                            winCardOccurenceBeforeHalf.set(playedCard, winCardOccurenceBeforeHalf.get(playedCard) + 1);
+                        } else {
+                            winCardOccurenceAfterHalf.set(playedCard, winCardOccurenceAfterHalf.get(playedCard) + 1);
+                        }
+                    }
+                }
+            }
+        }
+
+        System.out.println("All");
+        for (int i = 1; i < occurenceBeforeHalf.size(); i++) {
+            System.out.println("i: " + i + " " + " % " + (double) winCardOccurenceBeforeHalf.get(i) * 100 / occurenceBeforeHalf.get(i) + " " + " % " + (double) winCardOccurenceAfterHalf.get(i) * 100 / occurenceAfterHalf.get(i) + " " + cardService.getCard(i).getClass().getSimpleName());
+
+         //   System.out.println("cardToWeightFirstHalf.put(" + i + ", " + (double) winCardOccurenceBeforeHalf.get(i) * 100 / occurenceBeforeHalf.get(i) + ");");
+        }
+
+//        for (int i = 1; i < occurenceBeforeHalf.size(); i++) {
+//            System.out.println("cardToWeightSecondHalf.put(" + i + ", " + (double) winCardOccurenceAfterHalf.get(i) * 100 / occurenceAfterHalf.get(i) + ");");
+//        }
+
+        System.out.println((double)totalTurnsCount / finishedGames.size());
     }
 
     @GetMapping("/game/player/{playerUuid}")

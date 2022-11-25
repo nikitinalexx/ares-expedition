@@ -360,4 +360,8 @@ public class TurnService {
         return updateResult.getResult();
     }
 
+    public void pushGame(long gameId) {
+        gameProcessorService.registerAsyncGameUpdate(gameId);
+    }
+
 }

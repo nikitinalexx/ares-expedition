@@ -5,9 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by oleksii.nikitin
@@ -20,6 +18,7 @@ import java.util.List;
 public class Deck {
     @Builder.Default
     private final LinkedList<Integer> cards = new LinkedList<>();
+    private final Map<Integer, Integer> cardToTurn = new HashMap<>();
 
     public Deck dealCardsDeck(int count) {
         LinkedList<Integer> result = new LinkedList<>();
@@ -39,6 +38,9 @@ public class Deck {
 
     public void removeCards(List<Integer> cards) {
         this.cards.removeAll(cards);
+        for (Integer card : cards) {
+            cardToTurn.remove(card);
+        }
     }
 
     public boolean containsCard(int cardId) {
@@ -47,6 +49,11 @@ public class Deck {
 
     public void addCard(Integer card) {
         cards.add(card);
+    }
+
+    public void addCard(Integer card, int turn) {
+        cards.add(card);
+        cardToTurn.put(card, turn);
     }
 
     public void addCards(List<Integer> cards) {

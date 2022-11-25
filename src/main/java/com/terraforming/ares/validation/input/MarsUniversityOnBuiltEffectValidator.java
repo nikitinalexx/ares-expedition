@@ -42,6 +42,10 @@ public class MarsUniversityOnBuiltEffectValidator implements OnBuiltEffectValida
             return null;
         }
 
+        if (cardsInput.size() > scienceTagsCount) {
+            return "You can't discard more cards than the number of Science tags";
+        }
+
         for (Integer cardIdToDiscard : cardsInput) {
             if (!player.getHand().containsCard(cardIdToDiscard)) {
                 return "Can't discard the card that you don't have " + cardIdToDiscard;

@@ -9,10 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -40,6 +37,7 @@ public class MarsGame {
     private List<BaseAward> awards;
     @Setter
     private List<Milestone> milestones;
+    private boolean hasAi;
 
     public MarsGame(List<String> playerNames,
                     int playerHandSize,
@@ -48,24 +46,32 @@ public class MarsGame {
                     Planet planet,
                     boolean mulligan,
                     List<BaseAward> awards,
-                    List<Milestone> milestones) {
+                    List<Milestone> milestones,
+                    List<Boolean> computers) {
         this.projectsDeck = projectsDeck;
         this.corporationsDeck = corporationsDeck;
         this.planet = planet;
         this.awards = awards;
         this.milestones = milestones;
+        this.hasAi = (computers.stream().anyMatch(item -> item));
 
-        playerUuidToPlayer = playerNames.stream().map(playerName ->
-                Player.builder()
-                        .uuid(UUID.randomUUID().toString())
-                        .name(playerName)
-                        //.hand(Deck.builder().cards(new LinkedList<>(List.of(27, 20, 51, 80, 31, 1))).build())
-                        .hand(projectsDeck.dealCardsDeck(playerHandSize))
-                        .corporations(corporationsDeck.dealCardsDeck(INITIAL_CORPORATIONS_SIZE))
-                        .played(Deck.builder().build())
-                        .mulligan(mulligan)
-                        .build()).collect(Collectors.toMap(Player::getUuid, Function.identity())
-        );
+        List<Player> players = new ArrayList<>();
+
+        for (int i = 0; i < playerNames.size(); i++) {
+            players.add(
+                    Player.builder()
+                            .uuid(UUID.randomUUID().toString())
+                            .name(playerNames.get(i))
+                            //.hand(Deck.builder().cards(new LinkedList<>(List.of(31,29,30,34,35))).build())
+                            .hand(projectsDeck.dealCardsDeck(playerHandSize))
+                            .corporations(corporationsDeck.dealCardsDeck(INITIAL_CORPORATIONS_SIZE))
+                            .played(Deck.builder().build())
+                            .mulligan(mulligan)
+                            .ai(computers.get(i))
+                            .build()
+            );
+        }
+        playerUuidToPlayer = players.stream().collect(Collectors.toMap(Player::getUuid, Function.identity()));
 
         this.stateType = StateType.PICK_CORPORATIONS;
         this.currentPhase = Constants.PICK_CORPORATIONS_PHASE;

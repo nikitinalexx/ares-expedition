@@ -6,6 +6,7 @@ import com.terraforming.ares.model.Deck;
 import com.terraforming.ares.model.GameParameters;
 import com.terraforming.ares.model.Planet;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.GameProcessorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -35,7 +36,8 @@ public class DefaultGameFactory implements GameFactory {
                 mars,
                 gameParameters.isMulligan(),
                 achievementsFactory.createAwards(Constants.ACHIEVEMENTS_SIZE),
-                achievementsFactory.createMilestones(Constants.ACHIEVEMENTS_SIZE)
+                achievementsFactory.createMilestones(Constants.ACHIEVEMENTS_SIZE),
+                gameParameters.getComputers()
         );
 
     }

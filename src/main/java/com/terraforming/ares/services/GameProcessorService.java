@@ -9,6 +9,7 @@ import com.terraforming.ares.model.turn.Turn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.processors.turn.TurnProcessor;
 import com.terraforming.ares.repositories.caching.CachingGameRepository;
+import com.terraforming.ares.services.ai.AiService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -31,17 +32,20 @@ public class GameProcessorService {
     private final StateContextProvider stateContextProvider;
     private final TurnTypeService turnTypeService;
     private final Map<TurnType, TurnProcessor<?>> turnProcessors;
-    private final Queue<Long> gamesToProcess = new ArrayBlockingQueue<>(100);
+    private final AiService aiService;
+    private final Queue<Long> gamesToProcess = new ArrayBlockingQueue<>(1200);
 
     public GameProcessorService(List<TurnProcessor<?>> turnProcessor,
                                 CachingGameRepository gameRepository,
                                 StateContextProvider stateContextProvider,
                                 TurnTypeService turnTypeService,
-                                StateFactory stateFactory) {
+                                StateFactory stateFactory,
+                                AiService aiService) {
         this.gameRepository = gameRepository;
         this.stateFactory = stateFactory;
         this.turnTypeService = turnTypeService;
         this.stateContextProvider = stateContextProvider;
+        this.aiService = aiService;
 
         turnProcessors = turnProcessor.stream().collect(Collectors.toMap(
                 TurnProcessor::getType, Function.identity()
@@ -54,8 +58,16 @@ public class GameProcessorService {
             Long gameId = gamesToProcess.poll();
 
             gameRepository.updateMarsGame(gameId, game -> null, game -> {
+                while (aiService.waitingAiTurns(game)) {
+                    aiService.makeAiTurns(game);
+                }
+
                 while (processFinalTurns(game)) {
                     stateFactory.getCurrentState(game).updateState();
+                }
+
+                if (aiService.waitingAiTurns(game)) {
+                    registerAsyncGameUpdate(gameId);
                 }
 
                 return null;

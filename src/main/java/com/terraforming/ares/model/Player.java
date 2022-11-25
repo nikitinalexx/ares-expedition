@@ -62,6 +62,8 @@ public class Player {
 
     private List<Turn> nextTurns;
 
+    private boolean ai;
+
     public void setTerraformingRating(int terraformingRating) {
         if (terraformingRating > this.terraformingRating && unmiCorporation && !didUnmiAction) {
             hasUnmiAction = true;
