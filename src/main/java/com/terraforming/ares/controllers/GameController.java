@@ -93,6 +93,7 @@ public class GameController {
         List<Integer> occurenceAfterHalf = new ArrayList<>();
 
         long totalTurnsCount = 0;
+        long totalPointsCount = 0;
 
 
         for (int i = 0; i < 220; i++) {
@@ -140,6 +141,9 @@ public class GameController {
             int firstPlayerPoints = winPointsService.countWinPoints(firstPlayer, game);
             int secondPlayerPoints = winPointsService.countWinPoints(secondPlayer, game);
 
+            totalPointsCount += firstPlayerPoints;
+            totalPointsCount += secondPlayerPoints;
+
             if (firstPlayerPoints != secondPlayerPoints) {
                 Player winCardsPlayer = (firstPlayerPoints > secondPlayerPoints ? firstPlayer : secondPlayer);
 
@@ -167,6 +171,8 @@ public class GameController {
 //        }
 
         System.out.println((double)totalTurnsCount / finishedGames.size());
+
+        System.out.println((double) totalPointsCount / (2 * finishedGames.size()));
     }
 
     @GetMapping("/game/player/{playerUuid}")
