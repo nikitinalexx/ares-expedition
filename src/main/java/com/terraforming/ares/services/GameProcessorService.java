@@ -33,7 +33,7 @@ public class GameProcessorService {
     private final TurnTypeService turnTypeService;
     private final Map<TurnType, TurnProcessor<?>> turnProcessors;
     private final AiService aiService;
-    private final Queue<Long> gamesToProcess = new ArrayBlockingQueue<>(1200);
+    private final Queue<Long> gamesToProcess = new ArrayBlockingQueue<>(3200);
 
     public GameProcessorService(List<TurnProcessor<?>> turnProcessor,
                                 CachingGameRepository gameRepository,

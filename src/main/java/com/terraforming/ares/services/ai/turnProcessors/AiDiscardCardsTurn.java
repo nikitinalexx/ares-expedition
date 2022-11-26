@@ -1,6 +1,7 @@
 package com.terraforming.ares.services.ai.turnProcessors;
 
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
 import com.terraforming.ares.model.turn.TurnType;
@@ -48,9 +49,14 @@ public class AiDiscardCardsTurn implements AiTurnProcessor {
         int cardsToKeep = cardsToDiscard.size() - nextTurn.getSize();
 
         for (int i = 0; i < cardsToKeep; i++) {
-            //remove with lowest value
-            Integer worstCard = cardValueService.getWorstCard(cardsToDiscard, game.getTurns());
-            cardsToDiscard.remove(worstCard);
+            //keep best card
+            Integer bestCard;
+            if (player.getUuid().endsWith("0") && Constants.FIRST_BOT_IS_RANDOM) {
+                bestCard = cardsToDiscard.get(random.nextInt(cardsToDiscard.size()));
+            } else {
+                bestCard = cardValueService.getBestCard(game, player, cardsToDiscard, game.getTurns());
+            }
+            cardsToDiscard.remove(bestCard);
         }
 
         aiTurnService.discardCards(

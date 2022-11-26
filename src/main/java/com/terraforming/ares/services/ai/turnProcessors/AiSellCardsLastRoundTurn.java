@@ -1,6 +1,7 @@
 package com.terraforming.ares.services.ai.turnProcessors;
 
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.ai.CardValueService;
@@ -36,7 +37,12 @@ public class AiSellCardsLastRoundTurn implements AiTurnProcessor {
         List<Integer> cardsToSell = new ArrayList<>();
 
         for (int i = 0; i < cardsToSellCount; i++) {
-            Integer cardToSell = cardValueService.getWorstCard(allCards, game.getTurns());
+            Integer cardToSell;
+            if (player.getUuid().endsWith("0") && Constants.FIRST_BOT_IS_RANDOM) {
+                cardToSell = allCards.get(random.nextInt(allCards.size()));
+            } else {
+                cardToSell = cardValueService.getWorstCard(game, player, allCards, game.getTurns());
+            }
             allCards.remove(cardToSell);
             cardsToSell.add(cardToSell);
         }

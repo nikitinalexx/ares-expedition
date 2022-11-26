@@ -60,7 +60,7 @@ public class MarsGame {
         for (int i = 0; i < playerNames.size(); i++) {
             players.add(
                     Player.builder()
-                            .uuid(UUID.randomUUID().toString())
+                            .uuid(UUID.randomUUID().toString() + i)
                             .name(playerNames.get(i))
                             //.hand(Deck.builder().cards(new LinkedList<>(List.of(31,29,30,34,35))).build())
                             .hand(projectsDeck.dealCardsDeck(playerHandSize))
@@ -172,7 +172,8 @@ public class MarsGame {
     }
 
     public boolean timeToSave() {
-        return gameEndCondition() || this.updateCounter % 10 == 0;
+        //todo update before deploy
+        return gameEndCondition() || this.updateCounter % 1000 == 0;
     }
 
     @JsonIgnore

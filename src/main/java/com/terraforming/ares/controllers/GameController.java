@@ -48,13 +48,14 @@ public class GameController {
                 throw new IllegalArgumentException("Only 1 to 4 players are supported so far");
             }
 
-//            for (int i = 0; i < 1000; i++) {
-//                MarsGame marsGame = gameService.startNewGame(gameParameters);
-//
-//                if (aiPlayerCount == playersCount) {
-//                    turnService.pushGame(marsGame.getId());
-//                }
-//            }
+            //todo update before deploy
+            for (int i = 0; i < 1000; i++) {
+                MarsGame marsGame = gameService.startNewGame(gameParameters);
+
+                if (aiPlayerCount == playersCount) {
+                    turnService.pushGame(marsGame.getId());
+                }
+            }
 
             MarsGame marsGame = gameService.startNewGame(gameParameters);
 
@@ -84,6 +85,14 @@ public class GameController {
         }
     }
 
+    @GetMapping("/simulations")
+    public void runSimulations() {
+
+
+
+        statistics();
+    }
+
     @GetMapping("/statistics")
     public void statistics() {
         List<Integer> winCardOccurenceBeforeHalf = new ArrayList<>();
@@ -94,6 +103,9 @@ public class GameController {
 
         long totalTurnsCount = 0;
         long totalPointsCount = 0;
+
+        long firstWins = 0;
+        long secondWins = 0;
 
 
         for (int i = 0; i < 220; i++) {
@@ -121,12 +133,10 @@ public class GameController {
                     player -> {
                         for (Integer playedCard : player.getPlayed().getCards()) {
                             if (playedCard < 250) {
-                                if (playedCard < 250) {
-                                    if (player.getPlayed().getCardToTurn().get(playedCard) <= totalTurns / 2) {
-                                        occurenceBeforeHalf.set(playedCard, occurenceBeforeHalf.get(playedCard) + 1);
-                                    } else {
-                                        occurenceAfterHalf.set(playedCard, occurenceAfterHalf.get(playedCard) + 1);
-                                    }
+                                if (player.getPlayed().getCardToTurn().get(playedCard) <= totalTurns / 2) {
+                                    occurenceBeforeHalf.set(playedCard, occurenceBeforeHalf.get(playedCard) + 1);
+                                } else {
+                                    occurenceAfterHalf.set(playedCard, occurenceAfterHalf.get(playedCard) + 1);
                                 }
                             }
                         }
@@ -147,6 +157,12 @@ public class GameController {
             if (firstPlayerPoints != secondPlayerPoints) {
                 Player winCardsPlayer = (firstPlayerPoints > secondPlayerPoints ? firstPlayer : secondPlayer);
 
+                if (winCardsPlayer.getUuid().endsWith("0")) {
+                    firstWins++;
+                } else {
+                    secondWins++;
+                }
+
                 for (Integer playedCard : winCardsPlayer.getPlayed().getCards()) {
                     if (playedCard < 250) {
                         if (winCardsPlayer.getPlayed().getCardToTurn().get(playedCard) <= totalTurns / 2) {
@@ -161,18 +177,20 @@ public class GameController {
 
         System.out.println("All");
         for (int i = 1; i < occurenceBeforeHalf.size(); i++) {
-            System.out.println("i: " + i + " " + " % " + (double) winCardOccurenceBeforeHalf.get(i) * 100 / occurenceBeforeHalf.get(i) + " " + " % " + (double) winCardOccurenceAfterHalf.get(i) * 100 / occurenceAfterHalf.get(i) + " " + cardService.getCard(i).getClass().getSimpleName());
+//            System.out.println("i: " + i + " " + " % " + (double) winCardOccurenceBeforeHalf.get(i) * 100 / occurenceBeforeHalf.get(i) + " " + " % " + (double) winCardOccurenceAfterHalf.get(i) * 100 / occurenceAfterHalf.get(i) + " " + cardService.getCard(i).getClass().getSimpleName());
 
-         //   System.out.println("cardToWeightFirstHalf.put(" + i + ", " + (double) winCardOccurenceBeforeHalf.get(i) * 100 / occurenceBeforeHalf.get(i) + ");");
+            System.out.println("cardToWeightFirstHalf.put(" + i + ", " + (double) winCardOccurenceBeforeHalf.get(i) * 100 / occurenceBeforeHalf.get(i) + ");");
         }
 
-//        for (int i = 1; i < occurenceBeforeHalf.size(); i++) {
-//            System.out.println("cardToWeightSecondHalf.put(" + i + ", " + (double) winCardOccurenceAfterHalf.get(i) * 100 / occurenceAfterHalf.get(i) + ");");
-//        }
+        for (int i = 1; i < occurenceBeforeHalf.size(); i++) {
+            System.out.println("cardToWeightSecondHalf.put(" + i + ", " + (double) winCardOccurenceAfterHalf.get(i) * 100 / occurenceAfterHalf.get(i) + ");");
+        }
 
         System.out.println((double)totalTurnsCount / finishedGames.size());
 
         System.out.println((double) totalPointsCount / (2 * finishedGames.size()));
+
+        System.out.println("Old: " + firstWins + "; New: " + secondWins + "; Ratio: " + ((double) firstWins / (firstWins + secondWins)));
     }
 
     @GetMapping("/game/player/{playerUuid}")

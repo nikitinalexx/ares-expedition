@@ -41,6 +41,13 @@ public class AiSkipTurn implements AiTurnProcessor {
                 aiTurnService.sellAllCards(player, game, player.getHand().getCards());
                 return true;
             } else {
+                if (!game.getPlanetAtTheStartOfThePhase().isOxygenMax()) {
+                    String validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.FOREST);
+                    if (validationResult == null) {
+                        aiTurnService.standardProjectTurn(game, player, StandardProjectType.FOREST);
+                        return true;
+                    }
+                }
                 String validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.OCEAN);
                 if (validationResult == null) {
                     aiTurnService.standardProjectTurn(game, player, StandardProjectType.OCEAN);

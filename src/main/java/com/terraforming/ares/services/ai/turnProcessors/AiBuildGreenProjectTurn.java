@@ -60,7 +60,7 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
             return true;
         }
 
-        Card selectedCard = cardValueService.getBestCard(availableCards, game.getTurns());
+        Card selectedCard = cardValueService.getBestCardAsCard(game, player, availableCards, game.getTurns());
 
         aiTurnService.buildGreenProject(
                 game,

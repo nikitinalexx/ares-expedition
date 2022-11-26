@@ -44,6 +44,8 @@ public class Constants {
 
     public static final int ACHIEVEMENTS_SIZE = 3;
 
+    public static final boolean FIRST_BOT_IS_RANDOM = true;
+
 
     private Constants() {}
 

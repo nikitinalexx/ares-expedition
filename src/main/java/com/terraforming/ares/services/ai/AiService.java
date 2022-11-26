@@ -63,7 +63,7 @@ public class AiService {
                 .stream()
                 .filter(Player::isAi)
                 .allMatch(player -> {
-                    State currentState = stateFactory.getCurrentState(game);
+                            State currentState = stateFactory.getCurrentState(game);
                             return player.getNextTurn() != null && turnTypeService.isTerminal(player.getNextTurn().getType(), game) && !player.getNextTurn().expectedAsNextTurn()
                                     || player.getNextTurn() == null && currentState.getPossibleTurns(stateContextProvider.createStateContext(player.getUuid())).isEmpty();
                         }
@@ -87,7 +87,13 @@ public class AiService {
             boolean processed = turnProcessors.get(turnToProcess).processTurn(game, player);
 
             if (!processed) {
-                turnProcessors.get(TurnType.SKIP_TURN).processTurn(game, player);
+                if (possibleTurns.contains(TurnType.PLANT_FOREST)) {
+                    turnProcessors.get(TurnType.PLANT_FOREST).processTurn(game, player);
+                } else if (possibleTurns.contains(TurnType.INCREASE_TEMPERATURE)) {
+                    turnProcessors.get(TurnType.INCREASE_TEMPERATURE).processTurn(game, player);
+                } else {
+                    turnProcessors.get(TurnType.SKIP_TURN).processTurn(game, player);
+                }
             }
         } else if (turnToProcess == TurnType.GAME_END) {
             System.out.println("GAME_END");
@@ -97,12 +103,8 @@ public class AiService {
     }
 
     private TurnType getTurnToProcess(List<TurnType> possibleTurns, Player player) {
-        if (possibleTurns.contains(TurnType.PLANT_FOREST)) {
-            return TurnType.PLANT_FOREST;
-        }
-
-        if (possibleTurns.contains(TurnType.INCREASE_TEMPERATURE)) {
-            return TurnType.INCREASE_TEMPERATURE;
+        if (possibleTurns.contains(TurnType.UNMI_RT) && player.getMc() >= 6) {
+            return TurnType.UNMI_RT;
         }
 
         if (possibleTurns.contains(TurnType.BUILD_GREEN_PROJECT)) {
@@ -113,8 +115,8 @@ public class AiService {
             return TurnType.BUILD_BLUE_RED_PROJECT;
         }
 
-        if (possibleTurns.contains(TurnType.UNMI_RT) && player.getMc() >= 6) {
-            return TurnType.UNMI_RT;
+        if (possibleTurns.contains(TurnType.PERFORM_BLUE_ACTION)) {
+            return TurnType.PERFORM_BLUE_ACTION;
         }
 
         return possibleTurns.get(0);
