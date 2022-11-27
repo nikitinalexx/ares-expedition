@@ -159,6 +159,9 @@ public class AiCardActionHelper {
                     }
                     return (player.getCardResourcesCount().get(card.getClass()) >= actionInputData.getMax()) ? List.of(actionInputData.getMax()) : List.of(1);
                 } else if (actionInputData.getType() == ActionInputDataType.DISCARD_HEAT) {
+                    if (actionInputData.getMax() == Integer.MAX_VALUE && game.getPlanetAtTheStartOfThePhase().isTemperatureMax() && player.getHeat() > 20) {
+                        return List.of(player.getHeat());
+                    }
                     return List.of(Math.min(4, player.getHeat()));
                 } else if (actionInputData.getType() == ActionInputDataType.MICROBE_CARD) {
                     return List.of(getMicrobeCard(player).get().getId());

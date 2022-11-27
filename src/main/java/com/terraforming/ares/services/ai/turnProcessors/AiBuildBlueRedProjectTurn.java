@@ -60,15 +60,19 @@ public class AiBuildBlueRedProjectTurn implements AiTurnProcessor {
             return true;
         }
 
-        Card selectedCard = cardValueService.getBestCardAsCard(game, player, availableCards, game.getTurns());
+        Card selectedCard = cardValueService.getBestCardAsCard(game, player, availableCards, game.getTurns(), true);
 
-        aiTurnService.buildBlueRedProject(
-                game,
-                player,
-                selectedCard.getId(),
-                aiPaymentHelper.getCardPayments(player, selectedCard),
-                aiCardParamsHelper.getInputParamsForBuild(player, selectedCard)
-        );
+        if (selectedCard == null) {
+            aiTurnService.skipTurn(player);
+        } else {
+            aiTurnService.buildBlueRedProject(
+                    game,
+                    player,
+                    selectedCard.getId(),
+                    aiPaymentHelper.getCardPayments(player, selectedCard),
+                    aiCardParamsHelper.getInputParamsForBuild(player, selectedCard)
+            );
+        }
 
         return true;
     }

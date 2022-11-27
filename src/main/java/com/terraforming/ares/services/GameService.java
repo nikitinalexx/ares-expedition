@@ -34,6 +34,10 @@ public class GameService {
         return game;
     }
 
+    public MarsGame createNewSimulation(GameParameters gameParameters) {
+        return gameFactory.createMarsGame(gameParameters);
+    }
+
     public MarsGame getGame(String playerUuid) {
         return gameRepository.getGameByPlayerUuid(playerUuid);
     }
@@ -56,9 +60,30 @@ public class GameService {
         return builder.build();
     }
 
+    public ActionsDto getNextActions(MarsGame game, String playerUuid) {
+        State currentState = stateFactory.getCurrentState(game);
+
+        ActionsDto.ActionsDtoBuilder builder = ActionsDto.builder();
+
+        builder.playersToNextAction(playerUuid, currentState.nextAction(stateContextProvider.createStateContext(playerUuid)).name());
+
+        game.getPlayerUuidToPlayer()
+                .values()
+                .stream()
+                .map(Player::getUuid)
+                .filter(uuid -> !uuid.equals(playerUuid))
+                .forEach(uuid -> builder.playersToNextAction(uuid, currentState.nextAction(stateContextProvider.createStateContext(uuid)).name()));
+
+        return builder.build();
+    }
+
     public List<TurnType> getPossibleTurns(String playerUuid) {
         MarsGame game = gameRepository.getGameByPlayerUuid(playerUuid);
 
+        return stateFactory.getCurrentState(game).getPossibleTurns(stateContextProvider.createStateContext(playerUuid));
+    }
+
+    public List<TurnType> getPossibleTurns(MarsGame game, String playerUuid) {
         return stateFactory.getCurrentState(game).getPossibleTurns(stateContextProvider.createStateContext(playerUuid));
     }
 

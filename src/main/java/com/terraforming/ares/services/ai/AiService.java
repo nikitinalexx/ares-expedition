@@ -71,14 +71,14 @@ public class AiService {
     }
 
     private void processAiTurn(MarsGame game, Player player) {
-        ActionsDto nextActions = gameService.getNextActions(player.getUuid());
+        ActionsDto nextActions = gameService.getNextActions(game, player.getUuid());
         String nextAction = nextActions.getPlayersToNextActions().get(player.getUuid());
 
         if (Action.WAIT.name().equals(nextAction)) {
             return;
         }
 
-        List<TurnType> possibleTurns = gameService.getPossibleTurns(player.getUuid());
+        List<TurnType> possibleTurns = gameService.getPossibleTurns(game, player.getUuid());
 
 
         TurnType turnToProcess = getTurnToProcess(possibleTurns, player);

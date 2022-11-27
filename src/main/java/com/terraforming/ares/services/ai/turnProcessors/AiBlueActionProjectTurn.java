@@ -1,10 +1,8 @@
 package com.terraforming.ares.services.ai.turnProcessors;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Card;
-import com.terraforming.ares.model.Deck;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.StandardProjectType;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.CardValidationService;
@@ -14,7 +12,9 @@ import com.terraforming.ares.services.ai.helpers.AiPaymentService;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -74,6 +74,33 @@ public class AiBlueActionProjectTurn implements AiTurnProcessor {
         }
 
         if (!result) {
+            Set<CardAction> playedActions = player.getPlayed().getCards().stream().map(cardService::getCard)
+                    .map(Card::getCardMetadata)
+                    .filter(Objects::nonNull)
+                    .map(CardMetadata::getCardAction)
+                    .filter(Objects::nonNull).collect(Collectors.toSet());
+
+            if (!game.getPlanetAtTheStartOfThePhase().isOceansMax()) {
+                if ((playedActions.contains(CardAction.ARCTIC_ALGAE)
+                        || playedActions.contains(CardAction.FISH))
+                        && player.getMc() > 30) {
+                    aiTurnService.standardProjectTurn(game, player, StandardProjectType.OCEAN);
+                    return true;
+                }
+            }
+            if (!game.getPlanetAtTheStartOfThePhase().isTemperatureMax()) {
+                if ((playedActions.contains(CardAction.LIVESTOCK))
+                        && player.getMc() > 30) {
+                    aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
+                    return true;
+                }
+                if ((playedActions.contains(CardAction.PHYSICS_COMPLEX))
+                        && player.getMc() > 70) {
+                    aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
+                    return true;
+                }
+            }
+
             if (!game.gameEndCondition() && canFinishGame(game, player)) {
                 if (player.getHand().size() != 0) {
                     aiTurnService.sellAllCards(player, game, player.getHand().getCards());
@@ -81,17 +108,14 @@ public class AiBlueActionProjectTurn implements AiTurnProcessor {
                 }
                 if (game.getPlanet().temperatureLeft() > 0) {
                     aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
-                    System.out.println("Forcing Temperature");
                     return true;
                 }
                 if (game.getPlanet().oxygenLeft() > 0) {
                     aiTurnService.standardProjectTurn(game, player, StandardProjectType.FOREST);
-                    System.out.println("Forcing Forest");
                     return true;
                 }
                 if (game.getPlanet().oceansLeft() > 0) {
                     aiTurnService.standardProjectTurn(game, player, StandardProjectType.OCEAN);
-                    System.out.println("Forcing Ocean");
                     return true;
                 }
             }

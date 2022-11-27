@@ -3,6 +3,8 @@ package com.terraforming.ares.services.ai;
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.PaymentValidationService;
 import com.terraforming.ares.services.SpecialEffectsService;
@@ -27,444 +29,444 @@ public class CardValueService {
         this.cardService = cardService;
         this.paymentValidationService = paymentValidationService;
         this.specialEffectsService = specialEffectsService;
-        cardToWeightFirstHalf.put(1, 34.61538461538461);
-        cardToWeightFirstHalf.put(2, 50.81967213114754);
-        cardToWeightFirstHalf.put(3, 52.121212121212125);
-        cardToWeightFirstHalf.put(4, 75.0);
-        cardToWeightFirstHalf.put(5, 50.370370370370374);
-        cardToWeightFirstHalf.put(6, 82.08955223880596);
-        cardToWeightFirstHalf.put(7, 40.0);
-        cardToWeightFirstHalf.put(8, 33.333333333333336);
-        cardToWeightFirstHalf.put(9, 43.82022471910113);
-        cardToWeightFirstHalf.put(10, 45.0);
-        cardToWeightFirstHalf.put(11, 50.96774193548387);
+        cardToWeightFirstHalf.put(1, 40.0);
+        cardToWeightFirstHalf.put(2, 57.142857142857146);
+        cardToWeightFirstHalf.put(3, 51.04895104895105);
+        cardToWeightFirstHalf.put(4, 80.76923076923077);
+        cardToWeightFirstHalf.put(5, 0.0);
+        cardToWeightFirstHalf.put(6, 90.625);
+        cardToWeightFirstHalf.put(7, 0.0);
+        cardToWeightFirstHalf.put(8, 0.0);
+        cardToWeightFirstHalf.put(9, 44.44444444444444);
+        cardToWeightFirstHalf.put(10, 41.007194244604314);
+        cardToWeightFirstHalf.put(11, 48.611111111111114);
         cardToWeightFirstHalf.put(12, 0.0);
-        cardToWeightFirstHalf.put(13, 41.95402298850575);
+        cardToWeightFirstHalf.put(13, 57.93650793650794);
         cardToWeightFirstHalf.put(14, 0.0);
-        cardToWeightFirstHalf.put(15, 44.705882352941174);
-        cardToWeightFirstHalf.put(16, 38.46153846153846);
-        cardToWeightFirstHalf.put(17, 49.554896142433236);
-        cardToWeightFirstHalf.put(18, 30.0);
-        cardToWeightFirstHalf.put(19, 36.8421052631579);
-        cardToWeightFirstHalf.put(20, 31.03448275862069);
-        cardToWeightFirstHalf.put(21, 54.23728813559322);
-        cardToWeightFirstHalf.put(22, 46.69260700389105);
-        cardToWeightFirstHalf.put(23, 53.30739299610895);
-        cardToWeightFirstHalf.put(24, 47.5609756097561);
-        cardToWeightFirstHalf.put(25, 59.1324200913242);
-        cardToWeightFirstHalf.put(26, 62.15538847117794);
-        cardToWeightFirstHalf.put(27, 34.523809523809526);
-        cardToWeightFirstHalf.put(28, 41.75824175824176);
-        cardToWeightFirstHalf.put(29, 35.0);
-        cardToWeightFirstHalf.put(30, 47.05882352941177);
-        cardToWeightFirstHalf.put(31, 57.142857142857146);
-        cardToWeightFirstHalf.put(32, 33.333333333333336);
-        cardToWeightFirstHalf.put(33, 70.58823529411765);
-        cardToWeightFirstHalf.put(34, 42.2680412371134);
-        cardToWeightFirstHalf.put(35, 69.11764705882354);
-        cardToWeightFirstHalf.put(36, 59.682539682539684);
-        cardToWeightFirstHalf.put(37, 63.9344262295082);
-        cardToWeightFirstHalf.put(38, 39.053254437869825);
-        cardToWeightFirstHalf.put(39, 100.0);
-        cardToWeightFirstHalf.put(40, 49.06542056074766);
-        cardToWeightFirstHalf.put(41, 45.270270270270274);
-        cardToWeightFirstHalf.put(42, 53.645833333333336);
-        cardToWeightFirstHalf.put(43, 37.735849056603776);
-        cardToWeightFirstHalf.put(44, 60.150375939849624);
-        cardToWeightFirstHalf.put(45, 55.81395348837209);
-        cardToWeightFirstHalf.put(46, 72.12121212121212);
-        cardToWeightFirstHalf.put(47, 50.46296296296296);
-        cardToWeightFirstHalf.put(48, 61.30653266331658);
-        cardToWeightFirstHalf.put(49, 29.032258064516128);
-        cardToWeightFirstHalf.put(50, 33.333333333333336);
-        cardToWeightFirstHalf.put(51, 52.23880597014925);
-        cardToWeightFirstHalf.put(52, 14.285714285714286);
-        cardToWeightFirstHalf.put(53, 61.19733924611973);
-        cardToWeightFirstHalf.put(54, 44.31372549019608);
-        cardToWeightFirstHalf.put(55, 29.310344827586206);
-        cardToWeightFirstHalf.put(56, 39.53488372093023);
-        cardToWeightFirstHalf.put(57, 45.45454545454545);
-        cardToWeightFirstHalf.put(58, 49.142857142857146);
-        cardToWeightFirstHalf.put(59, 53.57142857142857);
-        cardToWeightFirstHalf.put(60, 65.4292343387471);
-        cardToWeightFirstHalf.put(61, 47.05882352941177);
-        cardToWeightFirstHalf.put(62, 46.31578947368421);
-        cardToWeightFirstHalf.put(63, 44.067796610169495);
-        cardToWeightFirstHalf.put(64, 47.096774193548384);
-        cardToWeightFirstHalf.put(65, 16.666666666666668);
+        cardToWeightFirstHalf.put(15, 50.74626865671642);
+        cardToWeightFirstHalf.put(16, 0.0);
+        cardToWeightFirstHalf.put(17, 49.78354978354978);
+        cardToWeightFirstHalf.put(18, 100.0);
+        cardToWeightFirstHalf.put(19, 0.0);
+        cardToWeightFirstHalf.put(20, 0.0);
+        cardToWeightFirstHalf.put(21, 0.0);
+        cardToWeightFirstHalf.put(22, 55.88235294117647);
+        cardToWeightFirstHalf.put(23, 54.95049504950495);
+        cardToWeightFirstHalf.put(24, 0.0);
+        cardToWeightFirstHalf.put(25, 63.63636363636363);
+        cardToWeightFirstHalf.put(26, 65.40880503144655);
+        cardToWeightFirstHalf.put(27, 0.0);
+        cardToWeightFirstHalf.put(28, 0.0);
+        cardToWeightFirstHalf.put(29, 0.0);
+        cardToWeightFirstHalf.put(30, 55.55555555555556);
+        cardToWeightFirstHalf.put(31, 52.54237288135593);
+        cardToWeightFirstHalf.put(32, 0.0);
+        cardToWeightFirstHalf.put(33, 70.0);
+        cardToWeightFirstHalf.put(34, 40.0);
+        cardToWeightFirstHalf.put(35, 61.81818181818182);
+        cardToWeightFirstHalf.put(36, 67.9245283018868);
+        cardToWeightFirstHalf.put(37, 67.63848396501457);
+        cardToWeightFirstHalf.put(38, 52.72727272727273);
+        cardToWeightFirstHalf.put(39, 0.0);
+        cardToWeightFirstHalf.put(40, 61.198738170347006);
+        cardToWeightFirstHalf.put(41, 0.0);
+        cardToWeightFirstHalf.put(42, 63.98713826366559);
+        cardToWeightFirstHalf.put(43, 0.0);
+        cardToWeightFirstHalf.put(44, 65.29968454258675);
+        cardToWeightFirstHalf.put(45, 55.85585585585586);
+        cardToWeightFirstHalf.put(46, 82.6086956521739);
+        cardToWeightFirstHalf.put(47, 47.05882352941177);
+        cardToWeightFirstHalf.put(48, 65.18518518518519);
+        cardToWeightFirstHalf.put(49, 59.85401459854015);
+        cardToWeightFirstHalf.put(50, 0.0);
+        cardToWeightFirstHalf.put(51, 63.192182410423456);
+        cardToWeightFirstHalf.put(52, 62.22222222222222);
+        cardToWeightFirstHalf.put(53, 61.07954545454545);
+        cardToWeightFirstHalf.put(54, 59.183673469387756);
+        cardToWeightFirstHalf.put(55, 45.36082474226804);
+        cardToWeightFirstHalf.put(56, 43.646408839779006);
+        cardToWeightFirstHalf.put(57, 0.0);
+        cardToWeightFirstHalf.put(58, 47.61904761904762);
+        cardToWeightFirstHalf.put(59, 59.79899497487437);
+        cardToWeightFirstHalf.put(60, 71.30434782608695);
+        cardToWeightFirstHalf.put(61, 42.10526315789474);
+        cardToWeightFirstHalf.put(62, 50.3448275862069);
+        cardToWeightFirstHalf.put(63, 47.019867549668874);
+        cardToWeightFirstHalf.put(64, 39.130434782608695);
+        cardToWeightFirstHalf.put(65, 0.0);
         cardToWeightFirstHalf.put(66, 0.0);
-        cardToWeightFirstHalf.put(67, 57.02479338842975);
-        cardToWeightFirstHalf.put(68, 50.0);
-        cardToWeightFirstHalf.put(69, 55.66502463054187);
-        cardToWeightFirstHalf.put(70, 59.20245398773006);
-        cardToWeightFirstHalf.put(71, 51.19047619047619);
-        cardToWeightFirstHalf.put(72, 50.20746887966805);
-        cardToWeightFirstHalf.put(73, 53.46534653465346);
-        cardToWeightFirstHalf.put(74, 54.76190476190476);
-        cardToWeightFirstHalf.put(75, 54.08560311284047);
-        cardToWeightFirstHalf.put(76, 55.033557046979865);
-        cardToWeightFirstHalf.put(77, 60.19417475728155);
-        cardToWeightFirstHalf.put(78, 61.94331983805668);
+        cardToWeightFirstHalf.put(67, 70.49180327868852);
+        cardToWeightFirstHalf.put(68, 0.0);
+        cardToWeightFirstHalf.put(69, 63.02250803858521);
+        cardToWeightFirstHalf.put(70, 65.79710144927536);
+        cardToWeightFirstHalf.put(71, 0.0);
+        cardToWeightFirstHalf.put(72, 53.20754716981132);
+        cardToWeightFirstHalf.put(73, 53.37837837837838);
+        cardToWeightFirstHalf.put(74, 59.05797101449275);
+        cardToWeightFirstHalf.put(75, 59.375);
+        cardToWeightFirstHalf.put(76, 52.40963855421687);
+        cardToWeightFirstHalf.put(77, 58.13953488372093);
+        cardToWeightFirstHalf.put(78, 51.65289256198347);
         cardToWeightFirstHalf.put(79, 0.0);
-        cardToWeightFirstHalf.put(80, 54.57142857142857);
-        cardToWeightFirstHalf.put(81, 54.54545454545455);
-        cardToWeightFirstHalf.put(82, 60.869565217391305);
-        cardToWeightFirstHalf.put(83, 57.89473684210526);
-        cardToWeightFirstHalf.put(84, 54.02597402597402);
-        cardToWeightFirstHalf.put(85, 53.793103448275865);
+        cardToWeightFirstHalf.put(80, 58.51063829787234);
+        cardToWeightFirstHalf.put(81, 58.898305084745765);
+        cardToWeightFirstHalf.put(82, 78.125);
+        cardToWeightFirstHalf.put(83, 61.53846153846154);
+        cardToWeightFirstHalf.put(84, 60.588235294117645);
+        cardToWeightFirstHalf.put(85, 64.77272727272727);
         cardToWeightFirstHalf.put(86, 0.0);
-        cardToWeightFirstHalf.put(87, 59.375);
-        cardToWeightFirstHalf.put(88, 53.44827586206897);
-        cardToWeightFirstHalf.put(89, 51.698113207547166);
+        cardToWeightFirstHalf.put(87, 49.09090909090909);
+        cardToWeightFirstHalf.put(88, 52.459016393442624);
+        cardToWeightFirstHalf.put(89, 68.72246696035242);
         cardToWeightFirstHalf.put(90, 0.0);
-        cardToWeightFirstHalf.put(91, 47.88732394366197);
+        cardToWeightFirstHalf.put(91, 46.42857142857143);
         cardToWeightFirstHalf.put(92, 0.0);
-        cardToWeightFirstHalf.put(93, 47.674418604651166);
-        cardToWeightFirstHalf.put(94, 80.3921568627451);
-        cardToWeightFirstHalf.put(95, 51.875);
-        cardToWeightFirstHalf.put(96, 54.41988950276243);
-        cardToWeightFirstHalf.put(97, 45.744680851063826);
-        cardToWeightFirstHalf.put(98, 47.20496894409938);
-        cardToWeightFirstHalf.put(99, 58.843537414965986);
-        cardToWeightFirstHalf.put(100, 48.598130841121495);
-        cardToWeightFirstHalf.put(101, 52.98804780876494);
-        cardToWeightFirstHalf.put(102, 51.690821256038646);
-        cardToWeightFirstHalf.put(103, 51.65562913907285);
-        cardToWeightFirstHalf.put(104, 54.0);
+        cardToWeightFirstHalf.put(93, 40.229885057471265);
+        cardToWeightFirstHalf.put(94, 85.41666666666667);
+        cardToWeightFirstHalf.put(95, 48.57142857142857);
+        cardToWeightFirstHalf.put(96, 64.09495548961425);
+        cardToWeightFirstHalf.put(97, 53.75494071146245);
+        cardToWeightFirstHalf.put(98, 50.476190476190474);
+        cardToWeightFirstHalf.put(99, 64.91803278688525);
+        cardToWeightFirstHalf.put(100, 50.0);
+        cardToWeightFirstHalf.put(101, 59.130434782608695);
+        cardToWeightFirstHalf.put(102, 48.78048780487805);
+        cardToWeightFirstHalf.put(103, 66.55405405405405);
+        cardToWeightFirstHalf.put(104, 0.0);
         cardToWeightFirstHalf.put(105, 0.0);
-        cardToWeightFirstHalf.put(106, 33.333333333333336);
-        cardToWeightFirstHalf.put(107, 0.0);
-        cardToWeightFirstHalf.put(108, 50.0);
-        cardToWeightFirstHalf.put(109, 28.94736842105263);
-        cardToWeightFirstHalf.put(110, 63.46153846153846);
-        cardToWeightFirstHalf.put(111, 46.666666666666664);
-        cardToWeightFirstHalf.put(112, 50.87719298245614);
-        cardToWeightFirstHalf.put(113, 49.845201238390096);
-        cardToWeightFirstHalf.put(114, 33.333333333333336);
-        cardToWeightFirstHalf.put(115, 44.51219512195122);
-        cardToWeightFirstHalf.put(116, 53.5);
-        cardToWeightFirstHalf.put(117, 53.03030303030303);
-        cardToWeightFirstHalf.put(118, 47.27272727272727);
-        cardToWeightFirstHalf.put(119, 56.09756097560975);
-        cardToWeightFirstHalf.put(120, 53.92156862745098);
-        cardToWeightFirstHalf.put(121, 57.142857142857146);
-        cardToWeightFirstHalf.put(122, 54.889589905362776);
-        cardToWeightFirstHalf.put(123, 54.6583850931677);
-        cardToWeightFirstHalf.put(124, 50.70422535211268);
-        cardToWeightFirstHalf.put(125, 86.20689655172414);
-        cardToWeightFirstHalf.put(126, 38.80597014925373);
-        cardToWeightFirstHalf.put(127, 46.42857142857143);
-        cardToWeightFirstHalf.put(128, 42.857142857142854);
-        cardToWeightFirstHalf.put(129, 45.833333333333336);
-        cardToWeightFirstHalf.put(130, 48.167539267015705);
-        cardToWeightFirstHalf.put(131, 61.53846153846154);
-        cardToWeightFirstHalf.put(132, 20.0);
+        cardToWeightFirstHalf.put(106, 0.0);
+        cardToWeightFirstHalf.put(107, 37.5);
+        cardToWeightFirstHalf.put(108, 48.148148148148145);
+        cardToWeightFirstHalf.put(109, 37.234042553191486);
+        cardToWeightFirstHalf.put(110, 49.6);
+        cardToWeightFirstHalf.put(111, 0.0);
+        cardToWeightFirstHalf.put(112, 43.63636363636363);
+        cardToWeightFirstHalf.put(113, 64.24050632911393);
+        cardToWeightFirstHalf.put(114, 48.214285714285715);
+        cardToWeightFirstHalf.put(115, 0.0);
+        cardToWeightFirstHalf.put(116, 67.10526315789474);
+        cardToWeightFirstHalf.put(117, 66.66666666666667);
+        cardToWeightFirstHalf.put(118, 0.0);
+        cardToWeightFirstHalf.put(119, 58.87850467289719);
+        cardToWeightFirstHalf.put(120, 53.333333333333336);
+        cardToWeightFirstHalf.put(121, 0.0);
+        cardToWeightFirstHalf.put(122, 65.44117647058823);
+        cardToWeightFirstHalf.put(123, 60.816326530612244);
+        cardToWeightFirstHalf.put(124, 35.483870967741936);
+        cardToWeightFirstHalf.put(125, 30.76923076923077);
+        cardToWeightFirstHalf.put(126, 50.93167701863354);
+        cardToWeightFirstHalf.put(127, 0.0);
+        cardToWeightFirstHalf.put(128, 0.0);
+        cardToWeightFirstHalf.put(129, 57.24907063197026);
+        cardToWeightFirstHalf.put(130, 11.764705882352942);
+        cardToWeightFirstHalf.put(131, 62.096774193548384);
+        cardToWeightFirstHalf.put(132, 0.0);
         cardToWeightFirstHalf.put(133, 0.0);
-        cardToWeightFirstHalf.put(134, 50.79365079365079);
-        cardToWeightFirstHalf.put(135, 44.44444444444444);
-        cardToWeightFirstHalf.put(136, 43.558282208588956);
-        cardToWeightFirstHalf.put(137, 62.62626262626262);
-        cardToWeightFirstHalf.put(138, 57.06214689265537);
-        cardToWeightFirstHalf.put(139, 50.0);
-        cardToWeightFirstHalf.put(140, 51.25);
-        cardToWeightFirstHalf.put(141, 46.28099173553719);
-        cardToWeightFirstHalf.put(142, 33.333333333333336);
-        cardToWeightFirstHalf.put(143, 48.10126582278481);
-        cardToWeightFirstHalf.put(144, 51.61290322580645);
-        cardToWeightFirstHalf.put(145, 50.0);
-        cardToWeightFirstHalf.put(146, 49.681528662420384);
-        cardToWeightFirstHalf.put(147, 47.44525547445255);
-        cardToWeightFirstHalf.put(148, 49.46236559139785);
-        cardToWeightFirstHalf.put(149, 56.0);
-        cardToWeightFirstHalf.put(150, 41.1764705882353);
-        cardToWeightFirstHalf.put(151, 50.64935064935065);
-        cardToWeightFirstHalf.put(152, 46.666666666666664);
-        cardToWeightFirstHalf.put(153, 65.38461538461539);
-        cardToWeightFirstHalf.put(154, 75.0);
-        cardToWeightFirstHalf.put(155, 46.91358024691358);
-        cardToWeightFirstHalf.put(156, 61.05263157894737);
-        cardToWeightFirstHalf.put(157, 100.0);
-        cardToWeightFirstHalf.put(158, 47.12643678160919);
-        cardToWeightFirstHalf.put(159, 69.06474820143885);
-        cardToWeightFirstHalf.put(160, 42.42424242424242);
-        cardToWeightFirstHalf.put(161, 28.571428571428573);
-        cardToWeightFirstHalf.put(162, 50.90909090909091);
-        cardToWeightFirstHalf.put(163, 43.84615384615385);
-        cardToWeightFirstHalf.put(164, 47.567567567567565);
-        cardToWeightFirstHalf.put(165, 55.51470588235294);
-        cardToWeightFirstHalf.put(166, 31.25);
-        cardToWeightFirstHalf.put(167, 34.375);
-        cardToWeightFirstHalf.put(168, 28.571428571428573);
+        cardToWeightFirstHalf.put(134, 0.0);
+        cardToWeightFirstHalf.put(135, 0.0);
+        cardToWeightFirstHalf.put(136, 60.66945606694561);
+        cardToWeightFirstHalf.put(137, 69.79166666666667);
+        cardToWeightFirstHalf.put(138, 59.375);
+        cardToWeightFirstHalf.put(139, 76.62337662337663);
+        cardToWeightFirstHalf.put(140, 39.516129032258064);
+        cardToWeightFirstHalf.put(141, 44.52554744525548);
+        cardToWeightFirstHalf.put(142, 0.0);
+        cardToWeightFirstHalf.put(143, 27.272727272727273);
+        cardToWeightFirstHalf.put(144, 0.0);
+        cardToWeightFirstHalf.put(145, 0.0);
+        cardToWeightFirstHalf.put(146, 60.37735849056604);
+        cardToWeightFirstHalf.put(147, 43.624161073825505);
+        cardToWeightFirstHalf.put(148, 53.84615384615385);
+        cardToWeightFirstHalf.put(149, 38.297872340425535);
+        cardToWeightFirstHalf.put(150, 0.0);
+        cardToWeightFirstHalf.put(151, 35.0);
+        cardToWeightFirstHalf.put(152, 0.0);
+        cardToWeightFirstHalf.put(153, 54.621848739495796);
+        cardToWeightFirstHalf.put(154, 0.0);
+        cardToWeightFirstHalf.put(155, 0.0);
+        cardToWeightFirstHalf.put(156, 65.60283687943263);
+        cardToWeightFirstHalf.put(157, 63.63636363636363);
+        cardToWeightFirstHalf.put(158, 61.30268199233716);
+        cardToWeightFirstHalf.put(159, 78.125);
+        cardToWeightFirstHalf.put(160, 52.980132450331126);
+        cardToWeightFirstHalf.put(161, 50.0);
+        cardToWeightFirstHalf.put(162, 0.0);
+        cardToWeightFirstHalf.put(163, 50.0);
+        cardToWeightFirstHalf.put(164, 0.0);
+        cardToWeightFirstHalf.put(165, 64.56692913385827);
+        cardToWeightFirstHalf.put(166, 0.0);
+        cardToWeightFirstHalf.put(167, 0.0);
+        cardToWeightFirstHalf.put(168, 0.0);
         cardToWeightFirstHalf.put(169, 0.0);
-        cardToWeightFirstHalf.put(170, 57.69230769230769);
-        cardToWeightFirstHalf.put(171, 36.36363636363637);
-        cardToWeightFirstHalf.put(172, 23.529411764705884);
-        cardToWeightFirstHalf.put(173, 39.097744360902254);
-        cardToWeightFirstHalf.put(174, 51.1520737327189);
-        cardToWeightFirstHalf.put(175, 43.24324324324324);
-        cardToWeightFirstHalf.put(176, 48.07692307692308);
-        cardToWeightFirstHalf.put(177, 20.0);
-        cardToWeightFirstHalf.put(178, 64.24870466321244);
-        cardToWeightFirstHalf.put(179, 45.45454545454545);
-        cardToWeightFirstHalf.put(180, 49.13793103448276);
-        cardToWeightFirstHalf.put(181, 52.11267605633803);
-        cardToWeightFirstHalf.put(182, 50.76335877862596);
-        cardToWeightFirstHalf.put(183, 53.191489361702125);
-        cardToWeightFirstHalf.put(184, 35.0);
-        cardToWeightFirstHalf.put(185, 45.91836734693877);
-        cardToWeightFirstHalf.put(186, 44.18604651162791);
-        cardToWeightFirstHalf.put(187, 41.37931034482759);
-        cardToWeightFirstHalf.put(188, 50.0);
-        cardToWeightFirstHalf.put(189, 43.262411347517734);
-        cardToWeightFirstHalf.put(190, 41.53846153846154);
-        cardToWeightFirstHalf.put(191, 44.0);
-        cardToWeightFirstHalf.put(192, 51.16279069767442);
-        cardToWeightFirstHalf.put(193, 53.50877192982456);
-        cardToWeightFirstHalf.put(194, 53.46534653465346);
-        cardToWeightFirstHalf.put(195, 45.45454545454545);
-        cardToWeightFirstHalf.put(196, 58.333333333333336);
-        cardToWeightFirstHalf.put(197, 72.0);
+        cardToWeightFirstHalf.put(170, 37.5);
+        cardToWeightFirstHalf.put(171, 0.0);
+        cardToWeightFirstHalf.put(172, 0.0);
+        cardToWeightFirstHalf.put(173, 100.0);
+        cardToWeightFirstHalf.put(174, 60.32608695652174);
+        cardToWeightFirstHalf.put(175, 45.19230769230769);
+        cardToWeightFirstHalf.put(176, 30.76923076923077);
+        cardToWeightFirstHalf.put(177, 0.0);
+        cardToWeightFirstHalf.put(178, 76.14678899082568);
+        cardToWeightFirstHalf.put(179, 43.39622641509434);
+        cardToWeightFirstHalf.put(180, 56.75675675675676);
+        cardToWeightFirstHalf.put(181, 63.73626373626374);
+        cardToWeightFirstHalf.put(182, 0.0);
+        cardToWeightFirstHalf.put(183, 48.611111111111114);
+        cardToWeightFirstHalf.put(184, 0.0);
+        cardToWeightFirstHalf.put(185, 32.8125);
+        cardToWeightFirstHalf.put(186, 0.0);
+        cardToWeightFirstHalf.put(187, 11.11111111111111);
+        cardToWeightFirstHalf.put(188, 51.724137931034484);
+        cardToWeightFirstHalf.put(189, 59.310344827586206);
+        cardToWeightFirstHalf.put(190, 0.0);
+        cardToWeightFirstHalf.put(191, 54.4973544973545);
+        cardToWeightFirstHalf.put(192, 56.111111111111114);
+        cardToWeightFirstHalf.put(193, 18.181818181818183);
+        cardToWeightFirstHalf.put(194, 49.20634920634921);
+        cardToWeightFirstHalf.put(195, 30.612244897959183);
+        cardToWeightFirstHalf.put(196, 0.0);
+        cardToWeightFirstHalf.put(197, 0.0);
         cardToWeightFirstHalf.put(198, 0.0);
-        cardToWeightFirstHalf.put(199, 0.0);
+        cardToWeightFirstHalf.put(199, 27.77777777777778);
         cardToWeightFirstHalf.put(200, 0.0);
-        cardToWeightFirstHalf.put(201, 46.3768115942029);
-        cardToWeightFirstHalf.put(202, 55.37190082644628);
-        cardToWeightFirstHalf.put(203, 42.857142857142854);
-        cardToWeightFirstHalf.put(204, 51.02040816326531);
-        cardToWeightFirstHalf.put(205, 55.55555555555556);
-        cardToWeightFirstHalf.put(206, 52.78688524590164);
+        cardToWeightFirstHalf.put(201, 0.0);
+        cardToWeightFirstHalf.put(202, 44.89795918367347);
+        cardToWeightFirstHalf.put(203, 52.87958115183246);
+        cardToWeightFirstHalf.put(204, 51.295336787564764);
+        cardToWeightFirstHalf.put(205, 62.5);
+        cardToWeightFirstHalf.put(206, 55.95238095238095);
         cardToWeightFirstHalf.put(207, 0.0);
-        cardToWeightFirstHalf.put(208, 100.0);
-        cardToWeightFirstHalf.put(209, 48.89867841409691);
-        cardToWeightFirstHalf.put(210, 56.70103092783505);
-        cardToWeightFirstHalf.put(211, 46.2962962962963);
-        cardToWeightFirstHalf.put(212, 58.97435897435897);
-        cardToWeightFirstHalf.put(213, 49.30875576036866);
-        cardToWeightFirstHalf.put(214, 61.67664670658683);
-        cardToWeightFirstHalf.put(215, 50.0);
-        cardToWeightFirstHalf.put(216, 42.622950819672134);
-        cardToWeightFirstHalf.put(217, 50.0);
-        cardToWeightFirstHalf.put(218, 52.534562211981566);
-        cardToWeightFirstHalf.put(219, 42.857142857142854);
-        cardToWeightSecondHalf.put(1, 38.70967741935484);
-        cardToWeightSecondHalf.put(2, 48.40764331210191);
-        cardToWeightSecondHalf.put(3, 49.27536231884058);
-        cardToWeightSecondHalf.put(4, 56.423611111111114);
-        cardToWeightSecondHalf.put(5, 37.03703703703704);
-        cardToWeightSecondHalf.put(6, 59.57446808510638);
-        cardToWeightSecondHalf.put(7, 41.86046511627907);
-        cardToWeightSecondHalf.put(8, 41.86046511627907);
-        cardToWeightSecondHalf.put(9, 42.857142857142854);
-        cardToWeightSecondHalf.put(10, 45.16129032258065);
-        cardToWeightSecondHalf.put(11, 45.05494505494506);
-        cardToWeightSecondHalf.put(12, 50.0);
-        cardToWeightSecondHalf.put(13, 43.38235294117647);
-        cardToWeightSecondHalf.put(14, 52.38095238095238);
-        cardToWeightSecondHalf.put(15, 43.1578947368421);
-        cardToWeightSecondHalf.put(16, 62.06896551724138);
-        cardToWeightSecondHalf.put(17, 57.17391304347826);
-        cardToWeightSecondHalf.put(18, 52.23880597014925);
-        cardToWeightSecondHalf.put(19, 47.96747967479675);
-        cardToWeightSecondHalf.put(20, 28.0);
-        cardToWeightSecondHalf.put(21, 40.54054054054054);
-        cardToWeightSecondHalf.put(22, 43.31210191082803);
-        cardToWeightSecondHalf.put(23, 52.666666666666664);
-        cardToWeightSecondHalf.put(24, 50.0);
-        cardToWeightSecondHalf.put(25, 50.41551246537396);
-        cardToWeightSecondHalf.put(26, 39.77900552486188);
-        cardToWeightSecondHalf.put(27, 40.0);
-        cardToWeightSecondHalf.put(28, 40.0);
-        cardToWeightSecondHalf.put(29, 38.46153846153846);
-        cardToWeightSecondHalf.put(30, 45.714285714285715);
-        cardToWeightSecondHalf.put(31, 35.0);
-        cardToWeightSecondHalf.put(32, 36.61971830985915);
-        cardToWeightSecondHalf.put(33, 48.507462686567166);
-        cardToWeightSecondHalf.put(34, 37.254901960784316);
-        cardToWeightSecondHalf.put(35, 60.34816247582205);
-        cardToWeightSecondHalf.put(36, 40.0);
-        cardToWeightSecondHalf.put(37, 49.00398406374502);
-        cardToWeightSecondHalf.put(38, 47.41379310344828);
-        cardToWeightSecondHalf.put(39, 58.97435897435897);
-        cardToWeightSecondHalf.put(40, 53.44827586206897);
-        cardToWeightSecondHalf.put(41, 43.75);
-        cardToWeightSecondHalf.put(42, 53.13807531380753);
-        cardToWeightSecondHalf.put(43, 43.75);
-        cardToWeightSecondHalf.put(44, 50.55679287305122);
-        cardToWeightSecondHalf.put(45, 49.60629921259842);
-        cardToWeightSecondHalf.put(46, 55.67928730512249);
-        cardToWeightSecondHalf.put(47, 37.2093023255814);
-        cardToWeightSecondHalf.put(48, 50.0);
-        cardToWeightSecondHalf.put(49, 46.42857142857143);
-        cardToWeightSecondHalf.put(50, 41.666666666666664);
-        cardToWeightSecondHalf.put(51, 37.125748502994014);
-        cardToWeightSecondHalf.put(52, 57.69230769230769);
-        cardToWeightSecondHalf.put(53, 48.77049180327869);
-        cardToWeightSecondHalf.put(54, 58.333333333333336);
-        cardToWeightSecondHalf.put(55, 55.55555555555556);
-        cardToWeightSecondHalf.put(56, 43.50282485875706);
-        cardToWeightSecondHalf.put(57, 45.23809523809524);
-        cardToWeightSecondHalf.put(58, 43.13725490196079);
-        cardToWeightSecondHalf.put(59, 45.714285714285715);
-        cardToWeightSecondHalf.put(60, 54.83870967741935);
-        cardToWeightSecondHalf.put(61, 55.0);
-        cardToWeightSecondHalf.put(62, 54.651162790697676);
-        cardToWeightSecondHalf.put(63, 58.76777251184834);
-        cardToWeightSecondHalf.put(64, 54.43037974683544);
-        cardToWeightSecondHalf.put(65, 55.81395348837209);
-        cardToWeightSecondHalf.put(66, 50.0);
-        cardToWeightSecondHalf.put(67, 47.63092269326683);
-        cardToWeightSecondHalf.put(68, 46.59090909090909);
-        cardToWeightSecondHalf.put(69, 54.42622950819672);
-        cardToWeightSecondHalf.put(70, 52.549019607843135);
-        cardToWeightSecondHalf.put(71, 43.884892086330936);
-        cardToWeightSecondHalf.put(72, 53.54330708661417);
-        cardToWeightSecondHalf.put(73, 47.03196347031963);
-        cardToWeightSecondHalf.put(74, 50.9375);
-        cardToWeightSecondHalf.put(75, 45.70446735395189);
-        cardToWeightSecondHalf.put(76, 56.94760820045558);
-        cardToWeightSecondHalf.put(77, 58.36909871244635);
-        cardToWeightSecondHalf.put(78, 56.9364161849711);
-        cardToWeightSecondHalf.put(79, 51.724137931034484);
-        cardToWeightSecondHalf.put(80, 52.63157894736842);
-        cardToWeightSecondHalf.put(81, 55.22727272727273);
-        cardToWeightSecondHalf.put(82, 54.46584938704028);
-        cardToWeightSecondHalf.put(83, 49.54128440366973);
-        cardToWeightSecondHalf.put(84, 57.795698924731184);
-        cardToWeightSecondHalf.put(85, 55.50122249388753);
-        cardToWeightSecondHalf.put(86, 50.258175559380376);
-        cardToWeightSecondHalf.put(87, 57.53899480069324);
-        cardToWeightSecondHalf.put(88, 49.12280701754386);
-        cardToWeightSecondHalf.put(89, 57.89473684210526);
-        cardToWeightSecondHalf.put(90, 50.0);
-        cardToWeightSecondHalf.put(91, 54.263565891472865);
-        cardToWeightSecondHalf.put(92, 57.89473684210526);
-        cardToWeightSecondHalf.put(93, 53.677621283255085);
-        cardToWeightSecondHalf.put(94, 54.63414634146341);
-        cardToWeightSecondHalf.put(95, 47.12643678160919);
-        cardToWeightSecondHalf.put(96, 55.471698113207545);
-        cardToWeightSecondHalf.put(97, 46.45669291338583);
-        cardToWeightSecondHalf.put(98, 51.908396946564885);
-        cardToWeightSecondHalf.put(99, 56.18279569892473);
-        cardToWeightSecondHalf.put(100, 60.0);
-        cardToWeightSecondHalf.put(101, 58.64332603938731);
-        cardToWeightSecondHalf.put(102, 44.36619718309859);
-        cardToWeightSecondHalf.put(103, 46.15384615384615);
-        cardToWeightSecondHalf.put(104, 25.0);
-        cardToWeightSecondHalf.put(105, 25.0);
+        cardToWeightFirstHalf.put(208, 54.54545454545455);
+        cardToWeightFirstHalf.put(209, 65.14522821576763);
+        cardToWeightFirstHalf.put(210, 53.40909090909091);
+        cardToWeightFirstHalf.put(211, 0.0);
+        cardToWeightFirstHalf.put(212, 61.79775280898876);
+        cardToWeightFirstHalf.put(213, 52.94117647058823);
+        cardToWeightFirstHalf.put(214, 62.5);
+        cardToWeightFirstHalf.put(215, 0.0);
+        cardToWeightFirstHalf.put(216, 0.0);
+        cardToWeightFirstHalf.put(217, 62.5);
+        cardToWeightFirstHalf.put(218, 64.15094339622641);
+        cardToWeightFirstHalf.put(219, 40.0);
+        cardToWeightSecondHalf.put(1, 38.16425120772947);
+        cardToWeightSecondHalf.put(2, 56.79012345679013);
+        cardToWeightSecondHalf.put(3, 42.93478260869565);
+        cardToWeightSecondHalf.put(4, 78.76344086021506);
+        cardToWeightSecondHalf.put(5, 0.0);
+        cardToWeightSecondHalf.put(6, 83.70927318295739);
+        cardToWeightSecondHalf.put(7, 0.0);
+        cardToWeightSecondHalf.put(8, 0.0);
+        cardToWeightSecondHalf.put(9, 63.63636363636363);
+        cardToWeightSecondHalf.put(10, 48.92086330935252);
+        cardToWeightSecondHalf.put(11, 46.478873239436616);
+        cardToWeightSecondHalf.put(12, 0.0);
+        cardToWeightSecondHalf.put(13, 46.42857142857143);
+        cardToWeightSecondHalf.put(14, 65.06849315068493);
+        cardToWeightSecondHalf.put(15, 41.935483870967744);
+        cardToWeightSecondHalf.put(16, 0.0);
+        cardToWeightSecondHalf.put(17, 64.4776119402985);
+        cardToWeightSecondHalf.put(18, 50.0);
+        cardToWeightSecondHalf.put(19, 25.49019607843137);
+        cardToWeightSecondHalf.put(20, 0.0);
+        cardToWeightSecondHalf.put(21, 9.090909090909092);
+        cardToWeightSecondHalf.put(22, 56.43564356435643);
+        cardToWeightSecondHalf.put(23, 70.09646302250803);
+        cardToWeightSecondHalf.put(24, 0.0);
+        cardToWeightSecondHalf.put(25, 61.16838487972509);
+        cardToWeightSecondHalf.put(26, 58.3732057416268);
+        cardToWeightSecondHalf.put(27, 0.0);
+        cardToWeightSecondHalf.put(28, 66.66666666666667);
+        cardToWeightSecondHalf.put(29, 0.0);
+        cardToWeightSecondHalf.put(30, 73.46938775510205);
+        cardToWeightSecondHalf.put(31, 51.25);
+        cardToWeightSecondHalf.put(32, 0.0);
+        cardToWeightSecondHalf.put(33, 36.734693877551024);
+        cardToWeightSecondHalf.put(34, 42.25352112676056);
+        cardToWeightSecondHalf.put(35, 64.25339366515837);
+        cardToWeightSecondHalf.put(36, 56.75675675675676);
+        cardToWeightSecondHalf.put(37, 64.65517241379311);
+        cardToWeightSecondHalf.put(38, 66.0968660968661);
+        cardToWeightSecondHalf.put(39, 100.0);
+        cardToWeightSecondHalf.put(40, 63.492063492063494);
+        cardToWeightSecondHalf.put(41, 0.0);
+        cardToWeightSecondHalf.put(42, 43.10344827586207);
+        cardToWeightSecondHalf.put(43, 0.0);
+        cardToWeightSecondHalf.put(44, 69.42857142857143);
+        cardToWeightSecondHalf.put(45, 50.847457627118644);
+        cardToWeightSecondHalf.put(46, 71.89189189189189);
+        cardToWeightSecondHalf.put(47, 52.99145299145299);
+        cardToWeightSecondHalf.put(48, 59.25925925925926);
+        cardToWeightSecondHalf.put(49, 53.333333333333336);
+        cardToWeightSecondHalf.put(50, 34.375);
+        cardToWeightSecondHalf.put(51, 53.211009174311926);
+        cardToWeightSecondHalf.put(52, 44.88636363636363);
+        cardToWeightSecondHalf.put(53, 52.121212121212125);
+        cardToWeightSecondHalf.put(54, 63.09148264984227);
+        cardToWeightSecondHalf.put(55, 49.800796812749006);
+        cardToWeightSecondHalf.put(56, 70.26315789473684);
+        cardToWeightSecondHalf.put(57, 44.11764705882353);
+        cardToWeightSecondHalf.put(58, 42.666666666666664);
+        cardToWeightSecondHalf.put(59, 50.0);
+        cardToWeightSecondHalf.put(60, 57.291666666666664);
+        cardToWeightSecondHalf.put(61, 36.70886075949367);
+        cardToWeightSecondHalf.put(62, 64.25855513307985);
+        cardToWeightSecondHalf.put(63, 53.84615384615385);
+        cardToWeightSecondHalf.put(64, 36.55913978494624);
+        cardToWeightSecondHalf.put(65, 56.52173913043478);
+        cardToWeightSecondHalf.put(66, 56.38766519823788);
+        cardToWeightSecondHalf.put(67, 52.071005917159766);
+        cardToWeightSecondHalf.put(68, 53.74149659863946);
+        cardToWeightSecondHalf.put(69, 54.824561403508774);
+        cardToWeightSecondHalf.put(70, 61.38996138996139);
+        cardToWeightSecondHalf.put(71, 0.0);
+        cardToWeightSecondHalf.put(72, 63.07692307692308);
+        cardToWeightSecondHalf.put(73, 49.46808510638298);
+        cardToWeightSecondHalf.put(74, 59.274193548387096);
+        cardToWeightSecondHalf.put(75, 43.61233480176212);
+        cardToWeightSecondHalf.put(76, 64.2023346303502);
+        cardToWeightSecondHalf.put(77, 67.61565836298932);
+        cardToWeightSecondHalf.put(78, 64.06926406926407);
+        cardToWeightSecondHalf.put(79, 47.82608695652174);
+        cardToWeightSecondHalf.put(80, 61.31386861313869);
+        cardToWeightSecondHalf.put(81, 73.2484076433121);
+        cardToWeightSecondHalf.put(82, 79.70660146699267);
+        cardToWeightSecondHalf.put(83, 62.23175965665236);
+        cardToWeightSecondHalf.put(84, 68.91025641025641);
+        cardToWeightSecondHalf.put(85, 66.2125340599455);
+        cardToWeightSecondHalf.put(86, 63.18181818181818);
+        cardToWeightSecondHalf.put(87, 71.42857142857143);
+        cardToWeightSecondHalf.put(88, 44.96124031007752);
+        cardToWeightSecondHalf.put(89, 59.375);
+        cardToWeightSecondHalf.put(90, 48.03921568627451);
+        cardToWeightSecondHalf.put(91, 42.57425742574257);
+        cardToWeightSecondHalf.put(92, 47.972972972972975);
+        cardToWeightSecondHalf.put(93, 64.50704225352112);
+        cardToWeightSecondHalf.put(94, 50.42016806722689);
+        cardToWeightSecondHalf.put(95, 57.00934579439252);
+        cardToWeightSecondHalf.put(96, 66.90140845070422);
+        cardToWeightSecondHalf.put(97, 44.85981308411215);
+        cardToWeightSecondHalf.put(98, 53.43511450381679);
+        cardToWeightSecondHalf.put(99, 69.42446043165468);
+        cardToWeightSecondHalf.put(100, 70.21857923497268);
+        cardToWeightSecondHalf.put(101, 66.996699669967);
+        cardToWeightSecondHalf.put(102, 48.31460674157304);
+        cardToWeightSecondHalf.put(103, 57.89473684210526);
+        cardToWeightSecondHalf.put(104, 18.181818181818183);
+        cardToWeightSecondHalf.put(105, 0.0);
         cardToWeightSecondHalf.put(106, 0.0);
-        cardToWeightSecondHalf.put(107, 100.0);
-        cardToWeightSecondHalf.put(108, 60.0);
-        cardToWeightSecondHalf.put(109, 58.333333333333336);
-        cardToWeightSecondHalf.put(110, 57.65407554671968);
-        cardToWeightSecondHalf.put(111, 20.0);
-        cardToWeightSecondHalf.put(112, 44.18604651162791);
-        cardToWeightSecondHalf.put(113, 54.20168067226891);
-        cardToWeightSecondHalf.put(114, 50.0);
-        cardToWeightSecondHalf.put(115, 49.24242424242424);
-        cardToWeightSecondHalf.put(116, 54.07801418439716);
-        cardToWeightSecondHalf.put(117, 41.1764705882353);
-        cardToWeightSecondHalf.put(118, 40.0);
-        cardToWeightSecondHalf.put(119, 53.26086956521739);
-        cardToWeightSecondHalf.put(120, 47.794117647058826);
-        cardToWeightSecondHalf.put(121, 50.0);
-        cardToWeightSecondHalf.put(122, 53.333333333333336);
-        cardToWeightSecondHalf.put(123, 52.7027027027027);
-        cardToWeightSecondHalf.put(124, 41.666666666666664);
-        cardToWeightSecondHalf.put(125, 40.38461538461539);
-        cardToWeightSecondHalf.put(126, 45.45454545454545);
-        cardToWeightSecondHalf.put(127, 50.0);
-        cardToWeightSecondHalf.put(128, 20.0);
-        cardToWeightSecondHalf.put(129, 70.0);
-        cardToWeightSecondHalf.put(130, 38.55421686746988);
-        cardToWeightSecondHalf.put(131, 40.0);
-        cardToWeightSecondHalf.put(132, 49.57983193277311);
-        cardToWeightSecondHalf.put(133, 100.0);
-        cardToWeightSecondHalf.put(134, 40.0);
-        cardToWeightSecondHalf.put(135, 41.37931034482759);
-        cardToWeightSecondHalf.put(136, 50.95693779904306);
-        cardToWeightSecondHalf.put(137, 51.49863760217983);
-        cardToWeightSecondHalf.put(138, 53.79537953795379);
-        cardToWeightSecondHalf.put(139, 50.0);
-        cardToWeightSecondHalf.put(140, 39.63963963963964);
-        cardToWeightSecondHalf.put(141, 43.90243902439025);
-        cardToWeightSecondHalf.put(142, 28.571428571428573);
-        cardToWeightSecondHalf.put(143, 50.645994832041346);
-        cardToWeightSecondHalf.put(144, 39.130434782608695);
-        cardToWeightSecondHalf.put(145, 40.0);
-        cardToWeightSecondHalf.put(146, 56.14754098360656);
-        cardToWeightSecondHalf.put(147, 49.034749034749034);
-        cardToWeightSecondHalf.put(148, 41.1764705882353);
-        cardToWeightSecondHalf.put(149, 38.23529411764706);
-        cardToWeightSecondHalf.put(150, 57.142857142857146);
-        cardToWeightSecondHalf.put(151, 55.172413793103445);
-        cardToWeightSecondHalf.put(152, 16.666666666666668);
-        cardToWeightSecondHalf.put(153, 60.33402922755741);
-        cardToWeightSecondHalf.put(154, 45.714285714285715);
-        cardToWeightSecondHalf.put(155, 50.0);
-        cardToWeightSecondHalf.put(156, 52.73224043715847);
-        cardToWeightSecondHalf.put(157, 25.0);
-        cardToWeightSecondHalf.put(158, 41.91616766467066);
-        cardToWeightSecondHalf.put(159, 59.96275605214153);
-        cardToWeightSecondHalf.put(160, 50.595238095238095);
-        cardToWeightSecondHalf.put(161, 54.367201426024955);
-        cardToWeightSecondHalf.put(162, 21.27659574468085);
-        cardToWeightSecondHalf.put(163, 39.09090909090909);
-        cardToWeightSecondHalf.put(164, 40.963855421686745);
-        cardToWeightSecondHalf.put(165, 52.129817444219064);
-        cardToWeightSecondHalf.put(166, 37.5);
-        cardToWeightSecondHalf.put(167, 20.0);
-        cardToWeightSecondHalf.put(168, 31.818181818181817);
-        cardToWeightSecondHalf.put(169, 47.78761061946903);
-        cardToWeightSecondHalf.put(170, 20.0);
-        cardToWeightSecondHalf.put(171, 28.571428571428573);
-        cardToWeightSecondHalf.put(172, 41.88034188034188);
-        cardToWeightSecondHalf.put(173, 50.0);
-        cardToWeightSecondHalf.put(174, 43.14720812182741);
-        cardToWeightSecondHalf.put(175, 46.478873239436616);
-        cardToWeightSecondHalf.put(176, 54.54545454545455);
-        cardToWeightSecondHalf.put(177, 33.333333333333336);
-        cardToWeightSecondHalf.put(178, 54.34380776340111);
-        cardToWeightSecondHalf.put(179, 53.84615384615385);
-        cardToWeightSecondHalf.put(180, 49.333333333333336);
-        cardToWeightSecondHalf.put(181, 47.43589743589744);
-        cardToWeightSecondHalf.put(182, 46.52777777777778);
-        cardToWeightSecondHalf.put(183, 46.51162790697674);
-        cardToWeightSecondHalf.put(184, 40.0);
-        cardToWeightSecondHalf.put(185, 47.46835443037975);
-        cardToWeightSecondHalf.put(186, 33.333333333333336);
-        cardToWeightSecondHalf.put(187, 46.948356807511736);
-        cardToWeightSecondHalf.put(188, 62.5);
-        cardToWeightSecondHalf.put(189, 55.214723926380366);
-        cardToWeightSecondHalf.put(190, 48.648648648648646);
-        cardToWeightSecondHalf.put(191, 48.484848484848484);
-        cardToWeightSecondHalf.put(192, 54.166666666666664);
-        cardToWeightSecondHalf.put(193, 47.142857142857146);
-        cardToWeightSecondHalf.put(194, 47.16981132075472);
-        cardToWeightSecondHalf.put(195, 66.66666666666667);
+        cardToWeightSecondHalf.put(107, 29.292929292929294);
+        cardToWeightSecondHalf.put(108, 33.333333333333336);
+        cardToWeightSecondHalf.put(109, 50.0);
+        cardToWeightSecondHalf.put(110, 66.44295302013423);
+        cardToWeightSecondHalf.put(111, 0.0);
+        cardToWeightSecondHalf.put(112, 41.37931034482759);
+        cardToWeightSecondHalf.put(113, 68.1159420289855);
+        cardToWeightSecondHalf.put(114, 58.8235294117647);
+        cardToWeightSecondHalf.put(115, 25.806451612903224);
+        cardToWeightSecondHalf.put(116, 70.3601108033241);
+        cardToWeightSecondHalf.put(117, 30.555555555555557);
+        cardToWeightSecondHalf.put(118, 0.0);
+        cardToWeightSecondHalf.put(119, 48.717948717948715);
+        cardToWeightSecondHalf.put(120, 37.735849056603776);
+        cardToWeightSecondHalf.put(121, 0.0);
+        cardToWeightSecondHalf.put(122, 68.5121107266436);
+        cardToWeightSecondHalf.put(123, 67.6056338028169);
+        cardToWeightSecondHalf.put(124, 47.36842105263158);
+        cardToWeightSecondHalf.put(125, 41.07142857142857);
+        cardToWeightSecondHalf.put(126, 50.0);
+        cardToWeightSecondHalf.put(127, 0.0);
+        cardToWeightSecondHalf.put(128, 0.0);
+        cardToWeightSecondHalf.put(129, 56.06060606060606);
+        cardToWeightSecondHalf.put(130, 28.676470588235293);
+        cardToWeightSecondHalf.put(131, 47.972972972972975);
+        cardToWeightSecondHalf.put(132, 34.22818791946309);
+        cardToWeightSecondHalf.put(133, 34.285714285714285);
+        cardToWeightSecondHalf.put(134, 0.0);
+        cardToWeightSecondHalf.put(135, 21.73913043478261);
+        cardToWeightSecondHalf.put(136, 62.171052631578945);
+        cardToWeightSecondHalf.put(137, 60.57692307692308);
+        cardToWeightSecondHalf.put(138, 60.19900497512438);
+        cardToWeightSecondHalf.put(139, 48.57142857142857);
+        cardToWeightSecondHalf.put(140, 47.36842105263158);
+        cardToWeightSecondHalf.put(141, 64.28571428571429);
+        cardToWeightSecondHalf.put(142, 0.0);
+        cardToWeightSecondHalf.put(143, 39.285714285714285);
+        cardToWeightSecondHalf.put(144, 0.0);
+        cardToWeightSecondHalf.put(145, 0.0);
+        cardToWeightSecondHalf.put(146, 57.59162303664922);
+        cardToWeightSecondHalf.put(147, 48.76543209876543);
+        cardToWeightSecondHalf.put(148, 46.25);
+        cardToWeightSecondHalf.put(149, 29.62962962962963);
+        cardToWeightSecondHalf.put(150, 60.0);
+        cardToWeightSecondHalf.put(151, 24.137931034482758);
+        cardToWeightSecondHalf.put(152, 0.0);
+        cardToWeightSecondHalf.put(153, 58.50340136054422);
+        cardToWeightSecondHalf.put(154, 0.0);
+        cardToWeightSecondHalf.put(155, 0.0);
+        cardToWeightSecondHalf.put(156, 72.33502538071066);
+        cardToWeightSecondHalf.put(157, 57.7720207253886);
+        cardToWeightSecondHalf.put(158, 53.96825396825397);
+        cardToWeightSecondHalf.put(159, 74.85875706214689);
+        cardToWeightSecondHalf.put(160, 64.26592797783934);
+        cardToWeightSecondHalf.put(161, 49.78540772532189);
+        cardToWeightSecondHalf.put(162, 0.0);
+        cardToWeightSecondHalf.put(163, 37.79904306220096);
+        cardToWeightSecondHalf.put(164, 0.0);
+        cardToWeightSecondHalf.put(165, 70.52631578947368);
+        cardToWeightSecondHalf.put(166, 0.0);
+        cardToWeightSecondHalf.put(167, 0.0);
+        cardToWeightSecondHalf.put(168, 0.0);
+        cardToWeightSecondHalf.put(169, 20.833333333333332);
+        cardToWeightSecondHalf.put(170, 29.166666666666668);
+        cardToWeightSecondHalf.put(171, 0.0);
+        cardToWeightSecondHalf.put(172, 17.1875);
+        cardToWeightSecondHalf.put(173, 14.285714285714286);
+        cardToWeightSecondHalf.put(174, 57.635467980295566);
+        cardToWeightSecondHalf.put(175, 40.60606060606061);
+        cardToWeightSecondHalf.put(176, 45.945945945945944);
+        cardToWeightSecondHalf.put(177, 0.0);
+        cardToWeightSecondHalf.put(178, 69.96805111821087);
+        cardToWeightSecondHalf.put(179, 20.0);
+        cardToWeightSecondHalf.put(180, 72.0);
+        cardToWeightSecondHalf.put(181, 71.66212534059946);
+        cardToWeightSecondHalf.put(182, 0.0);
+        cardToWeightSecondHalf.put(183, 29.032258064516128);
+        cardToWeightSecondHalf.put(184, 0.0);
+        cardToWeightSecondHalf.put(185, 50.0);
+        cardToWeightSecondHalf.put(186, 0.0);
+        cardToWeightSecondHalf.put(187, 49.35064935064935);
+        cardToWeightSecondHalf.put(188, 53.763440860215056);
+        cardToWeightSecondHalf.put(189, 65.11627906976744);
+        cardToWeightSecondHalf.put(190, 0.0);
+        cardToWeightSecondHalf.put(191, 54.54545454545455);
+        cardToWeightSecondHalf.put(192, 41.0958904109589);
+        cardToWeightSecondHalf.put(193, 44.89795918367347);
+        cardToWeightSecondHalf.put(194, 36.8421052631579);
+        cardToWeightSecondHalf.put(195, 33.333333333333336);
         cardToWeightSecondHalf.put(196, 0.0);
-        cardToWeightSecondHalf.put(197, 48.148148148148145);
-        cardToWeightSecondHalf.put(198, 50.0);
-        cardToWeightSecondHalf.put(199, 80.0);
-        cardToWeightSecondHalf.put(200, 20.0);
-        cardToWeightSecondHalf.put(201, 37.93103448275862);
-        cardToWeightSecondHalf.put(202, 45.774647887323944);
-        cardToWeightSecondHalf.put(203, 80.0);
-        cardToWeightSecondHalf.put(204, 51.13636363636363);
-        cardToWeightSecondHalf.put(205, 36.36363636363637);
-        cardToWeightSecondHalf.put(206, 52.764976958525345);
+        cardToWeightSecondHalf.put(197, 10.0);
+        cardToWeightSecondHalf.put(198, 0.0);
+        cardToWeightSecondHalf.put(199, 46.927374301675975);
+        cardToWeightSecondHalf.put(200, 0.0);
+        cardToWeightSecondHalf.put(201, 0.0);
+        cardToWeightSecondHalf.put(202, 41.37931034482759);
+        cardToWeightSecondHalf.put(203, 61.347517730496456);
+        cardToWeightSecondHalf.put(204, 62.1160409556314);
+        cardToWeightSecondHalf.put(205, 32.758620689655174);
+        cardToWeightSecondHalf.put(206, 65.83850931677019);
         cardToWeightSecondHalf.put(207, 0.0);
-        cardToWeightSecondHalf.put(208, 31.57894736842105);
-        cardToWeightSecondHalf.put(209, 43.08510638297872);
-        cardToWeightSecondHalf.put(210, 55.1948051948052);
-        cardToWeightSecondHalf.put(211, 33.333333333333336);
-        cardToWeightSecondHalf.put(212, 37.5);
-        cardToWeightSecondHalf.put(213, 48.611111111111114);
-        cardToWeightSecondHalf.put(214, 58.23754789272031);
-        cardToWeightSecondHalf.put(215, 36.666666666666664);
-        cardToWeightSecondHalf.put(216, 40.625);
-        cardToWeightSecondHalf.put(217, 45.714285714285715);
-        cardToWeightSecondHalf.put(218, 43.92156862745098);
-        cardToWeightSecondHalf.put(219, 50.0);
+        cardToWeightSecondHalf.put(208, 44.1025641025641);
+        cardToWeightSecondHalf.put(209, 50.869565217391305);
+        cardToWeightSecondHalf.put(210, 40.0);
+        cardToWeightSecondHalf.put(211, 0.0);
+        cardToWeightSecondHalf.put(212, 65.66757493188011);
+        cardToWeightSecondHalf.put(213, 50.3875968992248);
+        cardToWeightSecondHalf.put(214, 68.02507836990596);
+        cardToWeightSecondHalf.put(215, 0.0);
+        cardToWeightSecondHalf.put(216, 0.0);
+        cardToWeightSecondHalf.put(217, 55.714285714285715);
+        cardToWeightSecondHalf.put(218, 53.6231884057971);
+        cardToWeightSecondHalf.put(219, 36.36363636363637);
     }
 
     public static final double MIDDLE_TURN = 19.245;
@@ -495,7 +497,11 @@ public class CardValueService {
         return cards.get(worstCardIndex);
     }
 
-    public Card getBestCardAsCard(MarsGame game, Player player, List<Card> cards, int turn) {
+    public Card getBestCardAsCard(MarsGame game, Player player, List<Card> cards, int turn, boolean ignoreCardIfBad) {
+        if (cards.isEmpty()) {
+            return null;
+        }
+
         double firstHalfCoefficient;
         double secondHalfCoefficient;
         if (turn < MIDDLE_TURN) {
@@ -515,6 +521,10 @@ public class CardValueService {
                 bestCardWorth = worth;
                 bestCard = cards.get(i);
             }
+        }
+
+        if (ignoreCardIfBad && bestCardWorth <= 50.0) {
+            return null;
         }
 
         return bestCard;
@@ -585,6 +595,9 @@ public class CardValueService {
                         if (cardAction == CardAction.OLYMPUS_CONFERENCE || cardAction == CardAction.MARS_UNIVERSITY) {
                             return 1.3;
                         }
+                        if (cardAction == CardAction.AQUIFER_PUMPING && player.getSteelIncome() < 3) {
+                            return 0.0;
+                        }
                         if ((cardAction == CardAction.AQUIFER_PUMPING
                                 || cardAction == CardAction.ARCTIC_ALGAE
                                 || cardAction == CardAction.FISH
@@ -607,6 +620,131 @@ public class CardValueService {
                                 || cardAction == CardAction.PROGRESSIVE_POLICIES) && game.getPlanet().isOxygenMax()) {
                             return 0.0;
                         }
+
+                        if (cardAction == CardAction.HEAT_EARTH_INCOME) {
+                            int playedTags = cardService.countPlayedTags(player, Set.of(Tag.EARTH));
+                            if (playedTags > 0) {
+                                return 1.0 + playedTags * 0.05;
+                            }
+                        }
+
+                        if (cardAction == CardAction.MC_ANIMAL_PLANT_INCOME) {
+                            int playedTags = cardService.countPlayedTags(player, Set.of(Tag.ANIMAL, Tag.PLANT));
+                            if (playedTags > 0) {
+                                return 1.0 + playedTags * 0.05;
+                            }
+                        }
+
+                        if (cardAction == CardAction.MC_ANIMAL_PLANT_INCOME) {
+                            int playedTags = cardService.countPlayedTags(player, Set.of(Tag.ANIMAL, Tag.PLANT));
+                            if (playedTags > 0) {
+                                return 1.0 + playedTags * 0.05;
+                            }
+                        }
+
+                        if (cardAction == CardAction.CARD_SCIENCE_INCOME) {
+                            int playedTags = cardService.countPlayedTags(player, Set.of(Tag.SCIENCE));
+                            if (playedTags > 0) {
+                                return 1.0 + playedTags * 0.05;
+                            }
+                        }
+
+                        if (cardAction == CardAction.MC_EARTH_INCOME) {
+                            int playedTags = cardService.countPlayedTags(player, Set.of(Tag.EARTH));
+                            if (playedTags > 0) {
+                                return 1.0 + playedTags * 0.05;
+                            }
+                        }
+
+                        if (cardAction == CardAction.PLANT_PLANT_INCOME) {
+                            int playedTags = cardService.countPlayedTags(player, Set.of(Tag.PLANT));
+                            if (playedTags > 0) {
+                                return 1.0 + playedTags * 0.05;
+                            }
+                        }
+
+                        if (cardAction == CardAction.MC_SCIENCE_INCOME) {
+                            int playedTags = cardService.countPlayedTags(player, Set.of(Tag.SCIENCE));
+                            if (playedTags > 0) {
+                                return 1.0 + playedTags * 0.05;
+                            }
+                        }
+
+                        if (cardAction == CardAction.MC_2_BUILDING_INCOME) {
+                            int playedTags = cardService.countPlayedTags(player, Set.of(Tag.BUILDING));
+                            if (playedTags > 1) {
+                                return 1.0 + playedTags * 0.025;
+                            }
+                        }
+
+                        if (cardAction == CardAction.MC_ENERGY_INCOME) {
+                            int playedTags = cardService.countPlayedTags(player, Set.of(Tag.ENERGY));
+                            if (playedTags > 0) {
+                                return 1.0 + playedTags * 0.05;
+                            }
+                        }
+
+                        if (cardAction == CardAction.MC_SPACE_INCOME) {
+                            int playedTags = cardService.countPlayedTags(player, Set.of(Tag.SPACE));
+                            if (playedTags > 0) {
+                                return 1.0 + playedTags * 0.05;
+                            }
+                        }
+
+                        if (cardAction == CardAction.HEAT_SPACE_INCOME) {
+                            int playedTags = cardService.countPlayedTags(player, Set.of(Tag.SPACE));
+                            if (playedTags > 0) {
+                                return 1.0 + playedTags * 0.05;
+                            }
+                        }
+
+                        if (cardAction == CardAction.MC_EVENT_INCOME) {
+                            int playedTags = cardService.countPlayedTags(player, Set.of(Tag.EVENT));
+                            if (playedTags > 0) {
+                                return 1.0 + playedTags * 0.05;
+                            }
+                        }
+
+                        if (cardAction == CardAction.HEAT_ENERGY_INCOME) {
+                            int playedTags = cardService.countPlayedTags(player, Set.of(Tag.ENERGY));
+                            if (playedTags > 0) {
+                                return 1.0 + playedTags * 0.05;
+                            }
+                        }
+
+                        if (cardAction == CardAction.PLANT_MICROBE_INCOME) {
+                            int playedTags = cardService.countPlayedTags(player, Set.of(Tag.MICROBE));
+                            if (playedTags > 0) {
+                                return 1.0 + playedTags * 0.05;
+                            }
+                        }
+
+                        if (cardAction == CardAction.MC_FOREST_INCOME) {
+                            if (player.getForests() > 0) {
+                                return 1.0 + player.getForests() * 0.05;
+                            }
+                        }
+
+                        if (cardAction == CardAction.STEELWORKS || cardAction == CardAction.IRON_WORKS) {
+                            if (player.getHeatIncome() > 5) {
+                                return 1.5;
+                            } else {
+                                return 1.25;
+                            }
+                        }
+
+                        if (cardAction == CardAction.CARETAKER_CONTRACT) {
+                            if (player.getHeatIncome() >= 8) {
+                                return 1.5;
+                            } else if (player.getHeatIncome() >= 4) {
+                                return 1.25;
+                            }
+                        }
+
+                        if (cardAction == CardAction.POWER_INFRASTRUCTURE && game.getPlanet().isTemperatureMax()) {
+                            return MAX_PRIORITY;
+                        }
+
                         return null;
                     }
             ).orElse(1.0);

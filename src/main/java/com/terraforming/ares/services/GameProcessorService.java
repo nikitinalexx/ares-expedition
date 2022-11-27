@@ -10,46 +10,45 @@ import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.processors.turn.TurnProcessor;
 import com.terraforming.ares.repositories.caching.CachingGameRepository;
 import com.terraforming.ares.services.ai.AiService;
+import com.terraforming.ares.services.ai.DeepNetwork;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * Created by oleksii.nikitin
  * Creation date 25.04.2022
  */
 @Service
-public class GameProcessorService {
+public class GameProcessorService extends BaseProcessorService {
     private final CachingGameRepository gameRepository;
     private final StateFactory stateFactory;
-    private final StateContextProvider stateContextProvider;
-    private final TurnTypeService turnTypeService;
-    private final Map<TurnType, TurnProcessor<?>> turnProcessors;
     private final AiService aiService;
     private final Queue<Long> gamesToProcess = new ArrayBlockingQueue<>(3200);
+    private final DeepNetwork deepNetwork;
 
     public GameProcessorService(List<TurnProcessor<?>> turnProcessor,
                                 CachingGameRepository gameRepository,
                                 StateContextProvider stateContextProvider,
                                 TurnTypeService turnTypeService,
                                 StateFactory stateFactory,
-                                AiService aiService) {
+                                AiService aiService, DeepNetwork deepNetwork) {
+        super(
+                turnTypeService,
+                stateFactory,
+                stateContextProvider,
+                turnProcessor
+        );
         this.gameRepository = gameRepository;
         this.stateFactory = stateFactory;
-        this.turnTypeService = turnTypeService;
-        this.stateContextProvider = stateContextProvider;
         this.aiService = aiService;
-
-        turnProcessors = turnProcessor.stream().collect(Collectors.toMap(
-                TurnProcessor::getType, Function.identity()
-        ));
+        this.deepNetwork = deepNetwork;
     }
 
     @Scheduled(fixedRate = 200)
@@ -69,6 +68,10 @@ public class GameProcessorService {
                 if (aiService.waitingAiTurns(game)) {
                     registerAsyncGameUpdate(gameId);
                 }
+
+                final List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
+
+                deepNetwork.testState(game, players.get(0).getUuid().endsWith("0") ? players.get(0) : players.get(1));
 
                 return null;
             });
@@ -135,41 +138,6 @@ public class GameProcessorService {
 
             return turnResponse;
         };
-    }
-
-    private boolean processFinalTurns(MarsGame game) {
-        boolean allTurnsReadyAndAllTerminal = game.getPlayerUuidToPlayer()
-                .values()
-                .stream()
-                .allMatch(player -> player.getNextTurn() != null && turnTypeService.isTerminal(player.getNextTurn().getType(), game) && !player.getNextTurn().expectedAsNextTurn()
-                        || player.getNextTurn() == null && stateFactory.getCurrentState(game).getPossibleTurns(stateContextProvider.createStateContext(player.getUuid())).isEmpty()
-                );
-
-        if (!allTurnsReadyAndAllTerminal) {
-            return false;
-        }
-
-        game.getPlayerUuidToPlayer().values().forEach(player -> processNextTurn(player, game));
-
-        return true;
-    }
-
-    private void processNextTurn(Player player, MarsGame game) {
-        Turn turnToProcess = player.getNextTurn();
-        player.removeNextTurn();
-
-        processTurn(turnToProcess, game);
-    }
-
-    @SuppressWarnings("unchecked")
-    private TurnResponse processTurn(Turn turn, MarsGame game) {
-        if (turn == null) {
-            return null;
-        }
-
-        TurnProcessor<Turn> turnProcessor = (TurnProcessor<Turn>) turnProcessors.get(turn.getType());
-
-        return turnProcessor.processTurn(turn, game);
     }
 
     public void registerAsyncGameUpdate(long gameId) {

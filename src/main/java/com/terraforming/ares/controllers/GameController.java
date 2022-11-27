@@ -2,6 +2,8 @@ package com.terraforming.ares.controllers;
 
 import com.terraforming.ares.dto.*;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.mars.MarsGameDataset;
+import com.terraforming.ares.mars.MarsGameRow;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.request.AllProjectsRequest;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
@@ -15,6 +17,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,6 +43,7 @@ public class GameController {
     private final CachingGameRepository cachingGameRepository;
     private final TurnService turnService;
     private final GameRepositoryImpl gameRepository;
+    private final SimulationProcessorService simulationProcessorService;
 
     @PostMapping("/game/new")
     public PlayerUuidsDto startNewGame(@RequestBody GameParameters gameParameters) {
@@ -46,15 +52,6 @@ public class GameController {
             int playersCount = gameParameters.getPlayerNames().size();
             if (playersCount == 0 || playersCount > Constants.MAX_PLAYERS) {
                 throw new IllegalArgumentException("Only 1 to 4 players are supported so far");
-            }
-
-            //todo update before deploy
-            for (int i = 0; i < 1000; i++) {
-                MarsGame marsGame = gameService.startNewGame(gameParameters);
-
-                if (aiPlayerCount == playersCount) {
-                    turnService.pushGame(marsGame.getId());
-                }
             }
 
             MarsGame marsGame = gameService.startNewGame(gameParameters);
@@ -85,16 +82,129 @@ public class GameController {
         }
     }
 
-    @GetMapping("/simulations")
-    public void runSimulations() {
+    @GetMapping("/simulations/{simulationCount}")
+    public void runSimulations(@PathVariable int simulationCount) throws FileNotFoundException {
+        GameParameters gameParameters = GameParameters.builder()
+                .playerNames(List.of("ai1", "ai2"))
+                .computers(List.of(true, true))
+                .mulligan(false)
+                .expansions(List.of(Expansion.BASE, Expansion.BUFFED_CORPORATION))
+                .build();
+
+        List<MarsGame> games = new ArrayList<>();
+
+        System.out.println("Starting simulations");
+        System.out.println();
+
+        long startTime = System.currentTimeMillis();
+
+        List<MarsGameDataset> marsGameDatasets = new ArrayList<>();
+
+        for (int i = 0; i < simulationCount; i++) {
+            MarsGame marsGame = gameService.createNewSimulation(gameParameters);
+            if (Constants.COLLECT_DATASET) {
+                MarsGameDataset dataSet = simulationProcessorService.runSimulationWithDataset(marsGame);
+                if (dataSet != null) {
+                    marsGameDatasets.add(dataSet);
+                }
+            } else {
+                simulationProcessorService.processSimulation(marsGame);
+            }
 
 
+            games.add(marsGame);
 
-        statistics();
+            if (i != 0 && i % 10 == 0) {
+                long spentTime = System.currentTimeMillis() - startTime;
+
+                long timePerGame = (spentTime / i);
+                System.out.println("Time left: " + (simulationCount - i) * timePerGame / 1000);
+            }
+        }
+
+        if (Constants.COLLECT_DATASET) {
+            saveDatasets(marsGameDatasets);
+        }
+
+        statistics(games);
     }
 
-    @GetMapping("/statistics")
-    public void statistics() {
+    private void saveDatasets(List<MarsGameDataset> marsGameDatasets) throws FileNotFoundException {
+        File csvOutputFile = new File("dataset.csv");
+        try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
+            for (MarsGameDataset dataset : marsGameDatasets) {
+                List<MarsGameRow> rows = dataset.getFirstPlayerRows();
+                for (MarsGameRow row : rows) {
+                    write(row, pw);
+                }
+                rows = dataset.getSecondPlayerRows();
+                for (MarsGameRow row : rows) {
+                    write(row, pw);
+                }
+            }
+        }
+    }
+
+    private void write(MarsGameRow row, PrintWriter pw) {
+        pw.print(row.getTurn());
+        pw.print(',');
+        pw.print(row.getWinPoints());
+        pw.print(',');
+        pw.print(row.getMcIncome());
+        pw.print(',');
+        pw.print(row.getMc());
+        pw.print(',');
+        pw.print(row.getSteelIncome());
+        pw.print(',');
+        pw.print(row.getTitaniumIncome());
+        pw.print(',');
+        pw.print(row.getPlantsIncome());
+        pw.print(',');
+        pw.print(row.getPlants());
+        pw.print(',');
+        pw.print(row.getHeatIncome());
+        pw.print(',');
+        pw.print(row.getHeat());
+        pw.print(',');
+        pw.print(row.getCardsIncome());
+        pw.print(',');
+        pw.print(row.getCardsInHand());
+        pw.print(',');
+        pw.print(row.getCardsBuilt());
+        pw.print(',');
+        pw.print(row.getOxygenLevel());
+        pw.print(',');
+        pw.print(row.getTemperatureLevel());
+        pw.print(',');
+        pw.print(row.getOceansLevel());
+        pw.print(',');
+        pw.print(row.getOpponentWinPoints());
+        pw.print(',');
+        pw.print(row.getOpponentMcIncome());
+        pw.print(',');
+        pw.print(row.getOpponentMc());
+        pw.print(',');
+        pw.print(row.getOpponentSteelIncome());
+        pw.print(',');
+        pw.print(row.getOpponentTitaniumIncome());
+        pw.print(',');
+        pw.print(row.getOpponentPlantsIncome());
+        pw.print(',');
+        pw.print(row.getOpponentPlants());
+        pw.print(',');
+        pw.print(row.getOpponentHeatIncome());
+        pw.print(',');
+        pw.print(row.getOpponentHeat());
+        pw.print(',');
+        pw.print(row.getOpponentCardsIncome());
+        pw.print(',');
+        pw.print(row.getOpponentCardsBuilt());
+        pw.print(',');
+        pw.print(row.getWinner());
+        pw.println();
+    }
+
+    private void statistics(List<MarsGame> games) {
         List<Integer> winCardOccurenceBeforeHalf = new ArrayList<>();
         List<Integer> winCardOccurenceAfterHalf = new ArrayList<>();
 
@@ -115,7 +225,7 @@ public class GameController {
             occurenceAfterHalf.add(0);
         }
 
-        List<MarsGame> finishedGames = gameRepository.getAllGames().stream()
+        List<MarsGame> finishedGames = games.stream()
                 .filter(MarsGame::gameEndCondition)
                 .filter(game -> game.getPlayerUuidToPlayer().size() == 2)
                 .collect(Collectors.toList());
@@ -181,12 +291,12 @@ public class GameController {
 
             System.out.println("cardToWeightFirstHalf.put(" + i + ", " + (double) winCardOccurenceBeforeHalf.get(i) * 100 / occurenceBeforeHalf.get(i) + ");");
         }
-
+//
         for (int i = 1; i < occurenceBeforeHalf.size(); i++) {
             System.out.println("cardToWeightSecondHalf.put(" + i + ", " + (double) winCardOccurenceAfterHalf.get(i) * 100 / occurenceAfterHalf.get(i) + ");");
         }
 
-        System.out.println((double)totalTurnsCount / finishedGames.size());
+        System.out.println((double) totalTurnsCount / finishedGames.size());
 
         System.out.println((double) totalPointsCount / (2 * finishedGames.size()));
 

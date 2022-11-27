@@ -13,6 +13,7 @@ import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
 import lombok.RequiredArgsConstructor;
+import lombok.val;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -119,7 +120,11 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             return 0;
         }
 
-        Card bestCard = cardValueService.getBestCardAsCard(game, player, playableCards, game.getTurns());
+        Card bestCard = cardValueService.getBestCardAsCard(game, player, playableCards, game.getTurns(), true);
+        if (bestCard == null) {
+            return 0;
+        }
+
         return (bestCard.getColor() == CardColor.GREEN ? 1 : 2);
     }
 
@@ -128,7 +133,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             return false;
         }
 
-        return player.getHand()
+        List<Card> playableCards = player.getHand()
                 .getCards()
                 .stream()
                 .map(cardService::getCard)
@@ -142,8 +147,9 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                     );
                     return errorMessage == null;
                 })
-                .limit(2)
-                .count() == 2;
+                .collect(Collectors.toList());
+
+        return cardValueService.getBestCardAsCard(game, player, playableCards, game.getTurns(), true) != null;
     }
 
     private boolean mayPlayPhaseTwo(MarsGame game, Player player) {
@@ -151,7 +157,8 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             return false;
         }
 
-        return player.getHand()
+
+        List<Card> playableCards = player.getHand()
                 .getCards()
                 .stream()
                 .map(cardService::getCard)
@@ -165,17 +172,14 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                     );
                     return errorMessage == null;
                 })
-                .limit(2)
-                .count() == 2;
+                .collect(Collectors.toList());
+
+        return cardValueService.getBestCardAsCard(game, player, playableCards, game.getTurns(), true) != null;
     }
 
     private boolean mayPlayPhaseFour(MarsGame game, Player player) {
         if (player.getPreviousChosenPhase() != null && player.getPreviousChosenPhase() == 4) {
             return false;
-        }
-
-        if (player.getCardIncome() >= 3) {//when can get a lot of card
-            return true;
         }
 
         if (player.getMc() <= 5) {//when running really low unable to do anything
@@ -194,7 +198,25 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             return true;
         }
 
+        val players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
+        if (players.size() == 2) {
+            Player anotherPlayer = players.get(0) == player ? players.get(1) : players.get(0);
+
+            if (calcTotalIncome(game, player) / 2 > calcTotalIncome(game, anotherPlayer)) {
+                return true;
+            }
+        }
+
         return false;
+    }
+
+    private int calcTotalIncome(MarsGame game, Player player) {
+        return player.getMcIncome() +
+                player.getSteelIncome() * 2 +
+                player.getTitaniumIncome() * 3 +
+                player.getPlantsIncome() * (game.getPlanet().isOxygenMax() ? 1 : 2) +
+                player.getCardIncome() * 4 +
+                player.getHeatIncome() * (game.getPlanet().isTemperatureMax() ? 1 : 2);
     }
 
     private boolean mayPlayPhaseThreeSmart(MarsGame game, Player player) {
@@ -247,6 +269,10 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
 
         if ((cardActions.contains(CardAction.STEELWORKS) && player.getHeat() >= 8 || cardActions.contains(CardAction.IRON_WORKS) && player.getHeat() >= 12)
                 && !game.getPlanet().isOxygenMax()) {
+            requiredActiveCardsCount--;
+        }
+
+        if (cardActions.contains(CardAction.CARETAKER_CONTRACT) && player.getHeat() >= 16) {
             requiredActiveCardsCount--;
         }
 
