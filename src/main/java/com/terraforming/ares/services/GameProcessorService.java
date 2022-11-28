@@ -14,6 +14,7 @@ import com.terraforming.ares.services.ai.DeepNetwork;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -71,7 +72,7 @@ public class GameProcessorService extends BaseProcessorService {
 
                 final List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
 
-                deepNetwork.testState(game, players.get(0).getUuid().endsWith("0") ? players.get(0) : players.get(1));
+                System.out.println("Player expected win: " + deepNetwork.testState(game, players.get(0).getUuid().endsWith("0") ? players.get(0) : players.get(1)));
 
                 return null;
             });

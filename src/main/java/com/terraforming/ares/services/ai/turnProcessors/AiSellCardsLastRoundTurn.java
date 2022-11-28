@@ -29,7 +29,7 @@ public class AiSellCardsLastRoundTurn implements AiTurnProcessor {
     }
 
     @Override
-    public boolean processTurn(MarsGame game, Player player) {
+    public void processTurn(MarsGame game, Player player) {
         List<Integer> allCards = new ArrayList<>(player.getHand().getCards());
 
         int cardsToSellCount = allCards.size() - 10;
@@ -48,8 +48,6 @@ public class AiSellCardsLastRoundTurn implements AiTurnProcessor {
         }
 
         aiTurnService.sellCardsLastRoundTurn(player, cardsToSell);
-
-        return true;
     }
 
 }

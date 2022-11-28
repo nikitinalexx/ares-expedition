@@ -31,7 +31,7 @@ public class DeepNetwork {
         marsNetwork = FileIO.createFromFile("marsNet.dnet", FeedForwardNetwork.class);
     }
 
-    public void testState(MarsGame game, Player player) {
+    public float testState(MarsGame game, Player player) {
         final List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
         final MarsGameRow marsGameRow = MarsGameDataset.collectPlayerData(
                 winPointsService,
@@ -49,7 +49,9 @@ public class DeepNetwork {
 
         float[] output = marsNetwork.getOutput();
 
-        System.out.println(output[0]);
+        //System.out.println(output[0]);
+
+        return output[0];
 
     }
 

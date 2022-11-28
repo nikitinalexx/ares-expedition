@@ -30,9 +30,8 @@ public class AiIncreaseTemperatureTurn implements AiTurnProcessor {
     }
 
     @Override
-    public boolean processTurn(MarsGame game, Player player) {
+    public void processTurn(MarsGame game, Player player) {
         aiTurnService.increaseTemperature(game, player);
-        return true;
     }
 
 }

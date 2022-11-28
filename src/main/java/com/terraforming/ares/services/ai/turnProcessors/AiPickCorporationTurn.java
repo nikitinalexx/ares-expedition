@@ -27,7 +27,7 @@ public class AiPickCorporationTurn implements AiTurnProcessor {
     }
 
     @Override
-    public boolean processTurn(MarsGame game, Player player) {
+    public void processTurn(MarsGame game, Player player) {
         LinkedList<Integer> corporationCards = player.getCorporations().getCards();
 
         int selectedCorporationId = corporationCards.get(random.nextInt(corporationCards.size()));
@@ -36,8 +36,6 @@ public class AiPickCorporationTurn implements AiTurnProcessor {
                 .playerUuid(player.getUuid())
                 .corporationId(selectedCorporationId)
                 .build());
-
-        return true;
     }
 
 }

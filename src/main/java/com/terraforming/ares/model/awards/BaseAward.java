@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardService;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -28,6 +30,8 @@ import java.util.concurrent.ConcurrentHashMap;
         @JsonSubTypes.Type(value = ResearcherAward.class, name = "RESEARCHER"),
 })
 public abstract class BaseAward {
+    @Setter
+    @Getter
     private Map<String, Integer> winPoints = new ConcurrentHashMap<>();
 
     @JsonIgnore

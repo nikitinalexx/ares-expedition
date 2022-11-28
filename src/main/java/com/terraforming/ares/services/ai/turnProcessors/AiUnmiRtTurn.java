@@ -30,13 +30,8 @@ public class AiUnmiRtTurn implements AiTurnProcessor {
     }
 
     @Override
-    public boolean processTurn(MarsGame game, Player player) {
-        if (player.getMc() >= 6) {
-            aiTurnService.unmiRtCorporationTurn(game, player);
-            return true;
-        } else {
-            return false;
-        }
+    public void processTurn(MarsGame game, Player player) {
+        aiTurnService.unmiRtCorporationTurn(game, player);
     }
 
 }

@@ -3,11 +3,15 @@ package com.terraforming.ares.services.ai.turnProcessors;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardColor;
+import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.CardValidationService;
+import com.terraforming.ares.services.ai.AiProjectionService;
 import com.terraforming.ares.services.ai.CardValueService;
+import com.terraforming.ares.services.ai.DeepNetwork;
+import com.terraforming.ares.services.ai.ProjectionStrategy;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +35,8 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
     private final AiPaymentService aiPaymentHelper;
     private final AiCardBuildParamsHelper aiCardParamsHelper;
     private final CardValueService cardValueService;
+    private final DeepNetwork deepNetwork;
+    private final AiProjectionService aiProjectionService;
 
     @Override
     public TurnType getType() {
@@ -38,7 +44,7 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
     }
 
     @Override
-    public boolean processTurn(MarsGame game, Player player) {
+    public void processTurn(MarsGame game, Player player) {
         List<Card> availableCards = player.getHand()
                 .getCards()
                 .stream()
@@ -57,10 +63,30 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
 
         if (availableCards.isEmpty()) {
             aiTurnService.skipTurn(player);
-            return true;
+            return;
         }
 
-        Card selectedCard = cardValueService.getBestCardAsCard(game, player, availableCards, game.getTurns(), true);
+        Card selectedCard = null;
+        if (player.getUuid().endsWith("0") && Constants.FIRST_BOT_IS_RANDOM) {
+            selectedCard = availableCards.get(random.nextInt(availableCards.size()));
+        } else {
+            float bestChance = deepNetwork.testState(game, player);
+            Card bestCard = null;
+
+            for (Card playableCard : availableCards) {
+                MarsGame stateAfterPlayingTheCard = aiProjectionService.projectBuildCard(game, player, playableCard, ProjectionStrategy.FROM_PHASE);
+
+                float projectedChance = deepNetwork.testState(stateAfterPlayingTheCard, stateAfterPlayingTheCard.getPlayerByUuid(player.getUuid()));
+
+                if (projectedChance > bestChance) {
+                    bestChance = projectedChance;
+                    bestCard = playableCard;
+                }
+            }
+            if (bestCard != null) {
+                selectedCard = bestCard;
+            }
+        }
 
         if (selectedCard == null) {
             aiTurnService.skipTurn(player);
@@ -74,7 +100,7 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
             );
         }
 
-        return true;
+        return;
     }
 
 }

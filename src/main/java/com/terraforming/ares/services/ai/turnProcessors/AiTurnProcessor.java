@@ -12,6 +12,6 @@ public interface AiTurnProcessor {
 
     TurnType getType();
 
-    boolean processTurn(MarsGame game, Player player);
+    void processTurn(MarsGame game, Player player);
 
 }

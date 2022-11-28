@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -68,32 +69,57 @@ public class AiTurnService {
         makeAsyncTurn(player, new PhaseChoiceTurn(player.getUuid(), phaseId));
     }
 
+    public void buildGreenProjectSync(MarsGame game, Player player, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
+        buildProject(
+                game, player, projectId, payments, inputParams,
+                new BuildGreenProjectTurn(player.getUuid(), projectId, payments, inputParams),
+                true
+        );
+    }
+
     public void buildGreenProject(MarsGame game, Player player, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
         buildProject(
                 game, player, projectId, payments, inputParams,
-                new BuildGreenProjectTurn(player.getUuid(), projectId, payments, inputParams)
+                new BuildGreenProjectTurn(player.getUuid(), projectId, payments, inputParams),
+                game.getCurrentPhase() == 3
+        );
+    }
+
+    public void buildBlueRedProjectSync(MarsGame game, Player player, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
+        buildProject(
+                game, player, projectId, payments, inputParams,
+                new BuildBlueRedProjectTurn(player.getUuid(), projectId, payments, inputParams),
+                true
         );
     }
 
     public void buildBlueRedProject(MarsGame game, Player player, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
         buildProject(
                 game, player, projectId, payments, inputParams,
-                new BuildBlueRedProjectTurn(player.getUuid(), projectId, payments, inputParams)
+                new BuildBlueRedProjectTurn(player.getUuid(), projectId, payments, inputParams),
+                game.getCurrentPhase() == 3
         );
     }
 
-    private void buildProject(MarsGame game, Player player, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams, Turn turn) {
+    private void buildProject(MarsGame game, Player player, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams, Turn turn, boolean syncTurn) {
         String errorMessage = cardValidationService.validateCard(player, game, projectId, payments, inputParams);
         if (errorMessage != null) {
             throw new IllegalStateException(errorMessage);
         }
 
-        if (game.getCurrentPhase() == 3) {
+        if (syncTurn) {
             makeSyncTurn(player, game, turn);
         } else {
-            //async update
             makeAsyncTurn(player, turn);
         }
+    }
+
+    public void pickExtraCardTurnAsync(Player player) {
+        makeAsyncTurn(player, new PickExtraCardTurn(player.getUuid()));
+    }
+
+    public void pickExtraCardTurnSync(MarsGame game, Player player) {
+        makeSyncTurn(player, game, new PickExtraCardTurn(player.getUuid()));
     }
 
     public void collectIncomeTurn(Player player) {
@@ -153,6 +179,14 @@ public class AiTurnService {
             makeAsyncTurn(player, turn);
         }
 
+    }
+
+    public void unmiRtCorporationTurnSync(MarsGame game, Player player) {
+        if (player.getMc() < 6) {
+            throw new IllegalArgumentException("Not enough MC to perform the action");
+        }
+
+        makeSyncTurn(player, game, new UnmiRtTurn(player.getUuid()));
     }
 
     public void unmiRtCorporationTurn(MarsGame game, Player player) {

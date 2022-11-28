@@ -36,7 +36,7 @@ public class AiDiscardCardsTurn implements AiTurnProcessor {
     }
 
     @Override
-    public boolean processTurn(MarsGame game, Player player) {
+    public void processTurn(MarsGame game, Player player) {
         DiscardCardsTurn nextTurn = (DiscardCardsTurn) player.getNextTurn();
 
         List<Integer> cardsToDiscard;
@@ -65,7 +65,6 @@ public class AiDiscardCardsTurn implements AiTurnProcessor {
                 new DiscardCardsTurn(player.getUuid(), cardsToDiscard, cardsToDiscard.size(), false, false),
                 cardsToDiscard
         );
-        return true;
     }
 
 }

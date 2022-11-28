@@ -23,9 +23,8 @@ public class AiCollectIncomeTurn implements AiTurnProcessor {
     }
 
     @Override
-    public boolean processTurn(MarsGame game, Player player) {
+    public void processTurn(MarsGame game, Player player) {
         aiTurnService.collectIncomeTurn(player);
-        return true;
     }
 
 }

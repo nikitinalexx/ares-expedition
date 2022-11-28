@@ -2,7 +2,6 @@ package com.terraforming.ares.services.ai.turnProcessors;
 
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.StandardProjectType;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.CardValidationService;
@@ -35,42 +34,8 @@ public class AiSkipTurn implements AiTurnProcessor {
     }
 
     @Override
-    public boolean processTurn(MarsGame game, Player player) {
-        if (game.gameEndCondition()) {
-            if (player.getHand().size() != 0) {
-                aiTurnService.sellAllCards(player, game, player.getHand().getCards());
-                return true;
-            } else {
-                if (!game.getPlanetAtTheStartOfThePhase().isOxygenMax()) {
-                    String validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.FOREST);
-                    if (validationResult == null) {
-                        aiTurnService.standardProjectTurn(game, player, StandardProjectType.FOREST);
-                        return true;
-                    }
-                }
-                String validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.OCEAN);
-                if (validationResult == null) {
-                    aiTurnService.standardProjectTurn(game, player, StandardProjectType.OCEAN);
-                    return true;
-                }
-                validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.TEMPERATURE);
-                if (validationResult == null) {
-                    aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
-                    return true;
-                }
-                validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.FOREST);
-                if (validationResult == null) {
-                    aiTurnService.standardProjectTurn(game, player, StandardProjectType.FOREST);
-                    return true;
-                }
-            }
-
-            aiTurnService.confirmGameEnd(game, player);
-            return true;
-        }
-
+    public void processTurn(MarsGame game, Player player) {
         aiTurnService.skipTurn(player);
-        return true;
     }
 
 }

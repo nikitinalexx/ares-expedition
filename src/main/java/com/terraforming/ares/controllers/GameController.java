@@ -126,6 +126,10 @@ public class GameController {
             saveDatasets(marsGameDatasets);
         }
 
+        for (MarsGame game : games) {
+            gameRepository.save(game);
+        }
+
         statistics(games);
     }
 
@@ -287,14 +291,14 @@ public class GameController {
 
         System.out.println("All");
         for (int i = 1; i < occurenceBeforeHalf.size(); i++) {
-//            System.out.println("i: " + i + " " + " % " + (double) winCardOccurenceBeforeHalf.get(i) * 100 / occurenceBeforeHalf.get(i) + " " + " % " + (double) winCardOccurenceAfterHalf.get(i) * 100 / occurenceAfterHalf.get(i) + " " + cardService.getCard(i).getClass().getSimpleName());
+            System.out.println("i: " + i + " " + " % " + (double) winCardOccurenceBeforeHalf.get(i) * 100 / occurenceBeforeHalf.get(i) + " " + " % " + (double) winCardOccurenceAfterHalf.get(i) * 100 / occurenceAfterHalf.get(i) + " " + cardService.getCard(i).getClass().getSimpleName());
 
-            System.out.println("cardToWeightFirstHalf.put(" + i + ", " + (double) winCardOccurenceBeforeHalf.get(i) * 100 / occurenceBeforeHalf.get(i) + ");");
+//            System.out.println("cardToWeightFirstHalf.put(" + i + ", " + (double) winCardOccurenceBeforeHalf.get(i) * 100 / occurenceBeforeHalf.get(i) + ");");
         }
 //
-        for (int i = 1; i < occurenceBeforeHalf.size(); i++) {
-            System.out.println("cardToWeightSecondHalf.put(" + i + ", " + (double) winCardOccurenceAfterHalf.get(i) * 100 / occurenceAfterHalf.get(i) + ");");
-        }
+//        for (int i = 1; i < occurenceBeforeHalf.size(); i++) {
+//            System.out.println("cardToWeightSecondHalf.put(" + i + ", " + (double) winCardOccurenceAfterHalf.get(i) * 100 / occurenceAfterHalf.get(i) + ");");
+//        }
 
         System.out.println((double) totalTurnsCount / finishedGames.size());
 
