@@ -77,15 +77,14 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                 possiblePhases.add(3);
             }
 
+            if (mayPlayPhaseFour(game, player)) {
+                possiblePhases.add(4);
+            }
         } else {
-            int phase = deepNetworkChoose1To3Phase(game, player);
+            int phase = deepNetworkChoose1To4Phase(game, player);
             if (phase != 0) {
                 possiblePhases.add(phase);
             }
-        }
-
-        if (mayPlayPhaseFour(game, player)) {
-            possiblePhases.add(4);
         }
 
         if (mayPlayPhaseFive(game, player)) {
@@ -165,7 +164,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
         return cardValueService.getBestCardAsCard(game, player, playableCards, game.getTurns(), true) != null;
     }
 
-    private int deepNetworkChoose1To3Phase(MarsGame game, Player player) {
+    private int deepNetworkChoose1To4Phase(MarsGame game, Player player) {
         List<Card> playableCards = player.getHand()
                 .getCards()
                 .stream()
@@ -199,6 +198,16 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
 
             if (projectedChance > bestChance) {
                 return 3;
+            }
+        }
+
+        if (player.getPreviousChosenPhase() == null || player.getPreviousChosenPhase() != 4) {
+            MarsGame projectedState = aiProjectionService.projectPhaseFour(game, player, ProjectionStrategy.FROM_PICK_PHASE);
+
+            float projectedChance = deepNetwork.testState(projectedState, projectedState.getPlayerByUuid(player.getUuid()));
+
+            if (projectedChance > bestChance) {
+                return 4;
             }
         }
 

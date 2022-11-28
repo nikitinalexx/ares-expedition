@@ -6,6 +6,7 @@ import com.terraforming.ares.cards.corporations.*;
 import com.terraforming.ares.cards.green.*;
 import com.terraforming.ares.cards.red.*;
 import com.terraforming.ares.model.Card;
+import com.terraforming.ares.model.CardColor;
 import com.terraforming.ares.model.Expansion;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +28,8 @@ public class CardFactory {
 
     private final Map<Integer, Card> inmemoryProjectCards;
     private final List<Card> sortedProjects;
+
+    private final List<Card> sortedBlueCards;
 
     public CardFactory() {
         sortedProjects = List.of(
@@ -290,6 +293,11 @@ public class CardFactory {
         inmemoryProjectCards = sortedProjects.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
         corporationsStorage = sortedCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
         buffedCorporationsStorage = buffedCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
+
+        sortedBlueCards = sortedProjects.stream()
+                .filter(card -> card.getColor() == CardColor.BLUE)
+                .sorted(Comparator.comparingInt(Card::getId))
+                .collect(Collectors.toList());
     }
 
     public Map<Integer, Card> createCorporations() {
@@ -326,6 +334,10 @@ public class CardFactory {
         }
 
         return new ArrayList<>(corporations.values());
+    }
+
+    public List<Card> getSortedBlueCards() {
+        return sortedBlueCards;
     }
 
 }

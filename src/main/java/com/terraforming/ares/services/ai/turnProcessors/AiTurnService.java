@@ -126,6 +126,10 @@ public class AiTurnService {
         makeAsyncTurn(player, new CollectIncomeTurn(player.getUuid()));
     }
 
+    public void collectIncomeTurnSync(MarsGame game, Player player) {
+        makeSyncTurn(player, game, new CollectIncomeTurn(player.getUuid()));
+    }
+
     public void skipTurn(Player player) {
         makeAsyncTurn(player, new SkipTurn(player.getUuid()));
     }

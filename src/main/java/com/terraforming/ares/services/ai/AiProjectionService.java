@@ -138,6 +138,30 @@ public class AiProjectionService extends BaseProcessorService {
         return game;
     }
 
+    public MarsGame projectPhaseFour(MarsGame game, Player player, ProjectionStrategy projectionStrategy) {
+        game = copyMars(game);
+        player = game.getPlayerByUuid(player.getUuid());
+
+        final Player anotherPlayer = getAnotherPlayer(game, player);
+
+        if (projectionStrategy == ProjectionStrategy.FROM_PICK_PHASE) {
+            anotherPlayer.setPreviousChosenPhase(null);
+            if (game.getStateType() == StateType.PICK_PHASE) {
+                game.getPlayerUuidToPlayer().values().forEach(
+                        p -> aiTurnService.choosePhaseTurn(p, p.getUuid().equals(anotherPlayer.getUuid()) ? 5 : 4)
+                );
+                while (processFinalTurns(game)) {
+                    stateFactory.getCurrentState(game).updateState();
+                }
+            }
+        }
+
+        aiTurnService.collectIncomeTurnSync(game, player);
+        aiTurnService.collectIncomeTurnSync(game, anotherPlayer);
+
+        return game;
+    }
+
     public static final int NO_BEST_TURN = -100;
     public static final int TEMPERATURE_TURN = -99;
     public static final int FOREST_TURN = -98;
