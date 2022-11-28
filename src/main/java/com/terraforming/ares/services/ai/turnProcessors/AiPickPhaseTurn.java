@@ -80,15 +80,18 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             if (mayPlayPhaseFour(game, player)) {
                 possiblePhases.add(4);
             }
+
+            if (mayPlayPhaseFive(game, player)) {
+                possiblePhases.add(5);
+            }
+
         } else {
             int phase = deepNetworkChoose1To4Phase(game, player);
             if (phase != 0) {
                 possiblePhases.add(phase);
+            } else if (player.getPreviousChosenPhase() == null || player.getPreviousChosenPhase() != 5){
+                possiblePhases.add(5);
             }
-        }
-
-        if (mayPlayPhaseFive(game, player)) {
-            possiblePhases.add(5);
         }
 
         int chosenPhase;
@@ -441,6 +444,5 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
 
         return false;
     }
-
 
 }

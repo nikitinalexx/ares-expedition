@@ -1,8 +1,13 @@
 package com.terraforming.ares.mars;
 
+import com.terraforming.ares.model.Card;
+import com.terraforming.ares.services.CardFactory;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by oleksii.nikitin
@@ -45,10 +50,12 @@ public class MarsGameRow {
     private int opponentCardsIncome;
     private int opponentCardsBuilt;
 
+    private List<Integer> cards;
+
     private int winner;
 
     public float[] getAsInput() {
-        return new float[]{
+        final float[] basicData = {
                 turn,
                 winPoints,
                 mcIncome,
@@ -78,6 +85,22 @@ public class MarsGameRow {
                 opponentCardsIncome,
                 opponentCardsBuilt,
         };
+
+        int totalSize = basicData.length + cards.size();
+
+        float[] result = new float[totalSize];
+
+        int counter = 0;
+
+        for (int i = 0; i < basicData.length; i++) {
+            result[counter++] = basicData[i];
+        }
+
+        for (int i = 0; i < cards.size(); i++) {
+            result[counter++] = cards.get(i);
+        }
+
+        return result;
     }
 
 

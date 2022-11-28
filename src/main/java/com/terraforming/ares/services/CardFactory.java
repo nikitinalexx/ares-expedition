@@ -322,6 +322,10 @@ public class CardFactory {
         )).collect(Collectors.toList());
     }
 
+    public List<Card> getSortedProjects() {
+        return sortedProjects;
+    }
+
     public List<Card> getAllCorporations(List<Expansion> expansions) {
         Map<Integer, Card> corporations = new HashMap<>();
 
@@ -337,7 +341,7 @@ public class CardFactory {
     }
 
     public List<Card> getSortedBlueCards() {
-        return sortedBlueCards;
+        return sortedProjects;
     }
 
 }

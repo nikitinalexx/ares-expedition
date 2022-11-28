@@ -22,16 +22,18 @@ public class SimulationProcessorService extends BaseProcessorService {
     private final AiService aiService;
     private final StateFactory stateFactory;
     private final WinPointsService winPointsService;
+    private final CardFactory cardFactory;
 
     public SimulationProcessorService(List<TurnProcessor<?>> turnProcessor,
                                       TurnTypeService turnTypeService,
                                       StateFactory stateFactory,
                                       StateContextProvider stateContextProvider,
-                                      AiService aiService, WinPointsService winPointsService) {
+                                      AiService aiService, WinPointsService winPointsService, CardFactory cardFactory) {
         super(turnTypeService, stateFactory, stateContextProvider, turnProcessor);
         this.aiService = aiService;
         this.stateFactory = stateFactory;
         this.winPointsService = winPointsService;
+        this.cardFactory = cardFactory;
     }
 
     public MarsGameDataset runSimulationWithDataset(MarsGame game) {
@@ -40,13 +42,13 @@ public class SimulationProcessorService extends BaseProcessorService {
         while (game.getStateType() != StateType.GAME_END) {
             while (aiService.waitingAiTurns(game)) {
                 aiService.makeAiTurns(game);
-                dataSet.collectData(winPointsService, game);
+                dataSet.collectData(cardFactory, winPointsService, game);
             }
 
             while (processFinalTurns(game)) {
                 stateFactory.getCurrentState(game).updateState();
             }
-            dataSet.collectData(winPointsService, game);
+            dataSet.collectData(cardFactory, winPointsService, game);
         }
 
         String winner = null;

@@ -1,13 +1,16 @@
 package com.terraforming.ares.mars;
 
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.services.CardFactory;
 import com.terraforming.ares.services.WinPointsService;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by oleksii.nikitin
@@ -25,11 +28,11 @@ public class MarsGameDataset {
         playerUuidToPlayer.keySet().forEach(playerUuid -> playerToRows.put(playerUuid, new ArrayList<>()));
     }
 
-    public void collectData(WinPointsService winPointsService, MarsGame marsGame) {
+    public void collectData(CardFactory cardFactory, WinPointsService winPointsService, MarsGame marsGame) {
         for (int i = 0; i < 2; i++) {
             Player currentPlayer = marsGame.getPlayerByUuid(players.get(i));
             Player anotherPlayer = marsGame.getPlayerByUuid(players.get(i == 0 ? 1 : 0));
-            playerToRows.get(currentPlayer.getUuid()).add(collectPlayerData(winPointsService, marsGame, currentPlayer, anotherPlayer));
+            playerToRows.get(currentPlayer.getUuid()).add(collectPlayerData(cardFactory, winPointsService, marsGame, currentPlayer, anotherPlayer));
         }
     }
 
@@ -50,7 +53,7 @@ public class MarsGameDataset {
         return playerToRows.get(players.get(1));
     }
 
-    public static MarsGameRow collectPlayerData(WinPointsService winPointsService, MarsGame game, Player currentPlayer, Player anotherPlayer) {
+    public static MarsGameRow collectPlayerData(CardFactory cardFactory, WinPointsService winPointsService, MarsGame game, Player currentPlayer, Player anotherPlayer) {
         return MarsGameRow.builder()
                 .turn(game.getTurns())
                 .winPoints(winPointsService.countWinPoints(currentPlayer, game))
@@ -79,7 +82,40 @@ public class MarsGameDataset {
                 .opponentHeat(anotherPlayer.getHeat())
                 .opponentCardsIncome(anotherPlayer.getCardIncome())
                 .opponentCardsBuilt(anotherPlayer.getPlayed().size() - 1)
+                .cards(collectAllCards(currentPlayer, cardFactory))
                 .build();
+    }
+
+    private static List<Integer> collectAllCards(Player player, CardFactory cardFactory) {
+        return cardFactory.getSortedProjects().stream()
+                .map(Card::getId)
+                .map(cardId -> {
+                    if (player.getHand().containsCard(cardId)) {
+                        return 1;
+                    } else if (player.getPlayed().containsCard(cardId)) {
+                        return 2;
+                    } else {
+                        return 0;
+                    }
+                })
+                .collect(Collectors.toList());
+    }
+
+    private static List<Integer> collectBlueCards(Player player, CardFactory cardFactory) {
+        return cardFactory.getSortedBlueCards().stream()
+                .map(
+                        Card::getId
+                )
+                .map(cardId -> {
+                    if (player.getHand().containsCard(cardId)) {
+                        return 1;
+                    } else if (player.getPlayed().containsCard(cardId)) {
+                        return 2;
+                    } else {
+                        return 0;
+                    }
+                })
+                .collect(Collectors.toList());
     }
 
 }

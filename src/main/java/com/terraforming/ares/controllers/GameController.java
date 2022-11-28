@@ -134,7 +134,7 @@ public class GameController {
     }
 
     private void saveDatasets(List<MarsGameDataset> marsGameDatasets) throws FileNotFoundException {
-        File csvOutputFile = new File("dataset.csv");
+        File csvOutputFile = new File("mars.csv");
         try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
             for (MarsGameDataset dataset : marsGameDatasets) {
                 List<MarsGameRow> rows = dataset.getFirstPlayerRows();
@@ -203,6 +203,8 @@ public class GameController {
         pw.print(row.getOpponentCardsIncome());
         pw.print(',');
         pw.print(row.getOpponentCardsBuilt());
+        pw.print(',');
+        pw.print(row.getCards().stream().map(String::valueOf).collect(Collectors.joining(",")));
         pw.print(',');
         pw.print(row.getWinner());
         pw.println();
