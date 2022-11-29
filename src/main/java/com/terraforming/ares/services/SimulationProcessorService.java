@@ -2,12 +2,12 @@ package com.terraforming.ares.services;
 
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.mars.MarsGameDataset;
-import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.processors.turn.TurnProcessor;
 import com.terraforming.ares.services.ai.AiService;
+import com.terraforming.ares.services.dataset.DatasetCollectService;
+import com.terraforming.ares.services.dataset.MarsGameDataset;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,18 +22,20 @@ public class SimulationProcessorService extends BaseProcessorService {
     private final AiService aiService;
     private final StateFactory stateFactory;
     private final WinPointsService winPointsService;
-    private final CardFactory cardFactory;
+    private final CardService cardService;
+    private final DatasetCollectService datasetCollectService;
 
     public SimulationProcessorService(List<TurnProcessor<?>> turnProcessor,
                                       TurnTypeService turnTypeService,
                                       StateFactory stateFactory,
                                       StateContextProvider stateContextProvider,
-                                      AiService aiService, WinPointsService winPointsService, CardFactory cardFactory) {
+                                      AiService aiService, WinPointsService winPointsService, CardService cardService, DatasetCollectService datasetCollectService) {
         super(turnTypeService, stateFactory, stateContextProvider, turnProcessor);
         this.aiService = aiService;
         this.stateFactory = stateFactory;
         this.winPointsService = winPointsService;
-        this.cardFactory = cardFactory;
+        this.cardService = cardService;
+        this.datasetCollectService = datasetCollectService;
     }
 
     public MarsGameDataset runSimulationWithDataset(MarsGame game) {
@@ -42,13 +44,13 @@ public class SimulationProcessorService extends BaseProcessorService {
         while (game.getStateType() != StateType.GAME_END) {
             while (aiService.waitingAiTurns(game)) {
                 aiService.makeAiTurns(game);
-                dataSet.collectData(cardFactory, winPointsService, game);
+                datasetCollectService.collect(game, dataSet);
             }
 
             while (processFinalTurns(game)) {
                 stateFactory.getCurrentState(game).updateState();
             }
-            dataSet.collectData(cardFactory, winPointsService, game);
+            datasetCollectService.collect(game, dataSet);
         }
 
         String winner = null;

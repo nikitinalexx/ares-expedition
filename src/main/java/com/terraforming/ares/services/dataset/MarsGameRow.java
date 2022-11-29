@@ -1,4 +1,4 @@
-package com.terraforming.ares.mars;
+package com.terraforming.ares.services.dataset;
 
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.services.CardFactory;
@@ -30,8 +30,21 @@ public class MarsGameRow {
     private int heat;
     private int cardsIncome;
     private int cardsInHand;
-    //todo is it good?
     private int cardsBuilt;
+
+    private long space;
+    private long earth;
+    private long event;
+    private long science;
+    private long plant;
+    private long energy;
+    private long building;
+    private long animal;
+    private long jupiter;
+    private long microbe;
+
+    private int extraCardsToTake;
+    private int extraCardsToSee;
 
     private int oxygenLevel;
     private int temperatureLevel;

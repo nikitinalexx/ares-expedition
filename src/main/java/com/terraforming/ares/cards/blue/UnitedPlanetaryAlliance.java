@@ -25,7 +25,6 @@ public class UnitedPlanetaryAlliance implements BlueCard {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
                 .name("United Planetary Alliance")
-                //TODO support 5 phase
                 .description("When you draw cards during the research phase, draw one additional card and keep one additional card.")
                 .cardAction(CardAction.UNITED_PLANETARY)
                 .build();

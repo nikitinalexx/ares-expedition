@@ -2,8 +2,8 @@ package com.terraforming.ares.controllers;
 
 import com.terraforming.ares.dto.*;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.mars.MarsGameDataset;
-import com.terraforming.ares.mars.MarsGameRow;
+import com.terraforming.ares.services.dataset.MarsGameDataset;
+import com.terraforming.ares.services.dataset.MarsGameRow;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.request.AllProjectsRequest;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
