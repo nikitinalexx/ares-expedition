@@ -9,5 +9,9 @@ public enum BestTurnType {
     UNMI,
     PROJECT,
     GREEN,
-    EXTRA_CARD
+    EXTRA_CARD,
+    PHASE_1,
+    PHASE_2,
+    PHASE_3,
+    PHASE_4
 }

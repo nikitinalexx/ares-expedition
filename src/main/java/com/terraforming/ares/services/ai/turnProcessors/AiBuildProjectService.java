@@ -1,6 +1,5 @@
 package com.terraforming.ares.services.ai.turnProcessors;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
@@ -52,7 +51,7 @@ public class AiBuildProjectService extends BaseProcessorService {
         this.stateFactory = stateFactory;
     }
 
-    public BuildProjectPrediction getBestProjectToBuild(MarsGame game, Player player, Set<CardColor> cardColors) {
+    public BuildProjectPrediction getBestProjectToBuild(MarsGame game, Player player, Set<CardColor> cardColors, ProjectionStrategy projectionStrategy) {
         List<Card> availableCards = player.getHand()
                 .getCards()
                 .stream()
@@ -80,7 +79,11 @@ public class AiBuildProjectService extends BaseProcessorService {
         } else {
             Card bestCard = null;
             for (Card playableCard : availableCards) {
-                MarsGame stateAfterPlayingTheCard = projectBuildCard(game, player, playableCard, ProjectionStrategy.FROM_PHASE);
+                MarsGame stateAfterPlayingTheCard = projectBuildCard(game, player, playableCard, projectionStrategy);
+
+                if (stateAfterPlayingTheCard == null) {
+                    continue;
+                }
 
                 float projectedChance = deepNetwork.testState(stateAfterPlayingTheCard, stateAfterPlayingTheCard.getPlayerByUuid(player.getUuid()));
 
@@ -102,7 +105,7 @@ public class AiBuildProjectService extends BaseProcessorService {
     }
 
     public MarsGame projectBuildCard(MarsGame game, Player player, Card card, ProjectionStrategy projectionStrategy) {
-        game = copyMars(game);
+        game = new MarsGame(game);
         player = game.getPlayerByUuid(player.getUuid());
 
         if (projectionStrategy == ProjectionStrategy.FROM_PICK_PHASE) {
@@ -149,25 +152,5 @@ public class AiBuildProjectService extends BaseProcessorService {
     private Player getAnotherPlayer(MarsGame game, Player player) {
         return game.getPlayerUuidToPlayer().values().stream().filter(p -> !p.getUuid().equals(player.getUuid()))
                 .findFirst().orElseThrow(() -> new IllegalStateException("Another player not found"));
-    }
-
-    public MarsGame copyMars(MarsGame game) {
-        return safeDeserialize(safeSerialize(game));
-    }
-
-    private String safeSerialize(MarsGame marsGame) {
-        try {
-            return objectMapper.writeValueAsString(marsGame);
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Error serializing the game");
-        }
-    }
-
-    private MarsGame safeDeserialize(String gameJson) {
-        try {
-            return objectMapper.readValue(gameJson, MarsGame.class);
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Error deserializing the game");
-        }
     }
 }

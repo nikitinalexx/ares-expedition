@@ -17,8 +17,12 @@ import java.util.*;
 @AllArgsConstructor
 public class Deck {
     @Builder.Default
-    private final LinkedList<Integer> cards = new LinkedList<>();
+    private LinkedList<Integer> cards = new LinkedList<>();
     private final Map<Integer, Integer> cardToTurn = new HashMap<>();
+
+    public Deck(Deck copy) {
+        this.cards = new LinkedList<>(copy.cards);
+    }
 
     public Deck dealCardsDeck(int count) {
         LinkedList<Integer> result = new LinkedList<>();

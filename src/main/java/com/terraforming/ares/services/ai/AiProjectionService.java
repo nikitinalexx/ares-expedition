@@ -53,7 +53,7 @@ public class AiProjectionService extends BaseProcessorService {
 
     public MarsGame projectBuildCard(MarsGame game, Player player, Card card, ProjectionStrategy projectionStrategy) {
         //todo consider -3 discount in phase 1.
-        game = copyMars(game);
+        game = new MarsGame(game);
         player = game.getPlayerByUuid(player.getUuid());
 
         if (projectionStrategy == ProjectionStrategy.FROM_PICK_PHASE) {
@@ -98,7 +98,7 @@ public class AiProjectionService extends BaseProcessorService {
     }
 
     public MarsGame projectTakeExtraCard(MarsGame game, Player player) {
-        game = copyMars(game);
+        game = new MarsGame(game);
         player = game.getPlayerByUuid(player.getUuid());
 
         aiTurnService.pickExtraCardTurnSync(game, player);
@@ -107,7 +107,7 @@ public class AiProjectionService extends BaseProcessorService {
     }
 
     public MarsGame projectUnmiTurn(MarsGame game, Player player) {
-        game = copyMars(game);
+        game = new MarsGame(game);
         player = game.getPlayerByUuid(player.getUuid());
 
         aiTurnService.unmiRtCorporationTurnSync(game, player);
@@ -116,7 +116,7 @@ public class AiProjectionService extends BaseProcessorService {
     }
 
     public MarsGame projectPhaseThree(MarsGame game, Player player, ProjectionStrategy projectionStrategy) {
-        game = copyMars(game);
+        game = new MarsGame(game);
         player = game.getPlayerByUuid(player.getUuid());
 
         final Player anotherPlayer = getAnotherPlayer(game, player);
@@ -140,7 +140,7 @@ public class AiProjectionService extends BaseProcessorService {
     }
 
     public MarsGame projectPhaseFour(MarsGame game, Player player, ProjectionStrategy projectionStrategy) {
-        game = copyMars(game);
+        game = new MarsGame(game);
         player = game.getPlayerByUuid(player.getUuid());
 
         final Player anotherPlayer = getAnotherPlayer(game, player);
@@ -174,13 +174,13 @@ public class AiProjectionService extends BaseProcessorService {
     public boolean doBestThirdPhaseTurn(List<TurnType> possibleTurns, MarsGame originalGame, Player originalPlayer) {
         float bestState = deepNetwork.testState(originalGame, originalPlayer);
 
-        MarsGame game = copyMars(originalGame);
+        MarsGame game = new MarsGame(originalGame);
         Player player = game.getPlayerByUuid(originalPlayer.getUuid());
 
         int bestTurn = NO_BEST_TURN;
 
         if (player.getHeat() >= Constants.TEMPERATURE_HEAT_COST && !game.getPlanetAtTheStartOfThePhase().isTemperatureMax()) {
-            MarsGame copyMars = copyMars(game);
+            MarsGame copyMars = new MarsGame(game);
             Player copyPlayer = copyMars.getPlayerByUuid(player.getUuid());
             aiTurnService.increaseTemperature(copyMars, copyPlayer);
 
@@ -191,7 +191,7 @@ public class AiProjectionService extends BaseProcessorService {
         }
 
         if (player.getPlants() >= paymentValidationService.forestPriceInPlants(player)) {
-            MarsGame copyMars = copyMars(game);
+            MarsGame copyMars = new MarsGame(game);
             Player copyPlayer = copyMars.getPlayerByUuid(player.getUuid());
             aiTurnService.plantForest(copyMars, copyPlayer);
 
@@ -205,7 +205,7 @@ public class AiProjectionService extends BaseProcessorService {
         if (!game.getPlanetAtTheStartOfThePhase().isTemperatureMax()) {
             String validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.TEMPERATURE);
             if (validationResult == null) {
-                MarsGame copyMars = copyMars(game);
+                MarsGame copyMars = new MarsGame(game);
                 Player copyPlayer = copyMars.getPlayerByUuid(player.getUuid());
                 aiTurnService.standardProjectTurn(copyMars, copyPlayer, StandardProjectType.TEMPERATURE);
 
@@ -219,7 +219,7 @@ public class AiProjectionService extends BaseProcessorService {
         if (!game.getPlanetAtTheStartOfThePhase().isOceansMax()) {
             String validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.OCEAN);
             if (validationResult == null) {
-                MarsGame copyMars = copyMars(game);
+                MarsGame copyMars = new MarsGame(game);
                 Player copyPlayer = copyMars.getPlayerByUuid(player.getUuid());
                 aiTurnService.standardProjectTurn(copyMars, copyPlayer, StandardProjectType.OCEAN);
 
@@ -232,7 +232,7 @@ public class AiProjectionService extends BaseProcessorService {
 
         String validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.FOREST);
         if (validationResult == null) {
-            MarsGame copyMars = copyMars(game);
+            MarsGame copyMars = new MarsGame(game);
             Player copyPlayer = copyMars.getPlayerByUuid(player.getUuid());
             aiTurnService.standardProjectTurn(copyMars, copyPlayer, StandardProjectType.FOREST);
 
@@ -255,7 +255,7 @@ public class AiProjectionService extends BaseProcessorService {
         List<Integer> bestActionParameters = List.of();
 
         for (Card notUsedBlueCard : notUsedBlueCards) {
-            MarsGame copyMars = copyMars(game);
+            MarsGame copyMars = new MarsGame(game);
             Player copyPlayer = copyMars.getPlayerByUuid(player.getUuid());
 
             if (aiCardActionHelper.validateRandomAction(copyMars, copyPlayer, notUsedBlueCard) == null) {
@@ -317,13 +317,13 @@ public class AiProjectionService extends BaseProcessorService {
     private Player projectThirdPhasePlayer(MarsGame game, Player player) {
         float bestState = deepNetwork.testState(game, player);
 
-        game = copyMars(game);
+        game = new MarsGame(game);
         player = game.getPlayerByUuid(player.getUuid());
 
         int bestTurn = -1;
 
         if (player.getHeat() >= Constants.TEMPERATURE_HEAT_COST && !game.getPlanetAtTheStartOfThePhase().isTemperatureMax()) {
-            MarsGame copyMars = copyMars(game);
+            MarsGame copyMars = new MarsGame(game);
             Player copyPlayer = copyMars.getPlayerByUuid(player.getUuid());
             aiTurnService.increaseTemperature(copyMars, copyPlayer);
 
@@ -334,7 +334,7 @@ public class AiProjectionService extends BaseProcessorService {
         }
 
         if (player.getPlants() >= paymentValidationService.forestPriceInPlants(player)) {
-            MarsGame copyMars = copyMars(game);
+            MarsGame copyMars = new MarsGame(game);
             Player copyPlayer = copyMars.getPlayerByUuid(player.getUuid());
             aiTurnService.plantForest(copyMars, copyPlayer);
 
@@ -355,7 +355,7 @@ public class AiProjectionService extends BaseProcessorService {
                 .collect(Collectors.toList());
 
         for (Card notUsedBlueCard : notUsedBlueCards) {
-            MarsGame copyMars = copyMars(game);
+            MarsGame copyMars = new MarsGame(game);
             Player copyPlayer = copyMars.getPlayerByUuid(player.getUuid());
 
             if (aiCardActionHelper.validateRandomAction(copyMars, copyPlayer, notUsedBlueCard) == null) {
@@ -376,21 +376,21 @@ public class AiProjectionService extends BaseProcessorService {
         if (bestTurn == -1) {
             return player;
         } else if (bestTurn == 0) {
-            MarsGame copyMars = copyMars(game);
+            MarsGame copyMars = new MarsGame(game);
             Player copyPlayer = copyMars.getPlayerByUuid(player.getUuid());
             aiTurnService.increaseTemperature(copyMars, copyPlayer);
 
             game = copyMars;
             player = copyPlayer;
         } else if (bestTurn == 1) {
-            MarsGame copyMars = copyMars(game);
+            MarsGame copyMars = new MarsGame(game);
             Player copyPlayer = copyMars.getPlayerByUuid(player.getUuid());
             aiTurnService.plantForest(copyMars, copyPlayer);
 
             game = copyMars;
             player = copyPlayer;
         } else {
-            MarsGame copyMars = copyMars(game);
+            MarsGame copyMars = new MarsGame(game);
             Player copyPlayer = copyMars.getPlayerByUuid(player.getUuid());
             aiTurnService.performBlueAction(
                     copyMars,
@@ -409,25 +409,5 @@ public class AiProjectionService extends BaseProcessorService {
     private Player getAnotherPlayer(MarsGame game, Player player) {
         return game.getPlayerUuidToPlayer().values().stream().filter(p -> !p.getUuid().equals(player.getUuid()))
                 .findFirst().orElseThrow(() -> new IllegalStateException("Another player not found"));
-    }
-
-    public MarsGame copyMars(MarsGame game) {
-        return safeDeserialize(safeSerialize(game));
-    }
-
-    private String safeSerialize(MarsGame marsGame) {
-        try {
-            return objectMapper.writeValueAsString(marsGame);
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Error serializing the game");
-        }
-    }
-
-    private MarsGame safeDeserialize(String gameJson) {
-        try {
-            return objectMapper.readValue(gameJson, MarsGame.class);
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Error deserializing the game");
-        }
     }
 }

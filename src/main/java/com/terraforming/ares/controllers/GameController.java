@@ -13,6 +13,7 @@ import com.terraforming.ares.repositories.GameRepositoryImpl;
 import com.terraforming.ares.repositories.caching.CachingGameRepository;
 import com.terraforming.ares.services.*;
 import com.terraforming.ares.services.ai.DeepNetwork;
+import com.terraforming.ares.services.ai.turnProcessors.AiBuildProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
@@ -82,6 +84,8 @@ public class GameController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
     }
+
+    private final AiBuildProjectService aiBuildProjectService;
 
     @GetMapping("/simulations/{simulationCount}")
     public void runSimulations(@PathVariable int simulationCount) throws FileNotFoundException {
@@ -161,7 +165,7 @@ public class GameController {
 
     private void saveDatasets(List<MarsGameDataset> marsGameDatasets) throws FileNotFoundException {
         File csvOutputFile = new File("mars.csv");
-        try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
+        try (PrintWriter pw = new PrintWriter(new FileOutputStream(csvOutputFile, true))) {
             for (MarsGameDataset dataset : marsGameDatasets) {
                 List<MarsGameRow> rows = dataset.getFirstPlayerRows();
                 for (MarsGameRow row : rows) {

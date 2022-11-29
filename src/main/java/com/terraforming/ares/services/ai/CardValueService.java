@@ -13,17 +13,14 @@ import java.util.List;
  */
 @Service
 public class CardValueService {
-    private final AiProjectionService aiProjectionService;
     private final DeepNetwork deepNetwork;
 
-    public CardValueService(AiProjectionService aiProjectionService,
-                            DeepNetwork deepNetwork) {
-        this.aiProjectionService = aiProjectionService;
+    public CardValueService(DeepNetwork deepNetwork) {
         this.deepNetwork = deepNetwork;
     }
 
     public List<Integer> getCardsToDiscard(MarsGame game, Player player, List<Integer> cardsToDiscardFrom, int count) {
-        game = aiProjectionService.copyMars(game);
+        game = new MarsGame(game);
         player = game.getPlayerByUuid(player.getUuid());
 
         List<Integer> cardsToDiscard = new ArrayList<>();

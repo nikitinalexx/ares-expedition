@@ -9,9 +9,12 @@ import com.terraforming.ares.services.CardValidationService;
 import com.terraforming.ares.services.DraftCardsService;
 import com.terraforming.ares.services.SpecialEffectsService;
 import com.terraforming.ares.services.ai.*;
+import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
+import com.terraforming.ares.services.ai.turnFlow.BestTurnFlow;
+import com.terraforming.ares.services.ai.turnFlow.BestTurnType;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.springframework.stereotype.Component;
@@ -38,6 +41,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
     private final CardValueService cardValueService;
     private final AiProjectionService aiProjectionService;
     private final DeepNetwork deepNetwork;
+    private final AiBuildProjectService aiBuildProjectService;
 
 
     @Override
@@ -135,40 +139,37 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
     }
 
     private int deepNetworkChoose1To4Phase(MarsGame game, Player player) {
-        List<Card> playableCards = player.getHand()
-                .getCards()
-                .stream()
-                .map(cardService::getCard)
-                .filter(card -> (player.getPreviousChosenPhase() == null || player.getPreviousChosenPhase() != 1) && card.getColor() == CardColor.GREEN
-                        || (player.getPreviousChosenPhase() == null || player.getPreviousChosenPhase() != 2) && (card.getColor() == CardColor.BLUE || card.getColor() == CardColor.RED))
-                .collect(Collectors.toList());
+        BestTurnFlow bestTurnFlow = new BestTurnFlow(deepNetwork.testState(game, player));
 
+        Set<CardColor> availableColors = new HashSet<>();
 
-        float bestChance = deepNetwork.testState(game, player);
-        Card bestCard = null;
-
-        for (Card playableCard : playableCards) {
-            MarsGame stateAfterPlayingTheCard = aiProjectionService.projectBuildCard(game, player, playableCard, ProjectionStrategy.FROM_PICK_PHASE);
-
-            if (stateAfterPlayingTheCard == null) {
-                continue;
-            }
-            float projectedChance = deepNetwork.testState(stateAfterPlayingTheCard, stateAfterPlayingTheCard.getPlayerByUuid(player.getUuid()));
-
-            if (projectedChance > bestChance) {
-                bestChance = projectedChance;
-                bestCard = playableCard;
-            }
+        if (player.getPreviousChosenPhase() == null || player.getPreviousChosenPhase() != 1) {
+            availableColors.add(CardColor.GREEN);
         }
+
+        if (player.getPreviousChosenPhase() == null || player.getPreviousChosenPhase() != 2) {
+            availableColors.add(CardColor.BLUE);
+            availableColors.add(CardColor.RED);
+        }
+
+        BuildProjectPrediction prediction = aiBuildProjectService.getBestProjectToBuild(game, player, availableColors, ProjectionStrategy.FROM_PICK_PHASE);
+
+        if (prediction.isCanBuild()) {
+            bestTurnFlow.addScenarioToFlow(
+                    prediction.getExpectedValue(),
+                    prediction.getCard().getColor() == CardColor.GREEN
+                            ? BestTurnType.PHASE_1
+                            : BestTurnType.PHASE_2,
+                    prediction.getCard());
+        }
+
 
         if (player.getPreviousChosenPhase() == null || player.getPreviousChosenPhase() != 3) {
             MarsGame projectedState = aiProjectionService.projectPhaseThree(game, player, ProjectionStrategy.FROM_PICK_PHASE);
 
             float projectedChance = deepNetwork.testState(projectedState, projectedState.getPlayerByUuid(player.getUuid()));
 
-            if (projectedChance > bestChance) {
-                return 3;
-            }
+            bestTurnFlow.addScenarioToFlow(projectedChance, BestTurnType.PHASE_3);
         }
 
         if (player.getPreviousChosenPhase() == null || player.getPreviousChosenPhase() != 4) {
@@ -176,16 +177,21 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
 
             float projectedChance = deepNetwork.testState(projectedState, projectedState.getPlayerByUuid(player.getUuid()));
 
-            if (projectedChance > bestChance) {
-                return 4;
-            }
+            bestTurnFlow.addScenarioToFlow(projectedChance, BestTurnType.PHASE_4);
         }
 
-        if (bestCard != null) {
-            if (bestCard.getColor() == CardColor.GREEN) {
-                return 1;
-            } else {
-                return 2;
+        if (bestTurnFlow.getBestTurnType() != BestTurnType.SKIP) {
+            switch (bestTurnFlow.getBestTurnType()) {
+                case PHASE_1:
+                    return 1;
+                case PHASE_2:
+                    return 2;
+                case PHASE_3:
+                    return 3;
+                case PHASE_4:
+                    return 4;
+                default:
+                    throw new IllegalStateException("Unreachable");
             }
         } else if (player.getPreviousChosenPhase() == null || player.getPreviousChosenPhase() != 4 && player.getMc() < 20) {
             return 4;

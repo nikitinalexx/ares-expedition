@@ -44,8 +44,8 @@ public class Constants {
 
     public static final int ACHIEVEMENTS_SIZE = 3;
 
-    public static final boolean COLLECT_DATASET = false;
-    public static final boolean ANALYZE_DATASET = true;
+    public static final boolean COLLECT_DATASET = true;
+    public static final boolean ANALYZE_DATASET = false;
 
 
     private Constants() {}

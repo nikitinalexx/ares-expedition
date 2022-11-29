@@ -9,6 +9,7 @@ import com.terraforming.ares.services.CardValidationService;
 import com.terraforming.ares.services.ai.AiProjectionService;
 import com.terraforming.ares.services.ai.CardValueService;
 import com.terraforming.ares.services.ai.DeepNetwork;
+import com.terraforming.ares.services.ai.ProjectionStrategy;
 import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
@@ -37,7 +38,7 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
 
     @Override
     public void processTurn(MarsGame game, Player player) {
-        final BuildProjectPrediction prediction = aiBuildProjectService.getBestProjectToBuild(game, player, Set.of(CardColor.GREEN));
+        final BuildProjectPrediction prediction = aiBuildProjectService.getBestProjectToBuild(game, player, Set.of(CardColor.GREEN), ProjectionStrategy.FROM_PHASE);
 
         if (!prediction.isCanBuild()) {
             aiTurnService.skipTurn(player);

@@ -9,6 +9,7 @@ import com.terraforming.ares.services.CardValidationService;
 import com.terraforming.ares.services.ai.AiProjectionService;
 import com.terraforming.ares.services.ai.CardValueService;
 import com.terraforming.ares.services.ai.DeepNetwork;
+import com.terraforming.ares.services.ai.ProjectionStrategy;
 import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
@@ -46,7 +47,7 @@ public class AiSecondPhaseActionProcessor {
         }
 
         if (possibleTurns.contains(TurnType.BUILD_BLUE_RED_PROJECT)) {
-            BuildProjectPrediction prediction = aiBuildProjectService.getBestProjectToBuild(game, player, Set.of(CardColor.RED, CardColor.BLUE));
+            BuildProjectPrediction prediction = aiBuildProjectService.getBestProjectToBuild(game, player, Set.of(CardColor.RED, CardColor.BLUE), ProjectionStrategy.FROM_PHASE);
 
             if (prediction.isCanBuild()) {
                 bestTurnFlow.addScenarioToFlow(prediction.getExpectedValue(), BestTurnType.PROJECT, prediction.getCard());
@@ -54,7 +55,7 @@ public class AiSecondPhaseActionProcessor {
         }
 
         if (possibleTurns.contains(TurnType.BUILD_GREEN_PROJECT)) {
-            BuildProjectPrediction prediction = aiBuildProjectService.getBestProjectToBuild(game, player, Set.of(CardColor.GREEN));
+            BuildProjectPrediction prediction = aiBuildProjectService.getBestProjectToBuild(game, player, Set.of(CardColor.GREEN), ProjectionStrategy.FROM_PHASE);
 
             if (prediction.isCanBuild()) {
                 bestTurnFlow.addScenarioToFlow(prediction.getExpectedValue(), BestTurnType.PROJECT, prediction.getCard());
