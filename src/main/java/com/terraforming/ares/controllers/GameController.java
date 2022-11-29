@@ -26,6 +26,8 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -89,92 +91,130 @@ public class GameController {
 
     @GetMapping("/simulations/{simulationCount}")
     public void runSimulations(@PathVariable int simulationCount) throws FileNotFoundException {
-        GameParameters gameParameters = GameParameters.builder()
-                .playerNames(List.of("ai1", "ai2"))
-                .computers(List.of(true, true))
-                .mulligan(false)
-                .expansions(List.of(Expansion.BASE, Expansion.BUFFED_CORPORATION))
-                .build();
-
-
-        System.out.println("Starting simulations");
-        System.out.println();
-
-        List<MarsGame> games = new ArrayList<>();
-        List<MarsGameDataset> marsGameDatasets = new ArrayList<>();
-
-        long startTime = System.currentTimeMillis();
-
-        for (int i = 0; i < simulationCount; i++) {
-            MarsGame marsGame = gameService.createNewSimulation(gameParameters);
-            if (Constants.COLLECT_DATASET || Constants.ANALYZE_DATASET) {
-                MarsGameDataset dataSet = simulationProcessorService.runSimulationWithDataset(marsGame);
-                if (dataSet != null) {
-                    marsGameDatasets.add(dataSet);
-                }
-            } else {
-                simulationProcessorService.processSimulation(marsGame);
-            }
-
-            games.add(marsGame);
-
-            if (i != 0 && i % 10 == 0) {
-                long spentTime = System.currentTimeMillis() - startTime;
-
-                long timePerGame = (spentTime / i);
-                System.out.println("Time left: " + (simulationCount - i) * timePerGame / 1000);
-            }
-
-            if (i != 0 && i % 500 == 0) {
-                statistics(games);
-                if (Constants.COLLECT_DATASET) {
-                    saveDatasets(marsGameDatasets);
-                }
-                for (MarsGame game : games) {
-                    gameRepository.save(game);
-                }
-                games = new ArrayList<>();
-                marsGameDatasets = new ArrayList<>();
-            }
+        if (simulationCount < 8) {
+            return;
         }
 
-        if (Constants.COLLECT_DATASET) {
-            saveDatasets(marsGameDatasets);
-        }
+        int threads = 8;
 
-        for (MarsGame game : games) {
-            gameRepository.save(game);
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        for (int i = 0; i < threads; i++) {
+            Runnable worker = new WorkerThread(simulationCount / 8);
+            executor.execute(worker);
         }
-
-        statistics(games);
-
-        if (Constants.ANALYZE_DATASET) {
-            int correctGuess = 0;
-            int wrongGuess = 0;
-            for (MarsGameDataset marsGameDataset : marsGameDatasets) {
-                for (MarsGameRow row : marsGameDataset.getFirstPlayerRows()) {
-                    final float result = deepNetwork.testState(row);
-                    if (row.getWinner() == 1 && result > 0.5f || row.getWinner() == 0 && result <= 0.5f) {
-                        correctGuess++;
-                    } else {
-                        wrongGuess++;
-                    }
-                }
-                for (MarsGameRow row : marsGameDataset.getSecondPlayerRows()) {
-                    final float result = deepNetwork.testState(row);
-                    if (row.getWinner() == 1 && result > 0.5f || row.getWinner() == 0 && result <= 0.5f) {
-                        correctGuess++;
-                    } else {
-                        wrongGuess++;
-                    }
-                }
-            }
-            System.out.println();
-            System.out.println("Dataset Analysis: " + ((double) correctGuess / (correctGuess + wrongGuess)));
+        System.out.println("Before shutdown");
+        executor.shutdown();
+        System.out.println("After shutdown");
+        while (!executor.isTerminated()) {
         }
+        System.out.println("Finished all threads");
     }
 
-    private void saveDatasets(List<MarsGameDataset> marsGameDatasets) throws FileNotFoundException {
+    class WorkerThread implements Runnable {
+        int simulationCount;
+
+        WorkerThread(int simulationCount) {
+            this.simulationCount = simulationCount;
+        }
+
+        @Override
+        public void run() {
+            GameParameters gameParameters = GameParameters.builder()
+                    .playerNames(List.of("ai1", "ai2"))
+                    .computers(List.of(true, true))
+                    .mulligan(false)
+                    .expansions(List.of(Expansion.BASE, Expansion.BUFFED_CORPORATION))
+                    .build();
+
+
+            System.out.println("Starting simulations");
+            System.out.println();
+
+            List<MarsGame> games = new ArrayList<>();
+            List<MarsGameDataset> marsGameDatasets = new ArrayList<>();
+
+            long startTime = System.currentTimeMillis();
+
+            for (int i = 0; i < simulationCount; i++) {
+                MarsGame marsGame = gameService.createNewSimulation(gameParameters);
+                if (Constants.COLLECT_DATASET || Constants.ANALYZE_DATASET) {
+                    MarsGameDataset dataSet = simulationProcessorService.runSimulationWithDataset(marsGame);
+                    if (dataSet != null) {
+                        marsGameDatasets.add(dataSet);
+                    }
+                } else {
+                    simulationProcessorService.processSimulation(marsGame);
+                }
+
+                games.add(marsGame);
+
+                if (i != 0 && i % 10 == 0) {
+                    long spentTime = System.currentTimeMillis() - startTime;
+
+                    long timePerGame = (spentTime / i);
+                    System.out.println("Time left: " + (simulationCount - i) * timePerGame / 1000);
+                }
+
+                if (i != 0 && i % 500 == 0) {
+                    statistics(games);
+                    if (Constants.COLLECT_DATASET) {
+                        try {
+                            saveDatasets(marsGameDatasets);
+                        } catch (FileNotFoundException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                    for (MarsGame game : games) {
+                        gameRepository.save(game);
+                    }
+                    games = new ArrayList<>();
+                    marsGameDatasets = new ArrayList<>();
+                }
+            }
+
+            if (Constants.COLLECT_DATASET) {
+                try {
+                    saveDatasets(marsGameDatasets);
+                } catch (FileNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            for (MarsGame game : games) {
+                gameRepository.save(game);
+            }
+
+            statistics(games);
+
+            if (Constants.ANALYZE_DATASET) {
+                int correctGuess = 0;
+                int wrongGuess = 0;
+                for (MarsGameDataset marsGameDataset : marsGameDatasets) {
+                    for (MarsGameRow row : marsGameDataset.getFirstPlayerRows()) {
+                        final float result = deepNetwork.testState(row);
+                        if (row.getWinner() == 1 && result > 0.5f || row.getWinner() == 0 && result <= 0.5f) {
+                            correctGuess++;
+                        } else {
+                            wrongGuess++;
+                        }
+                    }
+                    for (MarsGameRow row : marsGameDataset.getSecondPlayerRows()) {
+                        final float result = deepNetwork.testState(row);
+                        if (row.getWinner() == 1 && result > 0.5f || row.getWinner() == 0 && result <= 0.5f) {
+                            correctGuess++;
+                        } else {
+                            wrongGuess++;
+                        }
+                    }
+                }
+                System.out.println();
+                System.out.println("Dataset Analysis: " + ((double) correctGuess / (correctGuess + wrongGuess)));
+            }
+        }
+
+    }
+
+    private synchronized void saveDatasets(List<MarsGameDataset> marsGameDatasets) throws FileNotFoundException {
         final long startTime = System.currentTimeMillis();
         File csvOutputFile = new File("mars.csv");
         try (PrintWriter pw = new PrintWriter(new FileOutputStream(csvOutputFile, true))) {
