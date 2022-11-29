@@ -96,14 +96,14 @@ public class GameController {
                 .expansions(List.of(Expansion.BASE, Expansion.BUFFED_CORPORATION))
                 .build();
 
-        List<MarsGame> games = new ArrayList<>();
 
         System.out.println("Starting simulations");
         System.out.println();
 
-        long startTime = System.currentTimeMillis();
-
+        List<MarsGame> games = new ArrayList<>();
         List<MarsGameDataset> marsGameDatasets = new ArrayList<>();
+
+        long startTime = System.currentTimeMillis();
 
         for (int i = 0; i < simulationCount; i++) {
             MarsGame marsGame = gameService.createNewSimulation(gameParameters);
@@ -116,7 +116,6 @@ public class GameController {
                 simulationProcessorService.processSimulation(marsGame);
             }
 
-
             games.add(marsGame);
 
             if (i != 0 && i % 10 == 0) {
@@ -124,6 +123,18 @@ public class GameController {
 
                 long timePerGame = (spentTime / i);
                 System.out.println("Time left: " + (simulationCount - i) * timePerGame / 1000);
+            }
+
+            if (i != 0 && i % 500 == 0) {
+                statistics(games);
+                if (Constants.COLLECT_DATASET) {
+                    saveDatasets(marsGameDatasets);
+                }
+                for (MarsGame game : games) {
+                    gameRepository.save(game);
+                }
+                games = new ArrayList<>();
+                marsGameDatasets = new ArrayList<>();
             }
         }
 
@@ -164,6 +175,7 @@ public class GameController {
     }
 
     private void saveDatasets(List<MarsGameDataset> marsGameDatasets) throws FileNotFoundException {
+        final long startTime = System.currentTimeMillis();
         File csvOutputFile = new File("mars.csv");
         try (PrintWriter pw = new PrintWriter(new FileOutputStream(csvOutputFile, true))) {
             for (MarsGameDataset dataset : marsGameDatasets) {
@@ -177,6 +189,7 @@ public class GameController {
                 }
             }
         }
+        System.out.println("Save datasets time spent: " + (System.currentTimeMillis() - startTime));
     }
 
     private void write(MarsGameRow row, PrintWriter pw) {
