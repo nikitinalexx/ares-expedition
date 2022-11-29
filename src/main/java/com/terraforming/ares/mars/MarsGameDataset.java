@@ -101,7 +101,7 @@ public class MarsGameDataset {
                 .collect(Collectors.toList());
     }
 
-    private static List<Integer> collectBlueCards(Player player, CardFactory cardFactory) {
+    private static List<Integer> collectSpecificBlueCards(Player player, CardFactory cardFactory) {
         return cardFactory.getSortedBlueCards().stream()
                 .map(
                         Card::getId
