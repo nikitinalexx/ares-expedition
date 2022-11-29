@@ -1,10 +1,7 @@
 package com.terraforming.ares.services.ai.turnProcessors;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Constants;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.StandardProjectType;
-import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.request.ChooseCorporationRequest;
 import com.terraforming.ares.model.turn.*;
@@ -30,10 +27,11 @@ public class AiTurnService {
     private final TerraformingService terraformingService;
     private final TurnTypeService turnTypeService;
     private final StandardProjectService standardProjectService;
+    private final CardService cardService;
 
     public AiTurnService(List<TurnProcessor<?>> turnProcessor,
                          CardValidationService cardValidationService,
-                         PaymentValidationService paymentValidationService, TerraformingService terraformingService, TurnTypeService turnTypeService, StandardProjectService standardProjectService) {
+                         PaymentValidationService paymentValidationService, TerraformingService terraformingService, TurnTypeService turnTypeService, StandardProjectService standardProjectService, CardService cardService) {
         this.cardValidationService = cardValidationService;
         this.paymentValidationService = paymentValidationService;
 
@@ -43,6 +41,7 @@ public class AiTurnService {
         this.terraformingService = terraformingService;
         this.turnTypeService = turnTypeService;
         this.standardProjectService = standardProjectService;
+        this.cardService = cardService;
     }
 
     public void chooseCorporationTurn(MarsGame game, ChooseCorporationRequest chooseCorporationRequest) {
@@ -67,6 +66,16 @@ public class AiTurnService {
         }
 
         makeAsyncTurn(player, new PhaseChoiceTurn(player.getUuid(), phaseId));
+    }
+
+    public void buildProject(MarsGame game, Player player, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
+        buildProject(
+                game, player, projectId, payments, inputParams,
+                cardService.getCard(projectId).getColor() == CardColor.GREEN
+                ? new BuildGreenProjectTurn(player.getUuid(), projectId, payments, inputParams)
+                : new BuildBlueRedProjectTurn(player.getUuid(), projectId, payments, inputParams),
+                game.getCurrentPhase() == 3
+        );
     }
 
     public void buildGreenProjectSync(MarsGame game, Player player, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {

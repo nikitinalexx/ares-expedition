@@ -43,6 +43,12 @@ public class Deck {
         }
     }
 
+    public void removeCard(Integer card) {
+        this.cards.remove(card);
+        //TODO remove cardToTurn variable at all
+        cardToTurn.remove(card);
+    }
+
     public boolean containsCard(int cardId) {
         return cards.contains(cardId);
     }

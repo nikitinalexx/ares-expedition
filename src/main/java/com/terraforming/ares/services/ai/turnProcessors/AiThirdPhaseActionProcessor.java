@@ -8,7 +8,9 @@ import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.CardValidationService;
 import com.terraforming.ares.services.StandardProjectService;
 import com.terraforming.ares.services.ai.AiProjectionService;
+import com.terraforming.ares.services.ai.RandomBotHelper;
 import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
+import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
 import org.springframework.stereotype.Component;
 
@@ -32,11 +34,12 @@ public class AiThirdPhaseActionProcessor {
     private final AiCardActionHelper aiCardActionHelper;
     private final StandardProjectService standardProjectService;
     private final AiProjectionService aiProjectionService;
+    private final AiCardBuildParamsHelper aiCardBuildParamsHelper;
 
     public AiThirdPhaseActionProcessor(AiTurnService aiTurnService,
                                        CardService cardService,
                                        CardValidationService cardValidationService,
-                                       AiPaymentService aiPaymentHelper, AiCardActionHelper aiCardActionHelper, StandardProjectService standardProjectService, AiProjectionService aiProjectionService) {
+                                       AiPaymentService aiPaymentHelper, AiCardActionHelper aiCardActionHelper, StandardProjectService standardProjectService, AiProjectionService aiProjectionService, AiCardBuildParamsHelper aiCardBuildParamsHelper) {
 
         this.aiTurnService = aiTurnService;
         this.cardService = cardService;
@@ -45,17 +48,16 @@ public class AiThirdPhaseActionProcessor {
         this.aiCardActionHelper = aiCardActionHelper;
         this.standardProjectService = standardProjectService;
         this.aiProjectionService = aiProjectionService;
+        this.aiCardBuildParamsHelper = aiCardBuildParamsHelper;
     }
 
     public boolean processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
-        if (player.getUuid().endsWith("0") && Constants.FIRST_BOT_IS_RANDOM) {
-            boolean madeATurn = oldRandomProcessTurn(game, player);
+        if (RandomBotHelper.isRandomBot(player)) {
+            boolean madeATurn = oldRandomProcessTurn(possibleTurns, game, player);
             if (madeATurn) {
                 return true;
-            } else {
-                if (doStandardActionsIfAvailable(possibleTurns, game, player)) {
-                    return true;
-                }
+            } else if (doStandardActionsIfAvailable(possibleTurns, game, player)) {
+                return true;
             }
         } else {
             boolean didBestThirdPhaseTurn = aiProjectionService.doBestThirdPhaseTurn(possibleTurns, game, player);
@@ -105,7 +107,7 @@ public class AiThirdPhaseActionProcessor {
     }
 
 
-    private boolean oldRandomProcessTurn(MarsGame game, Player player) {
+    private boolean oldRandomProcessTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
         Deck activatedBlueCards = player.getActivatedBlueCards();
 
         List<Card> notUsedBlueCards = player.getPlayed().getCards().stream()
@@ -179,6 +181,34 @@ public class AiThirdPhaseActionProcessor {
             }
         }
 
+        if (possibleTurns.contains(TurnType.BUILD_BLUE_RED_PROJECT) || possibleTurns.contains(TurnType.BUILD_GREEN_PROJECT)) {
+            List<Card> availableCards = player.getHand()
+                    .getCards()
+                    .stream()
+                    .map(cardService::getCard)
+                    .filter(card -> (possibleTurns.contains(TurnType.BUILD_BLUE_RED_PROJECT) && card.getColor() != CardColor.GREEN)
+                            || (possibleTurns.contains(TurnType.BUILD_GREEN_PROJECT) && card.getColor() == CardColor.GREEN))
+                    .filter(card ->
+                    {
+                        String errorMessage = cardValidationService.validateCard(
+                                player, game, card.getId(),
+                                aiPaymentHelper.getCardPayments(player, card),
+                                aiCardBuildParamsHelper.getInputParamsForValidation(player, card)
+                        );
+                        return errorMessage == null;
+                    })
+                    .collect(Collectors.toList());
+
+            if (!availableCards.isEmpty()) {
+                final Card cardToBuild = availableCards.get(random.nextInt(availableCards.size()));
+                aiTurnService.buildProject(
+                        game, player, cardToBuild.getId(), aiPaymentHelper.getCardPayments(player, cardToBuild),
+                        aiCardBuildParamsHelper.getInputParamsForBuild(player, cardToBuild)
+                );
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -220,12 +250,12 @@ public class AiThirdPhaseActionProcessor {
             int selectedIndex = random.nextInt(cards.size());
             Card selectedCard = cards.get(selectedIndex);
 
-            if (aiCardActionHelper.validateAction(game, player, selectedCard) == null) {
+            if (aiCardActionHelper.validateRandomAction(game, player, selectedCard) == null) {
                 aiTurnService.performBlueAction(
                         game,
                         player,
                         selectedCard.getId(),
-                        aiCardActionHelper.getActionInputParams(game, player, selectedCard)
+                        aiCardActionHelper.getActionInputParamsRandom(game, player, selectedCard)
                 );
                 return true;
             } else {

@@ -2,6 +2,7 @@ package com.terraforming.ares.services.ai;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.terraforming.ares.cards.blue.SelfReplicatingBacteria;
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
@@ -257,8 +258,8 @@ public class AiProjectionService extends BaseProcessorService {
             MarsGame copyMars = copyMars(game);
             Player copyPlayer = copyMars.getPlayerByUuid(player.getUuid());
 
-            if (aiCardActionHelper.validateAction(copyMars, copyPlayer, notUsedBlueCard) == null) {
-                List<Integer> actionParameters = aiCardActionHelper.getActionInputParams(copyMars, copyPlayer, notUsedBlueCard);
+            if (aiCardActionHelper.validateRandomAction(copyMars, copyPlayer, notUsedBlueCard) == null) {
+                List<Integer> actionParameters = aiCardActionHelper.getActionInputParamsRandom(copyMars, copyPlayer, notUsedBlueCard);
                 aiTurnService.performBlueAction(
                         copyMars,
                         copyPlayer,
@@ -266,7 +267,12 @@ public class AiProjectionService extends BaseProcessorService {
                         actionParameters
                 );
 
-                float newState = deepNetwork.testState(copyMars, copyPlayer);
+                float newState;
+                if (notUsedBlueCard.getClass() == SelfReplicatingBacteria.class) {
+                    newState = predictAfterSelfReplicatingBacteria(copyMars, copyPlayer);
+                } else {
+                    newState = deepNetwork.testState(copyMars, copyPlayer);
+                }
                 if (newState > bestState) {
                     bestTurn = notUsedBlueCard.getId();
                     bestActionParameters = actionParameters;
@@ -300,6 +306,12 @@ public class AiProjectionService extends BaseProcessorService {
             );
             return true;
         }
+    }
+
+    private float predictAfterSelfReplicatingBacteria(MarsGame copyMars, Player copyPlayer) {
+
+
+        return 0;
     }
 
     private Player projectThirdPhasePlayer(MarsGame game, Player player) {
@@ -346,12 +358,12 @@ public class AiProjectionService extends BaseProcessorService {
             MarsGame copyMars = copyMars(game);
             Player copyPlayer = copyMars.getPlayerByUuid(player.getUuid());
 
-            if (aiCardActionHelper.validateAction(copyMars, copyPlayer, notUsedBlueCard) == null) {
+            if (aiCardActionHelper.validateRandomAction(copyMars, copyPlayer, notUsedBlueCard) == null) {
                 aiTurnService.performBlueAction(
                         copyMars,
                         copyPlayer,
                         notUsedBlueCard.getId(),
-                        aiCardActionHelper.getActionInputParams(copyMars, copyPlayer, notUsedBlueCard)
+                        aiCardActionHelper.getActionInputParamsRandom(copyMars, copyPlayer, notUsedBlueCard)
                 );
 
                 float newState = deepNetwork.testState(copyMars, copyPlayer);
@@ -384,7 +396,7 @@ public class AiProjectionService extends BaseProcessorService {
                     copyMars,
                     copyPlayer,
                     bestTurn,
-                    aiCardActionHelper.getActionInputParams(copyMars, copyPlayer, cardService.getCard(bestTurn))
+                    aiCardActionHelper.getActionInputParamsRandom(copyMars, copyPlayer, cardService.getCard(bestTurn))
             );
 
             game = copyMars;
@@ -399,7 +411,7 @@ public class AiProjectionService extends BaseProcessorService {
                 .findFirst().orElseThrow(() -> new IllegalStateException("Another player not found"));
     }
 
-    private MarsGame copyMars(MarsGame game) {
+    public MarsGame copyMars(MarsGame game) {
         return safeDeserialize(safeSerialize(game));
     }
 

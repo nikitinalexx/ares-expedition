@@ -1,9 +1,7 @@
 package com.terraforming.ares.services.ai.turnProcessors;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardColor;
-import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
@@ -11,15 +9,17 @@ import com.terraforming.ares.services.CardValidationService;
 import com.terraforming.ares.services.ai.AiProjectionService;
 import com.terraforming.ares.services.ai.CardValueService;
 import com.terraforming.ares.services.ai.DeepNetwork;
-import com.terraforming.ares.services.ai.ProjectionStrategy;
+import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
+import com.terraforming.ares.services.ai.turnFlow.BestTurnFlow;
+import com.terraforming.ares.services.ai.turnFlow.BestTurnType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Random;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -28,100 +28,60 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 public class AiSecondPhaseActionProcessor {
-    private final Random random = new Random();
     private final AiTurnService aiTurnService;
-    private final CardService cardService;
-    private final CardValidationService cardValidationService;
     private final AiPaymentService aiPaymentHelper;
     private final AiCardBuildParamsHelper aiCardParamsHelper;
-    private final CardValueService cardValueService;
     private final DeepNetwork deepNetwork;
     private final AiProjectionService aiProjectionService;
+    private final AiBuildProjectService aiBuildProjectService;
 
     public void processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
-        float bestChance = deepNetwork.testState(game, player);
-        boolean bestTurnIsUnmi = false;
+        BestTurnFlow bestTurnFlow = new BestTurnFlow(deepNetwork.testState(game, player));
 
         if (possibleTurns.contains(TurnType.UNMI_RT) && player.getMc() >= 6) {
             MarsGame stateAfterUnmi = aiProjectionService.projectUnmiTurn(game, player);
             float projectedChance = deepNetwork.testState(stateAfterUnmi, stateAfterUnmi.getPlayerByUuid(player.getUuid()));
 
-            if (projectedChance > bestChance) {
-                bestChance = projectedChance;
-                bestTurnIsUnmi = true;
-            }
+            bestTurnFlow.addScenarioToFlow(projectedChance, BestTurnType.UNMI);
         }
 
         if (possibleTurns.contains(TurnType.BUILD_BLUE_RED_PROJECT)) {
-            List<Card> availableCards = player.getHand()
-                    .getCards()
-                    .stream()
-                    .map(cardService::getCard)
-                    .filter(card -> card.getColor() == CardColor.BLUE || card.getColor() == CardColor.RED)
-                    .filter(card ->
-                    {
-                        String errorMessage = cardValidationService.validateCard(
-                                player, game, card.getId(),
-                                aiPaymentHelper.getCardPayments(player, card),
-                                aiCardParamsHelper.getInputParamsForValidation(player, card)
-                        );
-                        return errorMessage == null;
-                    })
-                    .collect(Collectors.toList());
+            BuildProjectPrediction prediction = aiBuildProjectService.getBestProjectToBuild(game, player, Set.of(CardColor.RED, CardColor.BLUE));
 
-            Card selectedCard = null;
-            if (player.getUuid().endsWith("0") && Constants.FIRST_BOT_IS_RANDOM && !availableCards.isEmpty()) {
-                selectedCard = availableCards.get(random.nextInt(availableCards.size()));
-            } else {
-                Card bestCard = null;
-
-                for (Card playableCard : availableCards) {
-                    MarsGame stateAfterPlayingTheCard = aiProjectionService.projectBuildCard(game, player, playableCard, ProjectionStrategy.FROM_PHASE);
-
-                    float projectedChance = deepNetwork.testState(stateAfterPlayingTheCard, stateAfterPlayingTheCard.getPlayerByUuid(player.getUuid()));
-
-                    if (projectedChance > bestChance) {
-                        bestChance = projectedChance;
-                        bestCard = playableCard;
-                        bestTurnIsUnmi = false;
-                    }
-                }
-
-                if (possibleTurns.contains(TurnType.PICK_EXTRA_CARD)) {
-                    MarsGame stateAfterTakingExtraCard = aiProjectionService.projectTakeExtraCard(game, player);
-                    float projectedChance = deepNetwork.testState(stateAfterTakingExtraCard, stateAfterTakingExtraCard.getPlayerByUuid(player.getUuid()));
-
-                    if (projectedChance > bestChance) {
-                        aiTurnService.pickExtraCardTurnAsync(player);
-                        return;
-                    }
-                }
-
-
-                if (bestCard != null) {
-                    selectedCard = bestCard;
-                }
-            }
-
-            if (selectedCard == null && !bestTurnIsUnmi) {
-                aiTurnService.skipTurn(player);
-                return;
-            } else if (!bestTurnIsUnmi){
-                aiTurnService.buildBlueRedProject(
-                        game,
-                        player,
-                        selectedCard.getId(),
-                        aiPaymentHelper.getCardPayments(player, selectedCard),
-                        aiCardParamsHelper.getInputParamsForBuild(player, selectedCard)
-                );
-                return;
+            if (prediction.isCanBuild()) {
+                bestTurnFlow.addScenarioToFlow(prediction.getExpectedValue(), BestTurnType.PROJECT, prediction.getCard());
             }
         }
 
-        if (bestTurnIsUnmi) {
-            aiTurnService.unmiRtCorporationTurn(game, player);
-        } else if (possibleTurns.contains(TurnType.SKIP_TURN)) {
+        if (possibleTurns.contains(TurnType.BUILD_GREEN_PROJECT)) {
+            BuildProjectPrediction prediction = aiBuildProjectService.getBestProjectToBuild(game, player, Set.of(CardColor.GREEN));
+
+            if (prediction.isCanBuild()) {
+                bestTurnFlow.addScenarioToFlow(prediction.getExpectedValue(), BestTurnType.PROJECT, prediction.getCard());
+            }
+        }
+
+        if (possibleTurns.contains(TurnType.PICK_EXTRA_CARD)) {
+            MarsGame stateAfterTakingExtraCard = aiProjectionService.projectTakeExtraCard(game, player);
+            float projectedChance = deepNetwork.testState(stateAfterTakingExtraCard, stateAfterTakingExtraCard.getPlayerByUuid(player.getUuid()));
+
+            bestTurnFlow.addScenarioToFlow(projectedChance, BestTurnType.EXTRA_CARD);
+        }
+
+        if (bestTurnFlow.getBestTurnType() == BestTurnType.SKIP) {
             aiTurnService.skipTurn(player);
+        } else if (bestTurnFlow.getBestTurnType() == BestTurnType.EXTRA_CARD) {
+            aiTurnService.pickExtraCardTurnAsync(player);
+        } else if (bestTurnFlow.getBestTurnType() == BestTurnType.UNMI) {
+            aiTurnService.unmiRtCorporationTurn(game, player);
+        } else if (bestTurnFlow.getBestTurnType() == BestTurnType.PROJECT) {
+            aiTurnService.buildProject(
+                    game,
+                    player,
+                    bestTurnFlow.getCard().getId(),
+                    aiPaymentHelper.getCardPayments(player, bestTurnFlow.getCard()),
+                    aiCardParamsHelper.getInputParamsForBuild(player, bestTurnFlow.getCard())
+            );
         } else {
             throw new IllegalStateException("Not reachable");
         }

@@ -8,10 +8,7 @@ import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.CardValidationService;
 import com.terraforming.ares.services.DraftCardsService;
 import com.terraforming.ares.services.SpecialEffectsService;
-import com.terraforming.ares.services.ai.AiProjectionService;
-import com.terraforming.ares.services.ai.CardValueService;
-import com.terraforming.ares.services.ai.DeepNetwork;
-import com.terraforming.ares.services.ai.ProjectionStrategy;
+import com.terraforming.ares.services.ai.*;
 import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
@@ -64,7 +61,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
 //
 //        }
 
-        if (player.getUuid().endsWith("0") && Constants.FIRST_BOT_IS_RANDOM) {
+        if (RandomBotHelper.isRandomBot(player)) {
             if (mayPlayPhaseOne(game, player)) {
                 possiblePhases.add(1);
             }
@@ -89,7 +86,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             int phase = deepNetworkChoose1To4Phase(game, player);
             if (phase != 0) {
                 possiblePhases.add(phase);
-            } else if (player.getPreviousChosenPhase() == null || player.getPreviousChosenPhase() != 5){
+            } else if (player.getPreviousChosenPhase() == null || player.getPreviousChosenPhase() != 5) {
                 possiblePhases.add(5);
             }
         }
@@ -97,7 +94,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
         int chosenPhase;
 
         if (possiblePhases.isEmpty()) {
-            if (player.getUuid().endsWith("0") && Constants.FIRST_BOT_IS_RANDOM) {
+            if (RandomBotHelper.isRandomBot(player)) {
                 chosenPhase = random.nextInt(previousChosenPhase != null ? 4 : 5) + 1;
                 if (previousChosenPhase != null && chosenPhase == previousChosenPhase) {
                     chosenPhase++;
@@ -116,44 +113,17 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
         aiTurnService.choosePhaseTurn(player, chosenPhase);
     }
 
-    private int chooseBetweenFirstAndSecondPhase(MarsGame game, Player player) {
-        List<Card> playableCards = player.getHand()
-                .getCards()
-                .stream()
-                .map(cardService::getCard)
-                .filter(card ->
-                {
-                    String errorMessage = cardValidationService.validateCard(
-                            player, game, card.getId(),
-                            aiPaymentHelper.getCardPayments(player, card),
-                            aiCardParamsHelper.getInputParamsForValidation(player, card)
-                    );
-                    return errorMessage == null;
-                }).collect(Collectors.toList());
-
-        if (playableCards.isEmpty()) {
-            return 0;
-        }
-
-        Card bestCard = cardValueService.getBestCardAsCard(game, player, playableCards, game.getTurns(), true);
-        if (bestCard == null) {
-            return 0;
-        }
-
-        return (bestCard.getColor() == CardColor.GREEN ? 1 : 2);
-    }
-
     private boolean mayPlayPhaseOne(MarsGame game, Player player) {
         if (player.getPreviousChosenPhase() != null && player.getPreviousChosenPhase() == 1) {
             return false;
         }
 
-        List<Card> playableCards = player.getHand()
+        return player.getHand()
                 .getCards()
                 .stream()
                 .map(cardService::getCard)
                 .filter(card -> card.getColor() == CardColor.GREEN)
-                .filter(card ->
+                .anyMatch(card ->
                 {
                     String errorMessage = cardValidationService.validateCard(
                             player, game, card.getId(),
@@ -161,10 +131,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                             aiCardParamsHelper.getInputParamsForValidation(player, card)
                     );
                     return errorMessage == null;
-                })
-                .collect(Collectors.toList());
-
-        return cardValueService.getBestCardAsCard(game, player, playableCards, game.getTurns(), true) != null;
+                });
     }
 
     private int deepNetworkChoose1To4Phase(MarsGame game, Player player) {
@@ -220,6 +187,8 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             } else {
                 return 2;
             }
+        } else if (player.getPreviousChosenPhase() == null || player.getPreviousChosenPhase() != 4 && player.getMc() < 20) {
+            return 4;
         } else {
             return 0;
         }
@@ -230,13 +199,12 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             return false;
         }
 
-
-        List<Card> playableCards = player.getHand()
+        return player.getHand()
                 .getCards()
                 .stream()
                 .map(cardService::getCard)
                 .filter(card -> card.getColor() == CardColor.BLUE || card.getColor() == CardColor.RED)
-                .filter(card ->
+                .anyMatch(card ->
                 {
                     String errorMessage = cardValidationService.validateCard(
                             player, game, card.getId(),
@@ -244,10 +212,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                             aiCardParamsHelper.getInputParamsForValidation(player, card)
                     );
                     return errorMessage == null;
-                })
-                .collect(Collectors.toList());
-
-        return cardValueService.getBestCardAsCard(game, player, playableCards, game.getTurns(), true) != null;
+                });
     }
 
     private boolean mayPlayPhaseFour(MarsGame game, Player player) {
@@ -370,7 +335,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
 
         return activeCards
                 .stream()
-                .filter(card -> aiCardActionHelper.validateAction(game, player, card) == null)
+                .filter(card -> aiCardActionHelper.validateRandomAction(game, player, card) == null)
                 .limit(requiredActiveCardsCount)
                 .count() == requiredActiveCardsCount;
     }
@@ -379,7 +344,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
         return player.getPlayed().getCards().stream()
                 .map(cardService::getCard)
                 .filter(Card::isActiveCard)
-                .filter(card -> aiCardActionHelper.validateAction(game, player, card) == null)
+                .filter(card -> aiCardActionHelper.validateRandomAction(game, player, card) == null)
                 .limit(3)
                 .count() == 3;
     }

@@ -1,0 +1,173 @@
+package com.terraforming.ares.services.ai.turnProcessors;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.terraforming.ares.factories.StateFactory;
+import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Card;
+import com.terraforming.ares.model.CardColor;
+import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.StateType;
+import com.terraforming.ares.processors.turn.TurnProcessor;
+import com.terraforming.ares.services.*;
+import com.terraforming.ares.services.ai.DeepNetwork;
+import com.terraforming.ares.services.ai.ProjectionStrategy;
+import com.terraforming.ares.services.ai.RandomBotHelper;
+import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
+import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
+import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
+import com.terraforming.ares.services.ai.helpers.AiPaymentService;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+/**
+ * Created by oleksii.nikitin
+ * Creation date 29.11.2022
+ */
+@Service
+public class AiBuildProjectService extends BaseProcessorService {
+    private final CardService cardService;
+    private final CardValidationService cardValidationService;
+    private final AiPaymentService aiPaymentService;
+    private final AiCardBuildParamsHelper aiCardBuildParamsHelper;
+    private final Random random = new Random();
+    private final DeepNetwork deepNetwork;
+    private final ObjectMapper objectMapper;
+    private final AiTurnService aiTurnService;
+    private final StateFactory stateFactory;
+
+    protected AiBuildProjectService(TurnTypeService turnTypeService, StateFactory stateFactory, StateContextProvider stateContextProvider, List<TurnProcessor<?>> turnProcessor, AiTurnService aiTurnService, AiPaymentService aiPaymentService, AiCardBuildParamsHelper aiCardBuildParamsHelper, ObjectMapper objectMapper, CardValidationService cardValidationService, DeepNetwork deepNetwork, PaymentValidationService paymentValidationService, CardService cardService, AiCardActionHelper aiCardActionHelper, StandardProjectService standardProjectService) {
+        super(turnTypeService, stateFactory, stateContextProvider, turnProcessor);
+        this.aiTurnService = aiTurnService;
+        this.aiPaymentService = aiPaymentService;
+        this.aiCardBuildParamsHelper = aiCardBuildParamsHelper;
+        this.objectMapper = objectMapper;
+        this.cardValidationService = cardValidationService;
+        this.deepNetwork = deepNetwork;
+        this.cardService = cardService;
+        this.stateFactory = stateFactory;
+    }
+
+    public BuildProjectPrediction getBestProjectToBuild(MarsGame game, Player player, Set<CardColor> cardColors) {
+        List<Card> availableCards = player.getHand()
+                .getCards()
+                .stream()
+                .map(cardService::getCard)
+                .filter(card -> cardColors.contains(card.getColor()))
+                .filter(card ->
+                {
+                    String errorMessage = cardValidationService.validateCard(
+                            player, game, card.getId(),
+                            aiPaymentService.getCardPayments(player, card),
+                            aiCardBuildParamsHelper.getInputParamsForValidation(player, card)
+                    );
+                    return errorMessage == null;
+                })
+                .collect(Collectors.toList());
+
+        if (availableCards.isEmpty()) {
+            return BuildProjectPrediction.builder().canBuild(false).build();
+        }
+
+        Card selectedCard = null;
+        float bestChance = deepNetwork.testState(game, player);
+        if (RandomBotHelper.isRandomBot(player)) {
+            selectedCard = availableCards.get(random.nextInt(availableCards.size()));
+        } else {
+            Card bestCard = null;
+            for (Card playableCard : availableCards) {
+                MarsGame stateAfterPlayingTheCard = projectBuildCard(game, player, playableCard, ProjectionStrategy.FROM_PHASE);
+
+                float projectedChance = deepNetwork.testState(stateAfterPlayingTheCard, stateAfterPlayingTheCard.getPlayerByUuid(player.getUuid()));
+
+                if (projectedChance > bestChance) {
+                    bestChance = projectedChance;
+                    bestCard = playableCard;
+                }
+            }
+            if (bestCard != null) {
+                selectedCard = bestCard;
+            }
+        }
+
+        if (selectedCard == null) {
+            return BuildProjectPrediction.builder().canBuild(false).build();
+        } else {
+            return BuildProjectPrediction.builder().canBuild(true).expectedValue(bestChance).card(selectedCard).build();
+        }
+    }
+
+    public MarsGame projectBuildCard(MarsGame game, Player player, Card card, ProjectionStrategy projectionStrategy) {
+        game = copyMars(game);
+        player = game.getPlayerByUuid(player.getUuid());
+
+        if (projectionStrategy == ProjectionStrategy.FROM_PICK_PHASE) {
+            getAnotherPlayer(game, player).setPreviousChosenPhase(null);
+            if (game.getStateType() == StateType.PICK_PHASE) {
+                game.getPlayerUuidToPlayer().values().forEach(
+                        p -> aiTurnService.choosePhaseTurn(p, card.getColor() == CardColor.GREEN ? 1 : 2)
+                );
+                while (processFinalTurns(game)) {
+                    stateFactory.getCurrentState(game).updateState();
+                }
+            }
+            String errorMessage = cardValidationService.validateCard(
+                    player, game, card.getId(),
+                    aiPaymentService.getCardPayments(player, card),
+                    aiCardBuildParamsHelper.getInputParamsForValidation(player, card)
+            );
+            if (errorMessage != null) {
+                return null;
+            }
+        }
+
+        if (card.getColor() == CardColor.GREEN) {
+            aiTurnService.buildGreenProjectSync(
+                    game,
+                    player,
+                    card.getId(),
+                    aiPaymentService.getCardPayments(player, card),
+                    aiCardBuildParamsHelper.getInputParamsForBuild(player, card)
+            );
+        } else {
+            aiTurnService.buildBlueRedProjectSync(
+                    game,
+                    player,
+                    card.getId(),
+                    aiPaymentService.getCardPayments(player, card),
+                    aiCardBuildParamsHelper.getInputParamsForBuild(player, card)
+            );
+        }
+
+        return game;
+    }
+
+    private Player getAnotherPlayer(MarsGame game, Player player) {
+        return game.getPlayerUuidToPlayer().values().stream().filter(p -> !p.getUuid().equals(player.getUuid()))
+                .findFirst().orElseThrow(() -> new IllegalStateException("Another player not found"));
+    }
+
+    public MarsGame copyMars(MarsGame game) {
+        return safeDeserialize(safeSerialize(game));
+    }
+
+    private String safeSerialize(MarsGame marsGame) {
+        try {
+            return objectMapper.writeValueAsString(marsGame);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Error serializing the game");
+        }
+    }
+
+    private MarsGame safeDeserialize(String gameJson) {
+        try {
+            return objectMapper.readValue(gameJson, MarsGame.class);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Error deserializing the game");
+        }
+    }
+}

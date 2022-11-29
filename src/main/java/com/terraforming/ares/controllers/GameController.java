@@ -12,6 +12,7 @@ import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.repositories.GameRepositoryImpl;
 import com.terraforming.ares.repositories.caching.CachingGameRepository;
 import com.terraforming.ares.services.*;
+import com.terraforming.ares.services.ai.DeepNetwork;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +22,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -44,6 +44,7 @@ public class GameController {
     private final TurnService turnService;
     private final GameRepositoryImpl gameRepository;
     private final SimulationProcessorService simulationProcessorService;
+    private final DeepNetwork deepNetwork;
 
     @PostMapping("/game/new")
     public PlayerUuidsDto startNewGame(@RequestBody GameParameters gameParameters) {
@@ -102,7 +103,7 @@ public class GameController {
 
         for (int i = 0; i < simulationCount; i++) {
             MarsGame marsGame = gameService.createNewSimulation(gameParameters);
-            if (Constants.COLLECT_DATASET) {
+            if (Constants.COLLECT_DATASET || Constants.ANALYZE_DATASET) {
                 MarsGameDataset dataSet = simulationProcessorService.runSimulationWithDataset(marsGame);
                 if (dataSet != null) {
                     marsGameDatasets.add(dataSet);
@@ -131,6 +132,31 @@ public class GameController {
         }
 
         statistics(games);
+
+        if (Constants.ANALYZE_DATASET) {
+            int correctGuess = 0;
+            int wrongGuess = 0;
+            for (MarsGameDataset marsGameDataset : marsGameDatasets) {
+                for (MarsGameRow row : marsGameDataset.getFirstPlayerRows()) {
+                    final float result = deepNetwork.testState(row);
+                    if (row.getWinner() == 1 && result > 0.5f || row.getWinner() == 0 && result <= 0.5f) {
+                        correctGuess++;
+                    } else {
+                        wrongGuess++;
+                    }
+                }
+                for (MarsGameRow row : marsGameDataset.getSecondPlayerRows()) {
+                    final float result = deepNetwork.testState(row);
+                    if (row.getWinner() == 1 && result > 0.5f || row.getWinner() == 0 && result <= 0.5f) {
+                        correctGuess++;
+                    } else {
+                        wrongGuess++;
+                    }
+                }
+            }
+            System.out.println();
+            System.out.println("Dataset Analysis: " + ((double) correctGuess / (correctGuess + wrongGuess)));
+        }
     }
 
     private void saveDatasets(List<MarsGameDataset> marsGameDatasets) throws FileNotFoundException {

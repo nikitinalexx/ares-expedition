@@ -59,5 +59,17 @@ public class DeepNetwork {
 
     }
 
+    public float testState(MarsGameRow row) {
+        Tensor someInput = new Tensor(row.getAsInput());
+        someInput.div(MAX_INPUTS_TENSOR);
+
+        marsNetwork.setInput(someInput);
+
+        float[] output = marsNetwork.getOutput();
+
+        return output[0];
+
+    }
+
 
 }
