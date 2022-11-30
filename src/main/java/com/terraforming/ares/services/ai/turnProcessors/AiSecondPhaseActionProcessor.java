@@ -6,10 +6,7 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.CardValidationService;
-import com.terraforming.ares.services.ai.AiProjectionService;
-import com.terraforming.ares.services.ai.CardValueService;
-import com.terraforming.ares.services.ai.DeepNetwork;
-import com.terraforming.ares.services.ai.ProjectionStrategy;
+import com.terraforming.ares.services.ai.*;
 import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
@@ -37,11 +34,11 @@ public class AiSecondPhaseActionProcessor {
     private final AiBuildProjectService aiBuildProjectService;
 
     public void processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
-        BestTurnFlow bestTurnFlow = new BestTurnFlow(deepNetwork.testState(game, player));
+        BestTurnFlow bestTurnFlow = new BestTurnFlow(RandomBotHelper.isRandomBot(player) ? 0 : deepNetwork.testState(game, player));
 
         if (possibleTurns.contains(TurnType.UNMI_RT) && player.getMc() >= 6) {
             MarsGame stateAfterUnmi = aiProjectionService.projectUnmiTurn(game, player);
-            float projectedChance = deepNetwork.testState(stateAfterUnmi, stateAfterUnmi.getPlayerByUuid(player.getUuid()));
+            float projectedChance = RandomBotHelper.isRandomBot(player) ? 0.1f: deepNetwork.testState(stateAfterUnmi, stateAfterUnmi.getPlayerByUuid(player.getUuid()));
 
             bestTurnFlow.addScenarioToFlow(projectedChance, BestTurnType.UNMI);
         }
@@ -64,7 +61,7 @@ public class AiSecondPhaseActionProcessor {
 
         if (possibleTurns.contains(TurnType.PICK_EXTRA_CARD)) {
             MarsGame stateAfterTakingExtraCard = aiProjectionService.projectTakeExtraCard(game, player);
-            float projectedChance = deepNetwork.testState(stateAfterTakingExtraCard, stateAfterTakingExtraCard.getPlayerByUuid(player.getUuid()));
+            float projectedChance = RandomBotHelper.isRandomBot(player) ? 0.5f: deepNetwork.testState(stateAfterTakingExtraCard, stateAfterTakingExtraCard.getPlayerByUuid(player.getUuid()));
 
             bestTurnFlow.addScenarioToFlow(projectedChance, BestTurnType.EXTRA_CARD);
         }

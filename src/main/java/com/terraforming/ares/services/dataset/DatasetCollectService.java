@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by oleksii.nikitin
@@ -97,15 +98,10 @@ public class DatasetCollectService {
 
     private static List<Integer> collectSpecificBlueCards(Player player) {
         return cardsToLog.stream()
-                .map(cardId -> {
-                    if (player.getHand().containsCard(cardId)) {
-                        return 1;
-                    } else if (player.getPlayed().containsCard(cardId)) {
-                        return 2;
-                    } else {
-                        return 0;
-                    }
-                })
+                .flatMap(cardId -> Stream.of(
+                        player.getHand().containsCard(cardId) ? 1 : 0,
+                        player.getPlayed().containsCard(cardId) ? 1 : 0
+                ))
                 .collect(Collectors.toList());
     }
 }
