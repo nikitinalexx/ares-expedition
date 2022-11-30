@@ -43,6 +43,8 @@ public class MarsGameRow {
     private int extraCardsToTake;
     private int extraCardsToSee;
 
+    private float resourceCount;
+
     private int oxygenLevel;
     private int temperatureLevel;
     private int oceansLevel;
@@ -91,6 +93,7 @@ public class MarsGameRow {
                 microbe,
                 extraCardsToTake,
                 extraCardsToSee,
+                resourceCount,
                 oxygenLevel,
                 temperatureLevel,
                 oceansLevel,

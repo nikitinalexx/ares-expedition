@@ -149,7 +149,7 @@ public class AiProjectionService extends BaseProcessorService {
             anotherPlayer.setPreviousChosenPhase(null);
             if (game.getStateType() == StateType.PICK_PHASE) {
                 game.getPlayerUuidToPlayer().values().forEach(
-                        p -> aiTurnService.choosePhaseTurn(p, p.getUuid().equals(anotherPlayer.getUuid()) ? 5 : 4)
+                        p -> aiTurnService.choosePhaseTurn(p, 4)
                 );
                 while (processFinalTurns(game)) {
                     stateFactory.getCurrentState(game).updateState();
@@ -259,7 +259,7 @@ public class AiProjectionService extends BaseProcessorService {
             Player copyPlayer = copyMars.getPlayerByUuid(player.getUuid());
 
             if (aiCardActionHelper.validateRandomAction(copyMars, copyPlayer, notUsedBlueCard) == null) {
-                List<Integer> actionParameters = aiCardActionHelper.getActionInputParamsRandom(copyMars, copyPlayer, notUsedBlueCard);
+                List<Integer> actionParameters = aiCardActionHelper.getActionInputParamsSmart(copyMars, copyPlayer, notUsedBlueCard);
                 aiTurnService.performBlueAction(
                         copyMars,
                         copyPlayer,
@@ -358,12 +358,14 @@ public class AiProjectionService extends BaseProcessorService {
             MarsGame copyMars = new MarsGame(game);
             Player copyPlayer = copyMars.getPlayerByUuid(player.getUuid());
 
+            //checks if it is able to do the action at least randomly
             if (aiCardActionHelper.validateRandomAction(copyMars, copyPlayer, notUsedBlueCard) == null) {
+                //does a random action, but needs to be smart
                 aiTurnService.performBlueAction(
                         copyMars,
                         copyPlayer,
                         notUsedBlueCard.getId(),
-                        aiCardActionHelper.getActionInputParamsRandom(copyMars, copyPlayer, notUsedBlueCard)
+                        aiCardActionHelper.getActionInputParamsSmart(copyMars, copyPlayer, notUsedBlueCard)
                 );
 
                 float newState = deepNetwork.testState(copyMars, copyPlayer);
@@ -396,7 +398,7 @@ public class AiProjectionService extends BaseProcessorService {
                     copyMars,
                     copyPlayer,
                     bestTurn,
-                    aiCardActionHelper.getActionInputParamsRandom(copyMars, copyPlayer, cardService.getCard(bestTurn))
+                    aiCardActionHelper.getActionInputParamsSmart(copyMars, copyPlayer, cardService.getCard(bestTurn))
             );
 
             game = copyMars;

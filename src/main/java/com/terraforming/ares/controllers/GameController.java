@@ -283,6 +283,8 @@ public class GameController {
         pw.print(',');
         pw.print(row.getExtraCardsToSee());
         pw.print(',');
+        pw.print(row.getResourceCount());
+        pw.print(',');
         pw.print(row.getOxygenLevel());
         pw.print(',');
         pw.print(row.getTemperatureLevel());

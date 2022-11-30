@@ -116,7 +116,7 @@ public class AiThirdPhaseActionProcessor {
                 .filter(c -> !activatedBlueCards.containsCard(c.getId()))
                 .collect(Collectors.toList());
 
-        boolean actionPerformed = performAction(game, player, notUsedBlueCards);
+        boolean actionPerformed = performActionRandom(game, player, notUsedBlueCards);
 
         if (actionPerformed) {
             return true;
@@ -128,7 +128,7 @@ public class AiThirdPhaseActionProcessor {
                     .filter(Card::isActiveCard)
                     .collect(Collectors.toList());
 
-            actionPerformed = performAction(game, player, actionBlueCards);
+            actionPerformed = performActionRandom(game, player, actionBlueCards);
         }
 
         if (actionPerformed) {
@@ -245,7 +245,7 @@ public class AiThirdPhaseActionProcessor {
         return mc >= 0;
     }
 
-    private boolean performAction(MarsGame game, Player player, List<Card> cards) {
+    private boolean performActionRandom(MarsGame game, Player player, List<Card> cards) {
         while (!cards.isEmpty()) {
             int selectedIndex = random.nextInt(cards.size());
             Card selectedCard = cards.get(selectedIndex);
