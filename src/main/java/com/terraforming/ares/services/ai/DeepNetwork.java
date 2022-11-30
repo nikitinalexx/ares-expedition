@@ -26,7 +26,7 @@ public class DeepNetwork {
 
     public DeepNetwork(DatasetCollectService datasetCollectService) throws IOException, ClassNotFoundException {
         this.datasetCollectService = datasetCollectService;
-        marsNetworkNoTags = FileIO.createFromFile("marsNet-no-tags.dnet", FeedForwardNetwork.class);
+        marsNetworkNoTags = FileIO.createFromFile("marsNet.dnet", FeedForwardNetwork.class);
     }
 
     public float testState(MarsGame game, Player player) {
