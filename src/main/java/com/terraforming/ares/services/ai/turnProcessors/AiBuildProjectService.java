@@ -73,7 +73,7 @@ public class AiBuildProjectService extends BaseProcessorService {
         }
 
         Card selectedCard = null;
-        float bestChance = deepNetwork.testState(game, player);
+        float bestChance = RandomBotHelper.isRandomBot(player) ? 0 : deepNetwork.testState(game, player);
         if (RandomBotHelper.isRandomBot(player)) {
             selectedCard = availableCards.get(random.nextInt(availableCards.size()));
         } else {
