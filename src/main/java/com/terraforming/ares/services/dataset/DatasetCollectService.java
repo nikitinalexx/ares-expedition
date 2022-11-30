@@ -63,12 +63,12 @@ public class DatasetCollectService {
             Player currentPlayer = marsGame.getPlayerByUuid(marsGameDataset.getPlayers().get(i));
             Player anotherPlayer = marsGame.getPlayerByUuid(marsGameDataset.getPlayers().get(i == 0 ? 1 : 0));
             marsGameDataset.getPlayerToRows().get(currentPlayer.getUuid()).add(
-                    collectPlayerData(marsGame, currentPlayer, anotherPlayer)
+                    collectPlayerDataWithTags(marsGame, currentPlayer, anotherPlayer)
             );
         }
     }
 
-    public MarsGameRow collectPlayerData(MarsGame game, Player currentPlayer, Player anotherPlayer) {
+    public MarsGameRow collectPlayerDataWithTags(MarsGame game, Player currentPlayer, Player anotherPlayer) {
         final Map<Tag, Long> tagOccurence = getPlayerTagsCount(cardService, currentPlayer);
 
         return MarsGameRow.builder()
@@ -109,6 +109,42 @@ public class DatasetCollectService {
                 .animal(tagOccurence.getOrDefault(Tag.ANIMAL, 0L))
                 .jupiter(tagOccurence.getOrDefault(Tag.JUPITER, 0L))
                 .microbe(tagOccurence.getOrDefault(Tag.MICROBE, 0L))
+                .extraCardsToTake(draftCardsService.countExtraCardsToTake(currentPlayer))
+                .extraCardsToSee(draftCardsService.countExtraCardsToDraft(currentPlayer))
+                .resourceCount(getTotalResourceCount(currentPlayer.getCardResourcesCount()))
+                .cards(collectSpecificBlueCards(currentPlayer))
+                .build();
+    }
+
+    public MarsGameRow collectPlayerDataWithoutTags(MarsGame game, Player currentPlayer, Player anotherPlayer) {
+        return MarsGameRow.builder()
+                .turn(game.getTurns())
+                .winPoints(winPointsService.countWinPoints(currentPlayer, game))
+                .mcIncome(currentPlayer.getMcIncome())
+                .mc(currentPlayer.getMc())
+                .steelIncome(currentPlayer.getSteelIncome())
+                .titaniumIncome(currentPlayer.getTitaniumIncome())
+                .plantsIncome(currentPlayer.getPlantsIncome())
+                .plants(currentPlayer.getPlants())
+                .heatIncome(currentPlayer.getHeatIncome())
+                .heat(currentPlayer.getHeat())
+                .cardsIncome(currentPlayer.getCardIncome())
+                .cardsInHand(currentPlayer.getHand().size())
+                .cardsBuilt(currentPlayer.getPlayed().size() - 1)
+                .oxygenLevel(game.getPlanet().getOxygenValue())
+                .temperatureLevel(game.getPlanet().getTemperatureValue())
+                .oceansLevel(Constants.MAX_OCEANS - game.getPlanet().oceansLeft())
+                .opponentWinPoints(winPointsService.countWinPoints(anotherPlayer, game))
+                .opponentMcIncome(anotherPlayer.getMcIncome())
+                .opponentMc(anotherPlayer.getMc())
+                .opponentSteelIncome(anotherPlayer.getSteelIncome())
+                .opponentTitaniumIncome(anotherPlayer.getTitaniumIncome())
+                .opponentPlantsIncome(anotherPlayer.getPlantsIncome())
+                .opponentPlants(anotherPlayer.getPlants())
+                .opponentHeatIncome(anotherPlayer.getHeatIncome())
+                .opponentHeat(anotherPlayer.getHeat())
+                .opponentCardsIncome(anotherPlayer.getCardIncome())
+                .opponentCardsBuilt(anotherPlayer.getPlayed().size() - 1)
                 .extraCardsToTake(draftCardsService.countExtraCardsToTake(currentPlayer))
                 .extraCardsToSee(draftCardsService.countExtraCardsToDraft(currentPlayer))
                 .resourceCount(getTotalResourceCount(currentPlayer.getCardResourcesCount()))
