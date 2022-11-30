@@ -1,13 +1,10 @@
 package com.terraforming.ares.services.dataset;
 
-import com.terraforming.ares.model.Card;
-import com.terraforming.ares.services.CardFactory;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Created by oleksii.nikitin
@@ -82,7 +79,18 @@ public class MarsGameRow {
                 cardsIncome,
                 cardsInHand,
                 cardsBuilt,
-
+                space,
+                earth,
+                event,
+                science,
+                plant,
+                energy,
+                building,
+                animal,
+                jupiter,
+                microbe,
+                extraCardsToTake,
+                extraCardsToSee,
                 oxygenLevel,
                 temperatureLevel,
                 oceansLevel,
