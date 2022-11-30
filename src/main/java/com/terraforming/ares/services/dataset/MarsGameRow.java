@@ -29,16 +29,7 @@ public class MarsGameRow {
     private int cardsInHand;
     private int cardsBuilt;
 
-    private long space;
-    private long earth;
-    private long event;
-    private long science;
-    private long plant;
-    private long energy;
-    private long building;
-    private long animal;
-    private long jupiter;
-    private long microbe;
+    private int buildableCards;
 
     private int extraCardsToTake;
     private int extraCardsToSee;
@@ -67,7 +58,7 @@ public class MarsGameRow {
     private int winner;
 
     public float[] getAsInput() {
-        final float[] basicData = {
+        float[] basicData = new float[]{
                 turn,
                 winPoints,
                 mcIncome,
@@ -81,16 +72,7 @@ public class MarsGameRow {
                 cardsIncome,
                 cardsInHand,
                 cardsBuilt,
-                space,
-                earth,
-                event,
-                science,
-                plant,
-                energy,
-                building,
-                animal,
-                jupiter,
-                microbe,
+                buildableCards,
                 extraCardsToTake,
                 extraCardsToSee,
                 resourceCount,

@@ -4,12 +4,17 @@ import com.terraforming.ares.cards.blue.*;
 import com.terraforming.ares.cards.buffedCorporations.BuffedArclightCorporation;
 import com.terraforming.ares.cards.corporations.ArclightCorporation;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.CardValidationService;
 import com.terraforming.ares.services.DraftCardsService;
 import com.terraforming.ares.services.WinPointsService;
+import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
+import com.terraforming.ares.services.ai.helpers.AiPaymentService;
+import com.terraforming.ares.services.ai.turnProcessors.AiBuildProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -27,9 +32,12 @@ import java.util.stream.Stream;
 @Service
 @RequiredArgsConstructor
 public class DatasetCollectService {
-    private final CardService cardService;
     private final WinPointsService winPointsService;
     private final DraftCardsService draftCardsService;
+    private final CardService cardService;
+    private final CardValidationService cardValidationService;
+    private final AiPaymentService aiPaymentService;
+    private final AiCardBuildParamsHelper aiCardBuildParamsHelper;
 
     private static Map<Class<?>, Integer> RESOURCE_VP_COUNT;
     private static Map<Class<?>, Integer> RESOURCE_INTRINSIC_VP_COUNT;
@@ -63,57 +71,9 @@ public class DatasetCollectService {
             Player currentPlayer = marsGame.getPlayerByUuid(marsGameDataset.getPlayers().get(i));
             Player anotherPlayer = marsGame.getPlayerByUuid(marsGameDataset.getPlayers().get(i == 0 ? 1 : 0));
             marsGameDataset.getPlayerToRows().get(currentPlayer.getUuid()).add(
-                    collectPlayerDataWithTags(marsGame, currentPlayer, anotherPlayer)
+                    collectPlayerDataWithoutTags(marsGame, currentPlayer, anotherPlayer)
             );
         }
-    }
-
-    public MarsGameRow collectPlayerDataWithTags(MarsGame game, Player currentPlayer, Player anotherPlayer) {
-        final Map<Tag, Long> tagOccurence = getPlayerTagsCount(cardService, currentPlayer);
-
-        return MarsGameRow.builder()
-                .turn(game.getTurns())
-                .winPoints(winPointsService.countWinPoints(currentPlayer, game))
-                .mcIncome(currentPlayer.getMcIncome())
-                .mc(currentPlayer.getMc())
-                .steelIncome(currentPlayer.getSteelIncome())
-                .titaniumIncome(currentPlayer.getTitaniumIncome())
-                .plantsIncome(currentPlayer.getPlantsIncome())
-                .plants(currentPlayer.getPlants())
-                .heatIncome(currentPlayer.getHeatIncome())
-                .heat(currentPlayer.getHeat())
-                .cardsIncome(currentPlayer.getCardIncome())
-                .cardsInHand(currentPlayer.getHand().size())
-                .cardsBuilt(currentPlayer.getPlayed().size() - 1)
-                .oxygenLevel(game.getPlanet().getOxygenValue())
-                .temperatureLevel(game.getPlanet().getTemperatureValue())
-                .oceansLevel(Constants.MAX_OCEANS - game.getPlanet().oceansLeft())
-                .opponentWinPoints(winPointsService.countWinPoints(anotherPlayer, game))
-                .opponentMcIncome(anotherPlayer.getMcIncome())
-                .opponentMc(anotherPlayer.getMc())
-                .opponentSteelIncome(anotherPlayer.getSteelIncome())
-                .opponentTitaniumIncome(anotherPlayer.getTitaniumIncome())
-                .opponentPlantsIncome(anotherPlayer.getPlantsIncome())
-                .opponentPlants(anotherPlayer.getPlants())
-                .opponentHeatIncome(anotherPlayer.getHeatIncome())
-                .opponentHeat(anotherPlayer.getHeat())
-                .opponentCardsIncome(anotherPlayer.getCardIncome())
-                .opponentCardsBuilt(anotherPlayer.getPlayed().size() - 1)
-                .space(tagOccurence.getOrDefault(Tag.SPACE, 0L))
-                .earth(tagOccurence.getOrDefault(Tag.EARTH, 0L))
-                .event(tagOccurence.getOrDefault(Tag.EVENT, 0L))
-                .science(tagOccurence.getOrDefault(Tag.SCIENCE, 0L))
-                .plant(tagOccurence.getOrDefault(Tag.PLANT, 0L))
-                .energy(tagOccurence.getOrDefault(Tag.ENERGY, 0L))
-                .building(tagOccurence.getOrDefault(Tag.BUILDING, 0L))
-                .animal(tagOccurence.getOrDefault(Tag.ANIMAL, 0L))
-                .jupiter(tagOccurence.getOrDefault(Tag.JUPITER, 0L))
-                .microbe(tagOccurence.getOrDefault(Tag.MICROBE, 0L))
-                .extraCardsToTake(draftCardsService.countExtraCardsToTake(currentPlayer))
-                .extraCardsToSee(draftCardsService.countExtraCardsToDraft(currentPlayer))
-                .resourceCount(getTotalResourceCount(currentPlayer.getCardResourcesCount()))
-                .cards(collectSpecificBlueCards(currentPlayer))
-                .build();
     }
 
     public MarsGameRow collectPlayerDataWithoutTags(MarsGame game, Player currentPlayer, Player anotherPlayer) {
@@ -131,6 +91,7 @@ public class DatasetCollectService {
                 .cardsIncome(currentPlayer.getCardIncome())
                 .cardsInHand(currentPlayer.getHand().size())
                 .cardsBuilt(currentPlayer.getPlayed().size() - 1)
+                .buildableCards(countBuildableCards(game, currentPlayer))
                 .oxygenLevel(game.getPlanet().getOxygenValue())
                 .temperatureLevel(game.getPlanet().getTemperatureValue())
                 .oceansLevel(Constants.MAX_OCEANS - game.getPlanet().oceansLeft())
@@ -150,6 +111,23 @@ public class DatasetCollectService {
                 .resourceCount(getTotalResourceCount(currentPlayer.getCardResourcesCount()))
                 .cards(collectSpecificBlueCards(currentPlayer))
                 .build();
+    }
+
+    private int countBuildableCards(MarsGame game, Player player) {
+        return (int) player.getHand()
+                .getCards()
+                .stream()
+                .map(cardService::getCard)
+                .filter(card ->
+                {
+                    String errorMessage = cardValidationService.validateCard(
+                            player, game, card.getId(),
+                            aiPaymentService.getCardPayments(player, card),
+                            aiCardBuildParamsHelper.getInputParamsForValidation(player, card)
+                    );
+                    return errorMessage == null;
+                })
+                .count();
     }
 
 
