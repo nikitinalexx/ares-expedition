@@ -193,7 +193,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                 default:
                     throw new IllegalStateException("Unreachable");
             }
-        } else if (player.getPreviousChosenPhase() == null || player.getPreviousChosenPhase() != 4 && player.getMc() < 20) {
+        } else if (player.getPreviousChosenPhase() == null || player.getPreviousChosenPhase() != 4 && player.getMc() < 5) {
             return 4;
         } else {
             return 0;

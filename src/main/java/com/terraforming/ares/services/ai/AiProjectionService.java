@@ -1,8 +1,8 @@
 package com.terraforming.ares.services.ai;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.terraforming.ares.cards.blue.SelfReplicatingBacteria;
+import com.terraforming.ares.cards.blue.*;
+import com.terraforming.ares.cards.corporations.CelestiorCorporation;
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
@@ -157,10 +157,21 @@ public class AiProjectionService extends BaseProcessorService {
             }
         }
 
-        aiTurnService.collectIncomeTurnSync(game, player);
-        aiTurnService.collectIncomeTurnSync(game, anotherPlayer);
+        collectIncomeForPlayer(game, player);
+        collectIncomeForPlayer(game, anotherPlayer);
 
         return game;
+    }
+
+    private void collectIncomeForPlayer(MarsGame game, Player player) {
+        Deck cardsBeforeAction = new Deck(player.getHand());
+
+        aiTurnService.collectIncomeTurnSync(game, player);
+
+        if (player.getHand().size() != cardsBeforeAction.size()) {
+            player.setMc(player.getMc() + (player.getHand().size() - cardsBeforeAction.size()) * 4);
+            player.setHand(cardsBeforeAction);
+        }
     }
 
     public static final int NO_BEST_TURN = -100;
@@ -221,8 +232,14 @@ public class AiProjectionService extends BaseProcessorService {
             if (validationResult == null) {
                 MarsGame copyMars = new MarsGame(game);
                 Player copyPlayer = copyMars.getPlayerByUuid(player.getUuid());
+                Deck cardsBeforeAction = new Deck(copyPlayer.getHand());
+
                 aiTurnService.standardProjectTurn(copyMars, copyPlayer, StandardProjectType.OCEAN);
 
+                if (copyPlayer.getHand().size() != cardsBeforeAction.size()) {
+                    copyPlayer.setMc(copyPlayer.getMc() + (copyPlayer.getHand().size() - cardsBeforeAction.size()) * 4);
+                    copyPlayer.setHand(cardsBeforeAction);
+                }
                 float newState = deepNetwork.testState(copyMars, copyPlayer);
                 if (newState > bestState) {
                     bestTurn = STANDARD_OCEAN;
@@ -260,6 +277,7 @@ public class AiProjectionService extends BaseProcessorService {
 
             if (aiCardActionHelper.validateRandomAction(copyMars, copyPlayer, notUsedBlueCard) == null) {
                 List<Integer> actionParameters = aiCardActionHelper.getActionInputParamsSmart(copyMars, copyPlayer, notUsedBlueCard);
+                Deck cardsBeforeAction = new Deck(copyPlayer.getHand());
                 aiTurnService.performBlueAction(
                         copyMars,
                         copyPlayer,
@@ -267,12 +285,39 @@ public class AiProjectionService extends BaseProcessorService {
                         actionParameters
                 );
 
-                float newState;
-                if (notUsedBlueCard.getClass() == SelfReplicatingBacteria.class) {
-                    newState = predictAfterSelfReplicatingBacteria(copyMars, copyPlayer);
-                } else {
-                    newState = deepNetwork.testState(copyMars, copyPlayer);
+                int extraMoney = 0;
+                if (notUsedBlueCard.getClass() == CelestiorCorporation.class
+                        || notUsedBlueCard.getClass() == CircuitBoardFactory.class
+                        || notUsedBlueCard.getClass() == DevelopmentCenter.class
+                        || notUsedBlueCard.getClass() == MatterManufactoring.class
+                        || notUsedBlueCard.getClass() == RedraftedContracts.class
+                        || notUsedBlueCard.getClass() == ThinkTank.class) {
+                    extraMoney += 4;
                 }
+                if (notUsedBlueCard.getClass() == AdvancedScreeningTechnology.class) {
+                    extraMoney += 6;
+                }
+                if (notUsedBlueCard.getClass() == AiCentral.class) {
+                    extraMoney += 8;
+                }
+                if (notUsedBlueCard.getClass() == AssetLiquidation.class) {
+                    extraMoney += 12;
+                }
+                if (notUsedBlueCard.getClass() == BrainstormingSession.class) {
+                    extraMoney += 2;
+                }
+                if (extraMoney != 0) {
+                    copyPlayer.setMc(copyPlayer.getMc() + extraMoney);
+                } else if (copyPlayer.getHand().size() != cardsBeforeAction.size()) {
+                    copyPlayer.setMc(copyPlayer.getMc() + (copyPlayer.getHand().size() - cardsBeforeAction.size()) * 4);
+                }
+                copyPlayer.setHand(cardsBeforeAction);
+
+                float newState = deepNetwork.testState(copyMars, copyPlayer);
+//                if (notUsedBlueCard.getClass() == SelfReplicatingBacteria.class) {
+//                    newState = predictAfterSelfReplicatingBacteria(copyMars, copyPlayer);
+//                }
+
                 if (newState > bestState) {
                     bestTurn = notUsedBlueCard.getId();
                     bestActionParameters = actionParameters;
