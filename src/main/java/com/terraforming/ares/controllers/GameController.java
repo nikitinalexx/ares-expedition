@@ -259,8 +259,6 @@ public class GameController {
         pw.print(',');
         pw.print(row.getCardsBuilt());
         pw.print(',');
-        pw.print(row.getBuildableCards());
-        pw.print(',');
         pw.print(row.getExtraCardsToTake());
         pw.print(',');
         pw.print(row.getExtraCardsToSee());

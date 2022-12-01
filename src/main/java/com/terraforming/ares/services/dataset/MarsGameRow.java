@@ -29,8 +29,6 @@ public class MarsGameRow {
     private int cardsInHand;
     private int cardsBuilt;
 
-    private int buildableCards;
-
     private int extraCardsToTake;
     private int extraCardsToSee;
 
@@ -72,7 +70,6 @@ public class MarsGameRow {
                 cardsIncome,
                 cardsInHand,
                 cardsBuilt,
-                buildableCards,
                 extraCardsToTake,
                 extraCardsToSee,
                 resourceCount,

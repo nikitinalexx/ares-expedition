@@ -91,7 +91,6 @@ public class DatasetCollectService {
                 .cardsIncome(currentPlayer.getCardIncome())
                 .cardsInHand(currentPlayer.getHand().size())
                 .cardsBuilt(currentPlayer.getPlayed().size() - 1)
-                .buildableCards(countBuildableCards(game, currentPlayer))
                 .oxygenLevel(game.getPlanet().getOxygenValue())
                 .temperatureLevel(game.getPlanet().getTemperatureValue())
                 .oceansLevel(Constants.MAX_OCEANS - game.getPlanet().oceansLeft())
@@ -111,23 +110,6 @@ public class DatasetCollectService {
                 .resourceCount(getTotalResourceCount(currentPlayer.getCardResourcesCount()))
                 .cards(collectSpecificBlueCards(currentPlayer))
                 .build();
-    }
-
-    private int countBuildableCards(MarsGame game, Player player) {
-        return (int) player.getHand()
-                .getCards()
-                .stream()
-                .map(cardService::getCard)
-                .filter(card ->
-                {
-                    String errorMessage = cardValidationService.validateCard(
-                            player, game, card.getId(),
-                            aiPaymentService.getCardPayments(player, card),
-                            aiCardBuildParamsHelper.getInputParamsForValidation(player, card)
-                    );
-                    return errorMessage == null;
-                })
-                .count();
     }
 
 
