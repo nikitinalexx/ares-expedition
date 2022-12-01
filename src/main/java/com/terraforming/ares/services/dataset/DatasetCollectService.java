@@ -4,7 +4,6 @@ import com.terraforming.ares.cards.blue.*;
 import com.terraforming.ares.cards.buffedCorporations.BuffedArclightCorporation;
 import com.terraforming.ares.cards.corporations.ArclightCorporation;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
@@ -14,7 +13,6 @@ import com.terraforming.ares.services.DraftCardsService;
 import com.terraforming.ares.services.WinPointsService;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
-import com.terraforming.ares.services.ai.turnProcessors.AiBuildProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -80,7 +78,7 @@ public class DatasetCollectService {
         return MarsGameRow.builder()
                 .turn(game.getTurns())
                 .winPoints(winPointsService.countWinPoints(currentPlayer, game))
-                .mcIncome(currentPlayer.getMcIncome())
+                .mcIncome(currentPlayer.getMcIncome() + currentPlayer.getTerraformingRating())
                 .mc(currentPlayer.getMc())
                 .steelIncome(currentPlayer.getSteelIncome())
                 .titaniumIncome(currentPlayer.getTitaniumIncome())

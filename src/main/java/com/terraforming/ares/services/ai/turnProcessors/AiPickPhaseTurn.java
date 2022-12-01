@@ -165,11 +165,13 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
 
 
         if (player.getPreviousChosenPhase() == null || player.getPreviousChosenPhase() != 3) {
-            MarsGame projectedState = aiProjectionService.projectPhaseThree(game, player, ProjectionStrategy.FROM_PICK_PHASE);
+            if (player.getPlayed().getCards().stream().map(cardService::getCard).filter(Card::isActiveCard).count() >= 3) {
+                MarsGame projectedState = aiProjectionService.projectPhaseThree(game, player, ProjectionStrategy.FROM_PICK_PHASE);
 
-            float projectedChance = deepNetwork.testState(projectedState, projectedState.getPlayerByUuid(player.getUuid()));
+                float projectedChance = deepNetwork.testState(projectedState, projectedState.getPlayerByUuid(player.getUuid()));
 
-            bestTurnFlow.addScenarioToFlow(projectedChance, BestTurnType.PHASE_3);
+                bestTurnFlow.addScenarioToFlow(projectedChance, BestTurnType.PHASE_3);
+            }
         }
 
         if (player.getPreviousChosenPhase() == null || player.getPreviousChosenPhase() != 4) {
@@ -178,6 +180,14 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             float projectedChance = deepNetwork.testState(projectedState, projectedState.getPlayerByUuid(player.getUuid()));
 
             bestTurnFlow.addScenarioToFlow(projectedChance, BestTurnType.PHASE_4);
+        }
+
+        if (player.getPreviousChosenPhase() == null || player.getPreviousChosenPhase() != 5) {
+            MarsGame projectedState = aiProjectionService.projectPhaseFive(game, player);
+
+            float projectedChance = deepNetwork.testState(projectedState, projectedState.getPlayerByUuid(player.getUuid()));
+
+            bestTurnFlow.addScenarioToFlow(projectedChance, BestTurnType.PHASE_5);
         }
 
         if (bestTurnFlow.getBestTurnType() != BestTurnType.SKIP) {
@@ -190,6 +200,8 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                     return 3;
                 case PHASE_4:
                     return 4;
+                case PHASE_5:
+                    return 5;
                 default:
                     throw new IllegalStateException("Unreachable");
             }

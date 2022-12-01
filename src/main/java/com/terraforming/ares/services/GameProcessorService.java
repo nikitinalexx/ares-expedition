@@ -72,7 +72,8 @@ public class GameProcessorService extends BaseProcessorService {
 
                 final List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
 
-                System.out.println("Player expected win: " + deepNetwork.testState(game, players.get(0).getUuid().endsWith("0") ? players.get(0) : players.get(1)));
+                System.out.println("Player expected win: " + deepNetwork.testState(game, players.get(0).getUuid().endsWith("0") ? players.get(0) : players.get(1))
+                 + ". Another player: " + deepNetwork.testState(game, players.get(0).getUuid().endsWith("0") ? players.get(1) : players.get(0)));
 
                 return null;
             });

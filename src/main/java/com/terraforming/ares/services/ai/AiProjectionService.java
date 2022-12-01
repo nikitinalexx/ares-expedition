@@ -35,8 +35,9 @@ public class AiProjectionService extends BaseProcessorService {
     private final CardService cardService;
     private final AiCardActionHelper aiCardActionHelper;
     private final StandardProjectService standardProjectService;
+    private final DraftCardsService draftCardsService;
 
-    protected AiProjectionService(TurnTypeService turnTypeService, StateFactory stateFactory, StateContextProvider stateContextProvider, List<TurnProcessor<?>> turnProcessor, AiTurnService aiTurnService, AiPaymentService aiPaymentService, AiCardBuildParamsHelper aiCardBuildParamsHelper, ObjectMapper objectMapper, CardValidationService cardValidationService, DeepNetwork deepNetwork, PaymentValidationService paymentValidationService, CardService cardService, AiCardActionHelper aiCardActionHelper, StandardProjectService standardProjectService) {
+    protected AiProjectionService(TurnTypeService turnTypeService, StateFactory stateFactory, StateContextProvider stateContextProvider, List<TurnProcessor<?>> turnProcessor, AiTurnService aiTurnService, AiPaymentService aiPaymentService, AiCardBuildParamsHelper aiCardBuildParamsHelper, ObjectMapper objectMapper, CardValidationService cardValidationService, DeepNetwork deepNetwork, PaymentValidationService paymentValidationService, CardService cardService, AiCardActionHelper aiCardActionHelper, StandardProjectService standardProjectService, DraftCardsService draftCardsService) {
         super(turnTypeService, stateFactory, stateContextProvider, turnProcessor);
         this.aiTurnService = aiTurnService;
         this.aiPaymentService = aiPaymentService;
@@ -49,6 +50,7 @@ public class AiProjectionService extends BaseProcessorService {
         this.cardService = cardService;
         this.aiCardActionHelper = aiCardActionHelper;
         this.standardProjectService = standardProjectService;
+        this.draftCardsService = draftCardsService;
     }
 
     public MarsGame projectBuildCard(MarsGame game, Player player, Card card, ProjectionStrategy projectionStrategy) {
@@ -159,6 +161,21 @@ public class AiProjectionService extends BaseProcessorService {
 
         collectIncomeForPlayer(game, player);
         collectIncomeForPlayer(game, anotherPlayer);
+
+        return game;
+    }
+
+    public MarsGame projectPhaseFive(MarsGame game, Player player) {
+        game = new MarsGame(game);
+        player = game.getPlayerByUuid(player.getUuid());
+
+        final Player anotherPlayer = getAnotherPlayer(game, player);
+
+        int bonus = 11 + draftCardsService.countExtraCardsToDraft(player) * 4 + draftCardsService.countExtraCardsToDraft(player);
+        int anotherBonus = 5 + draftCardsService.countExtraCardsToDraft(anotherPlayer) * 4 + draftCardsService.countExtraCardsToDraft(anotherPlayer);
+
+        player.setMc(player.getMc() + bonus);
+        anotherPlayer.setMc(anotherPlayer.getMc() + anotherBonus);
 
         return game;
     }
