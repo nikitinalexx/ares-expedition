@@ -25,7 +25,7 @@ public class CardValueService {
 
         List<Integer> cardsToDiscard = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            int worstCardIndex = -1;
+            int worstCardIndex = 0;
             float worstChance = 1.0f;
 
             for (int j = 0; j < cardsToDiscardFrom.size(); j++) {
