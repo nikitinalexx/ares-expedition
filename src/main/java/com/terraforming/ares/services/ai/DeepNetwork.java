@@ -21,7 +21,7 @@ import java.util.List;
 public class DeepNetwork {
     private final FeedForwardNetwork marsNetworkNoTags;
     private final DatasetCollectService datasetCollectService;
-    private static final float[] MAX_INPUTS_NO_TAGS = new float[]{58.0f, 195.0f, 59.0f, 459.0f, 11.0f, 10.0f, 27.0f, 236.0f, 43.0f, 263.0f, 9.0f, 35.0f, 58.0f, 4.0f, 4.0f, 22.666666f, 14.0f, 30.0f, 9.0f, 195.0f, 59.0f, 459.0f, 11.0f, 10.0f, 27.0f, 236.0f, 43.0f, 263.0f, 9.0f, 58.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
+    private static final float[] MAX_INPUTS_NO_TAGS = new float[]{67.0f, 221.0f, 64.0f, 685.0f, 11.0f, 11.0f, 26.0f, 234.0f, 47.0f, 407.0f, 9.0f, 34.0f, 60.0f, 4.0f, 5.0f, 27.0f, 14.0f, 30.0f, 9.0f, 221.0f, 64.0f, 685.0f, 11.0f, 11.0f, 26.0f, 234.0f, 47.0f, 407.0f, 9.0f, 60.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
     private static final Tensor MAX_INPUTS_TENSOR_NO_TAGS = new Tensor(MAX_INPUTS_NO_TAGS);
 
     public DeepNetwork(DatasetCollectService datasetCollectService) throws IOException, ClassNotFoundException {
