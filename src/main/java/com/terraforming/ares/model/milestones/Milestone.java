@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardService;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,7 +31,9 @@ import java.util.concurrent.ConcurrentHashMap;
         @JsonSubTypes.Type(value = TycoonMilestone.class, name = "TYCOON")
 })
 public abstract class Milestone {
+    @Getter
     private final Set<String> achievedByPlayers = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    @Getter
     private final Map<String, Integer> playerToValue = new ConcurrentHashMap<>();
 
     public Set<String> getAchievedByPlayers() {
