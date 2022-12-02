@@ -47,7 +47,7 @@ public class MayNiProductionsCorporation implements CorporationCard {
     @Override
     public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
         if (project.getColor() == CardColor.GREEN) {
-            List<Integer> cards = game.dealCards(1);
+            List<Integer> cards = cardService.dealCards(game, 1);
             player.getHand().addCards(cards);
             player.addFirstTurn(
                     new DiscardCardsTurn(

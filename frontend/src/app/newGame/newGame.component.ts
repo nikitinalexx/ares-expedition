@@ -32,6 +32,10 @@ export class NewGameComponent implements OnInit {
       playerName2: '',
       playerName3: '',
       playerName4: '',
+      computer1: false,
+      computer2: false,
+      computer3: false,
+      computer4: false,
       mulligan: false,
       improveWeakCorp: false
     });
@@ -40,19 +44,21 @@ export class NewGameComponent implements OnInit {
   submitForm(formGroup: FormGroup) {
     if (formGroup.valid) {
       const names = [];
+      const computers = [];
       for (let i = 1; i <= this.parentForm.value.playerCount; i++) {
         const name = this.parentForm.get('playerName' + i)?.value;
         if (!name) {
           this.errorMessage = 'Invalid names';
           return;
         }
+        computers.push(this.parentForm.get('computer' + i)?.value);
         names.push(name);
       }
       const expansions = [Expansion.BASE];
       if (this.parentForm.value.improveWeakCorp) {
         expansions.push(Expansion.BUFFED_CORPORATION);
       }
-      this.model.createNewGame(new NewGameRequest(names, this.parentForm.value.mulligan, expansions))
+      this.model.createNewGame(new NewGameRequest(names, computers, this.parentForm.value.mulligan, expansions))
         .subscribe(response => {
           if (response) {
             this.errorMessage = null;

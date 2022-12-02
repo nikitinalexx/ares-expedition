@@ -29,9 +29,7 @@ public class PerformBlueActionState extends AbstractState {
         } else if (player.getNextTurn() != null) {
             return List.of();
         } else {
-            List<TurnType> turns = new ArrayList<>(List.of(
-                    TurnType.PERFORM_BLUE_ACTION
-            ));
+            List<TurnType> turns = new ArrayList<>();
 
             if (player.getActionsInSecondPhase() > 0) {
                 turns.add(TurnType.BUILD_BLUE_RED_PROJECT);

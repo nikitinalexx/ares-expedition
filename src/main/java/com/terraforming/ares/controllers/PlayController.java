@@ -23,6 +23,11 @@ public class PlayController {
     private final GameService gameService;
     private final TurnService turnService;
 
+    @GetMapping("/push/{gameId}")
+    public void getAllProjectCards(@PathVariable long gameId) {
+        turnService.pushGame(gameId);
+    }
+
     @GetMapping("/action/next/{playerUuid}")
     public ActionsDto getNextAction(@PathVariable String playerUuid) {
         return gameService.getNextActions(playerUuid);

@@ -62,6 +62,77 @@ public class Player {
 
     private List<Turn> nextTurns;
 
+    private boolean ai;
+
+    private int mc;
+    private int mcIncome;
+
+    private int cardIncome;
+
+    private int heat;
+    private int heatIncome;
+
+    private int plants;
+    private int plantsIncome;
+
+    private int steelIncome;
+    private int titaniumIncome;
+
+    public Player(Player copy) {
+        this.uuid = copy.uuid;
+        this.name = copy.name;
+        this.hand = new Deck(copy.hand);
+
+        this.played = new Deck(copy.played);
+
+        this.activatedBlueCards = new Deck(copy.activatedBlueCards);
+        this.activatedBlueActionTwice = copy.activatedBlueActionTwice;
+        this.selectedCorporationCard = copy.selectedCorporationCard;
+
+        this.cardResourcesCount = new HashMap<>(copy.getCardResourcesCount());
+
+        this.terraformingRating = copy.terraformingRating;
+        this.actionsInSecondPhase = copy.actionsInSecondPhase;
+        this.pickedCardInSecondPhase = copy.pickedCardInSecondPhase;
+        this.canBuildInFirstPhase = copy.canBuildInFirstPhase;
+        this.forests = copy.forests;
+        this.builtSpecialDesignLastTurn = copy.builtSpecialDesignLastTurn;
+        this.builtWorkCrewsLastTurn = copy.builtWorkCrewsLastTurn;
+        this.canBuildAnotherGreenWith9Discount = copy.canBuildAnotherGreenWith9Discount;
+        this.assortedEnterprisesDiscount = copy.assortedEnterprisesDiscount;
+        this.assortedEnterprisesGreenAvailable = copy.assortedEnterprisesGreenAvailable;
+        this.selfReplicatingDiscount = copy.selfReplicatingDiscount;
+        this.mayNiDiscount = copy.mayNiDiscount;
+        this.unmiCorporation = copy.unmiCorporation;
+        this.hasUnmiAction = copy.hasUnmiAction;
+        this.didUnmiAction = copy.didUnmiAction;
+        this.mulligan = copy.mulligan;
+
+        this.confirmedGameEndThirdPhase = copy.confirmedGameEndThirdPhase;
+
+        this.previousChosenPhase = copy.previousChosenPhase;
+
+        this.chosenPhase = copy.chosenPhase;
+
+        this.nextTurns = (copy.nextTurns == null ? null: new LinkedList<>(copy.nextTurns));
+
+        this.ai = copy.ai;
+
+        this.mc = copy.mc;
+        this.mcIncome = copy.mcIncome;
+
+        this.cardIncome = copy.cardIncome;
+
+        this.heat = copy.heat;
+        this.heatIncome = copy.heatIncome;
+
+        this.plants = copy.plants;
+        this.plantsIncome = copy.plantsIncome;
+
+        this.steelIncome = copy.steelIncome;
+        this.titaniumIncome = copy.titaniumIncome;
+    }
+
     public void setTerraformingRating(int terraformingRating) {
         if (terraformingRating > this.terraformingRating && unmiCorporation && !didUnmiAction) {
             hasUnmiAction = true;
@@ -97,20 +168,6 @@ public class Player {
             nextTurns.remove(0);
         }
     }
-
-    private int mc;
-    private int mcIncome;
-
-    private int cardIncome;
-
-    private int heat;
-    private int heatIncome;
-
-    private int plants;
-    private int plantsIncome;
-
-    private int steelIncome;
-    private int titaniumIncome;
 
     public void setActionsInSecondPhase(int actionsInSecondPhase) {
         if (this.actionsInSecondPhase == 1) {

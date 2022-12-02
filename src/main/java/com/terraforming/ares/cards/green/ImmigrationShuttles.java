@@ -51,7 +51,6 @@ public class ImmigrationShuttles implements BaseExpansionGreenCard {
 
     @Override
     public int getWinningPoints() {
-        //TODO
         return 0;
     }
 

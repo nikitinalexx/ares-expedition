@@ -40,4 +40,7 @@ public class GameEntity {
         return gameJson;
     }
 
+    public void setGameJson(String gameJson) {
+        this.gameJson = gameJson;
+    }
 }

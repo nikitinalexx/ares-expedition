@@ -39,6 +39,21 @@ public class Planet {
     }
 
     @JsonIgnore
+    public int oceansLeft() {
+        return (int) oceans.stream().filter(ocean -> !ocean.isRevealed()).count();
+    }
+
+    @JsonIgnore
+    public int temperatureLeft() {
+        return measurableGlobalParameters.get(GlobalParameter.TEMPERATURE).valueLeft();
+    }
+
+    @JsonIgnore
+    public int oxygenLeft() {
+        return measurableGlobalParameters.get(GlobalParameter.OXYGEN).valueLeft();
+    }
+
+    @JsonIgnore
     public List<Ocean> getRevealedOceans() {
         return oceans.stream().filter(Ocean::isRevealed).collect(Collectors.toList());
     }
