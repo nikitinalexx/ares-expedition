@@ -10,11 +10,9 @@ import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.processors.turn.TurnProcessor;
 import com.terraforming.ares.repositories.caching.CachingGameRepository;
 import com.terraforming.ares.services.ai.AiService;
-import com.terraforming.ares.services.ai.DeepNetwork;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -31,14 +29,13 @@ public class GameProcessorService extends BaseProcessorService {
     private final StateFactory stateFactory;
     private final AiService aiService;
     private final Queue<Long> gamesToProcess = new ArrayBlockingQueue<>(3200);
-    private final DeepNetwork deepNetwork;
 
     public GameProcessorService(List<TurnProcessor<?>> turnProcessor,
                                 CachingGameRepository gameRepository,
                                 StateContextProvider stateContextProvider,
                                 TurnTypeService turnTypeService,
                                 StateFactory stateFactory,
-                                AiService aiService, DeepNetwork deepNetwork) {
+                                AiService aiService) {
         super(
                 turnTypeService,
                 stateFactory,
@@ -48,7 +45,6 @@ public class GameProcessorService extends BaseProcessorService {
         this.gameRepository = gameRepository;
         this.stateFactory = stateFactory;
         this.aiService = aiService;
-        this.deepNetwork = deepNetwork;
     }
 
     @Scheduled(fixedRate = 200)

@@ -53,33 +53,6 @@
             <artifactId>json</artifactId>
             <version>20190722</version>
         </dependency>
-        <dependency>
-            <groupId>javax.visrec</groupId>
-            <artifactId>visrec-api</artifactId>
-            <version>1.0.5</version>
-        </dependency>
-        <dependency>
-            <groupId>javax.visrec</groupId>
-            <artifactId>visrec-ri</artifactId>
-            <version>1.0.3</version>
-            <type>jar</type>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.deepnetts</groupId>
-                    <artifactId>deepnetts-core</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.deepnetts</groupId>
-            <artifactId>deepnetts-core-pro</artifactId>
-            <version>3.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.deepnetts</groupId>
-            <artifactId>deepnetts-license</artifactId>
-            <version>1.0</version>
-        </dependency>
 
     </dependencies>
 
