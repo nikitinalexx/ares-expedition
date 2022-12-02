@@ -53,52 +53,6 @@ public class AiProjectionService extends BaseProcessorService {
         this.draftCardsService = draftCardsService;
     }
 
-    public MarsGame projectBuildCard(MarsGame game, Player player, Card card, ProjectionStrategy projectionStrategy) {
-        //todo consider -3 discount in phase 1.
-        game = new MarsGame(game);
-        player = game.getPlayerByUuid(player.getUuid());
-
-        if (projectionStrategy == ProjectionStrategy.FROM_PICK_PHASE) {
-            getAnotherPlayer(game, player).setPreviousChosenPhase(null);
-            if (game.getStateType() == StateType.PICK_PHASE) {
-                game.getPlayerUuidToPlayer().values().forEach(
-                        p -> aiTurnService.choosePhaseTurn(p, card.getColor() == CardColor.GREEN ? 1 : 2)
-                );
-                while (processFinalTurns(game)) {
-                    stateFactory.getCurrentState(game).updateState();
-                }
-            }
-            String errorMessage = cardValidationService.validateCard(
-                    player, game, card.getId(),
-                    aiPaymentService.getCardPayments(player, card),
-                    aiCardBuildParamsHelper.getInputParamsForValidation(player, card)
-            );
-            if (errorMessage != null) {
-                return null;
-            }
-        }
-
-        if (card.getColor() == CardColor.GREEN) {
-            aiTurnService.buildGreenProjectSync(
-                    game,
-                    player,
-                    card.getId(),
-                    aiPaymentService.getCardPayments(player, card),
-                    aiCardBuildParamsHelper.getInputParamsForBuild(player, card)
-            );
-        } else {
-            aiTurnService.buildBlueRedProjectSync(
-                    game,
-                    player,
-                    card.getId(),
-                    aiPaymentService.getCardPayments(player, card),
-                    aiCardBuildParamsHelper.getInputParamsForBuild(player, card)
-            );
-        }
-
-        return game;
-    }
-
     public MarsGame projectTakeExtraCard(MarsGame game, Player player) {
         game = new MarsGame(game);
         player = game.getPlayerByUuid(player.getUuid());

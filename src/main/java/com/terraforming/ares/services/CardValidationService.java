@@ -73,6 +73,19 @@ public class CardValidationService {
                 .orElse(null);
     }
 
+    public String validateGlobalParameters(Player player, MarsGame game, int cardId) {
+        Card card = cardService.getCard(cardId);
+        if (card == null) {
+            return "Card doesn't exist " + cardId;
+        }
+
+        boolean playerMayAmplifyGlobalRequirement = specialEffectsService.ownsSpecialEffect(player, SpecialEffect.AMPLIFY_GLOBAL_REQUIREMENT);
+        return validateOxygen(game.getPlanetAtTheStartOfThePhase(), card, playerMayAmplifyGlobalRequirement)
+                .or(() -> validateTemperature(game.getPlanetAtTheStartOfThePhase(), card, playerMayAmplifyGlobalRequirement))
+                .or(() -> validateOceans(game.getPlanetAtTheStartOfThePhase(), card))
+                .orElse(null);
+    }
+
     private Optional<String> validateCustomCards(Card card, Player player) {
         boolean canBuildAnotherGreenWith9Discount = player.isCanBuildAnotherGreenWith9Discount();
         boolean mayNiDiscount = player.isMayNiDiscount();

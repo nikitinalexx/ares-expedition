@@ -109,14 +109,14 @@ public class AiBuildProjectService extends BaseProcessorService {
         player = game.getPlayerByUuid(player.getUuid());
 
         if (projectionStrategy == ProjectionStrategy.FROM_PICK_PHASE) {
+            player.setPreviousChosenPhase(null);
             getAnotherPlayer(game, player).setPreviousChosenPhase(null);
-            if (game.getStateType() == StateType.PICK_PHASE) {
-                game.getPlayerUuidToPlayer().values().forEach(
-                        p -> aiTurnService.choosePhaseTurn(p, card.getColor() == CardColor.GREEN ? 1 : 2)
-                );
-                while (processFinalTurns(game)) {
-                    stateFactory.getCurrentState(game).updateState();
-                }
+            game.setStateType(StateType.PICK_PHASE, cardService);
+            game.getPlayerUuidToPlayer().values().forEach(
+                    p -> aiTurnService.choosePhaseTurn(p, card.getColor() == CardColor.GREEN ? 1 : 2)
+            );
+            while (processFinalTurns(game)) {
+                stateFactory.getCurrentState(game).updateState();
             }
             String errorMessage = cardValidationService.validateCard(
                     player, game, card.getId(),
