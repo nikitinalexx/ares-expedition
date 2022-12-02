@@ -245,8 +245,7 @@ public class MarsGame {
     }
 
     public boolean timeToSave() {
-        //todo update before deploy
-        return gameEndCondition() || this.updateCounter % 1000 == 0;
+        return gameEndCondition() || this.updateCounter % 10 == 0;
     }
 
     @JsonIgnore
