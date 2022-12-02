@@ -54,7 +54,7 @@ public class MarsGameDataset {
         return MarsGameRow.builder()
                 .turn(game.getTurns())
                 .winPoints(winPointsService.countWinPoints(currentPlayer, game))
-                .mcIncome(currentPlayer.getMcIncome())
+                .mcIncome(currentPlayer.getMcIncome() + currentPlayer.getTerraformingRating())
                 .mc(currentPlayer.getMc())
                 .steelIncome(currentPlayer.getSteelIncome())
                 .titaniumIncome(currentPlayer.getTitaniumIncome())

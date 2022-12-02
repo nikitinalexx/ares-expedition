@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 public class AiBuildBlueRedProjectTurn implements AiTurnProcessor {
-    private final Random random = new Random();
     private final AiTurnService aiTurnService;
     private final CardService cardService;
     private final CardValidationService cardValidationService;
@@ -60,7 +59,11 @@ public class AiBuildBlueRedProjectTurn implements AiTurnProcessor {
             return true;
         }
 
+        System.out.println("Available cards: " + availableCards.stream().map(Card::getClass).map(Class::getSimpleName).collect(Collectors.joining(",")));
+
         Card selectedCard = cardValueService.getBestCardAsCard(game, player, availableCards, game.getTurns(), true);
+
+        System.out.println("Chosen card with % " + (selectedCard != null ? selectedCard.getClass().getSimpleName() : null));
 
         if (selectedCard == null) {
             aiTurnService.skipTurn(player);
