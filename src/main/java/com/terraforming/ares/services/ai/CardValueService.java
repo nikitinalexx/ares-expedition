@@ -469,13 +469,27 @@ public class CardValueService {
         cardToWeightSecondHalf.put(219, 36.36363636363637);
     }
 
-    public static final double MIDDLE_TURN = 19.245;
+    public static final double MIDDLE_TURN_2_P = 19.245;
+    public static final double MIDDLE_TURN_3_P = 14.000;
+    public static final double MIDDLE_TURN_4_P = 10.000;
+
+    private static final Map<Integer, Double> PLAYER_COUNT_TO_MIDDLE_TURN = Map.of(
+            2, MIDDLE_TURN_2_P,
+            3, MIDDLE_TURN_3_P,
+            4, MIDDLE_TURN_4_P
+    );
+
+    private double getMiddleTurn(MarsGame game) {
+        final int playerCount = game.getPlayerUuidToPlayer().size();
+        return PLAYER_COUNT_TO_MIDDLE_TURN.get(playerCount);
+    }
 
     public Integer getWorstCard(MarsGame game, Player player, List<Integer> cards, int turn) {
         double firstHalfCoefficient;
         double secondHalfCoefficient;
-        if (turn < MIDDLE_TURN) {
-            firstHalfCoefficient = (double) turn / MIDDLE_TURN;
+        final double middleTurn = getMiddleTurn(game);
+        if (turn < middleTurn) {
+            firstHalfCoefficient = (double) turn / middleTurn;
             secondHalfCoefficient = 1.0 - firstHalfCoefficient;
         } else {
             firstHalfCoefficient = 0.0;
@@ -502,10 +516,12 @@ public class CardValueService {
             return null;
         }
 
+        final double middleTurn = getMiddleTurn(game);
+
         double firstHalfCoefficient;
         double secondHalfCoefficient;
-        if (turn < MIDDLE_TURN) {
-            firstHalfCoefficient = (double) turn / MIDDLE_TURN;
+        if (turn < middleTurn) {
+            firstHalfCoefficient = (double) turn / middleTurn;
             secondHalfCoefficient = 1.0 - firstHalfCoefficient;
         } else {
             firstHalfCoefficient = 0.0;
@@ -533,8 +549,11 @@ public class CardValueService {
     public Integer getBestCard(MarsGame game, Player player, List<Integer> cards, int turn) {
         double firstHalfCoefficient;
         double secondHalfCoefficient;
-        if (turn < MIDDLE_TURN) {
-            firstHalfCoefficient = (double) turn / MIDDLE_TURN;
+
+        final double middleTurn = getMiddleTurn(game);
+
+        if (turn < middleTurn) {
+            firstHalfCoefficient = (double) turn / middleTurn;
             secondHalfCoefficient = 1.0 - firstHalfCoefficient;
         } else {
             firstHalfCoefficient = 0.0;
@@ -556,10 +575,10 @@ public class CardValueService {
     }
 
     private double getCardCoefficient(MarsGame game, Player player, Card card, int turn) {
-
+        final double middleTurn = getMiddleTurn(game);
         double coefficient = 1.0;
         if (card.getSpecialEffects().contains(SpecialEffect.ADVANCED_ALLOYS)) {
-            if (turn < MIDDLE_TURN * 1.75 && (player.getSteelIncome() > 0 || player.getTitaniumIncome() > 1)) {
+            if (turn < middleTurn * 1.75 && (player.getSteelIncome() > 0 || player.getTitaniumIncome() > 1)) {
                 coefficient = 1.3;
             }
         } else if (card.getSpecialEffects().contains(SpecialEffect.SOLD_CARDS_COST_1_MC_MORE)) {
@@ -567,25 +586,25 @@ public class CardValueService {
         } else if (card.getSpecialEffects().contains(SpecialEffect.ENERGY_SUBSIDIES_DISCOUNT_4)
                 || card.getSpecialEffects().contains(SpecialEffect.INTERPLANETARY_CONFERENCE)
                 || card.getSpecialEffects().contains(SpecialEffect.MEDIA_GROUP)) {
-            if (turn < MIDDLE_TURN * 1.25) {
+            if (turn < middleTurn * 1.25) {
                 coefficient = 1.3;
             }
         } else if (card.getSpecialEffects().contains(SpecialEffect.EXTENDED_RESOURCES)
                 || card.getSpecialEffects().contains(SpecialEffect.INTERNS)
                 || card.getSpecialEffects().contains(SpecialEffect.UNITED_PLANETARY_ALLIANCE)) {
-            if (turn < MIDDLE_TURN) {
+            if (turn < middleTurn) {
                 coefficient = 1.5;
             }
         } else {
             coefficient = Optional.ofNullable(card.getCardMetadata()).map(CardMetadata::getCardAction).map(
                     cardAction -> {
-                        if (cardAction == CardAction.RECYCLED_DETRITUS && turn < MIDDLE_TURN * 1.25) {
+                        if (cardAction == CardAction.RECYCLED_DETRITUS && turn < middleTurn * 1.25) {
                             return 1.5;
                         }
-                        if (cardAction == CardAction.RESTRUCTURED_RESOURCES && turn < MIDDLE_TURN * 1.25) {
+                        if (cardAction == CardAction.RESTRUCTURED_RESOURCES && turn < middleTurn * 1.25) {
                             return 1.5;
                         }
-                        if ((cardAction == CardAction.ANTI_GRAVITY_TECH || cardAction == CardAction.AI_CENTRAL) && turn < MIDDLE_TURN * 1.75) {
+                        if ((cardAction == CardAction.ANTI_GRAVITY_TECH || cardAction == CardAction.AI_CENTRAL) && turn < middleTurn * 1.75) {
                             if (cardService.countPlayedTags(player, Set.of(Tag.SCIENCE)) >= 5) {
                                 return MAX_PRIORITY;
                             } else {
@@ -782,7 +801,7 @@ public class CardValueService {
             discountCoefficient = 1.35;
         }
 
-        if (turn >= MIDDLE_TURN * 1.25 && card.getWinningPoints() > 0) {
+        if (turn >= middleTurn * 1.25 && card.getWinningPoints() > 0) {
             discountCoefficient *= 1.25;
         }
 

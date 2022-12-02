@@ -50,6 +50,7 @@ public class GameController {
         try {
             int aiPlayerCount = (int) gameParameters.getComputers().stream().filter(item -> item).count();
             int playersCount = gameParameters.getPlayerNames().size();
+
             if (playersCount == 0 || playersCount > Constants.MAX_PLAYERS) {
                 throw new IllegalArgumentException("Only 1 to 4 players are supported so far");
             }

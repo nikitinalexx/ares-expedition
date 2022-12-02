@@ -69,10 +69,6 @@ public class GameProcessorService extends BaseProcessorService {
                     registerAsyncGameUpdate(gameId);
                 }
 
-                final List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
-
-                deepNetwork.testState(game, players.get(0).getUuid().endsWith("0") ? players.get(0) : players.get(1));
-
                 return null;
             });
         }
