@@ -17,9 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +26,8 @@ import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static com.terraforming.ares.model.Constants.WRITE_STATISTICS_TO_FILE;
 
 /**
  * Created by oleksii.nikitin
@@ -352,34 +352,48 @@ public class GameController {
             }
         }*/
 
-        if (Constants.STATISTICS_BY_CARD) {
-            final Map<Integer, List<Integer>> winCardOccurenceByTurn = gameStatistics.getTurnToWinCardsOccurence();
-            final Map<Integer, List<Integer>> occurenceByTurn = gameStatistics.getTurnToCardsOccurence();
+        if (WRITE_STATISTICS_TO_FILE) {
+            try(FileWriter fw = new FileWriter("cardStats.txt");
+                BufferedWriter writer = new BufferedWriter(fw)){
 
-            for (int cardId = 1; cardId <= 219; cardId++) {
-                System.out.println("Id: " + cardId + ". " + cardService.getCard(cardId).getClass().getSimpleName());
+                final Map<Integer, List<Integer>> winCardOccurenceByTurn = gameStatistics.getTurnToWinCardsOccurence();
+                final Map<Integer, List<Integer>> occurenceByTurn = gameStatistics.getTurnToCardsOccurence();
 
-                for (int turn = 1; turn <= winCardOccurenceByTurn.size() && turn <= 50; turn++) {
-
-                    final List<Integer> winCardOccurence = winCardOccurenceByTurn.getOrDefault(turn, new ArrayList<>());
-                    final List<Integer> cardOccurence = occurenceByTurn.getOrDefault(turn, new ArrayList<>());
-
-                    if (winCardOccurence.isEmpty()) {
-                        for (int k = 0; k < 220; k++) {
-                            winCardOccurence.add(0);
-                        }
+                for (int cardId = 1; cardId <= 219; cardId++) {
+                    if (Constants.WRITE_STATISTICS_TO_CONSOLE) {
+                        System.out.println("Id: " + cardId + ". " + cardService.getCard(cardId).getClass().getSimpleName());
                     }
+                    writer.write("#" + cardId + " " + cardService.getCard(cardId).getClass().getSimpleName() + "\n");
 
-                    if (cardOccurence.isEmpty()) {
-                        for (int k = 0; k < 220; k++) {
-                            cardOccurence.add(0);
+                    for (int turn = 1; turn <= winCardOccurenceByTurn.size() && turn <= 50; turn++) {
+
+                        final List<Integer> winCardOccurence = winCardOccurenceByTurn.getOrDefault(turn, new ArrayList<>());
+                        final List<Integer> cardOccurence = occurenceByTurn.getOrDefault(turn, new ArrayList<>());
+
+                        if (winCardOccurence.isEmpty()) {
+                            for (int k = 0; k < 220; k++) {
+                                winCardOccurence.add(0);
+                            }
                         }
-                    }
 
-                    System.out.println("Turn " + turn + ". " + (double) winCardOccurence.get(cardId) * 100 / cardOccurence.get(cardId));
+                        if (cardOccurence.isEmpty()) {
+                            for (int k = 0; k < 220; k++) {
+                                cardOccurence.add(0);
+                            }
+                        }
+
+                        if (Constants.WRITE_STATISTICS_TO_CONSOLE) {
+                            System.out.println("Turn " + turn + ". " + (double) winCardOccurence.get(cardId) * 100 / cardOccurence.get(cardId));
+                        }
+                        writer.write("." + turn + " " + (double) winCardOccurence.get(cardId) * 100 / cardOccurence.get(cardId) + "\n");
+                    }
+                    writer.write("\n");
                 }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
+
 
         System.out.println("Total games: " + gameStatistics.getTotalGames());
         System.out.println((double) gameStatistics.getTotalTurnsCount() / gameStatistics.getTotalGames());

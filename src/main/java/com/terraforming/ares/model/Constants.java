@@ -48,8 +48,8 @@ public class Constants {
 
     public static final boolean LOG_NET_COMPARISON = false;
 
-    public static final boolean STATISTICS_BY_TURN = false;
-    public static final boolean STATISTICS_BY_CARD = true;
+    public static final boolean WRITE_STATISTICS_TO_FILE = true;
+    public static final boolean WRITE_STATISTICS_TO_CONSOLE = false;
 
 
     private Constants() {}
