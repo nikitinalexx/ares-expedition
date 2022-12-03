@@ -83,14 +83,14 @@ public class AiBlueActionProjectTurn implements AiTurnProcessor {
             if (!game.getPlanetAtTheStartOfThePhase().isOceansMax()) {
                 if ((playedActions.contains(CardAction.ARCTIC_ALGAE)
                         || playedActions.contains(CardAction.FISH))
-                        && player.getMc() > 30) {
+                        && player.getMc() > 60) {
                     aiTurnService.standardProjectTurn(game, player, StandardProjectType.OCEAN);
                     return true;
                 }
             }
             if (!game.getPlanetAtTheStartOfThePhase().isTemperatureMax()) {
                 if ((playedActions.contains(CardAction.LIVESTOCK))
-                        && player.getMc() > 30) {
+                        && player.getMc() > 60) {
                     aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
                     return true;
                 }
@@ -119,7 +119,6 @@ public class AiBlueActionProjectTurn implements AiTurnProcessor {
                     return true;
                 }
             }
-
         }
 
         return result;

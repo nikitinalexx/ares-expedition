@@ -11,6 +11,7 @@ import com.terraforming.ares.services.CardValidationService;
 import com.terraforming.ares.services.ai.CardValueService;
 import com.terraforming.ares.services.ai.DeepNetwork;
 import com.terraforming.ares.services.ai.ProjectionStrategy;
+import com.terraforming.ares.services.ai.RandomBotHelper;
 import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
@@ -18,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -36,6 +38,7 @@ public class AiBuildBlueRedProjectTurn implements AiTurnProcessor {
     private final CardValueService cardValueService;
     private final AiBuildProjectService aiBuildProjectService;
     private final DeepNetwork deepNetwork;
+    private final Random random = new Random();
 
     @Override
     public TurnType getType() {
@@ -66,19 +69,24 @@ public class AiBuildBlueRedProjectTurn implements AiTurnProcessor {
         }
 
 
-        Card selectedCard = cardValueService.getBestCardAsCard(game, player, availableCards, game.getTurns(), true);
+        Card selectedCard;
 
-        if (Constants.LOG_NET_COMPARISON) {
-            System.out.println("Available cards: " + availableCards.stream().map(Card::getClass).map(Class::getSimpleName).collect(Collectors.joining(",")));
-            System.out.println("Chosen card with % " + (selectedCard != null ? selectedCard.getClass().getSimpleName() : null));
-            final BuildProjectPrediction bestProjectToBuild = aiBuildProjectService.getBestProjectToBuild(game, player, Set.of(CardColor.BLUE, CardColor.RED), ProjectionStrategy.FROM_PHASE);
-            if (bestProjectToBuild.isCanBuild()) {
-                System.out.println("Deep network state " + deepNetwork.testState(game, player));
-                System.out.println("Deep network card " + bestProjectToBuild.getCard().getClass().getSimpleName() + " with projected chance " + bestProjectToBuild.getExpectedValue());
+        if (RandomBotHelper.isRandomBot(player)) {
+            selectedCard = availableCards.get(random.nextInt(availableCards.size()));
+        } else {
+            selectedCard = cardValueService.getBestCardAsCard(game, player, availableCards, game.getTurns(), true);
+
+            if (Constants.LOG_NET_COMPARISON) {
+                System.out.println("Available cards: " + availableCards.stream().map(Card::getClass).map(Class::getSimpleName).collect(Collectors.joining(",")));
+                System.out.println("Chosen card with % " + (selectedCard != null ? selectedCard.getClass().getSimpleName() : null));
+                final BuildProjectPrediction bestProjectToBuild = aiBuildProjectService.getBestProjectToBuild(game, player, Set.of(CardColor.BLUE, CardColor.RED), ProjectionStrategy.FROM_PHASE);
+                if (bestProjectToBuild.isCanBuild()) {
+                    System.out.println("Deep network state " + deepNetwork.testState(game, player));
+                    System.out.println("Deep network card " + bestProjectToBuild.getCard().getClass().getSimpleName() + " with projected chance " + bestProjectToBuild.getExpectedValue());
+                }
+                System.out.println();
             }
-            System.out.println();
         }
-
 
         if (selectedCard == null) {
             aiTurnService.skipTurn(player);

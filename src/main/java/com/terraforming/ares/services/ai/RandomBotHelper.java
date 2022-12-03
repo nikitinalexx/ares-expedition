@@ -10,9 +10,9 @@ public class RandomBotHelper {
     public static final boolean FIRST_BOT_IS_RANDOM = true;
 
     public static boolean isRandomBot(Player player) {
-        return true;
+        //return true;
         //return true;
         // return player.isAi();
-       // return player.isAi() && player.getUuid().endsWith("0") && FIRST_BOT_IS_RANDOM;
+        return player.isAi() && player.getUuid().endsWith("0") && FIRST_BOT_IS_RANDOM;
     }
 }

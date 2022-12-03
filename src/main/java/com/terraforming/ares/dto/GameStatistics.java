@@ -38,12 +38,19 @@ public class GameStatistics {
     }
 
     public void cardOccured(int turn, int card) {
+        if (turn == 0) {
+            turn++;
+        }
         final List<Integer> turnCards = turnToCardsOccurence.get(turn);
 
         turnCards.set(card, turnCards.get(card) + 1);
+
     }
 
     public void winCardOccured(int turn, int card) {
+        if (turn == 0) {
+            turn++;
+        }
         final List<Integer> turnCards = turnToWinCardsOccurence.get(turn);
 
         turnCards.set(card, turnCards.get(card) + 1);

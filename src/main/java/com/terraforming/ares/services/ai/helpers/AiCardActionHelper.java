@@ -84,21 +84,10 @@ public class AiCardActionHelper {
             List<ActionInputData> actionsInputData = cardMetadata.getActionsInputData();
             if (!actionsInputData.isEmpty()) {
                 ActionInputData actionInputData = actionsInputData.get(0);
-                if (actionInputData.getType() == ActionInputDataType.MICROBE_ANIMAL_CARD) {
-                    if (cardMetadata.getCardAction() == CardAction.DECOMPOSING_FUNGUS) {
-                        if (hasCardWithAnimalOrMicrobe(player)) {
-                            return null;
-                        } else {
-                            return "No animal or microbe on any card";
-                        }
-                    } else {
-                        if (hasAnimalOrMicrobeCard(game, player)) {
-                            return null;
-                        } else {
-                            return "No animal or microbe card";
-                        }
-                    }
-
+                if (cardMetadata.getCardAction() == CardAction.DECOMPOSING_FUNGUS) {
+                    return hasCardWithCheapAnimalOrMicrobe(player) ? null : "No cheap animal or microbe on any card";
+                } else if (cardMetadata.getCardAction() == CardAction.CONSERVED_BIOME) {
+                    return hasAnimalOrMicrobeCard(game, player) ? null : "No animal or microbe card";
                 } else if (actionInputData.getType() == ActionInputDataType.DISCARD_CARD) {
                     if (actionInputData.getMax() == 1) {
                         if (player.getHand().size() != 0) {
@@ -210,10 +199,11 @@ public class AiCardActionHelper {
     }
 
 
-    private boolean hasCardWithAnimalOrMicrobe(Player player) {
+    private boolean hasCardWithCheapAnimalOrMicrobe(Player player) {
         return player.getPlayed().getCards().stream()
                 .map(cardService::getCard)
                 .filter(card -> card.getCollectableResource() == CardCollectableResource.ANIMAL || card.getCollectableResource() == CardCollectableResource.MICROBE)
+                .filter(card -> !VALUABLE_ANIMAL_CARDS.contains(card.getClass()))
                 .anyMatch(card -> player.getCardResourcesCount().get(card.getClass()) > 0);
     }
 
@@ -244,6 +234,9 @@ public class AiCardActionHelper {
 
     private static Map<Class<?>, Integer> MICROBE_ANIMAL_DISCARD_PRIORITIES;
     private static Map<Class<?>, Integer> CRITICAL_RESOURCE_VALUES_ON_CARDS;
+    private static Set<Class<?>> VALUABLE_ANIMAL_CARDS = Set.of(
+            Birds.class, Fish.class, Livestock.class
+    );
 
     static {
         MICROBE_ANIMAL_DISCARD_PRIORITIES = new HashMap<>();

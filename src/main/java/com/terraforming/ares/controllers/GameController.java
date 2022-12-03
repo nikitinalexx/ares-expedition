@@ -23,6 +23,8 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -84,55 +86,92 @@ public class GameController {
 
     @GetMapping("/simulations/{simulationCount}")
     public void runSimulations(@PathVariable int simulationCount) throws FileNotFoundException {
-        GameParameters gameParameters = GameParameters.builder()
-                .playerNames(List.of("ai1", "ai2"))
-                .computers(List.of(true, true))
-                .mulligan(false)
-                .expansions(List.of(Expansion.BASE, Expansion.BUFFED_CORPORATION))
-                .build();
-
-        List<MarsGame> games = new ArrayList<>();
-        final GameStatistics gameStatistics = new GameStatistics();
-
-        System.out.println("Starting simulations");
-        System.out.println();
-
-        long startTime = System.currentTimeMillis();
-
-        List<MarsGameDataset> marsGameDatasets = new ArrayList<>();
-
-        for (int i = 1; i <= simulationCount; i++) {
-            MarsGame marsGame = gameService.createNewSimulation(gameParameters);
-            if (Constants.COLLECT_DATASET) {
-                MarsGameDataset dataSet = simulationProcessorService.runSimulationWithDataset(marsGame);
-                if (dataSet != null) {
-                    marsGameDatasets.add(dataSet);
-                }
-            } else {
-                simulationProcessorService.processSimulation(marsGame);
-            }
-
-
-            games.add(marsGame);
-
-            if (i != 0 && i % 10 == 0) {
-                long spentTime = System.currentTimeMillis() - startTime;
-
-                long timePerGame = (spentTime / i);
-                System.out.println("Time left: " + (simulationCount - i) * timePerGame / 1000);
-            }
-
-            if (i % 500 == 0) {
-                gatherStatistics(games, gameStatistics);
-                games.clear();
-            }
+        if (simulationCount < 8) {
+            return;
         }
 
-        if (Constants.COLLECT_DATASET) {
-            saveDatasets(marsGameDatasets);
+        int threads = 8;
+        GameStatistics gameStatistics = new GameStatistics();
+
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        for (int i = 0; i < threads; i++) {
+            Runnable worker = new WorkerThread(simulationCount / 8, gameStatistics);
+            executor.execute(worker);
         }
+        executor.shutdown();
+        while (!executor.isTerminated()) {
+        }
+        System.out.println("Finished all threads");
+
 
         printStatistics(gameStatistics);
+    }
+
+    class WorkerThread implements Runnable {
+        int simulationCount;
+        GameStatistics gameStatistics;
+
+        WorkerThread(int simulationCount, GameStatistics gameStatistics) {
+            this.simulationCount = simulationCount;
+            this.gameStatistics = gameStatistics;
+        }
+
+        @Override
+        public void run() {
+            GameParameters gameParameters = GameParameters.builder()
+                    .playerNames(List.of("ai1", "ai2"))
+                    .computers(List.of(true, true))
+                    .mulligan(true)
+                    .expansions(List.of(Expansion.BASE, Expansion.BUFFED_CORPORATION))
+                    .build();
+
+            List<MarsGame> games = new ArrayList<>();
+
+            System.out.println("Starting simulations");
+            System.out.println();
+
+            long startTime = System.currentTimeMillis();
+
+            List<MarsGameDataset> marsGameDatasets = new ArrayList<>();
+
+            for (int i = 1; i <= simulationCount; i++) {
+                MarsGame marsGame = gameService.createNewSimulation(gameParameters);
+                if (Constants.COLLECT_DATASET) {
+                    MarsGameDataset dataSet = simulationProcessorService.runSimulationWithDataset(marsGame);
+                    if (dataSet != null) {
+                        marsGameDatasets.add(dataSet);
+                    }
+                } else {
+                    simulationProcessorService.processSimulation(marsGame);
+                }
+
+
+                games.add(marsGame);
+
+                if (i != 0 && i % 10 == 0) {
+                    long spentTime = System.currentTimeMillis() - startTime;
+
+                    long timePerGame = (spentTime / i);
+                    System.out.println("Time left: " + (simulationCount - i) * timePerGame / 1000);
+                }
+
+                if (i % 100 == 0) {
+                    gatherStatistics(games, gameStatistics);
+                    games.clear();
+                }
+            }
+
+            gatherStatistics(games, gameStatistics);
+
+            if (Constants.COLLECT_DATASET) {
+                try {
+                    saveDatasets(marsGameDatasets);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
     }
 
     private void gatherStatistics(List<MarsGame> games, GameStatistics gameStatistics) {
@@ -338,6 +377,7 @@ public class GameController {
             }
         }
 
+        System.out.println("Total games: " + gameStatistics.getTotalGames());
         System.out.println((double) gameStatistics.getTotalTurnsCount() / gameStatistics.getTotalGames());
 
         System.out.println((double) gameStatistics.getTotalPointsCount() / (2 * gameStatistics.getTotalGames()));

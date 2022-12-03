@@ -51,7 +51,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
 
         List<Integer> possiblePhases = new ArrayList<>();
 
-        if (previousChosenPhase == null || previousChosenPhase != 1 && previousChosenPhase != 2) {
+        if (!RandomBotHelper.isRandomBot(player) && (previousChosenPhase == null || previousChosenPhase != 1 && previousChosenPhase != 2)) {
             int phase = chooseBetweenFirstAndSecondPhase(game, player);
             if (phase != 0) {
                 possiblePhases.add(phase);
@@ -90,7 +90,16 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                 if (previousChosenPhase == null) {
                     chosenPhase = 5;
                 } else {
-                    chosenPhase = (previousChosenPhase == 4) ? 5 : 4;
+                    if (previousChosenPhase != 4 && previousChosenPhase != 5) {
+                        int ratio = random.nextInt(100);
+                        if (ratio < 40) {
+                            chosenPhase = 4;
+                        } else {
+                            chosenPhase = 5;
+                        }
+                    } else {
+                        chosenPhase = (previousChosenPhase == 4) ? 5 : 4;
+                    }
                 }
             }
         } else {
@@ -183,8 +192,12 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             return false;
         }
 
-        if (player.getMc() <= 5) {//when running really low unable to do anything
-            return true;
+        if (RandomBotHelper.isRandomBot(player)) {
+            if (player.getMc() <= 5) {//when running really low unable to do anything
+                return true;
+            }
+
+            return random.nextInt(5) == 0;
         }
 
         //when have a good income
@@ -327,6 +340,10 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
     private boolean mayPlayPhaseFive(MarsGame game, Player player) {
         if (player.getPreviousChosenPhase() != null && player.getPreviousChosenPhase() == 5) {
             return false;
+        }
+
+        if (RandomBotHelper.isRandomBot(player)) {
+            return random.nextInt(5) == 0;
         }
 
         if (draftCardsService.countExtraCardsToTake(player) >= 2
