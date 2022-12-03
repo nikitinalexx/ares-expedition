@@ -5,6 +5,7 @@ import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.ai.CardValueService;
+import com.terraforming.ares.services.ai.RandomBotHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -38,7 +39,7 @@ public class AiSellCardsLastRoundTurn implements AiTurnProcessor {
 
         for (int i = 0; i < cardsToSellCount; i++) {
             Integer cardToSell;
-            if (player.getUuid().endsWith("0") && Constants.FIRST_BOT_IS_RANDOM) {
+            if (RandomBotHelper.isRandomBot(player)) {
                 cardToSell = allCards.get(random.nextInt(allCards.size()));
             } else {
                 cardToSell = cardValueService.getWorstCard(game, player, allCards, game.getTurns());

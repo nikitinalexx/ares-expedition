@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -93,6 +92,7 @@ public class GameController {
                 .build();
 
         List<MarsGame> games = new ArrayList<>();
+        final GameStatistics gameStatistics = new GameStatistics();
 
         System.out.println("Starting simulations");
         System.out.println();
@@ -101,7 +101,7 @@ public class GameController {
 
         List<MarsGameDataset> marsGameDatasets = new ArrayList<>();
 
-        for (int i = 0; i < simulationCount; i++) {
+        for (int i = 1; i <= simulationCount; i++) {
             MarsGame marsGame = gameService.createNewSimulation(gameParameters);
             if (Constants.COLLECT_DATASET) {
                 MarsGameDataset dataSet = simulationProcessorService.runSimulationWithDataset(marsGame);
@@ -121,13 +121,87 @@ public class GameController {
                 long timePerGame = (spentTime / i);
                 System.out.println("Time left: " + (simulationCount - i) * timePerGame / 1000);
             }
+
+            if (i % 500 == 0) {
+                gatherStatistics(games, gameStatistics);
+                games.clear();
+            }
         }
 
         if (Constants.COLLECT_DATASET) {
             saveDatasets(marsGameDatasets);
         }
 
-        statistics(games);
+        printStatistics(gameStatistics);
+    }
+
+    private void gatherStatistics(List<MarsGame> games, GameStatistics gameStatistics) {
+        synchronized (gameStatistics) {
+            gameStatistics.addTotalGames(games.size());
+            for (MarsGame game : games) {
+                gameStatistics.addTotalTurnsCount(game.getTurns());
+
+                List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
+                Player firstPlayer = players.get(0);
+                Player secondPlayer = players.get(1);
+
+                int firstPlayerPoints = winPointsService.countWinPoints(firstPlayer, game);
+                int secondPlayerPoints = winPointsService.countWinPoints(secondPlayer, game);
+
+                gameStatistics.addTotalPointsCount(firstPlayerPoints + secondPlayerPoints);
+
+            }
+
+            List<MarsGame> finishedGames = games.stream()
+                    .filter(MarsGame::gameEndCondition)
+                    .filter(game -> game.getPlayerUuidToPlayer().size() == 2)
+                    .filter(game -> game.getTurns() <= GameStatistics.MAX_TURNS_TO_CONSIDER)
+                    .collect(Collectors.toList());
+
+            for (int i = 0; i < finishedGames.size(); i++) {
+                MarsGame game = finishedGames.get(i);
+
+                game.getPlayerUuidToPlayer().values().forEach(
+                        player -> {
+                            for (Integer playedCard : player.getPlayed().getCards()) {
+                                if (playedCard < 250) {
+                                    gameStatistics.cardOccured(
+                                            player.getPlayed().getCardToTurn().get(playedCard),
+                                            playedCard
+                                    );
+                                }
+                            }
+                        }
+                );
+
+
+                List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
+                Player firstPlayer = players.get(0);
+                Player secondPlayer = players.get(1);
+
+                int firstPlayerPoints = winPointsService.countWinPoints(firstPlayer, game);
+                int secondPlayerPoints = winPointsService.countWinPoints(secondPlayer, game);
+
+                if (firstPlayerPoints != secondPlayerPoints) {
+                    Player winCardsPlayer = (firstPlayerPoints > secondPlayerPoints ? firstPlayer : secondPlayer);
+
+                    if (winCardsPlayer.getUuid().endsWith("0")) {
+                        gameStatistics.addFirstWins();
+                    } else {
+                        gameStatistics.addSecondWins();
+                    }
+
+                    for (Integer playedCard : winCardsPlayer.getPlayed().getCards()) {
+                        if (playedCard < 250) {
+                            gameStatistics.winCardOccured(
+                                    winCardsPlayer.getPlayed().getCardToTurn().get(playedCard),
+                                    playedCard
+                            );
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private void saveDatasets(List<MarsGameDataset> marsGameDatasets) throws FileNotFoundException {
@@ -205,103 +279,71 @@ public class GameController {
         pw.println();
     }
 
-    private void statistics(List<MarsGame> games) {
-        List<Integer> winCardOccurenceBeforeHalf = new ArrayList<>();
-        List<Integer> winCardOccurenceAfterHalf = new ArrayList<>();
 
-        List<Integer> occurenceBeforeHalf = new ArrayList<>();
-        List<Integer> occurenceAfterHalf = new ArrayList<>();
+    private void printStatistics(GameStatistics gameStatistics) {
+        /*
+        if (Constants.STATISTICS_BY_TURN) {
+            for (int i = 1; i <= winCardOccurenceByTurn.size(); i++) {
+                System.out.println("Turn " + i);
 
-        long totalTurnsCount = 0;
-        long totalPointsCount = 0;
+                final List<Integer> winCardOccurence = winCardOccurenceByTurn.getOrDefault(i, new ArrayList<>());
+                final List<Integer> cardOccurence = occurenceByTurn.getOrDefault(i, new ArrayList<>());
 
-        long firstWins = 0;
-        long secondWins = 0;
-
-
-        for (int i = 0; i < 220; i++) {
-            winCardOccurenceBeforeHalf.add(0);
-            winCardOccurenceAfterHalf.add(0);
-            occurenceBeforeHalf.add(0);
-            occurenceAfterHalf.add(0);
-        }
-
-        List<MarsGame> finishedGames = games.stream()
-                .filter(MarsGame::gameEndCondition)
-                .filter(game -> game.getPlayerUuidToPlayer().size() == 2)
-                .collect(Collectors.toList());
-
-        System.out.println("Games count: " + finishedGames.size());
-
-        for (int i = 0; i < finishedGames.size(); i++) {
-            MarsGame game = finishedGames.get(i);
-
-            int totalTurns = game.getTurns();
-
-            totalTurnsCount += totalTurns;
-
-            game.getPlayerUuidToPlayer().values().forEach(
-                    player -> {
-                        for (Integer playedCard : player.getPlayed().getCards()) {
-                            if (playedCard < 250) {
-                                if (player.getPlayed().getCardToTurn().get(playedCard) <= totalTurns / 2) {
-                                    occurenceBeforeHalf.set(playedCard, occurenceBeforeHalf.get(playedCard) + 1);
-                                } else {
-                                    occurenceAfterHalf.set(playedCard, occurenceAfterHalf.get(playedCard) + 1);
-                                }
-                            }
-                        }
+                if (winCardOccurence.isEmpty()) {
+                    for (int j = 0; j < 220; j++) {
+                        winCardOccurence.add(0);
                     }
-            );
-
-
-            List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
-            Player firstPlayer = players.get(0);
-            Player secondPlayer = players.get(1);
-
-            int firstPlayerPoints = winPointsService.countWinPoints(firstPlayer, game);
-            int secondPlayerPoints = winPointsService.countWinPoints(secondPlayer, game);
-
-            totalPointsCount += firstPlayerPoints;
-            totalPointsCount += secondPlayerPoints;
-
-            if (firstPlayerPoints != secondPlayerPoints) {
-                Player winCardsPlayer = (firstPlayerPoints > secondPlayerPoints ? firstPlayer : secondPlayer);
-
-                if (winCardsPlayer.getUuid().endsWith("0")) {
-                    firstWins++;
-                } else {
-                    secondWins++;
                 }
 
-                for (Integer playedCard : winCardsPlayer.getPlayed().getCards()) {
-                    if (playedCard < 250) {
-                        if (winCardsPlayer.getPlayed().getCardToTurn().get(playedCard) <= totalTurns / 2) {
-                            winCardOccurenceBeforeHalf.set(playedCard, winCardOccurenceBeforeHalf.get(playedCard) + 1);
-                        } else {
-                            winCardOccurenceAfterHalf.set(playedCard, winCardOccurenceAfterHalf.get(playedCard) + 1);
+                if (cardOccurence.isEmpty()) {
+                    for (int j = 0; j < 220; j++) {
+                        cardOccurence.add(0);
+                    }
+                }
+
+                for (int j = 1; j < cardOccurence.size(); j++) {
+                    System.out.println("j: " + j + " " + " % " + (double) winCardOccurence.get(j) * 100 / cardOccurence.get(j) + " " + cardService.getCard(j).getClass().getSimpleName());
+                }
+
+                System.out.println();
+            }
+        }*/
+
+        if (Constants.STATISTICS_BY_CARD) {
+            final Map<Integer, List<Integer>> winCardOccurenceByTurn = gameStatistics.getTurnToWinCardsOccurence();
+            final Map<Integer, List<Integer>> occurenceByTurn = gameStatistics.getTurnToCardsOccurence();
+
+            for (int cardId = 1; cardId <= 219; cardId++) {
+                System.out.println("Id: " + cardId + ". " + cardService.getCard(cardId).getClass().getSimpleName());
+
+                for (int turn = 1; turn <= winCardOccurenceByTurn.size() && turn <= 50; turn++) {
+
+                    final List<Integer> winCardOccurence = winCardOccurenceByTurn.getOrDefault(turn, new ArrayList<>());
+                    final List<Integer> cardOccurence = occurenceByTurn.getOrDefault(turn, new ArrayList<>());
+
+                    if (winCardOccurence.isEmpty()) {
+                        for (int k = 0; k < 220; k++) {
+                            winCardOccurence.add(0);
                         }
                     }
+
+                    if (cardOccurence.isEmpty()) {
+                        for (int k = 0; k < 220; k++) {
+                            cardOccurence.add(0);
+                        }
+                    }
+
+                    System.out.println("Turn " + turn + ". " + (double) winCardOccurence.get(cardId) * 100 / cardOccurence.get(cardId));
                 }
             }
         }
 
-        System.out.println("All");
-        for (int i = 1; i < occurenceBeforeHalf.size(); i++) {
-//            System.out.println("i: " + i + " " + " % " + (double) winCardOccurenceBeforeHalf.get(i) * 100 / occurenceBeforeHalf.get(i) + " " + " % " + (double) winCardOccurenceAfterHalf.get(i) * 100 / occurenceAfterHalf.get(i) + " " + cardService.getCard(i).getClass().getSimpleName());
+        System.out.println((double) gameStatistics.getTotalTurnsCount() / gameStatistics.getTotalGames());
 
-            System.out.println("cardToWeightFirstHalf.put(" + i + ", " + (double) winCardOccurenceBeforeHalf.get(i) * 100 / occurenceBeforeHalf.get(i) + ");");
-        }
-//
-        for (int i = 1; i < occurenceBeforeHalf.size(); i++) {
-            System.out.println("cardToWeightSecondHalf.put(" + i + ", " + (double) winCardOccurenceAfterHalf.get(i) * 100 / occurenceAfterHalf.get(i) + ");");
-        }
+        System.out.println((double) gameStatistics.getTotalPointsCount() / (2 * gameStatistics.getTotalGames()));
 
-        System.out.println((double) totalTurnsCount / finishedGames.size());
-
-        System.out.println((double) totalPointsCount / (2 * finishedGames.size()));
-
-        System.out.println("Old: " + firstWins + "; New: " + secondWins + "; Ratio: " + ((double) firstWins / (firstWins + secondWins)));
+        System.out.println("Old: " + gameStatistics.getFirstWins() + "; New: " + gameStatistics.getSecondWins() +
+                "; Ratio: " + ((double) gameStatistics.getFirstWins() / (gameStatistics.getFirstWins() + gameStatistics.getSecondWins())));
     }
 
     @GetMapping("/game/player/{playerUuid}")

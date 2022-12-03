@@ -9,6 +9,7 @@ import com.terraforming.ares.services.CardValidationService;
 import com.terraforming.ares.services.DraftCardsService;
 import com.terraforming.ares.services.SpecialEffectsService;
 import com.terraforming.ares.services.ai.CardValueService;
+import com.terraforming.ares.services.ai.RandomBotHelper;
 import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
@@ -80,7 +81,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
         int chosenPhase;
 
         if (possiblePhases.isEmpty()) {
-            if (player.getUuid().endsWith("0") && Constants.FIRST_BOT_IS_RANDOM) {
+            if (RandomBotHelper.isRandomBot(player)) {
                 chosenPhase = random.nextInt(previousChosenPhase != null ? 4 : 5) + 1;
                 if (previousChosenPhase != null && chosenPhase == previousChosenPhase) {
                     chosenPhase++;
@@ -316,7 +317,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             return false;
         }
 
-        if (player.getUuid().endsWith("0") && Constants.FIRST_BOT_IS_RANDOM) {
+        if (RandomBotHelper.isRandomBot(player)) {
             return mayPlayPhaseThreeRandom(game, player);
         } else {
             return mayPlayPhaseThreeSmart(game, player);

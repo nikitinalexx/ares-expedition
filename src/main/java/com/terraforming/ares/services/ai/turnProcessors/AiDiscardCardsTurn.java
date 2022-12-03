@@ -8,6 +8,7 @@ import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.CardValidationService;
 import com.terraforming.ares.services.ai.CardValueService;
+import com.terraforming.ares.services.ai.RandomBotHelper;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -51,7 +52,7 @@ public class AiDiscardCardsTurn implements AiTurnProcessor {
         for (int i = 0; i < cardsToKeep; i++) {
             //keep best card
             Integer bestCard;
-            if (player.getUuid().endsWith("0") && Constants.FIRST_BOT_IS_RANDOM) {
+            if (RandomBotHelper.isRandomBot(player)) {
                 bestCard = cardsToDiscard.get(random.nextInt(cardsToDiscard.size()));
             } else {
                 bestCard = cardValueService.getBestCard(game, player, cardsToDiscard, game.getTurns());

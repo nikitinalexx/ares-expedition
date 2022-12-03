@@ -69,7 +69,7 @@ public class MarsGameDataset {
                 .temperatureLevel(game.getPlanet().getTemperatureValue())
                 .oceansLevel(Constants.MAX_OCEANS - game.getPlanet().oceansLeft())
                 .opponentWinPoints(winPointsService.countWinPoints(anotherPlayer, game))
-                .opponentMcIncome(anotherPlayer.getMcIncome())
+                .opponentMcIncome(anotherPlayer.getMcIncome() + anotherPlayer.getTerraformingRating())
                 .opponentMc(anotherPlayer.getMc())
                 .opponentSteelIncome(anotherPlayer.getSteelIncome())
                 .opponentTitaniumIncome(anotherPlayer.getTitaniumIncome())
