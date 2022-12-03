@@ -3,11 +3,10 @@ package com.terraforming.ares.services.ai;
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
-import com.terraforming.ares.model.income.Gain;
-import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.PaymentValidationService;
 import com.terraforming.ares.services.SpecialEffectsService;
+import com.terraforming.ares.services.ai.dto.CardValueResponse;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -484,7 +483,7 @@ public class CardValueService {
         return PLAYER_COUNT_TO_MIDDLE_TURN.get(playerCount);
     }
 
-    public Integer getWorstCard(MarsGame game, Player player, List<Integer> cards, int turn) {
+    public CardValueResponse getWorstCard(MarsGame game, Player player, List<Integer> cards, int turn) {
         double firstHalfCoefficient;
         double secondHalfCoefficient;
         final double middleTurn = getMiddleTurn(game);
@@ -496,19 +495,19 @@ public class CardValueService {
             secondHalfCoefficient = 1.0;
         }
 
-        double worstCard = 500.0;
+        double worstCardValue = 500.0;
         int worstCardIndex = 0;
 
         for (int i = 0; i < cards.size(); i++) {
-            double worth = getCardWorth(cards.get(i), firstHalfCoefficient, secondHalfCoefficient, game, player, turn);
-            if (worth < worstCard) {
-                worstCard = worth;
+            double cardValue = getCardValue(cards.get(i), firstHalfCoefficient, secondHalfCoefficient, game, player, turn);
+            if (cardValue < worstCardValue) {
+                worstCardValue = cardValue;
                 worstCardIndex = i;
             }
         }
 
 
-        return cards.get(worstCardIndex);
+        return CardValueResponse.of(cards.get(worstCardIndex), worstCardValue);
     }
 
     public Card getBestCardAsCard(MarsGame game, Player player, List<Card> cards, int turn, boolean ignoreCardIfBad) {
@@ -532,7 +531,7 @@ public class CardValueService {
         Card bestCard = cards.get(0);
 
         for (int i = 0; i < cards.size(); i++) {
-            double worth = getCardWorth(cards.get(i).getId(), firstHalfCoefficient, secondHalfCoefficient, game, player, turn);
+            double worth = getCardValue(cards.get(i).getId(), firstHalfCoefficient, secondHalfCoefficient, game, player, turn);
             if (worth >= bestCardWorth) {
                 bestCardWorth = worth;
                 bestCard = cards.get(i);
@@ -564,7 +563,7 @@ public class CardValueService {
         int bestCardId = 0;
 
         for (int i = 0; i < cards.size(); i++) {
-            double worth = getCardWorth(cards.get(i), firstHalfCoefficient, secondHalfCoefficient, game, player, turn);
+            double worth = getCardValue(cards.get(i), firstHalfCoefficient, secondHalfCoefficient, game, player, turn);
             if (worth >= bestCard) {
                 bestCard = worth;
                 bestCardId = cards.get(i);
@@ -824,7 +823,7 @@ public class CardValueService {
         return (int) card.getTags().stream().filter(t -> t == tag).count();
     }
 
-    private double getCardWorth(Integer card, double firstHalfCoefficient, double secondHalfCoefficient, MarsGame game, Player player, int turn) {
+    private double getCardValue(Integer card, double firstHalfCoefficient, double secondHalfCoefficient, MarsGame game, Player player, int turn) {
         return cardToWeightFirstHalf.get(card) * firstHalfCoefficient + cardToWeightSecondHalf.get(card) * secondHalfCoefficient
                 * getCardCoefficient(game, player, cardService.getCard(card), turn);
     }

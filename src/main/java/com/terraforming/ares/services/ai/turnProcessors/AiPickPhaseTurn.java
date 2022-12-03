@@ -311,7 +311,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
 
         return activeCards
                 .stream()
-                .filter(card -> aiCardActionHelper.validateAction(game, player, card) == null)
+                .filter(card -> aiCardActionHelper.isSmartPlayAction(game, player, card))
                 .limit(requiredActiveCardsCount)
                 .count() == requiredActiveCardsCount;
     }
@@ -320,7 +320,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
         return player.getPlayed().getCards().stream()
                 .map(cardService::getCard)
                 .filter(Card::isActiveCard)
-                .filter(card -> aiCardActionHelper.validateAction(game, player, card) == null)
+                .filter(card -> aiCardActionHelper.isSmartPlayAction(game, player, card))
                 .limit(3)
                 .count() == 3;
     }

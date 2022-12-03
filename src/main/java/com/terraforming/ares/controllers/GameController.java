@@ -148,7 +148,7 @@ public class GameController {
 
                 games.add(marsGame);
 
-                if (i != 0 && i % 10 == 0) {
+                if (i != 0 && i % 50 == 0) {
                     long spentTime = System.currentTimeMillis() - startTime;
 
                     long timePerGame = (spentTime / i);

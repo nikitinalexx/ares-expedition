@@ -42,7 +42,7 @@ public class AiSellCardsLastRoundTurn implements AiTurnProcessor {
             if (RandomBotHelper.isRandomBot(player)) {
                 cardToSell = allCards.get(random.nextInt(allCards.size()));
             } else {
-                cardToSell = cardValueService.getWorstCard(game, player, allCards, game.getTurns());
+                cardToSell = cardValueService.getWorstCard(game, player, allCards, game.getTurns()).getCardId();
             }
             allCards.remove(cardToSell);
             cardsToSell.add(cardToSell);
