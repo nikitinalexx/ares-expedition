@@ -156,12 +156,16 @@ public class GameController {
                 }
 
                 if (i % 100 == 0) {
+                    System.out.println("Before gather statistics");
                     gatherStatistics(games, gameStatistics);
+                    System.out.println("After gather statistics");
                     games.clear();
                 }
             }
 
+            System.out.println("Before final gather statistics");
             gatherStatistics(games, gameStatistics);
+            System.out.println("After final gather statistics");
 
             if (Constants.COLLECT_DATASET) {
                 try {
@@ -175,72 +179,72 @@ public class GameController {
     }
 
     private void gatherStatistics(List<MarsGame> games, GameStatistics gameStatistics) {
-        synchronized (gameStatistics) {
-            gameStatistics.addTotalGames(games.size());
-            for (MarsGame game : games) {
-                gameStatistics.addTotalTurnsCount(game.getTurns());
+        System.out.println("Inside gather statistics");
+        gameStatistics.addTotalGames(games.size());
+        for (MarsGame game : games) {
+            gameStatistics.addTotalTurnsCount(game.getTurns());
 
-                List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
-                Player firstPlayer = players.get(0);
-                Player secondPlayer = players.get(1);
+            List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
+            Player firstPlayer = players.get(0);
+            Player secondPlayer = players.get(1);
 
-                int firstPlayerPoints = winPointsService.countWinPoints(firstPlayer, game);
-                int secondPlayerPoints = winPointsService.countWinPoints(secondPlayer, game);
+            int firstPlayerPoints = winPointsService.countWinPoints(firstPlayer, game);
+            int secondPlayerPoints = winPointsService.countWinPoints(secondPlayer, game);
 
-                gameStatistics.addTotalPointsCount(firstPlayerPoints + secondPlayerPoints);
+            gameStatistics.addTotalPointsCount(firstPlayerPoints + secondPlayerPoints);
 
-            }
+        }
 
-            List<MarsGame> finishedGames = games.stream()
-                    .filter(MarsGame::gameEndCondition)
-                    .filter(game -> game.getPlayerUuidToPlayer().size() == 2)
-                    .filter(game -> game.getTurns() <= GameStatistics.MAX_TURNS_TO_CONSIDER)
-                    .collect(Collectors.toList());
+        List<MarsGame> finishedGames = games.stream()
+                .filter(MarsGame::gameEndCondition)
+                .filter(game -> game.getPlayerUuidToPlayer().size() == 2)
+                .filter(game -> game.getTurns() <= GameStatistics.MAX_TURNS_TO_CONSIDER)
+                .collect(Collectors.toList());
 
-            for (int i = 0; i < finishedGames.size(); i++) {
-                MarsGame game = finishedGames.get(i);
+        for (int i = 0; i < finishedGames.size(); i++) {
+            MarsGame game = finishedGames.get(i);
 
-                game.getPlayerUuidToPlayer().values().forEach(
-                        player -> {
-                            for (Integer playedCard : player.getPlayed().getCards()) {
-                                if (playedCard < 250) {
-                                    gameStatistics.cardOccured(
-                                            player.getPlayed().getCardToTurn().get(playedCard),
-                                            playedCard
-                                    );
-                                }
+            game.getPlayerUuidToPlayer().values().forEach(
+                    player -> {
+                        for (Integer playedCard : player.getPlayed().getCards()) {
+                            if (playedCard < 250) {
+                                gameStatistics.cardOccured(
+                                        player.getPlayed().getCardToTurn().get(playedCard),
+                                        playedCard
+                                );
                             }
                         }
-                );
-
-
-                List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
-                Player firstPlayer = players.get(0);
-                Player secondPlayer = players.get(1);
-
-                int firstPlayerPoints = winPointsService.countWinPoints(firstPlayer, game);
-                int secondPlayerPoints = winPointsService.countWinPoints(secondPlayer, game);
-
-                if (firstPlayerPoints != secondPlayerPoints) {
-                    Player winCardsPlayer = (firstPlayerPoints > secondPlayerPoints ? firstPlayer : secondPlayer);
-
-                    if (winCardsPlayer.getUuid().endsWith("0")) {
-                        gameStatistics.addFirstWins();
-                    } else {
-                        gameStatistics.addSecondWins();
                     }
+            );
 
-                    for (Integer playedCard : winCardsPlayer.getPlayed().getCards()) {
-                        if (playedCard < 250) {
-                            gameStatistics.winCardOccured(
-                                    winCardsPlayer.getPlayed().getCardToTurn().get(playedCard),
-                                    playedCard
-                            );
-                        }
+
+            List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
+            Player firstPlayer = players.get(0);
+            Player secondPlayer = players.get(1);
+
+            int firstPlayerPoints = winPointsService.countWinPoints(firstPlayer, game);
+            int secondPlayerPoints = winPointsService.countWinPoints(secondPlayer, game);
+
+            if (firstPlayerPoints != secondPlayerPoints) {
+                Player winCardsPlayer = (firstPlayerPoints > secondPlayerPoints ? firstPlayer : secondPlayer);
+
+                if (winCardsPlayer.getUuid().endsWith("0")) {
+                    gameStatistics.addFirstWins();
+                } else {
+                    gameStatistics.addSecondWins();
+                }
+
+                for (Integer playedCard : winCardsPlayer.getPlayed().getCards()) {
+                    if (playedCard < 250) {
+                        gameStatistics.winCardOccured(
+                                winCardsPlayer.getPlayed().getCardToTurn().get(playedCard),
+                                playedCard
+                        );
                     }
                 }
             }
         }
+        System.out.println("Going out of gatherStatistics");
     }
 
     private void saveDatasets(List<MarsGameDataset> marsGameDatasets) throws FileNotFoundException {

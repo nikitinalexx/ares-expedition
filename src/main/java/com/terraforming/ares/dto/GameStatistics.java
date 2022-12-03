@@ -1,6 +1,7 @@
 package com.terraforming.ares.dto;
 
 import lombok.Getter;
+import lombok.Synchronized;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,7 +38,7 @@ public class GameStatistics {
         }
     }
 
-    public void cardOccured(int turn, int card) {
+    public synchronized void cardOccured(int turn, int card) {
         if (turn == 0) {
             turn++;
         }
@@ -47,7 +48,7 @@ public class GameStatistics {
 
     }
 
-    public void winCardOccured(int turn, int card) {
+    public synchronized void winCardOccured(int turn, int card) {
         if (turn == 0) {
             turn++;
         }
@@ -56,23 +57,23 @@ public class GameStatistics {
         turnCards.set(card, turnCards.get(card) + 1);
     }
 
-    public void addTotalGames(int games) {
+    public synchronized void addTotalGames(int games) {
         totalGames += games;
     }
 
-    public void addTotalTurnsCount(int turnsCount) {
+    public synchronized void addTotalTurnsCount(int turnsCount) {
         totalTurnsCount += turnsCount;
     }
 
-    public void addTotalPointsCount(int points) {
+    public synchronized void addTotalPointsCount(int points) {
         totalPointsCount += points;
     }
 
-    public void addFirstWins() {
+    public synchronized void addFirstWins() {
         firstWins++;
     }
 
-    public void addSecondWins() {
+    public synchronized void addSecondWins() {
         secondWins++;
     }
 
