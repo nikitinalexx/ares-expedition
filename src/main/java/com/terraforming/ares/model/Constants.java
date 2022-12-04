@@ -44,8 +44,12 @@ public class Constants {
 
     public static final int ACHIEVEMENTS_SIZE = 3;
 
-    public static final boolean FIRST_BOT_IS_RANDOM = false;
     public static final boolean COLLECT_DATASET = false;
+
+    public static final boolean LOG_NET_COMPARISON = false;
+
+    public static final boolean WRITE_STATISTICS_TO_FILE = false;
+    public static final boolean WRITE_STATISTICS_TO_CONSOLE = false;
 
 
     private Constants() {}

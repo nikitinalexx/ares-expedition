@@ -9,6 +9,8 @@ import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.GameService;
 import com.terraforming.ares.services.StateContextProvider;
 import com.terraforming.ares.services.TurnTypeService;
+import com.terraforming.ares.services.ai.turnProcessors.AiSecondPhaseActionProcessor;
+import com.terraforming.ares.services.ai.turnProcessors.AiThirdPhaseActionProcessor;
 import com.terraforming.ares.services.ai.turnProcessors.AiTurnProcessor;
 import com.terraforming.ares.states.Action;
 import com.terraforming.ares.states.State;
@@ -29,6 +31,8 @@ public class AiService {
     private final StateFactory stateFactory;
     private final StateContextProvider stateContextProvider;
     private final GameService gameService;
+    private final AiSecondPhaseActionProcessor aiSecondPhaseActionProcessor;
+    private final AiThirdPhaseActionProcessor aiThirdPhaseActionProcessor;
 
     private final Map<TurnType, AiTurnProcessor> turnProcessors;
 
@@ -36,7 +40,7 @@ public class AiService {
                      TurnTypeService turnTypeService,
                      StateFactory stateFactory,
                      StateContextProvider stateContextProvider,
-                     GameService gameService) {
+                     GameService gameService, AiSecondPhaseActionProcessor aiSecondPhaseActionProcessor, AiThirdPhaseActionProcessor aiThirdPhaseActionProcessor) {
         this.turnTypeService = turnTypeService;
         this.stateFactory = stateFactory;
         this.stateContextProvider = stateContextProvider;
@@ -45,6 +49,8 @@ public class AiService {
         turnProcessors = turnProcessor.stream().collect(Collectors.toMap(
                 AiTurnProcessor::getType, Function.identity()
         ));
+        this.aiSecondPhaseActionProcessor = aiSecondPhaseActionProcessor;
+        this.aiThirdPhaseActionProcessor = aiThirdPhaseActionProcessor;
     }
 
     public void makeAiTurns(MarsGame game) {
@@ -80,29 +86,28 @@ public class AiService {
 
         List<TurnType> possibleTurns = gameService.getPossibleTurns(game, player.getUuid());
 
-
-        TurnType turnToProcess = getTurnToProcess(possibleTurns, player);
-
-        if (turnProcessors.containsKey(turnToProcess)) {
-            boolean processed = turnProcessors.get(turnToProcess).processTurn(game, player);
-
-            if (!processed) {
-                if (possibleTurns.contains(TurnType.PLANT_FOREST)) {
-                    turnProcessors.get(TurnType.PLANT_FOREST).processTurn(game, player);
-                } else if (possibleTurns.contains(TurnType.INCREASE_TEMPERATURE)) {
-                    turnProcessors.get(TurnType.INCREASE_TEMPERATURE).processTurn(game, player);
-                } else {
-                    turnProcessors.get(TurnType.SKIP_TURN).processTurn(game, player);
-                }
-            }
-        } else if (turnToProcess == TurnType.GAME_END) {
-            System.out.println("GAME_END");
+        if (possibleTurns.size() == 1 && possibleTurns.get(0) == TurnType.DISCARD_CARDS) {
+            turnProcessors.get(possibleTurns.get(0)).processTurn(game, player);
+        } else if (game.getStateType() == StateType.PERFORM_BLUE_ACTION) {
+            aiThirdPhaseActionProcessor.processTurn(possibleTurns, game, player);
+        } else if (game.getStateType() == StateType.BUILD_BLUE_RED_PROJECTS) {
+            aiSecondPhaseActionProcessor.processTurn(possibleTurns, game, player);
         } else {
-            throw new IllegalArgumentException("Could not process the turn " + turnToProcess);
+            TurnType turnToProcess = getTurnToProcess(possibleTurns, player);
+
+            if (turnProcessors.containsKey(turnToProcess)) {
+                turnProcessors.get(turnToProcess).processTurn(game, player);
+            } else {
+                throw new IllegalArgumentException("Could not process the turn " + turnToProcess);
+            }
         }
     }
 
     private TurnType getTurnToProcess(List<TurnType> possibleTurns, Player player) {
+        if (possibleTurns.contains(TurnType.MULLIGAN)) {
+            return TurnType.MULLIGAN;
+        }
+
         if (possibleTurns.contains(TurnType.UNMI_RT) && player.getMc() >= 6) {
             return TurnType.UNMI_RT;
         }
@@ -119,7 +124,13 @@ public class AiService {
             return TurnType.PERFORM_BLUE_ACTION;
         }
 
-        return possibleTurns.get(0);
+        for (int i = 0; i < possibleTurns.size(); i++) {
+            if (possibleTurns.get(i) != TurnType.UNMI_RT && possibleTurns.get(i) != TurnType.SELL_CARDS) {
+                return possibleTurns.get(i);
+            }
+        }
+
+        throw new IllegalStateException("Unreachable");
     }
 
 }

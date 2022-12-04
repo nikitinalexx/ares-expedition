@@ -6,8 +6,11 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.turn.SkipTurn;
 import com.terraforming.ares.model.turn.TurnType;
+import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 /**
  * Created by oleksii.nikitin
@@ -16,6 +19,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class SkipTurnProcessor implements TurnProcessor<SkipTurn> {
+    private final CardService cardService;
 
     @Override
     public TurnType getType() {
@@ -26,6 +30,14 @@ public class SkipTurnProcessor implements TurnProcessor<SkipTurn> {
     public TurnResponse processTurn(SkipTurn turn, MarsGame game) {
         int currentPhase = game.getCurrentPhase();
         Player player = game.getPlayerByUuid(turn.getPlayerUuid());
+
+        if (currentPhase == Constants.BUILD_BLUE_RED_PROJECTS_PHASE && !player.isPickedCardInSecondPhase()) {
+            List<Integer> cards = cardService.dealCards(game, 1);
+
+            for (Integer card : cards) {
+                player.getHand().addCard(card);
+            }
+        }
 
         if (currentPhase == 1) {
             player.setCanBuildInFirstPhase(0);

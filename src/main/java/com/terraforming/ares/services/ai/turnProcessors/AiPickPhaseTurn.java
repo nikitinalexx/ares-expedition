@@ -8,7 +8,8 @@ import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.CardValidationService;
 import com.terraforming.ares.services.DraftCardsService;
 import com.terraforming.ares.services.SpecialEffectsService;
-import com.terraforming.ares.services.ai.CardValueService;
+import com.terraforming.ares.services.ai.ICardValueService;
+import com.terraforming.ares.services.ai.RandomBotHelper;
 import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
@@ -35,7 +36,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
     private final AiCardBuildParamsHelper aiCardParamsHelper;
     private final SpecialEffectsService specialEffectsService;
     private final DraftCardsService draftCardsService;
-    private final CardValueService cardValueService;
+    private final ICardValueService cardValueService;
 
 
     @Override
@@ -50,7 +51,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
 
         List<Integer> possiblePhases = new ArrayList<>();
 
-        if (previousChosenPhase == null || previousChosenPhase != 1 && previousChosenPhase != 2) {
+        if (!RandomBotHelper.isRandomBot(player) && (previousChosenPhase == null || previousChosenPhase != 1 && previousChosenPhase != 2)) {
             int phase = chooseBetweenFirstAndSecondPhase(game, player);
             if (phase != 0) {
                 possiblePhases.add(phase);
@@ -80,7 +81,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
         int chosenPhase;
 
         if (possiblePhases.isEmpty()) {
-            if (player.getUuid().endsWith("0") && Constants.FIRST_BOT_IS_RANDOM) {
+            if (RandomBotHelper.isRandomBot(player)) {
                 chosenPhase = random.nextInt(previousChosenPhase != null ? 4 : 5) + 1;
                 if (previousChosenPhase != null && chosenPhase == previousChosenPhase) {
                     chosenPhase++;
@@ -89,7 +90,16 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                 if (previousChosenPhase == null) {
                     chosenPhase = 5;
                 } else {
-                    chosenPhase = (previousChosenPhase == 4) ? 5 : 4;
+                    if (previousChosenPhase != 4 && previousChosenPhase != 5) {
+                        int ratio = random.nextInt(100);
+                        if (ratio < 40) {
+                            chosenPhase = 4;
+                        } else {
+                            chosenPhase = 5;
+                        }
+                    } else {
+                        chosenPhase = (previousChosenPhase == 4) ? 5 : 4;
+                    }
                 }
             }
         } else {
@@ -120,7 +130,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             return 0;
         }
 
-        Card bestCard = cardValueService.getBestCardAsCard(game, player, playableCards, game.getTurns(), true);
+        Card bestCard = cardValueService.getBestCardToBuild(game, player, playableCards, game.getTurns(), true);
         if (bestCard == null) {
             return 0;
         }
@@ -149,7 +159,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                 })
                 .collect(Collectors.toList());
 
-        return cardValueService.getBestCardAsCard(game, player, playableCards, game.getTurns(), true) != null;
+        return cardValueService.getBestCardToBuild(game, player, playableCards, game.getTurns(), true) != null;
     }
 
     private boolean mayPlayPhaseTwo(MarsGame game, Player player) {
@@ -174,7 +184,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                 })
                 .collect(Collectors.toList());
 
-        return cardValueService.getBestCardAsCard(game, player, playableCards, game.getTurns(), true) != null;
+        return cardValueService.getBestCardToBuild(game, player, playableCards, game.getTurns(), true) != null;
     }
 
     private boolean mayPlayPhaseFour(MarsGame game, Player player) {
@@ -182,14 +192,24 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             return false;
         }
 
-        if (player.getMc() <= 5) {//when running really low unable to do anything
+        if (RandomBotHelper.isRandomBot(player)) {
+            if (player.getMc() <= 5) {//when running really low unable to do anything
+                return true;
+            }
+
+            return random.nextInt(5) == 0;
+        }
+
+        if (player.getMc() <= 5 && player.getCardIncome() >= 3) {//when running really low unable to do anything
             return true;
         }
 
         //when have a good income
-        if (player.getMcIncome() > 20 || player.getHeatIncome() > 15 || player.getPlantsIncome() > 5) {
+        if (player.getMcIncome() > 20 || (player.getHeatIncome() > 15 && !game.getPlanet().isTemperatureMax()) || player.getPlantsIncome() > 5) {
             return true;
         }
+
+
 
         //when need and can fill restructured resources
         if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.RESTRUCTURED_RESOURCES)
@@ -210,8 +230,13 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
         return false;
     }
 
+    private Player getAnotherPlayer(MarsGame game, Player player) {
+        return game.getPlayerUuidToPlayer().values().stream().filter(p -> !p.getUuid().equals(player.getUuid()))
+                .findFirst().orElseThrow(() -> new IllegalStateException("Another player not found"));
+    }
+
     private int calcTotalIncome(MarsGame game, Player player) {
-        return player.getMcIncome() +
+        return player.getMcIncome() + player.getTerraformingRating() +
                 player.getSteelIncome() * 2 +
                 player.getTitaniumIncome() * 3 +
                 player.getPlantsIncome() * (game.getPlanet().isOxygenMax() ? 1 : 2) +
@@ -293,11 +318,15 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             return true;
         }
 
+        if (player.getMc() > 200) {
+            return true;
+        }
+
         requiredActiveCardsCount = Math.max(0, requiredActiveCardsCount);
 
         return activeCards
                 .stream()
-                .filter(card -> aiCardActionHelper.validateAction(game, player, card) == null)
+                .filter(card -> aiCardActionHelper.isSmartPlayAction(game, player, card))
                 .limit(requiredActiveCardsCount)
                 .count() == requiredActiveCardsCount;
     }
@@ -306,7 +335,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
         return player.getPlayed().getCards().stream()
                 .map(cardService::getCard)
                 .filter(Card::isActiveCard)
-                .filter(card -> aiCardActionHelper.validateAction(game, player, card) == null)
+                .filter(card -> aiCardActionHelper.isSmartPlayAction(game, player, card))
                 .limit(3)
                 .count() == 3;
     }
@@ -316,7 +345,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             return false;
         }
 
-        if (player.getUuid().endsWith("0") && Constants.FIRST_BOT_IS_RANDOM) {
+        if (RandomBotHelper.isRandomBot(player)) {
             return mayPlayPhaseThreeRandom(game, player);
         } else {
             return mayPlayPhaseThreeSmart(game, player);
@@ -326,6 +355,10 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
     private boolean mayPlayPhaseFive(MarsGame game, Player player) {
         if (player.getPreviousChosenPhase() != null && player.getPreviousChosenPhase() == 5) {
             return false;
+        }
+
+        if (RandomBotHelper.isRandomBot(player)) {
+            return random.nextInt(5) == 0;
         }
 
         if (draftCardsService.countExtraCardsToTake(player) >= 2

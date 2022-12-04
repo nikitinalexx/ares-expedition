@@ -1,10 +1,10 @@
 package com.terraforming.ares.services.ai.turnProcessors;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.TurnType;
-import com.terraforming.ares.services.ai.CardValueService;
+import com.terraforming.ares.services.ai.ICardValueService;
+import com.terraforming.ares.services.ai.RandomBotHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -21,7 +21,7 @@ import java.util.Random;
 public class AiSellCardsLastRoundTurn implements AiTurnProcessor {
     private final Random random = new Random();
     private final AiTurnService aiTurnService;
-    private final CardValueService cardValueService;
+    private final ICardValueService cardValueService;
 
     @Override
     public TurnType getType() {
@@ -38,10 +38,10 @@ public class AiSellCardsLastRoundTurn implements AiTurnProcessor {
 
         for (int i = 0; i < cardsToSellCount; i++) {
             Integer cardToSell;
-            if (player.getUuid().endsWith("0") && Constants.FIRST_BOT_IS_RANDOM) {
+            if (RandomBotHelper.isRandomBot(player)) {
                 cardToSell = allCards.get(random.nextInt(allCards.size()));
             } else {
-                cardToSell = cardValueService.getWorstCard(game, player, allCards, game.getTurns());
+                cardToSell = cardValueService.getWorstCard(game, player, allCards, game.getTurns()).getCardId();
             }
             allCards.remove(cardToSell);
             cardsToSell.add(cardToSell);
