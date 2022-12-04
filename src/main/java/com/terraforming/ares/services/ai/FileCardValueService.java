@@ -1,15 +1,19 @@
 package com.terraforming.ares.services.ai;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.dto.GameStatistics;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.PaymentValidationService;
 import com.terraforming.ares.services.SpecialEffectsService;
+import com.terraforming.ares.services.ai.dto.CardValue;
 import com.terraforming.ares.services.ai.dto.CardValueResponse;
 import org.springframework.stereotype.Service;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -17,49 +21,63 @@ import java.util.*;
  * Creation date 25.11.2022
  */
 @Service
-public class FileCardValueService {
+public class FileCardValueService implements ICardValueService {
     private static final double MAX_PRIORITY = 10.0;
     private final CardService cardService;
     private final PaymentValidationService paymentValidationService;
     private final SpecialEffectsService specialEffectsService;
+    private final AiBalanceService aiBalanceService;
 
-    public FileCardValueService(CardService cardService, PaymentValidationService paymentValidationService, SpecialEffectsService specialEffectsService) throws IOException {
+    private Map<Integer, Map<Integer, CardValue>> cardIdToTurnToValueFirstPlayer;
+    private Map<Integer, Map<Integer, CardValue>> cardIdToTurnToValueSecondPlayer;
+
+
+    public FileCardValueService(CardService cardService, PaymentValidationService paymentValidationService, SpecialEffectsService specialEffectsService, AiBalanceService aiBalanceService) throws IOException {
         this.cardService = cardService;
         this.paymentValidationService = paymentValidationService;
         this.specialEffectsService = specialEffectsService;
+        this.aiBalanceService = aiBalanceService;
 
-        try(FileReader fr = new FileReader("cardStats.txt");
+        this.cardIdToTurnToValueFirstPlayer = initCardStatsFromFile("cardStatsSmartVsSmart.txt");
+        this.cardIdToTurnToValueSecondPlayer = initCardStatsFromFile("cardStatsSmartVsSmart.txt");
+    }
+
+    private Map<Integer, Map<Integer, CardValue>> initCardStatsFromFile(String fileName) throws IOException {
+        Map<Integer, Map<Integer, CardValue>> result = new HashMap<>();
+        try(FileReader fr = new FileReader(fileName);
             BufferedReader reader = new BufferedReader(fr)) {
             String line;
+            int cardId = -1;
             while ((line = reader.readLine()) != null) {
                 if (line.startsWith("#")) {
                     line = line.substring(1);
-                    final int cardId = Integer.parseInt(line.split(" ")[0]);
+                    cardId = Integer.parseInt(line.split(" ")[0]);
+                    result.put(cardId, new HashMap<>());
                 } else if (line.startsWith(".")) {
                     line = line.substring(1);
+                    String[] turnWithOccurence = line.split(" ");
+                    final int turnId = Integer.parseInt(turnWithOccurence[0]);
+                    CardValue cardValue;
+                    if (turnWithOccurence[1].equals("NaN")) {
+                        cardValue = CardValue.builder().isNan(true).build();
+                    } else {
+                        cardValue = CardValue.builder().value(Double.parseDouble(turnWithOccurence[1])).build();
+                    }
+                    result.get(cardId).put(turnId, cardValue);
 
                 }
             }
+            System.out.println("Completed reading file");
         }
+        return result;
     }
 
     public CardValueResponse getWorstCard(MarsGame game, Player player, List<Integer> cards, int turn) {
-        double firstHalfCoefficient;
-        double secondHalfCoefficient;
-        final double middleTurn = getMiddleTurn(game);
-        if (turn < middleTurn) {
-            firstHalfCoefficient = (double) turn / middleTurn;
-            secondHalfCoefficient = 1.0 - firstHalfCoefficient;
-        } else {
-            firstHalfCoefficient = 0.0;
-            secondHalfCoefficient = 1.0;
-        }
-
         double worstCardValue = 500.0;
         int worstCardIndex = 0;
 
         for (int i = 0; i < cards.size(); i++) {
-            double cardValue = getCardValue(cards.get(i), firstHalfCoefficient, secondHalfCoefficient, game, player, turn);
+            double cardValue = getCardValue(cards.get(i), game, player, turn);
             if (cardValue < worstCardValue) {
                 worstCardValue = cardValue;
                 worstCardIndex = i;
@@ -70,35 +88,23 @@ public class FileCardValueService {
         return CardValueResponse.of(cards.get(worstCardIndex), worstCardValue);
     }
 
-    public Card getBestCardAsCard(MarsGame game, Player player, List<Card> cards, int turn, boolean ignoreCardIfBad) {
+    public Card getBestCardToBuild(MarsGame game, Player player, List<Card> cards, int turn, boolean ignoreCardIfBad) {
         if (cards.isEmpty()) {
             return null;
-        }
-
-        final double middleTurn = getMiddleTurn(game);
-
-        double firstHalfCoefficient;
-        double secondHalfCoefficient;
-        if (turn < middleTurn) {
-            firstHalfCoefficient = (double) turn / middleTurn;
-            secondHalfCoefficient = 1.0 - firstHalfCoefficient;
-        } else {
-            firstHalfCoefficient = 0.0;
-            secondHalfCoefficient = 1.0;
         }
 
         double bestCardWorth = 0.0;
         Card bestCard = cards.get(0);
 
         for (int i = 0; i < cards.size(); i++) {
-            double worth = getCardValue(cards.get(i).getId(), firstHalfCoefficient, secondHalfCoefficient, game, player, turn);
+            double worth = getCardValue(cards.get(i).getId(), game, player, turn);
             if (worth >= bestCardWorth) {
                 bestCardWorth = worth;
                 bestCard = cards.get(i);
             }
         }
 
-        if (ignoreCardIfBad && bestCardWorth <= 50.0) {
+        if (ignoreCardIfBad && bestCardWorth < aiBalanceService.getMinimumBuildCardWorth()) {
             return null;
         }
 
@@ -106,24 +112,11 @@ public class FileCardValueService {
     }
 
     public Integer getBestCard(MarsGame game, Player player, List<Integer> cards, int turn) {
-        double firstHalfCoefficient;
-        double secondHalfCoefficient;
-
-        final double middleTurn = getMiddleTurn(game);
-
-        if (turn < middleTurn) {
-            firstHalfCoefficient = (double) turn / middleTurn;
-            secondHalfCoefficient = 1.0 - firstHalfCoefficient;
-        } else {
-            firstHalfCoefficient = 0.0;
-            secondHalfCoefficient = 1.0;
-        }
-
         double bestCard = 0.0;
         int bestCardId = 0;
 
         for (int i = 0; i < cards.size(); i++) {
-            double worth = getCardValue(cards.get(i), firstHalfCoefficient, secondHalfCoefficient, game, player, turn);
+            double worth = getCardValue(cards.get(i), game, player, turn);
             if (worth >= bestCard) {
                 bestCard = worth;
                 bestCardId = cards.get(i);
@@ -134,7 +127,7 @@ public class FileCardValueService {
     }
 
     private double getCardCoefficient(MarsGame game, Player player, Card card, int turn) {
-        final double middleTurn = getMiddleTurn(game);
+        final double middleTurn = 10;
         double coefficient = 1.0;
         if (card.getSpecialEffects().contains(SpecialEffect.ADVANCED_ALLOYS)) {
             if (turn < middleTurn * 1.75 && (player.getSteelIncome() > 0 || player.getTitaniumIncome() > 1)) {
@@ -303,20 +296,8 @@ public class FileCardValueService {
                             }
                         }
 
-                        if (cardAction == CardAction.STEELWORKS || cardAction == CardAction.IRON_WORKS) {
-                            if (player.getHeatIncome() > 5) {
-                                return 1.5;
-                            } else {
-                                return 1.25;
-                            }
-                        }
-
-                        if (cardAction == CardAction.CARETAKER_CONTRACT) {
-                            if (player.getHeatIncome() >= 8) {
-                                return 1.5;
-                            } else if (player.getHeatIncome() >= 4) {
-                                return 1.25;
-                            }
+                        if ((cardAction == CardAction.STEELWORKS || cardAction == CardAction.IRON_WORKS || cardAction == CardAction.CARETAKER_CONTRACT) && player.getHeatIncome() >= 8 && game.getPlanetAtTheStartOfThePhase().isTemperatureMax()) {
+                            return 1.1;
                         }
 
                         if (cardAction == CardAction.POWER_INFRASTRUCTURE && game.getPlanet().isTemperatureMax()) {
@@ -383,8 +364,24 @@ public class FileCardValueService {
         return (int) card.getTags().stream().filter(t -> t == tag).count();
     }
 
-    private double getCardValue(Integer card, double firstHalfCoefficient, double secondHalfCoefficient, MarsGame game, Player player, int turn) {
-        return cardToWeightFirstHalf.get(card) * firstHalfCoefficient + cardToWeightSecondHalf.get(card) * secondHalfCoefficient
+    private double getCardValue(Integer card, MarsGame game, Player player, int turn) {
+        if (turn == 0) {
+            turn++;
+        }
+
+        Map<Integer, CardValue> turnToCardValue = (player.getUuid().startsWith("0") ? cardIdToTurnToValueFirstPlayer.get(card) : cardIdToTurnToValueSecondPlayer.get(card));
+
+        int totalStatsCount = 0;
+        double totalValue = 0;
+        for (int i = turn; i < turn + aiBalanceService.getFutureTurnCardStatsToConsider() && i <= GameStatistics.MAX_TURNS_TO_CONSIDER; i++) {
+            CardValue cardValue = turnToCardValue.get(i);
+            if (!cardValue.isNan()) {
+                totalValue += cardValue.getValue();
+                totalStatsCount++;
+            }
+        }
+
+        return (totalStatsCount == 0 ? 0 : totalValue / totalStatsCount)
                 * getCardCoefficient(game, player, cardService.getCard(card), turn);
     }
 

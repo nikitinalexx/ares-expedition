@@ -104,6 +104,10 @@ public class AiService {
     }
 
     private TurnType getTurnToProcess(List<TurnType> possibleTurns, Player player) {
+        if (possibleTurns.contains(TurnType.MULLIGAN)) {
+            return TurnType.MULLIGAN;
+        }
+
         if (possibleTurns.contains(TurnType.UNMI_RT) && player.getMc() >= 6) {
             return TurnType.UNMI_RT;
         }

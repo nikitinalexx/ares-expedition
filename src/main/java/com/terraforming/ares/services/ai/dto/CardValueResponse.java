@@ -6,7 +6,7 @@ import lombok.Getter;
 @Builder
 @Getter
 public class CardValueResponse {
-    int cardId;
+    Integer cardId;
     double worth;
 
     public static CardValueResponse of(int cardId, double worth) {

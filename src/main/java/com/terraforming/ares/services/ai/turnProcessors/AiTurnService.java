@@ -227,6 +227,13 @@ public class AiTurnService {
         makeAsyncTurn(player, new SellCardsLastRoundTurn(player.getUuid(), cards));
     }
 
+    public void mulliganCards(MarsGame game, Player player, List<Integer> cards) {
+        if (!player.getHand().getCards().containsAll(cards)) {
+            throw new IllegalStateException("Can't mulligan cards that you don't have");
+        }
+        makeSyncTurn(player, game, new MulliganTurn(player.getUuid(), cards));
+    }
+
     public void performBlueAction(MarsGame game, Player player, int projectId, List<Integer> inputParams) {
         String errorMessage = cardValidationService.validateBlueAction(player, game, projectId, inputParams);
 

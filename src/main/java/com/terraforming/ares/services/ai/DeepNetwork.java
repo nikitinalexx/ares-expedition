@@ -23,7 +23,7 @@ public class DeepNetwork {
     private final FeedForwardNetwork marsNetwork;
     private final WinPointsService winPointsService;
 
-    private static final float[] MAX_INPUTS = new float[]{58.0f, 231.0f, 85.0f, 863.0f, 5.0f, 11.0f, 6.0f, 84.0f, 55.0f, 352.0f, 9.0f, 32.0f, 51.0f, 14.0f, 30.0f, 9.0f, 217.0f, 85.0f, 863.0f, 5.0f, 11.0f, 6.0f, 84.0f, 55.0f, 352.0f, 9.0f, 51.0f};
+    private static final float[] MAX_INPUTS = new float[]{48.0f, 182.0f, 146.0f, 812.0f, 10.0f, 11.0f, 15.0f, 169.0f, 49.0f, 299.0f, 8.0f, 24.0f, 53.0f, 14.0f, 30.0f, 9.0f, 167.0f, 146.0f, 812.0f, 10.0f, 11.0f, 15.0f, 169.0f, 49.0f, 299.0f, 8.0f, 53.0f};
     private static final Tensor MAX_INPUTS_TENSOR = new Tensor(MAX_INPUTS);
 
     public DeepNetwork(WinPointsService winPointsService) throws IOException, ClassNotFoundException {

@@ -11,7 +11,7 @@ import com.terraforming.ares.model.action.ActionInputDataType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.TerraformingService;
 import com.terraforming.ares.services.ai.AiBalanceService;
-import com.terraforming.ares.services.ai.CardValueService;
+import com.terraforming.ares.services.ai.ICardValueService;
 import com.terraforming.ares.services.ai.dto.ActionInputParamsResponse;
 import com.terraforming.ares.services.ai.dto.CardValueResponse;
 import com.terraforming.ares.validation.action.ActionValidator;
@@ -32,10 +32,10 @@ public class AiCardActionHelper {
     private final CardService cardService;
     private final TerraformingService terraformingService;
     private final Random random = new Random();
-    private final CardValueService cardValueService;
+    private final ICardValueService cardValueService;
     private final AiBalanceService aiBalanceService;
 
-    public AiCardActionHelper(List<ActionValidator<?>> validators, CardService cardService, TerraformingService terraformingService, CardValueService cardValueService, AiBalanceService aiBalanceService) {
+    public AiCardActionHelper(List<ActionValidator<?>> validators, CardService cardService, TerraformingService terraformingService, ICardValueService cardValueService, AiBalanceService aiBalanceService) {
         blueActionValidators = validators.stream().collect(
                 Collectors.toMap(
                         ActionValidator::getType,
@@ -276,10 +276,8 @@ public class AiCardActionHelper {
     }
 
 
-    private List<Integer> getCardsToDiscardSmart(MarsGame game, Player player, int max) {
+    public List<Integer> getCardsToDiscardSmart(MarsGame game, Player player, int max) {
         List<Integer> cards = new ArrayList<>(player.getHand().getCards());
-
-        max = (max == 1) ? 1 : random.nextInt(max - 1) + 1;
 
         List<Integer> cardsToDiscard = new ArrayList<>();
         while (cardsToDiscard.size() != max) {
@@ -288,8 +286,9 @@ public class AiCardActionHelper {
             }
             CardValueResponse cardValueResponse = cardValueService.getWorstCard(game, player, cards, game.getTurns());
 
-            if (aiBalanceService.isCardWorthToDiscard(cardValueResponse.getWorth())) {
+            if (aiBalanceService.isCardWorthToDiscard(player, cardValueResponse.getWorth())) {
                 cardsToDiscard.add(cardValueResponse.getCardId());
+                cards.remove(cardValueResponse.getCardId());
             } else {
                 break;
             }

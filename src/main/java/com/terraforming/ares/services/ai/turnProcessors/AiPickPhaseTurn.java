@@ -8,7 +8,7 @@ import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.CardValidationService;
 import com.terraforming.ares.services.DraftCardsService;
 import com.terraforming.ares.services.SpecialEffectsService;
-import com.terraforming.ares.services.ai.CardValueService;
+import com.terraforming.ares.services.ai.ICardValueService;
 import com.terraforming.ares.services.ai.RandomBotHelper;
 import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
@@ -36,7 +36,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
     private final AiCardBuildParamsHelper aiCardParamsHelper;
     private final SpecialEffectsService specialEffectsService;
     private final DraftCardsService draftCardsService;
-    private final CardValueService cardValueService;
+    private final ICardValueService cardValueService;
 
 
     @Override
@@ -130,7 +130,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             return 0;
         }
 
-        Card bestCard = cardValueService.getBestCardAsCard(game, player, playableCards, game.getTurns(), true);
+        Card bestCard = cardValueService.getBestCardToBuild(game, player, playableCards, game.getTurns(), true);
         if (bestCard == null) {
             return 0;
         }
@@ -159,7 +159,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                 })
                 .collect(Collectors.toList());
 
-        return cardValueService.getBestCardAsCard(game, player, playableCards, game.getTurns(), true) != null;
+        return cardValueService.getBestCardToBuild(game, player, playableCards, game.getTurns(), true) != null;
     }
 
     private boolean mayPlayPhaseTwo(MarsGame game, Player player) {
@@ -184,7 +184,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                 })
                 .collect(Collectors.toList());
 
-        return cardValueService.getBestCardAsCard(game, player, playableCards, game.getTurns(), true) != null;
+        return cardValueService.getBestCardToBuild(game, player, playableCards, game.getTurns(), true) != null;
     }
 
     private boolean mayPlayPhaseFour(MarsGame game, Player player) {
@@ -200,10 +200,16 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             return random.nextInt(5) == 0;
         }
 
-        //when have a good income
-        if (player.getMcIncome() > 20 || player.getHeatIncome() > 15 || player.getPlantsIncome() > 5) {
+        if (player.getMc() <= 5 && player.getCardIncome() >= 3) {//when running really low unable to do anything
             return true;
         }
+
+        //when have a good income
+        if (player.getMcIncome() > 20 || (player.getHeatIncome() > 15 && !game.getPlanet().isTemperatureMax()) || player.getPlantsIncome() > 5) {
+            return true;
+        }
+
+
 
         //when need and can fill restructured resources
         if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.RESTRUCTURED_RESOURCES)
@@ -224,8 +230,13 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
         return false;
     }
 
+    private Player getAnotherPlayer(MarsGame game, Player player) {
+        return game.getPlayerUuidToPlayer().values().stream().filter(p -> !p.getUuid().equals(player.getUuid()))
+                .findFirst().orElseThrow(() -> new IllegalStateException("Another player not found"));
+    }
+
     private int calcTotalIncome(MarsGame game, Player player) {
-        return player.getMcIncome() +
+        return player.getMcIncome() + player.getTerraformingRating() +
                 player.getSteelIncome() * 2 +
                 player.getTitaniumIncome() * 3 +
                 player.getPlantsIncome() * (game.getPlanet().isOxygenMax() ? 1 : 2) +
@@ -304,6 +315,10 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
         }
 
         if (player.getHeat() >= 40 && !game.getPlanet().isTemperatureMax() || player.getPlants() >= 32 && !game.getPlanet().isOxygenMax()) {
+            return true;
+        }
+
+        if (player.getMc() > 200) {
             return true;
         }
 

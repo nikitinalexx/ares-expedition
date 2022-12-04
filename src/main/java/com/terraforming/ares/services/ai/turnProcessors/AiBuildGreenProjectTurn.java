@@ -8,8 +8,8 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.CardValidationService;
-import com.terraforming.ares.services.ai.CardValueService;
 import com.terraforming.ares.services.ai.DeepNetwork;
+import com.terraforming.ares.services.ai.ICardValueService;
 import com.terraforming.ares.services.ai.ProjectionStrategy;
 import com.terraforming.ares.services.ai.RandomBotHelper;
 import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
@@ -35,7 +35,7 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
     private final CardValidationService cardValidationService;
     private final AiPaymentService aiPaymentHelper;
     private final AiCardBuildParamsHelper aiCardParamsHelper;
-    private final CardValueService cardValueService;
+    private final ICardValueService cardValueService;
     private final AiBuildProjectService aiBuildProjectService;
     private final DeepNetwork deepNetwork;
     private final Random random = new Random();
@@ -73,7 +73,9 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
         if (RandomBotHelper.isRandomBot(player)) {
             selectedCard = availableCards.get(random.nextInt(availableCards.size()));
         } else {
-            selectedCard = cardValueService.getBestCardAsCard(game, player, availableCards, game.getTurns(), true);
+            selectedCard = cardValueService.getBestCardToBuild(game, player, availableCards, game.getTurns(), true);
+
+
 
             if (Constants.LOG_NET_COMPARISON) {
                 System.out.println("Available cards: " + availableCards.stream().map(Card::getClass).map(Class::getSimpleName).collect(Collectors.joining(",")));
@@ -84,13 +86,12 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
                 if (bestProjectToBuild.isCanBuild()) {
                     System.out.println("Deep network state " + deepNetwork.testState(game, player));
                     System.out.println("Deep network card " + bestProjectToBuild.getCard().getClass().getSimpleName() + " with projected chance " + bestProjectToBuild.getExpectedValue());
+                } else {
+                    System.out.println("Deep network : do not build");
                 }
                 System.out.println();
             }
         }
-
-
-
 
 
         if (selectedCard == null) {

@@ -12,6 +12,7 @@ import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.repositories.GameRepositoryImpl;
 import com.terraforming.ares.repositories.caching.CachingGameRepository;
 import com.terraforming.ares.services.*;
+import com.terraforming.ares.services.ai.AiBalanceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -45,6 +46,7 @@ public class GameController {
     private final TurnService turnService;
     private final GameRepositoryImpl gameRepository;
     private final SimulationProcessorService simulationProcessorService;
+    private final AiBalanceService aiBalanceService;
 
     @PostMapping("/game/new")
     public PlayerUuidsDto startNewGame(@RequestBody GameParameters gameParameters) {
@@ -84,36 +86,72 @@ public class GameController {
         }
     }
 
-    @GetMapping("/simulations/{simulationCount}")
-    public void runSimulations(@PathVariable int simulationCount) throws FileNotFoundException {
-        if (simulationCount < 8) {
+    @GetMapping("/simulations")
+    public void runSimulations(@RequestBody SimulationsRequest request) {
+        int availableProcessors = Runtime.getRuntime().availableProcessors();
+
+        if (request.getSimulationsCount() < availableProcessors) {
             return;
         }
 
-        int threads = 8;
-        GameStatistics gameStatistics = new GameStatistics();
 
-        ExecutorService executor = Executors.newFixedThreadPool(threads);
-        for (int i = 0; i < threads; i++) {
-            Runnable worker = new WorkerThread(simulationCount / 8, gameStatistics);
-            executor.execute(worker);
+        int threads = availableProcessors;
+
+        List<Integer> calibrationValues = aiBalanceService.calibrationValues();
+
+        if (request.isWithParamCalibration()) {
+            for (Integer calibrationValue : calibrationValues) {
+                System.out.println();
+                System.out.println("Calibration value " + calibrationValue);
+                aiBalanceService.setCalibrationValue(calibrationValue);
+
+                GameStatistics gameStatistics = new GameStatistics();
+
+                ExecutorService executor = Executors.newFixedThreadPool(threads);
+                for (int i = 0; i < threads; i++) {
+                    Runnable worker = new WorkerThread(request.getSimulationsCount() / threads, gameStatistics, request.isWithParamCalibration());
+                    executor.execute(worker);
+                }
+                executor.shutdown();
+                while (!executor.isTerminated()) {
+                }
+                System.out.println("Finished all threads");
+
+
+                printStatistics(gameStatistics);
+            }
+        } else {
+            System.out.println("Starting simulations");
+
+            GameStatistics gameStatistics = new GameStatistics();
+
+            ExecutorService executor = Executors.newFixedThreadPool(threads);
+            for (int i = 0; i < threads; i++) {
+                Runnable worker = new WorkerThread(request.getSimulationsCount() / threads, gameStatistics, request.isWithParamCalibration());
+                executor.execute(worker);
+            }
+            executor.shutdown();
+            while (!executor.isTerminated()) {
+            }
+            System.out.println("Finished all threads");
+
+
+            printStatistics(gameStatistics);
         }
-        executor.shutdown();
-        while (!executor.isTerminated()) {
-        }
-        System.out.println("Finished all threads");
 
-
-        printStatistics(gameStatistics);
     }
 
     class WorkerThread implements Runnable {
         int simulationCount;
         GameStatistics gameStatistics;
+        boolean withCalibration;
 
-        WorkerThread(int simulationCount, GameStatistics gameStatistics) {
+        WorkerThread(int simulationCount, GameStatistics gameStatistics, boolean withCalibration) {
             this.simulationCount = simulationCount;
             this.gameStatistics = gameStatistics;
+            this.withCalibration = withCalibration;
+
+
         }
 
         @Override
@@ -126,9 +164,6 @@ public class GameController {
                     .build();
 
             List<MarsGame> games = new ArrayList<>();
-
-            System.out.println("Starting simulations");
-            System.out.println();
 
             long startTime = System.currentTimeMillis();
 
@@ -152,20 +187,18 @@ public class GameController {
                     long spentTime = System.currentTimeMillis() - startTime;
 
                     long timePerGame = (spentTime / i);
-                    System.out.println("Time left: " + (simulationCount - i) * timePerGame / 1000);
+                    if (!withCalibration) {
+                        System.out.println("Time left: " + (simulationCount - i) * timePerGame / 1000);
+                    }
                 }
 
                 if (i % 100 == 0) {
-                    System.out.println("Before gather statistics");
                     gatherStatistics(games, gameStatistics);
-                    System.out.println("After gather statistics");
                     games.clear();
                 }
             }
 
-            System.out.println("Before final gather statistics");
             gatherStatistics(games, gameStatistics);
-            System.out.println("After final gather statistics");
 
             if (Constants.COLLECT_DATASET) {
                 try {
@@ -179,7 +212,6 @@ public class GameController {
     }
 
     private void gatherStatistics(List<MarsGame> games, GameStatistics gameStatistics) {
-        System.out.println("Inside gather statistics");
         gameStatistics.addTotalGames(games.size());
         for (MarsGame game : games) {
             gameStatistics.addTotalTurnsCount(game.getTurns());
@@ -200,6 +232,11 @@ public class GameController {
                 .filter(game -> game.getPlayerUuidToPlayer().size() == 2)
                 .filter(game -> game.getTurns() <= GameStatistics.MAX_TURNS_TO_CONSIDER)
                 .collect(Collectors.toList());
+
+        games.stream()
+                .map(MarsGame::getTurns)
+                .filter(turn -> turn > 60)
+                .forEach(turn -> System.out.println("Long game " + turn));
 
         for (int i = 0; i < finishedGames.size(); i++) {
             MarsGame game = finishedGames.get(i);
@@ -244,10 +281,9 @@ public class GameController {
                 }
             }
         }
-        System.out.println("Going out of gatherStatistics");
     }
 
-    private void saveDatasets(List<MarsGameDataset> marsGameDatasets) throws FileNotFoundException {
+    private synchronized void saveDatasets(List<MarsGameDataset> marsGameDatasets) throws FileNotFoundException {
         File csvOutputFile = new File("dataset.csv");
         try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
             for (MarsGameDataset dataset : marsGameDatasets) {
@@ -353,8 +389,8 @@ public class GameController {
         }*/
 
         if (WRITE_STATISTICS_TO_FILE) {
-            try(FileWriter fw = new FileWriter("cardStats.txt");
-                BufferedWriter writer = new BufferedWriter(fw)){
+            try (FileWriter fw = new FileWriter("cardStats.txt");
+                 BufferedWriter writer = new BufferedWriter(fw)) {
 
                 final Map<Integer, List<Integer>> winCardOccurenceByTurn = gameStatistics.getTurnToWinCardsOccurence();
                 final Map<Integer, List<Integer>> occurenceByTurn = gameStatistics.getTurnToCardsOccurence();

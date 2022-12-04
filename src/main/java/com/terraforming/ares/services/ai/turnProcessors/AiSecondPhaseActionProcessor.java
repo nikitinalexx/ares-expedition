@@ -8,17 +8,18 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.CardValidationService;
-import com.terraforming.ares.services.ai.*;
+import com.terraforming.ares.services.ai.DeepNetwork;
+import com.terraforming.ares.services.ai.ICardValueService;
+import com.terraforming.ares.services.ai.ProjectionStrategy;
+import com.terraforming.ares.services.ai.RandomBotHelper;
 import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
 import com.terraforming.ares.services.ai.turnFlow.AvailableTurnFlow;
-import com.terraforming.ares.services.ai.turnFlow.BestTurnFlow;
 import com.terraforming.ares.services.ai.turnFlow.BestTurnType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -38,7 +39,7 @@ public class AiSecondPhaseActionProcessor {
     private final AiBuildProjectService aiBuildProjectService;
     private final CardService cardService;
     private final CardValidationService cardValidationService;
-    private final CardValueService cardValueService;
+    private final ICardValueService cardValueService;
     private final Random random = new Random();
 
     public void processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
@@ -72,7 +73,7 @@ public class AiSecondPhaseActionProcessor {
             if (!availableCards.isEmpty()) {
                 Card selectedCard = RandomBotHelper.isRandomBot(player)
                         ? availableCards.get(random.nextInt(availableCards.size()))
-                        : cardValueService.getBestCardAsCard(game, player, availableCards, game.getTurns(), true);
+                        : cardValueService.getBestCardToBuild(game, player, availableCards, game.getTurns(), true);
 
                 logComputerCardSelection(availableCards, selectedCard, game, player);
 
@@ -110,6 +111,8 @@ public class AiSecondPhaseActionProcessor {
             if (bestProjectToBuild.isCanBuild()) {
                 System.out.println("Deep network state " + deepNetwork.testState(game, player));
                 System.out.println("Deep network card " + bestProjectToBuild.getCard().getClass().getSimpleName() + " with projected chance " + bestProjectToBuild.getExpectedValue());
+            } else {
+                System.out.println("Deep network : do not build");
             }
             System.out.println();
         }
