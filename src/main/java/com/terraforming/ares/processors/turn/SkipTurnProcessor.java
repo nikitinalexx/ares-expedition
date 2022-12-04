@@ -31,7 +31,7 @@ public class SkipTurnProcessor implements TurnProcessor<SkipTurn> {
         int currentPhase = game.getCurrentPhase();
         Player player = game.getPlayerByUuid(turn.getPlayerUuid());
 
-        if (currentPhase == Constants.BUILD_BLUE_RED_PROJECTS_PHASE && !player.isPickedCardInSecondPhase()) {
+        if (currentPhase == Constants.BUILD_BLUE_RED_PROJECTS_PHASE && !player.isPickedCardInSecondPhase() && player.getChosenPhase() == 2) {
             List<Integer> cards = cardService.dealCards(game, 1);
 
             for (Integer card : cards) {
