@@ -1,18 +1,8 @@
 package com.terraforming.ares.services.ai;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.mars.MarsGameDataset;
-import com.terraforming.ares.mars.MarsGameRow;
 import com.terraforming.ares.model.Player;
-import com.terraforming.ares.services.WinPointsService;
-import deepnetts.net.FeedForwardNetwork;
-import deepnetts.util.FileIO;
-import deepnetts.util.Tensor;
 import org.springframework.stereotype.Service;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Created by oleksii.nikitin
