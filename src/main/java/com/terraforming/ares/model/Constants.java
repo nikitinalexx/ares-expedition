@@ -48,7 +48,7 @@ public class Constants {
 
     public static final boolean LOG_NET_COMPARISON = false;
 
-    public static final boolean WRITE_STATISTICS_TO_FILE = true;
+    public static final boolean WRITE_STATISTICS_TO_FILE = false;
     public static final boolean WRITE_STATISTICS_TO_CONSOLE = false;
 
 
