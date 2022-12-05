@@ -209,8 +209,6 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             return true;
         }
 
-
-
         //when need and can fill restructured resources
         if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.RESTRUCTURED_RESOURCES)
                 && player.getPlantsIncome() > 0
@@ -218,21 +216,25 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             return true;
         }
 
-        val players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
-        if (players.size() == 2) {
-            Player anotherPlayer = players.get(0) == player ? players.get(1) : players.get(0);
+        List<Player> otherPlayers = getOtherPlayers(game, player);
 
-            if (calcTotalIncome(game, player) / 2 > calcTotalIncome(game, anotherPlayer)) {
-                return true;
-            }
+        if (calcTotalIncome(game, player) / 2 > getPlayerMaxIncome(game, otherPlayers)) {
+            return true;
         }
 
         return false;
     }
 
-    private Player getAnotherPlayer(MarsGame game, Player player) {
-        return game.getPlayerUuidToPlayer().values().stream().filter(p -> !p.getUuid().equals(player.getUuid()))
-                .findFirst().orElseThrow(() -> new IllegalStateException("Another player not found"));
+    private int getPlayerMaxIncome(MarsGame game, List<Player> players) {
+        return players.stream().mapToInt(p -> calcTotalIncome(game, p)).max().orElse(Integer.MAX_VALUE);
+    }
+
+    private List<Player> getOtherPlayers(MarsGame game, Player player) {
+        return game.getPlayerUuidToPlayer()
+                .values()
+                .stream()
+                .filter(p -> !p.getUuid().equals(player.getUuid()))
+                .collect(Collectors.toList());
     }
 
     private int calcTotalIncome(MarsGame game, Player player) {

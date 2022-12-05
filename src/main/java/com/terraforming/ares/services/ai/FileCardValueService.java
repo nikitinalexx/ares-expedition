@@ -1,6 +1,12 @@
 package com.terraforming.ares.services.ai;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.cards.blue.ArcticAlgae;
+import com.terraforming.ares.cards.green.AirborneRadiation;
+import com.terraforming.ares.cards.green.BiothermalPower;
+import com.terraforming.ares.cards.green.DeepWellHeating;
+import com.terraforming.ares.cards.green.TrappedHeat;
+import com.terraforming.ares.cards.red.*;
 import com.terraforming.ares.dto.GameStatistics;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
@@ -9,6 +15,7 @@ import com.terraforming.ares.services.PaymentValidationService;
 import com.terraforming.ares.services.SpecialEffectsService;
 import com.terraforming.ares.services.ai.dto.CardValue;
 import com.terraforming.ares.services.ai.dto.CardValueResponse;
+import com.terraforming.ares.services.ai.dto.ReducedCardValue;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
@@ -44,8 +51,8 @@ public class FileCardValueService implements ICardValueService {
 
     private Map<Integer, Map<Integer, CardValue>> initCardStatsFromFile(String fileName) throws IOException {
         Map<Integer, Map<Integer, CardValue>> result = new HashMap<>();
-        try(FileReader fr = new FileReader(fileName);
-            BufferedReader reader = new BufferedReader(fr)) {
+        try (FileReader fr = new FileReader(fileName);
+             BufferedReader reader = new BufferedReader(fr)) {
             String line;
             int cardId = -1;
             while ((line = reader.readLine()) != null) {
@@ -309,24 +316,7 @@ public class FileCardValueService implements ICardValueService {
             ).orElse(1.0);
         }
 
-        int cardDiscount = paymentValidationService.getDiscount(card, player);
-
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ENERGY_SUBSIDIES_DISCOUNT_4)) {
-            cardDiscount += countCardTags(card, Tag.ENERGY) * 4;
-        }
-
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.INTERPLANETARY_CONFERENCE)) {
-            cardDiscount += countCardTags(card, Tag.EARTH) * 4;
-            cardDiscount += countCardTags(card, Tag.JUPITER) * 4;
-        }
-
-        if (card.getTags().contains(Tag.EVENT) && hasCardAction(player, CardAction.OPTIMAL_AEROBRAKING)) {
-            cardDiscount += 8;
-        }
-
-        if (card.getTags().contains(Tag.EVENT) && hasCardAction(player, CardAction.RECYCLED_DETRITUS)) {
-            cardDiscount += 8;
-        }
+        int cardDiscount = getTotalCardDiscount(card, game, player);
 
         double ratio = ((double) cardDiscount / card.getPrice());
 
@@ -350,6 +340,42 @@ public class FileCardValueService implements ICardValueService {
         return coefficient;
     }
 
+    private int getTotalCardDiscount(Card card, MarsGame game, Player player) {
+        int cardDiscount = paymentValidationService.getDiscount(card, player);
+
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ENERGY_SUBSIDIES_DISCOUNT_4)) {
+            cardDiscount += countCardTags(card, Tag.ENERGY) * 4;
+        }
+
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.INTERPLANETARY_CONFERENCE)) {
+            cardDiscount += countCardTags(card, Tag.EARTH) * 4;
+            cardDiscount += countCardTags(card, Tag.JUPITER) * 4;
+        }
+
+        if (card.getTags().contains(Tag.EVENT) && hasCardAction(player, CardAction.OPTIMAL_AEROBRAKING)) {
+            cardDiscount += 8;
+        }
+
+        if (card.getTags().contains(Tag.EVENT) && hasCardAction(player, CardAction.RECYCLED_DETRITUS)) {
+            cardDiscount += 8;
+        }
+
+        if (hasCardAction(player, CardAction.ANTI_GRAVITY_TECH)) {
+            if (game.getPlanetAtTheStartOfThePhase().isTemperatureMax()) {
+                cardDiscount += 1;
+            } else {
+                cardDiscount += 4;
+            }
+            if (game.getPlanetAtTheStartOfThePhase().isOxygenMax()) {
+                cardDiscount += 2;
+            } else {
+                cardDiscount += 4;
+            }
+        }
+
+        return cardDiscount;
+    }
+
     private boolean hasCardAction(Player player, CardAction cardAction) {
         return player.getPlayed().getCards().stream()
                 .map(cardService::getCard)
@@ -369,6 +395,11 @@ public class FileCardValueService implements ICardValueService {
             turn++;
         }
 
+        final ReducedCardValue reducedEventValue = reducedCardValue(game, player, card);
+        if (reducedEventValue.isValueReduced()) {
+            return reducedEventValue.getValue();
+        }
+
         Map<Integer, CardValue> turnToCardValue = (player.getUuid().startsWith("0") ? cardIdToTurnToValueFirstPlayer.get(card) : cardIdToTurnToValueSecondPlayer.get(card));
 
         int totalStatsCount = 0;
@@ -383,6 +414,88 @@ public class FileCardValueService implements ICardValueService {
 
         return (totalStatsCount == 0 ? 0 : totalValue / totalStatsCount)
                 * getCardCoefficient(game, player, cardService.getCard(card), turn);
+    }
+
+    private ReducedCardValue reducedCardValue(MarsGame game, Player player, Integer cardId) {
+        if (player.getUuid().endsWith("0")) {
+            final Card card = cardService.getCard(cardId);
+
+            int defaultSenseInCard = 4;
+
+            final int totalCardDiscount = getTotalCardDiscount(card, game, player);
+
+            if (game.getPlanetAtTheStartOfThePhase().isOceansMax()) {
+                if (card.getClass() == ArtificialLake.class
+                        || card.getClass() == Comet.class
+                        || card.getClass() == GiantIceAsteroid.class
+                        || card.getClass() == ImportedHydrogen.class
+                        || card.getClass() == LargeConvoy.class
+                        || card.getClass() == PhobosFalls.class
+                        || card.getClass() == TechnologyDemonstration.class
+                        || card.getClass() == TowingAComet.class
+                        || card.getClass() == ArcticAlgae.class) {
+                    defaultSenseInCard -= 2;
+                }
+                if (card.getClass() == ConvoyFromEuropa.class) {
+                    defaultSenseInCard -= 3;
+                }
+                if (card.getClass() == Crater.class
+                        || card.getClass() == IceAsteroid.class
+                        || card.getClass() == IceCapMelting.class
+                        || card.getClass() == LakeMariners.class
+                        || card.getClass() == PermafrostExtraction.class
+                        || card.getClass() == SubterraneanReservoir.class
+                        || card.getClass() == TrappedHeat.class) {
+                    defaultSenseInCard -= 4;
+                }
+            }
+
+            if (game.getPlanetAtTheStartOfThePhase().isOxygenMax()) {
+                if (card.getClass() == AtmosphereFiltering.class) {
+                    defaultSenseInCard -= 4;
+                }
+                if (card.getClass() == AirborneRadiation.class) {
+                    defaultSenseInCard -= 3;
+                }
+                if (card.getClass() == Mangrove.class
+                        || card.getClass() == Plantation.class
+                        || card.getClass() == BiothermalPower.class) {
+                    defaultSenseInCard -= 2;
+                }
+            }
+
+            if (game.getPlanetAtTheStartOfThePhase().isTemperatureMax()) {
+                if (card.getClass() == Comet.class
+                        || card.getClass() == DeimosDown.class
+                        || card.getClass() == GiantIceAsteroid.class
+                        || card.getClass() == NitrogenRichAsteroid.class
+                        || card.getClass() == PhobosFalls.class) {
+                    defaultSenseInCard -= 2;
+                }
+                if (card.getClass() == LavaFlows.class
+                        || card.getClass() == DeepWellHeating.class) {
+                    defaultSenseInCard -= 4;
+                }
+            }
+
+            if (defaultSenseInCard == 4) {
+                return ReducedCardValue.noReduce();
+            } else if (defaultSenseInCard == 1) {
+                if (card.getPrice() - totalCardDiscount < 5) {
+                    return ReducedCardValue.useReducedValue(50);
+                } else {
+                    return ReducedCardValue.useReducedValue(0);
+                }
+            } else if (defaultSenseInCard == 0) {
+                if (card.getPrice() - totalCardDiscount < 0) {
+                    return ReducedCardValue.useReducedValue(48);
+                } else {
+                    return ReducedCardValue.useReducedValue(0);
+                }
+            }
+
+        }
+        return ReducedCardValue.noReduce();
     }
 
 }

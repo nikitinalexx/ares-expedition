@@ -239,6 +239,7 @@ export class BuildBlueRedComponent implements OnInit {
     this.importedNitrogenMicrobeCard = null;
     this.largeConvoyAnimalCard = null;
     this.localHeatTrappingCard = null;
+    this.projectsToDiscard = [];
   }
 
   anaerobicMicroorganismsCardAction(): boolean {

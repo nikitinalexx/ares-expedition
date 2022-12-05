@@ -290,6 +290,7 @@ export class BuildGreenComponent implements OnInit {
     this.onBuildMicrobeChoice = null;
     this.onBuildAnimalChoice = null;
     this.viralEnhancersTargetCards = null;
+    this.projectsToDiscard = [];
   }
 
   buildGreenProject(callback: (value: any) => void) {
