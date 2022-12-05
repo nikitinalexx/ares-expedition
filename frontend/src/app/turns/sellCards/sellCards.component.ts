@@ -70,6 +70,9 @@ export class SellCardsComponent implements OnInit {
     }
     if (this.mulliganTurn) {
       sellCardsFunc = this.gameRepository.mulliganCards;
+      if (!this.cardsToCell) {
+        this.cardsToCell = [];
+      }
     }
     sellCardsFunc(game.player.playerUuid, this.cardsToCell).subscribe(
       data => {
