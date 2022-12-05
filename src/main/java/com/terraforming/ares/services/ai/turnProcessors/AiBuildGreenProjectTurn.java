@@ -75,16 +75,28 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
         } else {
             selectedCard = cardValueService.getBestCardToBuild(game, player, availableCards, game.getTurns(), true);
 
-
+            final float currentState = deepNetwork.testState(game, player);
 
             if (Constants.LOG_NET_COMPARISON) {
                 System.out.println("Available cards: " + availableCards.stream().map(Card::getClass).map(Class::getSimpleName).collect(Collectors.joining(",")));
 
                 System.out.println("Chosen card with % " + (selectedCard != null ? selectedCard.getClass().getSimpleName() : null));
+            }
 
-                final BuildProjectPrediction bestProjectToBuild = aiBuildProjectService.getBestProjectToBuild(game, player, Set.of(CardColor.GREEN), ProjectionStrategy.FROM_PHASE);
+            final BuildProjectPrediction bestProjectToBuild = aiBuildProjectService.getBestProjectToBuild(game, player, Set.of(CardColor.GREEN), ProjectionStrategy.FROM_PHASE);
+
+            if (player.getUuid().endsWith("0")) {
                 if (bestProjectToBuild.isCanBuild()) {
-                    System.out.println("Deep network state " + deepNetwork.testState(game, player));
+                    selectedCard = bestProjectToBuild.getCard();
+                } else {
+                    selectedCard = null;
+                }
+            }
+
+
+            if (Constants.LOG_NET_COMPARISON) {
+                if (bestProjectToBuild.isCanBuild()) {
+                    System.out.println("Deep network state " + currentState);
                     System.out.println("Deep network card " + bestProjectToBuild.getCard().getClass().getSimpleName() + " with projected chance " + bestProjectToBuild.getExpectedValue());
                 } else {
                     System.out.println("Deep network : do not build");
