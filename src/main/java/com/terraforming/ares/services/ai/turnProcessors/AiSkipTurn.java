@@ -3,6 +3,7 @@ package com.terraforming.ares.services.ai.turnProcessors;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StandardProjectType;
+import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.CardValidationService;
@@ -36,7 +37,7 @@ public class AiSkipTurn implements AiTurnProcessor {
 
     @Override
     public boolean processTurn(MarsGame game, Player player) {
-        if (game.gameEndCondition()) {
+        if (game.gameEndCondition() && game.getStateType() == StateType.PERFORM_BLUE_ACTION) {
             if (player.getHand().size() != 0) {
                 aiTurnService.sellAllCards(player, game, player.getHand().getCards());
                 return true;

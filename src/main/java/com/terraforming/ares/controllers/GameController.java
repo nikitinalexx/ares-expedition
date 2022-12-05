@@ -157,8 +157,8 @@ public class GameController {
         @Override
         public void run() {
             GameParameters gameParameters = GameParameters.builder()
-                    .playerNames(List.of("ai1", "ai2"))
-                    .computers(List.of(true, true))
+                    .playerNames(List.of("ai1", "ai2", "ai3", "ai4"))
+                    .computers(List.of(true, true, true, true))
                     .mulligan(true)
                     .expansions(List.of(Expansion.BASE, Expansion.BUFFED_CORPORATION))
                     .build();
@@ -219,17 +219,21 @@ public class GameController {
             List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
             Player firstPlayer = players.get(0);
             Player secondPlayer = players.get(1);
+            Player thirdPlayer = players.get(2);
+            Player fourthPlayer = players.get(3);
+
 
             int firstPlayerPoints = winPointsService.countWinPoints(firstPlayer, game);
             int secondPlayerPoints = winPointsService.countWinPoints(secondPlayer, game);
-
-            gameStatistics.addTotalPointsCount(firstPlayerPoints + secondPlayerPoints);
+            int thirdPlayerPoints = winPointsService.countWinPoints(thirdPlayer, game);
+            int fourthPlayerPoints = winPointsService.countWinPoints(fourthPlayer, game);
+            gameStatistics.addTotalPointsCount(firstPlayerPoints + secondPlayerPoints + thirdPlayerPoints + fourthPlayerPoints);
 
         }
 
         List<MarsGame> finishedGames = games.stream()
                 .filter(MarsGame::gameEndCondition)
-                .filter(game -> game.getPlayerUuidToPlayer().size() == 2)
+                .filter(game -> game.getPlayerUuidToPlayer().size() == 4)
                 .filter(game -> game.getTurns() <= GameStatistics.MAX_TURNS_TO_CONSIDER)
                 .collect(Collectors.toList());
 
@@ -258,23 +262,48 @@ public class GameController {
             List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
             Player firstPlayer = players.get(0);
             Player secondPlayer = players.get(1);
+            Player thirdPlayer = players.get(2);
+            Player fourthPlayer = players.get(3);
 
             int firstPlayerPoints = winPointsService.countWinPoints(firstPlayer, game);
             int secondPlayerPoints = winPointsService.countWinPoints(secondPlayer, game);
+            int thirdPlayerPoints = winPointsService.countWinPoints(thirdPlayer, game);
+            int fourthPlayerPoints = winPointsService.countWinPoints(fourthPlayer, game);
 
-            if (firstPlayerPoints != secondPlayerPoints) {
-                Player winCardsPlayer = (firstPlayerPoints > secondPlayerPoints ? firstPlayer : secondPlayer);
+            if (firstPlayerPoints != secondPlayerPoints || secondPlayerPoints != thirdPlayerPoints || thirdPlayerPoints != fourthPlayerPoints) {
+                int winnerPoints = firstPlayerPoints;
+                Player winner = firstPlayer;
 
-                if (winCardsPlayer.getUuid().endsWith("0")) {
+                if (secondPlayerPoints > winnerPoints) {
+                    winnerPoints = secondPlayerPoints;
+                    winner = secondPlayer;
+                }
+
+                if (thirdPlayerPoints > winnerPoints) {
+                    winnerPoints = thirdPlayerPoints;
+                    winner = thirdPlayer;
+                }
+
+                if (fourthPlayerPoints > winnerPoints) {
+                    winnerPoints = fourthPlayerPoints;
+                    winner = fourthPlayer;
+                }
+
+
+                if (winner.getUuid().endsWith("0")) {
                     gameStatistics.addFirstWins();
                 } else {
                     gameStatistics.addSecondWins();
                 }
 
-                for (Integer playedCard : winCardsPlayer.getPlayed().getCards()) {
+                for (Integer playedCard : winner.getPlayed().getCards()) {
                     if (playedCard < 250) {
                         gameStatistics.winCardOccured(
-                                winCardsPlayer.getPlayed().getCardToTurn().get(playedCard),
+                                winner.getPlayed().getCardToTurn().get(playedCard),
+                                playedCard
+                        );
+                        gameStatistics.winCardOccured(
+                                winner.getPlayed().getCardToTurn().get(playedCard),
                                 playedCard
                         );
                     }

@@ -35,8 +35,9 @@ public class FileCardValueService implements ICardValueService {
     private final SpecialEffectsService specialEffectsService;
     private final AiBalanceService aiBalanceService;
 
-    private Map<Integer, Map<Integer, CardValue>> cardIdToTurnToValueFirstPlayer;
-    private Map<Integer, Map<Integer, CardValue>> cardIdToTurnToValueSecondPlayer;
+    private Map<Integer, Map<Integer, CardValue>> cardIdToTurnToValueTwoPlayer;
+    private Map<Integer, Map<Integer, CardValue>> cardIdToTurnToValueFourPlayer;
+
 
 
     public FileCardValueService(CardService cardService, PaymentValidationService paymentValidationService, SpecialEffectsService specialEffectsService, AiBalanceService aiBalanceService) throws IOException {
@@ -45,8 +46,8 @@ public class FileCardValueService implements ICardValueService {
         this.specialEffectsService = specialEffectsService;
         this.aiBalanceService = aiBalanceService;
 
-        this.cardIdToTurnToValueFirstPlayer = initCardStatsFromFile("cardStatsSmartVsSmart.txt");
-        this.cardIdToTurnToValueSecondPlayer = initCardStatsFromFile("cardStatsSmartVsSmart.txt");
+        this.cardIdToTurnToValueTwoPlayer = initCardStatsFromFile("cardStatsSmartVsSmart.txt");
+        this.cardIdToTurnToValueFourPlayer = initCardStatsFromFile("cardStatsRandom.txt");
     }
 
     private Map<Integer, Map<Integer, CardValue>> initCardStatsFromFile(String fileName) throws IOException {
@@ -406,7 +407,8 @@ public class FileCardValueService implements ICardValueService {
             return reducedEventValue.getValue();
         }
 
-        Map<Integer, CardValue> turnToCardValue = (player.getUuid().startsWith("0") ? cardIdToTurnToValueFirstPlayer.get(card) : cardIdToTurnToValueSecondPlayer.get(card));
+
+        Map<Integer, CardValue> turnToCardValue = game.getPlayerUuidToPlayer().size() == 2 ? cardIdToTurnToValueTwoPlayer.get(card) : cardIdToTurnToValueFourPlayer.get(card);
 
         int totalStatsCount = 0;
         double totalValue = 0;
@@ -487,13 +489,13 @@ public class FileCardValueService implements ICardValueService {
             return ReducedCardValue.noReduce();
         } else if (defaultSenseInCard == 1) {
             if (card.getPrice() - totalCardDiscount < 5) {
-                return ReducedCardValue.useReducedValue(50);
+                return ReducedCardValue.useReducedValue(45);
             } else {
                 return ReducedCardValue.useReducedValue(0);
             }
         } else if (defaultSenseInCard == 0) {
             if (card.getPrice() - totalCardDiscount < 0) {
-                return ReducedCardValue.useReducedValue(48);
+                return ReducedCardValue.useReducedValue(40);
             } else {
                 return ReducedCardValue.useReducedValue(0);
             }
