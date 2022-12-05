@@ -417,83 +417,80 @@ public class FileCardValueService implements ICardValueService {
     }
 
     private ReducedCardValue reducedCardValue(MarsGame game, Player player, Integer cardId) {
-        if (player.getUuid().endsWith("0")) {
-            final Card card = cardService.getCard(cardId);
+        final Card card = cardService.getCard(cardId);
 
-            int defaultSenseInCard = 4;
+        int defaultSenseInCard = 4;
 
-            final int totalCardDiscount = getTotalCardDiscount(card, game, player);
+        final int totalCardDiscount = getTotalCardDiscount(card, game, player);
 
-            if (game.getPlanetAtTheStartOfThePhase().isOceansMax()) {
-                if (card.getClass() == ArtificialLake.class
-                        || card.getClass() == Comet.class
-                        || card.getClass() == GiantIceAsteroid.class
-                        || card.getClass() == ImportedHydrogen.class
-                        || card.getClass() == LargeConvoy.class
-                        || card.getClass() == PhobosFalls.class
-                        || card.getClass() == TechnologyDemonstration.class
-                        || card.getClass() == TowingAComet.class
-                        || card.getClass() == ArcticAlgae.class) {
-                    defaultSenseInCard -= 2;
-                }
-                if (card.getClass() == ConvoyFromEuropa.class) {
-                    defaultSenseInCard -= 3;
-                }
-                if (card.getClass() == Crater.class
-                        || card.getClass() == IceAsteroid.class
-                        || card.getClass() == IceCapMelting.class
-                        || card.getClass() == LakeMariners.class
-                        || card.getClass() == PermafrostExtraction.class
-                        || card.getClass() == SubterraneanReservoir.class
-                        || card.getClass() == TrappedHeat.class) {
-                    defaultSenseInCard -= 4;
-                }
+        if (game.getPlanetAtTheStartOfThePhase().isOceansMax()) {
+            if (card.getClass() == ArtificialLake.class
+                    || card.getClass() == Comet.class
+                    || card.getClass() == GiantIceAsteroid.class
+                    || card.getClass() == ImportedHydrogen.class
+                    || card.getClass() == LargeConvoy.class
+                    || card.getClass() == PhobosFalls.class
+                    || card.getClass() == TechnologyDemonstration.class
+                    || card.getClass() == TowingAComet.class
+                    || card.getClass() == ArcticAlgae.class) {
+                defaultSenseInCard -= 2;
             }
-
-            if (game.getPlanetAtTheStartOfThePhase().isOxygenMax()) {
-                if (card.getClass() == AtmosphereFiltering.class) {
-                    defaultSenseInCard -= 4;
-                }
-                if (card.getClass() == AirborneRadiation.class) {
-                    defaultSenseInCard -= 3;
-                }
-                if (card.getClass() == Mangrove.class
-                        || card.getClass() == Plantation.class
-                        || card.getClass() == BiothermalPower.class) {
-                    defaultSenseInCard -= 2;
-                }
+            if (card.getClass() == ConvoyFromEuropa.class) {
+                defaultSenseInCard -= 3;
             }
-
-            if (game.getPlanetAtTheStartOfThePhase().isTemperatureMax()) {
-                if (card.getClass() == Comet.class
-                        || card.getClass() == DeimosDown.class
-                        || card.getClass() == GiantIceAsteroid.class
-                        || card.getClass() == NitrogenRichAsteroid.class
-                        || card.getClass() == PhobosFalls.class) {
-                    defaultSenseInCard -= 2;
-                }
-                if (card.getClass() == LavaFlows.class
-                        || card.getClass() == DeepWellHeating.class) {
-                    defaultSenseInCard -= 4;
-                }
+            if (card.getClass() == Crater.class
+                    || card.getClass() == IceAsteroid.class
+                    || card.getClass() == IceCapMelting.class
+                    || card.getClass() == LakeMariners.class
+                    || card.getClass() == PermafrostExtraction.class
+                    || card.getClass() == SubterraneanReservoir.class
+                    || card.getClass() == TrappedHeat.class) {
+                defaultSenseInCard -= 4;
             }
+        }
 
-            if (defaultSenseInCard == 4) {
-                return ReducedCardValue.noReduce();
-            } else if (defaultSenseInCard == 1) {
-                if (card.getPrice() - totalCardDiscount < 5) {
-                    return ReducedCardValue.useReducedValue(50);
-                } else {
-                    return ReducedCardValue.useReducedValue(0);
-                }
-            } else if (defaultSenseInCard == 0) {
-                if (card.getPrice() - totalCardDiscount < 0) {
-                    return ReducedCardValue.useReducedValue(48);
-                } else {
-                    return ReducedCardValue.useReducedValue(0);
-                }
+        if (game.getPlanetAtTheStartOfThePhase().isOxygenMax()) {
+            if (card.getClass() == AtmosphereFiltering.class) {
+                defaultSenseInCard -= 4;
             }
+            if (card.getClass() == AirborneRadiation.class) {
+                defaultSenseInCard -= 3;
+            }
+            if (card.getClass() == Mangrove.class
+                    || card.getClass() == Plantation.class
+                    || card.getClass() == BiothermalPower.class) {
+                defaultSenseInCard -= 2;
+            }
+        }
 
+        if (game.getPlanetAtTheStartOfThePhase().isTemperatureMax()) {
+            if (card.getClass() == Comet.class
+                    || card.getClass() == DeimosDown.class
+                    || card.getClass() == GiantIceAsteroid.class
+                    || card.getClass() == NitrogenRichAsteroid.class
+                    || card.getClass() == PhobosFalls.class) {
+                defaultSenseInCard -= 2;
+            }
+            if (card.getClass() == LavaFlows.class
+                    || card.getClass() == DeepWellHeating.class) {
+                defaultSenseInCard -= 4;
+            }
+        }
+
+        if (defaultSenseInCard == 4) {
+            return ReducedCardValue.noReduce();
+        } else if (defaultSenseInCard == 1) {
+            if (card.getPrice() - totalCardDiscount < 5) {
+                return ReducedCardValue.useReducedValue(50);
+            } else {
+                return ReducedCardValue.useReducedValue(0);
+            }
+        } else if (defaultSenseInCard == 0) {
+            if (card.getPrice() - totalCardDiscount < 0) {
+                return ReducedCardValue.useReducedValue(48);
+            } else {
+                return ReducedCardValue.useReducedValue(0);
+            }
         }
         return ReducedCardValue.noReduce();
     }
