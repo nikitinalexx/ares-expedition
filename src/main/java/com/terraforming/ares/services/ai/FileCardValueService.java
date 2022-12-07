@@ -185,6 +185,12 @@ public class FileCardValueService implements ICardValueService {
                                 && game.getPlanet().isOceansMax()) {
                             return 0.0;
                         }
+                        if (cardAction == CardAction.VOLCANIC_POOLS) {
+                            if (player.getTitaniumIncome() <= 2 || cardService.countPlayedTags(player, Set.of(Tag.ENERGY)) < 4) {
+                                return 0.5;
+                            }
+                        }
+
                         if ((cardAction == CardAction.DEVELOPED_INFRASTRUCTURE
                                 || cardAction == CardAction.GHG_PRODUCTION
                                 || cardAction == CardAction.LIVESTOCK

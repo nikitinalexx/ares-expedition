@@ -47,9 +47,6 @@ export class CardTemplateComponent {
   }
 
   getBackgroundColorClass(card: Card): string {
-    if (card.name === 'Processing Plant') {
-      console.log(card.cardColor);
-    }
     switch (card.cardColor) {
       case CardColor.BLUE:
         return 'background-color-active';

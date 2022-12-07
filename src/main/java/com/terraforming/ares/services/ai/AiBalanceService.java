@@ -29,10 +29,10 @@ public class AiBalanceService {
 
 
 
-    public static final int DEFAULT_CALIBRATION_VALUE = 50;
-    public static int CHANGABLE_CALIBRATION_VALUE = DEFAULT_CALIBRATION_VALUE;
+    public static final double DEFAULT_CALIBRATION_VALUE = 1.20;
+    public static double CHANGABLE_CALIBRATION_VALUE = DEFAULT_CALIBRATION_VALUE;
 
-    public int getSenceFor0(Player player) {
+    public double getExtraRatio(Player player) {
         if (player.getUuid().endsWith("0")) {
             return CHANGABLE_CALIBRATION_VALUE;
         } else {
@@ -41,15 +41,15 @@ public class AiBalanceService {
     }
 
 
-    public List<Integer> calibrationValues() {
-        List<Integer> calibrationParams = new ArrayList<>();
-        for (int i = 40; i < 60; i++) {
+    public List<Double> calibrationValues() {
+        List<Double> calibrationParams = new ArrayList<>();
+        for (double i = 1.99; i < 3.00; i += 0.01) {
             calibrationParams.add(i);
         }
         return calibrationParams;
     }
 
-    public void setCalibrationValue(int calibrationValue) {
+    public void setCalibrationValue(double calibrationValue) {
         CHANGABLE_CALIBRATION_VALUE = calibrationValue;
     }
 }

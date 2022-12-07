@@ -50,6 +50,7 @@ public class Constants {
 
     public static final boolean WRITE_STATISTICS_TO_FILE = false;
     public static final boolean WRITE_STATISTICS_TO_CONSOLE = false;
+    public static final boolean SAVE_SIMULATION_GAMES_TO_DB = false;
 
 
     private Constants() {}
