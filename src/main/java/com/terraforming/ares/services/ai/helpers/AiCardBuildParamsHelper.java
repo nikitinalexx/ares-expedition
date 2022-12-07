@@ -1,8 +1,11 @@
 package com.terraforming.ares.services.ai.helpers;
 
 import com.terraforming.ares.cards.blue.Decomposers;
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.ai.ICardValueService;
+import com.terraforming.ares.services.ai.dto.CardValueResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +23,7 @@ import static com.terraforming.ares.model.InputFlag.DECOMPOSERS_TAKE_MICROBE;
 @RequiredArgsConstructor
 public class AiCardBuildParamsHelper {
     private final CardService cardService;
+    private final ICardValueService cardValueService;
     private final Random random = new Random();
 
     public Map<Integer, List<Integer>> getInputParamsForValidation(Player player, Card card) {
@@ -123,7 +127,7 @@ public class AiCardBuildParamsHelper {
         return result;
     }
 
-    public Map<Integer, List<Integer>> getInputParamsForBuild(Player player, Card card) {
+    public Map<Integer, List<Integer>> getInputParamsForBuild(MarsGame game, Player player, Card card) {
         Map<Integer, List<Integer>> result = null;
 
         if (card.getCardMetadata().getCardAction() == CardAction.ASTROFARM) {
@@ -235,7 +239,7 @@ public class AiCardBuildParamsHelper {
                         .stream().map(cardService::getCard).collect(Collectors.toList());
 
 
-                result.put(InputFlag.MARS_UNIVERSITY_CARD.getId(), getMarsUniversityInput(card, handCards, scienceTagsCount));
+                result.put(InputFlag.MARS_UNIVERSITY_CARD.getId(), getMarsUniversityInput(game, player, card, handCards, scienceTagsCount));
             }
         }
 
@@ -326,6 +330,56 @@ public class AiCardBuildParamsHelper {
     private boolean cardActionTriggered(List<Card> playedCards, Card card, CardAction cardAction) {
         return card.getCardMetadata().getCardAction() == cardAction
                 || playedCards.stream().anyMatch(c -> c.getCardMetadata().getCardAction() == cardAction);
+    }
+
+    private List<Integer> getMarsUniversityInput(MarsGame game, Player player, Card card, List<Card> handCards, int scienceTagsCount) {
+        if (player.getUuid().endsWith("1")) {
+            return getMarsUniversityInput(card, handCards, scienceTagsCount);
+        }
+        List<Card> copy = handCards.stream()
+                .filter(c -> c.getId() != card.getId())
+                .collect(Collectors.toList());
+
+        if (copy.isEmpty() || scienceTagsCount == 0) {
+            return List.of(InputFlag.SKIP_ACTION.getId());
+        }
+
+        if (copy.size() == 1) {
+            return List.of(copy.get(0).getId());
+        }
+
+        if (copy.size() == 2 && scienceTagsCount == 2) {
+            return List.of(copy.get(0).getId(), copy.get(1).getId());
+        }
+
+        List<Integer> cardsToDiscard = new ArrayList<>(scienceTagsCount);
+
+        List<Integer> plantCards = copy.stream()
+                .filter(c -> c.getTags().contains(Tag.PLANT))
+                .map(Card::getId)
+                .collect(Collectors.toList());
+
+        while (!plantCards.isEmpty() && cardsToDiscard.size() != scienceTagsCount) {
+            CardValueResponse cardValueResponse = cardValueService.getWorstCard(game, player, plantCards, game.getTurns());
+            cardsToDiscard.add(cardValueResponse.getCardId());
+            plantCards.remove(cardValueResponse.getCardId());
+        }
+
+        if (cardsToDiscard.size() == scienceTagsCount) {
+            return cardsToDiscard;
+        }
+
+        List<Integer> nonPlantCards = copy.stream()
+                .filter(c -> !c.getTags().contains(Tag.PLANT))
+                .map(Card::getId)
+                .collect(Collectors.toList());
+        while (!nonPlantCards.isEmpty() && cardsToDiscard.size() != scienceTagsCount) {
+            CardValueResponse cardValueResponse = cardValueService.getWorstCard(game, player, nonPlantCards, game.getTurns());
+            cardsToDiscard.add(cardValueResponse.getCardId());
+            plantCards.remove(cardValueResponse.getCardId());
+        }
+
+        return cardsToDiscard;
     }
 
     private List<Integer> getMarsUniversityInput(Card card, List<Card> handCards, int scienceTagsCount) {

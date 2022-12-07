@@ -96,7 +96,7 @@ public class AiSecondPhaseActionProcessor {
                     player,
                     availableTurnFlow.getCard().getId(),
                     aiPaymentHelper.getCardPayments(player, availableTurnFlow.getCard()),
-                    aiCardParamsHelper.getInputParamsForBuild(player, availableTurnFlow.getCard())
+                    aiCardParamsHelper.getInputParamsForBuild(game, player, availableTurnFlow.getCard())
             );
         } else {
             throw new IllegalStateException("Not reachable");

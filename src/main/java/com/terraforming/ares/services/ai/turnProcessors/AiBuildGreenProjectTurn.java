@@ -111,7 +111,7 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
                     player,
                     selectedCard.getId(),
                     aiPaymentHelper.getCardPayments(player, selectedCard),
-                    aiCardParamsHelper.getInputParamsForBuild(player, selectedCard)
+                    aiCardParamsHelper.getInputParamsForBuild(game, player, selectedCard)
             );
         }
 

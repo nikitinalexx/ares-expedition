@@ -140,7 +140,7 @@ public class AiBuildProjectService extends BaseProcessorService {
                     player,
                     card.getId(),
                     aiPaymentService.getCardPayments(player, card),
-                    aiCardBuildParamsHelper.getInputParamsForBuild(player, card)
+                    aiCardBuildParamsHelper.getInputParamsForBuild(game, player, card)
             );
         } else {
             aiTurnService.buildBlueRedProjectSync(
@@ -148,7 +148,7 @@ public class AiBuildProjectService extends BaseProcessorService {
                     player,
                     card.getId(),
                     aiPaymentService.getCardPayments(player, card),
-                    aiCardBuildParamsHelper.getInputParamsForBuild(player, card)
+                    aiCardBuildParamsHelper.getInputParamsForBuild(game, player, card)
             );
         }
 

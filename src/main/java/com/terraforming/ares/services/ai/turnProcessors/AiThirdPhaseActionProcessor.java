@@ -191,7 +191,7 @@ public class AiThirdPhaseActionProcessor {
                 final Card cardToBuild = availableCards.get(random.nextInt(availableCards.size()));
                 aiTurnService.buildProject(
                         game, player, cardToBuild.getId(), aiPaymentHelper.getCardPayments(player, cardToBuild),
-                        aiCardBuildParamsHelper.getInputParamsForBuild(player, cardToBuild)
+                        aiCardBuildParamsHelper.getInputParamsForBuild(game, player, cardToBuild)
                 );
                 return true;
             }

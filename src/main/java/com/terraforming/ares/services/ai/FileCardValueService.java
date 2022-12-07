@@ -92,7 +92,6 @@ public class FileCardValueService implements ICardValueService {
             }
         }
 
-
         return CardValueResponse.of(cards.get(worstCardIndex), worstCardValue);
     }
 
