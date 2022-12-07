@@ -22,7 +22,7 @@ public class AiPickCorporationTurn implements AiTurnProcessor {
     private final Random random = new Random();
     private final AiTurnService aiTurnService;
 
-    private List<Integer> CORPORATION_PRIORITY = List.of(
+    private static final List<Integer> CORPORATION_PRIORITY = List.of(
             10006, /* Tharsis */
             10015, /* MayNi */
             10104, 10011, /* Saturn */
