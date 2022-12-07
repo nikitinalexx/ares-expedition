@@ -8,10 +8,7 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.CardValidationService;
-import com.terraforming.ares.services.ai.DeepNetwork;
-import com.terraforming.ares.services.ai.ICardValueService;
-import com.terraforming.ares.services.ai.ProjectionStrategy;
-import com.terraforming.ares.services.ai.RandomBotHelper;
+import com.terraforming.ares.services.ai.*;
 import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
@@ -39,6 +36,7 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
     private final AiBuildProjectService aiBuildProjectService;
     private final DeepNetwork deepNetwork;
     private final Random random = new Random();
+    private final AiBalanceService aiBalanceService;
 
     @Override
     public TurnType getType() {
@@ -85,13 +83,12 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
 
             final BuildProjectPrediction bestProjectToBuild = aiBuildProjectService.getBestProjectToBuild(game, player, Set.of(CardColor.GREEN), ProjectionStrategy.FROM_PHASE);
 
-            if (player.getUuid().endsWith("0")) {
-                if (bestProjectToBuild.isCanBuild()) {
-                    selectedCard = bestProjectToBuild.getCard();
-                } else {
-                    selectedCard = null;
-                }
-            }
+//            if (player.getUuid().endsWith("0")) {
+//                if (bestProjectToBuild.isCanBuild() && game.getTurns() < 10 && bestProjectToBuild.getExpectedValue() >= currentState * aiBalanceService.getExtraRatio(player)) {
+//                    selectedCard = bestProjectToBuild.getCard();
+//                }
+//            }
+
 
 
             if (Constants.LOG_NET_COMPARISON) {

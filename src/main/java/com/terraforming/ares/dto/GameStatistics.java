@@ -1,7 +1,6 @@
 package com.terraforming.ares.dto;
 
 import lombok.Getter;
-import lombok.Synchronized;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,6 +18,9 @@ public class GameStatistics {
 
     private Map<Integer, List<Integer>> turnToWinCardsOccurence;
     private Map<Integer, List<Integer>> turnToCardsOccurence;
+    private Map<Integer, Integer> corporationToWin = new HashMap<>();
+    private Map<Integer, Integer> corporationToOccurence = new HashMap<>();
+
 
     private long totalGames = 0;
     private long totalTurnsCount = 0;
@@ -46,6 +48,28 @@ public class GameStatistics {
 
         turnCards.set(card, turnCards.get(card) + 1);
 
+    }
+
+    public synchronized void corporationWon(int corporation) {
+        corporationToWin.compute(corporation, (key, value) -> {
+            if (value == null) {
+                value = 1;
+            } else {
+                value++;
+            }
+            return value;
+        });
+    }
+
+    public synchronized void corporationOccured(int corporation) {
+        corporationToOccurence.compute(corporation, (key, value) -> {
+            if (value == null) {
+                value = 1;
+            } else {
+                value++;
+            }
+            return value;
+        });
     }
 
     public synchronized void winCardOccured(int turn, int card) {

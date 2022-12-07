@@ -20,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -97,10 +98,10 @@ public class GameController {
 
         int threads = availableProcessors;
 
-        List<Integer> calibrationValues = aiBalanceService.calibrationValues();
+        List<Double> calibrationValues = aiBalanceService.calibrationValues();
 
         if (request.isWithParamCalibration()) {
-            for (Integer calibrationValue : calibrationValues) {
+            for (Double calibrationValue : calibrationValues) {
                 System.out.println();
                 System.out.println("Calibration value " + calibrationValue);
                 aiBalanceService.setCalibrationValue(calibrationValue);
@@ -157,8 +158,8 @@ public class GameController {
         @Override
         public void run() {
             GameParameters gameParameters = GameParameters.builder()
-                    .playerNames(List.of("ai1", "ai2", "ai3", "ai4"))
-                    .computers(List.of(true, true, true, true))
+                    .playerNames(List.of("ai1", "ai2"))
+                    .computers(List.of(true, true))
                     .mulligan(true)
                     .expansions(List.of(Expansion.BASE, Expansion.BUFFED_CORPORATION))
                     .build();
@@ -194,11 +195,17 @@ public class GameController {
 
                 if (i % 100 == 0) {
                     gatherStatistics(games, gameStatistics);
+                    if (Constants.SAVE_SIMULATION_GAMES_TO_DB) {
+                        games.forEach(gameRepository::save);
+                    }
                     games.clear();
                 }
             }
 
             gatherStatistics(games, gameStatistics);
+            if (Constants.SAVE_SIMULATION_GAMES_TO_DB) {
+                games.forEach(gameRepository::save);
+            }
 
             if (Constants.COLLECT_DATASET) {
                 try {
@@ -219,21 +226,17 @@ public class GameController {
             List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
             Player firstPlayer = players.get(0);
             Player secondPlayer = players.get(1);
-            Player thirdPlayer = players.get(2);
-            Player fourthPlayer = players.get(3);
-
 
             int firstPlayerPoints = winPointsService.countWinPoints(firstPlayer, game);
             int secondPlayerPoints = winPointsService.countWinPoints(secondPlayer, game);
-            int thirdPlayerPoints = winPointsService.countWinPoints(thirdPlayer, game);
-            int fourthPlayerPoints = winPointsService.countWinPoints(fourthPlayer, game);
-            gameStatistics.addTotalPointsCount(firstPlayerPoints + secondPlayerPoints + thirdPlayerPoints + fourthPlayerPoints);
+
+            gameStatistics.addTotalPointsCount(firstPlayerPoints + secondPlayerPoints);
 
         }
 
         List<MarsGame> finishedGames = games.stream()
                 .filter(MarsGame::gameEndCondition)
-                .filter(game -> game.getPlayerUuidToPlayer().size() == 4)
+                .filter(game -> game.getPlayerUuidToPlayer().size() == 2)
                 .filter(game -> game.getTurns() <= GameStatistics.MAX_TURNS_TO_CONSIDER)
                 .collect(Collectors.toList());
 
@@ -262,52 +265,34 @@ public class GameController {
             List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
             Player firstPlayer = players.get(0);
             Player secondPlayer = players.get(1);
-            Player thirdPlayer = players.get(2);
-            Player fourthPlayer = players.get(3);
 
             int firstPlayerPoints = winPointsService.countWinPoints(firstPlayer, game);
             int secondPlayerPoints = winPointsService.countWinPoints(secondPlayer, game);
-            int thirdPlayerPoints = winPointsService.countWinPoints(thirdPlayer, game);
-            int fourthPlayerPoints = winPointsService.countWinPoints(fourthPlayer, game);
 
-            if (firstPlayerPoints != secondPlayerPoints || secondPlayerPoints != thirdPlayerPoints || thirdPlayerPoints != fourthPlayerPoints) {
-                int winnerPoints = firstPlayerPoints;
-                Player winner = firstPlayer;
-
-                if (secondPlayerPoints > winnerPoints) {
-                    winnerPoints = secondPlayerPoints;
-                    winner = secondPlayer;
-                }
-
-                if (thirdPlayerPoints > winnerPoints) {
-                    winnerPoints = thirdPlayerPoints;
-                    winner = thirdPlayer;
-                }
-
-                if (fourthPlayerPoints > winnerPoints) {
-                    winnerPoints = fourthPlayerPoints;
-                    winner = fourthPlayer;
-                }
+            if (firstPlayerPoints != secondPlayerPoints) {
+                Player winCardsPlayer = (firstPlayerPoints > secondPlayerPoints ? firstPlayer : secondPlayer);
+                Player anotherPlayer = (secondPlayerPoints > firstPlayerPoints ? firstPlayer : secondPlayer);
 
 
-                if (winner.getUuid().endsWith("0")) {
+                if (winCardsPlayer.getUuid().endsWith("0")) {
                     gameStatistics.addFirstWins();
                 } else {
                     gameStatistics.addSecondWins();
                 }
 
-                for (Integer playedCard : winner.getPlayed().getCards()) {
+                for (Integer playedCard : winCardsPlayer.getPlayed().getCards()) {
                     if (playedCard < 250) {
                         gameStatistics.winCardOccured(
-                                winner.getPlayed().getCardToTurn().get(playedCard),
-                                playedCard
-                        );
-                        gameStatistics.winCardOccured(
-                                winner.getPlayed().getCardToTurn().get(playedCard),
+                                winCardsPlayer.getPlayed().getCardToTurn().get(playedCard),
                                 playedCard
                         );
                     }
                 }
+
+                gameStatistics.corporationWon(winCardsPlayer.getSelectedCorporationCard());
+                gameStatistics.corporationOccured(winCardsPlayer.getSelectedCorporationCard());
+                gameStatistics.corporationOccured(anotherPlayer.getSelectedCorporationCard());
+
             }
         }
     }
@@ -458,6 +443,13 @@ public class GameController {
                 e.printStackTrace();
             }
         }
+
+
+        gameStatistics.getCorporationToWin().entrySet().stream()
+                .sorted(Comparator.comparingDouble(entry -> (double) entry.getValue() / gameStatistics.getCorporationToOccurence().get(entry.getKey())))
+                .forEachOrdered(entry -> {
+                    System.out.println(cardService.getCard(entry.getKey()).getClass().getSimpleName() + " " + (double) entry.getValue() / gameStatistics.getCorporationToOccurence().get(entry.getKey()));
+                });
 
 
         System.out.println("Total games: " + gameStatistics.getTotalGames());
