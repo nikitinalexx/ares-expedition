@@ -4,7 +4,7 @@ import {SpecialEffect} from '../data/SpecialEffect';
 import {Player} from '../data/Player';
 import {Tag} from '../data/Tag';
 import {DiscountComponent} from '../discount/discount.component';
-import {PARAMETER_COLORS, ParameterColor} from '../data/ParameterColor';
+import {ParameterColor} from '../data/ParameterColor';
 import {Game} from '../data/Game';
 import {CardAction} from '../data/CardAction';
 
@@ -120,17 +120,23 @@ export class RequirementsComponent {
 
   amplifyRequirement(initialRequirement: ParameterColor[]): ParameterColor[] {
     const resultRequirement = Object.assign([], initialRequirement);
-    const minRequirement = initialRequirement.map(value => value.valueOf()).reduce((a, b) => (a < b) ? a : b);
-    const maxRequirement = initialRequirement.map(value => value.valueOf()).reduce((a, b) => (a > b) ? a : b);
 
-    if (minRequirement > 0) {
-      resultRequirement.push(PARAMETER_COLORS[minRequirement - 1]);
+    const minRequirement = initialRequirement.map(value => value.valueOf()).reduce((a, b) => (ParameterColor[a] < ParameterColor[b]) ? a : b);
+    const maxRequirement = initialRequirement.map(value => value.valueOf()).reduce((a, b) => (ParameterColor[a] > ParameterColor[b]) ? a : b);
+
+    if (ParameterColor[minRequirement] > ParameterColor.P.toString()) {
+      resultRequirement.push(ParameterColor[Number.parseInt(ParameterColor[minRequirement], 0) - 1]);
     }
-    if (maxRequirement < ParameterColor.W.valueOf()) {
-      resultRequirement.push(PARAMETER_COLORS[maxRequirement + 1]);
+    if (ParameterColor[maxRequirement] < ParameterColor.W.toString()) {
+      resultRequirement.push(ParameterColor[Number.parseInt(ParameterColor[maxRequirement], 0) + 1]);
     }
 
+    console.log(resultRequirement);
     return resultRequirement;
+  }
+
+  subtract(num: number): number {
+    return num - 1;
   }
 
 }
