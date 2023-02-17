@@ -7,6 +7,12 @@
       <input type="checkbox" (click)="improvedCorporationsClicked($event)" class="form-check-input" id="buffed" style="margin-left: 10px;">
     </div>
 
+    <div class="bg-warning text-dark new-game-label" style="width: 250px; border-radius: 5px;">
+      <label title="Some corporations with buffed stats" for="buffed"
+             class="form-label">Discovery expansion cards</label>
+      <input type="checkbox" [defaultChecked]="true" (click)="discoveryExpansionClicked($event)" class="form-check-input" id="discovery" style="margin-left: 10px;">
+    </div>
+
     <!--1-->
     <li *ngFor="let card of getProjectCards();" class="filterDiv automated display">
       <app-card-template [card]="card"></app-card-template>

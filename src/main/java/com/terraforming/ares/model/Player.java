@@ -9,10 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.util.CollectionUtils;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -78,6 +75,9 @@ public class Player {
     private int steelIncome;
     private int titaniumIncome;
 
+    @Builder.Default
+    private List<Integer> phaseCards = new ArrayList<>(List.of(0, 0, 0, 0, 0));
+
     public Player(Player copy) {
         this.uuid = copy.uuid;
         this.name = copy.name;
@@ -131,6 +131,8 @@ public class Player {
 
         this.steelIncome = copy.steelIncome;
         this.titaniumIncome = copy.titaniumIncome;
+
+        this.phaseCards = new ArrayList<>(copy.phaseCards);
     }
 
     public void setTerraformingRating(int terraformingRating) {
@@ -190,6 +192,9 @@ public class Player {
         this.cardResourcesCount.put(toCard.getClass(), 0);
     }
 
+    public void updatePhaseCard(int phaseIndex, int card) {
+        phaseCards.set(phaseIndex, card);
+    }
     public void clearRoundResults() {
         chosenPhase = null;
         activatedBlueCards = Deck.builder().build();

@@ -19,4 +19,8 @@ export class CardServiceComponent {
     this.model.improvedCorporationsFlagChanged($event.target.checked);
   }
 
+  discoveryExpansionClicked($event: any) {
+    this.model.discoveryExpansionFlagChanged($event.target.checked);
+  }
+
 }

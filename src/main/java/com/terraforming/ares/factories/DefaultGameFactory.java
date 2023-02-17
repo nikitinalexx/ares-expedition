@@ -37,7 +37,8 @@ public class DefaultGameFactory implements GameFactory {
                 gameParameters.isMulligan(),
                 achievementsFactory.createAwards(Constants.ACHIEVEMENTS_SIZE),
                 achievementsFactory.createMilestones(Constants.ACHIEVEMENTS_SIZE),
-                gameParameters.getComputers()
+                gameParameters.getComputers(),
+                gameParameters.getExpansions()
         );
 
     }

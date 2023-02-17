@@ -34,6 +34,7 @@ public class PlayerDto {
     private final boolean assortedEnterprisesDiscount;
     private final boolean selfReplicatingDiscount;
     private boolean mayNiDiscount;
+    private List<Integer> phaseCards;
 
     private final int mc;
     private final int mcIncome;

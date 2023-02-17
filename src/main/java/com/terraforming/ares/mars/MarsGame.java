@@ -39,6 +39,7 @@ public class MarsGame {
     @Setter
     private List<Milestone> milestones;
     private boolean hasAi;
+    private List<Expansion> expansions;
 
 
     public MarsGame(MarsGame copy) {
@@ -53,6 +54,7 @@ public class MarsGame {
         this.awards = copyAwards(copy);
         this.milestones = copyMilestones(copy);
         this.hasAi = copy.hasAi;
+        this.expansions = copy.expansions;
     }
 
     private List<BaseAward> copyAwards(MarsGame marsGame) {
@@ -120,12 +122,14 @@ public class MarsGame {
                     boolean mulligan,
                     List<BaseAward> awards,
                     List<Milestone> milestones,
-                    List<Boolean> computers) {
+                    List<Boolean> computers,
+                    List<Expansion> expansions) {
         this.projectsDeck = projectsDeck;
         this.corporationsDeck = corporationsDeck;
         this.planet = planet;
         this.awards = awards;
         this.milestones = milestones;
+        this.expansions = expansions;
         this.hasAi = (computers.stream().anyMatch(item -> item));
 
         List<Player> players = new ArrayList<>();
@@ -135,8 +139,8 @@ public class MarsGame {
                     Player.builder()
                             .uuid(UUID.randomUUID().toString() + i)
                             .name(playerNames.get(i))
-                            //.hand(Deck.builder().cards(new LinkedList<>(List.of(1))).build())
-                            .hand(projectsDeck.dealCardsDeck(playerHandSize))
+                            .hand(Deck.builder().cards(new LinkedList<>(List.of(300, 301, 302, 303, 304, 305, 306, 307))).build())
+                            //.hand(projectsDeck.dealCardsDeck(playerHandSize))
                             .corporations(corporationsDeck.dealCardsDeck(INITIAL_CORPORATIONS_SIZE))
                             .played(Deck.builder().build())
                             .mulligan(mulligan)

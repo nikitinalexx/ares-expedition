@@ -12,7 +12,8 @@ import {CardResource} from '../../data/CardResource';
 import {CardAction} from '../../data/CardAction';
 import {Tag} from '../../data/Tag';
 import {InputFlag} from '../../data/InputFlag';
-import {RequirementsComponent} from "../../requirements/requirements.component";
+import {RequirementsComponent} from '../../requirements/requirements.component';
+import {PhaseDescription} from '../../data/PhaseDescription';
 
 @Component({
   selector: 'app-build-green',
@@ -26,6 +27,8 @@ export class BuildGreenComponent implements OnInit {
   onBuildAnimalChoice = null;
   projectsToDiscard: number[];
   viralEnhancersTargetCards: number[];
+  phaseInput = 0;
+  phaseUpgradeType = -1;
 
   @Input()
   game: Game;
@@ -110,6 +113,7 @@ export class BuildGreenComponent implements OnInit {
   clickProjectToBuild(card: Card) {
     if (this.selectedProject && this.selectedProject.id === card.id) {
       this.selectedProject = null;
+      this.resetAllInputs();
     } else {
       this.selectedProject = card;
       this.parentForm.controls.mcPrice.setValue(
@@ -210,6 +214,10 @@ export class BuildGreenComponent implements OnInit {
       && this.selectedProject.tags.some(tag => tag === Tag[Tag.SCIENCE]);
   }
 
+  upgradePhaseCardEffect(): boolean {
+    return this.selectedProject.cardAction === CardAction[CardAction.UPDATE_PHASE_CARD];
+  }
+
   viralEnhancersEffect(): boolean {
     return (this.selectedProject.cardAction === CardAction[CardAction.VIRAL_ENHANCERS]
       || this.game.player.played.some(card => card.cardAction === CardAction[CardAction.VIRAL_ENHANCERS]))
@@ -291,6 +299,72 @@ export class BuildGreenComponent implements OnInit {
     this.onBuildAnimalChoice = null;
     this.viralEnhancersTargetCards = null;
     this.projectsToDiscard = [];
+    this.phaseUpgradeType = null;
+  }
+
+  phaseCounter(count: number) {
+    return new Array(count);
+  }
+
+  phaseDescription(phase: number) {
+    switch (phase) {
+      case 1:
+        return PhaseDescription.PHASE_1_MAIN;
+      case 2:
+        return PhaseDescription.PHASE_2_MAIN;
+      case 3:
+        return PhaseDescription.PHASE_3_MAIN;
+      case 4:
+        return PhaseDescription.PHASE_4_MAIN;
+      case 5:
+        return PhaseDescription.PHASE_5_MAIN;
+    }
+  }
+
+  phaseBonusDescription(phase: number) {
+    const phaseBonus = this.game?.player.phaseCards[phase - 1];
+    switch (phase) {
+      case 1:
+        return PhaseDescription.PHASE_1_BONUS[phaseBonus];
+      case 2:
+        return PhaseDescription.PHASE_2_BONUS[phaseBonus];
+      case 3:
+        return PhaseDescription.PHASE_3_BONUS[phaseBonus];
+      case 4:
+        return PhaseDescription.PHASE_4_BONUS[phaseBonus];
+      case 5:
+        return PhaseDescription.PHASE_5_BONUS[phaseBonus];
+    }
+  }
+
+  phaseBonusUp1Description(phase: number) {
+    switch (phase) {
+      case 1:
+        return PhaseDescription.PHASE_1_BONUS[1];
+      case 2:
+        return PhaseDescription.PHASE_2_BONUS[1];
+      case 3:
+        return PhaseDescription.PHASE_3_BONUS[1];
+      case 4:
+        return PhaseDescription.PHASE_4_BONUS[1];
+      case 5:
+        return PhaseDescription.PHASE_5_BONUS[1];
+    }
+  }
+
+  phaseBonusUp2Description(phase: number) {
+    switch (phase) {
+      case 1:
+        return PhaseDescription.PHASE_1_BONUS[2];
+      case 2:
+        return PhaseDescription.PHASE_2_BONUS[2];
+      case 3:
+        return PhaseDescription.PHASE_3_BONUS[2];
+      case 4:
+        return PhaseDescription.PHASE_4_BONUS[2];
+      case 5:
+        return PhaseDescription.PHASE_5_BONUS[2];
+    }
   }
 
   buildGreenProject(callback: (value: any) => void) {
@@ -357,6 +431,18 @@ export class BuildGreenComponent implements OnInit {
         }
         inputParams[InputFlag.DECOMPOSERS_TAKE_MICROBE.valueOf()] = [takeMicrobes];
         inputParams[InputFlag.DECOMPOSERS_TAKE_CARD.valueOf()] = [takeCards];
+      }
+
+      if (this.upgradePhaseCardEffect()) {
+        if (this.phaseInput < 0 || this.phaseInput > 4) {
+          this.errorMessage = 'Pick the phase you want to upgrade';
+          return;
+        }
+        if (this.phaseUpgradeType !== 0 && this.phaseUpgradeType !== 1) {
+          this.errorMessage = 'Choose the type of phase upgrade';
+          return;
+        }
+        inputParams[InputFlag.PHASE_UPGRADE_CARD.valueOf()] = [this.phaseInput * 2 + this.phaseUpgradeType];
       }
 
       if (this.viralEnhancersEffect()) {

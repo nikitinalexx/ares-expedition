@@ -840,6 +840,14 @@ li.events::before {
   vertical-align: middle;
 }
 
+.card-phase-x {
+  background: url("../images/phases/X.png");
+  height: 40px;
+  width: 40px;
+  background-size: 40px 40px;
+  vertical-align: middle;
+}
+
 .card-blue {
   background: url("../images/resources/blueCard.png");
   height: 40px;
@@ -926,6 +934,18 @@ li.events::before {
 /************** Extras ************/
 .red-arrow {
   background-image: url(../images/misc/arrow.png);
+  background-size: 30px;
+  width: 30px;
+  height: 30px;
+  vertical-align: middle;
+  display: inline-block;
+  margin-bottom: 5px;
+  background-repeat: no-repeat;
+  background-position: 0px;
+}
+
+.upgrade {
+  background-image: url(../images/misc/upgrade.png);
   background-size: 30px;
   width: 30px;
   height: 30px;

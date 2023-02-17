@@ -9,6 +9,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by oleksii.nikitin
@@ -17,25 +18,24 @@ import java.util.stream.Collectors;
 @Service
 public class CardService {
     private final ShuffleService shuffleService;
-    private final Map<Integer, Card> projects;
+    private final Map<Expansion, Map<Integer, Card>> projects;
     private final Map<Integer, Card> baseCorporations;
     private final Map<Integer, Card> buffedCorporations;
     private final Map<Integer, Card> buffedCorporationsMapping;
 
     public CardService(CardFactory cardFactory, ShuffleService shuffleService) {
         this.shuffleService = shuffleService;
-        projects = cardFactory.createProjects();
+        projects = cardFactory.createAllProjects();
         baseCorporations = cardFactory.createCorporations();
         buffedCorporations = cardFactory.createBuffedCorporations();
         buffedCorporationsMapping = cardFactory.getBuffedCorporationsMapping();
     }
 
     public Deck createProjectsDeck(List<Expansion> expansions) {
-        if (expansions.contains(Expansion.BASE)) {
-            return createAndShuffleDeck(projects.keySet());
-        }
-
-        return Deck.builder().build();
+        return createAndShuffleDeck(expansions.stream()
+                .filter(projects::containsKey)
+                .map(projects::get)
+                .flatMap(cards -> cards.keySet().stream()));
     }
 
     public Deck createCorporationsDeck(List<Expansion> expansions) {
@@ -48,14 +48,13 @@ public class CardService {
             corporations.putAll(this.buffedCorporationsMapping);
         }
 
-
         return createAndShuffleDeck(
-                corporations.values().stream().map(Card::getId).collect(Collectors.toSet())
+                corporations.values().stream().map(Card::getId)
         );
     }
 
-    private Deck createAndShuffleDeck(Set<Integer> cards) {
-        LinkedList<Integer> cardsList = new LinkedList<>(cards);
+    private Deck createAndShuffleDeck(Stream<Integer> cards) {
+        LinkedList<Integer> cardsList = cards.collect(Collectors.toCollection(LinkedList::new));
 
         shuffleService.shuffle(cardsList);
 
@@ -63,10 +62,15 @@ public class CardService {
     }
 
     public Card getCard(int id) {
-        Card card = projects.get(id);
-        if (card != null) {
-            return card;
+        Card card;
+
+        for (Map.Entry<Expansion, Map<Integer, Card>> expansionEntry : projects.entrySet()) {
+            card = expansionEntry.getValue().get(id);
+            if (card != null) {
+                return card;
+            }
         }
+
         card = baseCorporations.get(id);
         if (card != null) {
             return card;
@@ -116,7 +120,7 @@ public class CardService {
     public List<Integer> dealCards(MarsGame game, int count) {
         int size = game.getProjectsDeck().size();
         if (size < count) {
-            Deck newProjectsDeck = createProjectsDeck(List.of(Expansion.BASE));
+            Deck newProjectsDeck = createProjectsDeck(game.getExpansions());
             game.mergeDeck(newProjectsDeck);
         }
         return game.dealCards(count);

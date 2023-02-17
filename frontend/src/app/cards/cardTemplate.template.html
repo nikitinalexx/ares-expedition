@@ -614,6 +614,11 @@
     <span class="card resource"></span>
   </div>
 
+  <div *ngIf="actionUpdatePhaseUpdate(card)">
+    <div class="upgrade"></div>
+    <span class="card-phase-x resource "></span>
+  </div>
+
   <div *ngIf="actionAiCentral(card)">
     <div class="red-arrow"></div>
     <span class="card resource"></span>

@@ -52,7 +52,8 @@ class TestCardService {
                 false,
                 null,
                 null,
-                null
+                null,
+                List.of(Expansion.BASE)
         );
 
         List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());

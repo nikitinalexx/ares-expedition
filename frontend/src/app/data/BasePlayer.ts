@@ -18,6 +18,7 @@ export class BasePlayer {
               terraformingRating: number,
               forests: number,
               cardResources: Map<number, number>,
+              phaseCards: number[],
               phase?: number) {
   }
 
@@ -37,6 +38,7 @@ export class BasePlayer {
   forests: number;
   hand: Card[];
   played: Card[];
+  phaseCards: number[];
   phase?: number;
   cardResources: Map<number, number>;
 

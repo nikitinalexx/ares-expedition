@@ -482,6 +482,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.LARGE_CONVOY;
   }
 
+  actionUpdatePhaseUpdate(card: Card): boolean {
+    return card.cardAction === CardAction.UPDATE_PHASE_CARD;
+  }
+
   actionProcessedMetals(card: Card): boolean {
     return card.cardAction === CardAction.PROCESSED_METALS;
   }

@@ -30,10 +30,11 @@ export class Player extends BasePlayer {
               selfReplicatingDiscount: boolean,
               mayNiDiscount: boolean,
               activatedBlueCards: number[],
+              phaseCards: number[],
               corporationId?: number,
               phase?: number) {
     super(playerUuid, name, winPoints, mc, hand, played, heat, plants, mcIncome, heatIncome, plantsIncome,
-      steelIncome, titaniumIncome, cardIncome, terraformingRating, forests, cardResources, phase);
+      steelIncome, titaniumIncome, cardIncome, terraformingRating, forests, cardResources, phaseCards, phase);
   }
 
   corporations: Card[];

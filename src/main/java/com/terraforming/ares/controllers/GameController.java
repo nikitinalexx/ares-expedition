@@ -510,7 +510,7 @@ public class GameController {
     @PostMapping("/projects")
     public List<CardDto> getAllProjectCards(@RequestBody AllProjectsRequest request) {
         List<Card> corporations = cardFactory.getAllCorporations(request.getExpansions());
-        List<Card> projects = cardFactory.getAllProjects();
+        List<Card> projects = cardFactory.getAllProjects(request.getExpansions());
 
         return Stream.of(corporations, projects)
                 .flatMap(List::stream)
@@ -546,6 +546,7 @@ public class GameController {
                 .hand(player.getHand().getCards().stream().map(cardService::getCard).map(CardDto::from).collect(Collectors.toList()))
                 .played(player.getPlayed().getCards().stream().map(cardService::getCard).map(CardDto::from).collect(Collectors.toList()))
                 .cardResources(getPlayerCardResources(player))
+                .phaseCards(player.getPhaseCards())
                 .build();
     }
 
@@ -583,6 +584,7 @@ public class GameController {
                 .assortedEnterprisesDiscount(player.isAssortedEnterprisesDiscount())
                 .selfReplicatingDiscount(player.isSelfReplicatingDiscount())
                 .mayNiDiscount(player.isMayNiDiscount())
+                .phaseCards(player.getPhaseCards())
                 .build();
     }
 

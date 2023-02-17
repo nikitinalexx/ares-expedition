@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by oleksii.nikitin
@@ -25,11 +26,15 @@ public class CardFactory {
     private final List<Card> sortedCorporations;
     private final List<Card> buffedCorporations;
 
-    private final Map<Integer, Card> inmemoryProjectCards;
-    private final List<Card> sortedProjects;
+    private final Map<Integer, Card> baseExpansionProjects;
+    private final Map<Integer, Card> discoveryExpansionProjects;
+
+    //used for display of all projecst cards, needs sorting in advance
+    private final List<Card> baseExpansionSortedProjects;
+    private final List<Card> discoveryExpansionSortedProjects;
 
     public CardFactory() {
-        sortedProjects = List.of(
+        baseExpansionSortedProjects = List.of(
                 new AdaptationTechnology(1),
                 new AdvancedAlloys(2),
                 new AdvancedScreeningTechnology(3),
@@ -251,6 +256,16 @@ public class CardFactory {
                 new SelfReplicatingBacteria(219)
         );
 
+        discoveryExpansionSortedProjects = List.of(
+                new Warehouses(300),
+                new Warehouses(301),
+                new Warehouses(302),
+                new Warehouses(303),
+                new Warehouses(304),
+                new Warehouses(305),
+                new Warehouses(306),
+                new Warehouses(307)
+                );
 
         sortedCorporations = List.of(
                 new HelionCorporation(10000),
@@ -287,7 +302,8 @@ public class CardFactory {
 
         buffedCorporations = new ArrayList<>(buffedCorporationsMapping.values());
 
-        inmemoryProjectCards = sortedProjects.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
+        baseExpansionProjects = baseExpansionSortedProjects.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
+        discoveryExpansionProjects = discoveryExpansionSortedProjects.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
         corporationsStorage = sortedCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
         buffedCorporationsStorage = buffedCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
     }
@@ -304,14 +320,24 @@ public class CardFactory {
         return buffedCorporationsMapping;
     }
 
-    public Map<Integer, Card> createProjects() {
-        return inmemoryProjectCards;
+    public Map<Expansion, Map<Integer, Card>> createAllProjects() {
+        return Map.of(Expansion.BASE, baseExpansionProjects,
+                Expansion.DISCOVERY, discoveryExpansionProjects
+        );
     }
 
-    public List<Card> getAllProjects() {
-        return sortedProjects.stream().sorted(Comparator.comparingInt(
-                card -> card.getColor().ordinal()
-        )).collect(Collectors.toList());
+    public List<Card> getAllProjects(List<Expansion> expansions) {
+        //todo refactor remove if checks, make a map expansion -> cards
+        return Stream.concat(
+                expansions.contains(Expansion.BASE) ?
+                        baseExpansionSortedProjects.stream().sorted(Comparator.comparingInt(
+                                card -> card.getColor().ordinal()
+                        )) : Stream.empty(),
+                expansions.contains(Expansion.DISCOVERY) ?
+                        discoveryExpansionSortedProjects.stream().sorted(Comparator.comparingInt(
+                                card -> card.getColor().ordinal()
+                        )) : Stream.empty()
+        ).collect(Collectors.toList());
     }
 
     public List<Card> getAllCorporations(List<Expansion> expansions) {

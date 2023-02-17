@@ -22,6 +22,7 @@ public class AnotherPlayerDto {
     private final List<CardDto> hand;
     private final List<CardDto> played;
     private final Map<Integer, Integer> cardResources;
+    private final List<Integer> phaseCards;
 
     private final int terraformingRating;
     private final int forests;

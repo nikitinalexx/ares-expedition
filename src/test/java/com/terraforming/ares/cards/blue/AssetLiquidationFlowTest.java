@@ -4,6 +4,7 @@ import com.terraforming.ares.controllers.PlayController;
 import com.terraforming.ares.factories.PlanetFactory;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Deck;
+import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.model.payments.MegacreditsPayment;
@@ -56,7 +57,8 @@ class AssetLiquidationFlowTest {
                 false,
                 null,
                 null,
-                null
+                null,
+                List.of(Expansion.BASE)
         );
         marsGame.setStateType(StateType.PICK_PHASE, null);
 
