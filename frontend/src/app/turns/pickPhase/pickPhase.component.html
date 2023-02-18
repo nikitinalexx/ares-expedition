@@ -7,16 +7,11 @@
 
 <div class="card-container">
   <ul class="myUL">
-    <li *ngFor="let phaseId of getAllowedPhases();" (click)="clickPhase(phaseId)"
-        class="filterDiv display phase-size phase-{{phaseId}}" [ngClass]="isSelectedPhase(phaseId)">
-      <div class="{{phaseId <= 3 ? 'text-white' : 'text-black'}} phase-{{phaseId}}-description">
-        {{phaseDescription(phaseId)}}
-      </div>
 
-      <div class="{{phaseId <= 3 ? 'text-white' : 'text-black'}} {{phaseId === 3 &&this.game?.player.phaseCards[2] === 2 ? 'phase-3-bonus-description' : 'phase-bonus-description'}}">
-        Bonus: {{phaseBonusDescription(phaseId)}}
-      </div>
+    <li *ngFor="let phaseId of getAllowedPhases();" (click)="clickPhase(phaseId)">
+      <app-phase-card-template [phase]="phaseId" [player]="game?.player" [selected]="isSelectedPhase(phaseId)"></app-phase-card-template>
     </li>
+
   </ul>
   <form>
     <div class="form-group d-grid gap-2 col-6 mx-auto">

@@ -1,0 +1,11 @@
+<div class="filterDiv display phase-size phase-{{phase}}" [ngClass]="selected ? 'clicked-card': ''">
+
+  <div class="{{phase <= 3 ? 'text-white' : 'text-black'}} phase-{{phase}}-description">
+    {{phaseDescription(phase)}}
+  </div>
+
+  <div class="{{phase <= 3 ? 'text-white' : 'text-black'}} {{phase === 3 &&player.phaseCards[2] === 2 ? 'phase-3-bonus-description' : 'phase-bonus-description'}}">
+    Bonus: {{phaseBonusDescription(phase)}}
+  </div>
+
+</div>

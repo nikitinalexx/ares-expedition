@@ -67,14 +67,11 @@
       <div *ngIf="upgradePhaseCardEffect()">
         <h1 class="text-white">Upgrade phase <span class="text-danger">BONUS</span>: </h1>
 
-        <span *ngFor='let phase of phaseCounter(5) ;let i = index'>
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" (click)="phaseInput = i; phaseUpgradeType = -1" type="radio" id="phaseUpdate{{i}}" value="{{i}}"
-                   [checked]="phaseInput === i"
-            >
-            <label class="form-check-label text-white" for="phaseUpdate{{i}}">{{i + 1}}</label>
-          </div>
-        </span>
+        <div *ngFor='let phase of phaseCounter(5) ;let i = index' class="form-check form-check-inline">
+          <input class="form-check-input" (click)="phaseInput = i; phaseUpgradeType = -1" type="radio" id="phaseUpdate{{i}}" value="{{i}}"
+                 [checked]="phaseInput === i">
+          <label class="form-check-label text-white" for="phaseUpdate{{i}}">{{i + 1}}</label>
+        </div>
 
         <br/>
 
@@ -95,24 +92,14 @@
             </label>
           </h6>
         </div>
-      </div>
 
-      <div *ngIf="upgradePhaseCardEffect()" class="card-container">
         <div class="card-container">
           <ul class="myUL">
-            <li class="filterDiv display phase-size phase-{{phaseInput + 1}}">
-              <div class="{{phaseInput <= 2 ? 'text-white' : 'text-black'}} phase-{{phaseInput + 1}}-description">
-                {{phaseDescription(phaseInput + 1)}}
-              </div>
-
-              <div class="{{phaseInput <= 2 ? 'text-white' : 'text-black'}} {{phaseInput + 1 === 3 && this.game?.player.phaseCards[2] === 2 ? 'phase-3-bonus-description' : 'phase-bonus-description'}}">
-                Bonus: {{phaseBonusDescription(phaseInput + 1)}}
-              </div>
+            <li>
+              <app-phase-card-template [phase]="phaseInput + 1" [player]="game?.player"></app-phase-card-template>
             </li>
-
           </ul>
         </div>
-
 
       </div>
 

@@ -306,37 +306,6 @@ export class BuildGreenComponent implements OnInit {
     return new Array(count);
   }
 
-  phaseDescription(phase: number) {
-    switch (phase) {
-      case 1:
-        return PhaseDescription.PHASE_1_MAIN;
-      case 2:
-        return PhaseDescription.PHASE_2_MAIN;
-      case 3:
-        return PhaseDescription.PHASE_3_MAIN;
-      case 4:
-        return PhaseDescription.PHASE_4_MAIN;
-      case 5:
-        return PhaseDescription.PHASE_5_MAIN;
-    }
-  }
-
-  phaseBonusDescription(phase: number) {
-    const phaseBonus = this.game?.player.phaseCards[phase - 1];
-    switch (phase) {
-      case 1:
-        return PhaseDescription.PHASE_1_BONUS[phaseBonus];
-      case 2:
-        return PhaseDescription.PHASE_2_BONUS[phaseBonus];
-      case 3:
-        return PhaseDescription.PHASE_3_BONUS[phaseBonus];
-      case 4:
-        return PhaseDescription.PHASE_4_BONUS[phaseBonus];
-      case 5:
-        return PhaseDescription.PHASE_5_BONUS[phaseBonus];
-    }
-  }
-
   phaseBonusUp1Description(phase: number) {
     switch (phase) {
       case 1:
