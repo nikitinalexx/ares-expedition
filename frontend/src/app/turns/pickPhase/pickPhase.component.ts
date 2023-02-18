@@ -51,11 +51,8 @@ export class PickPhaseComponent {
     this.outputToParent.emit(data);
   }
 
-  isSelectedPhase(phaseId: number): string {
-    if (this.phaseInput && phaseId === this.phaseInput) {
-      return 'clicked-card';
-    }
-    return '';
+  isSelectedPhase(phaseId: number): boolean {
+    return this.phaseInput && phaseId === this.phaseInput;
   }
 
   phaseDescription(phase: number) {
