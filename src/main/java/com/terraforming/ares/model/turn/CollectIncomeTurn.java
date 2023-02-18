@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class CollectIncomeTurn implements Turn {
     private String playerUuid;
+    private Integer doubleCollectCardId;
 
     @Override
     public TurnType getType() {

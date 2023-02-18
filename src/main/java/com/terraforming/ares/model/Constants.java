@@ -44,6 +44,26 @@ public class Constants {
 
     public static final int ACHIEVEMENTS_SIZE = 3;
 
+    public static final int PHASE_1_NO_UPGRADE = 0;
+    public static final int PHASE_1_UPGRADE_DISCOUNT = 1;
+    public static final int PHASE_1_UPGRADE_BUILD_EXTRA = 2;
+
+    public static final int PHASE_2_NO_UPGRADE = 3;
+    public static final int PHASE_2_UPGRADE_PROJECT_AND_MC = 4;
+    public static final int PHASE_2_UPGRADE_PROJECT_AND_CARD = 5;
+
+    public static final int PHASE_3_NO_UPGRADE = 6;
+    public static final int PHASE_3_UPGRADE_DOUBLE_REPEAT = 7;
+    public static final int PHASE_3_UPGRADE_REVEAL_CARDS = 8;
+
+    public static final int PHASE_4_NO_UPGRADE = 9;
+    public static final int PHASE_4_UPGRADE_EXTRA_MC = 10;
+    public static final int PHASE_4_UPGRADE_DOUBLE_PRODUCE = 11;
+
+    public static final int PHASE_5_NO_UPGRADE = 12;
+    public static final int PHASE_5_UPGRADE_KEEP_EXTRA = 13;
+    public static final int PHASE_5_UPGRADE_SEE_EXTRA = 14;
+
     public static final boolean COLLECT_DATASET = false;
 
     public static final boolean LOG_NET_COMPARISON = false;

@@ -29,19 +29,20 @@ public class Player {
     private Deck corporations;
     @Builder.Default
     private Deck activatedBlueCards = Deck.builder().build();
-    private boolean activatedBlueActionTwice;
+    private int blueActionExtraActivationsLeft;
     private Integer selectedCorporationCard;
     @Builder.Default
     private Map<Class<?>, Integer> cardResourcesCount = new HashMap<>();
     @Builder.Default
     private int terraformingRating = Constants.STARTING_RT;
     private int actionsInSecondPhase;
-    private boolean pickedCardInSecondPhase;
+    private boolean gotBonusInSecondPhase;
     private int canBuildInFirstPhase;
     private int forests;
     private boolean builtSpecialDesignLastTurn;
     private boolean builtWorkCrewsLastTurn;
     private boolean canBuildAnotherGreenWith9Discount;
+    private boolean canBuildAnotherGreenWithPrice12;
     private boolean assortedEnterprisesDiscount;
     private boolean assortedEnterprisesGreenAvailable;
     private boolean selfReplicatingDiscount;
@@ -86,19 +87,20 @@ public class Player {
         this.played = new Deck(copy.played);
 
         this.activatedBlueCards = new Deck(copy.activatedBlueCards);
-        this.activatedBlueActionTwice = copy.activatedBlueActionTwice;
+        this.blueActionExtraActivationsLeft = copy.blueActionExtraActivationsLeft;
         this.selectedCorporationCard = copy.selectedCorporationCard;
 
         this.cardResourcesCount = new HashMap<>(copy.getCardResourcesCount());
 
         this.terraformingRating = copy.terraformingRating;
         this.actionsInSecondPhase = copy.actionsInSecondPhase;
-        this.pickedCardInSecondPhase = copy.pickedCardInSecondPhase;
+        this.gotBonusInSecondPhase = copy.gotBonusInSecondPhase;
         this.canBuildInFirstPhase = copy.canBuildInFirstPhase;
         this.forests = copy.forests;
         this.builtSpecialDesignLastTurn = copy.builtSpecialDesignLastTurn;
         this.builtWorkCrewsLastTurn = copy.builtWorkCrewsLastTurn;
         this.canBuildAnotherGreenWith9Discount = copy.canBuildAnotherGreenWith9Discount;
+        this.canBuildAnotherGreenWithPrice12 = copy.canBuildAnotherGreenWithPrice12;
         this.assortedEnterprisesDiscount = copy.assortedEnterprisesDiscount;
         this.assortedEnterprisesGreenAvailable = copy.assortedEnterprisesGreenAvailable;
         this.selfReplicatingDiscount = copy.selfReplicatingDiscount;
@@ -173,7 +175,7 @@ public class Player {
 
     public void setActionsInSecondPhase(int actionsInSecondPhase) {
         if (this.actionsInSecondPhase == 1) {
-            setPickedCardInSecondPhase(true);
+            setGotBonusInSecondPhase(true);
         }
         this.actionsInSecondPhase = actionsInSecondPhase;
     }
@@ -195,13 +197,18 @@ public class Player {
     public void updatePhaseCard(int phaseIndex, int card) {
         phaseCards.set(phaseIndex, card);
     }
+
+    public boolean hasPhaseUpgrade(int upgrade) {
+        return phaseCards.get(upgrade / 3) == (upgrade % 3);
+    }
+
     public void clearRoundResults() {
         chosenPhase = null;
         activatedBlueCards = Deck.builder().build();
-        activatedBlueActionTwice = false;
+        blueActionExtraActivationsLeft = 0;
         actionsInSecondPhase = 0;
         canBuildInFirstPhase = 0;
-        pickedCardInSecondPhase = false;
+        gotBonusInSecondPhase = false;
         assortedEnterprisesDiscount = false;
         selfReplicatingDiscount = false;
         mayNiDiscount = false;
@@ -218,6 +225,7 @@ public class Player {
         builtSpecialDesignLastTurn = false;
         builtWorkCrewsLastTurn = false;
         canBuildAnotherGreenWith9Discount = false;
+        canBuildAnotherGreenWithPrice12 = false;
         assortedEnterprisesDiscount = false;
         selfReplicatingDiscount = false;
         mayNiDiscount = false;

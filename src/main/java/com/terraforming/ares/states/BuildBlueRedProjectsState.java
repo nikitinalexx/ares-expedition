@@ -1,6 +1,7 @@
 package com.terraforming.ares.states;
 
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateContext;
 import com.terraforming.ares.model.turn.TurnType;
@@ -36,8 +37,8 @@ public class BuildBlueRedProjectsState extends AbstractState {
                     TurnType.SELL_CARDS,
                     TurnType.SKIP_TURN
             ));
-            if (player.getChosenPhase() == 2 && !player.isPickedCardInSecondPhase()) {
-                actions.add(TurnType.PICK_EXTRA_CARD);
+            if (player.getChosenPhase() == 2 && !player.isGotBonusInSecondPhase() && !player.hasPhaseUpgrade(Constants.PHASE_2_UPGRADE_PROJECT_AND_CARD)) {
+                actions.add(TurnType.PICK_EXTRA_BONUS_SECOND_PHASE);
             }
             if (player.isAssortedEnterprisesGreenAvailable() || player.getCanBuildInFirstPhase() > 0) {
                 actions.add(TurnType.BUILD_GREEN_PROJECT);

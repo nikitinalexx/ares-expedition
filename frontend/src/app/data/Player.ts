@@ -18,7 +18,7 @@ export class Player extends BasePlayer {
               nextTurn: any,
               titaniumIncome: number,
               cardIncome: number,
-              activatedBlueActionTwice: boolean,
+              blueActionExtraActivationsLeft: number,
               cardResources: Map<number, number>,
               terraformingRating: number,
               winPoints: number,
@@ -26,9 +26,11 @@ export class Player extends BasePlayer {
               builtSpecialDesignLastTurn: boolean,
               builtWorkCrewsLastTurn: boolean,
               canBuildAnotherGreenWith9Discount: boolean,
+              canBuildAnotherGreenWithPrice12: boolean,
               assortedEnterprisesDiscount: boolean,
               selfReplicatingDiscount: boolean,
               mayNiDiscount: boolean,
+              canBuildInFirstPhase: number,
               activatedBlueCards: number[],
               phaseCards: number[],
               corporationId?: number,
@@ -42,12 +44,14 @@ export class Player extends BasePlayer {
   previousPhase: number;
   nextTurn: any;
   activatedBlueCards: number[];
-  activatedBlueActionTwice: boolean;
+  blueActionExtraActivationsLeft: number;
   builtSpecialDesignLastTurn: boolean;
   builtWorkCrewsLastTurn: boolean;
   canBuildAnotherGreenWith9Discount: boolean;
+  canBuildAnotherGreenWithPrice12: boolean;
   assortedEnterprisesDiscount: boolean;
   selfReplicatingDiscount: boolean;
   mayNiDiscount: boolean;
+  canBuildInFirstPhase: number;
 
 }

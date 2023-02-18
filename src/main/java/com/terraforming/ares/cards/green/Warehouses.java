@@ -6,6 +6,7 @@ import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.UpgradePhaseHelper;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -33,18 +34,15 @@ public class Warehouses implements DiscoveryExpansionGreenCard {
     }
 
     @Override
+    public void payAgain(MarsGame game, CardService cardService, Player player) {
+        player.setMc(player.getMc() + 2);
+    }
+
+    @Override
     public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> input) {
         List<Integer> cardInput = input.get(InputFlag.PHASE_UPGRADE_CARD.getId());
 
-        Integer phaseInput = cardInput.get(0);
-
-        //0 to 4. represents 1 to 5 phase.
-        int phaseId = phaseInput / 2;
-
-        //0 is default phase. 1 is first upgrade, 2 is second upgrade.
-        int card = phaseInput % 2 + 1;
-
-        player.updatePhaseCard(phaseId, card);
+        UpgradePhaseHelper.upgradePhase(cardService, game, player, cardInput.get(0));
     }
 
     @Override

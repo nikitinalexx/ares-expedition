@@ -70,7 +70,7 @@ class TestTurnSerialization {
 
     @Test
     void testCollectIncomeTurn() throws Exception {
-        CollectIncomeTurn expectedTurn = new CollectIncomeTurn("uuid");
+        CollectIncomeTurn expectedTurn = new CollectIncomeTurn("uuid", null);
         CollectIncomeTurn actualTurn = (CollectIncomeTurn) serializeDeserialize(expectedTurn);
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
@@ -184,8 +184,8 @@ class TestTurnSerialization {
 
     @Test
     void testPickExtraCardTurn() throws Exception {
-        PickExtraCardTurn expectedTurn = new PickExtraCardTurn("uuid");
-        PickExtraCardTurn actualTurn = (PickExtraCardTurn) serializeDeserialize(expectedTurn);
+        PickExtraBonusSecondPhase expectedTurn = new PickExtraBonusSecondPhase("uuid");
+        PickExtraBonusSecondPhase actualTurn = (PickExtraBonusSecondPhase) serializeDeserialize(expectedTurn);
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());
         assertFalse(expectedTurn.expectedAsNextTurn());

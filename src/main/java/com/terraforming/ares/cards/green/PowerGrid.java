@@ -30,6 +30,18 @@ public class PowerGrid implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void payAgain(MarsGame game, CardService cardService, Player player) {
+        int energyTagCount = (int) player
+                .getPlayed()
+                .getCards().stream()
+                .map(cardService::getCard)
+                .flatMap(card -> card.getTags().stream())
+                .filter(Tag.ENERGY::equals).count();
+
+        player.setMc(player.getMc() + energyTagCount);
+    }
+
+    @Override
     public CardMetadata getCardMetadata() {
         return cardMetadata;
     }

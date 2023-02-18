@@ -31,11 +31,17 @@ public class SkipTurnProcessor implements TurnProcessor<SkipTurn> {
         int currentPhase = game.getCurrentPhase();
         Player player = game.getPlayerByUuid(turn.getPlayerUuid());
 
-        if (currentPhase == Constants.BUILD_BLUE_RED_PROJECTS_PHASE && !player.isPickedCardInSecondPhase() && player.getChosenPhase() == 2) {
-            List<Integer> cards = cardService.dealCards(game, 1);
+        if (currentPhase == Constants.BUILD_BLUE_RED_PROJECTS_PHASE && !player.isGotBonusInSecondPhase() && player.getChosenPhase() == 2) {
+            if (player.hasPhaseUpgrade(Constants.PHASE_2_NO_UPGRADE)) {
+                List<Integer> cards = cardService.dealCards(game, 1);
 
-            for (Integer card : cards) {
-                player.getHand().addCard(card);
+                for (Integer card : cards) {
+                    player.getHand().addCard(card);
+                }
+            }
+
+            if (player.hasPhaseUpgrade(Constants.PHASE_2_UPGRADE_PROJECT_AND_MC)) {
+                player.setMc(player.getMc() + 6);
             }
         }
 
@@ -45,13 +51,14 @@ public class SkipTurnProcessor implements TurnProcessor<SkipTurn> {
                 || currentPhase == Constants.PERFORM_BLUE_ACTION_PHASE
                 || currentPhase == Constants.PICK_CORPORATIONS_PHASE) {
             player.setActionsInSecondPhase(0);
-            player.setPickedCardInSecondPhase(true);
+            player.setGotBonusInSecondPhase(true);
             player.setCanBuildInFirstPhase(0);
         }
 
         player.setBuiltSpecialDesignLastTurn(false);
         player.setBuiltWorkCrewsLastTurn(false);
         player.setCanBuildAnotherGreenWith9Discount(false);
+        player.setCanBuildAnotherGreenWithPrice12(false);
         player.setAssortedEnterprisesDiscount(false);
         player.setSelfReplicatingDiscount(false);
         player.setMayNiDiscount(false);

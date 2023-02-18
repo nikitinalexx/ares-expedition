@@ -30,6 +30,18 @@ public class Insects implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void payAgain(MarsGame game, CardService cardService, Player player) {
+        int plantTagCount = (int) player
+                .getPlayed()
+                .getCards().stream()
+                .map(cardService::getCard)
+                .flatMap(card -> card.getTags().stream())
+                .filter(Tag.PLANT::equals).count();
+
+        player.setPlants(player.getPlants() + plantTagCount);
+    }
+
+    @Override
     public CardMetadata getCardMetadata() {
         return cardMetadata;
     }

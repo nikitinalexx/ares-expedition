@@ -57,7 +57,7 @@ public class PickCorporationsState extends AbstractState {
         if (marsGame.getPlayerUuidToPlayer().values().stream().allMatch(
                 player -> player.getActionsInSecondPhase() == 0 && player.getCanBuildInFirstPhase() == 0 && player.getNextTurn() == null
         )) {
-            marsGame.setStateType(StateType.PICK_PHASE, cardService);
+            marsGame.setStateType(StateType.PICK_PHASE, cardService, true);
         }
     }
 

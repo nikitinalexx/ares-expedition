@@ -4,7 +4,9 @@
     {{phaseDescription(phase)}}
   </div>
 
-  <div class="{{phase <= 3 ? 'text-white' : 'text-black'}} {{phase === 3 &&player.phaseCards[2] === 2 ? 'phase-3-bonus-description' : 'phase-bonus-description'}}">
+  <div class="{{phase <= 3 ? 'text-white' : 'text-black'}}
+              {{phase === 3 &&player.phaseCards[2] === 2 ? 'phase-3-bonus-description' : 'phase-bonus-description'}}
+              {{player.phaseCards[phase - 1] !== 0 ? 'upgraded-phase-bonus' : ''}}">
     Bonus: {{phaseBonusDescription(phase)}}
   </div>
 

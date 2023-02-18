@@ -1,6 +1,7 @@
 package com.terraforming.ares.processors.turn;
 
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.turn.CollectIncomeTurn;
@@ -29,7 +30,23 @@ public class CollectIncomeTurnProcessor implements TurnProcessor<CollectIncomeTu
     public TurnResponse processTurn(CollectIncomeTurn turn, MarsGame game) {
         Player player = game.getPlayerByUuid(turn.getPlayerUuid());
 
-        player.setMc(player.getMc() + player.getMcIncome() + player.getTerraformingRating() + (player.getChosenPhase() == 4 ? 4 : 0));
+        int extraMcForPhasePick = 0;
+
+        if (player.getChosenPhase() == 4) {
+            if (player.hasPhaseUpgrade(Constants.PHASE_4_UPGRADE_EXTRA_MC)) {
+                extraMcForPhasePick = 7;
+            } else if (player.hasPhaseUpgrade(Constants.PHASE_4_UPGRADE_DOUBLE_PRODUCE)) {
+                extraMcForPhasePick = 1;
+            } else {
+                extraMcForPhasePick = 4;
+            }
+        }
+
+        player.setMc(
+                player.getMc() + player.getMcIncome()
+                        + player.getTerraformingRating()
+                        + extraMcForPhasePick
+        );
         player.setHeat(player.getHeat() + player.getHeatIncome());
         player.setPlants(player.getPlants() + player.getPlantsIncome());
 
@@ -37,6 +54,10 @@ public class CollectIncomeTurnProcessor implements TurnProcessor<CollectIncomeTu
 
         for (Integer card : cards) {
             player.getHand().addCard(card);
+        }
+
+        if (turn.getDoubleCollectCardId() != null) {
+            cardService.getCard(turn.getDoubleCollectCardId()).payAgain(game, cardService, player);
         }
 
         return null;

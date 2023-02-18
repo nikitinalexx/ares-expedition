@@ -51,7 +51,7 @@ public class BlueActionProcessor implements TurnProcessor<PerformBlueActionTurn>
             player.setMc(player.getMc() + 1);
         }
         if (player.getActivatedBlueCards().containsCard(projectCard.getId())) {
-            player.setActivatedBlueActionTwice(true);
+            player.setBlueActionExtraActivationsLeft(player.getBlueActionExtraActivationsLeft() - 1);
         } else {
             player.getActivatedBlueCards().addCard(projectCard.getId());
         }

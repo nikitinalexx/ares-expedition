@@ -11,12 +11,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class PickExtraCardTurn implements Turn {
+public class PickExtraBonusSecondPhase implements Turn {
     String playerUuid;
 
     @Override
     public TurnType getType() {
-        return TurnType.PICK_EXTRA_CARD;
+        return TurnType.PICK_EXTRA_BONUS_SECOND_PHASE;
     }
 
 }

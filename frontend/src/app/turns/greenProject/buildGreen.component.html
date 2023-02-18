@@ -7,7 +7,7 @@
 
   <input id="greenProject" (click)="resetAllInputs()" type="radio" class="form-check-input" value="greenProject"
          formControlName="turn">
-  <label class="custom-control-label text-white" for="greenProject">Build green project</label>
+  <label class="custom-control-label text-white" for="greenProject">Build green project <span style="color: black; background-color: red">{{this.game.player.canBuildInFirstPhase == 2 ? '(can build extra <= 12 MC)' : ''}}</span></label>
 
   <div *ngIf="parentForm.value?.turn === 'greenProject'" class="card-container">
     <ul class="myUL">
@@ -64,44 +64,12 @@
 
       </div>
 
-      <div *ngIf="upgradePhaseCardEffect()">
-        <h1 class="text-white">Upgrade phase <span class="text-danger">BONUS</span>: </h1>
-
-        <div *ngFor='let phase of phaseCounter(5) ;let i = index' class="form-check form-check-inline">
-          <input class="form-check-input" (click)="phaseInput = i; phaseUpgradeType = -1" type="radio" id="phaseUpdate{{i}}" value="{{i}}"
-                 [checked]="phaseInput === i">
-          <label class="form-check-label text-white" for="phaseUpdate{{i}}">{{i + 1}}</label>
-        </div>
-
-        <br/>
-
-        <h2 class="text-white">Upgrade type: </h2>
-
-        <div class="form-check form-check-inline">
-          <h6>
-            <input class="form-check-input" type="radio" id="phaseType1" value="1" (click)="phaseUpgradeType = 0" [checked]="phaseUpgradeType === 0">
-            <label class="form-check-label text-white align-middle" for="phaseType1">
-              {{phaseBonusUp1Description(phaseInput + 1)}}
-            </label>
-          </h6>
-
-          <h6>
-            <input class="form-check-input" type="radio" id="phaseType2" value="2" (click)="phaseUpgradeType = 1" [checked]="phaseUpgradeType === 1">
-            <label class="form-check-label text-white align-middle" for="phaseType2">
-              {{phaseBonusUp2Description(phaseInput + 1)}}
-            </label>
-          </h6>
-        </div>
-
-        <div class="card-container">
-          <ul class="myUL">
-            <li>
-              <app-phase-card-template [phase]="phaseInput + 1" [player]="game?.player"></app-phase-card-template>
-            </li>
-          </ul>
-        </div>
-
-      </div>
+      <app-upgrade-phase-template *ngIf="upgradePhaseCardEffect()" [phaseInput]="phaseInput" [phaseUpgradeTypeInput]="phaseUpgradeType"
+                                  [game]="game"
+                                  (phaseOutput)="updatePhaseInput($event)"
+                                  (phaseUpgradeTypeOutput)="updatePhaseUpgradeTypeInput($event)"
+      >
+      </app-upgrade-phase-template>
 
       <div *ngIf="expectsDecomposersInput()">
         <h1 class="text-white">Decomposers effect: </h1>

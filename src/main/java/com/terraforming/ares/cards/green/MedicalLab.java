@@ -30,6 +30,18 @@ public class MedicalLab implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void payAgain(MarsGame game, CardService cardService, Player player) {
+        int buildingTagCount = (int) player
+                .getPlayed()
+                .getCards().stream()
+                .map(cardService::getCard)
+                .flatMap(card -> card.getTags().stream())
+                .filter(Tag.BUILDING::equals).count();
+
+        player.setMc(player.getMc() + buildingTagCount / 2);
+    }
+
+    @Override
     public CardMetadata getCardMetadata() {
         return cardMetadata;
     }

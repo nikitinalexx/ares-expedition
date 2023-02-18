@@ -49,7 +49,7 @@ public class AiSecondPhaseActionProcessor {
             availableTurnFlow.addScenarioToFlow(BestTurnType.UNMI);
         }
 
-        if (possibleTurns.contains(TurnType.PICK_EXTRA_CARD) && !availableTurnFlow.nonSkipTurnAvailable()) {
+        if (possibleTurns.contains(TurnType.PICK_EXTRA_BONUS_SECOND_PHASE) && !availableTurnFlow.nonSkipTurnAvailable()) {
             availableTurnFlow.addScenarioToFlow(BestTurnType.EXTRA_CARD);
         }
 

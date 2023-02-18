@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -124,19 +123,19 @@ public class AiTurnService {
     }
 
     public void pickExtraCardTurnAsync(Player player) {
-        makeAsyncTurn(player, new PickExtraCardTurn(player.getUuid()));
+        makeAsyncTurn(player, new PickExtraBonusSecondPhase(player.getUuid()));
     }
 
     public void pickExtraCardTurnSync(MarsGame game, Player player) {
-        makeSyncTurn(player, game, new PickExtraCardTurn(player.getUuid()));
+        makeSyncTurn(player, game, new PickExtraBonusSecondPhase(player.getUuid()));
     }
 
     public void collectIncomeTurn(Player player) {
-        makeAsyncTurn(player, new CollectIncomeTurn(player.getUuid()));
+        makeAsyncTurn(player, new CollectIncomeTurn(player.getUuid(), null));
     }
 
     public void collectIncomeTurnSync(MarsGame game, Player player) {
-        makeSyncTurn(player, game, new CollectIncomeTurn(player.getUuid()));
+        makeSyncTurn(player, game, new CollectIncomeTurn(player.getUuid(), null));
     }
 
     public void skipTurn(Player player) {

@@ -75,12 +75,17 @@ public class CardValidationService {
 
     private Optional<String> validateCustomCards(Card card, Player player) {
         boolean canBuildAnotherGreenWith9Discount = player.isCanBuildAnotherGreenWith9Discount();
+        boolean canBuildAnotherGreenWithPrice12 = player.isCanBuildAnotherGreenWithPrice12();
         boolean mayNiDiscount = player.isMayNiDiscount();
 
         return Optional.ofNullable(
-                card.getColor() == CardColor.GREEN && canBuildAnotherGreenWith9Discount && card.getPrice() >= 10 ? "You may only build a card with a price of 9 or less" : null
+                card.getColor() == CardColor.GREEN
+                        && canBuildAnotherGreenWith9Discount
+                        && !canBuildAnotherGreenWithPrice12
+                        && card.getPrice() >= 10 ? "You may only build a card with a price of 9 or less" : null
         ).or(() -> Optional.ofNullable(
-                mayNiDiscount && card.getPrice() > 12 ? "You may only build a card with a price of 12 or less" : null
+                (mayNiDiscount || player.getCanBuildInFirstPhase() == 1 && canBuildAnotherGreenWithPrice12)
+                        && card.getPrice() > 12 ? "You may only build a card with a price of 12 or less" : null
         ));
     }
 
@@ -103,8 +108,8 @@ public class CardValidationService {
             if (player.getChosenPhase() != 3) {
                 return "Can't play an action twice if you didn't choose phase 3";
             }
-            if (player.isActivatedBlueActionTwice()) {
-                return "Can't play an action that was already played and double action already performed";
+            if (player.getBlueActionExtraActivationsLeft() < 1) {
+                return "Can't play an action that was already played and extra actions already performed";
             }
         }
 

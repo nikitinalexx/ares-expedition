@@ -9,8 +9,9 @@ import {DiscountComponent} from '../../discount/discount.component';
 import {SellCardsComponent} from '../sellCards/sellCards.component';
 import {DiscardCardsTurn} from '../../data/DiscardCardsTurn';
 import {BuildGreenComponent} from '../greenProject/buildGreen.component';
-import {BuildBlueRedComponent} from '../blueProject/buildBlueRed.component';
-import {ScrollComponent} from "../../scroll/scroll.component";
+import {ScrollComponent} from '../../scroll/scroll.component';
+import {BuildBlueRedComponent} from '../blueRedProject/buildBlueRed.component';
+import {PhaseConstants} from "../../data/PhaseConstants";
 
 @Component({
   selector: 'app-second-phase',
@@ -84,8 +85,8 @@ export class SecondPhaseComponent implements OnInit {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.SELL_CARDS])?.length > 0;
   }
 
-  pickExtraCardTurn(): boolean {
-    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.PICK_EXTRA_CARD])?.length > 0;
+  pickExtraBonusSecondPhaseTurn(): boolean {
+    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.PICK_EXTRA_BONUS_SECOND_PHASE])?.length > 0;
   }
 
   unmiRtTurn(): boolean {
@@ -135,6 +136,14 @@ export class SecondPhaseComponent implements OnInit {
     this.scrollService.scrollToPlayerChoice();
   }
 
+  hasNoUpgradeBonusInSecondPhase(): boolean {
+    return this.game.player.phaseCards[PhaseConstants.PHASE_2_INDEX] === PhaseConstants.PHASE_NO_UPGRADE_INDEX;
+  }
+
+  hasSixMcBonusInSecondPhase(): boolean {
+    return this.game.player.phaseCards[PhaseConstants.PHASE_2_INDEX] === PhaseConstants.PHASE_UPGRADE_1_INDEX;
+  }
+
   submitForm(formGroup: FormGroup) {
     this.errorMessage = null;
     this.isSubmitted = true;
@@ -150,8 +159,8 @@ export class SecondPhaseComponent implements OnInit {
         this.gameRepository.skipTurn(this.game.player.playerUuid).subscribe(
           data => this.sendToParent(data)
         );
-      } else if (formGroup.value.turn === 'pickExtraCard') {
-        this.gameRepository.pickCard(this.game.player.playerUuid).subscribe(
+      } else if (formGroup.value.turn === 'pickExtraBonus') {
+        this.gameRepository.pickExtraBonus(this.game.player.playerUuid).subscribe(
           data => this.sendToParent(data)
         );
       } else if (formGroup.value.turn === 'unmiRaiseRt') {

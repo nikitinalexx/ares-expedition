@@ -31,6 +31,18 @@ public class DiverseHabitats implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void payAgain(MarsGame game, CardService cardService, Player player) {
+        int tagCount = (int) player
+                .getPlayed()
+                .getCards().stream()
+                .map(cardService::getCard)
+                .flatMap(card -> card.getTags().stream())
+                .filter(tag -> tag == Tag.ANIMAL || tag == Tag.PLANT).count();
+
+        player.setMc(player.getMc() + tagCount);
+    }
+
+    @Override
     public CardMetadata getCardMetadata() {
         return cardMetadata;
     }

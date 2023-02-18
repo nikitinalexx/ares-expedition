@@ -39,8 +39,8 @@ export class GameRepository {
     return this.dataSource.confirmGameEnd(playerUuid);
   }
 
-  pickCard(playerUuid: string): Observable<any> {
-    return this.dataSource.pickCard(playerUuid);
+  pickExtraBonus(playerUuid: string): Observable<any> {
+    return this.dataSource.pickExtraBonus(playerUuid);
   }
 
   raiseUnmiRt(playerUuid: string): Observable<any> {
@@ -63,8 +63,8 @@ export class GameRepository {
     return this.dataSource.discardCards(playerUuid, cards);
   }
 
-  collectIncome(playerUuid: string): Observable<any> {
-    return this.dataSource.collectIncome(playerUuid);
+  collectIncome(playerUuid: string, doubleCollectProject: number): Observable<any> {
+    return this.dataSource.collectIncome(playerUuid, doubleCollectProject);
   }
 
   draftCards(playerUuid: string): Observable<any> {

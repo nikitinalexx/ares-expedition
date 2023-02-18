@@ -74,8 +74,25 @@ public class TurnService {
         );
     }
 
-    public void collectIncomeTurn(String playerUuid) {
-        performTurn(new CollectIncomeTurn(playerUuid), playerUuid, game -> null, ASYNC_TURN);
+    public void collectIncomeTurn(String playerUuid, Integer cardId) {
+        performTurn(
+                new CollectIncomeTurn(playerUuid, cardId),
+                playerUuid,
+                game -> {
+                    Player player = game.getPlayerByUuid(playerUuid);
+
+                    if (cardId != null && !player.getPlayed().containsCard(cardId)) {
+                        return "Can't collect income from Card you don't own";
+                    }
+
+                    if (cardId != null && (player.getChosenPhase() != 4 || !player.hasPhaseUpgrade(Constants.PHASE_4_UPGRADE_DOUBLE_PRODUCE))) {
+                        return "Not allowed to collect income twice";
+                    }
+
+                    return null;
+                },
+                ASYNC_TURN
+        );
     }
 
     public void skipTurn(String playerUuid) {
@@ -94,8 +111,8 @@ public class TurnService {
         }, ASYNC_TURN);
     }
 
-    public void pickExtraCardTurn(String playerUuid) {
-        performTurn(new PickExtraCardTurn(playerUuid), playerUuid, game -> null, ASYNC_TURN);
+    public void pickExtraBonusTurn(String playerUuid) {
+        performTurn(new PickExtraBonusSecondPhase(playerUuid), playerUuid, game -> null, ASYNC_TURN);
     }
 
     public void draftCards(String playerUuid) {

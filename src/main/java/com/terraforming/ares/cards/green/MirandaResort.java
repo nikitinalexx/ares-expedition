@@ -30,6 +30,18 @@ public class MirandaResort implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void payAgain(MarsGame game, CardService cardService, Player player) {
+        int earthTagCount = (int) player
+                .getPlayed()
+                .getCards().stream()
+                .map(cardService::getCard)
+                .flatMap(card -> card.getTags().stream())
+                .filter(Tag.EARTH::equals).count();
+
+        player.setMc(player.getMc() + earthTagCount);
+    }
+
+    @Override
     public CardMetadata getCardMetadata() {
         return cardMetadata;
     }

@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.green;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
@@ -8,6 +9,7 @@ import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.model.parameters.ParameterColor;
+import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.TerraformingService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,11 @@ public class AirborneRadiation implements BaseExpansionGreenCard {
                 .incomes(List.of(Gain.of(GainType.HEAT, 2)))
                 .bonuses(List.of(Gain.of(GainType.OXYGEN, 1)))
                 .build();
+    }
+
+    @Override
+    public void payAgain(MarsGame game, CardService cardService, Player player) {
+        player.setHeat(player.getHeat() + 2);
     }
 
     @Override

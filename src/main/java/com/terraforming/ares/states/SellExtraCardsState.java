@@ -32,6 +32,6 @@ public class SellExtraCardsState extends AbstractState {
 
     @Override
     public void updateState() {
-        marsGame.setStateType(StateType.PICK_PHASE, cardService);
+        marsGame.setStateType(StateType.PICK_PHASE, cardService, true);
     }
 }

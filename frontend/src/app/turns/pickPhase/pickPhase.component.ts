@@ -2,7 +2,7 @@ import {Component, EventEmitter, Input, Output} from '@angular/core';
 import {Game} from '../../data/Game';
 import {GameRepository} from '../../model/gameRepository.model';
 import {ScrollComponent} from "../../scroll/scroll.component";
-import {PhaseDescription} from "../../data/PhaseDescription";
+import {PhaseConstants} from "../../data/PhaseConstants";
 
 @Component({
   selector: 'app-pick-phase',
@@ -58,15 +58,15 @@ export class PickPhaseComponent {
   phaseDescription(phase: number) {
     switch (phase) {
       case 1:
-        return PhaseDescription.PHASE_1_MAIN;
+        return PhaseConstants.PHASE_1_MAIN;
       case 2:
-        return PhaseDescription.PHASE_2_MAIN;
+        return PhaseConstants.PHASE_2_MAIN;
       case 3:
-        return PhaseDescription.PHASE_3_MAIN;
+        return PhaseConstants.PHASE_3_MAIN;
       case 4:
-        return PhaseDescription.PHASE_4_MAIN;
+        return PhaseConstants.PHASE_4_MAIN;
       case 5:
-        return PhaseDescription.PHASE_5_MAIN;
+        return PhaseConstants.PHASE_5_MAIN;
     }
   }
 
@@ -74,15 +74,15 @@ export class PickPhaseComponent {
     const phaseBonus = this.game?.player.phaseCards[phase - 1];
     switch (phase) {
       case 1:
-        return PhaseDescription.PHASE_1_BONUS[phaseBonus];
+        return PhaseConstants.PHASE_1_BONUS[phaseBonus];
       case 2:
-        return PhaseDescription.PHASE_2_BONUS[phaseBonus];
+        return PhaseConstants.PHASE_2_BONUS[phaseBonus];
       case 3:
-        return PhaseDescription.PHASE_3_BONUS[phaseBonus];
+        return PhaseConstants.PHASE_3_BONUS[phaseBonus];
       case 4:
-        return PhaseDescription.PHASE_4_BONUS[phaseBonus];
+        return PhaseConstants.PHASE_4_BONUS[phaseBonus];
       case 5:
-        return PhaseDescription.PHASE_5_BONUS[phaseBonus];
+        return PhaseConstants.PHASE_5_BONUS[phaseBonus];
     }
   }
 

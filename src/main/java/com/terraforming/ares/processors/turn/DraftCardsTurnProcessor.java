@@ -1,6 +1,7 @@
 package com.terraforming.ares.processors.turn;
 
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
@@ -34,8 +35,20 @@ public class DraftCardsTurnProcessor implements TurnProcessor<DraftCardsTurn> {
     public TurnResponse processTurn(DraftCardsTurn turn, MarsGame game) {
         Player player = game.getPlayerByUuid(turn.getPlayerUuid());
 
-        int cardsToDraft = (player.getChosenPhase() == 5 ? 5 : 2) + draftCardsService.countExtraCardsToDraft(player);
-        int cardsToTake = (player.getChosenPhase() == 5 ? 2 : 1) + draftCardsService.countExtraCardsToTake(player);
+        int initialCardsToDraft = (player.getChosenPhase() == 5 ? 5 : 2);
+        int initialCardsToTake = (player.getChosenPhase() == 5 ? 2 : 1);
+
+        if (player.getChosenPhase() == 5 && player.hasPhaseUpgrade(Constants.PHASE_5_UPGRADE_KEEP_EXTRA)) {
+            initialCardsToDraft = 4;
+            initialCardsToTake = 3;
+        }
+
+        if (player.getChosenPhase() == 5 && player.hasPhaseUpgrade(Constants.PHASE_5_UPGRADE_SEE_EXTRA)) {
+            initialCardsToDraft = 8;
+        }
+
+        int cardsToDraft = initialCardsToDraft + draftCardsService.countExtraCardsToDraft(player);
+        int cardsToTake = initialCardsToTake + draftCardsService.countExtraCardsToTake(player);
 
         cardsToTake = Math.min(cardsToTake, cardsToDraft);
 

@@ -15,20 +15,21 @@ import {FifthPhaseComponent} from '../turns/fifthPhase/fifthPhase.component';
 import {EndRoundComponent} from '../turns/endRoundPhase/endRound.component';
 import {NavbarComponent} from '../navbar/navbar.component';
 import {BuildGreenComponent} from '../turns/greenProject/buildGreen.component';
-import {BuildBlueRedComponent} from '../turns/blueProject/buildBlueRed.component';
 import {ScrollComponent} from '../scroll/scroll.component';
+import {UpgradePhaseTemplateComponent} from '../turns/upgradePhase/upgradePhaseTemplate.template';
+import {BuildBlueRedComponent} from '../turns/blueRedProject/buildBlueRed.component';
 
 @NgModule({
   imports: [BrowserModule, ModelModule, ReactiveFormsModule, FormsModule, CardServiceModule],
   declarations: [GameComponent, PickCorporationComponent, PickPhaseComponent,
     FirstPhaseComponent, SecondPhaseComponent, SellCardsComponent, FourthPhaseComponent,
     ThirdPhaseComponent, FifthPhaseComponent, EndRoundComponent, NavbarComponent, BuildGreenComponent,
-    BuildBlueRedComponent
+    BuildBlueRedComponent, UpgradePhaseTemplateComponent
   ],
   exports: [GameComponent, PickCorporationComponent, PickPhaseComponent, ThirdPhaseComponent,
     FirstPhaseComponent, SecondPhaseComponent, SellCardsComponent, FourthPhaseComponent,
     FifthPhaseComponent, EndRoundComponent, NavbarComponent, BuildGreenComponent,
-    BuildBlueRedComponent
+    BuildBlueRedComponent, UpgradePhaseTemplateComponent
   ],
   providers: [SellCardsComponent, ScrollComponent]
 })

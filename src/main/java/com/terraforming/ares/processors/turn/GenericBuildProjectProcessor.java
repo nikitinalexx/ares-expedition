@@ -16,7 +16,7 @@ import java.util.Collections;
  */
 @RequiredArgsConstructor
 public abstract class GenericBuildProjectProcessor<T extends GenericBuildProjectTurn> implements TurnProcessor<T> {
-    private final CardService cardService;
+    protected final CardService cardService;
     private final TerraformingService terraformingService;
 
     @Override

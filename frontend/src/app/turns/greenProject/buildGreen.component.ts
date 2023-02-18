@@ -13,7 +13,6 @@ import {CardAction} from '../../data/CardAction';
 import {Tag} from '../../data/Tag';
 import {InputFlag} from '../../data/InputFlag';
 import {RequirementsComponent} from '../../requirements/requirements.component';
-import {PhaseDescription} from '../../data/PhaseDescription';
 
 @Component({
   selector: 'app-build-green',
@@ -54,7 +53,12 @@ export class BuildGreenComponent implements OnInit {
 
   getGreenPlayerHand(): Card[] {
     let cards;
-    if (this.game.player.canBuildAnotherGreenWith9Discount) {
+    if (this.game.player.canBuildAnotherGreenWithPrice12
+      && (this.game.player.canBuildInFirstPhase === 1 || this.game.player.canBuildAnotherGreenWith9Discount)) {
+      cards = this.game?.player.hand.filter(card => {
+        return card.cardColor === CardColor[CardColor.GREEN] && card.price <= 12;
+      });
+    } else if (this.game.player.canBuildAnotherGreenWith9Discount && this.game.player.canBuildInFirstPhase === 1) {
       cards = this.game?.player.hand.filter(card => {
         return card.cardColor === CardColor[CardColor.GREEN] && card.price < 10;
       });
@@ -302,38 +306,12 @@ export class BuildGreenComponent implements OnInit {
     this.phaseUpgradeType = null;
   }
 
-  phaseCounter(count: number) {
-    return new Array(count);
+  updatePhaseInput(newPhaseInput: number) {
+    this.phaseInput = newPhaseInput;
   }
 
-  phaseBonusUp1Description(phase: number) {
-    switch (phase) {
-      case 1:
-        return PhaseDescription.PHASE_1_BONUS[1];
-      case 2:
-        return PhaseDescription.PHASE_2_BONUS[1];
-      case 3:
-        return PhaseDescription.PHASE_3_BONUS[1];
-      case 4:
-        return PhaseDescription.PHASE_4_BONUS[1];
-      case 5:
-        return PhaseDescription.PHASE_5_BONUS[1];
-    }
-  }
-
-  phaseBonusUp2Description(phase: number) {
-    switch (phase) {
-      case 1:
-        return PhaseDescription.PHASE_1_BONUS[2];
-      case 2:
-        return PhaseDescription.PHASE_2_BONUS[2];
-      case 3:
-        return PhaseDescription.PHASE_3_BONUS[2];
-      case 4:
-        return PhaseDescription.PHASE_4_BONUS[2];
-      case 5:
-        return PhaseDescription.PHASE_5_BONUS[2];
-    }
+  updatePhaseUpgradeTypeInput(newPhaseUpgradeType: number) {
+    this.phaseUpgradeType = newPhaseUpgradeType;
   }
 
   buildGreenProject(callback: (value: any) => void) {

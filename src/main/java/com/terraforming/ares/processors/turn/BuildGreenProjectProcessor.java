@@ -1,6 +1,7 @@
 package com.terraforming.ares.processors.turn;
 
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.BuildGreenProjectTurn;
@@ -24,7 +25,15 @@ public class BuildGreenProjectProcessor extends GenericBuildProjectProcessor<Bui
     protected void processInternalBeforeBuild(BuildGreenProjectTurn turn, MarsGame game) {
         Player player = game.getPlayerUuidToPlayer().get(turn.getPlayerUuid());
 
-        player.setCanBuildAnotherGreenWith9Discount(false);
+        final Card card = cardService.getCard(turn.getProjectId());
+        if (player.isCanBuildAnotherGreenWithPrice12()
+                && ((!player.isCanBuildAnotherGreenWith9Discount() && card.getPrice() <= 12)
+                || (player.isCanBuildAnotherGreenWith9Discount() && card.getPrice() > 9 && card.getPrice() <= 12))) {
+            player.setCanBuildAnotherGreenWithPrice12(false);
+        } else if (player.isCanBuildAnotherGreenWith9Discount() && card.getPrice() <= 9) {
+            player.setCanBuildAnotherGreenWith9Discount(false);
+        }
+
         player.setAssortedEnterprisesDiscount(false);
         player.setSelfReplicatingDiscount(false);
         player.setMayNiDiscount(false);

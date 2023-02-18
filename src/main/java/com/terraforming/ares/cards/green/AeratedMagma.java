@@ -1,6 +1,7 @@
 package com.terraforming.ares.cards.green;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
@@ -8,6 +9,7 @@ import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.model.parameters.ParameterColor;
+import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -30,6 +32,12 @@ public class AeratedMagma implements BaseExpansionGreenCard {
                 .description("Requires red oxygen or higher. During the production phase you draw a card and this produces 2 heat.")
                 .incomes(List.of(Gain.of(GainType.CARD, 1), Gain.of(GainType.HEAT, 2)))
                 .build();
+    }
+
+    @Override
+    public void payAgain(MarsGame game, CardService cardService, Player player) {
+        player.getHand().addCards(cardService.dealCards(game, 1));
+        player.setHeat(player.getHeat() + 2);
     }
 
     @Override

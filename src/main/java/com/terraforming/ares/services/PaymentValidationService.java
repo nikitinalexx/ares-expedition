@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.terraforming.ares.model.Constants.PHASE_1_UPGRADE_DISCOUNT;
+
 /**
  * Created by oleksii.nikitin
  * Creation date 03.05.2022
@@ -52,10 +54,17 @@ public class PaymentValidationService {
 
         if (player.isCanBuildAnotherGreenWith9Discount()
                 && card.getPrice() > 9
-                && card.getColor() == CardColor.GREEN) {
+                && card.getColor() == CardColor.GREEN
+                && !player.isCanBuildAnotherGreenWithPrice12()) {
             return "Can only build a second building with print price of 9 or less";
         }
 
+        if ((player.getCanBuildInFirstPhase() == 1 || player.isCanBuildAnotherGreenWith9Discount())
+                && player.isCanBuildAnotherGreenWithPrice12()
+                && card.getColor() == CardColor.GREEN
+                && card.getPrice() > 12) {
+            return "Can only build a second building with print price of 12 or less";
+        }
 
         int discount = getDiscount(card, player);
         discount += payments.stream().mapToInt(Payment::getDiscount).sum();
@@ -88,8 +97,14 @@ public class PaymentValidationService {
             discount += player.getTitaniumIncome() * (3 + (playerOwnsAdvancedAlloys ? 1 : 0) + (playerOwnsPhobolog ? 1 : 0));
         }
 
-        if (card.getColor() == CardColor.GREEN && player.getChosenPhase() == 1) {
+        if (card.getColor() == CardColor.GREEN && player.getChosenPhase() == 1
+                && !player.isCanBuildAnotherGreenWith9Discount()
+                && !(player.isCanBuildAnotherGreenWithPrice12() && player.getCanBuildInFirstPhase() == 1)) {
             discount += 3;
+
+            if (player.hasPhaseUpgrade(PHASE_1_UPGRADE_DISCOUNT)) {
+                discount += 3;
+            }
         }
 
         if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.EARTH_CATAPULT_DISCOUNT_2)) {

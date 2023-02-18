@@ -1,6 +1,6 @@
 import {Component, Input} from '@angular/core';
 import {BasePlayer} from '../../data/BasePlayer';
-import {PhaseDescription} from '../../data/PhaseDescription';
+import {PhaseConstants} from '../../data/PhaseConstants';
 
 @Component({
   selector: 'app-phase-card-template',
@@ -18,15 +18,15 @@ export class PhaseCardTemplateComponent {
   phaseDescription(phase: number) {
     switch (phase) {
       case 1:
-        return PhaseDescription.PHASE_1_MAIN;
+        return PhaseConstants.PHASE_1_MAIN;
       case 2:
-        return PhaseDescription.PHASE_2_MAIN;
+        return PhaseConstants.PHASE_2_MAIN;
       case 3:
-        return PhaseDescription.PHASE_3_MAIN;
+        return PhaseConstants.PHASE_3_MAIN;
       case 4:
-        return PhaseDescription.PHASE_4_MAIN;
+        return PhaseConstants.PHASE_4_MAIN;
       case 5:
-        return PhaseDescription.PHASE_5_MAIN;
+        return PhaseConstants.PHASE_5_MAIN;
     }
   }
 
@@ -34,15 +34,15 @@ export class PhaseCardTemplateComponent {
     const phaseBonus = this.player.phaseCards[phase - 1];
     switch (phase) {
       case 1:
-        return PhaseDescription.PHASE_1_BONUS[phaseBonus];
+        return PhaseConstants.PHASE_1_BONUS[phaseBonus];
       case 2:
-        return PhaseDescription.PHASE_2_BONUS[phaseBonus];
+        return PhaseConstants.PHASE_2_BONUS[phaseBonus];
       case 3:
-        return PhaseDescription.PHASE_3_BONUS[phaseBonus];
+        return PhaseConstants.PHASE_3_BONUS[phaseBonus];
       case 4:
-        return PhaseDescription.PHASE_4_BONUS[phaseBonus];
+        return PhaseConstants.PHASE_4_BONUS[phaseBonus];
       case 5:
-        return PhaseDescription.PHASE_5_BONUS[phaseBonus];
+        return PhaseConstants.PHASE_5_BONUS[phaseBonus];
     }
   }
 

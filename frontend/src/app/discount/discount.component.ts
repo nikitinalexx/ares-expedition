@@ -4,6 +4,7 @@ import {SpecialEffect} from '../data/SpecialEffect';
 import {Player} from '../data/Player';
 import {Tag} from '../data/Tag';
 import {CardColor} from '../data/CardColor';
+import {PhaseConstants} from "../data/PhaseConstants";
 
 @Injectable()
 export class DiscountComponent {
@@ -29,8 +30,14 @@ export class DiscountComponent {
       discount += player.titaniumIncome * (3 + (ownsAdvancedAlloys ? 1 : 0) + (ownsPhobolog ? 1 : 0));
     }
 
-    if (card.cardColor === CardColor.GREEN && player.phase === 1) {
+    if (card.cardColor === CardColor.GREEN && player.phase === 1
+      && !player.canBuildAnotherGreenWith9Discount
+      && !(player.canBuildAnotherGreenWithPrice12 && player.canBuildInFirstPhase === 1)) {
       discount += 3;
+
+      if (player.phaseCards[PhaseConstants.PHASE_1_INDEX] === PhaseConstants.PHASE_UPGRADE_1_INDEX) {
+        discount += 3;
+      }
     }
 
     if (this.ownsSpecialEffect(player, SpecialEffect.EARTH_CATAPULT_DISCOUNT_2)) {

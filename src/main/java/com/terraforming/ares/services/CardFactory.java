@@ -257,15 +257,9 @@ public class CardFactory {
         );
 
         discoveryExpansionSortedProjects = List.of(
-                new Warehouses(300),
-                new Warehouses(301),
-                new Warehouses(302),
-                new Warehouses(303),
-                new Warehouses(304),
-                new Warehouses(305),
-                new Warehouses(306),
-                new Warehouses(307)
-                );
+                new OreLeaching(318),
+                new Warehouses(342)
+        );
 
         sortedCorporations = List.of(
                 new HelionCorporation(10000),

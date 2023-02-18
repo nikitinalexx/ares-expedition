@@ -37,6 +37,9 @@ public interface Card {
 
     CardColor getColor();
 
+    default void payAgain(MarsGame game, CardService cardService, Player player) {
+    }
+
     default int getWinningPoints() {
         return 0;
     }

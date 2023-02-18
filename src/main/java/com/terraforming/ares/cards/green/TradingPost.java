@@ -1,11 +1,13 @@
 package com.terraforming.ares.cards.green;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
+import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -29,6 +31,11 @@ public class TradingPost implements BaseExpansionGreenCard {
                 .incomes(List.of(Gain.of(GainType.MC, 2)))
                 .bonuses(List.of(Gain.of(GainType.PLANT, 3)))
                 .build();
+    }
+
+    @Override
+    public void payAgain(MarsGame game, CardService cardService, Player player) {
+        player.setMc(player.getMc() + 2);
     }
 
     @Override

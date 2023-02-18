@@ -22,7 +22,7 @@ public class TurnTypeService {
             case BUILD_BLUE_RED_PROJECT:
             case COLLECT_INCOME:
             case DRAFT_CARDS:
-            case PICK_EXTRA_CARD:
+            case PICK_EXTRA_BONUS_SECOND_PHASE:
             case GAME_END_CONFIRM:
             case GAME_END:
                 return true;

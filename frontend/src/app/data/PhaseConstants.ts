@@ -1,4 +1,4 @@
-export class PhaseDescription {
+export class PhaseConstants {
   static readonly PHASE_1_MAIN = 'Each player may play 1 green project card.';
   static readonly PHASE_2_MAIN = 'Each player may play 1 blue/red project card.';
   static readonly PHASE_3_MAIN = 'Each player activates any "Action:" effects and Standard Actions';
@@ -34,5 +34,15 @@ export class PhaseDescription {
     'Draw an additional 2 cards and keep an additional 2.',
     'Draw an additional 6 cards and keep an additional 1.'
   ];
+
+  static readonly PHASE_1_INDEX = 0;
+  static readonly PHASE_2_INDEX = 1;
+  static readonly PHASE_3_INDEX = 2;
+  static readonly PHASE_4_INDEX = 3;
+  static readonly PHASE_5_INDEX = 4;
+
+  static readonly PHASE_NO_UPGRADE_INDEX = 0;
+  static readonly PHASE_UPGRADE_1_INDEX = 1;
+  static readonly PHASE_UPGRADE_2_INDEX = 2;
 
 }

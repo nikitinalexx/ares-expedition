@@ -139,7 +139,7 @@ public class MarsGame {
                     Player.builder()
                             .uuid(UUID.randomUUID().toString() + i)
                             .name(playerNames.get(i))
-                            .hand(Deck.builder().cards(new LinkedList<>(List.of(300, 301, 302, 303, 304, 305, 306, 307))).build())
+                            .hand(Deck.builder().cards(new LinkedList<>(List.of(195, 209, 318, 342))).build())
                             //.hand(projectsDeck.dealCardsDeck(playerHandSize))
                             .corporations(corporationsDeck.dealCardsDeck(INITIAL_CORPORATIONS_SIZE))
                             .played(Deck.builder().build())
@@ -180,8 +180,11 @@ public class MarsGame {
         projectsDeck.addCards(cards);
     }
 
-    public void setStateType(StateType stateType, CardService cardService) {
-        playerUuidToPlayer.values().forEach(Player::clearPhaseResults);
+    public void setStateType(StateType stateType, CardService cardService, boolean clearPhaseResults) {
+        if (clearPhaseResults) {
+            playerUuidToPlayer.values().forEach(Player::clearPhaseResults);
+        }
+
         assignMilestones(cardService);
         if (stateType == StateType.GAME_END) {
             assignAwards(cardService);

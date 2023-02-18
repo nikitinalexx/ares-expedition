@@ -14,9 +14,9 @@ import {InputFlag} from '../../data/InputFlag';
 import {StandardProjectType} from '../../data/StandardProjectType';
 import {CardColor} from '../../data/CardColor';
 import {BuildGreenComponent} from '../greenProject/buildGreen.component';
-import {BuildBlueRedComponent} from '../blueProject/buildBlueRed.component';
 import {DiscardCardsTurn} from '../../data/DiscardCardsTurn';
 import {ScrollComponent} from '../../scroll/scroll.component';
+import {BuildBlueRedComponent} from "../blueRedProject/buildBlueRed.component";
 
 @Component({
   selector: 'app-third-phase',
@@ -134,7 +134,9 @@ export class ThirdPhaseComponent implements OnInit {
   }
 
   canPlayExtraBlueAction(): boolean {
-    return this.game.player.phase === 3 && !this.game.player.activatedBlueActionTwice && this.game.player.activatedBlueCards?.length > 0;
+    return this.game.player.phase === 3
+      && this.game.player.blueActionExtraActivationsLeft > 0
+      && this.game.player.activatedBlueCards?.length > 0;
   }
 
   getPlayerHandForAction(): Card[] {

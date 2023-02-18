@@ -101,8 +101,8 @@ export class RestDataSource {
     );
   }
 
-  pickCard(playerUuid: string): Observable<any> {
-    return this.sendRequest<any>('POST', this.url + '/turn/pick-card',
+  pickExtraBonus(playerUuid: string): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/turn/pick-extra-bonus',
       {player: playerUuid}
     );
   }
@@ -157,9 +157,9 @@ export class RestDataSource {
     );
   }
 
-  collectIncome(playerUuid: string): Observable<any> {
+  collectIncome(playerUuid: string, doubleCollectProject: number): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/turn/collect-income',
-      {player: playerUuid}
+      {playerUuid: playerUuid, cardId: doubleCollectProject}
     );
   }
 

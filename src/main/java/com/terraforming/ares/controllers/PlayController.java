@@ -117,13 +117,13 @@ public class PlayController {
     }
 
     @PostMapping("/turn/collect-income")
-    public void collectIncome(@RequestBody PlayerRequest playerUuidRequest) {
-        turnService.collectIncomeTurn(playerUuidRequest.getPlayer());
+    public void collectIncome(@RequestBody CollectIncomeRequest collectIncomeRequest) {
+        turnService.collectIncomeTurn(collectIncomeRequest.getPlayerUuid(), collectIncomeRequest.getCardId());
     }
 
-    @PostMapping("/turn/pick-card")
+    @PostMapping("/turn/pick-extra-bonus")
     public void pickExtraCardTurn(@RequestBody PlayerRequest playerUuidRequest) {
-        turnService.pickExtraCardTurn(playerUuidRequest.getPlayer());
+        turnService.pickExtraBonusTurn(playerUuidRequest.getPlayer());
     }
 
     @PostMapping("/turn/draft-cards")

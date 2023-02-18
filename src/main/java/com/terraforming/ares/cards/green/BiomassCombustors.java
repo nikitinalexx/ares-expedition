@@ -34,6 +34,11 @@ public class BiomassCombustors implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void payAgain(MarsGame game, CardService cardService, Player player) {
+        player.setHeat(player.getHeat() + 5);
+    }
+
+    @Override
     public CardMetadata getCardMetadata() {
         return cardMetadata;
     }

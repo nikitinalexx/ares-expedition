@@ -44,6 +44,12 @@ public class Astrofarm implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void payAgain(MarsGame game, CardService cardService, Player player) {
+        player.setPlants(player.getPlants() + 1);
+        player.setHeat(player.getHeat() + 3);
+    }
+
+    @Override
     public CardMetadata getCardMetadata() {
         return cardMetadata;
     }

@@ -110,7 +110,7 @@ public class AiThirdPhaseActionProcessor {
             return true;
         }
 
-        if (player.getChosenPhase() == 3 && !player.isActivatedBlueActionTwice()) {
+        if (player.getChosenPhase() == 3 && player.getBlueActionExtraActivationsLeft() > 0) {
             List<Card> actionBlueCards = player.getPlayed().getCards().stream()
                     .map(cardService::getCard)
                     .filter(Card::isActiveCard)

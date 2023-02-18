@@ -122,6 +122,13 @@
         </div>
       </div>
 
+      <app-upgrade-phase-template *ngIf="upgradePhaseCardEffect()" [phaseInput]="phaseInput" [phaseUpgradeTypeInput]="phaseUpgradeType"
+                                  [game]="game"
+                                  (phaseOutput)="updatePhaseInput($event)"
+                                  (phaseUpgradeTypeOutput)="updatePhaseUpgradeTypeInput($event)"
+      >
+      </app-upgrade-phase-template>
+
       <div *ngIf="expectsResourceInputOnBuild()">
         <h1 class="text-white">Choose card to put resource on </h1>
 

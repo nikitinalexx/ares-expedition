@@ -12,7 +12,7 @@ import {CardAction} from '../../data/CardAction';
 import {Tag} from '../../data/Tag';
 import {InputFlag} from '../../data/InputFlag';
 import {CardResource} from '../../data/CardResource';
-import {RequirementsComponent} from "../../requirements/requirements.component";
+import {RequirementsComponent} from '../../requirements/requirements.component';
 
 @Component({
   selector: 'app-build-blue-red',
@@ -30,6 +30,8 @@ export class BuildBlueRedComponent implements OnInit {
   importedNitrogenAnimalCard = null;
   largeConvoyAnimalCard = null;
   localHeatTrappingCard = null;
+  phaseInput = 0;
+  phaseUpgradeType = -1;
 
   @Input()
   game: Game;
@@ -337,6 +339,18 @@ export class BuildBlueRedComponent implements OnInit {
     );
   }
 
+  upgradePhaseCardEffect(): boolean {
+    return this.selectedProject.cardAction === CardAction[CardAction.UPDATE_PHASE_CARD];
+  }
+
+  updatePhaseInput(newPhaseInput: number) {
+    this.phaseInput = newPhaseInput;
+  }
+
+  updatePhaseUpgradeTypeInput(newPhaseUpgradeType: number) {
+    this.phaseUpgradeType = newPhaseUpgradeType;
+  }
+
   buildBlueRedProject(callback: (value: any) => void) {
     if (!this.selectedProject) {
       this.errorMessage = 'No project selected';
@@ -450,6 +464,18 @@ export class BuildBlueRedComponent implements OnInit {
         } else {
           inputParams[InputFlag.IMPORTED_HYDROGEN_PUT_RESOURCE.valueOf()] = [this.importedHydrogenMicrobeAnimal.id];
         }
+      }
+
+      if (this.upgradePhaseCardEffect()) {
+        if (this.phaseInput < 0 || this.phaseInput > 4) {
+          this.errorMessage = 'Pick the phase you want to upgrade';
+          return;
+        }
+        if (this.phaseUpgradeType !== 0 && this.phaseUpgradeType !== 1) {
+          this.errorMessage = 'Choose the type of phase upgrade';
+          return;
+        }
+        inputParams[InputFlag.PHASE_UPGRADE_CARD.valueOf()] = [this.phaseInput * 2 + this.phaseUpgradeType];
       }
 
       if (this.importedNitrogenEffect()) {

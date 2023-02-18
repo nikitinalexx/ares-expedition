@@ -60,7 +60,7 @@ class AssetLiquidationFlowTest {
                 null,
                 List.of(Expansion.BASE)
         );
-        marsGame.setStateType(StateType.PICK_PHASE, null);
+        marsGame.setStateType(StateType.PICK_PHASE, null, true);
 
         players = new ArrayList<>(marsGame.getPlayerUuidToPlayer().values());
         firstPlayer = players.get(0);

@@ -31,6 +31,20 @@ public class Laboratories implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void payAgain(MarsGame game, CardService cardService, Player player) {
+        int scienceTagCount = (int) player
+                .getPlayed()
+                .getCards().stream()
+                .map(cardService::getCard)
+                .flatMap(card -> card.getTags().stream())
+                .filter(Tag.SCIENCE::equals).count();
+
+        if (scienceTagCount >= 3) {
+            player.getHand().addCards(cardService.dealCards(game, scienceTagCount / 3));
+        }
+    }
+
+    @Override
     public CardMetadata getCardMetadata() {
         return cardMetadata;
     }

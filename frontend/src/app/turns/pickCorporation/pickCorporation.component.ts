@@ -7,8 +7,8 @@ import {TurnType} from '../../data/TurnType';
 import {DiscardCardsTurn} from '../../data/DiscardCardsTurn';
 import {CardColor} from '../../data/CardColor';
 import {BuildGreenComponent} from '../greenProject/buildGreen.component';
-import {BuildBlueRedComponent} from '../blueProject/buildBlueRed.component';
 import {SellCardsComponent} from '../sellCards/sellCards.component';
+import {BuildBlueRedComponent} from "../blueRedProject/buildBlueRed.component";
 
 @Component({
   selector: 'app-pick-corporation',
