@@ -59,6 +59,11 @@ public class GameController {
                 throw new IllegalArgumentException("Only 1 to 4 players are supported so far");
             }
 
+            final List<Expansion> expansions = gameParameters.getExpansions();
+            if (expansions.contains(Expansion.DISCOVERY) && aiPlayerCount > 0) {
+                throw new IllegalArgumentException("Computer is not smart enough to play the Discovery expansion lol!");
+            }
+
             MarsGame marsGame = gameService.startNewGame(gameParameters);
 
             if (aiPlayerCount == playersCount) {

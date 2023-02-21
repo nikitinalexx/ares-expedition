@@ -103,7 +103,7 @@ public class CardService {
     public int countCardTags(Card card, Set<Tag> tags, Map<Integer, List<Integer>> input) {
         int tagCount = 0;
 
-        if (input.containsKey(InputFlag.TAG_INPUT.getId())) {
+        if (input != null && input.containsKey(InputFlag.TAG_INPUT.getId())) {
             List<Integer> tagInput = input.get(InputFlag.TAG_INPUT.getId());
 
             if (tags.contains(Tag.byIndex(tagInput.get(0)))) {
@@ -117,7 +117,7 @@ public class CardService {
     public List<Tag> getCardTags(Card card, Map<Integer, List<Integer>> input) {
         List<Tag> result = new ArrayList<>();
 
-        if (input.containsKey(InputFlag.TAG_INPUT.getId())) {
+        if (input != null && input.containsKey(InputFlag.TAG_INPUT.getId())) {
             List<Integer> tagInput = input.get(InputFlag.TAG_INPUT.getId());
             result.add(Tag.byIndex(tagInput.get(0)));
         }

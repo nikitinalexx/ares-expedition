@@ -93,6 +93,7 @@ public class Player {
         this.selectedCorporationCard = copy.selectedCorporationCard;
 
         this.cardResourcesCount = new HashMap<>(copy.getCardResourcesCount());
+        this.cardToTag = new HashMap<>(copy.getCardToTag());
 
         this.terraformingRating = copy.terraformingRating;
         this.actionsInSecondPhase = copy.actionsInSecondPhase;
