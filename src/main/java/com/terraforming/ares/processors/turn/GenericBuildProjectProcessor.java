@@ -16,7 +16,7 @@ import java.util.Collections;
  */
 @RequiredArgsConstructor
 public abstract class GenericBuildProjectProcessor<T extends GenericBuildProjectTurn> implements TurnProcessor<T> {
-    private final CardService cardService;
+    protected final CardService cardService;
     private final TerraformingService terraformingService;
 
     @Override
@@ -30,29 +30,29 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
 
         processInternalBeforeBuild(turn, game);
 
-        TurnResponse response = card.buildProject(
-                MarsContext.builder()
-                        .game(game)
-                        .player(player)
-                        .terraformingService(terraformingService)
-                        .cardService(cardService)
-                        .build()
-        );
+        final MarsContext marsContext = MarsContext.builder()
+                .game(game)
+                .player(player)
+                .terraformingService(terraformingService)
+                .cardService(cardService)
+                .build();
+
+        TurnResponse response = card.buildProject(marsContext);
 
         for (Integer previouslyPlayedCardId : player.getPlayed().getCards()) {
             Card previouslyPlayedCard = cardService.getCard(previouslyPlayedCardId);
             if (previouslyPlayedCard.onBuiltEffectApplicableToOther()) {
-                previouslyPlayedCard.onProjectBuiltEffect(cardService, game, player, card, turn.getInputParams());
+                previouslyPlayedCard.postProjectBuiltEffect(marsContext, card, turn.getInputParams());
             }
         }
 
         player.getHand().removeCards(Collections.singletonList(turn.getProjectId()));
-        player.getPlayed().addCard(turn.getProjectId());
+        player.getPlayed().addCard(turn.getProjectId(), game.getTurns());
 
         processInternalAfterBuild(turn, game);
 
         if (card.onBuiltEffectApplicableToItself()) {
-            card.onProjectBuiltEffect(cardService, game, player, card, turn.getInputParams());
+            card.postProjectBuiltEffect(marsContext, card, turn.getInputParams());
         }
 
         return response;

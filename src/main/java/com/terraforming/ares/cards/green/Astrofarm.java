@@ -44,12 +44,18 @@ public class Astrofarm implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void payAgain(MarsGame game, CardService cardService, Player player) {
+        player.setPlants(player.getPlants() + 1);
+        player.setHeat(player.getHeat() + 3);
+    }
+
+    @Override
     public CardMetadata getCardMetadata() {
         return cardMetadata;
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> input) {
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> input) {
         List<Integer> cardInput = input.get(InputFlag.ASTROFARM_PUT_RESOURCE.getId());
 
         Integer cardId = cardInput.get(0);
@@ -58,12 +64,9 @@ public class Astrofarm implements BaseExpansionGreenCard {
             return;
         }
 
-        Card inputCard = cardService.getCard(cardId);
+        Card inputCard = marsContext.getCardService().getCard(cardId);
 
-        player.getCardResourcesCount().put(
-                inputCard.getClass(),
-                player.getCardResourcesCount().get(inputCard.getClass()) + 2
-        );
+        marsContext.getPlayer().addResources(inputCard, 2);
     }
 
     @Override

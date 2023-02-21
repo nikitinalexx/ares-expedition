@@ -2,6 +2,7 @@ package com.terraforming.ares.processors.action;
 
 import com.terraforming.ares.cards.blue.CaretakerContract;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import org.springframework.stereotype.Component;
@@ -18,7 +19,7 @@ public class CaretakerContractActionProcessor implements BlueActionCardProcessor
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player) {
+    public TurnResponse process(MarsGame game, Player player, Card actionCard) {
         player.setHeat(player.getHeat() - 8);
         player.setTerraformingRating(player.getTerraformingRating() + 1);
 

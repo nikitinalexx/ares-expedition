@@ -32,6 +32,11 @@ public class MeasurableGlobalParameter {
     }
 
     @JsonIgnore
+    public int valueLeft() {
+        return levels.size() - currentLevel - 1;
+    }
+
+    @JsonIgnore
     public ParameterColor getCurrentColor() {
         return levels.get(currentLevel).getColor();
     }

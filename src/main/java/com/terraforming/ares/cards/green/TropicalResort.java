@@ -34,6 +34,11 @@ public class TropicalResort implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void payAgain(MarsGame game, CardService cardService, Player player) {
+        player.setMc(player.getMc() + 4);
+    }
+
+    @Override
     public boolean onBuiltEffectApplicableToItself() {
         return true;
     }

@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -30,21 +31,25 @@ public class MedicalLab implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void payAgain(MarsGame game, CardService cardService, Player player) {
+        int buildingTagCount = cardService.countPlayedTags(player, Set.of(Tag.BUILDING));
+
+        player.setMc(player.getMc() + buildingTagCount / 2);
+    }
+
+    @Override
     public CardMetadata getCardMetadata() {
         return cardMetadata;
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        int buildingTagCountBefore = (int) player
-                .getPlayed()
-                .getCards().stream()
-                .map(cardService::getCard)
-                .flatMap(card -> card.getTags().stream())
-                .filter(Tag.BUILDING::equals).count();
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
+        final Player player = marsContext.getPlayer();
+
+        int buildingTagCountBefore = marsContext.getCardService().countPlayedTags(player, Set.of(Tag.BUILDING));
 
         int buildingTagCountAfter = buildingTagCountBefore +
-                (int) project.getTags().stream().filter(Tag.BUILDING::equals).count();
+                marsContext.getCardService().countCardTags(project, Set.of(Tag.BUILDING), inputParams);
 
         int mcIncomeDifference = (buildingTagCountAfter / 2) - (buildingTagCountBefore / 2);
 
@@ -58,18 +63,27 @@ public class MedicalLab implements BaseExpansionGreenCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        int buildingTagCount = (int) marsContext.getPlayer()
-                .getPlayed()
-                .getCards().stream()
-                .map(marsContext.getCardService()::getCard)
-                .flatMap(card -> card.getTags().stream())
-                .filter(Tag.BUILDING::equals).count();
+        int buildingTagCount = marsContext.getCardService().countPlayedTags(marsContext.getPlayer(), Set.of(Tag.BUILDING));
 
         int mcIncomeExtra = (buildingTagCount + 1) / 2;
 
         marsContext.getPlayer().setMcIncome(marsContext.getPlayer().getMcIncome() + mcIncomeExtra);
 
         return null;
+    }
+
+    @Override
+    public void revertPlayedTags(CardService cardService, Card card, Player player) {
+        int buildingTagCountBefore = cardService.countPlayedTags(player, Set.of(Tag.BUILDING));
+
+        int buildingTagCountAfter = buildingTagCountBefore -
+                cardService.countCardTagsWithDynamic(card, player, Set.of(Tag.BUILDING));
+
+        int mcIncomeDifference = (buildingTagCountBefore / 2) - (buildingTagCountAfter / 2);
+
+        if (mcIncomeDifference > 0) {
+            player.setMcIncome(player.getMcIncome() - mcIncomeDifference);
+        }
     }
 
     @Override

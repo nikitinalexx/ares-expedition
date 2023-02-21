@@ -9,6 +9,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.terraforming.ares.model.InputFlag.VIRAL_ENHANCERS_TAKE_PLANT;
 
@@ -28,10 +29,7 @@ public class ViralEnhancersOnBuiltEffectValidator implements OnBuiltEffectValida
 
     @Override
     public String validate(Card card, Player player, Map<Integer, List<Integer>> input) {
-        long tagsCount = card.getTags()
-                .stream()
-                .filter(tag -> tag == Tag.ANIMAL || tag == Tag.MICROBE || tag == Tag.PLANT)
-                .count();
+        long tagsCount = cardService.countCardTags(card, Set.of(Tag.ANIMAL, Tag.MICROBE, Tag.PLANT), input);
 
         if (tagsCount == 0) {
             return null;

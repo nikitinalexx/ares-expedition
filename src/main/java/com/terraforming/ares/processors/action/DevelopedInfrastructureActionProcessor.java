@@ -27,7 +27,7 @@ public class DevelopedInfrastructureActionProcessor implements BlueActionCardPro
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player) {
+    public TurnResponse process(MarsGame game, Player player, Card actionCard) {
         long minFiveBlueCards = player.getPlayed().getCards().stream()
                 .map(cardService::getCard)
                 .map(Card::getColor)
@@ -36,8 +36,6 @@ public class DevelopedInfrastructureActionProcessor implements BlueActionCardPro
                 .count();
 
         player.setMc(player.getMc() - (10 - ((minFiveBlueCards == 5) ? 5 : 0)));
-
-        player.setTerraformingRating(player.getTerraformingRating() + 1);
 
         terraformingService.increaseTemperature(game, player);
 

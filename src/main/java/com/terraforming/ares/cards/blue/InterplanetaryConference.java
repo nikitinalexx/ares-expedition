@@ -1,9 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
-import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -51,23 +49,15 @@ public class InterplanetaryConference implements BlueCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        int cardsToGiveCount = 0;
-
-        if (project.getTags().contains(Tag.EARTH)) {
-            cardsToGiveCount++;
-        }
-
-        if (project.getTags().contains(Tag.JUPITER)) {
-            cardsToGiveCount++;
-        }
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
+        int cardsToGiveCount = marsContext.getCardService().countCardTags(project, Set.of(Tag.EARTH, Tag.JUPITER), inputParams);
 
         if (cardsToGiveCount == 0) {
             return;
         }
 
-        for (Integer card : cardService.dealCards(game, cardsToGiveCount)) {
-            player.getHand().addCard(card);
+        for (Integer card : marsContext.getCardService().dealCards(marsContext.getGame(), cardsToGiveCount)) {
+            marsContext.getPlayer().getHand().addCard(card);
         }
     }
 

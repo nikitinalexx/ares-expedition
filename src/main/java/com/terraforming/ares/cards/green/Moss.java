@@ -30,7 +30,13 @@ public class Moss implements BaseExpansionGreenCard {
                 .description("Requires 3 ocean tiles to be flipped and for you to spend 1 plant. During the production phase, this produces 1 plant.")
                 .incomes(List.of(Gain.of(GainType.PLANT, 1)))
                 .bonuses(List.of(Gain.of(GainType.PLANT, -1)))
+                .cardAction(CardAction.MOSS)
                 .build();
+    }
+
+    @Override
+    public void payAgain(MarsGame game, CardService cardService, Player player) {
+        player.setPlants(player.getPlants() + 1);
     }
 
     @Override
@@ -43,9 +49,20 @@ public class Moss implements BaseExpansionGreenCard {
         Player player = marsContext.getPlayer();
 
         player.setPlantsIncome(player.getPlantsIncome() + 1);
-        player.setPlants(player.getPlants() - 1);
 
         return null;
+    }
+
+    @Override
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
+        final Player player = marsContext.getPlayer();
+
+        player.setPlants(player.getPlants() - 1);
+    }
+
+    @Override
+    public boolean onBuiltEffectApplicableToItself() {
+        return true;
     }
 
     @Override

@@ -38,8 +38,8 @@ body {
 }
 
 .card-box {
-  display: inline-block;
-  vertical-align: top;
+  display: flex;
+  flex-direction: row;
 }
 
 .card-box-container {
@@ -179,8 +179,18 @@ li.events::before {
 }
 
 .clicked-card {
-  box-shadow: 0 0 1px 1px #444, 0 0 15px 5px white !important;
-  filter: grayscale(1);
+  box-shadow: 0 0 1px 1px #444, 0 0 15px 15px springgreen !important;
+  filter: brightness(90%);
+}
+
+.upgraded-phase-bonus {
+  border-radius: 5px;
+  box-shadow: 0 0 1px 1px #444, 0 0 10px 10px gold !important;
+  filter: brightness(90%);
+}
+
+.unavailable-card {
+  filter: grayscale(80%);
 }
 
 * {
@@ -198,6 +208,56 @@ li.events::before {
 
 
 .tag {
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.6), 0 0 0 2px rgba(0,0,0,0.3);
+  width: 36px;
+  height: 36px;
+  background-size: 46px;
+  background-position: -5px;
+  text-align: center;
+  border-radius: 50%;
+  border-top: 2px solid rgb(221,221,221);
+  border-left: 2px solid rgb(221,221,221);
+  border-bottom: 2px solid rgb(137,137,137);
+  border-right: 2px solid rgb(137,137,137);
+  background-color: white;
+  margin-left: 5px;
+  margin-top: 5px;
+  filter: brightness(0.9);
+}
+
+.tags-header {
+  position: absolute;
+  background: linear-gradient(-60deg, #ec6a13 10%, #ec6a1388, #ec6a13 90%);
+  width: 62px;
+  height: 230px;
+  border-radius: 16px;
+  top: 2px;
+  left: 2px;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 60%), 0 0 0 2px rgb(0 0 0 / 30%);
+}
+
+.tag-wrapper {
+  position: absolute;
+  left: 5px;
+  background-color: #0003;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+}
+
+.tag1 {
+  top: 65px;
+}
+
+.tag2 {
+  top: 120px;
+}
+
+.tag3 {
+  top: 175px;
+}
+
+.corporation-tag {
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(0, 0, 0, 0.3);
   position: absolute;
   width: 40px;
@@ -215,15 +275,15 @@ li.events::before {
   filter: brightness(0.9);
 }
 
-.tag1 {
+.corporation-tag1 {
   margin-left: 200px;
 }
 
-.tag2 {
+.corporation-tag2 {
   margin-left: 152px;
 }
 
-.tag3 {
+.corporation-tag3 {
   margin-left: 104px;
 }
 
@@ -241,23 +301,39 @@ li.events::before {
 }
 
 .title {
-  position: relative;
+  /*position: absolute;*/
   text-transform: uppercase;
-  float: left;
   font-family: Prototype;
-  margin-top: 36px;
-  width: 100%;
-  border-top: 1px solid #888;
-  border-bottom: 1px solid #888;
-  box-shadow: 0 1px 0px 0px #888;
+  /*float: left;*/
+  width: 165px;
+  /*left: 70px;*/
+  /*top: 5px;*/
+  border-bottom: 1px solid #222;
   border-radius: 0 0 0px 0px;
-  line-height: 30px;
-  font-size: 16px;
+  line-height: 18px;
+  font-size: 14px;
   text-align: center;
-  border-radius: 0 0 30% 30%;
+  margin-top: 5px;
+  margin-bottom: 15px;
 }
 
 .price {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  font-family: Prototype;
+  font-size: 26px;
+  width: 50px;
+  height: 50px;
+  line-height: 48px;
+  border-radius: 10px;
+  text-align: center;
+  background-image: url(../images/megacredits/megacredit.png);
+  background-size: 50px;
+  filter: drop-shadow(0px 0px 1px black);
+}
+
+.discount-price {
   float: left;
   font-size: 26px;
   width: 50px;
@@ -265,15 +341,16 @@ li.events::before {
   line-height: 48px;
   border-radius: 10px;
   text-align: center;
-  margin-top: -77px;
-  margin-left: -10px;
+  margin-top: -60px;
+  margin-left: 13px;
   background-image: url(../images/megacredits/megacredit.png);
   background-size: 50px;
   filter: drop-shadow(0px 0px 1px black);
+  z-index: 5;
 }
 
 .number {
-  position: relative;
+  position: absolute;
   float: left;
   width: 36px;
   height: 20px;
@@ -281,35 +358,37 @@ li.events::before {
   text-align: center;
   color: #aaa;
   letter-spacing: 1px;
-  margin-top: -62px;
-  margin-left: 50px;
+  margin-top: 287px;
+  margin-left: 204px;
   font-size: 12px;
 }
 
 .points {
   position: absolute;
+  font-family: Prototype;
   font-weight: normal;
-  margin-top: 183px;
-  margin-left: 143px;
-  width: 80px;
-  height: 42px;
-  line-height: 35px;
+  left: -63px;
+  bottom: -25px;
+  width: 50px;
+  height: 50px;
+  line-height: 50px;
   font-size: 28px;
   text-align: center;
-  border-radius: 10px;
-  background-color: rgb(205, 162, 130);
-  background: linear-gradient(#cc8b00, rgb(128, 87, 0), rgb(128, 87, 0));
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(0, 0, 0, 0.3);
+  border-radius: 50%;
+  background-color: rgb(205,162, 130);
+  background: linear-gradient(#cc8b00, rgb(128, 87, 0),rgb(128, 87, 0));
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 60%), 0 0 0 2px rgb(0 0 0 / 30%);
   background: url(../images/mars.png);
-  background-size: 90px;
-  background-position: -5px -25px;
+  background-size: 58px;
+  background-position: -4px -4px;
   text-shadow: 0 0 5px darkorange;
+  white-space: nowrap;
 }
 
 .points-player {
   position: absolute;
-  margin-left: -5px;
-  margin-top: 197px;
+  margin-left: 175px;
+  margin-top: 275px;
   font-weight: normal;
   width: 60px;
   height: 30px;
@@ -339,27 +418,28 @@ li.events::before {
 }
 
 .points-big {
-  line-height: 42px;
+  line-height: 50px;
   font-size: 36px;
 }
 
 .requirements {
   font-family: Prototype;
   width: 70%;
-  margin-left: 33px;
+  margin-left: 15%;
   margin-bottom: 10px;
   height: 25px;
   line-height: 25px;
   text-align: center;
   font-weight: normal;
   font-size: 15px;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 1.2), 0 0 0 2px rgba(0, 0, 0, 0.3);
   background: linear-gradient(to right, #fa2525, #fb7272, #fb7272, #fa2525);
   background-image: url(../images/requisites/min_big.png);
-  background-size: 180px 38px;
+  background-size: 147px 38px;
   background-position: -15px -4px;
   height: 25px;
   line-height: 25px;
+  border-radius: 5%;
 }
 
 .requirements-max {
@@ -434,6 +514,13 @@ li.events::before {
   background-image: url(../images/tiles/empty.png);
 }
 
+.small-tile {
+  width: 20px;
+  height: 23px;
+  background-size: 20px 23px;
+  margin: 0 0 0 2px;
+}
+
 .temperature-tile {
   background-image: url(../images/global-parameters/temperature.png);
   width: 14px;
@@ -479,15 +566,22 @@ li.events::before {
   background-size: 50px 40px;
 }
 
+.small-rating {
+  background-image: url(../images/resources/tr.png);
+  width: 20px;
+  height: 20px;
+  background-size: 20px 20px;
+  margin: 0 0 0 2px;
+}
 /************** Style the Content ************/
 .content {
   position: relative;
-  display: inline-block;
-  width: 220px;
-  padding: 10px;
+  width: 165px;
+  height: 270px;
   font-size: 16px;
   line-height: 20px;
   text-align: center;
+  margin-left: 70px;
 }
 
 .contentCorporation {
@@ -544,6 +638,10 @@ li.events::before {
   line-height: 32px;
   background-image: url(../images/misc/production.png);
   background-size: cover;
+}
+
+.production-box-size0b {
+  width: 50px;
 }
 
 .production-box-size1a {
@@ -619,6 +717,10 @@ li.events::before {
   background-image: url("../images/tags/animal.png");
 }
 
+.tag-dynamic {
+  background-image: url("../images/tags/dynamic.png");
+}
+
 .tag-event {
   background-image: url("../images/tags/event.png");
 }
@@ -645,6 +747,12 @@ li.events::before {
   vertical-align: middle;
 }
 
+.small {
+  background-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
 .resource-tag {
   position: relative;
   display: inline-block;
@@ -657,8 +765,15 @@ li.events::before {
   line-height: 28px;
   box-shadow: 0 0 0 1px rgba(0,0,0,0.6), 0 0 0 2px rgba(0,0,0,0.3);
   vertical-align: middle;
-  margin-bottom: 5px;
+  margin: 2px;
   filter: brightness(0.9);
+}
+
+.small-tag {
+  background-size: 24px;
+  background-position: -1px -1px;
+  width: 22px;
+  height: 22px;
 }
 
 .money {
@@ -735,6 +850,14 @@ li.events::before {
   vertical-align: middle;
 }
 
+.card-phase-x {
+  background: url("../images/phases/X.png");
+  height: 30px;
+  width: 30px;
+  background-size: 30px 30px;
+  vertical-align: middle;
+}
+
 .card-blue {
   background: url("../images/resources/blueCard.png");
   height: 40px;
@@ -780,9 +903,59 @@ li.events::before {
   box-shadow: 0 0 0 1px rgba(0,0,0,0.3);
 }
 
+.tag-icon {
+  position: absolute;
+  margin-left: 20px;
+  margin-top: -10px;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  background-size: 18px 18px;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.3);
+  font-size: 15px;
+}
+
+.discount-icon {
+  position: absolute;
+  margin-left: 20px;
+  margin-top: 20px;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  background-size: 18px 18px;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.3);
+  font-size: 15px;
+}
+
+.forest-tag-icon {
+  margin-left: 30px;
+}
+
+.tag-icon-first {
+  margin-left: -3px;
+}
+
+.card-tag-icon {
+  width: 13px;
+  height: 18px;
+  background-size: 13px 18px;
+}
+
 /************** Extras ************/
 .red-arrow {
   background-image: url(../images/misc/arrow.png);
+  background-size: 30px;
+  width: 30px;
+  height: 30px;
+  vertical-align: middle;
+  display: inline-block;
+  margin-bottom: 5px;
+  background-repeat: no-repeat;
+  background-position: 0px;
+}
+
+.upgrade {
+  background-image: url(../images/misc/upgrade.png);
   background-size: 30px;
   width: 30px;
   height: 30px;
@@ -798,17 +971,11 @@ li.events::before {
   background: linear-gradient(-60deg, rgb(255, 204, 100) 10%, rgba(255, 204, 100, .4), rgb(255, 204, 100) 90%)
 }
 
-.background-color-automated {
-  background: linear-gradient(-60deg, #089108 10%, #08910888, #089108 90%)
-}
+.background-color-automated { background:linear-gradient(-60deg,  #089108 10%,  #08910888,  #089108 90%)}
 
-.background-color-active {
-  background: linear-gradient(-60deg, #208cdf 10%, #208cdf88, #208cdf 90%);
-}
+.background-color-active { background: linear-gradient(-60deg,  #208cdf 10%,  #208cdf88,  #208cdf 90%);}
 
-.background-color-events {
-  background: linear-gradient(-60deg, #ec6a13 10%, #ec6a1388, #ec6a13 90%)
-}
+.background-color-events {background: linear-gradient(-60deg, #ec6a13 10%, #ec6a1388, #ec6a13 90%)}
 
 .background-color-global {
   background: linear-gradient(-60deg, #43afa5 10%, #43afa588, #43afa5 90%);

@@ -23,7 +23,8 @@ public class WoodBurningStoves implements BlueCard {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
                 .name("Wood Burning Stoves")
-                .description("Gain 4 plants. Action: Spend 4 plants to raise temperature 1 step. *if you chose the action phase this round, spend 3 plants.")
+                .actionDescription("Action: Spend 4 plants to raise temperature 1 step. *if you chose the action phase this round, spend 3 plants.")
+                .description("Gain 4 plants.")
                 .bonuses(List.of(Gain.of(GainType.PLANT, 4)))
                 .cardAction(CardAction.WOOD_BURNING_STOVES)
                 .build();

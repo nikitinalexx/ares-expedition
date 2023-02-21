@@ -1,11 +1,10 @@
 package com.terraforming.ares.cards.green;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.model.CardAction;
-import com.terraforming.ares.model.MarsContext;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.parameters.ParameterColor;
+import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -28,6 +27,11 @@ public class Zeppelins implements BaseExpansionGreenCard {
                 .description("Requires red oxygen or higher. During the production phase, this produces 1 MC per Forest you have.")
                 .cardAction(CardAction.MC_FOREST_INCOME)
                 .build();
+    }
+
+    @Override
+    public void payAgain(MarsGame game, CardService cardService, Player player) {
+        player.setMc(player.getMc() + player.getForests());
     }
 
     @Override

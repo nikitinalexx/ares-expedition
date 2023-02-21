@@ -48,7 +48,7 @@ public class GhgProductionBacteria implements BlueCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        marsContext.getPlayer().getCardResourcesCount().put(GhgProductionBacteria.class, 0);
+        marsContext.getPlayer().initResources(this);
         return null;
     }
 

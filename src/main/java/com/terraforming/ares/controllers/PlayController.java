@@ -1,10 +1,9 @@
 package com.terraforming.ares.controllers;
 
-import com.terraforming.ares.dto.ActionDto;
+import com.terraforming.ares.dto.ActionsDto;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.request.*;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
-import com.terraforming.ares.model.turn.DiscardDraftedCardsTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.GameService;
 import com.terraforming.ares.services.TurnService;
@@ -24,9 +23,14 @@ public class PlayController {
     private final GameService gameService;
     private final TurnService turnService;
 
+    @GetMapping("/push/{gameId}")
+    public void getAllProjectCards(@PathVariable long gameId) {
+        turnService.pushGame(gameId);
+    }
+
     @GetMapping("/action/next/{playerUuid}")
-    public ActionDto getNextAction(@PathVariable String playerUuid) {
-        return new ActionDto(gameService.getNextAction(playerUuid));
+    public ActionsDto getNextAction(@PathVariable String playerUuid) {
+        return gameService.getNextActions(playerUuid);
     }
 
     @GetMapping("/turns/next/{playerUuid}")
@@ -45,28 +49,33 @@ public class PlayController {
     }
 
     @PostMapping("/game/player/skip")
-    public void skipTurn(@RequestBody PlayerUuidRequest playerUuidRequest) {
-        turnService.skipTurn(playerUuidRequest.getPlayerUuid());
+    public void skipTurn(@RequestBody PlayerRequest playerUuidRequest) {
+        turnService.skipTurn(playerUuidRequest.getPlayer());
     }
 
     @PostMapping("/game/player/game-end/confirm")
-    public void confirmGameEnd(@RequestBody PlayerUuidRequest playerUuidRequest) {
-        turnService.confirmGameEnd(playerUuidRequest.getPlayerUuid());
+    public void confirmGameEnd(@RequestBody PlayerRequest playerUuidRequest) {
+        turnService.confirmGameEnd(playerUuidRequest.getPlayer());
     }
 
     @PostMapping("/game/player/sell")
-    public void sellCards(@RequestBody SellCardsRequest sellCardsRequest) {
+    public void sellCards(@RequestBody CardsRequest sellCardsRequest) {
         turnService.sellCards(sellCardsRequest.getPlayerUuid(), sellCardsRequest.getCards());
     }
 
+    @PostMapping("/game/player/mulligan")
+    public void mulliganCards(@RequestBody CardsRequest mulliganCardsRequest) {
+        turnService.mulliganCards(mulliganCardsRequest.getPlayerUuid(), mulliganCardsRequest.getCards());
+    }
+
     @PostMapping("/game/player/sell/last")
-    public void sellCardsLastRoundTurn(@RequestBody SellCardsRequest sellCardsRequest) {
+    public void sellCardsLastRoundTurn(@RequestBody CardsRequest sellCardsRequest) {
         turnService.sellCardsLastRoundTurn(sellCardsRequest.getPlayerUuid(), sellCardsRequest.getCards());
     }
 
     @PostMapping("/turn/build/green")
-    public void buildGreenProject(@RequestBody BuildProjectRequest buildProjectRequest) {
-        turnService.buildGreenProjectCard(
+    public TurnResponse buildGreenProject(@RequestBody BuildProjectRequest buildProjectRequest) {
+        return turnService.buildGreenProjectCard(
                 buildProjectRequest.getPlayerUuid(),
                 buildProjectRequest.getCardId(),
                 buildProjectRequest.getPayments(),
@@ -75,8 +84,8 @@ public class PlayController {
     }
 
     @PostMapping("/turn/build/blue-red")
-    public void buildBlueRedProject(@RequestBody BuildProjectRequest buildProjectRequest) {
-        turnService.buildBlueRedProjectCard(
+    public TurnResponse buildBlueRedProject(@RequestBody BuildProjectRequest buildProjectRequest) {
+        return turnService.buildBlueRedProjectCard(
                 buildProjectRequest.getPlayerUuid(),
                 buildProjectRequest.getCardId(),
                 buildProjectRequest.getPayments(),
@@ -96,46 +105,40 @@ public class PlayController {
     @PostMapping("/turn/cards/discard")
     public TurnResponse discardCards(@RequestBody DiscardCardsRequest request) {
         return turnService.discardCards(
-                new DiscardCardsTurn(request.getPlayerUuid(), request.getCards(), request.getCards().size(), false),
+                new DiscardCardsTurn(request.getPlayerUuid(), request.getCards(), request.getCards().size(), false, false),
                 request.getPlayerUuid(),
-                request.getCards(),
-                true
+                request.getCards()
         );
     }
 
-    @PostMapping("/turn/cards/discard/drafted")
-    public TurnResponse discardDraftedCards(@RequestBody DiscardCardsRequest request) {
-        return turnService.discardCards(
-                new DiscardDraftedCardsTurn(request.getPlayerUuid(), request.getCards()),
-                request.getPlayerUuid(),
-                request.getCards(),
-                false
-        );
+    @PostMapping("/turn/unmi/rt")
+    public TurnResponse unmiRtCorporationTurn(@RequestBody PlayerRequest playerUuidRequest) {
+        return turnService.unmiRtCorporationTurn(playerUuidRequest.getPlayer());
     }
 
     @PostMapping("/turn/collect-income")
-    public void collectIncome(@RequestBody PlayerUuidRequest playerUuidRequest) {
-        turnService.collectIncomeTurn(playerUuidRequest.getPlayerUuid());
+    public void collectIncome(@RequestBody CollectIncomeRequest collectIncomeRequest) {
+        turnService.collectIncomeTurn(collectIncomeRequest.getPlayerUuid(), collectIncomeRequest.getCardId());
     }
 
-    @PostMapping("/turn/pick-card")
-    public void pickExtraCardTurn(@RequestBody PlayerUuidRequest playerUuidRequest) {
-        turnService.pickExtraCardTurn(playerUuidRequest.getPlayerUuid());
+    @PostMapping("/turn/pick-extra-bonus")
+    public void pickExtraCardTurn(@RequestBody PlayerRequest playerUuidRequest) {
+        turnService.pickExtraBonusTurn(playerUuidRequest.getPlayer());
     }
 
     @PostMapping("/turn/draft-cards")
-    public void draftCards(@RequestBody PlayerUuidRequest playerUuidRequest) {
-        turnService.draftCards(playerUuidRequest.getPlayerUuid());
+    public void draftCards(@RequestBody PlayerRequest playerUuidRequest) {
+        turnService.draftCards(playerUuidRequest.getPlayer());
     }
 
     @PostMapping("/turn/forest")
-    public void plantForest(@RequestBody PlayerUuidRequest playerUuidRequest) {
-        turnService.plantForest(playerUuidRequest.getPlayerUuid());
+    public void plantForest(@RequestBody PlayerRequest playerUuidRequest) {
+        turnService.plantForest(playerUuidRequest.getPlayer());
     }
 
     @PostMapping("/turn/temperature")
-    public void increaseTemperature(@RequestBody PlayerUuidRequest playerUuidRequest) {
-        turnService.increaseTemperature(playerUuidRequest.getPlayerUuid());
+    public void increaseTemperature(@RequestBody PlayerRequest playerUuidRequest) {
+        turnService.increaseTemperature(playerUuidRequest.getPlayer());
     }
 
     @PostMapping("/turn/standard")

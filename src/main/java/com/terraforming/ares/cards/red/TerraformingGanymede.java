@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -35,12 +36,7 @@ public class TerraformingGanymede implements BaseExpansionRedCard {
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
 
-        int jupiterTags = (int) player.getPlayed()
-                .getCards()
-                .stream()
-                .map(marsContext.getCardService()::getCard)
-                .flatMap(projectCard -> projectCard.getTags().stream())
-                .filter(Tag.JUPITER::equals).count();
+        int jupiterTags = marsContext.getCardService().countPlayedTags(player, Set.of(Tag.JUPITER));
 
         player.setTerraformingRating(player.getTerraformingRating() + jupiterTags + 1);
 

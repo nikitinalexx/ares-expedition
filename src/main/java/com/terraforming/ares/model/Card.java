@@ -25,6 +25,7 @@ public interface Card {
         return null;
     }
 
+
     default List<Tag> getTags() {
         return Collections.emptyList();
     }
@@ -36,6 +37,9 @@ public interface Card {
     int getPrice();
 
     CardColor getColor();
+
+    default void payAgain(MarsGame game, CardService cardService, Player player) {
+    }
 
     default int getWinningPoints() {
         return 0;
@@ -61,7 +65,7 @@ public interface Card {
         return null;
     }
 
-    default void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
+    default void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
     }
 
     default void onOceanFlippedEffect(Player player) {
@@ -92,6 +96,17 @@ public interface Card {
 
     default int heatSpendOnBuild() {
         return 0;
+    }
+
+    default void revertPlayedTags(CardService cardService, Card card, Player player) {
+    }
+
+    default void onAchievementGained(Player player) {
+
+    }
+
+    default boolean isBlankCard() {
+        return false;
     }
 
 }

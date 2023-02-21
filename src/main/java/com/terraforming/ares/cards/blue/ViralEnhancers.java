@@ -1,15 +1,14 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
-import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.terraforming.ares.model.InputFlag.VIRAL_ENHANCERS_TAKE_PLANT;
 
@@ -38,11 +37,8 @@ public class ViralEnhancers implements BlueCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        long tagsCount = project.getTags()
-                .stream()
-                .filter(tag -> tag == Tag.ANIMAL || tag == Tag.MICROBE || tag == Tag.PLANT)
-                .count();
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
+        long tagsCount = marsContext.getCardService().countCardTags(project, Set.of(Tag.ANIMAL, Tag.MICROBE, Tag.PLANT), inputParams);
 
         if (tagsCount == 0) {
             return;
@@ -51,17 +47,16 @@ public class ViralEnhancers implements BlueCard {
         List<Integer> takePlantsInput = inputParams.getOrDefault(VIRAL_ENHANCERS_TAKE_PLANT.getId(), List.of());
         List<Integer> microbeAnimalsInput = inputParams.getOrDefault(InputFlag.VIRAL_ENHANCERS_PUT_RESOURCE.getId(), List.of());
 
+        final Player player = marsContext.getPlayer();
+
         if (!CollectionUtils.isEmpty(takePlantsInput)) {
             player.setPlants(player.getPlants() + takePlantsInput.get(0));
         }
 
         if (!CollectionUtils.isEmpty(microbeAnimalsInput)) {
             for (Integer cardId : microbeAnimalsInput) {
-                Card projectCard = cardService.getCard(cardId);
-                player.getCardResourcesCount().put(
-                        projectCard.getClass(),
-                        player.getCardResourcesCount().get(projectCard.getClass()) + 1
-                );
+                Card projectCard = marsContext.getCardService().getCard(cardId);
+                player.addResources(projectCard, 1);
             }
         }
     }

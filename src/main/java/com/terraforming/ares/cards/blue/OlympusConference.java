@@ -1,14 +1,13 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
-import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -35,15 +34,15 @@ public class OlympusConference implements BlueCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        int scienceTags = (int) project.getTags().stream().map(Tag.SCIENCE::equals).count();
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
+        int scienceTags = marsContext.getCardService().countCardTags(project, Set.of(Tag.SCIENCE), inputParams);
 
         if (scienceTags == 0) {
             return;
         }
 
-        for (Integer card : cardService.dealCards(game, scienceTags)) {
-            player.getHand().addCard(card);
+        for (Integer card : marsContext.getCardService().dealCards(marsContext.getGame(), scienceTags)) {
+            marsContext.getPlayer().getHand().addCard(card);
         }
 
     }

@@ -1,26 +1,40 @@
-<div *ngIf="!card.corporation" [ngClass]="getBackgroundColorClass(card)" class="title" [ngStyle]="getNameStyle(card)">{{ card.name }}</div>
-<div class="price" *ngIf="!card.corporation"> {{card.price}}</div>
-
 <div *ngIf="discountApplicable(card)">
   <div class="card-cost-transition"></div>
-  <div class="price card-old-cost">{{card.price - getDiscount(card)}}</div>
+  <div class="discount-price card-old-cost">{{card.price - getDiscount(card)}}</div>
 </div>
 
-<div *ngIf="card.tags[0]" [ngClass]="getTagClasses(card, 0)" class="tag tag1 "></div>
-<div *ngIf="card.tags[1]" [ngClass]="getTagClasses(card, 1)" class="tag tag2 "></div>
-<div *ngIf="card.tags[2]" [ngClass]="getTagClasses(card, 2)" class="tag tag3 "></div>
+<div *ngIf="!card.corporation" class="tags-header" [ngClass]="getBackgroundColorClass(card)">
+  <div class="price" *ngIf="!card.corporation"> {{card.price}}</div>
 
-<div *ngIf="card.corporation" class="corporationLabel" >CORPORATION</div>
+  <div class="tag-wrapper tag1 ">
+    <div *ngIf="card.tags[0]" class="tag" [ngClass]="getTagClasses(card, 0)"></div>
+  </div>
+  <div class="tag-wrapper tag2 ">
+    <div *ngIf="card.tags[1]" class="tag" [ngClass]="getTagClasses(card, 1)"></div>
+  </div>
+  <div class="tag-wrapper tag3 ">
+    <div *ngIf="card.tags[2]" class="tag" [ngClass]="getTagClasses(card, 2)"></div>
+  </div>
+</div>
+
+<div *ngIf="card.corporation">
+  <div *ngIf="card.tags[0]" [ngClass]="getTagClasses(card, 0)" class="corporation-tag corporation-tag1 "></div>
+  <div *ngIf="card.tags[1]" [ngClass]="getTagClasses(card, 1)" class="corporation-tag corporation-tag2 "></div>
+  <div *ngIf="card.tags[2]" [ngClass]="getTagClasses(card, 2)" class="corporation-tag corporation-tag3 "></div>
+</div>
+
+<div *ngIf="card.corporation" class="corporationLabel">CORPORATION</div>
 <div *ngIf="!card.corporation" class="number">#{{getFormattedId(card)}}</div>
 
 <div *ngIf="card.corporation" class="contentCorporation">
-  <div *ngIf="card.winPointsInfo" class="points" style="font-size: 26px; margin-top: 258px;">
+  <div *ngIf="card.winPointsInfo" class="points" style="font-size: 26px; margin-bottom: -131px; margin-left: 65px">
     {{card.winPointsInfo.points + '/' +
   (card.winPointsInfo.points >= card.winPointsInfo.resources ? '' : card.winPointsInfo.resources) }}
     <div class="{{card.winPointsInfo.type.toString().toLowerCase()}} resource"></div>
   </div>
 
-  <div *ngIf="player && card.cardResource && showResources" class="points-player" style="margin-top: 263px;">
+  <div *ngIf="player && card.cardResource && showResources" class="points-player"
+       style="margin-top: 258px; margin-left: 165px">
     <span class="points-counter">{{player.cardResources[card.id]}}</span>
     <span class="{{card.cardResource.toString().toLowerCase()}} resource player-resource"></span>
   </div>
@@ -38,6 +52,16 @@
       </div>
     </div>
 
+    <div *ngIf="isInterplanetaryCinematics(card)">
+      <div class="resource-tag tag-event"></div>
+      :
+      <div class="money resource ">-2</div>
+
+      <div class="description" style="text-align:center;margin-top:0px;">
+        (Effect: When you play an Event, you pay 2 MC less for it.)
+      </div>
+    </div>
+
     <div *ngIf="isCelestiorCorporation(card)">
       <div class="corporationEffectBoxLabel">ACTION</div>
 
@@ -48,7 +72,8 @@
       <span class="card resource"></span>
 
       <div class="description" style="text-align:center;margin-top:0px;">
-        (Action: Reveal the top 3 cards of the deck. Place the cards with an Event tag into your hand. Discard the rest.)
+        (Action: Reveal the top 3 cards of the deck. Place the cards with an Event tag into your hand. Discard the
+        rest.)
       </div>
     </div>
 
@@ -64,6 +89,21 @@
       </div>
     </div>
 
+    <div *ngIf="isUnmiCorporation(card)">
+      <div class="corporationEffectBoxLabel">EFFECT</div>
+
+      +
+      <div class="rating tile "></div>
+      :
+      <div class=" money resource ">6</div>
+      : 1
+      <div class="rating tile "></div>
+
+      <div class="description" style="text-align:center;margin-top:0px;">
+        (Effect: When you first raise RT during the phase, you may spend 6 MC to get 1 extra RT.)
+      </div>
+    </div>
+
     <div *ngIf="isLaunchStarCorporation(card)">
       <div class="corporationEffectBoxLabel">EFFECT</div>
 
@@ -73,6 +113,60 @@
 
       <div class="description" style="text-align:center;margin-top:0px;">
         (Effect: When you play a blue card, you pay 3 MC less for it.)
+      </div>
+    </div>
+
+    <div *ngIf="isZetacellCorporation(card)">
+      <div class="corporationEffectBoxLabel">EFFECT</div>
+
+      <div class="tile ocean-tile"></div>
+      :
+      <div class="resource money ">2</div>
+      <div class="resource plant "></div>
+      <div class="resource plant "></div>
+
+      <div class="description" style="text-align:center;margin-top:0px;">
+        (Effect: When you flip an ocean tile, gain 2 mc and 2 plants.)
+      </div>
+    </div>
+
+    <div *ngIf="isEcolineCorporation(card)">
+      <div class="corporationEffectBoxLabel">EFFECT</div>
+
+      7
+      <div class="resource plant "></div>
+      :
+      <div class="tile forest-tile"></div>
+
+      <div class="description" style="text-align:center;margin-top:0px;">
+        (Effect: When you trade plants for forest, pay 1 plant less.)
+      </div>
+    </div>
+
+    <div *ngIf="isInventrixCorporation(card)">
+      <div class="corporationEffectBoxLabel">EFFECT</div>
+
+      <div class="tile globals-box">Temperature Oxygen</div>
+      : +/- 1 Color
+
+      <div class="description" style="text-align:center">
+        (Effect: When playing a card with requirements, you may consider the oxygen or temperature one color higher or
+        lower. This cannot be modified futher by other effects.)
+      </div>
+    </div>
+
+    <div *ngIf="isMayNiProductionsCorporation(card)">
+      <div class="corporationEffectBoxLabel">EFFECT</div>
+
+      <div class="resource card card-green"></div>
+      :
+      +
+      <div class="resource card"></div>
+      -
+      <div class="resource card"></div>
+
+      <div class="description" style="text-align:center">
+        (Effect: Whenever you play a Green card, take a card and discard a card.)
       </div>
     </div>
 
@@ -115,7 +209,8 @@
       <div class="corporationEffectBoxLabel">EFFECT</div>
 
       <div class="resource card"></div>
-      <div class="money resource ">20</div>+
+      <div class="money resource ">20</div>
+      +
       :
       <div class="money resource ">-4</div>
 
@@ -127,15 +222,21 @@
     <div *ngIf="isArclightCorporation(card)">
       <div class="corporationEffectBoxLabel">EFFECT</div>
 
-      <div class="tag-animal resource-tag"></div>
-      /
-      <div class="tag-plant resource-tag"></div>
-      :
-      <div class="animal resource"></div>
+      <div style="margin-top: -12px">
+        <div class="tag-animal resource-tag"></div>
+        /
+        <div class="tag-plant resource-tag"></div>
+        <span *ngIf="isBuffedCorporation(card)"> / <span class="tag-microbe resource-tag"></span></span>
+        :
+        <div class="animal resource"></div>
 
-      <div class="description" style="text-align:center;margin-top:0px;">
-        (Effect: When you play an Animal or Plant tag including this, add an Animal to this card. 1 VP for 2 animals on this card.)
+        <div class="description" style="text-align:center;">
+          (Effect: When you play an Animal or Plant{{isBuffedCorporation(card) ? ' or Microbe ' : ''}} tags including
+          this, add an Animal to this card. 1 VP for 2 animals on
+          this card.)
+        </div>
       </div>
+
     </div>
 
     <div *ngIf="isPhobologCorporation(card)" style="margin-top: 10px;">
@@ -188,9 +289,9 @@
       <div class="production heat"></div>
       <div class="production heat"></div>
     </div>
-    <div class="resource money" style="margin-left:20px;">28</div>
+    <div class="resource money" style="margin-left:20px;">{{card.price}}</div>
     <div class="description" style="text-align:center;">
-      (You start with 3 heat production and 28 MC.)
+      (You start with 3 heat production and {{card.price}} MC.)
     </div>
   </div>
 
@@ -199,9 +300,34 @@
       celestior
     </div>
     <br/>
-    <div class="resource money" style="margin-left:96px;">50</div>
+    <div class="resource money" style="margin-left:96px;">{{card.price}}</div>
     <div class="description" style="text-align:right; margin-left: 54px;">
-      (You start with 50 MC.)
+      (You start with {{card.price}} MC.)
+    </div>
+  </div>
+
+  <div *ngIf="isUnmiCorporation(card)">
+    <div class="corporation-name">
+      unmi
+    </div>
+    <br/>
+    <div class="resource money" style="margin-left:96px;">{{card.price}}</div>
+    <div class="description" style="text-align:right; margin-left: 54px;">
+      (You start with {{card.price}} MC.)
+    </div>
+  </div>
+
+  <div *ngIf="isInterplanetaryCinematics(card)">
+    <div class="corporation-name">
+      cinematics
+    </div>
+    <br/>
+    <div class="resource money" style="margin-left:55px;">{{card.price}}</div>
+    <div class="production-box production-box-size1a" style="margin-left:20px;margin-top:-50px;">
+      <div class="production steel"></div>
+    </div>
+    <div class="description" style="text-align:center;">
+      (You start with {{card.price}} MC and 1 steel production.)
     </div>
   </div>
 
@@ -212,7 +338,7 @@
     <br/>
 
     <div style="margin-top: -20px; margin-left: 35px;">
-      <div class="resource money">40</div>
+      <div class="resource money">{{card.price}}</div>
 
       <div class="resource card"></div>
       5
@@ -221,7 +347,85 @@
     </div>
 
     <div class="description">
-      (You start with 40 MC. Draw 5 cards from the deck and take all Green. Discard other.)
+      (You start with {{card.price}} MC. Draw 5 cards from the deck and take all Green. Discard other.)
+    </div>
+  </div>
+
+  <div *ngIf="isZetacellCorporation(card)">
+    <div class="corporation-name">
+      zetacell
+    </div>
+    <br/>
+
+    <div style="margin-top: -20px; margin-left: 35px;">
+      <div class="resource money">{{card.price}}</div>
+
+      +5
+      <div class="resource card"></div>
+      : -4
+      <div class="resource card"></div>
+    </div>
+
+    <div class="description" style="text-align: center">
+      (You start with {{card.price}} MC. Draw 5 cards, then discard 4.)
+    </div>
+  </div>
+
+  <div *ngIf="isEcolineCorporation(card)">
+    <div class="corporation-name">
+      ecoline
+    </div>
+
+    <div style="margin-top: 15px" [style]="isBuffedCorporation(card) ? 'margin-left: -22px' : ''">
+      <div class="resource money" style="margin-left:55px;">{{card.price}}</div>
+      <div class="production-box production-box-size0b" style="margin-left:20px;margin-top:-50px;">
+        <div class="production plant"></div>
+      </div>
+      <div *ngIf="isBuffedCorporation(card)" class="card resource" style="margin-top: 4px; margin-left: 23px">
+        <div class="card-icon tag-plant"></div>
+      </div>
+    </div>
+
+    <div class="description" style="text-align: center; margin-left: 7px">
+      (You start with {{card.price}} MC. 1 plant production. {{isBuffedCorporation(card) ? '1 Plant card.' : ''}})
+    </div>
+  </div>
+
+  <div *ngIf="isInventrixCorporation(card)">
+    <div class="corporation-name">
+      inventrix
+    </div>
+    <br/>
+
+    <div style="margin-top: -10px; margin-left: 35px;">
+      <div class="resource money">{{card.price}}</div>
+
+      <div class="resource card"></div>
+      <div class="resource card"></div>
+      <div class="resource card"></div>
+    </div>
+
+    <div class="description" style="text-align: center; margin-left: 20px">
+      (You start with {{card.price}} MC. Take 3 cards.)
+    </div>
+  </div>
+
+  <div *ngIf="isMayNiProductionsCorporation(card)">
+    <div class="corporation-name">
+      mayni
+    </div>
+    <br/>
+
+    <div style="margin-top: -15px; margin-left: 45px;">
+      <div class="resource money">{{card.price}}</div>
+
+      <div class="resource card"></div>
+      :
+      <div class="resource money">-12</div>
+    </div>
+
+    <div class="description" style="text-align: center;">
+      (You start with {{card.price}} MC. You may play a card from hand that costs 12 MC or less for free.)
     </div>
   </div>
 
@@ -232,12 +436,12 @@
     <br/>
 
     <div style="margin-top: -20px; margin-left: 70px;">
-      <div class="resource money">36</div>
+      <div class="resource money">{{card.price}}</div>
       <div class="resource card card-blue"></div>
     </div>
 
     <div class="description">
-      (You start with 36 MC. Draw cards from the deck until Blue card is found. Discard other.)
+      (You start with {{card.price}} MC. Draw cards from the deck until Blue card is found. Discard other.)
     </div>
   </div>
 
@@ -246,12 +450,12 @@
       thorgate
     </div>
     <br/>
-    <div class="resource money" style="margin-left:55px;">45</div>
+    <div class="resource money" style="margin-left:55px;">{{card.price}}</div>
     <div class="production-box production-box-size1a" style="margin-left:20px;margin-top:-50px;">
       <div class="production heat"></div>
     </div>
     <div class="description" style="text-align:center;">
-      (You start with 45 MC and 1 heat production.)
+      (You start with {{card.price}} MC and 1 heat production.)
     </div>
   </div>
 
@@ -260,9 +464,9 @@
       teractor
     </div>
     <br/>
-    <div class="resource money" style="margin-left: 92px;">51</div>
+    <div class="resource money" style="margin-left: 92px;">{{card.price}}</div>
     <div class="description" style="text-align:center; margin-left: 53px;">
-      (You start with 51 MC.)
+      (You start with {{card.price}} MC.)
     </div>
   </div>
 
@@ -271,9 +475,9 @@
       tharsis
     </div>
     <br/>
-    <div class="resource money" style="margin-left: 93px;">40</div>
+    <div class="resource money" style="margin-left: 93px;">{{card.price}}</div>
     <div class="description" style="text-align:center; margin-left: 42px;">
-      (You start with 40 MC.)
+      (You start with {{card.price}} MC.)
     </div>
   </div>
 
@@ -282,9 +486,9 @@
       credicor
     </div>
     <br/>
-    <div class="resource money" style="margin-left: 93px;">48</div>
+    <div class="resource money" style="margin-left: 93px;">{{card.price}}</div>
     <div class="description" style="text-align:center; margin-left: 42px;">
-      (You start with 48 MC.)
+      (You start with {{card.price}} MC.)
     </div>
   </div>
 
@@ -293,9 +497,9 @@
       arclight
     </div>
     <br/>
-    <div class="resource money" style="margin-left: 92px;">43</div>
+    <div class="resource money" style="margin-left: 92px;">{{card.price}}</div>
     <div class="description" style="text-align:center; margin-left: 53px;">
-      (You start with 43 MC.)
+      (You start with {{card.price}} MC.)
     </div>
   </div>
 
@@ -303,13 +507,18 @@
     <div class="corporation-name">
       phobolog
     </div>
-    <br/>
-    <div class="resource money" style="margin-left:55px;">20</div>
-    <div class="production-box production-box-size1a" style="margin-left:20px;margin-top:-50px;">
-      <div class="production titanium"></div>
+    <div style="margin-top: 20px" [style]="isBuffedCorporation(card) ? 'margin-left: -22px' : ''">
+      <div class="resource money" style="margin-left:55px;">{{card.price}}</div>
+      <div class="production-box production-box-size0b" style="margin-left:20px;">
+        <div class="production titanium"></div>
+      </div>
+      <div *ngIf="isBuffedCorporation(card)" class="card resource" style="margin-top: 4px; margin-left: 23px">
+        <div class="card-icon tag-space"></div>
+      </div>
     </div>
     <div class="description" style="text-align:center;">
-      (You start with 20 MC and 1 titanium production.)
+      (You start with {{card.price}}
+      MC {{isBuffedCorporation(card) ? ',1 titanium production and 1 Space card' : 'and 1 titanium production'}}.)
     </div>
   </div>
 
@@ -317,13 +526,18 @@
     <div class="corporation-name" style="margin-left: -5px;">
       mining
     </div>
-    <br/>
-    <div class="resource money" style="margin-left:55px;">27</div>
-    <div class="production-box production-box-size1a" style="margin-left:20px;margin-top:-50px;">
-      <div class="production steel"></div>
+    <div style="margin-top: 20px" [style]="isBuffedCorporation(card) ? 'margin-left: -22px' : ''">
+      <div class="resource money" style="margin-left:55px;">{{card.price}}</div>
+      <div class="production-box production-box-size0b" style="margin-left:20px;margin-top:-50px;">
+        <div class="production steel"></div>
+      </div>
+      <div *ngIf="isBuffedCorporation(card)" class="card resource" style="margin-top: 4px; margin-left: 23px">
+        <div class="card-icon tag-building"></div>
+      </div>
     </div>
     <div class="description" style="text-align:center;">
-      (You start with 27 MC and 1 steel production.)
+      (You start with {{card.price}}
+      MC {{isBuffedCorporation(card) ? ', 1 steel production and 1 Building card' : 'and 1 steel production'}}.)
     </div>
   </div>
 
@@ -331,41 +545,68 @@
     <div class="corporation-name" style="margin-left: -5px;">
       saturn
     </div>
-    <br/>
-    <div class="resource money" style="margin-left:55px;">24</div>
-    <div class="production-box production-box-size1a" style="margin-left:20px;margin-top:-50px;">
-      <div class="production titanium"></div>
+    <div style="margin-top: 20px" [style]="isBuffedCorporation(card) ? 'margin-left: -22px' : ''">
+      <div class="resource money" style="margin-left:55px;">{{card.price}}</div>
+      <div class="production-box production-box-size0b" style="margin-left:20px;margin-top:-50px;">
+        <div class="production titanium"></div>
+      </div>
+      <div *ngIf="isBuffedCorporation(card)" class="card resource" style="margin-top: 4px; margin-left: 23px">
+        <div class="card-icon tag-space"></div>
+      </div>
     </div>
     <div class="description" style="text-align:center;">
-      (You start with 24 MC and 1 titanium production.)
+      (You start with {{card.price}}
+      MC {{isBuffedCorporation(card) ? ',1 titanium production and 1 Space card' : 'and 1 titanium production'}}.)
     </div>
   </div>
 
 </div>
 
+<div *ngIf="!card.corporation && player && card.cardResource && showResources" class="points-player">
+  <span class="points-counter">{{player.cardResources[card.id]}}</span>
+  <span class="{{card.cardResource.toString().toLowerCase()}} resource player-resource"></span>
+</div>
+
 <div *ngIf="!card.corporation" class="content ">
+  <div class="title">
+    {{ card.name }}
+  </div>
+
   <div *ngIf="card.winPoints" class="points points-big">{{ card.winPoints }}</div>
 
   <div *ngIf="card.winPointsInfo" class="points" style="font-size: 26px;">
-    {{card.winPointsInfo.points + '/' +
-  (card.winPointsInfo.points >= card.winPointsInfo.resources ? '' : card.winPointsInfo.resources) }}
-    <div class="{{card.winPointsInfo.type.toString().toLowerCase()}} resource"></div>
+    <span>{{card.winPointsInfo.points + '/' + (card.winPointsInfo.points >= card.winPointsInfo.resources ? '' : card.winPointsInfo.resources) }}</span>
+    <div class="{{card.winPointsInfo.type.toString().toLowerCase()}} resource small"></div>
   </div>
 
-  <div *ngIf="player && card.cardResource && showResources" class="points-player">
-    <span class="points-counter">{{player.cardResources[card.id]}}</span>
-    <span class="{{card.cardResource.toString().toLowerCase()}} resource player-resource"></span>
+
+  <div *ngIf="hasAtLeastFourTagRequirements(card)" class="requirements">
+    {{card.tagReq.length}} <span class="small-tag resource-tag tag-{{card.tagReq[0].toLowerCase()}}"></span>
   </div>
 
-  <div *ngIf="hasTagRequirements(card)" class="requirements">{{getTagRequirements(card)}}</div>
+  <div *ngIf="hasOneToThreeTagRequirements(card)" class="requirements">
+    <span *ngFor="let tag of card.tagReq" class="small-tag resource-tag tag-{{tag.toLowerCase()}}"></span>
+  </div>
 
   <div *ngIf="hasTempRequirements(card)" [ngClass]="getTemperatureClass(card)" class="requirements">Temperature</div>
   <div *ngIf="hasOxygenRequirements(card)" [ngClass]="getOxygenClass(card)" class="requirements">Oxygen</div>
-  <div *ngIf="hasOceanRequirement(card)" class="requirements">{{getOceanRequirementValue(card)}} Oceans</div>
+  <div *ngIf="hasOceanRequirement(card)" class="requirements">
+    {{card.oceanRequirement.minValue === 0 ? 'Max' : 'Min'}} {{displayOceanRequirementAsNumber(card) ? getOceanDisplayNumber(card) : ''}}
+    <div *ngFor="let item of [].constructor(getOceanRequirementNumber(card)); let i = index"
+         class="ocean-tile tile small-tile"></div>
+  </div>
+
+  <div *ngIf="actionDiscountOne(card)" style="margin-top: 50px">
+    : <span class="money resource ">-1</span>
+  </div>
+
+  <div *ngIf="effectHohmannDiscountOne(card)" style="margin-top: 10px">
+    : <span class="money resource ">-1</span>
+  </div>
 
   <div *ngIf="hasAmplifyGlobalRequirements(card) || actionSpecialDesign(card)">
     <div class="tile globals-box">Temperature Oxygen</div>
-    : +/- 1 Color
+    : <br/> +/- 1 Color
   </div>
 
   <div *ngIf="hasAdvancedAlloysRequirements(card)">
@@ -386,13 +627,60 @@
     <span class="card resource"></span>
   </div>
 
+  <div *ngIf="actionUpdatePhase(card)">
+    <div class="upgrade"></div>
+    <span class="card-phase-x resource" style="border-radius: 5px"></span>
+  </div>
+
+  <div *ngIf="actionDoublePhaseUpdate(card)">
+    <div class="upgrade"></div>
+    <span class="card-phase-x resource" style="border-radius: 5px"></span>
+    <br/>
+    <div class="upgrade"></div>
+    <span class="card-phase-x resource" style="border-radius: 5px"></span>
+  </div>
+
+  <div *ngIf="actionCommunicationsStreamlining(card)">
+    Play
+    <div class="upgrade"></div>
+    <span class="card-phase-x resource" style="border-radius: 5px"></span>
+    <span style="font-size: 20px">:</span>
+    <div class="money resource">1</div>
+  </div>
+
+  <div *ngIf="actionUpgradePhase1(card)">
+    <div class="upgrade"></div>
+    <span class="phase-1 resource" style="border-radius: 5px"></span>
+  </div>
+
+  <div *ngIf="actionUpgradePhase2(card)">
+    <div class="upgrade"></div>
+    <span class="phase-2 resource" style="border-radius: 5px"></span>
+  </div>
+
+  <div *ngIf="actionUpgradePhase3(card) || actionCommunicationsStreamlining(card) ">
+    <div class="upgrade"></div>
+    <span class="phase-3 resource" style="border-radius: 5px"></span>
+  </div>
+
+  <div *ngIf="actionUpgradePhase4(card)">
+    <div class="upgrade"></div>
+    <span class="phase-4 resource" style="border-radius: 5px"></span>
+  </div>
+
+  <div *ngIf="actionAwardWinningReflector(card)">
+    <div class="milestone border border-success border-3"></div>
+    ? + 4
+    <div class="heat resource "></div>
+  </div>
+
   <div *ngIf="actionAiCentral(card)">
     <div class="red-arrow"></div>
     <span class="card resource"></span>
     <span class="card resource"></span>
   </div>
 
-  <div *ngIf="actionAnaerobicOrganisms(card)">
+  <div *ngIf="actionAnaerobicOrganisms(card)" style="margin-top: -10px">
     <div class="tag-animal resource-tag"></div>
     /
     <div class="tag-plant resource-tag"></div>
@@ -400,8 +688,8 @@
     <div class="tag-microbe resource-tag"></div>
     :
     <div class="microbe resource"></div>
-    <div></div>
-    <span class="card resource"></span> : -
+    <br/>
+    <span class="card resource"></span>:-
     <div class="microbe resource "></div>
     <div class="microbe resource "></div>
     =
@@ -422,9 +710,17 @@
 
   <div *ngIf="actionArcticAlgae(card)">
     <div class="tile ocean-tile"></div>
+    :<br/>
+    <div class="resource plant "></div>
+    <div class="resource plant "></div>
+    <div class="resource plant "></div>
+    <div class="resource plant "></div>
+    <br>
+  </div>
+
+  <div *ngIf="actionVolcanicSoil(card)">
+    <div class="tile temperature-tile "></div>
     :
-    <div class="resource plant "></div>
-    <div class="resource plant "></div>
     <div class="resource plant "></div>
     <div class="resource plant "></div>
     <br>
@@ -436,6 +732,13 @@
     <span class="card resource "></span>
   </div>
 
+  <div *ngIf="actionBiomedicalImports(card)">
+    <div class="tile oxygen-tile "></div>
+    OR
+    <div class="upgrade"></div>
+    <span class="card-phase-x resource" style="border-radius: 5px"></span>
+  </div>
+
   <div *ngIf="actionAssemblyLines(card)">
     :
     <div class="red-arrow"></div>
@@ -444,15 +747,43 @@
 
   <div *ngIf="actionAssetLiquidation(card)">
     <div class="rating tile "></div>
+    <br/>
     <span class="red-arrow " style="margin-left:5px; "></span>
+    <br/>
     <span class="card resource "></span>
     <span class="card resource "></span>
     <span class="card resource "></span>
-    <span style="font-size:14px; ">{{card.description.substring(0, card.description.indexOf('.'))}}</span>
+    <br/>
+    <span style="font-size:14px; ">{{card.actionDescription}}</span>
+  </div>
+
+  <div *ngIf="actionExperimentalTechnology(card)">
+    <div class="rating tile "></div>
+    <br/>
+    <span class="red-arrow " style="margin-left:5px; "></span>
+    <br/>
+    <div class="upgrade"></div>
+    <span class="card-phase-x resource" style="border-radius: 5px"></span>
+    <br/>
+    <span style="font-size:14px; ">{{card.actionDescription}}</span>
+  </div>
+
+  <div *ngIf="actionVirtualEmployeeDevelopment(card)">
+    <span class="red-arrow " style="margin-left:5px; "></span>
+    <div class="upgrade"></div>
+    <span class="card-phase-x resource" style="border-radius: 5px"></span>
+    <br/>
+    <span style="font-size:14px; ">{{card.actionDescription}}</span>
   </div>
 
   <div *ngIf="actionAddAnimal(card)">
     <div class="red-arrow "></div>
+    <div class="resource animal"></div>
+  </div>
+
+  <div *ngIf="actionFilterFeeders(card)">
+    <div class="resource microbe"></div>
+    * :
     <div class="resource animal"></div>
   </div>
 
@@ -484,11 +815,28 @@
     <span class="card resource"></span>
   </div>
 
+  <div *ngIf="actionCityCouncil(card)">
+    <div class="red-arrow"></div>
+    <span class="card resource"></span>
+    <br/>
+
+    + <span class="card resource"></span> /
+    <div class="milestone border border-success border-3"></div>
+  </div>
+
   <div *ngIf="actionCommunityGardens(card)">
     <div class="red-arrow"></div>
     <div class=" money resource ">2</div>
     <div></div>
     <div class=" plant resource "></div>
+    *
+  </div>
+
+  <div *ngIf="actionDroneAssistedConstruction(card)">
+    <div class="red-arrow"></div>
+    <div class=" money resource ">2</div>
+    <div></div>
+    <div class=" money resource ">2</div>
     *
   </div>
 
@@ -515,22 +863,27 @@
     : <br>
     +
     <div class="resource microbe"></div>
-    OR -
+    <br/>
+    OR
+    <br/>
+    -
     <div class="resource microbe"></div>
     : <span class="card resource"></span>
   </div>
 
-  <div *ngIf="actionDecomposingFungus(card)" style="width: 231px; margin-left: -5px;">
+  <div *ngIf="actionDecomposingFungus(card)">
     <div class="microbe resource "></div>
     */
     <div class="animal resource "></div>
     *
+    <br/>
     <div class="red-arrow "></div>
+    <br/>
     <div class="plant resource"></div>
     <div class="plant resource"></div>
     <div class="plant resource"></div>
-    <div></div>
-    <span style="font-size:12px; ">{{card.description.substring(card.description.indexOf('.') + 1)}}</span>
+    <br/>
+    <span style="font-size:12px; ">{{card.actionDescription}}</span>
     <div></div>
     <div class="resource microbe"></div>
     <div class="resource microbe"></div>
@@ -538,12 +891,16 @@
 
   <div *ngIf="actionDevelopedInfrastructure(card)">
     <div class="money resource ">10</div>
-    (<div class="money resource ">-5</div>:5<div class="resource card-blue"></div>)
+    (
+    <div class="money resource ">-5</div>
+    :5
+    <div class="resource card-blue"></div>
+    )
     <div class="red-arrow "></div>
     <div class="tile temperature-tile "></div>
   </div>
 
-  <div *ngIf="actionDevelopmentCenter(card)">
+  <div *ngIf="actionDevelopmentCenter(card)" style="margin-top: 50px">
     <span class="heat resource "></span> <span class="heat resource "></span>
     <div class="red-arrow "></div>
     <span class="card resource "></span>
@@ -553,12 +910,28 @@
     : <span class="money resource ">-2</span>
   </div>
 
+  <div *ngIf="actionOrbitalOutpost(card)">
+    < = 1
+    <div class="resource-tag" style="background-color: white"></div>
+    : <span class="money resource ">-3</span>
+  </div>
+
   <div *ngIf="actionEcologicalZone(card)">
     <div class="resource-tag tag-plant"></div>
     /
     <div class="resource-tag tag-animal"></div>
     :
     <div class="resource animal"></div>
+  </div>
+
+  <div *ngIf="actionBacterialAggregates(card)">
+    <div class="resource-tag tag-earth"></div>
+    :
+    <div class="resource microbe"></div>
+
+    <div class="tile globals-box" style="height: 20px;">Research</div>
+    :<br/> Draw +<span class="card resource "></span> /
+    <div class="resource microbe"></div>
   </div>
 
   <div *ngIf="actionEnergySubsidies(card)">
@@ -570,7 +943,9 @@
 
   <div *ngIf="actionExtendedResources(card)">
     <div class="tile globals-box" style="height: 20px;">Research</div>
-    : Keep +<span class="card resource "></span>
+    :
+    <br/>
+    Keep +<span class="card resource "></span>
   </div>
 
   <div *ngIf="actionExtremeColdFungus(card)">
@@ -583,7 +958,7 @@
     *
   </div>
 
-  <div *ngIf="actionFarmersMarket(card)">
+  <div *ngIf="actionFarmersMarket(card)" style="margin-top: 50px">
     <span class="money resource ">1</span>
     <div class="red-arrow "></div>
     <span class="plant resource "></span><span class="plant resource "></span>
@@ -591,17 +966,29 @@
   </div>
 
   <div *ngIf="actionFarmingCoops(card)">
+    <div class="card resource"></div>
+    <div class="red-arrow "></div>
+    <br/>
+    <div class="plant resource"></div>
+    <div class="plant resource"></div>
+    <div class="plant resource"></div>
+    <div></div>
+    <span style="font-size:12px; ">{{card.actionDescription}}</span>
+    <div></div>
+    <div class="resource plant"></div>
+    <div class="resource plant"></div>
+    <div class="resource plant"></div>
+  </div>
+
+  <div *ngIf="actionMatterGenerator(card)">
     <div class="card resource "></div>
     <div class="red-arrow "></div>
-    <div class="plant resource"></div>
-    <div class="plant resource"></div>
-    <div class="plant resource"></div>
+    <div class=" money resource ">6</div>
     <div></div>
     <span style="font-size:12px; ">{{card.description.substring(card.description.indexOf('.') + 1)}}</span>
     <div></div>
-    <div class="resource plant"></div>
-    <div class="resource plant"></div>
-    <div class="resource plant"></div>
+    <div class="resource card"></div>
+    <div class="resource card"></div>
   </div>
 
   <div *ngIf="actionFish(card)">
@@ -624,6 +1011,7 @@
   <div *ngIf="actionGreenHouses(card)">
     (1-4) X
     <div class="resource heat"></div>
+    <br/>
     <div class="red-arrow "></div>
     (1-4) X
     <div class="resource plant"></div>
@@ -636,6 +1024,7 @@
     /
     <div class="tile temperature-tile "></div>
     :
+    <br/>
     <div class="resource animal "></div>
   </div>
 
@@ -663,13 +1052,32 @@
     <span class="card resource "></span>
   </div>
 
+  <div *ngIf="actionImpactAnalysis(card)">
+    <div class="resource-tag tag-event"></div>
+    :
+    <span class="card resource "></span>
+  </div>
+
   <div *ngIf="actionInterplanetaryRelations(card)">
     <div class="tile globals-box" style="height: 20px;">Research</div>
-    :<br/> Draw +<span class="card resource "></span>Keep +<span class="card resource "></span>
+    :<br/> Draw +<span class="card resource "></span>
+    <br/>
+    Keep +<span class="card resource "></span>
   </div>
 
   <div *ngIf="actionIronWorks(card)">
     4 <span class="heat resource "></span>
+    <div class="red-arrow "></div>
+    <div class="tile oxygen-tile"></div>
+  </div>
+
+  <div *ngIf="actionProgressivePolicies(card)" style="margin-left: -13px;">
+    <span class="money resource ">10</span>
+    (
+    <div class="money resource ">-5</div>
+    : 4
+    <div class="resource-tag tag-event"></div>
+    )
     <div class="red-arrow "></div>
     <div class="tile oxygen-tile"></div>
   </div>
@@ -684,12 +1092,14 @@
     <div class="resource-tag tag-science"></div>
     : - <span class="card resource "></span> + <span class="card resource "></span><br/>
     OR
-    <div class="resource-tag tag-science"></div>
-    : -
+    <br/>
+    <br/>
+    <div class="resource-tag tag-science" style="margin-left: -4px"></div>
+    :-
     <div class="card resource ">
       <div class="card-icon tag-plant"></div>
     </div>
-    + <span class="card resource "></span><span class="card resource "></span>
+    +<span class="card resource "></span><span class="card resource "></span>
   </div>
 
   <div *ngIf="actionMatterManufactoring(card)">
@@ -698,7 +1108,7 @@
     <span class="card resource "></span>
   </div>
 
-  <div *ngIf="actionMediaGroup(card)">
+  <div *ngIf="actionMediaGroup(card)" style="margin-top: 50px">
     <div class="resource-tag tag-event"></div>
     :
     <div class="money resource ">-5</div>
@@ -713,19 +1123,48 @@
     <div class="red-arrow "></div>
     <div class="tile ocean-tile "></div>
     <br/>
-    <span style="font-size:12px; ">{{card.description.substring(card.description.indexOf('.') + 1)}}</span>
+    <span style="font-size:12px; ">{{card.actionDescription}}</span>
+    <br/>
     <div class="microbe resource "></div>
     <div class="microbe resource "></div>
     <div class="microbe resource "></div>
   </div>
 
-  <div *ngIf="actionOlympusConference(card)">
+  <div *ngIf="actionFibrousComposite(card)">
+    <div class="red-arrow "></div>
+    <div class="science resource "></div>
+    <br/>
+    <span style="margin-left: -3px">OR 3</span>
+    <div class="science resource "></div>
+    <div class="red-arrow "></div>
+    <div class="upgrade"></div>
+    <span class="card-phase-x resource" style="border-radius: 5px"></span>
+
+    <br/>
+    <span style="font-size:12px; ">{{card.actionDescription}}</span>
+    <br/>
+    <div class="science resource "></div>
+    <div class="science resource "></div>
+    <div class="science resource "></div>
+  </div>
+
+  <div *ngIf="actionSelfReplicatingBacteria(card)">
+    <div class="red-arrow "></div>
+    <div class="microbe resource "></div>
+    <br>
+    OR 5
+    <div class="microbe resource "></div>
+    <div class="red-arrow "></div>
+    : <span class="money resource ">-25</span>
+  </div>
+
+  <div *ngIf="actionOlympusConference(card)" style="margin-top: 50px">
     <div class="resource-tag tag-science"></div>
     :
     <div class="card resource "></div>
   </div>
 
-  <div *ngIf="actionOptimalAerobraking(card)">
+  <div *ngIf="actionOptimalAerobraking(card)" style="margin-top: 50px">
     <div class="resource-tag tag-event"></div>
     : <span class="heat resource "></span><span class="heat resource "></span><span class="plant resource "></span><span
     class="plant resource "></span>
@@ -737,14 +1176,14 @@
     <div class="resource science"></div>
   </div>
 
-  <div *ngIf="actionPowerInfrastructure(card)">
+  <div *ngIf="actionPowerInfrastructure(card)" style="margin-top: 50px">
     X
     <div class="heat resource "></div>
     <div class="red-arrow "></div>
     <div class="money resource ">X</div>
   </div>
 
-  <div *ngIf="actionRecycledDetritus(card)">
+  <div *ngIf="actionRecycledDetritus(card)" style="margin-top: 50px">
     <div class="resource-tag tag-event"></div>
     :
     <div class="card resource"></div>
@@ -755,26 +1194,34 @@
     -(1-3)
     <div class="card resource "></div>
     <div class="red-arrow "></div>
+    <br/>
     +(1-3)
     <div class="card resource "></div>
+  </div>
+
+  <div *ngIf="actionSoftwareStreamlining(card)">
+    <div class="red-arrow "></div>
+    +2
+    <div class="card resource "></div>
+    -2
+    <div class="card resource "></div>
+    <br/>
+    <span style="font-size:12px; ">{{card.actionDescription}}</span><br/>
   </div>
 
   <div *ngIf="actionRegolithEaters(card)">
     <div class="red-arrow "></div>
     <div class="microbe resource "></div>
-    <br>
+    <br/>
     OR
+    <br/>
     <div class="microbe resource "></div>
     <div class="microbe resource "></div>
     <div class="red-arrow "></div>
     <div class="tile oxygen-tile "></div>
   </div>
 
-  <div *ngIf="actionResearchOutpost(card)">
-    : <span class="money resource ">-1</span>
-  </div>
-
-  <div *ngIf="actionRestructuredResources(card)">
+  <div *ngIf="actionRestructuredResources(card)" style="margin-top: 50px">
     -
     <div class="plant resource "></div>
     : <span class="money resource ">-5</span>
@@ -786,6 +1233,12 @@
     <div class="resource animal "></div>
   </div>
 
+  <div *ngIf="actionZoos(card)">
+    <div class="milestone border border-success border-3"></div>
+    :
+    <div class="resource animal "></div>
+  </div>
+
   <div *ngIf="actionSolarPunk(card)">
     <div class=" money resource ">15</div>
     (<span class="resource titanium"></span>=<span class="resource money">2</span>)
@@ -793,7 +1246,27 @@
     <div class="forest-tile tile "></div>
   </div>
 
-  <div *ngIf="actionStandardTechnology(card)">
+  <div *ngIf="actionCommunityAfforestation(card)">
+    <div class=" money resource ">14</div>
+    <div class="red-arrow "></div>
+    <div class="forest-tile tile "></div>
+    <br/>
+    (
+    <div class="milestone border border-success border-3"></div>
+    = <span class="resource money">-4</span> )
+  </div>
+
+  <div *ngIf="actionGasCooledReactors(card)">
+    <div class=" money resource ">12</div>
+    <div class="red-arrow "></div>
+    <div class="tile temperature-tile"></div>
+    <br/>
+    (
+    <div class="upgrade"></div>
+    <span class="card-phase-x resource" style="border-radius: 5px"></span>=<span class="resource money">-2</span>)
+  </div>
+
+  <div *ngIf="actionStandardTechnology(card)" style="margin-top: 50px">
     <div class="tile globals-box">Standard projects</div>
     :
     <div class="money resource">-4</div>
@@ -802,6 +1275,7 @@
   <div *ngIf="actionSteelworks(card)">
     6
     <div class="heat resource"></div>
+    <br/>
     <div class="red-arrow"></div>
     <div class="money resource">2</div>
     <div class="oxygen-tile tile "></div>
@@ -813,12 +1287,12 @@
     *
   </div>
 
-  <div *ngIf="actionAddMicrobe(card)">
+  <div *ngIf="actionAddMicrobe(card)" style="margin-top: 50px">
     <div class="red-arrow "></div>
     <div class="microbe resource "></div>
   </div>
 
-  <div *ngIf="actionThinktank(card)">
+  <div *ngIf="actionThinktank(card)" style="margin-top: 50px">
     <div class="money resource">2</div>
     <div class="red-arrow"></div>
     <div class="card resource"></div>
@@ -826,10 +1300,24 @@
 
   <div *ngIf="actionUnitedPlanetary(card)">
     <div class="tile globals-box" style="height: 20px;">Research</div>
-    :<br/> Draw +<span class="card resource "></span>Keep +<span class="card resource "></span>
+    :<br/> Draw +<span class="card resource "></span>
+    <br/>
+    Keep +<span class="card resource "></span>
   </div>
 
-  <div *ngIf="actionViralEnhancers(card)">
+  <div *ngIf="actionProcessedMetals(card)">
+    <div class="card resource"></div>
+    /
+    <div class="resource-tag tag-energy"></div>
+  </div>
+
+  <div *ngIf="actionProcessingPlant(card)">
+    <div class="card resource ">
+      <div class="card-icon tag-building"></div>
+    </div>
+  </div>
+
+  <div *ngIf="actionViralEnhancers(card)" style="margin-top: 50px">
     <div class="resource-tag tag-plant"></div>
     /
     <div class="resource-tag tag-microbe"></div>
@@ -862,10 +1350,19 @@
     4 <span class="plant resource "></span>(3*<span class="plant resource "></span>)
     <div class="red-arrow "></div>
     <div class="tile temperature-tile"></div>
-    <span style="font-size:12px; ">{{card.description.substring(card.description.indexOf('.') + 1)}}</span><br/>
+    <br/>
+    <span style="font-size:12px; ">{{card.actionDescription}}</span><br/>
   </div>
 
-  <div *ngIf="actionCapitalizeDescription(card)">
+  <div *ngIf="actionResearchGrant(card)">
+    <div class="red-arrow "></div>
+    <div class="resource-tag tag-dynamic"></div>
+    <br/>
+    <span style="font-size:12px">{{card.actionDescription}}</span>
+    <div style="height: 20px"></div>
+  </div>
+
+  <div *ngIf="capitalizeDescription(card)">
     <span style="font-size:14px; ">{{card.description}}</span>
   </div>
 
@@ -888,6 +1385,19 @@
     <div class="resource-tag tag-jupiter"></div>
   </div>
 
+  <div *ngIf="actionInnovativeTechnologies(card)">
+    <div class="tile rating"></div>
+    /
+    <div class="upgrade"></div>
+    <span class="card-phase-x resource" style="border-radius: 5px"></span>
+  </div>
+
+  <div *ngIf="actionTourism(card)">
+    <div class="tile rating"></div>
+    /
+    <div class="milestone border border-success border-3"></div>
+  </div>
+
   <div *ngIf="actionWorkCrews(card)">
     <span style="font-size:14px;">NEXT CARD: </span>
     <div class="resource money">-11</div>
@@ -895,6 +1405,12 @@
 
   <div *ngIf="actionEnergyStorage(card)">
     <div class="requirements">7 TR</div>
+  </div>
+
+  <div *ngIf="actionPrivateInvestorBeach(card)">
+    <div class="requirements">
+      <div class="milestone-requirements border border-success border-2"></div>
+    </div>
   </div>
 
   <span *ngIf="actionEosChasma(card)">
@@ -908,6 +1424,11 @@
 
   <div *ngIf="actionFoodFactory(card)">
     -2
+    <div class="resource plant"></div>
+  </div>
+
+  <div *ngIf="actionMoss(card)">
+    -1
     <div class="resource plant"></div>
   </div>
 
@@ -965,6 +1486,7 @@
               {{income.value > 1 && income.type !== 'MC' ? income.value : ''}}
               <span class="production"
                     [ngClass]="getIncomeClass(income)">{{income.type === 'MC' ? income.value : ''}}</span>
+              <br *ngIf="income.type === 'CARD'"/>
             </span>
   </div>
 
@@ -979,6 +1501,26 @@
       <div class="production heat"></div>
       /
       <div class="resource-tag production-tag tag-earth"></div>
+    </div>
+  </div>
+
+  <div *ngIf="actionMcAnimalPlantIncome(card)">
+    <div class="production-box production-box-size2a">
+      <div class="production money">1</div>
+      /
+      <div class="resource-tag production-tag tag-animal"></div>
+      <br/>
+      <div class="production money">1</div>
+      /
+      <div class="resource-tag production-tag tag-plant"></div>
+    </div>
+  </div>
+
+  <div *ngIf="actionCardScienceIncome(card)">
+    <div class="production-box production-box-size3 text-white">
+      <div class="production card"></div>
+      / 3
+      <div class="resource-tag production-tag tag-science"></div>
     </div>
   </div>
 
@@ -1007,7 +1549,7 @@
   </div>
 
   <div *ngIf="actionMc2BuildingIncome(card)">
-    <div class="production-box production-box-size2a">
+    <div class="production-box production-box-size3 text-white">
       <div class="production money">1</div>
       / 2
       <div class="resource-tag production-tag tag-building"></div>
@@ -1063,8 +1605,8 @@
   </div>
 
   <div *ngIf="actionMcForestIncome(card)">
-    <div class="production-box production-box-size2a">
-      <div class="production money">1</div>
+    <div class="production-box production-box-size3">
+      <div class="production money" style="vertical-align: middle; margin-left: 3px;">1</div>
       /
       <div class="forest-tile tile"></div>
     </div>
@@ -1097,6 +1639,14 @@
     *
   </div>
 
+  <div *ngIf="actionCryogenicShipment(card)">
+    <span>3</span>
+    <div class="resource microbe "></div>
+    * OR <span>2</span>
+    <div class="resource animal "></div>
+    *
+  </div>
+
   <div *ngIf="actionImportedNitrogen(card)">
     3
     <div class="microbe resource"></div>
@@ -1113,7 +1663,7 @@
     *
   </div>
 
-  <div class="description ">
+  <div *ngIf="!capitalizeDescription(card)" class="description ">
     ({{ card.description }})
   </div>
 </div>

@@ -1,15 +1,13 @@
 package com.terraforming.ares.cards.corporations;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.cards.blue.AnaerobicMicroorganisms;
-import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.winPoints.WinPointsInfo;
-import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -57,32 +55,29 @@ public class ArclightCorporation implements CorporationCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame marsGame, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        int affectedTagsCount = (int) project.getTags().stream().filter(tag ->
-                tag == Tag.ANIMAL || tag == Tag.PLANT
-        ).count();
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
+        int affectedTagsCount = marsContext.getCardService().countCardTags(project, Set.of(Tag.ANIMAL, Tag.PLANT), inputParams);
 
-        player.getCardResourcesCount().compute(
-                ArclightCorporation.class, (key, value) -> {
-                    if (value == null) {
-                        value = 0;
-                    }
-                    return value + affectedTagsCount;
-                }
-        );
+        marsContext.getPlayer().addResources(this, affectedTagsCount);
     }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
         player.setMc(43);
-        player.getCardResourcesCount().put(ArclightCorporation.class, 2);
+        player.initResources(this);
+        player.addResources(this, 2);
         return null;
     }
 
     @Override
     public Expansion getExpansion() {
         return Expansion.BASE;
+    }
+
+    @Override
+    public int getPrice() {
+        return 43;
     }
 
 }

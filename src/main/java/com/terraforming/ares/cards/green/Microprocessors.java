@@ -1,10 +1,12 @@
 package com.terraforming.ares.cards.green;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
+import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -31,6 +33,11 @@ public class Microprocessors implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void payAgain(MarsGame game, CardService cardService, Player player) {
+        player.setHeat(player.getHeat() + 3);
+    }
+
+    @Override
     public CardMetadata getCardMetadata() {
         return cardMetadata;
     }
@@ -41,12 +48,13 @@ public class Microprocessors implements BaseExpansionGreenCard {
 
         player.setHeatIncome(player.getHeatIncome() + 3);
 
-        player.setNextTurn(
+        player.addNextTurn(
                 new DiscardCardsTurn(
                         player.getUuid(),
                         List.of(),
                         1,
-                        false
+                        false,
+                        true
                 )
         );
 

@@ -3,17 +3,63 @@
   {{errorMessage}}
 </div>
 
-<h1>Choose corporation</h1>
 
-<div class="card-container">
-  <ul class="myUL">
-    <li *ngFor="let card of getCorporationCards();" (click)="clickCorporation(card)" class="filterDiv automated display" [ngClass]="isSelectedCard(card)">
-      <app-card-template [card]="card"></app-card-template>
-    </li>
-  </ul>
-  <form>
-    <div class="form-group d-grid gap-2 col-6 mx-auto">
-      <button type="submit" class="btn btn-warning btn-lg" (click)="chooseCorporation(corporationInput)">Confirm</button>
+
+<form [formGroup]="parentForm" (submit)="submitForm(parentForm)" novalidate>
+
+  <div *ngIf="buildBlueRedProjectTurn()" class="form-check">
+    <app-build-blue-red [game]="game" [parentForm]="parentForm"></app-build-blue-red>
+  </div>
+
+  <div *ngIf="buildGreenProjectTurn()" class="form-check">
+    <app-build-green [game]="game" [parentForm]="parentForm"></app-build-green>
+  </div>
+
+  <div *ngIf="skipTurn()" class="form-check">
+    <input id="skipTurn" (click)="resetAllInputs()" type="radio" class="form-check-input" value="skipTurn"
+           formControlName="turn">
+    <label class="custom-control-label text-white" for="skipTurn">Finish turn</label>
+  </div>
+
+  <div *ngIf="pickCorporationTurn()" class="form-check">
+    <div *ngIf="!mulliganTurn()">
+      <input id="pickCorporation" (click)="resetAllInputs()" type="radio" class="form-check-input" value="pickCorporation"
+             formControlName="turn">
+      <label class="custom-control-label text-white" for="skipTurn">Choose corporation</label>
     </div>
-  </form>
-</div>
+
+    <div class="card-container">
+      <ul class="myUL">
+        <li *ngFor="let card of getCorporationCards();" (click)="clickCorporation(card)" class="filterDiv automated display" [ngClass]="isSelectedCard(card)">
+          <app-card-template [card]="card"></app-card-template>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div *ngIf="mulliganTurn()" class="form-check">
+    <app-sell-cards [game]="game" [parentForm]="parentForm" [mulliganTurn]="true"></app-sell-cards>
+  </div>
+
+  <div *ngIf="discardCardsTurn()" class="form-check">
+    <input id="discardCards" type="radio" class="form-check-input" value="discardCards" formControlName="turn">
+    <label class="custom-control-label text-white" for="discardCards">Discard {{game.player.nextTurn.size }}
+      cards</label>
+
+    <div *ngIf="parentForm.value?.turn === 'discardCards'" class="card-container">
+      <ul class="myUL">
+        <li *ngFor="let card of getDiscardCards();" (click)="clickProjectToDiscard(card)"
+            [ngClass]="selectedProjectToDiscardClass(card)" class="filterDiv automated display">
+          <app-card-template [card]="card" [player]="game?.player"></app-card-template>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="form-group d-grid gap-2 col-6 mx-auto">
+    <button type="submit" class="btn btn-warning btn-lg">Confirm</button>
+  </div>
+
+</form>
+
+

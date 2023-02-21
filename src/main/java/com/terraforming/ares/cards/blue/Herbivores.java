@@ -62,7 +62,7 @@ public class Herbivores implements BlueCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        marsContext.getPlayer().getCardResourcesCount().put(Herbivores.class, 0);
+        marsContext.getPlayer().initResources(this);
         return null;
     }
 
@@ -92,7 +92,7 @@ public class Herbivores implements BlueCard {
     }
 
     private void addAnimal(Player player) {
-        player.getCardResourcesCount().put(Herbivores.class, player.getCardResourcesCount().get(Herbivores.class) + 1);
+        player.addResources(this, 1);
     }
 
     @Override

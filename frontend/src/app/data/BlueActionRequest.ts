@@ -1,5 +1,5 @@
 export class BlueActionRequest {
-  constructor(playerUuid: string, cardId: number, inputParams?: number[]) {
+  constructor(playerUuid: string, cardId: number, inputParams?: Map<number, number[]>) {
     this.playerUuid = playerUuid;
     this.cardId = cardId;
     this.inputParams = inputParams;
@@ -7,6 +7,6 @@ export class BlueActionRequest {
 
   playerUuid: string;
   cardId: number;
-  inputParams: number[];
+  inputParams: Map<number, number[]>;
 
 }

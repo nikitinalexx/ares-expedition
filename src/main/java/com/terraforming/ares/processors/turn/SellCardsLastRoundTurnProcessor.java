@@ -25,8 +25,6 @@ public class SellCardsLastRoundTurnProcessor extends SellCardsGenericTurnProcess
 
         sell(player, turn.getCards());
 
-        player.setNextTurn(null);
-
         return null;
     }
 

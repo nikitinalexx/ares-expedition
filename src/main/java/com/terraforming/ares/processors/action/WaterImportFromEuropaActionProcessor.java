@@ -2,6 +2,7 @@ package com.terraforming.ares.processors.action;
 
 import com.terraforming.ares.cards.blue.WaterImportFromEuropa;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.services.TerraformingService;
@@ -23,7 +24,7 @@ public class WaterImportFromEuropaActionProcessor implements BlueActionCardProce
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player) {
+    public TurnResponse process(MarsGame game, Player player, Card actionCard) {
         int flipPrice = Math.max(0, 12 - player.getTitaniumIncome());
 
         player.setMc(player.getMc() - flipPrice);

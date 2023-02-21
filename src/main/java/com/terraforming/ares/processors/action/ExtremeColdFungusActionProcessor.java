@@ -2,12 +2,17 @@ package com.terraforming.ares.processors.action;
 
 import com.terraforming.ares.cards.blue.ExtremeColdFungus;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.Card;
+import com.terraforming.ares.model.InputFlag;
+import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by oleksii.nikitin
@@ -24,19 +29,15 @@ public class ExtremeColdFungusActionProcessor implements BlueActionCardProcessor
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player, List<Integer> inputParameters) {
-        Integer choiceType = inputParameters.get(0);
-
-        if (choiceType == InputFlag.EXTEME_COLD_FUNGUS_PICK_PLANT.getId()) {
+    public TurnResponse process(MarsGame game, Player player, Card actionCard, Map<Integer, List<Integer>> inputParameters) {
+        if (!CollectionUtils.isEmpty(inputParameters.get(InputFlag.EXTEME_COLD_FUNGUS_PICK_PLANT.getId()))) {
             player.setPlants(player.getPlants() + 1);
         } else {
-            Integer cardToAddTo = inputParameters.get(1);
+            Integer cardToAddToId = inputParameters.get(InputFlag.EXTREME_COLD_FUNGUS_PUT_MICROBE.getId()).get(0);
 
-            Card card = cardService.getCard(cardToAddTo);
+            Card cardToAddTo = cardService.getCard(cardToAddToId);
 
-            Integer currentResourceCount = player.getCardResourcesCount().get(card.getClass());
-
-            player.getCardResourcesCount().put(card.getClass(), currentResourceCount + 1);
+            player.addResources(cardToAddTo, 1);
         }
 
         return null;

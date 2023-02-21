@@ -7,7 +7,6 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
-import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.TerraformingService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +45,8 @@ public class LargeConvoy implements BaseExpansionRedCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> input) {
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> input) {
+        final Player player = marsContext.getPlayer();
         if (input.containsKey(InputFlag.LARGE_CONVOY_PICK_PLANT.getId())) {
             player.setPlants(player.getPlants() + 5);
             return;
@@ -55,12 +55,9 @@ public class LargeConvoy implements BaseExpansionRedCard {
         List<Integer> animalsInput = input.get(InputFlag.LARGE_CONVOY_ADD_ANIMAL.getId());
         Integer animalsCardId = animalsInput.get(0);
 
-        Card animalsCard = cardService.getCard(animalsCardId);
+        Card animalsCard = marsContext.getCardService().getCard(animalsCardId);
 
-        player.getCardResourcesCount().put(
-                animalsCard.getClass(),
-                player.getCardResourcesCount().get(animalsCard.getClass()) + 3
-        );
+        player.addResources(animalsCard, 3);
     }
 
     @Override

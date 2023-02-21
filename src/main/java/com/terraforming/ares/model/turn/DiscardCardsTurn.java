@@ -21,6 +21,12 @@ public class DiscardCardsTurn implements Turn {
     private List<Integer> cards;
     private int size;
     private boolean onlyFromSelectedCards;
+    private boolean expectedAsNextTurn;
+
+    @Override
+    public boolean expectedAsNextTurn() {
+        return expectedAsNextTurn;
+    }
 
     @Override
     public TurnType getType() {

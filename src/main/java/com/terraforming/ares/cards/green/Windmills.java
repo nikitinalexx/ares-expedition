@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -30,29 +31,42 @@ public class Windmills implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void payAgain(MarsGame game, CardService cardService, Player player) {
+        int energyTagCount = cardService.countPlayedTags(player, Set.of(Tag.ENERGY));
+
+        player.setHeat(player.getHeat() + energyTagCount);
+    }
+
+    @Override
     public CardMetadata getCardMetadata() {
         return cardMetadata;
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        int energyTagsCount = (int) project.getTags().stream().filter(Tag.ENERGY::equals).count();
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
+        int energyTagsCount = marsContext.getCardService().countCardTags(project, Set.of(Tag.ENERGY), inputParams);
+
+        final Player player = marsContext.getPlayer();
 
         player.setHeatIncome(player.getHeatIncome() + energyTagsCount);
     }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        int energyTagsCount = (int) marsContext.getPlayer()
-                .getPlayed()
-                .getCards().stream()
-                .map(marsContext.getCardService()::getCard)
-                .flatMap(card -> card.getTags().stream())
-                .filter(Tag.ENERGY::equals).count();
+        final Player player = marsContext.getPlayer();
 
-        marsContext.getPlayer().setHeatIncome(marsContext.getPlayer().getHeatIncome() + energyTagsCount + 1);
+        int energyTagCount = marsContext.getCardService().countPlayedTags(player, Set.of(Tag.ENERGY));
+
+        player.setHeatIncome(player.getHeatIncome() + energyTagCount + 1);
 
         return null;
+    }
+
+    @Override
+    public void revertPlayedTags(CardService cardService, Card card, Player player) {
+        int energyTagCount = cardService.countCardTagsWithDynamic(card, player, Set.of(Tag.ENERGY));
+
+        player.setHeatIncome(player.getHeatIncome() - energyTagCount);
     }
 
     @Override

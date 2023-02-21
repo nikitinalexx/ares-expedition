@@ -43,12 +43,17 @@ public class EosChasmaNationalPark implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void payAgain(MarsGame game, CardService cardService, Player player) {
+        player.setMc(player.getMc() + 2);
+    }
+
+    @Override
     public CardMetadata getCardMetadata() {
         return cardMetadata;
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> input) {
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> input) {
         List<Integer> cardInput = input.get(InputFlag.EOS_CHASMA_PUT_RESOURCE.getId());
 
 
@@ -58,12 +63,9 @@ public class EosChasmaNationalPark implements BaseExpansionGreenCard {
             return;
         }
 
-        Card inputCard = cardService.getCard(cardId);
+        Card inputCard = marsContext.getCardService().getCard(cardId);
 
-        player.getCardResourcesCount().put(
-                inputCard.getClass(),
-                player.getCardResourcesCount().get(inputCard.getClass()) + 1
-        );
+        marsContext.getPlayer().addResources(inputCard, 1);
     }
 
     @Override

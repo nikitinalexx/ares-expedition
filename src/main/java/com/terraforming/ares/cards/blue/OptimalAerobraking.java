@@ -1,14 +1,13 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
-import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -40,8 +39,12 @@ public class OptimalAerobraking implements BlueCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        if (project.getTags().contains(Tag.EVENT)) {
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
+        int eventTagsCount = marsContext.getCardService().countCardTags(project, Set.of(Tag.EVENT), inputParams);
+
+        final Player player = marsContext.getPlayer();
+
+        if (eventTagsCount > 0) {
             player.setHeat(player.getHeat() + 2);
             player.setPlants(player.getPlants() + 2);
         }

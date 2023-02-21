@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -30,27 +31,32 @@ public class AtmosphericInsulators implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void payAgain(MarsGame game, CardService cardService, Player player) {
+        int earthTagCount = cardService.countPlayedTags(player, Set.of(Tag.EARTH));
+
+        player.setHeat(player.getHeat() + earthTagCount);
+    }
+
+    @Override
     public CardMetadata getCardMetadata() {
         return cardMetadata;
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        int earthTags = (int) project.getTags().stream().filter(Tag.EARTH::equals).count();
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
+        final Player player = marsContext.getPlayer();
+        int earthTags = marsContext.getCardService().countCardTags(project, Set.of(Tag.EARTH), inputParams);
 
         player.setHeatIncome(player.getHeatIncome() + earthTags);
     }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        int earthTagCount = (int) marsContext.getPlayer()
-                .getPlayed()
-                .getCards().stream()
-                .map(marsContext.getCardService()::getCard)
-                .flatMap(card -> card.getTags().stream())
-                .filter(Tag.EARTH::equals).count();
+        final Player player = marsContext.getPlayer();
 
-        marsContext.getPlayer().setHeatIncome(marsContext.getPlayer().getHeatIncome() + earthTagCount + 1);
+        int earthTagCount = marsContext.getCardService().countPlayedTags(player, Set.of(Tag.EARTH));
+
+        player.setHeatIncome(player.getHeatIncome() + earthTagCount + 1);
 
         return null;
     }
@@ -58,6 +64,12 @@ public class AtmosphericInsulators implements BaseExpansionGreenCard {
     @Override
     public boolean onBuiltEffectApplicableToOther() {
         return true;
+    }
+
+    @Override
+    public void revertPlayedTags(CardService cardService, Card card, Player player) {
+        int earthTagCount = cardService.countCardTagsWithDynamic(card, player, Set.of(Tag.EARTH));
+        player.setHeatIncome(player.getHeatIncome() - earthTagCount);
     }
 
     @Override

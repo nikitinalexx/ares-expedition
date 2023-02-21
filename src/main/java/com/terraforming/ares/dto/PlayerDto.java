@@ -1,5 +1,6 @@
 package com.terraforming.ares.dto;
 
+import com.terraforming.ares.model.Tag;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -23,14 +24,21 @@ public class PlayerDto {
     private final Integer previousPhase;
     private final TurnDto nextTurn;
     private final Map<Integer, Integer> cardResources;
+    private final Map<Integer, List<Tag>> cardToTag;
     private final List<Integer> activatedBlueCards;
-    private final boolean activatedBlueActionTwice;
+    private final int blueActionExtraActivationsLeft;
     private final int terraformingRating;
     private final int winPoints;
     private final int forests;
     private final boolean builtSpecialDesignLastTurn;
     private final boolean builtWorkCrewsLastTurn;
     private final boolean canBuildAnotherGreenWith9Discount;
+    private final boolean canBuildAnotherGreenWithPrice12;
+    private final boolean assortedEnterprisesDiscount;
+    private final boolean selfReplicatingDiscount;
+    private final int canBuildInFirstPhase;
+    private boolean mayNiDiscount;
+    private List<Integer> phaseCards;
 
     private final int mc;
     private final int mcIncome;

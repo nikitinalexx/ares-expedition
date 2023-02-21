@@ -25,7 +25,8 @@ public class NitriteReductingBacteria implements BlueCard {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
                 .name("Nitrite Reducting Bacteria")
-                .description("Add 3 microbes to this card. Action: Add 1 microbe to this card or remove 3 microbes to flip an ocean tile.")
+                .actionDescription("Action: Add 1 microbe to this card or remove 3 microbes to flip an ocean tile.")
+                .description("Add 3 microbes to this card.")
                 .bonuses(List.of(Gain.of(GainType.MICROBE, 3)))
                 .cardAction(CardAction.NITRITE_REDUCTING)
                 .actionInputData(
@@ -60,7 +61,8 @@ public class NitriteReductingBacteria implements BlueCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        marsContext.getPlayer().getCardResourcesCount().put(NitriteReductingBacteria.class, 3);
+        marsContext.getPlayer().initResources(this);
+        marsContext.getPlayer().addResources(this, 3);
         return null;
     }
 

@@ -7,10 +7,9 @@ import com.terraforming.ares.model.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by oleksii.nikitin
@@ -19,33 +18,43 @@ import java.util.Set;
 @Service
 public class CardService {
     private final ShuffleService shuffleService;
-    private final Map<Integer, Card> projects;
-    private final Map<Integer, Card> corporations;
+    private final Map<Expansion, Map<Integer, Card>> projects;
+    private final Map<Integer, Card> baseCorporations;
+    private final Map<Integer, Card> buffedCorporations;
+    private final Map<Integer, Card> buffedCorporationsMapping;
 
     public CardService(CardFactory cardFactory, ShuffleService shuffleService) {
         this.shuffleService = shuffleService;
-        projects = cardFactory.createProjects();
-        corporations = cardFactory.createCorporations();
+        projects = cardFactory.createAllProjects();
+        baseCorporations = cardFactory.createCorporations();
+        buffedCorporations = cardFactory.createBuffedCorporations();
+        buffedCorporationsMapping = cardFactory.getBuffedCorporationsMapping();
     }
 
     public Deck createProjectsDeck(List<Expansion> expansions) {
-        if (expansions.contains(Expansion.BASE)) {
-            return createAndShuffleDeck(projects.keySet());
-        }
-
-        return Deck.builder().build();
+        return createAndShuffleDeck(expansions.stream()
+                .filter(projects::containsKey)
+                .map(projects::get)
+                .flatMap(cards -> cards.keySet().stream()));
     }
 
     public Deck createCorporationsDeck(List<Expansion> expansions) {
+        Map<Integer, Card> corporations = new HashMap<>();
         if (expansions.contains(Expansion.BASE)) {
-            return createAndShuffleDeck(corporations.keySet());
+            corporations.putAll(this.baseCorporations);
         }
 
-        return Deck.builder().build();
+        if (expansions.contains(Expansion.BUFFED_CORPORATION)) {
+            corporations.putAll(this.buffedCorporationsMapping);
+        }
+
+        return createAndShuffleDeck(
+                corporations.values().stream().map(Card::getId)
+        );
     }
 
-    private Deck createAndShuffleDeck(Set<Integer> cards) {
-        LinkedList<Integer> cardsList = new LinkedList<>(cards);
+    private Deck createAndShuffleDeck(Stream<Integer> cards) {
+        LinkedList<Integer> cardsList = cards.collect(Collectors.toCollection(LinkedList::new));
 
         shuffleService.shuffle(cardsList);
 
@@ -53,11 +62,20 @@ public class CardService {
     }
 
     public Card getCard(int id) {
-        Card projectCard = projects.get(id);
-        if (projectCard != null) {
-            return projectCard;
+        Card card;
+
+        for (Map.Entry<Expansion, Map<Integer, Card>> expansionEntry : projects.entrySet()) {
+            card = expansionEntry.getValue().get(id);
+            if (card != null) {
+                return card;
+            }
         }
-        return corporations.get(id);
+
+        card = baseCorporations.get(id);
+        if (card != null) {
+            return card;
+        }
+        return buffedCorporations.get(id);
     }
 
     public AutoPickCardsAction dealCards(Deck deck, Player player) {
@@ -71,18 +89,63 @@ public class CardService {
         return resultBuilder.build();
     }
 
-    public int countPlayedTags(Player player, Tag tag) {
+    public int countCardTagsWithDynamic(Card card, Player player, Set<Tag> tagsToCount) {
+        int tagCount = 0;
+
+        if (card.getTags().contains(Tag.DYNAMIC) && player.getCardToTag().containsKey(card.getClass())
+                && player.getCardToTag().get(card.getClass()).stream().anyMatch(tagsToCount::contains)) {
+            tagCount++;
+        }
+
+        return tagCount + (int) card.getTags().stream().filter(tagsToCount::contains).count();
+    }
+
+    public int countCardTags(Card card, Set<Tag> tags, Map<Integer, List<Integer>> input) {
+        int tagCount = 0;
+
+        if (input != null && input.containsKey(InputFlag.TAG_INPUT.getId())) {
+            List<Integer> tagInput = input.get(InputFlag.TAG_INPUT.getId());
+
+            if (tags.contains(Tag.byIndex(tagInput.get(0)))) {
+                tagCount++;
+            }
+        }
+
+        return tagCount + (int) card.getTags().stream().filter(tags::contains).count();
+    }
+
+    public List<Tag> getCardTags(Card card, Map<Integer, List<Integer>> input) {
+        List<Tag> result = new ArrayList<>();
+
+        if (input != null && input.containsKey(InputFlag.TAG_INPUT.getId())) {
+            List<Integer> tagInput = input.get(InputFlag.TAG_INPUT.getId());
+            result.add(Tag.byIndex(tagInput.get(0)));
+        }
+
+        result.addAll(card.getTags());
+        return result;
+    }
+
+    public int countPlayedTags(Player player, Set<Tag> tagsToCheck) {
         if (player == null || player.getPlayed() == null || CollectionUtils.isEmpty(player.getPlayed().getCards())) {
             return 0;
         }
 
-        return (int) player.getPlayed()
-                .getCards()
-                .stream()
-                .map(this::getCard)
-                .flatMap(card -> card.getTags().stream())
-                .filter(tag::equals)
-                .count();
+        return (int) (
+                player.getPlayed().getCards().stream().map(this::getCard)
+                        .filter(card -> player.getCardToTag().containsKey(card.getClass()))
+                        .flatMap(card -> player.getCardToTag().get(card.getClass()).stream())
+                        .filter(tagsToCheck::contains)
+                        .count()
+
+                        + player.getPlayed()
+                        .getCards()
+                        .stream()
+                        .map(this::getCard)
+                        .flatMap(card -> card.getTags().stream())
+                        .filter(tagsToCheck::contains)
+                        .count()
+        );
     }
 
     public int countPlayedCards(Player player, Set<CardColor> colors) {
@@ -102,10 +165,27 @@ public class CardService {
     public List<Integer> dealCards(MarsGame game, int count) {
         int size = game.getProjectsDeck().size();
         if (size < count) {
-            Deck newProjectsDeck = createProjectsDeck(List.of(Expansion.BASE));
+            Deck newProjectsDeck = createProjectsDeck(game.getExpansions());
             game.mergeDeck(newProjectsDeck);
         }
         return game.dealCards(count);
+    }
+
+    public Integer dealCardWithTag(Tag tag, MarsGame game) {
+        while (true) {
+            List<Integer> cards = dealCards(game, 1);
+            if (CollectionUtils.isEmpty(cards)) {
+                break;
+            }
+            Integer cardId = cards.get(0);
+
+            final Card card = getCard(cardId);
+
+            if (card.getTags().contains(tag) || card.getTags().contains(Tag.DYNAMIC)) {
+                return cardId;
+            }
+        }
+        throw new IllegalStateException("Unable to find a card with tag");
     }
 
 }

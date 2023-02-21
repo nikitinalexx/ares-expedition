@@ -4,10 +4,13 @@ import com.terraforming.ares.cards.blue.Decomposers;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.services.CardService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.terraforming.ares.model.InputFlag.DECOMPOSERS_TAKE_CARD;
 import static com.terraforming.ares.model.InputFlag.DECOMPOSERS_TAKE_MICROBE;
@@ -17,7 +20,9 @@ import static com.terraforming.ares.model.InputFlag.DECOMPOSERS_TAKE_MICROBE;
  * Creation date 07.05.2022
  */
 @Component
+@RequiredArgsConstructor
 public class DecomposersOnBuiltEffectValidator implements OnBuiltEffectValidator<Decomposers> {
+    private final CardService cardService;
 
     @Override
     public Class<Decomposers> getType() {
@@ -26,10 +31,7 @@ public class DecomposersOnBuiltEffectValidator implements OnBuiltEffectValidator
 
     @Override
     public String validate(Card card, Player player, Map<Integer, List<Integer>> input) {
-        long tagsCount = card.getTags()
-                .stream()
-                .filter(tag -> tag == Tag.ANIMAL || tag == Tag.MICROBE || tag == Tag.PLANT)
-                .count();
+        long tagsCount = cardService.countCardTags(card, Set.of(Tag.ANIMAL, Tag.MICROBE, Tag.PLANT), input);
 
         if (tagsCount == 0) {
             return null;

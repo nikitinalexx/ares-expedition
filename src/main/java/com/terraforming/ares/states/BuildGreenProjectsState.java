@@ -2,9 +2,10 @@ package com.terraforming.ares.states;
 
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.StateContext;
 import com.terraforming.ares.model.turn.TurnType;
+import com.terraforming.ares.services.CardService;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -14,20 +15,25 @@ import java.util.List;
  */
 public class BuildGreenProjectsState extends AbstractState {
 
-    public BuildGreenProjectsState(MarsGame marsGame) {
-        super(marsGame);
+    public BuildGreenProjectsState(MarsGame marsGame, CardService cardService) {
+        super(marsGame, cardService);
     }
 
     @Override
-    public List<TurnType> getPossibleTurns(String playerUuid) {
-        Player player = marsGame.getPlayerByUuid(playerUuid);
+    public List<TurnType> getPossibleTurns(StateContext stateContext) {
+        Player player = marsGame.getPlayerByUuid(stateContext.getPlayerUuid());
 
-        if (player.getNextTurn() != null && player.getNextTurn().getType().isIntermediate()) {
+        if (player.getNextTurn() != null && stateContext.getTurnTypeService().isIntermediate(player.getNextTurn().getType())) {
             return List.of(player.getNextTurn().getType());
-        } else if (player.getNextTurn() != null || player.getCanBuildInFirstPhase() == 0) {
+        } else if (player.getNextTurn() != null) {
             return Collections.emptyList();
+        } else if (player.getCanBuildInFirstPhase() == 0) {
+            if (player.isUnmiCorporation() && player.isHasUnmiAction()) {
+                return List.of(TurnType.UNMI_RT, TurnType.SELL_CARDS, TurnType.SKIP_TURN);
+            }
+            return List.of();
         } else {
-            return Arrays.asList(
+            return List.of(
                     TurnType.BUILD_GREEN_PROJECT,
                     TurnType.SELL_CARDS,
                     TurnType.SKIP_TURN
@@ -38,7 +44,9 @@ public class BuildGreenProjectsState extends AbstractState {
     @Override
     public void updateState() {
         if (marsGame.getPlayerUuidToPlayer().values().stream().allMatch(
-                player -> player.getCanBuildInFirstPhase() == 0 && player.getNextTurn() == null
+                player -> player.getCanBuildInFirstPhase() == 0
+                        && player.getNextTurn() == null
+                        && !player.isHasUnmiAction()
         )) {
             performStateTransferFromPhase(2);
         }

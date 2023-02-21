@@ -54,4 +54,9 @@ public class PhobologCorporation implements CorporationCard {
         return Expansion.BASE;
     }
 
+    @Override
+    public int getPrice() {
+        return 20;
+    }
+
 }

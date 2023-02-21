@@ -63,27 +63,34 @@ public class CardValidationService {
         boolean playerMayAmplifyGlobalRequirement = specialEffectsService.ownsSpecialEffect(player, SpecialEffect.AMPLIFY_GLOBAL_REQUIREMENT);
         boolean builtSpecialDesignLastTurn = player.isBuiltSpecialDesignLastTurn();
 
-        //TODO requirements should be set at the beginning of phase
         return validateOxygen(game.getPlanetAtTheStartOfThePhase(), card, playerMayAmplifyGlobalRequirement || builtSpecialDesignLastTurn)
                 .or(() -> validateTemperature(game.getPlanetAtTheStartOfThePhase(), card, playerMayAmplifyGlobalRequirement || builtSpecialDesignLastTurn))
                 .or(() -> validateOceans(game.getPlanetAtTheStartOfThePhase(), card))
                 .or(() -> validateTags(player, card))
-                .or(() -> validatePayments(card, player, payments))
-                .or(() -> validateInputParameters(card, player, inputParameters))
+                .or(() -> validatePayments(card, player, payments, inputParameters))
+                .or(() -> validateInputParameters(game, card, player, inputParameters))
                 .or(() -> validateCustomCards(card, player))
                 .orElse(null);
     }
 
     private Optional<String> validateCustomCards(Card card, Player player) {
         boolean canBuildAnotherGreenWith9Discount = player.isCanBuildAnotherGreenWith9Discount();
+        boolean canBuildAnotherGreenWithPrice12 = player.isCanBuildAnotherGreenWithPrice12();
+        boolean mayNiDiscount = player.isMayNiDiscount();
 
         return Optional.ofNullable(
-                canBuildAnotherGreenWith9Discount && card.getPrice() >= 10 ? "You may only build a card with a price of 9 or less" : null
-        );
+                card.getColor() == CardColor.GREEN
+                        && canBuildAnotherGreenWith9Discount
+                        && !canBuildAnotherGreenWithPrice12
+                        && card.getPrice() >= 10 ? "You may only build a card with a price of 9 or less" : null
+        ).or(() -> Optional.ofNullable(
+                (mayNiDiscount || player.getCanBuildInFirstPhase() == 1 && canBuildAnotherGreenWithPrice12)
+                        && card.getPrice() > 12 ? "You may only build a card with a price of 12 or less" : null
+        ));
     }
 
     @SuppressWarnings("unchecked")
-    public String validateBlueAction(Player player, MarsGame game, int cardId, List<Integer> inputParameters) {
+    public String validateBlueAction(Player player, MarsGame game, int cardId, Map<Integer, List<Integer>> inputParameters) {
         Card card = cardService.getCard(cardId);
         if (card == null) {
             return "card doesn't exist " + cardId;
@@ -101,8 +108,8 @@ public class CardValidationService {
             if (player.getChosenPhase() != 3) {
                 return "Can't play an action twice if you didn't choose phase 3";
             }
-            if (player.isActivatedBlueActionTwice()) {
-                return "Can't play an action that was already played and double action already performed";
+            if (player.getBlueActionExtraActivationsLeft() < 1) {
+                return "Can't play an action that was already played and extra actions already performed";
             }
         }
 
@@ -138,7 +145,7 @@ public class CardValidationService {
     private List<ParameterColor> amplifyRequirement(List<ParameterColor> initialRequirement) {
         List<ParameterColor> resultRequirement = new ArrayList<>(initialRequirement);
         int minRequirement = initialRequirement.stream().mapToInt(Enum::ordinal).min().orElse(0);
-        int maxRequirement = initialRequirement.stream().mapToInt(Enum::ordinal).min().orElse(ParameterColor.W.ordinal());
+        int maxRequirement = initialRequirement.stream().mapToInt(Enum::ordinal).max().orElse(ParameterColor.W.ordinal());
 
         if (minRequirement > 0) {
             resultRequirement.add(ParameterColor.values()[minRequirement - 1]);
@@ -158,17 +165,17 @@ public class CardValidationService {
         }
     }
 
-    private Optional<String> validatePayments(Card card, Player player, List<Payment> payments) {
-        return Optional.ofNullable(paymentValidationService.validate(card, player, payments));
+    private Optional<String> validatePayments(Card card, Player player, List<Payment> payments, Map<Integer, List<Integer>> inputParameters) {
+        return Optional.ofNullable(paymentValidationService.validate(card, player, payments, inputParameters));
     }
 
-    private Optional<String> validateInputParameters(Card card, Player player, Map<Integer, List<Integer>> inputParams) {
+    private Optional<String> validateInputParameters(MarsGame game, Card card, Player player, Map<Integer, List<Integer>> inputParams) {
         Optional<String> validationResult = Optional.empty();
 
         if (card.onBuiltEffectApplicableToItself()) {
             validationResult = validationResult.or(
                     () -> Optional.ofNullable(onBuiltEffectValidators.get(card.getClass()))
-                            .map(validator -> validator.validate(card, player, CollectionUtils.isEmpty(inputParams) ? Map.of() : inputParams))
+                            .map(validator -> validator.validate(game, card, player, CollectionUtils.isEmpty(inputParams) ? Map.of() : inputParams))
             );
         }
 
@@ -180,7 +187,7 @@ public class CardValidationService {
                         .filter(Card::onBuiltEffectApplicableToOther)
                         .map(c -> onBuiltEffectValidators.get(c.getClass()))
                         .filter(Objects::nonNull)
-                        .map(validator -> validator.validate(card, player, inputParams))
+                        .map(validator -> validator.validate(game, card, player, inputParams))
                         .filter(Objects::nonNull)
                         .findAny()
         );
@@ -205,6 +212,16 @@ public class CardValidationService {
             if (tagRequirements.isEmpty()) {
                 return Optional.empty();
             }
+        }
+
+        for (List<Tag> dynamicTags : player.getCardToTag().values()) {
+            for (Tag dynamicTag : dynamicTags) {
+                tagRequirements.remove(dynamicTag);
+            }
+        }
+
+        if (tagRequirements.isEmpty()) {
+            return Optional.empty();
         }
 
         return Optional.of("Project tag requirements not met");

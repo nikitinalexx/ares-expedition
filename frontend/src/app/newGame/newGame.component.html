@@ -5,8 +5,28 @@
 <form [formGroup]="parentForm" (submit)="submitForm(parentForm)" novalidate>
   <div class="form-group col-6 mx-auto" style="margin-top: 100px;">
 
-    <label for="choices" class="form-label bg-warning text-dark"
-           style="border-radius: 5px; font-size: 20px;">Players</label>
+    <div class="bg-warning text-dark new-game-label" style="width: 250px; border-radius: 5px;">
+      <label title="You may discard any number of initial cards to get the same amount of cards" for="improveWeakCorp"
+             class="form-label">Improve weak corporations</label>
+      <input type="checkbox" class="form-check-input" id="improveWeakCorp" style="margin-left: 10px;"
+             formControlName="improveWeakCorp">
+    </div>
+    <div class="bg-warning text-dark new-game-label" style="width: 100px; border-radius: 5px; margin-top: 10px;">
+      <label title="You may discard any number of initial cards to get the same amount of cards" for="mulliganChoice"
+             class="form-label">Mulligan</label>
+      <input type="checkbox" class="form-check-input" id="mulliganChoice" style="margin-left: 10px;"
+             formControlName="mulligan">
+    </div>
+
+    <div class="bg-warning text-dark new-game-label" style="width: 200px; border-radius: 5px; margin-top: 10px;">
+      <label for="discoveryChoice"
+             class="form-label">Discovery Expansion</label>
+      <input type="checkbox" class="form-check-input" id="discoveryChoice" style="margin-left: 10px;"
+             formControlName="discovery">
+    </div>
+    <br/>
+
+    <label for="choices" class="form-label bg-warning text-dark new-game-label text-big">Players</label>
 
     <div id="choices">
       <div class="form-check form-check-inline bg-warning" style="border-radius: 5px;">
@@ -34,11 +54,16 @@
     <div *ngFor="let item of getPlayerCountArray(); let i = index" style="margin-top: 15px;">
       <label for="playerName" class="form-label p-1 mb-2 bg-warning text-dark"
              style="border-radius: 5px;">Player {{item}} name</label>
+        <label *ngIf="!this.parentForm.value.discovery" class="form-label p-1 mb-2 bg-warning text-dark"
+               style="margin-left: 5px; border-radius: 5px;">Computer <input type="checkbox" [formControlName]="'computer' + item"/></label>
+
       <input type="text" class="form-control" id="playerName" [formControlName]="'playerName' + item">
+
     </div>
 
     <button type="submit" class="btn btn-warning btn-lg" style="margin-top: 10px">Create</button>
   </div>
+
 </form>
 
 <div *ngIf="playersPresent()" class="d-grid gap-2 col-6 mx-auto" style="margin-top: 10px;">

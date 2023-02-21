@@ -4,6 +4,7 @@ import com.terraforming.ares.cards.blue.AssetLiquidation;
 import com.terraforming.ares.dto.CardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.services.CardService;
@@ -25,7 +26,7 @@ public class AssetLiquidationActionProcessor implements BlueActionCardProcessor<
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player) {
+    public TurnResponse process(MarsGame game, Player player, Card actionCard) {
         player.setTerraformingRating(player.getTerraformingRating() - 1);
 
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();

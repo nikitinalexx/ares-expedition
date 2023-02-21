@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.terraforming.ares.model.Constants.PHASE_1_UPGRADE_DISCOUNT;
+
 /**
  * Created by oleksii.nikitin
  * Creation date 03.05.2022
@@ -20,15 +22,27 @@ import java.util.stream.Collectors;
 public class PaymentValidationService {
     private final Map<PaymentType, PaymentValidator> validators;
     private final SpecialEffectsService specialEffectsService;
+    private final CardService cardService;
 
-    public PaymentValidationService(SpecialEffectsService specialEffectsService, List<PaymentValidator> paymentValidators) {
+    public PaymentValidationService(SpecialEffectsService specialEffectsService, List<PaymentValidator> paymentValidators, CardService cardService) {
         this.specialEffectsService = specialEffectsService;
+        this.cardService = cardService;
         validators = paymentValidators.stream().collect(Collectors.toMap(
                 PaymentValidator::getType, Function.identity()
         ));
     }
 
-    public String validate(Card card, Player player, List<Payment> payments) {
+    public int forestPriceInPlants(Player player) {
+        int plantsCost = Constants.FOREST_PLANT_COST;
+
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ECOLINE_DISCOUNT)) {
+            plantsCost--;
+        }
+
+        return plantsCost;
+    }
+
+    public String validate(Card card, Player player, List<Payment> payments, Map<Integer, List<Integer>> inputParameters) {
         for (Payment payment : payments) {
             PaymentValidator paymentValidator = validators.get(payment.getType());
             if (paymentValidator == null) {
@@ -40,12 +54,21 @@ public class PaymentValidationService {
             }
         }
 
-        if (player.isCanBuildAnotherGreenWith9Discount() && card.getPrice() > 9) {
+        if (player.isCanBuildAnotherGreenWith9Discount()
+                && card.getPrice() > 9
+                && card.getColor() == CardColor.GREEN
+                && !player.isCanBuildAnotherGreenWithPrice12()) {
             return "Can only build a second building with print price of 9 or less";
         }
 
+        if ((player.getCanBuildInFirstPhase() == 1 || player.isCanBuildAnotherGreenWith9Discount())
+                && player.isCanBuildAnotherGreenWithPrice12()
+                && card.getColor() == CardColor.GREEN
+                && card.getPrice() > 12) {
+            return "Can only build a second building with print price of 12 or less";
+        }
 
-        int discount = getDiscount(card, player);
+        int discount = getDiscount(card, player, inputParameters);
         discount += payments.stream().mapToInt(Payment::getDiscount).sum();
         int discountedPrice = Math.max(0, card.getPrice() - discount);
 
@@ -60,10 +83,10 @@ public class PaymentValidationService {
         }
     }
 
-    private int getDiscount(Card card, Player player) {
+    public int getDiscount(Card card, Player player, Map<Integer, List<Integer>> inputParameters) {
         int discount = 0;
 
-        List<Tag> tags = card.getTags();
+        List<Tag> tags = cardService.getCardTags(card, inputParameters);
 
         boolean playerOwnsAdvancedAlloys = specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ADVANCED_ALLOYS);
         boolean playerOwnsPhobolog = specialEffectsService.ownsSpecialEffect(player, SpecialEffect.PHOBOLOG);
@@ -76,34 +99,49 @@ public class PaymentValidationService {
             discount += player.getTitaniumIncome() * (3 + (playerOwnsAdvancedAlloys ? 1 : 0) + (playerOwnsPhobolog ? 1 : 0));
         }
 
-        if (card.getColor() == CardColor.GREEN && player.getChosenPhase() == 1) {
+        if (card.getColor() == CardColor.GREEN && player.getChosenPhase() == 1
+                && !player.isCanBuildAnotherGreenWith9Discount()
+                && !(player.isCanBuildAnotherGreenWithPrice12() && player.getCanBuildInFirstPhase() == 1)) {
             discount += 3;
+
+            if (player.hasPhaseUpgrade(PHASE_1_UPGRADE_DISCOUNT)) {
+                discount += 3;
+            }
         }
 
         if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.EARTH_CATAPULT_DISCOUNT_2)) {
             discount += 2;
         }
 
-        if (card.getTags().contains(Tag.ENERGY) &&
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ORBITAL_OUTPOST_DISCOUNT)
+                && tags.size() <= 1) {
+            discount += 3;
+        }
+
+        if (tags.contains(Tag.ENERGY) &&
                 specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ENERGY_SUBSIDIES_DISCOUNT_4)) {
             discount += 4;
         }
 
         if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.INTERPLANETARY_CONFERENCE)) {
-            if (card.getTags().contains(Tag.EARTH)) {
+            if (tags.contains(Tag.EARTH)) {
                 discount += 3;
             }
-            if (card.getTags().contains(Tag.JUPITER)) {
+            if (tags.contains(Tag.JUPITER)) {
                 discount += 3;
             }
         }
 
-        if (card.getTags().contains(Tag.EVENT) &&
+        if (tags.contains(Tag.EVENT) &&
                 specialEffectsService.ownsSpecialEffect(player, SpecialEffect.MEDIA_GROUP)) {
             discount += 5;
         }
 
         if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.RESEARCH_OUTPOST_DISCOUNT_1)) {
+            discount += 1;
+        }
+
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.HOHMANN_DISCOUNT_1)) {
             discount += 1;
         }
 
@@ -115,12 +153,16 @@ public class PaymentValidationService {
             discount += 3;
         }
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.TORGATE_ENERGY_DISCOUNT) && card.getTags().contains(Tag.ENERGY)) {
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.TORGATE_ENERGY_DISCOUNT) && tags.contains(Tag.ENERGY)) {
             discount += 3;
         }
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.TERACTOR_EARTH_DISCOUNT) && card.getTags().contains(Tag.EARTH)) {
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.TERACTOR_EARTH_DISCOUNT) && tags.contains(Tag.EARTH)) {
             discount += 3;
+        }
+
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.INTERPLANETARY_CINEMATICS_DISCOUNT) && tags.contains(Tag.EVENT)) {
+            discount += 2;
         }
 
         if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.CREDICOR_DISCOUNT) && card.getPrice() >= 20) {
@@ -133,6 +175,18 @@ public class PaymentValidationService {
 
         if (player.isCanBuildAnotherGreenWith9Discount() && card.getPrice() <= 9) {
             discount += 9;
+        }
+
+        if (player.isAssortedEnterprisesDiscount()) {
+            discount += 2;
+        }
+
+        if (player.isSelfReplicatingDiscount()) {
+            discount += 25;
+        }
+
+        if (player.isMayNiDiscount()) {
+            discount += 12;
         }
 
         return discount;

@@ -1,27 +1,66 @@
 <app-navbar [game]="game" [player]="getPlayerToShow()"></app-navbar>
 
-<div style="padding-top: 100px;">
+<div style="padding-top: 100px;"></div>
 
+<div class="form-check bg-primary" style="width: 200px; position: absolute; border-radius: 5px; margin: 5px">
+  <input class="form-check-input" style="margin-left: -20px" type="checkbox" id="alert" (change)="alertCheckEvent($event)" [checked]="this.isAlertAlwaysOn()">
+  <label class="form-check-label" for="alert">
+    Turn alert always ON
+  </label>
 </div>
 
 <form [formGroup]="parentForm" class="view-choice">
-  <div class="form-check">
-    <input id="you" type="radio" class="form-check-input" value="You" formControlName="player" [checked]="true">
-    <label class="custom-control-label text-white" for="you">
-      You
-    </label>
-  </div>
+  <table>
+    <tbody>
+    <tr>
+      <td>
+        <div class="form-check">
+          <input id="you" type="radio" class="form-check-input" value="You" formControlName="player" [checked]="true">
+          <label class="custom-control-label text-white" for="you">
+            You
+          </label>
+        </div>
+      </td>
+      <td>
+        <div class="form-check">
+          <input id="turnInfo" type="checkbox" class="custom-control-input btn-check" [checked]="true"
+                 onclick="this.checked=!this.checked;"/>
+          <label class="btn" [ngClass]="yourTurnInfo() ? 'btn-outline-success' : 'btn-outline-danger'" for="turnInfo"
+                 style="font-size: 10px">
+            {{yourTurnInfo() ? 'WAIT' : 'TURN'}}
+          </label>
+        </div>
+      </td>
+    </tr>
 
-  <div *ngFor="let otherPlayer of game?.otherPlayers; let i = index" class="form-check">
-    <input id="opponent" type="radio" class="form-check-input" value="{{i}}"
-           formControlName="player">
-    <label class="custom-control-label text-white" for="opponent">
-      Opponent {{i + 1}}
-    </label>
-  </div>
+    <tr *ngFor="let otherPlayer of game?.otherPlayers; let i = index">
+      <td>
+        <div class="form-check">
+          <input id="opponent" type="radio" class="form-check-input" value="{{i}}"
+                 formControlName="player">
+          <label class="custom-control-label text-white" for="opponent">
+            {{otherPlayer.name}}
+          </label>
+        </div>
+      </td>
+      <td>
+        <div class="form-check">
+          <input id="otherTurnInfo" type="checkbox" class="custom-control-input btn-check" [checked]="true"
+                 onclick="this.checked=!this.checked;"/>
+          <label class="btn" [ngClass]="otherPlayerTurnInfo(otherPlayer) ? 'btn-outline-success' : 'btn-outline-danger'"
+                 for="otherTurnInfo" style="font-size: 10px">
+            {{otherPlayerTurnInfo(otherPlayer) ? 'WAIT' : 'TURN'}}
+          </label>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+
+
 </form>
 
-<div class="display-phase-container">
+<div id="displayPhaseContainer" class="display-phase-container">
   <div *ngFor="let item of chosenPhases()" [ngClass]="phaseDisplayStyles(item)"
        class="phaseDisplay display phase-{{item}}"></div>
 </div>
@@ -51,12 +90,118 @@
     <div *ngIf="ocean.mc" class="resource money">{{ocean.mc}}</div>
     <div *ngIf="ocean.cards" class="resource card"></div>
   </div>
+
+  <div *ngFor="let milestone of game?.milestones; let awardIndex = index" class="achievement-border"
+       [ngClass]="milestoneSuccessClass(milestone)"
+       [ngStyle]="{'left.px': 650, 'top.px': 17 + 120 * awardIndex}"
+  >
+    <div class="milestone achievement" [ngClass]="milestoneClass(milestone)">
+
+      <div class="achievement-player-value bg-dark text-white" style="left: 10px"
+           [ngStyle]="{'top.px': 88}">
+        {{milestoneValue(0, milestone)}}
+      </div>
+
+      <div *ngFor="let player of this.game?.otherPlayers; let otherPlayerIndex = index;" class="achievement-player-value text-white"
+           [ngClass]="otherPlayerBackgroundClass(otherPlayerIndex)"
+           [ngStyle]="{'left.px': 40 + 30 * otherPlayerIndex, 'top.px': 88}"
+      >
+        {{milestoneValue(otherPlayerIndex + 1, milestone)}}
+      </div>
+
+      <div class="achievement-title">{{milestone.type.replace('\_', ' ')}}</div>
+
+      <div style="margin-top: -4px">
+        <div *ngIf="milestoneMagnate(milestone)">8 green cards</div>
+        <div *ngIf="milestoneTerraformer(milestone)">
+          15
+          <div class="tile small-rating"></div>
+        </div>
+        <div *ngIf="milestoneBuilder(milestone)">
+          8
+          <div class="resource-tag tag-building small-tag"></div>
+        </div>
+        <div *ngIf="milestoneSpaceBaron(milestone)">
+          7
+          <div class="resource-tag tag-space small-tag"></div>
+        </div>
+        <div *ngIf="milestoneEnergizer(milestone)">
+          10 prod
+          <div class="resource heat small"></div>
+        </div>
+        <div *ngIf="milestoneFarmer(milestone)">
+          5 prod
+          <div class="resource plant small"></div>
+        </div>
+        <div *ngIf="milestoneTycoon(milestone)">6 blue cards</div>
+        <div *ngIf="milestonePlanner(milestone)">12 cards played</div>
+        <div *ngIf="milestoneDiversifier(milestone)">9 unique tags</div>
+        <div *ngIf="milestoneLegend(milestone)">6 red cards</div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <div *ngFor="let award of game?.awards; let awardIndex = index" class="achievement-border"
+       [ngClass]="awardSuccessClass(award)"
+       [ngStyle]="{'left.px': 795, 'top.px': 17 + 120 * awardIndex}"
+  >
+    <div class="award achievement">
+      <div class="achievement-player-value bg-dark text-white" style="left: 10px"
+           [ngStyle]="{'top.px': 88}">
+        {{awardValue(0, award)}}
+      </div>
+
+      <div *ngFor="let player of this.game?.otherPlayers; let otherPlayerIndex = index;" class="achievement-player-value text-white"
+           [ngClass]="otherPlayerBackgroundClass(otherPlayerIndex)"
+           [ngStyle]="{'left.px': 40 + 30 * otherPlayerIndex, 'top.px': 88}"
+      >
+        {{awardValue(otherPlayerIndex + 1, award)}}
+      </div>
+
+      <div class="achievement-title">{{award.type.replace('\_', ' ')}}</div>
+
+      <div *ngIf="awardTypeIndustrialist(award)" style="margin-top: -5px">
+        Most
+        <div class="resource steel small"></div>
+        /
+        <div class="resource titanium small"></div>
+      </div>
+      <div *ngIf="awardTypeProjectManager(award)">
+        Most cards played
+      </div>
+
+      <div *ngIf="awardTypeGenerator(award)" style="margin-top: -5px">
+        Production
+        <div class="resource heat small"></div>
+      </div>
+      <div *ngIf="awardTypeCelebrity(award)" style="margin-top: -5px">
+        Production
+        <div class="resource money small">
+          <div style="margin-top: -6px">€</div>
+        </div>
+      </div>
+      <div *ngIf="awardTypeCollector(award)">
+        Most resources
+      </div>
+      <div *ngIf="awardTypeResearcher(award)">
+        Most
+        <div class="resource-tag tag-science small-tag"></div>
+      </div>
+
+    </div>
+  </div>
+
+
 </div>
 
 <div *ngIf="this.parentForm.value?.player === 'You'">
-  <div *ngFor="let player of this.game?.otherPlayers" class="player-info another-player-info">
+  <div *ngFor="let player of this.game?.otherPlayers; let i = index;" class="player-info another-player-info">
 
-    <div class="player-info another-player-info bg-dark" style="height: 80px; --bs-bg-opacity: .7;">
+    <div class="player-info another-player-info" [ngClass]="otherPlayerBackgroundClass(i)"
+         style="height: 80px; --bs-bg-opacity: .7;">
       <div class="text-white"
            style="width: 22px; height: 50px; word-wrap: break-word; font-size: 12px;">{{player.name}}</div>
       <div class="resource_item">
@@ -139,9 +284,7 @@
         </div>
       </div>
     </div>
-
   </div>
-
 </div>
 
 
@@ -154,7 +297,7 @@
   <div *ngIf="nextTurns && nextTurns.length > 0">
     <div>
       <app-pick-corporation *ngIf="pickCorporationTurn()" (outputToParent)="GetOutputVal($event)"
-                            [game]="game"></app-pick-corporation>
+                            [game]="game" [nextTurns]="this.nextTurns"></app-pick-corporation>
     </div>
 
     <div>
@@ -208,7 +351,7 @@
 
   <div class="card-container">
     <ul class="myUL">
-      <li *ngFor="let card of getPlayerHand(getPlayerToShow());" class="filterDiv automated display">
+      <li *ngFor="let card of getPlayerHand(this.game?.player);" class="filterDiv automated display">
         <app-card-template [card]="card"></app-card-template>
       </li>
     </ul>

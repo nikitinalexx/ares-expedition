@@ -24,6 +24,7 @@ public class CardDto {
     int winPoints;
     List<Tag> tags;
     String description;
+    String actionDescription;
     List<Gain> incomes;
     CardColor cardColor;
     List<SpecialEffect> specialEffects;
@@ -39,6 +40,7 @@ public class CardDto {
     boolean isActive;
     List<ActionInputData> actionInputData;
     boolean corporation;
+    Expansion expansion;
 
     public static CardDto from(Card card) {
         return new CardDto(
@@ -48,6 +50,7 @@ public class CardDto {
                 card.getWinningPoints(),
                 card.getTags(),
                 card.getCardMetadata().getDescription(),
+                card.getCardMetadata().getActionDescription(),
                 card.getCardMetadata().getIncomes(),
                 card.getColor(),
                 card.getSpecialEffects().isEmpty() ? List.of() : new ArrayList<>(card.getSpecialEffects()),
@@ -62,7 +65,8 @@ public class CardDto {
                 card.getCardMetadata().getResourcesOnBuild(),
                 card.isActiveCard(),
                 card.getCardMetadata().getActionsInputData(),
-                card.isCorporation()
+                card.isCorporation(),
+                card.getExpansion()
         );
     }
 

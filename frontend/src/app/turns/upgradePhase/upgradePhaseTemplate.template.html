@@ -1,0 +1,35 @@
+<h1 class="text-white">Upgrade phase <span class="text-danger">BONUS</span>: </h1>
+
+<div *ngFor='let pc of phases ;' class="form-check form-check-inline">
+  <input class="form-check-input" (click)="outputPhaseId(pc - 1); (-1)" type="radio" id="phaseUpdate{{pc - 1}}" value="{{pc - 1}}"
+         [checked]="phaseInput === pc - 1">
+  <label class="form-check-label text-white" for="phaseUpdate{{pc - 1}}">{{pc}}</label>
+</div>
+
+<br/>
+
+<h2 class="text-white">Upgrade type: </h2>
+
+<div class="form-check form-check-inline">
+  <h6>
+    <input class="form-check-input" type="radio" id="phaseType1" value="1" (click)="outputPhaseUpgradeType(0)" [checked]="phaseUpgradeTypeInput === 0">
+    <label class="form-check-label text-white align-middle" for="phaseType1">
+      {{phaseBonusUp1Description(phaseInput + 1)}}
+    </label>
+  </h6>
+
+  <h6>
+    <input class="form-check-input" type="radio" id="phaseType2" value="2" (click)="outputPhaseUpgradeType(1)" [checked]="phaseUpgradeTypeInput === 1">
+    <label class="form-check-label text-white align-middle" for="phaseType2">
+      {{phaseBonusUp2Description(phaseInput + 1)}}
+    </label>
+  </h6>
+</div>
+
+<div class="card-container">
+  <ul class="myUL">
+    <li>
+      <app-phase-card-template [phase]="phaseInput + 1" [player]="game?.player"></app-phase-card-template>
+    </li>
+  </ul>
+</div>

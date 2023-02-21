@@ -1,15 +1,14 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
-import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -42,7 +41,7 @@ public class AnaerobicMicroorganisms implements BlueCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        marsContext.getPlayer().getCardResourcesCount().put(AnaerobicMicroorganisms.class, 0);
+        marsContext.getPlayer().initResources(this);
         return null;
     }
 
@@ -67,18 +66,10 @@ public class AnaerobicMicroorganisms implements BlueCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame marsGame, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        int affectedTagsCount = (int) project.getTags().stream().filter(tag ->
-                tag == Tag.ANIMAL || tag == Tag.MICROBE || tag == Tag.PLANT
-        ).count();
-
-        player.getCardResourcesCount().compute(
-                AnaerobicMicroorganisms.class, (key, value) -> {
-                    if (value == null) {
-                        value = 0;
-                    }
-                    return value + affectedTagsCount;
-                }
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
+        marsContext.getPlayer().addResources(
+                this,
+                marsContext.getCardService().countCardTags(project, Set.of(Tag.ANIMAL, Tag.MICROBE, Tag.PLANT), inputParams)
         );
     }
 

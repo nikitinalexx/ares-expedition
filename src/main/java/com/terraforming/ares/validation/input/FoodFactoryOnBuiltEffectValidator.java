@@ -28,4 +28,6 @@ public class FoodFactoryOnBuiltEffectValidator implements OnBuiltEffectValidator
 
         return null;
     }
+
+
 }

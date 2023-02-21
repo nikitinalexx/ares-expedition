@@ -1,5 +1,6 @@
 package com.terraforming.ares.cards.blue;
 
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.payments.AnaerobicMicroorganismsPayment;
 import com.terraforming.ares.model.payments.MegacreditsPayment;
@@ -11,6 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Map;
 
 import static com.terraforming.ares.model.Constants.AI_CENTRAL_CARD_ID;
 import static com.terraforming.ares.model.Constants.ANAEROBIC_MICROORGANISMS_CARD_ID;
@@ -28,37 +30,41 @@ class AnaerobicMicroorganismsFlowTest {
     private PaymentValidationService paymentValidationService;
 
     private Player player;
+    private Card card;
 
     @BeforeEach
     public void setUp() {
         player = Player.builder().build();
         player.getPlayed().addCard(ANAEROBIC_MICROORGANISMS_CARD_ID);
+        card = new AnaerobicMicroorganisms(ANAEROBIC_MICROORGANISMS_CARD_ID);
+        player.initResources(card);
     }
 
     @Test
     void testNotEnoughResources() {
-        player.getCardResourcesCount().put(AnaerobicMicroorganisms.class, 1);
+        player.addResources(card, 1);
         String errorMessage = paymentValidationService.validate(
                 new AiCentral(AI_CENTRAL_CARD_ID),
                 player,
-                Collections.singletonList(new AnaerobicMicroorganismsPayment())
+                Collections.singletonList(new AnaerobicMicroorganismsPayment()),
+                Map.of()
         );
         assertEquals("Invalid payment: Anaerobic Microorganisms < 2", errorMessage);
     }
 
     @Test
     void testNotEnoughTotalMcToPay() {
-        player.getCardResourcesCount().put(AnaerobicMicroorganisms.class, 3);
+        player.addResources(card, 3);
 
         String errorMessage = paymentValidationService.validate(
-                new AiCentral(AI_CENTRAL_CARD_ID), player, Collections.singletonList(new AnaerobicMicroorganismsPayment())
+                new AiCentral(AI_CENTRAL_CARD_ID), player, Collections.singletonList(new AnaerobicMicroorganismsPayment()), Map.of()
         );
         assertEquals("Total payment is not enough to cover the project price", errorMessage);
     }
 
     @Test
     void testEnoughResources() {
-        player.getCardResourcesCount().put(AnaerobicMicroorganisms.class, 3);
+        player.addResources(card, 3);
         player.setMc(100);
 
         String errorMessage = paymentValidationService.validate(
@@ -67,7 +73,8 @@ class AnaerobicMicroorganismsFlowTest {
                 Arrays.asList(
                         new AnaerobicMicroorganismsPayment(),
                         new MegacreditsPayment(12)
-                )
+                ),
+                Map.of()
         );
         assertNull(errorMessage);
     }

@@ -2,18 +2,23 @@ package com.terraforming.ares.validation.input;
 
 import com.terraforming.ares.cards.blue.MarsUniversity;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.services.CardService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
  * Creation date 07.05.2022
  */
 @Component
+@RequiredArgsConstructor
 public class MarsUniversityOnBuiltEffectValidator implements OnBuiltEffectValidator<MarsUniversity> {
+    private final CardService cardService;
 
     @Override
     public Class<MarsUniversity> getType() {
@@ -22,11 +27,7 @@ public class MarsUniversityOnBuiltEffectValidator implements OnBuiltEffectValida
 
     @Override
     public String validate(Card card, Player player, Map<Integer, List<Integer>> input) {
-        //TODO test
-        long scienceTagsCount = card.getTags()
-                .stream()
-                .filter(Tag.SCIENCE::equals)
-                .count();
+        long scienceTagsCount = cardService.countCardTags(card, Set.of(Tag.SCIENCE), input);
 
         if (scienceTagsCount == 0) {
             return null;
@@ -40,6 +41,10 @@ public class MarsUniversityOnBuiltEffectValidator implements OnBuiltEffectValida
 
         if (cardsInput.contains(InputFlag.SKIP_ACTION.getId())) {
             return null;
+        }
+
+        if (cardsInput.size() > scienceTagsCount) {
+            return "You can't discard more cards than the number of Science tags";
         }
 
         for (Integer cardIdToDiscard : cardsInput) {

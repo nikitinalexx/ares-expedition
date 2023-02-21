@@ -47,4 +47,9 @@ public class CelestiorCorporation implements CorporationCard {
     public Expansion getExpansion() {
         return Expansion.BASE;
     }
+
+    @Override
+    public int getPrice() {
+        return 50;
+    }
 }

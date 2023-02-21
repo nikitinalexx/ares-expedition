@@ -13,18 +13,25 @@ import {FourthPhaseComponent} from '../turns/fourthPhase/fourthPhase.component';
 import {ThirdPhaseComponent} from '../turns/thirdPhase/thirdPhase.component';
 import {FifthPhaseComponent} from '../turns/fifthPhase/fifthPhase.component';
 import {EndRoundComponent} from '../turns/endRoundPhase/endRound.component';
-import {NavbarComponent} from "../navbar/navbar.component";
+import {NavbarComponent} from '../navbar/navbar.component';
+import {BuildGreenComponent} from '../turns/greenProject/buildGreen.component';
+import {ScrollComponent} from '../scroll/scroll.component';
+import {UpgradePhaseTemplateComponent} from '../turns/upgradePhase/upgradePhaseTemplate.template';
+import {BuildBlueRedComponent} from '../turns/blueRedProject/buildBlueRed.component';
 
 @NgModule({
   imports: [BrowserModule, ModelModule, ReactiveFormsModule, FormsModule, CardServiceModule],
   declarations: [GameComponent, PickCorporationComponent, PickPhaseComponent,
     FirstPhaseComponent, SecondPhaseComponent, SellCardsComponent, FourthPhaseComponent,
-    ThirdPhaseComponent, FifthPhaseComponent, EndRoundComponent, NavbarComponent
+    ThirdPhaseComponent, FifthPhaseComponent, EndRoundComponent, NavbarComponent, BuildGreenComponent,
+    BuildBlueRedComponent, UpgradePhaseTemplateComponent
   ],
   exports: [GameComponent, PickCorporationComponent, PickPhaseComponent, ThirdPhaseComponent,
     FirstPhaseComponent, SecondPhaseComponent, SellCardsComponent, FourthPhaseComponent,
-    FifthPhaseComponent, EndRoundComponent, NavbarComponent],
-  providers: [SellCardsComponent]
+    FifthPhaseComponent, EndRoundComponent, NavbarComponent, BuildGreenComponent,
+    BuildBlueRedComponent, UpgradePhaseTemplateComponent
+  ],
+  providers: [SellCardsComponent, ScrollComponent]
 })
 export class GameModule {
 

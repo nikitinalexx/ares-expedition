@@ -1,5 +1,6 @@
 import {Card} from './Card';
 import {BasePlayer} from './BasePlayer';
+import {Tag} from './Tag';
 
 export class Player extends BasePlayer {
   constructor(name: string,
@@ -18,30 +19,41 @@ export class Player extends BasePlayer {
               nextTurn: any,
               titaniumIncome: number,
               cardIncome: number,
-              activatedBlueActionTwice: boolean,
+              blueActionExtraActivationsLeft: number,
               cardResources: Map<number, number>,
+              cardToTag: Map<number, Tag[]>,
               terraformingRating: number,
               winPoints: number,
               forests: number,
               builtSpecialDesignLastTurn: boolean,
               builtWorkCrewsLastTurn: boolean,
               canBuildAnotherGreenWith9Discount: boolean,
+              canBuildAnotherGreenWithPrice12: boolean,
+              assortedEnterprisesDiscount: boolean,
+              selfReplicatingDiscount: boolean,
+              mayNiDiscount: boolean,
+              canBuildInFirstPhase: number,
               activatedBlueCards: number[],
+              phaseCards: number[],
               corporationId?: number,
               phase?: number) {
-    super(name, winPoints, mc, hand, played, heat, plants, mcIncome, heatIncome, plantsIncome,
-      steelIncome, titaniumIncome, cardIncome, terraformingRating, forests, cardResources, phase);
+    super(playerUuid, name, winPoints, mc, hand, played, heat, plants, mcIncome, heatIncome, plantsIncome,
+      steelIncome, titaniumIncome, cardIncome, terraformingRating, forests, cardResources, cardToTag, phaseCards, phase);
   }
 
-  playerUuid: string;
   corporations: Card[];
   corporationId: number;
   previousPhase: number;
   nextTurn: any;
   activatedBlueCards: number[];
-  activatedBlueActionTwice: boolean;
+  blueActionExtraActivationsLeft: number;
   builtSpecialDesignLastTurn: boolean;
   builtWorkCrewsLastTurn: boolean;
   canBuildAnotherGreenWith9Discount: boolean;
+  canBuildAnotherGreenWithPrice12: boolean;
+  assortedEnterprisesDiscount: boolean;
+  selfReplicatingDiscount: boolean;
+  mayNiDiscount: boolean;
+  canBuildInFirstPhase: number;
 
 }

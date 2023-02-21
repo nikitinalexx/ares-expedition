@@ -15,4 +15,12 @@ export class CardServiceComponent {
     return this.model.getProjectCards();
   }
 
+  improvedCorporationsClicked($event: any) {
+    this.model.improvedCorporationsFlagChanged($event.target.checked);
+  }
+
+  discoveryExpansionClicked($event: any) {
+    this.model.discoveryExpansionFlagChanged($event.target.checked);
+  }
+
 }

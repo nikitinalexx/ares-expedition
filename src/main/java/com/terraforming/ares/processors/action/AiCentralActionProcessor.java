@@ -26,7 +26,7 @@ public class AiCentralActionProcessor implements BlueActionCardProcessor<AiCentr
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player) {
+    public TurnResponse process(MarsGame game, Player player, Card actionCard) {
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 
         for (Integer card : deckService.dealCards(game, 2)) {

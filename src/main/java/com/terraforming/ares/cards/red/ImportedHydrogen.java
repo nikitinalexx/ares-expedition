@@ -1,11 +1,9 @@
 package com.terraforming.ares.cards.red;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
-import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.TerraformingService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -53,7 +51,9 @@ public class ImportedHydrogen implements BaseExpansionRedCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> input) {
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> input) {
+        final Player player = marsContext.getPlayer();
+
         if (input.containsKey(InputFlag.IMPORTED_HYDROGEN_PICK_PLANT.getId())) {
             player.setPlants(player.getPlants() + 3);
             return;
@@ -61,16 +61,13 @@ public class ImportedHydrogen implements BaseExpansionRedCard {
 
         int inputCardId = input.get(InputFlag.IMPORTED_HYDROGEN_PUT_RESOURCE.getId()).get(0);
 
-        Card inputCard = cardService.getCard(inputCardId);
+        Card inputCard = marsContext.getCardService().getCard(inputCardId);
         int resourcedToAdd = 2;
         if (inputCard.getCollectableResource() == CardCollectableResource.MICROBE) {
             resourcedToAdd = 3;
         }
 
-        player.getCardResourcesCount().put(
-                inputCard.getClass(),
-                player.getCardResourcesCount().get(inputCard.getClass()) + resourcedToAdd
-        );
+        player.addResources(inputCard, resourcedToAdd);
     }
 
     @Override

@@ -7,6 +7,15 @@
     <input id="collectIncome" type="radio" class="form-check-input" value="collectIncome" formControlName="turn"
            required [checked]="this.parentForm.value?.turn === 'collectIncome'">
     <label class="custom-control-label text-white" for="collectIncome">Collect Income</label>
+
+    <div *ngIf="hasDoubleCollectGreenCardBonus()" class="card-container">
+      <ul class="myUL">
+        <li *ngFor="let card of getGreenPlayedCards();" (click)="clickProjectToBuild(card)"
+            [ngClass]="greenCardClass(card)" class="filterDiv automated display">
+          <app-card-template [card]="card" [player]="game?.player" [showDiscount]="false"></app-card-template>
+        </li>
+      </ul>
+    </div>
   </div>
 
   <!-- Submit Button -->

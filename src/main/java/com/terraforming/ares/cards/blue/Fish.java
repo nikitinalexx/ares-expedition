@@ -41,7 +41,7 @@ public class Fish implements BlueCard {
 
     @Override
     public void onOceanFlippedEffect(Player player) {
-        player.getCardResourcesCount().put(Fish.class, player.getCardResourcesCount().get(Fish.class) + 1);
+        player.addResources(this, 1);
     }
 
     @Override
@@ -51,7 +51,7 @@ public class Fish implements BlueCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        marsContext.getPlayer().getCardResourcesCount().put(Fish.class, 0);
+        marsContext.getPlayer().initResources(this);
         return null;
     }
 

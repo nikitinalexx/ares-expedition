@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -30,29 +31,42 @@ public class VentureCapitalism implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void payAgain(MarsGame game, CardService cardService, Player player) {
+        int eventTagCount = cardService.countPlayedTags(player, Set.of(Tag.EVENT));
+
+        player.setMc(player.getMc() + eventTagCount);
+    }
+
+    @Override
     public CardMetadata getCardMetadata() {
         return cardMetadata;
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        int eventTagCount = (int) project.getTags().stream().filter(Tag.EVENT::equals).count();
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
+        int eventTagCount = marsContext.getCardService().countCardTags(project, Set.of(Tag.EVENT), inputParams);
+
+        final Player player = marsContext.getPlayer();
 
         player.setMcIncome(player.getMcIncome() + eventTagCount);
     }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        int eventTagCount = (int) marsContext.getPlayer()
-                .getPlayed()
-                .getCards().stream()
-                .map(marsContext.getCardService()::getCard)
-                .flatMap(card -> card.getTags().stream())
-                .filter(Tag.EVENT::equals).count();
+        final Player player = marsContext.getPlayer();
 
-        marsContext.getPlayer().setMcIncome(marsContext.getPlayer().getMcIncome() + eventTagCount);
+        int eventTagCount = marsContext.getCardService().countPlayedTags(player, Set.of(Tag.EVENT));
+
+        player.setMcIncome(player.getMcIncome() + eventTagCount);
 
         return null;
+    }
+
+    @Override
+    public void revertPlayedTags(CardService cardService, Card card, Player player) {
+        int eventTagCount = cardService.countCardTagsWithDynamic(card, player, Set.of(Tag.EVENT));
+
+        player.setMcIncome(player.getMcIncome() - eventTagCount);
     }
 
     @Override

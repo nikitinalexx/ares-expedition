@@ -1,5 +1,6 @@
 package com.terraforming.ares.states;
 
+import com.terraforming.ares.model.StateContext;
 import com.terraforming.ares.model.turn.TurnType;
 
 import java.util.List;
@@ -10,9 +11,9 @@ import java.util.List;
  */
 public interface State {
 
-    Action nextAction(String playerUuid);
+    Action nextAction(StateContext stateContext);
 
-    List<TurnType> getPossibleTurns(String playerUuid);
+    List<TurnType> getPossibleTurns(StateContext stateContext);
 
     void updateState();
 

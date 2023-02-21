@@ -9,6 +9,12 @@ import {FormBuilder, FormGroup} from '@angular/forms';
 import {BasePlayer} from '../data/BasePlayer';
 import {CardColor} from '../data/CardColor';
 import {Tag} from '../data/Tag';
+import {Player} from "../data/Player";
+import {DiscardCardsTurn} from "../data/DiscardCardsTurn";
+import {Award} from "../data/Award";
+import {AwardType} from "../data/AwardType";
+import {Milestone} from "../data/Milestone";
+import {MilestoneType} from "../data/MilestoneType";
 
 
 @Component({
@@ -19,13 +25,13 @@ import {Tag} from '../data/Tag';
 export class GameComponent implements OnInit {
   public errorMessage: string;
   private playerUuid: string;
-  private nextAction: string;
+  private playersToNextActions: Map<string, string>;
   public game: Game;
   public nextTurns: TurnType[];
   private subscription: Subscription;
   private thirdPhaseSubscription: Subscription;
   private audio: HTMLAudioElement;
-  private waitingFor: number;
+  private alertAlwaysOn: boolean;
   parentForm: FormGroup;
 
   constructor(private route: ActivatedRoute,
@@ -47,12 +53,43 @@ export class GameComponent implements OnInit {
     });
   }
 
+  yourTurnInfo(): boolean {
+    if (!this.playersToNextActions) {
+      return true;
+    }
+    const playerUuid = this.game.player.playerUuid;
+    return this.playersToNextActions[playerUuid] !== 'TURN';
+  }
+
+  otherPlayerTurnInfo(anotherPlayer: BasePlayer): boolean {
+    if (!this.playersToNextActions) {
+      return true;
+    }
+    const currentPlayer = this.game.player.playerUuid;
+    if (this.playersToNextActions[currentPlayer] === 'TURN') {
+      return false;
+    }
+    if (this.playersToNextActions[anotherPlayer.playerUuid] === 'TURN') {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
   getCorporationCards(): Card[] {
     return this.game?.player.corporations;
   }
 
-  getPlayerHand(player: BasePlayer): Card[] {
-    return player?.hand;
+  getPlayerHand(player: Player): Card[] {
+    if (!player) {
+      return [];
+    }
+    const nextTurn = player.nextTurn as DiscardCardsTurn;
+    if (nextTurn && nextTurn.cards) {
+      return player.hand.filter(card => !nextTurn.cards.some(c => c.id === card.id));
+    } else {
+      return player.hand;
+    }
   }
 
   getPlayerPlayedCards(player: BasePlayer): Card[] {
@@ -61,6 +98,10 @@ export class GameComponent implements OnInit {
 
   getPlayedBlueCardsWithCorporation(player: BasePlayer): Card[] {
     return player?.played.filter(card => card.cardColor === CardColor.BLUE || card.cardColor === CardColor.CORPORATION);
+  }
+
+  getPlayedBlueCards(player: BasePlayer): Card[] {
+    return player?.played.filter(card => card.cardColor === CardColor.BLUE);
   }
 
   getPlayedRedCards(player: BasePlayer): Card[] {
@@ -72,7 +113,7 @@ export class GameComponent implements OnInit {
   }
 
   pickCorporationTurn(): boolean {
-    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.PICK_CORPORATION])?.length > 0;
+    return this.game && this.game.phase === 7;
   }
 
   pickPhaseTurn(): boolean {
@@ -80,27 +121,27 @@ export class GameComponent implements OnInit {
   }
 
   firstPhaseTurn(): boolean {
-    return this.game && this.game.phase === 1 && this.nextAction === 'TURN';
+    return this.game && this.game.phase === 1 && this.playersToNextActions[this.game.player.playerUuid] === 'TURN';
   }
 
   secondPhaseTurn(): boolean {
-    return this.game && this.game.phase === 2 && this.nextAction === 'TURN';
+    return this.game && this.game.phase === 2 && this.playersToNextActions[this.game.player.playerUuid] === 'TURN';
   }
 
   thirdPhaseTurn(): boolean {
-    return this.game && this.game.phase === 3 && this.nextAction === 'TURN';
+    return this.game && this.game.phase === 3 && this.playersToNextActions[this.game.player.playerUuid] === 'TURN';
   }
 
   fourthPhaseTurn(): boolean {
-    return this.game && this.game.phase === 4 && this.nextAction === 'TURN';
+    return this.game && this.game.phase === 4 && this.playersToNextActions[this.game.player.playerUuid] === 'TURN';
   }
 
   fifthPhaseTurn(): boolean {
-    return this.game && this.game.phase === 5 && this.nextAction === 'TURN';
+    return this.game && this.game.phase === 5 && this.playersToNextActions[this.game.player.playerUuid] === 'TURN';
   }
 
   sixthPhaseTurn(): boolean {
-    return this.game && this.game.phase === 6 && this.nextAction === 'TURN';
+    return this.game && this.game.phase === 6 && this.playersToNextActions[this.game.player.playerUuid] === 'TURN';
   }
 
   gameEnd(): boolean {
@@ -143,6 +184,70 @@ export class GameComponent implements OnInit {
     return result;
   }
 
+  milestoneMagnate(milestone: Milestone): boolean {
+    return milestone.type === MilestoneType.MAGNATE;
+  }
+
+  milestoneTerraformer(milestone: Milestone): boolean {
+    return milestone.type === MilestoneType.TERRAFORMER;
+  }
+
+  milestoneBuilder(milestone: Milestone): boolean {
+    return milestone.type === MilestoneType.BUILDER;
+  }
+
+  milestoneSpaceBaron(milestone: Milestone): boolean {
+    return milestone.type === MilestoneType.SPACE_BARON;
+  }
+
+  milestoneEnergizer(milestone: Milestone): boolean {
+    return milestone.type === MilestoneType.ENERGIZER;
+  }
+
+  milestoneFarmer(milestone: Milestone): boolean {
+    return milestone.type === MilestoneType.FARMER;
+  }
+
+  milestoneTycoon(milestone: Milestone): boolean {
+    return milestone.type === MilestoneType.TYCOON;
+  }
+
+  milestonePlanner(milestone: Milestone): boolean {
+    return milestone.type === MilestoneType.PLANNER;
+  }
+
+  milestoneDiversifier(milestone: Milestone): boolean {
+    return milestone.type === MilestoneType.DIVERSIFIER;
+  }
+
+  milestoneLegend(milestone: Milestone): boolean {
+    return milestone.type === MilestoneType.LEGEND;
+  }
+
+  awardTypeIndustrialist(award: Award): boolean {
+    return award.type === AwardType.INDUSTRIALIST;
+  }
+
+  awardTypeProjectManager(award: Award): boolean {
+    return award.type === AwardType.PROJECT_MANAGER;
+  }
+
+  awardTypeGenerator(award: Award): boolean {
+    return award.type === AwardType.GENERATOR;
+  }
+
+  awardTypeCelebrity(award: Award): boolean {
+    return award.type === AwardType.CELEBRITY;
+  }
+
+  awardTypeCollector(award: Award): boolean {
+    return award.type === AwardType.COLLECTOR;
+  }
+
+  awardTypeResearcher(award: Award): boolean {
+    return award.type === AwardType.RESEARCHER;
+  }
+
   updateGameShort() {
     this.model.getShortGame(this.playerUuid).subscribe(shortGame => {
       this.game.temperature = shortGame.temperature;
@@ -151,6 +256,7 @@ export class GameComponent implements OnInit {
       this.game.oxygen = shortGame.oxygen;
       this.game.oceans = shortGame.oceans;
       this.game.phaseOceans = shortGame.phaseOceans;
+      this.game.otherPlayers = shortGame.otherPlayers;
     });
   }
 
@@ -174,14 +280,15 @@ export class GameComponent implements OnInit {
   }
 
   identifyNextAction() {
-    this.model.nextAction(this.playerUuid).subscribe(data => {
-      const previousAction = this.nextAction;
-      this.nextAction = data.action;
-      if (this.nextAction === 'TURN') {
-        if (previousAction && previousAction === 'WAIT' && document.hidden && this.waitingFor && (Date.now() - this.waitingFor) > 2000) {
+    this.model.nextActions(this.playerUuid).subscribe(data => {
+      const previousAction = this.playersToNextActions
+        ? this.playersToNextActions[this.game.player.playerUuid]
+        : null;
+      this.playersToNextActions = data.playersToNextActions;
+      if (this.playersToNextActions[this.game.player.playerUuid] === 'TURN') {
+        if (previousAction && previousAction === 'WAIT' && (document.hidden || this.isAlertAlwaysOn())) {
           this.audio.play();
         }
-        this.waitingFor = null;
         this.model.nextTurns(this.playerUuid).subscribe(turns => {
           const globalParamReachedMax = !this.nextTurns
             && previousAction === 'WAIT'
@@ -208,10 +315,7 @@ export class GameComponent implements OnInit {
         if (this.subscription) {
           this.subscription.unsubscribe();
         }
-      } else if (this.nextAction === 'WAIT') {
-        if (!this.waitingFor) {
-          this.waitingFor = Date.now();
-        }
+      } else if (this.playersToNextActions[this.game.player.playerUuid] === 'WAIT') {
         this.errorMessage = 'Waiting for the other player';
         this.nextTurns = null;
         if (!this.subscription || this.subscription.closed) {
@@ -221,4 +325,124 @@ export class GameComponent implements OnInit {
     });
   }
 
+  milestoneClass(milestone: Milestone): string {
+    if (Array.from(milestone.players.values()).length === 0) {
+      return '';
+    } else {
+      return 'achieved-milestone';
+    }
+  }
+
+  alertCheckEvent($event: any) {
+    localStorage.setItem('alertAlwaysOn', $event.target.checked ? 'yes' : 'no');
+  }
+
+  isAlertAlwaysOn(): boolean {
+    return localStorage.getItem('alertAlwaysOn') === 'yes';
+  }
+
+  otherPlayerBackgroundClass(index: number): string {
+    if (index === 0) {
+      return 'bg-warning';
+    } else if (index === 1) {
+      return 'bg-info';
+    } else {
+      return 'bg-primary';
+    }
+  }
+
+  milestoneValue(playerIndex: number, milestone: Milestone): number {
+    const player = (playerIndex === 0 ? this.game.player : this.game.otherPlayers[playerIndex - 1]);
+
+    if (Array.from(milestone.players.values()).length !== 0) {
+      return milestone.playerToValue[player.playerUuid];
+    }
+
+    switch (milestone.type) {
+      case MilestoneType.MAGNATE:
+        return this.getPlayedGreenCards(player)?.length;
+      case MilestoneType.TERRAFORMER:
+        return player.terraformingRating;
+      case MilestoneType.BUILDER:
+        return this.countPlayedTags(player, Tag.BUILDING);
+      case MilestoneType.SPACE_BARON:
+        return this.countPlayedTags(player, Tag.SPACE);
+      case MilestoneType.ENERGIZER:
+        return player.heatIncome;
+      case MilestoneType.FARMER:
+        return player.plantsIncome;
+      case MilestoneType.TYCOON:
+        return this.getPlayedBlueCards(player)?.length;
+      case MilestoneType.PLANNER:
+        return player.played.length === 0 ? 0 : player.played.length - 1;
+      case MilestoneType.DIVERSIFIER:
+        return this.countDistinctTags(player);
+      case MilestoneType.LEGEND:
+        return this.getPlayedRedCards(player)?.length;
+    }
+
+    return 0;
+  }
+
+  awardValue(playerIndex: number, award: Award): number {
+    const player = (playerIndex === 0 ? this.game.player : this.game.otherPlayers[playerIndex - 1]);
+
+    switch (award.type) {
+      case AwardType.INDUSTRIALIST:
+        return player.steelIncome + player.titaniumIncome;
+      case AwardType.PROJECT_MANAGER:
+        return player.played.length === 0 ? 0 : player.played.length - 1;
+      case AwardType.GENERATOR:
+        return player.heatIncome;
+      case AwardType.CELEBRITY:
+        return player.mcIncome;
+      case AwardType.COLLECTOR:
+        return Object.values(player.cardResources).reduce((acc, val) => acc + val, 0);
+      case AwardType.RESEARCHER:
+        return player?.played.map(card => card.tags).reduce((acc, val) => acc.concat(val), [])?.filter(tag => tag === Tag.SCIENCE).length;
+    }
+
+    return 0;
+  }
+
+  countPlayedTags(player: BasePlayer, tag: Tag): number {
+    return player?.played.map(card => card.tags).reduce((acc, val) => acc.concat(val), [])?.filter(t => t === tag).length;
+  }
+
+  countDistinctTags(player: BasePlayer): number {
+    return [...new Set(player?.played.map(card => card.tags).reduce((acc, val) => acc.concat(val), []))].length;
+  }
+
+  milestoneSuccessClass(milestone: Milestone): string {
+    if (Array.from(milestone.players.values()).length !== 0) {
+      const playerValue = milestone.playerToValue[this.game.player.playerUuid];
+      for (const otherPlayer of this.game.otherPlayers) {
+        if (milestone.playerToValue[otherPlayer.playerUuid] > playerValue) {
+          return '';
+        }
+      }
+      if (milestone.playerToValue[this.game.player.playerUuid] !== undefined) {
+        return 'achievement-success border border-success border-5';
+      } else {
+        return '';
+      }
+    }
+    const maxValue = this.milestoneValue(0, milestone);
+    for (let i = 0; i < this.game.otherPlayers.length; i++) {
+      if (this.milestoneValue(i + 1, milestone) > maxValue) {
+        return '';
+      }
+    }
+    return 'achievement-success border border-success border-5';
+  }
+
+  awardSuccessClass(award: Award): string {
+    const maxValue = this.awardValue(0, award);
+    for (let i = 0; i < this.game.otherPlayers.length; i++) {
+      if (this.awardValue(i + 1, award) > maxValue) {
+        return '';
+      }
+    }
+    return 'achievement-success border border-success border-5';
+  }
 }

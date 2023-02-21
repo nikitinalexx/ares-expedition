@@ -41,15 +41,12 @@ public class Livestock implements BlueCard {
 
     @Override
     public void onTemperatureChangedEffect(Player player) {
-        player.getCardResourcesCount().put(
-                Livestock.class,
-                player.getCardResourcesCount().get(Livestock.class) + 1
-        );
+        player.addResources(this, 1);
     }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        marsContext.getPlayer().getCardResourcesCount().put(Livestock.class, 0);
+        marsContext.getPlayer().initResources(this);
         return null;
     }
 

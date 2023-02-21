@@ -5,6 +5,7 @@ import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by oleksii.nikitin
@@ -14,7 +15,7 @@ public interface ActionValidator<T extends Card> {
 
     Class<T> getType();
 
-    default String validate(MarsGame game, Player player, List<Integer> inputParameters) {
+    default String validate(MarsGame game, Player player, Map<Integer, List<Integer>> inputParameters) {
         return validate(game, player);
     }
 

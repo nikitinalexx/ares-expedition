@@ -37,15 +37,19 @@ public class GameRepositoryImpl implements GameRepository {
         GameEntity oldGame = new GameEntity(safeSerialize(game));
         oldGame.setId(game.getId());
         GameEntity savedGame = gameRepository.save(oldGame);
-
         if (newGame) {
-            players.forEach(player -> {
-                player.setGame(savedGame);
-                playerRepository.save(player);
-            });
+            game.setId(savedGame.getId());
+            savedGame.setGameJson(safeSerialize(game));
+            savedGame = gameRepository.save(savedGame);
         }
 
-        game.setId(savedGame.getId());
+        if (newGame) {
+            for (PlayerEntity player : players) {
+                player.setGame(savedGame);
+                playerRepository.save(player);
+            }
+        }
+
         return savedGame.getId();
     }
 
@@ -56,6 +60,14 @@ public class GameRepositoryImpl implements GameRepository {
         MarsGame marsGame = safeDeserialize(entity.getGameJson());
         marsGame.setId(entity.getId());
         return marsGame;
+    }
+
+    @Transactional(readOnly = true)
+    public List<MarsGame> getAllGames() {
+        return gameRepository.findAllBy()
+                .stream()
+                .map(game -> safeDeserialize(game.getGameJson()))
+                .collect(Collectors.toList());
     }
 
     @Override

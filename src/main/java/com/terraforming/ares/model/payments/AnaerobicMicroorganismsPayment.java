@@ -2,10 +2,10 @@ package com.terraforming.ares.model.payments;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.terraforming.ares.cards.blue.AnaerobicMicroorganisms;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardService;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
 /**
  * Created by oleksii.nikitin
@@ -32,11 +32,18 @@ public class AnaerobicMicroorganismsPayment implements Payment {
 
     @Override
     public void pay(CardService deckService, Player player) {
-        Integer resources = player.getCardResourcesCount().get(AnaerobicMicroorganisms.class);
+        Card card = player.getPlayed()
+                .getCards()
+                .stream()
+                .map(deckService::getCard).filter(c -> c.getClass() == AnaerobicMicroorganisms.class)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Invalid payment: card Anaerobic Microorganisms was not played"));
+
+        Integer resources = player.getCardResourcesCount().get(card.getClass());
         if (resources == null || resources < 2) {
             throw new IllegalStateException("Invalid payment: Anaerobic Microorganisms < 2");
         }
-        player.getCardResourcesCount().put(AnaerobicMicroorganisms.class, resources - 2);
+        player.addResources(card, -2);
     }
 
 

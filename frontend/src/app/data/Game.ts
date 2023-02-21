@@ -1,25 +1,38 @@
 import {Player} from './Player';
 import {Ocean} from './Ocean';
 import {BasePlayer} from './BasePlayer';
+import {ParameterColor} from './ParameterColor';
+import {Milestone} from './Milestone';
+import {Award} from './Award';
 
 export class Game {
-  constructor(player: Player,
+  constructor(turns: number,
+              player: Player,
               phase: number,
               temperature: number,
               oxygen: number,
               oceans: Ocean[],
+              phaseTemperatureColor: ParameterColor,
+              phaseOxygenColor: ParameterColor,
+              awards: Award[],
+              milestones: Milestone[],
               phaseTemperature?: number,
               phaseOxygen?: number,
               phaseOceans?: number,
               otherPlayers?: BasePlayer[]) {
   }
 
+  turns: number;
   player: Player;
   phase: number;
+  awards: Award[];
+  milestones: Milestone[];
   otherPlayers: BasePlayer[];
   temperature: number;
   oxygen: number;
   oceans: Ocean[];
+  phaseTemperatureColor: ParameterColor;
+  phaseOxygenColor: ParameterColor;
   phaseTemperature?: number;
   phaseOxygen?: number;
   phaseOceans?: number;

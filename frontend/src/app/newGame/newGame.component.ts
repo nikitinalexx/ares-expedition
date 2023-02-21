@@ -3,13 +3,15 @@ import {NewGameRepository} from '../model/newGameRepository.model';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {NewGameRequest} from '../data/NewGameRequest';
 import {PlayerReference} from '../data/PlayerReference';
+import {Expansion} from '../data/Expansion';
 
 
 export const BASE_URL = new InjectionToken('rest_url');
 
 @Component({
   selector: 'app-new-game',
-  templateUrl: './newGame.component.html'
+  templateUrl: './newGame.component.html',
+  styleUrls: ['./newGame.component.css']
 })
 export class NewGameComponent implements OnInit {
   public playerCount: number;
@@ -29,22 +31,39 @@ export class NewGameComponent implements OnInit {
       playerName1: '',
       playerName2: '',
       playerName3: '',
-      playerName4: ''
+      playerName4: '',
+      computer1: false,
+      computer2: false,
+      computer3: false,
+      computer4: false,
+      mulligan: false,
+      discovery: false,
+      improveWeakCorp: false
     });
   }
 
   submitForm(formGroup: FormGroup) {
     if (formGroup.valid) {
       const names = [];
+      const computers = [];
       for (let i = 1; i <= this.parentForm.value.playerCount; i++) {
         const name = this.parentForm.get('playerName' + i)?.value;
         if (!name) {
           this.errorMessage = 'Invalid names';
           return;
         }
+        computers.push(this.parentForm.value.discovery ? false : this.parentForm.get('computer' + i)?.value);
+
         names.push(name);
       }
-      this.model.createNewGame(new NewGameRequest(names))
+      const expansions = [Expansion.BASE];
+      if (this.parentForm.value.improveWeakCorp) {
+        expansions.push(Expansion.BUFFED_CORPORATION);
+      }
+      if (this.parentForm.value.discovery) {
+        expansions.push(Expansion.DISCOVERY);
+      }
+      this.model.createNewGame(new NewGameRequest(names, computers, this.parentForm.value.mulligan, expansions))
         .subscribe(response => {
           if (response) {
             this.errorMessage = null;

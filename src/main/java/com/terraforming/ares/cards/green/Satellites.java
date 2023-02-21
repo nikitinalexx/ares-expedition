@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -30,29 +31,39 @@ public class Satellites implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void payAgain(MarsGame game, CardService cardService, Player player) {
+        int spaceTagCount = cardService.countPlayedTags(player, Set.of(Tag.SPACE));
+
+        player.setMc(player.getMc() + spaceTagCount);
+    }
+
+    @Override
     public CardMetadata getCardMetadata() {
         return cardMetadata;
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        int spaceTags = (int) project.getTags().stream().filter(Tag.SPACE::equals).count();
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
+        int spaceTags = marsContext.getCardService().countCardTags(project, Set.of(Tag.SPACE), inputParams);
 
+        final Player player = marsContext.getPlayer();
         player.setMcIncome(player.getMcIncome() + spaceTags);
     }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        int spaceTags = (int) marsContext.getPlayer()
-                .getPlayed()
-                .getCards().stream()
-                .map(marsContext.getCardService()::getCard)
-                .flatMap(card -> card.getTags().stream())
-                .filter(Tag.SPACE::equals).count();
+        int spaceTags = marsContext.getCardService().countPlayedTags(marsContext.getPlayer(), Set.of(Tag.SPACE));
 
         marsContext.getPlayer().setMcIncome(marsContext.getPlayer().getMcIncome() + spaceTags + 1);
 
         return null;
+    }
+
+    @Override
+    public void revertPlayedTags(CardService cardService, Card card, Player player) {
+        int spaceTagCount = cardService.countCardTagsWithDynamic(card, player, Set.of(Tag.SPACE));
+
+        player.setMcIncome(player.getMcIncome() - spaceTagCount);
     }
 
     @Override

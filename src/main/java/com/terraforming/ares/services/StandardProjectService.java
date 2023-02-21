@@ -44,6 +44,22 @@ public class StandardProjectService {
         return null;
     }
 
+    public String validateStandardProjectAvailability(MarsGame game, Player player) {
+        if (terraformingService.canRevealOcean(game) && getProjectPrice(player, StandardProjectType.OCEAN) <= player.getMc()) {
+            return "Standard action: Ocean is available";
+        }
+
+        if (terraformingService.canIncreaseTemperature(game) && getProjectPrice(player, StandardProjectType.TEMPERATURE) <= player.getMc()) {
+            return "Standard action: Temperature is available";
+        }
+
+        if (getProjectPrice(player, StandardProjectType.FOREST) <= player.getMc()) {
+            return "Standard action: Forest is available";
+        }
+
+        return null;
+    }
+
     public int getProjectPrice(Player player, StandardProjectType type) {
         int price = PROJECT_TO_PRICE.get(type);
 

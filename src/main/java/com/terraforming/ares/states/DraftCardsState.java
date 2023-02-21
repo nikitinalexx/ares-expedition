@@ -2,7 +2,9 @@ package com.terraforming.ares.states;
 
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.StateContext;
 import com.terraforming.ares.model.turn.TurnType;
+import com.terraforming.ares.services.CardService;
 
 import java.util.List;
 
@@ -12,14 +14,14 @@ import java.util.List;
  */
 public class DraftCardsState extends AbstractState {
 
-    public DraftCardsState(MarsGame marsGame) {
-        super(marsGame);
+    public DraftCardsState(MarsGame marsGame, CardService cardService) {
+        super(marsGame, cardService);
     }
 
-    public List<TurnType> getPossibleTurns(String playerUuid) {
-        Player player = marsGame.getPlayerByUuid(playerUuid);
-        if (player.getNextTurn() != null && player.getNextTurn().getType() == TurnType.DISCARD_CARDS) {
-            return List.of(TurnType.DISCARD_DRAFTED_CARDS);
+    public List<TurnType> getPossibleTurns(StateContext stateContext) {
+        Player player = marsGame.getPlayerByUuid(stateContext.getPlayerUuid());
+        if (player.getNextTurn() != null && player.getNextTurn().expectedAsNextTurn()) {
+            return List.of(player.getNextTurn().getType());
         } else {
             return List.of();
         }

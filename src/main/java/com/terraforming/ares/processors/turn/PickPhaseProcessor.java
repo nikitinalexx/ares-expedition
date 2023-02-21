@@ -1,10 +1,14 @@
 package com.terraforming.ares.processors.turn;
 
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.SpecialEffect;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.turn.PhaseChoiceTurn;
 import com.terraforming.ares.model.turn.TurnType;
+import com.terraforming.ares.services.SpecialEffectsService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
@@ -12,7 +16,9 @@ import org.springframework.stereotype.Service;
  * Creation date 25.04.2022
  */
 @Service
+@RequiredArgsConstructor
 public class PickPhaseProcessor implements TurnProcessor<PhaseChoiceTurn> {
+    private final SpecialEffectsService specialEffectsService;
 
     @Override
     public TurnResponse processTurn(PhaseChoiceTurn turn, MarsGame game) {
@@ -22,8 +28,22 @@ public class PickPhaseProcessor implements TurnProcessor<PhaseChoiceTurn> {
         player.setPreviousChosenPhase(turn.getPhaseId());
         player.setChosenPhase(turn.getPhaseId());
 
-        player.setCanBuildInFirstPhase(1);
-        player.setActionsInSecondPhase(turn.getPhaseId() == 2 ? 2 : 1);
+        if (turn.getPhaseId() == 1 && player.hasPhaseUpgrade(Constants.PHASE_1_UPGRADE_BUILD_EXTRA)) {
+            player.setCanBuildInFirstPhase(player.getCanBuildInFirstPhase() + 1);
+            player.setCanBuildAnotherGreenWithPrice12(true);
+        }
+
+        if (turn.getPhaseId() == 3) {
+            player.setBlueActionExtraActivationsLeft(1);
+
+            if (player.hasPhaseUpgrade(Constants.PHASE_3_UPGRADE_DOUBLE_REPEAT)) {
+                player.setBlueActionExtraActivationsLeft(2);
+            }
+        }
+
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.COMMUNICATIONS_STREAMLINING) && player.isPhaseUpgraded(turn.getPhaseId())) {
+            player.setMc(player.getMc() + 1);
+        }
 
         return null;
     }

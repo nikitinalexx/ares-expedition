@@ -48,11 +48,12 @@ public class InventionContest implements BaseExpansionRedCard {
             resultBuilder.takenCard(CardDto.from(projectCard));
         }
 
-        marsContext.getPlayer().setNextTurn(
+        marsContext.getPlayer().addNextTurn(
                 new DiscardCardsTurn(
                         marsContext.getPlayer().getUuid(),
                         new ArrayList<>(cards),
                         2,
+                        true,
                         true
                 )
         );

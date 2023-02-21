@@ -7,58 +7,11 @@
 
 <div class="card-container">
   <ul class="myUL">
-    <li *ngFor="let phaseId of getAllowedPhases();" (click)="clickPhase(phaseId)"
-        class="filterDiv display phase-size phase-{{phaseId}}" [ngClass]="isSelectedPhase(phaseId)">
-      <div *ngIf="phaseId === 1" class="text-white"
-           style="margin-left: 10px; margin-top: 10px; font-size: 12px; text-align: center; align-content: center">
-        Each player may play 1 green project card.
-      </div>
 
-      <div *ngIf="phaseId === 1" class="text-white"
-           style="position: absolute; margin-left: 10px; text-align: center; margin-top: 164px; font-size: 12px;">
-        Bonus: Pay 3 MC less for the card you play this phase.
-      </div>
-
-      <div *ngIf="phaseId === 2" class="text-white"
-           style="margin-left: 10px; font-size: 12px; text-align: center; align-content: center">
-        Each player may play 1 blue/red project card.
-      </div>
-
-      <div *ngIf="phaseId === 2" class="text-white"
-           style="position: absolute; margin-left: 10px; text-align: center; margin-top: 164px; font-size: 12px;">
-        Bonus: Draw a card or play an additional 1 blue/red project card.
-      </div>
-
-      <div *ngIf="phaseId === 3" class="text-white"
-           style="margin-left: 10px; font-size: 12px; text-align: center; align-content: center">
-        Each player activates any "Action:" effects and Standard Actions
-      </div>
-
-      <div *ngIf="phaseId === 3" class="text-white"
-           style="position: absolute; margin-left: 10px; text-align: center; margin-top: 164px; font-size: 12px;">
-        Bonus: You may activate one "Action:" an additional time.
-      </div>
-
-      <div *ngIf="phaseId === 4" class="text-black"
-           style="margin-left: 10px; font-size: 12px; text-align: center; align-content: center">
-        Each player gains mc, heat, plants and cards according to production level and TR.
-      </div>
-
-      <div *ngIf="phaseId === 4" class="text-black"
-           style="position: absolute; margin-left: 75px; text-align: center; margin-top: 164px; font-size: 12px;">
-        Bonus: Gain 4 MC.
-      </div>
-
-      <div *ngIf="phaseId === 5" class="text-black"
-           style="margin-left: 10px; font-size: 14px; text-align: center; align-content: center">
-        Each player draws 2 cards and keeps 1.
-      </div>
-
-      <div *ngIf="phaseId === 5" class="text-black"
-           style="position: absolute; margin-left: 10px; text-align: center; margin-top: 150px; font-size: 12px;">
-        Bonus: Draw an additional 3 cards and keep 1 additional card.
-      </div>
+    <li *ngFor="let phaseId of getAllowedPhases();" (click)="clickPhase(phaseId)">
+      <app-phase-card-template [phase]="phaseId" [player]="game?.player" [selected]="isSelectedPhase(phaseId)"></app-phase-card-template>
     </li>
+
   </ul>
   <form>
     <div class="form-group d-grid gap-2 col-6 mx-auto">

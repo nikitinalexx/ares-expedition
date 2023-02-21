@@ -504,7 +504,7 @@
 
 .cards-stack {
   position: relative;
-  margin-top: -256px;
+  margin-left: -207px;
   filter: drop-shadow(0px -3px 3px black);
   z-index: 1;
 }
@@ -555,9 +555,9 @@
 
 .stack-hidden-area {
   position: absolute;
-  width: 240px;
-  margin-top: 73px;
-  height: 237px;
+  width: 174px;
+  margin-left: 70px;
+  height: 310px;
   z-index: 3;
 }
 
@@ -566,4 +566,84 @@
   -moz-transform:scale(0.3);
   -ms-transform:scale(0.3);
   transform:scale(0.3);
+}
+
+.tm-box {
+  display: flex;
+  flex-flow: column;
+}
+
+.gen-text {
+  font-size: 14px;
+  margin-top: 2px;
+}
+.gen-marker {
+  font-size: 34px;
+}
+
+.tm {
+  background: url(../../assets/images/mars.png);
+  width: 60px;
+  height: 60px;
+  margin-top: 3px;
+  border-radius: 50%;
+  box-shadow: 0 1px 1px 1px black;
+  font-family: Prototype;
+  text-align: center;
+  line-height: 20px;
+  color: black;
+  background-size: 100px;
+  background-position: -26px -20px;
+  margin-left: 10px;
+}
+
+
+.award {
+  background: url(../../assets/images/award.png);
+}
+
+.milestone {
+  background: url(../../assets/images/milestone.png);
+}
+
+.achievement {
+  position: absolute;
+  width: 135px;
+  height: 85px;
+  background-size: contain;
+  border-radius: 10px;
+}
+
+.achievement-title {
+  text-align: center;
+  width: 135px;
+  text-transform: uppercase;
+  font-family: Prototype;
+  font-size: 14px;
+  margin-top: 42px;
+}
+
+.achieved-milestone {
+  filter: grayscale(100%);
+}
+
+.achievement-player-value {
+  position: absolute;
+  height: 25px;
+  width: 25px;
+  display: inline;
+  background-size: contain;
+  border-radius: 3px;
+}
+
+.achievement-border {
+  position: absolute;
+  width: 135px;
+  height: 85px;
+  background-size: contain;
+  border-radius: 15px;
+}
+
+.achievement-success {
+  margin-top: -4px;
 }

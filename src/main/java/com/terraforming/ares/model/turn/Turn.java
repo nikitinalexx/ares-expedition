@@ -22,14 +22,15 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
         @JsonSubTypes.Type(value = IncreaseTemperatureTurn.class, name = "INCREASE_TEMPERATURE"),
         @JsonSubTypes.Type(value = PerformBlueActionTurn.class, name = "PERFORM_BLUE_ACTION"),
         @JsonSubTypes.Type(value = PhaseChoiceTurn.class, name = "PICK_PHASE"),
-        @JsonSubTypes.Type(value = PickExtraCardTurn.class, name = "PICK_EXTRA_CARD"),
+        @JsonSubTypes.Type(value = PickExtraBonusSecondPhase.class, name = "PICK_EXTRA_BONUS_SECOND_PHASE"),
         @JsonSubTypes.Type(value = PlantForestTurn.class, name = "PLANT_FOREST"),
         @JsonSubTypes.Type(value = SellCardsTurn.class, name = "SELL_CARDS"),
         @JsonSubTypes.Type(value = SkipTurn.class, name = "SKIP_TURN"),
         @JsonSubTypes.Type(value = StandardProjectTurn.class, name = "STANDARD_PROJECT"),
         @JsonSubTypes.Type(value = GameEndConfirmTurn.class, name = "GAME_END_CONFIRM"),
         @JsonSubTypes.Type(value = SellCardsLastRoundTurn.class, name = "SELL_CARDS_LAST_ROUND"),
-        @JsonSubTypes.Type(value = DiscardDraftedCardsTurn.class, name = "DISCARD_DRAFTED_CARDS")
+        @JsonSubTypes.Type(value = UnmiRtTurn.class, name = "UNMI_RT"),
+        @JsonSubTypes.Type(value = MulliganTurn.class, name = "MULLIGAN")
 })
 public interface Turn {
 
@@ -37,5 +38,13 @@ public interface Turn {
 
     @JsonIgnore
     TurnType getType();
+
+    @JsonIgnore
+    /*
+      True if this turn is the prototype of the future expected player turn
+     */
+    default boolean expectedAsNextTurn() {
+        return false;
+    }
 
 }

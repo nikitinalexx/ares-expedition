@@ -2,6 +2,8 @@ package com.terraforming.ares.processors.action;
 
 import com.terraforming.ares.cards.blue.NitriteReductingBacteria;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Card;
+import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.services.TerraformingService;
@@ -9,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by oleksii.nikitin
@@ -25,15 +28,13 @@ public class NitriteReductingBacteriaActionProcessor implements BlueActionCardPr
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player, List<Integer> inputParameters) {
-        Integer input = inputParameters.get(0);
-
-        Integer currentMicrobeNumber = player.getCardResourcesCount().get(NitriteReductingBacteria.class);
+    public TurnResponse process(MarsGame game, Player player, Card actionCard, Map<Integer, List<Integer>> inputParameters) {
+        Integer input = inputParameters.get(InputFlag.ADD_DISCARD_MICROBE.getId()).get(0);
 
         if (input == 1) {
-            player.getCardResourcesCount().put(NitriteReductingBacteria.class, currentMicrobeNumber + 1);
+            player.addResources(actionCard, 1);
         } else if (input == 3) {
-            player.getCardResourcesCount().put(NitriteReductingBacteria.class, currentMicrobeNumber - 3);
+            player.addResources(actionCard, -3);
 
             terraformingService.revealOcean(game, player);
         }

@@ -1,16 +1,18 @@
 package com.terraforming.ares.services;
 
 import com.terraforming.ares.cards.blue.*;
+import com.terraforming.ares.cards.buffedCorporations.*;
 import com.terraforming.ares.cards.corporations.*;
 import com.terraforming.ares.cards.green.*;
 import com.terraforming.ares.cards.red.*;
 import com.terraforming.ares.model.Card;
+import com.terraforming.ares.model.Expansion;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by oleksii.nikitin
@@ -18,14 +20,21 @@ import java.util.stream.Collectors;
  */
 @Service
 public class CardFactory {
-    private final Map<Integer, Card> inmemoryCorporationsStorage;
+    private final Map<Integer, Card> corporationsStorage;
+    private final Map<Integer, Card> buffedCorporationsStorage;
+    private final Map<Integer, Card> buffedCorporationsMapping;
     private final List<Card> sortedCorporations;
+    private final List<Card> buffedCorporations;
 
-    private final Map<Integer, Card> inmemoryProjectCards;
-    private final List<Card> sortedProjects;
+    private final Map<Integer, Card> baseExpansionProjects;
+    private final Map<Integer, Card> discoveryExpansionProjects;
+
+    //used for display of all projecst cards, needs sorting in advance
+    private final List<Card> baseExpansionSortedProjects;
+    private final List<Card> discoveryExpansionSortedProjects;
 
     public CardFactory() {
-        sortedProjects = List.of(
+        baseExpansionSortedProjects = List.of(
                 new AdaptationTechnology(1),
                 new AdvancedAlloys(2),
                 new AdvancedScreeningTechnology(3),
@@ -233,9 +242,73 @@ public class CardFactory {
                 new WavePower(205),
                 new Windmills(206),
                 new Worms(207),
-                new Zeppelins(208)
+                new Zeppelins(208),
+                new AssortedEnterprises(209),
+                new CommercialImports(210),
+                new DiverseHabitats(211),
+                new Laboratories(212),
+                new MatterGenerator(213),
+                new ProcessedMetals(214),
+                new ProcessingPlant(215),
+                new ProgressivePolicies(216),
+                new FilterFeeders(217),
+                new SyntheticCatastrophe(218),
+                new SelfReplicatingBacteria(219)
         );
 
+        discoveryExpansionSortedProjects = List.of(
+                new CommunicationsStreamlining(305),
+                new DroneAssistedConstruction(306),
+                new ExperimentalTechnology(307),
+                new ImpactAnalysis(308),
+                new HohmannTransferShipping(309),
+                new FibrousCompositeMaterial(310),
+                new SoftwareStreamlining(311),
+                new VirtualEmployeeDevelopment(312),
+                new VolcanicSoil(313),
+                new OreLeaching(318),
+
+                new BiomedicalImports(314),
+                new CryogenicShipment(315),
+                new Exosuits(316),
+                new ImportedConstructionCrews(317),
+                new PrivateInvestorBeach(319),
+                new TopographicMapping(320),
+                new ThreeDPrinting(321),
+                new Biofoundries(322),
+                new BlastFurnaces(323),
+                new Dandelions(324),
+                new ElectricArcFurnaces(325),
+                new LocalMarket(326),
+                new ManufacturingHub(327),
+                new HeatReflectiveGlass(328),
+                new HematiteMining(329),
+                new HydroponicGardens(330),
+                new IlmeniteDeposits(331),
+                new IndustrialComplex(332),
+                new MartianMuseum(333),
+                new Metallurgy(334),
+                new AwardWinningReflectorMaterial(335),
+                new PerfluorocarbonProduction(337),
+                new MagneticFieldGenerator(338),
+                new PoliticalInfluence(339),
+                new BiologicalFactories(340),
+                new NuclearDetonationSite(341),
+                new Warehouses(342),
+
+                new BacterialAggregates(369),
+                new CityCouncil(370),
+                new CommunityAfforestation(371),
+                new OrbitalOutpost(372),
+                new GasCooledReactors(373),
+                new ResearchGrant(374),
+                new Zoos(375),
+                new InnovativeTechnologiesAward(376),
+                new MartianStudiesScholarship(377),
+                new GeneticallyModifiedVegetables(378),
+                new GlacialEvaporation(379),
+                new Tourism(380)
+        );
 
         sortedCorporations = List.of(
                 new HelionCorporation(10000),
@@ -249,27 +322,79 @@ public class CardFactory {
                 new ArclightCorporation(10008),
                 new PhobologCorporation(10009),
                 new MiningGuildCorporation(10010),
-                new SaturnSystemsCorporation(10011)
+                new SaturnSystemsCorporation(10011),
+                new ZetacellCorporation(10012),
+                new EcolineCorporation(10013),
+                new Inventrix(10014),
+                new MayNiProductionsCorporation(10015),
+                new UnmiCorporation(10016),
+                new InterplanetaryCinematics(10017)
         );
 
+        buffedCorporationsMapping = Map.of(
+                10000, new BuffedHelionCorporation(10100),
+                10008, new BuffedArclightCorporation(10101),
+                10009, new BuffedPhobologCorporation(10102),
+                10010, new BuffedMiningGuildCorporation(10103),
+                10011, new BuffedSaturnSystemsCorporation(10104),
+                10012, new BuffedZetacellCorporation(10105),
+                10013, new BuffedEcolineCorporation(10106),
+                10014, new BuffedInventrix(10107),
+                10016, new BuffedUnmiCorporation(10108)
+        );
 
-        inmemoryProjectCards = sortedProjects.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
-        inmemoryCorporationsStorage = sortedCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
+        buffedCorporations = new ArrayList<>(buffedCorporationsMapping.values());
+
+        baseExpansionProjects = baseExpansionSortedProjects.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
+        discoveryExpansionProjects = discoveryExpansionSortedProjects.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
+        corporationsStorage = sortedCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
+        buffedCorporationsStorage = buffedCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
     }
 
     public Map<Integer, Card> createCorporations() {
-        return inmemoryCorporationsStorage;
+        return corporationsStorage;
     }
 
-    public Map<Integer, Card> createProjects() {
-        return inmemoryProjectCards;
+    public Map<Integer, Card> createBuffedCorporations() {
+        return buffedCorporationsStorage;
     }
 
-    public List<Card> getAllProjects() {
-        return sortedProjects;
+    public Map<Integer, Card> getBuffedCorporationsMapping() {
+        return buffedCorporationsMapping;
     }
 
-    public List<Card> getAllCorporations() {
-        return sortedCorporations;
+    public Map<Expansion, Map<Integer, Card>> createAllProjects() {
+        return Map.of(Expansion.BASE, baseExpansionProjects,
+                Expansion.DISCOVERY, discoveryExpansionProjects
+        );
     }
+
+    public List<Card> getAllProjects(List<Expansion> expansions) {
+        //todo refactor remove if checks, make a map expansion -> cards
+        return Stream.concat(
+                expansions.contains(Expansion.BASE) ?
+                        baseExpansionSortedProjects.stream().sorted(Comparator.comparingInt(
+                                card -> card.getColor().ordinal()
+                        )) : Stream.empty(),
+                expansions.contains(Expansion.DISCOVERY) ?
+                        discoveryExpansionSortedProjects.stream().sorted(Comparator.comparingInt(
+                                card -> card.getColor().ordinal()
+                        )) : Stream.empty()
+        ).collect(Collectors.toList());
+    }
+
+    public List<Card> getAllCorporations(List<Expansion> expansions) {
+        Map<Integer, Card> corporations = new HashMap<>();
+
+        if (expansions.contains(Expansion.BASE)) {
+            corporations.putAll(corporationsStorage);
+        }
+
+        if (expansions.contains(Expansion.BUFFED_CORPORATION)) {
+            corporations.putAll(buffedCorporationsMapping);
+        }
+
+        return new ArrayList<>(corporations.values());
+    }
+
 }

@@ -3,15 +3,17 @@
   background-image: url(../../assets/images/misc/cost-transition-arrow.png);
   width: 14px;
   height: 21px;
-  left: 9px;
-  top: 40px;
+  left: 24px;
+  top: 43px;
+  transform: rotate(-90deg);
   z-index: 2;
 }
+
 .card-old-cost {
   transform: scale(0.6);
   filter: grayscale(60%);
-  top: 130px;
-  left: 1px;
+  top: 91px;
+  left: 18px;
   position: absolute;
 }
 
@@ -26,4 +28,25 @@
   background: #e6e600;
   box-shadow: 6px 6px 6px grey;
   border-radius:2px;
+}
+
+.milestone {
+  background: url(../../assets/images/milestone.png);
+  width: 67px;
+  height: 42px;
+  background-size: 67px;
+  border-radius: 5px;
+  vertical-align: middle;
+  display: inline-block;
+  margin-bottom: 5px;
+}
+
+.milestone-requirements {
+  background: url(../../assets/images/milestone.png);
+  width: 33px;
+  height: 21px;
+  background-size: 33px;
+  border-radius: 2px;
+  vertical-align: middle;
+  display: inline-block;
 }

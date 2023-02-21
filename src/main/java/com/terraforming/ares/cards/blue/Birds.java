@@ -47,7 +47,7 @@ public class Birds implements BlueCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        marsContext.getPlayer().getCardResourcesCount().put(Birds.class, 0);
+        marsContext.getPlayer().initResources(this);
         return null;
     }
 

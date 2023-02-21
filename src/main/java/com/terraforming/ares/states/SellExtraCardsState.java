@@ -2,9 +2,10 @@ package com.terraforming.ares.states;
 
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.StateContext;
 import com.terraforming.ares.model.StateType;
-import com.terraforming.ares.model.turn.Turn;
 import com.terraforming.ares.model.turn.TurnType;
+import com.terraforming.ares.services.CardService;
 
 import java.util.Collections;
 import java.util.List;
@@ -15,13 +16,13 @@ import java.util.List;
  */
 public class SellExtraCardsState extends AbstractState {
 
-    public SellExtraCardsState(MarsGame marsGame) {
-        super(marsGame);
+    public SellExtraCardsState(MarsGame marsGame, CardService cardService) {
+        super(marsGame, cardService);
     }
 
     @Override
-    public List<TurnType> getPossibleTurns(String playerUuid) {
-        Player player = marsGame.getPlayerByUuid(playerUuid);
+    public List<TurnType> getPossibleTurns(StateContext stateContext) {
+        Player player = marsGame.getPlayerByUuid(stateContext.getPlayerUuid());
         if (player.getNextTurn() == null && player.getHand().size() > 10) {
             return Collections.singletonList(TurnType.SELL_CARDS_LAST_ROUND);
         } else {
@@ -31,6 +32,6 @@ public class SellExtraCardsState extends AbstractState {
 
     @Override
     public void updateState() {
-        marsGame.setStateType(StateType.PICK_PHASE);
+        marsGame.setStateType(StateType.PICK_PHASE, cardService, true);
     }
 }

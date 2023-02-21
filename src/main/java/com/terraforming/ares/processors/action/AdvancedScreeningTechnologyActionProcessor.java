@@ -27,12 +27,12 @@ public class AdvancedScreeningTechnologyActionProcessor implements BlueActionCar
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player) {
+    public TurnResponse process(MarsGame game, Player player, Card actionCard) {
         AutoPickDiscardCardsAction.AutoPickDiscardCardsActionBuilder resultBuilder = AutoPickDiscardCardsAction.builder();
 
         for (Integer card : cardService.dealCards(game, 3)) {
             Card projectCard = cardService.getCard(card);
-            if (projectCard.getTags().contains(Tag.SCIENCE) || projectCard.getTags().contains(Tag.PLANT)) {
+            if (projectCard.getTags().contains(Tag.SCIENCE) || projectCard.getTags().contains(Tag.PLANT) || projectCard.getTags().contains(Tag.DYNAMIC)) {
                 player.getHand().addCard(card);
                 resultBuilder.takenCard(CardDto.from(projectCard));
             } else {

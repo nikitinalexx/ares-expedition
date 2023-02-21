@@ -5,10 +5,12 @@ import {SpecialEffect} from '../data/SpecialEffect';
 import {GainType} from '../data/GainType';
 import {Gain} from '../data/Gain';
 import {CardAction} from '../data/CardAction';
-import {ParameterColor} from '../data/ParameterColor';
+import {PARAMETER_COLORS, ParameterColor} from '../data/ParameterColor';
 import {DiscountComponent} from '../discount/discount.component';
 import {BasePlayer} from '../data/BasePlayer';
 import {Player} from '../data/Player';
+import {Expansion} from '../data/Expansion';
+import {Tag} from '../data/Tag';
 
 @Component({
   selector: 'app-card-template',
@@ -24,6 +26,8 @@ export class CardTemplateComponent {
   showDiscount: boolean;
   @Input()
   showResources: boolean;
+  @Input()
+  tagInput: number;
 
   constructor(private discountService: DiscountComponent) {
   }
@@ -32,15 +36,18 @@ export class CardTemplateComponent {
     if (!this.showDiscount) {
       return false;
     }
-    return this.discountService.isDiscountApplicable(card, this.player as Player);
+    return this.discountService.isDiscountApplicable(card, this.player as Player, this.tagInput);
   }
 
   getDiscount(card: Card): number {
-    return this.discountService.getDiscount(card, this.player as Player);
+    return this.discountService.getDiscount(card, this.player as Player, this.tagInput);
   }
 
   getTagClasses(card: Card, tagNumber: number): string {
     if (card.tags[tagNumber]) {
+      if (card.tags[tagNumber] === Tag.DYNAMIC && this.player && this.player.cardToTag[card.id]) {
+        return 'tag-' + this.player.cardToTag[card.id][tagNumber].toString().toLowerCase();
+      }
       return 'tag-' + card.tags[tagNumber].toString().toLowerCase();
     }
   }
@@ -189,8 +196,8 @@ export class CardTemplateComponent {
   }
 
   getNameStyle(card: Card): { 'font-size.px': number } {
-    if (card.name.length > 22) {
-      const proportion = card.name.length / 22;
+    if (card.name.length > 14) {
+      const proportion = card.name.length / 14;
       return {'font-size.px': 16 / proportion};
     }
     return;
@@ -224,8 +231,16 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.AQUIFER_PUMPING;
   }
 
+  actionBiomedicalImports(card: Card): boolean {
+    return card.cardAction === CardAction.BIOMEDICAL_IMPORTS;
+  }
+
   actionArcticAlgae(card: Card): boolean {
     return card.cardAction === CardAction.ARCTIC_ALGAE;
+  }
+
+  actionVolcanicSoil(card: Card): boolean {
+    return card.cardAction === CardAction.VOLCANIC_SOIL;
   }
 
   actionArtificialJungle(card: Card): boolean {
@@ -240,8 +255,20 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.ASSET_LIQUIDATION;
   }
 
+  actionExperimentalTechnology(card: Card): boolean {
+    return card.cardAction === CardAction.EXPERIMENTAL_TECHNOLOGY;
+  }
+
+  actionVirtualEmployeeDevelopment(card: Card): boolean {
+    return card.cardAction === CardAction.VIRTUAL_EMPLOYEE_DEVELOPMENT;
+  }
+
   actionAddAnimal(card: Card): boolean {
     return card.cardAction === CardAction.ADD_ANIMAL;
+  }
+
+  actionFilterFeeders(card: Card): boolean {
+    return card.cardAction === CardAction.FILTER_FEEDERS;
   }
 
   actionBrainstormingSession(card: Card): boolean {
@@ -256,8 +283,16 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.CIRCUIT_BOARD;
   }
 
+  actionCityCouncil(card: Card): boolean {
+    return card.cardAction === CardAction.CITY_COUNCIL;
+  }
+
   actionCommunityGardens(card: Card): boolean {
     return card.cardAction === CardAction.COMMUNITY_GARDENS;
+  }
+
+  actionDroneAssistedConstruction(card: Card): boolean {
+    return card.cardAction === CardAction.DRONE_ASSISTED_CONSTRUCTION;
   }
 
   actionCompostingFactory(card: Card): boolean {
@@ -288,8 +323,16 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.EARTH_CATAPULT;
   }
 
+  actionOrbitalOutpost(card: Card): boolean {
+    return card.cardAction === CardAction.ORBITAL_OUTPOST;
+  }
+
   actionEcologicalZone(card: Card): boolean {
     return card.cardAction === CardAction.ECOLOGICAL_ZONE;
+  }
+
+  actionBacterialAggregates(card: Card): boolean {
+    return card.cardAction === CardAction.BACTERIAL_AGGREGATES;
   }
 
   actionEnergySubsidies(card: Card): boolean {
@@ -312,6 +355,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.FARMING_COOPS;
   }
 
+  actionMatterGenerator(card: Card): boolean {
+    return card.cardAction === CardAction.MATTER_GENERATOR;
+  }
+
   actionFish(card: Card): boolean {
     return card.cardAction === CardAction.FISH;
   }
@@ -322,6 +369,14 @@ export class CardTemplateComponent {
 
   actionGreenHouses(card: Card): boolean {
     return card.cardAction === CardAction.GREEN_HOUSES;
+  }
+
+  actionInnovativeTechnologies(card: Card): boolean {
+    return card.cardAction === CardAction.INNOVATIVE_TECHNOLOGIES;
+  }
+
+  actionTourism(card: Card): boolean {
+    return card.cardAction === CardAction.TOURISM;
   }
 
   actionHerbivores(card: Card): boolean {
@@ -340,12 +395,20 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.INTERPLANETARY_CONFERENCE;
   }
 
+  actionImpactAnalysis(card: Card): boolean {
+    return card.cardAction === CardAction.IMPACT_ANALYSIS;
+  }
+
   actionInterplanetaryRelations(card: Card): boolean {
     return card.cardAction === CardAction.INTERPLANETARY_RELATIONS;
   }
 
   actionIronWorks(card: Card): boolean {
     return card.cardAction === CardAction.IRON_WORKS;
+  }
+
+  actionProgressivePolicies(card: Card): boolean {
+    return card.cardAction === CardAction.PROGRESSIVE_POLICIES;
   }
 
   actionLivestock(card: Card): boolean {
@@ -366,6 +429,14 @@ export class CardTemplateComponent {
 
   actionNitriteReducting(card: Card): boolean {
     return card.cardAction === CardAction.NITRITE_REDUCTING;
+  }
+
+  actionFibrousComposite(card: Card): boolean {
+    return card.cardAction === CardAction.FIBROUS_COMPOSITE_MATERIAL;
+  }
+
+  actionSelfReplicatingBacteria(card: Card): boolean {
+    return card.cardAction === CardAction.SELF_REPLICATING_BACTERIA;
   }
 
   actionOlympusConference(card: Card): boolean {
@@ -392,12 +463,20 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.REDRAFTED_CONTRACTS;
   }
 
+  actionSoftwareStreamlining(card: Card): boolean {
+    return card.cardAction === CardAction.SOFTWARE_STREAMLINING;
+  }
+
   actionRegolithEaters(card: Card): boolean {
     return card.cardAction === CardAction.REGOLITH_EATERS;
   }
 
-  actionResearchOutpost(card: Card): boolean {
+  actionDiscountOne(card: Card): boolean {
     return card.cardAction === CardAction.RESEARCH_OUTPOST;
+  }
+
+  effectHohmannDiscountOne(card: Card): boolean {
+    return this.hasSpecialEffect(card, SpecialEffect.HOHMANN_DISCOUNT_1);
   }
 
   actionRestructuredResources(card: Card): boolean {
@@ -408,8 +487,20 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.SMALL_ANIMALS;
   }
 
+  actionZoos(card: Card): boolean {
+    return card.cardAction === CardAction.ZOOS;
+  }
+
   actionSolarPunk(card: Card): boolean {
     return card.cardAction === CardAction.SOLAR_PUNK;
+  }
+
+  actionCommunityAfforestation(card: Card): boolean {
+    return card.cardAction === CardAction.COMMUNITY_AFFORESTATION;
+  }
+
+  actionGasCooledReactors(card: Card): boolean {
+    return card.cardAction === CardAction.GAS_COOLED_REACTORS;
   }
 
   actionStandardTechnology(card: Card): boolean {
@@ -452,16 +543,68 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.WOOD_BURNING_STOVES;
   }
 
-  actionCapitalizeDescription(card: Card): boolean {
-    return card.cardAction === CardAction.CAPITALISE_DESCRIPTION;
+  actionResearchGrant(card: Card): boolean {
+    return card.cardAction === CardAction.RESEARCH_GRANT;
+  }
+
+  capitalizeDescription(card: Card): boolean {
+    return card.cardAction === CardAction.CAPITALISE_DESCRIPTION ||
+      card.cardAction === CardAction.SYNTHETIC_CATASTROPHE;
   }
 
   actionImportedHydrogen(card: Card): boolean {
     return card.cardAction === CardAction.IMPORTED_HYDROGEN;
   }
 
+  actionCryogenicShipment(card: Card): boolean {
+    return card.cardAction === CardAction.CRYOGENIC_SHIPMENT;
+  }
+
   actionLargeConvoy(card: Card): boolean {
     return card.cardAction === CardAction.LARGE_CONVOY;
+  }
+
+  actionUpdatePhase(card: Card): boolean {
+    return card.cardAction === CardAction.UPDATE_PHASE_CARD
+      || card.cardAction === CardAction.TOPOGRAPHIC_MAPPING
+      || card.cardAction === CardAction.CRYOGENIC_SHIPMENT
+      || card.cardAction === CardAction[CardAction.SOFTWARE_STREAMLINING];
+  }
+
+  actionDoublePhaseUpdate(card: Card): boolean {
+    return card.cardAction === CardAction.UPDATE_PHASE_CARD_TWICE;
+  }
+
+  actionUpgradePhase1(card: Card): boolean {
+    return card.cardAction === CardAction.UPDATE_PHASE_1_CARD;
+  }
+
+  actionUpgradePhase2(card: Card): boolean {
+    return card.cardAction === CardAction.UPDATE_PHASE_2_CARD;
+  }
+
+  actionUpgradePhase3(card: Card): boolean {
+    return card.cardAction === CardAction.UPDATE_PHASE_3_CARD;
+  }
+
+  actionUpgradePhase4(card: Card): boolean {
+    return card.cardAction === CardAction.UPDATE_PHASE_4_CARD;
+  }
+
+  actionAwardWinningReflector(card: Card): boolean {
+    return card.cardAction === CardAction.AWARD_WINNING_REFLECTOR;
+  }
+
+  actionCommunicationsStreamlining(card: Card): boolean {
+    return card.cardAction === CardAction.COMMUNICATIONS_STREAMLINING;
+  }
+
+  actionProcessedMetals(card: Card): boolean {
+    return card.cardAction === CardAction.PROCESSED_METALS;
+  }
+
+  actionProcessingPlant(card: Card): boolean {
+    return card.cardAction === CardAction.PROCESSING_PLANT;
   }
 
   actionImportedNitrogen(card: Card): boolean {
@@ -494,6 +637,14 @@ export class CardTemplateComponent {
 
   actionHeatEarthIncome(card: Card): boolean {
     return card.cardAction === CardAction.HEAT_EARTH_INCOME;
+  }
+
+  actionMcAnimalPlantIncome(card: Card): boolean {
+    return card.cardAction === CardAction.MC_ANIMAL_PLANT_INCOME;
+  }
+
+  actionCardScienceIncome(card: Card): boolean {
+    return card.cardAction === CardAction.CARD_SCIENCE_INCOME;
   }
 
   actionMcEarthIncome(card: Card): boolean {
@@ -552,6 +703,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.ENERGY_STORAGE;
   }
 
+  actionPrivateInvestorBeach(card: Card): boolean {
+    return card.cardAction === CardAction.PRIVATE_INVESTOR_BEACH;
+  }
+
   actionEosChasma(card: Card): boolean {
     return card.cardAction === CardAction.EOS_CHASMA;
   }
@@ -562,6 +717,10 @@ export class CardTemplateComponent {
 
   actionFoodFactory(card: Card): boolean {
     return card.cardAction === CardAction.FOOD_FACTORY;
+  }
+
+  actionMoss(card: Card): boolean {
+    return card.cardAction === CardAction.MOSS;
   }
 
   actionTallStation(card: Card): boolean {
@@ -588,6 +747,14 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.DEVTECHS_CORPORATION;
   }
 
+  isUnmiCorporation(card: Card): boolean {
+    return card.cardAction === CardAction.UNMI_CORPORATION;
+  }
+
+  isInterplanetaryCinematics(card: Card): boolean {
+    return card.cardAction === CardAction.INTERPLANETARY_CINEMATICS;
+  }
+
   isMiningGuildCorporation(card: Card): boolean {
     return card.cardAction === CardAction.MINING_GUILD_CORPORATION;
   }
@@ -598,6 +765,22 @@ export class CardTemplateComponent {
 
   isLaunchStarCorporation(card: Card): boolean {
     return card.cardAction === CardAction.LAUNCH_STAR_CORPORATION;
+  }
+
+  isZetacellCorporation(card: Card): boolean {
+    return card.cardAction === CardAction.ZETACELL_CORPORATION;
+  }
+
+  isEcolineCorporation(card: Card): boolean {
+    return card.cardAction === CardAction.ECOLINE_CORPORATION;
+  }
+
+  isInventrixCorporation(card: Card): boolean {
+    return card.cardAction === CardAction.INVENTRIX_CORPORATION;
+  }
+
+  isMayNiProductionsCorporation(card: Card): boolean {
+    return card.cardAction === CardAction.MAY_NI_PRODUCTIONS_CORPORATION;
   }
 
   isThorgateCorporation(card: Card): boolean {
@@ -626,6 +809,37 @@ export class CardTemplateComponent {
 
   hasTagRequirements(card: Card): boolean {
     return card.tagReq.length !== 0;
+  }
+
+  hasAtLeastFourTagRequirements(card: Card): boolean {
+    return card.tagReq.length >= 4;
+  }
+
+  hasOneToThreeTagRequirements(card: Card): boolean {
+    return card.tagReq.length >= 1 && card.tagReq.length <= 3;
+  }
+
+  displayOceanRequirementAsNumber(card: Card): boolean {
+    return card.oceanRequirement.minValue === 0 && card.oceanRequirement.maxValue > 3
+      || card.oceanRequirement.maxValue === 9 && card.oceanRequirement.minValue > 3;
+  }
+
+  getOceanDisplayNumber(card: Card): number {
+    if (card.oceanRequirement.minValue === 0) {
+      return card.oceanRequirement.maxValue;
+    } else {
+      return card.oceanRequirement.minValue;
+    }
+  }
+
+  getOceanRequirementNumber(card: Card): number {
+    if (this.displayOceanRequirementAsNumber(card)) {
+      return 1;
+    } else if (card.oceanRequirement.minValue === 0) {
+      return card.oceanRequirement.maxValue;
+    } else {
+      return card.oceanRequirement.minValue;
+    }
   }
 
   hasTempRequirements(card: Card): boolean {
@@ -657,21 +871,25 @@ export class CardTemplateComponent {
   }
 
   private getTemperatureOxygenClass(req: ParameterColor[]): string {
-    if (req.length === 3 && req[0] === ParameterColor.R) {
+    if (req.length === 3 && req[0] === PARAMETER_COLORS[ParameterColor.R]) {
       return 'requirements-ryw';
     }
-    if (req.length === 2 && req[0] === ParameterColor.Y) {
+    if (req.length === 2 && req[0] === PARAMETER_COLORS[ParameterColor.Y]) {
       return 'requirements-yw';
     }
-    if (req.length === 2 && req[0] === ParameterColor.P) {
+    if (req.length === 2 && req[0] === PARAMETER_COLORS[ParameterColor.P]) {
       return 'requirements-pr';
     }
-    if (req.length === 1 && req[0] === ParameterColor.W) {
+    if (req.length === 1 && req[0] === PARAMETER_COLORS[ParameterColor.W]) {
       return 'requirements-w';
     }
-    if (req.length === 1 && req[0] === ParameterColor.P) {
+    if (req.length === 1 && req[0] === PARAMETER_COLORS[ParameterColor.P]) {
       return 'requirements-p';
     }
+  }
+
+  isBuffedCorporation(card: Card): boolean {
+    return card.expansion === Expansion.BUFFED_CORPORATION;
   }
 
   getTagRequirements(card: Card): string {

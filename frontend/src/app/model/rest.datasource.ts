@@ -7,12 +7,15 @@ import {NewGame} from '../data/NewGame';
 import {NewGameRequest} from '../data/NewGameRequest';
 import {Game} from '../data/Game';
 import {TurnType} from '../data/TurnType';
-import {ActionDto} from '../data/ActionDto';
+import {ActionsDto} from '../data/ActionsDto';
 import {BuildProjectRequest} from '../data/BuildProjectRequest';
 import {BlueActionRequest} from '../data/BlueActionRequest';
 import {StandardProjectType} from '../data/StandardProjectType';
 import {environment} from '../../environments/environment';
 import {GameShort} from "../data/GameShort";
+import {Lobby} from "../data/Lobby";
+import {PlayerReference} from "../data/PlayerReference";
+import {Expansion} from "../data/Expansion";
 
 
 @Injectable()
@@ -22,12 +25,48 @@ export class RestDataSource {
   constructor(private http: HttpClient) {
   }
 
-  getData(): Observable<Card[]> {
-    return this.sendRequest<Card[]>('GET', this.url + '/projects');
+  getCards(expansions: Expansion[]): Observable<Card[]> {
+    return this.sendRequest<Card[]>('POST', this.url + '/projects',
+      { expansions: expansions }
+    );
+  }
+
+  getLobby(nickname: string): Observable<Lobby> {
+    return this.sendRequest<Lobby>('GET', this.url + '/lobby/' + nickname);
   }
 
   createGame(requestBody: NewGameRequest): Observable<NewGame> {
     return this.sendRequest<NewGame>('POST', this.url + '/game/new', requestBody);
+  }
+
+  createLobbyGame(host: string, mulligan: boolean): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/lobby/game/new',
+      {host: host, mulligan: mulligan}
+    );
+  }
+
+  joinLobbyGame(player: string, gameId: number): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/lobby/game/join',
+      {player: player, gameId: gameId}
+    );
+  }
+
+  leaveLobbyGame(player: string, gameId: number): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/lobby/game/leave',
+      {player: player, gameId: gameId}
+    );
+  }
+
+  getLobbyGamePlayerUuid(player: string, gameId: number): Observable<PlayerReference> {
+    return this.sendRequest<PlayerReference>('POST', this.url + '/lobby/game/uuid',
+      {player: player, gameId: gameId}
+    );
+  }
+
+  confirmGameStart(player: string, gameId: number): Observable<any> {
+    return this.sendRequest<NewGame>('POST', this.url + '/lobby/game/confirm',
+      {player: player, gameId: gameId}
+    );
   }
 
   getGame(playerUuid: string): Observable<Game> {
@@ -52,24 +91,36 @@ export class RestDataSource {
 
   skipTurn(playerUuid: string): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/game/player/skip',
-      {playerUuid: playerUuid}
+      {player: playerUuid}
     );
   }
 
   confirmGameEnd(playerUuid: string): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/game/player/game-end/confirm',
-      {playerUuid: playerUuid}
+      {player: playerUuid}
     );
   }
 
-  pickCard(playerUuid: string): Observable<any> {
-    return this.sendRequest<any>('POST', this.url + '/turn/pick-card',
-      {playerUuid: playerUuid}
+  pickExtraBonus(playerUuid: string): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/turn/pick-extra-bonus',
+      {player: playerUuid}
+    );
+  }
+
+  raiseUnmiRt(playerUuid: string): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/turn/unmi/rt',
+      {player: playerUuid}
     );
   }
 
   sellCards(playerUuid: string, cards: number[]): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/game/player/sell',
+      {playerUuid: playerUuid, cards: cards}
+    );
+  }
+
+  mulliganCards(playerUuid: string, cards: number[]): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/game/player/mulligan',
       {playerUuid: playerUuid, cards: cards}
     );
   }
@@ -80,8 +131,8 @@ export class RestDataSource {
     );
   }
 
-  nextAction(playerUuid: string): Observable<ActionDto> {
-    return this.sendRequest<ActionDto>('GET', this.url + '/action/next/' + playerUuid);
+  nextActions(playerUuid: string): Observable<ActionsDto> {
+    return this.sendRequest<ActionsDto>('GET', this.url + '/action/next/' + playerUuid);
   }
 
   nextTurns(playerUuid: string): Observable<TurnType[]> {
@@ -106,33 +157,27 @@ export class RestDataSource {
     );
   }
 
-  discardDraftedCards(playerUuid: string, cards: number[]): Observable<any> {
-    return this.sendRequest<any>('POST', this.url + '/turn/cards/discard/drafted',
-      {playerUuid: playerUuid, cards: cards}
-    );
-  }
-
-  collectIncome(playerUuid: string): Observable<any> {
+  collectIncome(playerUuid: string, doubleCollectProject: number): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/turn/collect-income',
-      {playerUuid: playerUuid}
+      {playerUuid: playerUuid, cardId: doubleCollectProject}
     );
   }
 
   draftCards(playerUuid: string): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/turn/draft-cards',
-      {playerUuid: playerUuid}
+      {player: playerUuid}
     );
   }
 
   plantForest(playerUuid: string): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/turn/forest',
-      {playerUuid: playerUuid}
+      {player: playerUuid}
     );
   }
 
   increaseTemperature(playerUuid: string): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/turn/temperature',
-      {playerUuid: playerUuid}
+      {player: playerUuid}
     );
   }
 

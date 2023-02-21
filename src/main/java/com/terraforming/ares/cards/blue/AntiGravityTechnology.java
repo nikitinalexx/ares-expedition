@@ -1,9 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
-import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -38,9 +36,12 @@ public class AntiGravityTechnology implements BlueCard {
     }
 
     @Override
-    public void onProjectBuiltEffect(CardService cardService, MarsGame marsGame, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        player.setHeat(player.getHeat() + 2);
-        player.setPlants(player.getPlants() + 2);
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
+        if (!project.isBlankCard()) {
+            final Player player = marsContext.getPlayer();
+            player.setHeat(player.getHeat() + 2);
+            player.setPlants(player.getPlants() + 2);
+        }
     }
 
     @Override
