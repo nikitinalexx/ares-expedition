@@ -291,7 +291,13 @@ public class CardFactory {
                 new NuclearDetonationSite(341),
                 new Warehouses(342),
 
-                new MartianStudiesScholarship(377)
+                new ResearchGrant(374),
+                new Zoos(375),
+                new InnovativeTechnologiesAward(376),
+                new MartianStudiesScholarship(377),
+                new GeneticallyModifiedVegetables(378),
+                new GlacialEvaporation(379),
+                new Tourism(380)
         );
 
         sortedCorporations = List.of(

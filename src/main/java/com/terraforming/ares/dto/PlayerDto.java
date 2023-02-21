@@ -24,7 +24,7 @@ public class PlayerDto {
     private final Integer previousPhase;
     private final TurnDto nextTurn;
     private final Map<Integer, Integer> cardResources;
-    private final Map<Integer, Tag> cardToTag;
+    private final Map<Integer, List<Tag>> cardToTag;
     private final List<Integer> activatedBlueCards;
     private final int blueActionExtraActivationsLeft;
     private final int terraformingRating;

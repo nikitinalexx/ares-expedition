@@ -41,7 +41,7 @@ public class TopographicMapping implements DiscoveryExpansionRedCard {
     public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> input) {
         List<Integer> tagInput = input.get(InputFlag.TAG_INPUT.getId());
         final Tag tag = Tag.byIndex(tagInput.get(0));
-        marsContext.getPlayer().getCardToTag().put(TopographicMapping.class, tag);
+        marsContext.getPlayer().getCardToTag().put(TopographicMapping.class, List.of(tag));
 
         List<Integer> cardInput = input.get(InputFlag.PHASE_UPGRADE_CARD.getId());
         UpgradePhaseHelper.upgradePhase(marsContext.getCardService(), marsContext.getGame(), marsContext.getPlayer(), cardInput.get(0));
@@ -50,11 +50,6 @@ public class TopographicMapping implements DiscoveryExpansionRedCard {
     @Override
     public boolean onBuiltEffectApplicableToItself() {
         return true;
-    }
-
-    @Override
-    public boolean onBuiltEffectApplicableToOther() {
-        return false;
     }
 
     @Override

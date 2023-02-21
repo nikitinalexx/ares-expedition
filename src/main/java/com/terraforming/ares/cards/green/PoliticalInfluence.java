@@ -52,17 +52,12 @@ public class PoliticalInfluence implements DiscoveryExpansionGreenCard {
 
         final Tag tag = Tag.byIndex(tagInput.get(0));
 
-        marsContext.getPlayer().getCardToTag().put(PoliticalInfluence.class, tag);
+        marsContext.getPlayer().getCardToTag().put(PoliticalInfluence.class, List.of(tag));
     }
 
     @Override
     public boolean onBuiltEffectApplicableToItself() {
         return true;
-    }
-
-    @Override
-    public boolean onBuiltEffectApplicableToOther() {
-        return false;
     }
 
     @Override

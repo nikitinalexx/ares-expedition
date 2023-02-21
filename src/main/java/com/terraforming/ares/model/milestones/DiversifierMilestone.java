@@ -32,11 +32,10 @@ public class DiversifierMilestone extends Milestone {
                                 .stream()
                                 .map(cardService::getCard)
                                 .map(Card::getTags)
-                                .flatMap(Collection::stream)
-                                .filter(tag -> tag != Tag.DYNAMIC),
+                                .flatMap(Collection::stream),
 
                         player.getCardToTag().values().stream()
-                ).distinct().count();
+                ).filter(tag -> tag != Tag.DYNAMIC).distinct().count();
     }
 
     @Override

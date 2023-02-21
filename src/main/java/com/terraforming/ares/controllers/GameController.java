@@ -593,7 +593,7 @@ public class GameController {
     }
 
 
-    private Map<Integer, Tag> getPlayerCardToTag(Player player) {
+    private Map<Integer, List<Tag>> getPlayerCardToTag(Player player) {
         return player.getPlayed().getCards().stream().map(cardService::getCard)
                 .filter(card -> card.getTags().contains(Tag.DYNAMIC))
                 .collect(Collectors.toMap(

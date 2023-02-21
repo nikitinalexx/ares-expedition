@@ -139,7 +139,7 @@ public class MarsGame {
                     Player.builder()
                             .uuid(UUID.randomUUID().toString() + i)
                             .name(playerNames.get(i))
-                            .hand(Deck.builder().cards(new LinkedList<>(List.of(308, 342, 341, 335, 315, 377))).build())
+                            .hand(Deck.builder().cards(new LinkedList<>(List.of(375, 11, 339, 374))).build())
                             //.hand(projectsDeck.dealCardsDeck(playerHandSize))
                             .corporations(corporationsDeck.dealCardsDeck(INITIAL_CORPORATIONS_SIZE))
                             .played(Deck.builder().build())
@@ -241,7 +241,10 @@ public class MarsGame {
                                     .forEach(achievement::setAchieved);
                             if (achievement.isAchieved()) {
                                 playerUuidToPlayer.values()
-                                        .forEach(player -> achievement.setValue(player, achievement.getValue(player, cardService)));
+                                        .forEach(player -> {
+                                            achievement.setValue(player, achievement.getValue(player, cardService));
+                                            player.getPlayed().getCards().stream().map(cardService::getCard).forEach(card -> card.onAchievementGained(player));
+                                        });
                             }
                         }
                 );

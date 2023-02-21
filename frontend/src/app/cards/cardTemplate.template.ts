@@ -46,7 +46,7 @@ export class CardTemplateComponent {
   getTagClasses(card: Card, tagNumber: number): string {
     if (card.tags[tagNumber]) {
       if (card.tags[tagNumber] === Tag.DYNAMIC && this.player && this.player.cardToTag[card.id]) {
-        return 'tag-' + this.player.cardToTag[card.id].toString().toLowerCase();
+        return 'tag-' + this.player.cardToTag[card.id][tagNumber].toString().toLowerCase();
       }
       return 'tag-' + card.tags[tagNumber].toString().toLowerCase();
     }
@@ -351,6 +351,14 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.GREEN_HOUSES;
   }
 
+  actionInnovativeTechnologies(card: Card): boolean {
+    return card.cardAction === CardAction.INNOVATIVE_TECHNOLOGIES;
+  }
+
+  actionTourism(card: Card): boolean {
+    return card.cardAction === CardAction.TOURISM;
+  }
+
   actionHerbivores(card: Card): boolean {
     return card.cardAction === CardAction.HERBIVORES;
   }
@@ -447,6 +455,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.SMALL_ANIMALS;
   }
 
+  actionZoos(card: Card): boolean {
+    return card.cardAction === CardAction.ZOOS;
+  }
+
   actionSolarPunk(card: Card): boolean {
     return card.cardAction === CardAction.SOLAR_PUNK;
   }
@@ -489,6 +501,10 @@ export class CardTemplateComponent {
 
   actionWoodBurningStoves(card: Card): boolean {
     return card.cardAction === CardAction.WOOD_BURNING_STOVES;
+  }
+
+  actionResearchGrant(card: Card): boolean {
+    return card.cardAction === CardAction.RESEARCH_GRANT;
   }
 
   capitalizeDescription(card: Card): boolean {

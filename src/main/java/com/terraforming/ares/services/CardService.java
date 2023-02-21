@@ -89,14 +89,15 @@ public class CardService {
         return resultBuilder.build();
     }
 
-    public int countCardTagsWithDynamic(Card card, Player player, Set<Tag> tags) {
+    public int countCardTagsWithDynamic(Card card, Player player, Set<Tag> tagsToCount) {
         int tagCount = 0;
 
-        if (card.getTags().contains(Tag.DYNAMIC) && player.getCardToTag().containsKey(card.getClass()) && tags.contains(player.getCardToTag().get(card.getClass()))) {
+        if (card.getTags().contains(Tag.DYNAMIC) && player.getCardToTag().containsKey(card.getClass())
+                && player.getCardToTag().get(card.getClass()).stream().anyMatch(tagsToCount::contains)) {
             tagCount++;
         }
 
-        return tagCount + (int) card.getTags().stream().filter(tags::contains).count();
+        return tagCount + (int) card.getTags().stream().filter(tagsToCount::contains).count();
     }
 
     public int countCardTags(Card card, Set<Tag> tags, Map<Integer, List<Integer>> input) {
@@ -125,7 +126,7 @@ public class CardService {
         return result;
     }
 
-    public int countPlayedTags(Player player, Set<Tag> tags) {
+    public int countPlayedTags(Player player, Set<Tag> tagsToCheck) {
         if (player == null || player.getPlayed() == null || CollectionUtils.isEmpty(player.getPlayed().getCards())) {
             return 0;
         }
@@ -133,8 +134,8 @@ public class CardService {
         return (int) (
                 player.getPlayed().getCards().stream().map(this::getCard)
                         .filter(card -> player.getCardToTag().containsKey(card.getClass()))
-                        .map(card -> player.getCardToTag().get(card.getClass()))
-                        .filter(tags::contains)
+                        .flatMap(card -> player.getCardToTag().get(card.getClass()).stream())
+                        .filter(tagsToCheck::contains)
                         .count()
 
                         + player.getPlayed()
@@ -142,7 +143,7 @@ public class CardService {
                         .stream()
                         .map(this::getCard)
                         .flatMap(card -> card.getTags().stream())
-                        .filter(tags::contains)
+                        .filter(tagsToCheck::contains)
                         .count()
         );
     }

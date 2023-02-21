@@ -174,8 +174,19 @@ export class NavbarComponent {
 
   getUniqueTags() {
     const tags = this.player?.played
-      .map(card => card.tags.map(tag => tag === Tag.DYNAMIC ? this.player.cardToTag[card.id] : tag))
+      .map(card => {
+        const tagsWithDynamic = [];
+        for (let i = 0; i < card.tags.length; i++) {
+          if (card.tags[i] !== Tag.DYNAMIC) {
+            tagsWithDynamic.push(card.tags[i]);
+          } else if (this.player.cardToTag[card.id][i] !== Tag.DYNAMIC) {
+            tagsWithDynamic.push(this.player.cardToTag[card.id][i]);
+          }
+        }
+        return tagsWithDynamic;
+      })
       .reduce((acc, val) => acc.concat(val), []);
+
     if (!tags) {
       return [];
     }

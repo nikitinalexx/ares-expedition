@@ -17,6 +17,7 @@ import {BuildGreenComponent} from '../greenProject/buildGreen.component';
 import {DiscardCardsTurn} from '../../data/DiscardCardsTurn';
 import {ScrollComponent} from '../../scroll/scroll.component';
 import {BuildBlueRedComponent} from "../blueRedProject/buildBlueRed.component";
+import {Tag} from "../../data/Tag";
 
 @Component({
   selector: 'app-third-phase',
@@ -24,6 +25,9 @@ import {BuildBlueRedComponent} from "../blueRedProject/buildBlueRed.component";
   styleUrls: ['../turns.component.css']
 })
 export class ThirdPhaseComponent implements OnInit {
+  allTags = [Tag.SPACE, Tag.EARTH, Tag.EVENT, Tag.SCIENCE, Tag.PLANT,
+    Tag.ENERGY, Tag.BUILDING, Tag.ANIMAL, Tag.JUPITER, Tag.MICROBE];
+
   public errorMessage: string;
   isSubmitted = false;
   selectedProject: Card;
@@ -31,6 +35,7 @@ export class ThirdPhaseComponent implements OnInit {
   projectsToDiscard: number[];
   phaseInput = 0;
   phaseUpgradeType = -1;
+  tagInput = -1;
 
   @ViewChild(SellCardsComponent) sellCardsService;
   @ViewChild(BuildGreenComponent) buildGreenService;
@@ -146,6 +151,18 @@ export class ThirdPhaseComponent implements OnInit {
   }
 
   canPlayExtraBlueAction(): boolean {
+    const exhaustedResearchGrant = this.game?.player.played.some(card =>
+      card.cardAction === CardAction.RESEARCH_GRANT && this.game.player.cardToTag[card.id].every(tag => tag !== Tag.DYNAMIC)
+    );
+
+    if (exhaustedResearchGrant) {
+      const exhaustedResearchCard = this.game?.player.played.find(card => card.cardAction === CardAction.RESEARCH_GRANT);
+      if (this.game.player.activatedBlueCards?.length === 1
+        && this.game.player.activatedBlueCards.find(cardId => cardId === exhaustedResearchCard.id)) {
+        return false;
+      }
+    }
+
     return this.game.player.phase === 3
       && this.game.player.blueActionExtraActivationsLeft > 0
       && this.game.player.activatedBlueCards?.length > 0;
@@ -176,16 +193,30 @@ export class ThirdPhaseComponent implements OnInit {
     }
   }
 
+  expectsTagInput(): boolean {
+    return this.selectedProject?.cardAction === CardAction[CardAction.RESEARCH_GRANT];
+  }
+
+  getAllTagsArray(): Tag[] {
+    return this.allTags;
+  }
+
+  getTagClasses(tagNumber: number): string {
+    return 'tag-' + this.allTags[tagNumber].toString().toLowerCase();
+  }
+
   getActiveCards(): Card[] {
     return this.game?.player.played.filter(
       card => card.active
         && !this.game.player.activatedBlueCards.find(abc => abc === card.id)
+        && !(card.cardAction === CardAction.RESEARCH_GRANT && this.game.player.cardToTag[card.id].every(tag => tag !== Tag.DYNAMIC))
     );
   }
 
   getPlayedActiveCards(): Card[] {
     return this.game?.player.played.filter(card =>
       card.active && this.game.player.activatedBlueCards?.find(playedCardId => playedCardId === card.id)
+      && !(card.cardAction === CardAction.RESEARCH_GRANT && this.game.player.cardToTag[card.id].every(tag => tag !== Tag.DYNAMIC))
     );
   }
 
@@ -316,6 +347,20 @@ export class ThirdPhaseComponent implements OnInit {
 
   hasStandardTechnology(): boolean {
     return this.game.player.played.some(card => card.cardAction === CardAction.STANDARD_TECHNOLOGY);
+  }
+
+  expectsDecomposersInput(): boolean {
+    return this.expectsTagInput() && this.tagInput >= 0 && this.tagInput < this.allTags.length
+      && (this.allTags[this.tagInput] === Tag.ANIMAL
+        || this.allTags[this.tagInput] === Tag.MICROBE
+        || this.allTags[this.tagInput] === Tag.PLANT);
+  }
+
+  decomposersCanTakeCard(): boolean {
+    const microbeCount = this.game.player.cardResources[this.game.player.played.find(
+      card => card.cardAction === CardAction[CardAction.DECOMPOSERS]
+    )?.id];
+    return microbeCount && microbeCount >= 1;
   }
 
   submitForm(formGroup: FormGroup) {
@@ -471,6 +516,29 @@ export class ThirdPhaseComponent implements OnInit {
             }
             inputParams.push(InputFlag.EXTREME_COLD_FUNGUS_PUT_MICROBE.valueOf());
             inputParams.push(this.actionTargetCards[0]);
+          }
+        }
+
+        if (this.expectsTagInput()) {
+          if (this.tagInput < 0) {
+            this.errorMessage = 'Choose a tag to put on a Card';
+            return;
+          }
+          inputParams.push(this.tagInput);
+        }
+
+        if (this.expectsDecomposersInput()) {
+          const takeMicrobes = this.parentForm.value.takeMicrobes ? this.parentForm.value.takeMicrobes : 0;
+          const takeCards = this.parentForm.value.takeCards ? this.parentForm.value.takeCards : 0;
+
+          if (1 !== (takeMicrobes + takeCards)) {
+            this.errorMessage = 'Sum of taken microbes and cards doesn\'t correspond to tag sum';
+            return;
+          }
+          if (takeMicrobes > 0) {
+            inputParams.push(InputFlag.DECOMPOSERS_TAKE_MICROBE.valueOf());
+          } else if (takeCards > 0) {
+            inputParams.push(InputFlag.DECOMPOSERS_TAKE_CARD.valueOf());
           }
         }
 

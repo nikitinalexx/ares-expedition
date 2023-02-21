@@ -1152,6 +1152,12 @@
     <div class="resource animal "></div>
   </div>
 
+  <div *ngIf="actionZoos(card)">
+    <div class="milestone border border-success border-3"></div>
+    :
+    <div class="resource animal "></div>
+  </div>
+
   <div *ngIf="actionSolarPunk(card)">
     <div class=" money resource ">15</div>
     (<span class="resource titanium"></span>=<span class="resource money">2</span>)
@@ -1247,6 +1253,14 @@
     <span style="font-size:12px; ">{{card.actionDescription}}</span><br/>
   </div>
 
+  <div *ngIf="actionResearchGrant(card)">
+    <div class="red-arrow "></div>
+    <div class="resource-tag tag-dynamic"></div>
+    <br/>
+    <span style="font-size:12px">{{card.actionDescription}}</span>
+    <div style="height: 20px"></div>
+  </div>
+
   <div *ngIf="capitalizeDescription(card)">
     <span style="font-size:14px; ">{{card.description}}</span>
   </div>
@@ -1268,6 +1282,19 @@
     <div class="tile rating"></div>
     /
     <div class="resource-tag tag-jupiter"></div>
+  </div>
+
+  <div *ngIf="actionInnovativeTechnologies(card)">
+    <div class="tile rating"></div>
+    /
+    <div class="upgrade"></div>
+    <span class="card-phase-x resource" style="border-radius: 5px"></span>
+  </div>
+
+  <div *ngIf="actionTourism(card)">
+    <div class="tile rating"></div>
+    /
+    <div class="milestone border border-success border-3"></div>
   </div>
 
   <div *ngIf="actionWorkCrews(card)">

@@ -74,6 +74,16 @@
         </div>
       </div>
 
+      <div *ngIf="expectsTagInput()">
+        <h1 class="text-white">Choose tag to put on a card: </h1>
+
+        <div *ngFor='let tag of getAllTagsArray(); let i = index;' class="form-check form-check-inline">
+          <div class="tag" [ngClass]="getTagClasses(i)">
+            <input class="form-check-input" (click)="tagInput = i" type="radio" [checked]="tagInput === i">
+          </div>
+        </div>
+      </div>
+
       <div *ngIf="expectsAddDiscardMicrobeInput()" style="margin-left: 20px">
         <div class="form-group">
           <div class="form-row">
@@ -124,6 +134,26 @@
               <app-card-template [card]="card" [player]="this.game?.player" [showResources]="true"></app-card-template>
             </li>
           </ul>
+        </div>
+      </div>
+
+      <div *ngIf="expectsDecomposersInput()">
+        <h1 class="text-white">Decomposers effect: </h1>
+        <div class="form-group">
+          <div class="form-row">
+            <div class="col-sm-1">
+              <label class="custom-control-label text-white" for="takeMicrobes">Take microbes</label>
+              <input id="takeMicrobes" type="number" class="form-control form-control-sm"
+                     formControlName="takeMicrobes"
+              >
+            </div>
+            <div *ngIf="decomposersCanTakeCard()" class="col-sm-1">
+              <label class="custom-control-label text-white" for="takeCards">Take cards</label>
+              <input id="takeCards" type="number" class="form-control form-control-sm"
+                     formControlName="takeCards"
+              >
+            </div>
+          </div>
         </div>
       </div>
 

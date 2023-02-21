@@ -10,24 +10,23 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by oleksii.nikitin
- * Creation date 20.02.2023
+ * Creation date 17.02.2023
  */
 @RequiredArgsConstructor
 @Getter
-public class LocalMarket implements DiscoveryExpansionGreenCard {
+public class Tourism implements DiscoveryExpansionGreenCard {
     private final int id;
     private final CardMetadata cardMetadata;
 
-    public LocalMarket(int id) {
+    public Tourism(int id) {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
-                .name("Local Market")
-                .description("Choose a tag and add to this card. During production phase, this produces 2 MC")
-                .cardAction(CardAction.CHOOSE_TAG)
+                .name("Tourism")
+                .description("Raise your TR 1 step for every your Milestone. During the production phase, this produces 2 MC.")
+                .cardAction(CardAction.TOURISM)
                 .incomes(List.of(Gain.of(GainType.MC, 2)))
                 .build();
     }
@@ -39,25 +38,17 @@ public class LocalMarket implements DiscoveryExpansionGreenCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        final Player player = marsContext.getPlayer();
+        Player player = marsContext.getPlayer();
 
+        int milestonesAchieved = (int) marsContext.getGame()
+                .getMilestones()
+                .stream()
+                .filter(milestone -> milestone.isAchieved(player)).count();
+
+        player.setTerraformingRating(player.getTerraformingRating() + milestonesAchieved);
         player.setMcIncome(player.getMcIncome() + 2);
 
         return null;
-    }
-
-    @Override
-    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> input) {
-        List<Integer> tagInput = input.get(InputFlag.TAG_INPUT.getId());
-
-        final Tag tag = Tag.byIndex(tagInput.get(0));
-
-        marsContext.getPlayer().getCardToTag().put(LocalMarket.class, List.of(tag));
-    }
-
-    @Override
-    public boolean onBuiltEffectApplicableToItself() {
-        return true;
     }
 
     @Override
@@ -65,15 +56,14 @@ public class LocalMarket implements DiscoveryExpansionGreenCard {
         return cardMetadata;
     }
 
-
     @Override
     public List<Tag> getTags() {
-        return List.of(Tag.DYNAMIC);
+        return List.of(Tag.EARTH);
     }
 
     @Override
     public int getPrice() {
-        return 7;
+        return 8;
     }
 
 }

@@ -214,8 +214,10 @@ public class CardValidationService {
             }
         }
 
-        for (Tag dynamicTag : player.getCardToTag().values()) {
-            tagRequirements.remove(dynamicTag);
+        for (List<Tag> dynamicTags : player.getCardToTag().values()) {
+            for (Tag dynamicTag : dynamicTags) {
+                tagRequirements.remove(dynamicTag);
+            }
         }
 
         if (tagRequirements.isEmpty()) {

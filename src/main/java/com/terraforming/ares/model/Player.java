@@ -34,7 +34,7 @@ public class Player {
     @Builder.Default
     private Map<Class<?>, Integer> cardResourcesCount = new HashMap<>();
     @Builder.Default
-    private Map<Class<?>, Tag> cardToTag = new HashMap<>();
+    private Map<Class<?>, List<Tag>> cardToTag = new HashMap<>();
     @Builder.Default
     private int terraformingRating = Constants.STARTING_RT;
     private int actionsInSecondPhase;

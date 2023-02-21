@@ -101,4 +101,12 @@ public interface Card {
     default void revertPlayedTags(CardService cardService, Card card, Player player) {
     }
 
+    default void onAchievementGained(Player player) {
+
+    }
+
+    default boolean isBlankCard() {
+        return false;
+    }
+
 }

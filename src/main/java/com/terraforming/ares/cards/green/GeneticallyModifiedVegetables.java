@@ -1,7 +1,11 @@
 package com.terraforming.ares.cards.green;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.model.*;
+import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.MarsContext;
+import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.services.CardService;
@@ -12,22 +16,26 @@ import java.util.List;
 
 /**
  * Created by oleksii.nikitin
- * Creation date 08.05.2022
+ * Creation date 17.02.2023
  */
 @RequiredArgsConstructor
 @Getter
-public class ProcessingPlant implements BaseExpansionGreenCard {
+public class GeneticallyModifiedVegetables implements DiscoveryExpansionGreenCard {
     private final int id;
     private final CardMetadata cardMetadata;
 
-    public ProcessingPlant(int id) {
+    public GeneticallyModifiedVegetables(int id) {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
-                .name("Processing Plant")
-                .description("Reveal cards from the top of the deck until you reveal a Building tag. Place it into your hand. Discard the rest. When you play a Building, you pay 4 MC less for it.")
-                .incomes(List.of(Gain.of(GainType.STEEL, 2)))
-                .cardAction(CardAction.PROCESSING_PLANT)
+                .name("Genetically Modified Vegetables")
+                .description("During the production phase, this produces 3 plants.")
+                .incomes(List.of(Gain.of(GainType.PLANT, 3)))
                 .build();
+    }
+
+    @Override
+    public void payAgain(MarsGame game, CardService cardService, Player player) {
+        player.setPlants(player.getPlants() + 3);
     }
 
     @Override
@@ -38,27 +46,20 @@ public class ProcessingPlant implements BaseExpansionGreenCard {
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
-        CardService cardService = marsContext.getCardService();
 
-        player.setSteelIncome(player.getSteelIncome() + 2);
-
-        player.getHand().addCard(cardService.dealCardWithTag(Tag.BUILDING, marsContext.getGame()));
+        player.setPlantsIncome(player.getPlantsIncome() + 3);
 
         return null;
     }
 
     @Override
-    public int getWinningPoints() {
-        return 1;
-    }
-
-    @Override
     public List<Tag> getTags() {
-        return List.of(Tag.BUILDING);
+        return List.of(Tag.MICROBE, Tag.PLANT);
     }
 
     @Override
     public int getPrice() {
-        return 19;
+        return 26;
     }
+
 }

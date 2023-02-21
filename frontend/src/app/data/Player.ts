@@ -21,7 +21,7 @@ export class Player extends BasePlayer {
               cardIncome: number,
               blueActionExtraActivationsLeft: number,
               cardResources: Map<number, number>,
-              cardToTag: Map<number, Tag>,
+              cardToTag: Map<number, Tag[]>,
               terraformingRating: number,
               winPoints: number,
               forests: number,

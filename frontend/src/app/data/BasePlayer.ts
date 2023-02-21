@@ -19,7 +19,7 @@ export class BasePlayer {
               terraformingRating: number,
               forests: number,
               cardResources: Map<number, number>,
-              cardToTag: Map<number, Tag>,
+              cardToTag: Map<number, Tag[]>,
               phaseCards: number[],
               phase?: number) {
   }
@@ -43,6 +43,6 @@ export class BasePlayer {
   phaseCards: number[];
   phase?: number;
   cardResources: Map<number, number>;
-  cardToTag: Map<number, Tag>;
+  cardToTag: Map<number, Tag[]>;
 
 }
