@@ -239,6 +239,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.ARCTIC_ALGAE;
   }
 
+  actionVolcanicSoil(card: Card): boolean {
+    return card.cardAction === CardAction.VOLCANIC_SOIL;
+  }
+
   actionArtificialJungle(card: Card): boolean {
     return card.cardAction === CardAction.ARTIFICIAL_JUNGLE;
   }
@@ -253,6 +257,10 @@ export class CardTemplateComponent {
 
   actionExperimentalTechnology(card: Card): boolean {
     return card.cardAction === CardAction.EXPERIMENTAL_TECHNOLOGY;
+  }
+
+  actionVirtualEmployeeDevelopment(card: Card): boolean {
+    return card.cardAction === CardAction.VIRTUAL_EMPLOYEE_DEVELOPMENT;
   }
 
   actionAddAnimal(card: Card): boolean {
@@ -273,6 +281,10 @@ export class CardTemplateComponent {
 
   actionCircuitBoard(card: Card): boolean {
     return card.cardAction === CardAction.CIRCUIT_BOARD;
+  }
+
+  actionCityCouncil(card: Card): boolean {
+    return card.cardAction === CardAction.CITY_COUNCIL;
   }
 
   actionCommunityGardens(card: Card): boolean {
@@ -311,8 +323,16 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.EARTH_CATAPULT;
   }
 
+  actionOrbitalOutpost(card: Card): boolean {
+    return card.cardAction === CardAction.ORBITAL_OUTPOST;
+  }
+
   actionEcologicalZone(card: Card): boolean {
     return card.cardAction === CardAction.ECOLOGICAL_ZONE;
+  }
+
+  actionBacterialAggregates(card: Card): boolean {
+    return card.cardAction === CardAction.BACTERIAL_AGGREGATES;
   }
 
   actionEnergySubsidies(card: Card): boolean {
@@ -411,6 +431,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.NITRITE_REDUCTING;
   }
 
+  actionFibrousComposite(card: Card): boolean {
+    return card.cardAction === CardAction.FIBROUS_COMPOSITE_MATERIAL;
+  }
+
   actionSelfReplicatingBacteria(card: Card): boolean {
     return card.cardAction === CardAction.SELF_REPLICATING_BACTERIA;
   }
@@ -439,12 +463,20 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.REDRAFTED_CONTRACTS;
   }
 
+  actionSoftwareStreamlining(card: Card): boolean {
+    return card.cardAction === CardAction.SOFTWARE_STREAMLINING;
+  }
+
   actionRegolithEaters(card: Card): boolean {
     return card.cardAction === CardAction.REGOLITH_EATERS;
   }
 
-  actionResearchOutpost(card: Card): boolean {
+  actionDiscountOne(card: Card): boolean {
     return card.cardAction === CardAction.RESEARCH_OUTPOST;
+  }
+
+  effectHohmannDiscountOne(card: Card): boolean {
+    return this.hasSpecialEffect(card, SpecialEffect.HOHMANN_DISCOUNT_1);
   }
 
   actionRestructuredResources(card: Card): boolean {
@@ -461,6 +493,14 @@ export class CardTemplateComponent {
 
   actionSolarPunk(card: Card): boolean {
     return card.cardAction === CardAction.SOLAR_PUNK;
+  }
+
+  actionCommunityAfforestation(card: Card): boolean {
+    return card.cardAction === CardAction.COMMUNITY_AFFORESTATION;
+  }
+
+  actionGasCooledReactors(card: Card): boolean {
+    return card.cardAction === CardAction.GAS_COOLED_REACTORS;
   }
 
   actionStandardTechnology(card: Card): boolean {
@@ -527,7 +567,8 @@ export class CardTemplateComponent {
   actionUpdatePhase(card: Card): boolean {
     return card.cardAction === CardAction.UPDATE_PHASE_CARD
       || card.cardAction === CardAction.TOPOGRAPHIC_MAPPING
-      || card.cardAction === CardAction.CRYOGENIC_SHIPMENT;
+      || card.cardAction === CardAction.CRYOGENIC_SHIPMENT
+      || card.cardAction === CardAction[CardAction.SOFTWARE_STREAMLINING];
   }
 
   actionDoublePhaseUpdate(card: Card): boolean {

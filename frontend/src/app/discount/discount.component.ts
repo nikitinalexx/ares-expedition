@@ -46,6 +46,10 @@ export class DiscountComponent {
       discount += 2;
     }
 
+    if (this.ownsSpecialEffect(player, SpecialEffect.ORBITAL_OUTPOST_DISCOUNT) && (!card.tags || card.tags.length <= 1)) {
+      discount += 3;
+    }
+
     if (this.cardHasTag(card, Tag.ENERGY, tagInput) && this.ownsSpecialEffect(player, SpecialEffect.ENERGY_SUBSIDIES_DISCOUNT_4)) {
       discount += 4;
     }
@@ -76,6 +80,10 @@ export class DiscountComponent {
     }
 
     if (this.ownsSpecialEffect(player, SpecialEffect.RESEARCH_OUTPOST_DISCOUNT_1)) {
+      discount += 1;
+    }
+
+    if (this.ownsSpecialEffect(player, SpecialEffect.HOHMANN_DISCOUNT_1)) {
       discount += 1;
     }
 

@@ -236,7 +236,10 @@ export class ThirdPhaseComponent implements OnInit {
   }
 
   expectsAnyPhaseUpgradeActionInput(): boolean {
-    return this.selectedProject && this.selectedProject.cardAction === CardAction.EXPERIMENTAL_TECHNOLOGY;
+    return this.selectedProject
+      && (this.selectedProject.cardAction === CardAction.EXPERIMENTAL_TECHNOLOGY
+        || this.selectedProject.cardAction === CardAction.VIRTUAL_EMPLOYEE_DEVELOPMENT
+        || this.selectedProject.cardAction === CardAction.FIBROUS_COMPOSITE_MATERIAL && this.parentForm.value?.addOrUseMicrobe === 'useMicrobe');
   }
 
   getUpgradePhasesArray(): number[] {

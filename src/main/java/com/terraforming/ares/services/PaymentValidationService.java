@@ -113,6 +113,11 @@ public class PaymentValidationService {
             discount += 2;
         }
 
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ORBITAL_OUTPOST_DISCOUNT)
+                && tags.size() <= 1) {
+            discount += 3;
+        }
+
         if (tags.contains(Tag.ENERGY) &&
                 specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ENERGY_SUBSIDIES_DISCOUNT_4)) {
             discount += 4;
@@ -133,6 +138,10 @@ public class PaymentValidationService {
         }
 
         if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.RESEARCH_OUTPOST_DISCOUNT_1)) {
+            discount += 1;
+        }
+
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.HOHMANN_DISCOUNT_1)) {
             discount += 1;
         }
 

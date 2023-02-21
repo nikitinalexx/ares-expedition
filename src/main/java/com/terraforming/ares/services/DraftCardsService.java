@@ -1,5 +1,6 @@
 package com.terraforming.ares.services;
 
+import com.terraforming.ares.cards.blue.BacterialAggregates;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.SpecialEffect;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +55,10 @@ public class DraftCardsService {
 
         if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.THARSIS_REPUBLIC)) {
             extraCardsToDraft++;
+        }
+
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.BACTERIAL_AGGREGATES)) {
+            extraCardsToDraft += player.getCardResourcesCount().get(BacterialAggregates.class);
         }
 
         return extraCardsToDraft;

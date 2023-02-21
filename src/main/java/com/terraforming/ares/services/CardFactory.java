@@ -261,6 +261,11 @@ public class CardFactory {
                 new DroneAssistedConstruction(306),
                 new ExperimentalTechnology(307),
                 new ImpactAnalysis(308),
+                new HohmannTransferShipping(309),
+                new FibrousCompositeMaterial(310),
+                new SoftwareStreamlining(311),
+                new VirtualEmployeeDevelopment(312),
+                new VolcanicSoil(313),
                 new OreLeaching(318),
 
                 new BiomedicalImports(314),
@@ -291,6 +296,11 @@ public class CardFactory {
                 new NuclearDetonationSite(341),
                 new Warehouses(342),
 
+                new BacterialAggregates(369),
+                new CityCouncil(370),
+                new CommunityAfforestation(371),
+                new OrbitalOutpost(372),
+                new GasCooledReactors(373),
                 new ResearchGrant(374),
                 new Zoos(375),
                 new InnovativeTechnologiesAward(376),

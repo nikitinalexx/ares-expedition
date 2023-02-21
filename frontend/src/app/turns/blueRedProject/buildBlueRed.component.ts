@@ -384,6 +384,7 @@ export class BuildBlueRedComponent implements OnInit {
       || this.selectedProject.cardAction === CardAction[CardAction.UPDATE_PHASE_CARD_TWICE]
       || this.selectedProject.cardAction === CardAction[CardAction.CRYOGENIC_SHIPMENT]
       || this.selectedProject.cardAction === CardAction[CardAction.UPDATE_PHASE_2_CARD]
+      || this.selectedProject.cardAction === CardAction[CardAction.SOFTWARE_STREAMLINING]
       || this.expectsBiomedicalImportsInput() && this.parentForm.value.biomedicalImports === 'phase';
   }
 

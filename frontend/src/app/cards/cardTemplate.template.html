@@ -33,7 +33,8 @@
     <div class="{{card.winPointsInfo.type.toString().toLowerCase()}} resource"></div>
   </div>
 
-  <div *ngIf="player && card.cardResource && showResources" class="points-player" style="margin-top: 258px; margin-left: 165px">
+  <div *ngIf="player && card.cardResource && showResources" class="points-player"
+       style="margin-top: 258px; margin-left: 165px">
     <span class="points-counter">{{player.cardResources[card.id]}}</span>
     <span class="{{card.cardResource.toString().toLowerCase()}} resource player-resource"></span>
   </div>
@@ -230,7 +231,8 @@
         <div class="animal resource"></div>
 
         <div class="description" style="text-align:center;">
-          (Effect: When you play an Animal or Plant{{isBuffedCorporation(card) ? ' or Microbe ' : ''}} tags including this, add an Animal to this card. 1 VP for 2 animals on
+          (Effect: When you play an Animal or Plant{{isBuffedCorporation(card) ? ' or Microbe ' : ''}} tags including
+          this, add an Animal to this card. 1 VP for 2 animals on
           this card.)
         </div>
       </div>
@@ -515,7 +517,8 @@
       </div>
     </div>
     <div class="description" style="text-align:center;">
-      (You start with {{card.price}} MC {{isBuffedCorporation(card) ? ',1 titanium production and 1 Space card' : 'and 1 titanium production'}}.)
+      (You start with {{card.price}}
+      MC {{isBuffedCorporation(card) ? ',1 titanium production and 1 Space card' : 'and 1 titanium production'}}.)
     </div>
   </div>
 
@@ -533,7 +536,8 @@
       </div>
     </div>
     <div class="description" style="text-align:center;">
-      (You start with {{card.price}} MC {{isBuffedCorporation(card) ? ', 1 steel production and 1 Building card' : 'and 1 steel production'}}.)
+      (You start with {{card.price}}
+      MC {{isBuffedCorporation(card) ? ', 1 steel production and 1 Building card' : 'and 1 steel production'}}.)
     </div>
   </div>
 
@@ -551,7 +555,8 @@
       </div>
     </div>
     <div class="description" style="text-align:center;">
-      (You start with {{card.price}} MC {{isBuffedCorporation(card) ? ',1 titanium production and 1 Space card' : 'and 1 titanium production'}}.)
+      (You start with {{card.price}}
+      MC {{isBuffedCorporation(card) ? ',1 titanium production and 1 Space card' : 'and 1 titanium production'}}.)
     </div>
   </div>
 
@@ -575,7 +580,6 @@
   </div>
 
 
-
   <div *ngIf="hasAtLeastFourTagRequirements(card)" class="requirements">
     {{card.tagReq.length}} <span class="small-tag resource-tag tag-{{card.tagReq[0].toLowerCase()}}"></span>
   </div>
@@ -588,7 +592,16 @@
   <div *ngIf="hasOxygenRequirements(card)" [ngClass]="getOxygenClass(card)" class="requirements">Oxygen</div>
   <div *ngIf="hasOceanRequirement(card)" class="requirements">
     {{card.oceanRequirement.minValue === 0 ? 'Max' : 'Min'}} {{displayOceanRequirementAsNumber(card) ? getOceanDisplayNumber(card) : ''}}
-    <div *ngFor="let item of [].constructor(getOceanRequirementNumber(card)); let i = index" class="ocean-tile tile small-tile"></div>
+    <div *ngFor="let item of [].constructor(getOceanRequirementNumber(card)); let i = index"
+         class="ocean-tile tile small-tile"></div>
+  </div>
+
+  <div *ngIf="actionDiscountOne(card)" style="margin-top: 50px">
+    : <span class="money resource ">-1</span>
+  </div>
+
+  <div *ngIf="effectHohmannDiscountOne(card)" style="margin-top: 10px">
+    : <span class="money resource ">-1</span>
   </div>
 
   <div *ngIf="hasAmplifyGlobalRequirements(card) || actionSpecialDesign(card)">
@@ -628,7 +641,8 @@
   </div>
 
   <div *ngIf="actionCommunicationsStreamlining(card)">
-    Play <div class="upgrade"></div>
+    Play
+    <div class="upgrade"></div>
     <span class="card-phase-x resource" style="border-radius: 5px"></span>
     <span style="font-size: 20px">:</span>
     <div class="money resource">1</div>
@@ -655,7 +669,9 @@
   </div>
 
   <div *ngIf="actionAwardWinningReflector(card)">
-    <div class="milestone border border-success border-3"></div> ?  + 4 <div class="heat resource "></div>
+    <div class="milestone border border-success border-3"></div>
+    ? + 4
+    <div class="heat resource "></div>
   </div>
 
   <div *ngIf="actionAiCentral(card)">
@@ -697,6 +713,14 @@
     :<br/>
     <div class="resource plant "></div>
     <div class="resource plant "></div>
+    <div class="resource plant "></div>
+    <div class="resource plant "></div>
+    <br>
+  </div>
+
+  <div *ngIf="actionVolcanicSoil(card)">
+    <div class="tile temperature-tile "></div>
+    :
     <div class="resource plant "></div>
     <div class="resource plant "></div>
     <br>
@@ -744,6 +768,14 @@
     <span style="font-size:14px; ">{{card.actionDescription}}</span>
   </div>
 
+  <div *ngIf="actionVirtualEmployeeDevelopment(card)">
+    <span class="red-arrow " style="margin-left:5px; "></span>
+    <div class="upgrade"></div>
+    <span class="card-phase-x resource" style="border-radius: 5px"></span>
+    <br/>
+    <span style="font-size:14px; ">{{card.actionDescription}}</span>
+  </div>
+
   <div *ngIf="actionAddAnimal(card)">
     <div class="red-arrow "></div>
     <div class="resource animal"></div>
@@ -781,6 +813,15 @@
   <div *ngIf="actionCircuitBoard(card)">
     <div class="red-arrow"></div>
     <span class="card resource"></span>
+  </div>
+
+  <div *ngIf="actionCityCouncil(card)">
+    <div class="red-arrow"></div>
+    <span class="card resource"></span>
+    <br/>
+
+    + <span class="card resource"></span> /
+    <div class="milestone border border-success border-3"></div>
   </div>
 
   <div *ngIf="actionCommunityGardens(card)">
@@ -869,12 +910,28 @@
     : <span class="money resource ">-2</span>
   </div>
 
+  <div *ngIf="actionOrbitalOutpost(card)">
+    < = 1
+    <div class="resource-tag" style="background-color: white"></div>
+    : <span class="money resource ">-3</span>
+  </div>
+
   <div *ngIf="actionEcologicalZone(card)">
     <div class="resource-tag tag-plant"></div>
     /
     <div class="resource-tag tag-animal"></div>
     :
     <div class="resource animal"></div>
+  </div>
+
+  <div *ngIf="actionBacterialAggregates(card)">
+    <div class="resource-tag tag-earth"></div>
+    :
+    <div class="resource microbe"></div>
+
+    <div class="tile globals-box" style="height: 20px;">Research</div>
+    :<br/> Draw +<span class="card resource "></span> /
+    <div class="resource microbe"></div>
   </div>
 
   <div *ngIf="actionEnergySubsidies(card)">
@@ -1073,6 +1130,24 @@
     <div class="microbe resource "></div>
   </div>
 
+  <div *ngIf="actionFibrousComposite(card)">
+    <div class="red-arrow "></div>
+    <div class="science resource "></div>
+    <br/>
+    <span style="margin-left: -3px">OR 3</span>
+    <div class="science resource "></div>
+    <div class="red-arrow "></div>
+    <div class="upgrade"></div>
+    <span class="card-phase-x resource" style="border-radius: 5px"></span>
+
+    <br/>
+    <span style="font-size:12px; ">{{card.actionDescription}}</span>
+    <br/>
+    <div class="science resource "></div>
+    <div class="science resource "></div>
+    <div class="science resource "></div>
+  </div>
+
   <div *ngIf="actionSelfReplicatingBacteria(card)">
     <div class="red-arrow "></div>
     <div class="microbe resource "></div>
@@ -1124,6 +1199,16 @@
     <div class="card resource "></div>
   </div>
 
+  <div *ngIf="actionSoftwareStreamlining(card)">
+    <div class="red-arrow "></div>
+    +2
+    <div class="card resource "></div>
+    -2
+    <div class="card resource "></div>
+    <br/>
+    <span style="font-size:12px; ">{{card.actionDescription}}</span><br/>
+  </div>
+
   <div *ngIf="actionRegolithEaters(card)">
     <div class="red-arrow "></div>
     <div class="microbe resource "></div>
@@ -1134,10 +1219,6 @@
     <div class="microbe resource "></div>
     <div class="red-arrow "></div>
     <div class="tile oxygen-tile "></div>
-  </div>
-
-  <div *ngIf="actionResearchOutpost(card)" style="margin-top: 50px">
-    : <span class="money resource ">-1</span>
   </div>
 
   <div *ngIf="actionRestructuredResources(card)" style="margin-top: 50px">
@@ -1163,6 +1244,26 @@
     (<span class="resource titanium"></span>=<span class="resource money">2</span>)
     <div class="red-arrow "></div>
     <div class="forest-tile tile "></div>
+  </div>
+
+  <div *ngIf="actionCommunityAfforestation(card)">
+    <div class=" money resource ">14</div>
+    <div class="red-arrow "></div>
+    <div class="forest-tile tile "></div>
+    <br/>
+    (
+    <div class="milestone border border-success border-3"></div>
+    = <span class="resource money">-4</span> )
+  </div>
+
+  <div *ngIf="actionGasCooledReactors(card)">
+    <div class=" money resource ">12</div>
+    <div class="red-arrow "></div>
+    <div class="tile temperature-tile"></div>
+    <br/>
+    (
+    <div class="upgrade"></div>
+    <span class="card-phase-x resource" style="border-radius: 5px"></span>=<span class="resource money">-2</span>)
   </div>
 
   <div *ngIf="actionStandardTechnology(card)" style="margin-top: 50px">
@@ -1307,7 +1408,9 @@
   </div>
 
   <div *ngIf="actionPrivateInvestorBeach(card)">
-    <div class="requirements"><div class="milestone-requirements border border-success border-2"></div></div>
+    <div class="requirements">
+      <div class="milestone-requirements border border-success border-2"></div>
+    </div>
   </div>
 
   <span *ngIf="actionEosChasma(card)">
