@@ -233,7 +233,7 @@ public class AiTurnService {
         makeSyncTurn(player, game, new MulliganTurn(player.getUuid(), cards));
     }
 
-    public void performBlueAction(MarsGame game, Player player, int projectId, List<Integer> inputParams) {
+    public void performBlueAction(MarsGame game, Player player, int projectId, Map<Integer, List<Integer>> inputParams) {
         String errorMessage = cardValidationService.validateBlueAction(player, game, projectId, inputParams);
 
         if (errorMessage != null) {

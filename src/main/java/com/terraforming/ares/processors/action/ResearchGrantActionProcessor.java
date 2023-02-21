@@ -28,10 +28,10 @@ public class ResearchGrantActionProcessor implements BlueActionCardProcessor<Res
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player, Card actionCard, List<Integer> inputParameters) {
+    public TurnResponse process(MarsGame game, Player player, Card actionCard, Map<Integer, List<Integer>> inputParameters) {
         final List<Tag> cardTags = player.getCardToTag().get(ResearchGrant.class);
 
-        final Tag inputTag = Tag.byIndex(inputParameters.get(0));
+        final Tag inputTag = Tag.byIndex(inputParameters.get(InputFlag.TAG_INPUT.getId()).get(0));
 
         assert inputTag != null;
 
@@ -52,7 +52,7 @@ public class ResearchGrantActionProcessor implements BlueActionCardProcessor<Res
         player.getPlayed().getCards().stream()
                 .map(cardService::getCard)
                 .filter(Card::onBuiltEffectApplicableToOther)
-                .forEach(card -> card.postProjectBuiltEffect(marsContext, new DummyCard(List.of(inputTag)), Map.of()));
+                .forEach(card -> card.postProjectBuiltEffect(marsContext, new DummyCard(), inputParameters));
 
 
         return null;

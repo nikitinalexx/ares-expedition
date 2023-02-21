@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Value;
 
 import java.util.List;
+import java.util.Map;
 
 @Builder
 @Value
@@ -13,7 +14,7 @@ public class ActionInputParamsResponse {
 
 
     boolean makeAction;
-    List<Integer> inputParams;
+    Map<Integer, List<Integer>> inputParams;
 
     public static ActionInputParamsResponse makeAction() {
         return makeActionResponse;
@@ -23,7 +24,7 @@ public class ActionInputParamsResponse {
         return noActionResponse;
     }
 
-    public static ActionInputParamsResponse makeActionWithParams(List<Integer> params) {
+    public static ActionInputParamsResponse makeActionWithParams(Map<Integer, List<Integer>> params) {
         return ActionInputParamsResponse.builder().makeAction(true).inputParams(params).build();
     }
 

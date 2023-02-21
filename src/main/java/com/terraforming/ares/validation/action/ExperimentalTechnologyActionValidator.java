@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by oleksii.nikitin
@@ -24,7 +25,7 @@ public class ExperimentalTechnologyActionValidator implements ActionValidator<Ex
     }
 
     @Override
-    public String validate(MarsGame game, Player player, List<Integer> inputParameters) {
+    public String validate(MarsGame game, Player player, Map<Integer, List<Integer>> inputParameters) {
         return onBuiltEffectValidationService.validatePhaseUpgrade(inputParameters);
     }
 }

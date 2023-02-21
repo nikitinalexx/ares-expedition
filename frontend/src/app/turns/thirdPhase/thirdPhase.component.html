@@ -157,6 +157,47 @@
         </div>
       </div>
 
+      <div *ngIf="expectsMarsUniversityInput()" class="card-container">
+        <h1 class="text-white">Mars University Discard Cards: </h1>
+
+        <ul class="myUL">
+          <li *ngFor="let card of getPlayerHand();" (click)="clickProjectToDiscard(card)"
+              [ngClass]="selectedProjectToDiscardClass(card)" class="filterDiv automated display">
+            <app-card-template [card]="card" [player]="game?.player"></app-card-template>
+          </li>
+        </ul>
+
+        <label for="marsUniversityDiscardLess" class="text-white">Discard fewer cards</label>
+        <input type="checkbox" class="custom-control-input" id="marsUniversityDiscardLess"
+               formControlName="marsUniversityDiscardLess">
+
+      </div>
+
+      <div *ngIf="expectsViralEnhancersInput()" class="card-container">
+        <h1 class="text-white">Viral Enhancers choice: </h1>
+
+        <div class="form-group">
+          <div class="form-row">
+            <div class="col-sm-1">
+              <label for="plantsInput" class="text-white">Take plants</label>
+              <input type="number" class="form-control form-control-sm" id="plantsInput"
+                     formControlName="viralEnhancersPlantInput">
+            </div>
+          </div>
+
+          <h1 class="text-white">Take microbes and animals</h1>
+
+          <ul class="myUL">
+            <li *ngFor="let card of getMicrobeAnimalPlayedCards();"
+                (click)="clickViralEnhancersTargetCard(card)"
+                [ngClass]="selectedViralEnhancersCardClass(card)" class="filterDiv automated display">
+              <app-card-template [card]="card" [player]="game?.player" [showResources]="true"></app-card-template>
+            </li>
+          </ul>
+
+        </div>
+      </div>
+
     </div>
   </div>
 

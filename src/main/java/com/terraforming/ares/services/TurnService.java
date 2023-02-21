@@ -337,7 +337,7 @@ public class TurnService {
         );
     }
 
-    public TurnResponse performBlueAction(String playerUuid, int projectId, List<Integer> inputParams) {
+    public TurnResponse performBlueAction(String playerUuid, int projectId, Map<Integer, List<Integer>> inputParams) {
         return performTurn(
                 new PerformBlueActionTurn(playerUuid, projectId, inputParams),
                 playerUuid,

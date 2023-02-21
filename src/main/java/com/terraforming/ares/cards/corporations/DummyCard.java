@@ -15,20 +15,10 @@ import java.util.List;
  */
 @Getter
 public class DummyCard implements CorporationCard {
-    private final List<Tag> tags;
-
-    public DummyCard(List<Tag> tags) {
-        this.tags = Collections.unmodifiableList(tags);
-    }
 
     @Override
     public boolean isBlankCard() {
         return true;
-    }
-
-    @Override
-    public List<Tag> getTags() {
-        return tags;
     }
 
     @Override

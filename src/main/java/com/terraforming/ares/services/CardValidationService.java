@@ -90,7 +90,7 @@ public class CardValidationService {
     }
 
     @SuppressWarnings("unchecked")
-    public String validateBlueAction(Player player, MarsGame game, int cardId, List<Integer> inputParameters) {
+    public String validateBlueAction(Player player, MarsGame game, int cardId, Map<Integer, List<Integer>> inputParameters) {
         Card card = cardService.getCard(cardId);
         if (card == null) {
             return "card doesn't exist " + cardId;

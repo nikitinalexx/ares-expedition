@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by oleksii.nikitin
@@ -18,5 +19,5 @@ import java.util.List;
 public class BlueActionRequest {
     private String playerUuid;
     private Integer cardId;
-    private List<Integer> inputParams;
+    private Map<Integer, List<Integer>> inputParams;
 }

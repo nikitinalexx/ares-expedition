@@ -157,7 +157,7 @@ class TestTurnSerialization {
         PerformBlueActionTurn expectedTurn = new PerformBlueActionTurn(
                 "uuid",
                 6,
-                List.of(7, 8)
+                Map.of(0, List.of(7, 8))
 
         );
         PerformBlueActionTurn actualTurn = (PerformBlueActionTurn) serializeDeserialize(expectedTurn);

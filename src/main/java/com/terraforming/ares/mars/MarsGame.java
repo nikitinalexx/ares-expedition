@@ -139,7 +139,7 @@ public class MarsGame {
                     Player.builder()
                             .uuid(UUID.randomUUID().toString() + i)
                             .name(playerNames.get(i))
-                            .hand(Deck.builder().cards(new LinkedList<>(List.of(375, 11, 339, 374))).build())
+                            .hand(Deck.builder().cards(new LinkedList<>(List.of(57, 43, 50, 219, 27 ))).build())
                             //.hand(projectsDeck.dealCardsDeck(playerHandSize))
                             .corporations(corporationsDeck.dealCardsDeck(INITIAL_CORPORATIONS_SIZE))
                             .played(Deck.builder().build())

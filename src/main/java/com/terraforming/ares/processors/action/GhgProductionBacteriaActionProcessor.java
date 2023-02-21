@@ -3,6 +3,7 @@ package com.terraforming.ares.processors.action;
 import com.terraforming.ares.cards.blue.GhgProductionBacteria;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
+import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.services.CardService;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by oleksii.nikitin
@@ -28,8 +30,8 @@ public class GhgProductionBacteriaActionProcessor implements BlueActionCardProce
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player, Card actionCard, List<Integer> inputParameters) {
-        Integer input = inputParameters.get(0);
+    public TurnResponse process(MarsGame game, Player player, Card actionCard, Map<Integer, List<Integer>> inputParameters) {
+        Integer input = inputParameters.get(InputFlag.ADD_DISCARD_MICROBE.getId()).get(0);
 
         if (input == 1) {
             player.addResources(actionCard, 1);

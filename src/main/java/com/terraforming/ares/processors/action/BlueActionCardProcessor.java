@@ -6,6 +6,7 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by oleksii.nikitin
@@ -19,7 +20,7 @@ public interface BlueActionCardProcessor<T extends Card> {
         return null;
     }
 
-    default TurnResponse process(MarsGame game, Player player, Card actionCard, List<Integer> inputParameters) {
+    default TurnResponse process(MarsGame game, Player player, Card actionCard, Map<Integer, List<Integer>> inputParameters) {
         return process(game, player, actionCard);
     }
 

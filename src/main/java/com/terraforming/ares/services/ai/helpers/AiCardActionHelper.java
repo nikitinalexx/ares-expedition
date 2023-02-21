@@ -149,37 +149,36 @@ public class AiCardActionHelper {
             if (!actionsInputData.isEmpty()) {
                 ActionInputData actionInputData = actionsInputData.get(0);
                 if (cardMetadata.getCardAction() == CardAction.DECOMPOSING_FUNGUS) {
-                    return ActionInputParamsResponse.makeActionWithParams(List.of(getLeastValuableCardWithAnimalOrMicrobePresent(game, player)));
+                    return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.CARD_CHOICE.getId(), List.of(getLeastValuableCardWithAnimalOrMicrobePresent(game, player))));
                 } else if (cardMetadata.getCardAction() == CardAction.CONSERVED_BIOME) {
-                    return ActionInputParamsResponse.makeActionWithParams(List.of(getMostValuableAnimalOrMicrobeCard(game, player, Set.of(CardCollectableResource.ANIMAL, CardCollectableResource.MICROBE)).get()));
+                    return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.CARD_CHOICE.getId(), List.of(getMostValuableAnimalOrMicrobeCard(game, player, Set.of(CardCollectableResource.ANIMAL, CardCollectableResource.MICROBE)).get())));
 
                 } else if (actionInputData.getType() == ActionInputDataType.DISCARD_CARD) {
-                    return ActionInputParamsResponse.makeActionWithParams(getRandomHandCards(player, actionInputData.getMax()));
+                    return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.CARD_CHOICE.getId(), getRandomHandCards(player, actionInputData.getMax())));
                 } else if (actionInputData.getType() == ActionInputDataType.ADD_DISCARD_MICROBE) {
                     if (cardMetadata.getCardAction() == CardAction.GHG_PRODUCTION && !terraformingService.canIncreaseTemperature(game)
                             || cardMetadata.getCardAction() == CardAction.NITRITE_REDUCTING && !terraformingService.canRevealOcean(game)
                             || cardMetadata.getCardAction() == CardAction.REGOLITH_EATERS && !terraformingService.canIncreaseOxygen(game)) {
-                        return ActionInputParamsResponse.makeActionWithParams(List.of(1));
+                        return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.ADD_DISCARD_MICROBE.getId(), List.of(1)));
                     }
-                    return ActionInputParamsResponse.makeActionWithParams((player.getCardResourcesCount().get(card.getClass()) >= actionInputData.getMax()) ? List.of(actionInputData.getMax()) : List.of(1));
+                    return ActionInputParamsResponse.makeActionWithParams((player.getCardResourcesCount().get(card.getClass()) >= actionInputData.getMax()) ? Map.of(InputFlag.ADD_DISCARD_MICROBE.getId(), List.of(actionInputData.getMax())) : Map.of(InputFlag.ADD_DISCARD_MICROBE.getId(), List.of(1)));
                 } else if (actionInputData.getType() == ActionInputDataType.DISCARD_HEAT) {
                     int maxHeatToDiscard = Math.min(player.getHeat(), actionInputData.getMax());
                     if (maxHeatToDiscard == 1) {
-                        return ActionInputParamsResponse.makeActionWithParams(List.of(1));
+                        return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.DISCARD_HEAT.getId(), List.of(1)));
                     }
                     int heatToDiscard = random.nextInt(maxHeatToDiscard - 1) + 1;
-                    return ActionInputParamsResponse.makeActionWithParams(List.of(heatToDiscard));
+                    return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.DISCARD_HEAT.getId(), List.of(heatToDiscard)));
                 } else if (actionInputData.getType() == ActionInputDataType.MICROBE_CARD) {
-                    return ActionInputParamsResponse.makeActionWithParams(List.of(getRandomMicrobeCard(player).get().getId()));
+                    return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.CARD_CHOICE.getId(), List.of(getRandomMicrobeCard(player).get().getId())));
                 }
             }
 
             if (cardMetadata.getCardAction() == CardAction.EXTREME_COLD_FUNGUS) {
                 Optional<Card> microbeCard = getRandomMicrobeCard(player);
-                return ActionInputParamsResponse.makeActionWithParams(microbeCard.map(value -> List.of(
-                        InputFlag.EXTREME_COLD_FUNGUS_PUT_MICROBE.getId(),
-                        value.getId())
-                ).orElseGet(() -> List.of(InputFlag.EXTEME_COLD_FUNGUS_PICK_PLANT.getId())));
+                return ActionInputParamsResponse.makeActionWithParams(microbeCard.map(value ->
+                        Map.of(InputFlag.EXTREME_COLD_FUNGUS_PUT_MICROBE.getId(), List.of(value.getId()))
+                ).orElseGet(() -> Map.of(InputFlag.EXTEME_COLD_FUNGUS_PICK_PLANT.getId(), List.of(0))));
             }
         }
 
@@ -199,43 +198,44 @@ public class AiCardActionHelper {
             if (!actionsInputData.isEmpty()) {
                 ActionInputData actionInputData = actionsInputData.get(0);
                 if (cardMetadata.getCardAction() == CardAction.DECOMPOSING_FUNGUS) {
-                    return ActionInputParamsResponse.makeActionWithParams(List.of(getLeastValuableCardWithAnimalOrMicrobePresent(game, player)));
+                    return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.CARD_CHOICE.getId(), List.of(getLeastValuableCardWithAnimalOrMicrobePresent(game, player))));
                 } else if (cardMetadata.getCardAction() == CardAction.CONSERVED_BIOME) {
-                    return ActionInputParamsResponse.makeActionWithParams(List.of(getMostValuableAnimalOrMicrobeCard(game, player, Set.of(CardCollectableResource.ANIMAL, CardCollectableResource.MICROBE)).get()));
+                    return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.CARD_CHOICE.getId(), List.of(getMostValuableAnimalOrMicrobeCard(game, player, Set.of(CardCollectableResource.ANIMAL, CardCollectableResource.MICROBE)).get())));
                 } else if (actionInputData.getType() == ActionInputDataType.DISCARD_CARD) {
                     List<Integer> cardsToDiscard = getCardsToDiscardSmart(game, player, actionInputData.getMax());
-                    return ActionInputParamsResponse.builder().makeAction(!cardsToDiscard.isEmpty()).inputParams(cardsToDiscard).build();
+                    return ActionInputParamsResponse.builder().makeAction(!cardsToDiscard.isEmpty()).inputParams(Map.of(InputFlag.CARD_CHOICE.getId(), cardsToDiscard)).build();
                 } else if (actionInputData.getType() == ActionInputDataType.ADD_DISCARD_MICROBE) {
                     if (cardMetadata.getCardAction() == CardAction.GHG_PRODUCTION && !terraformingService.canIncreaseTemperature(game)
                             || cardMetadata.getCardAction() == CardAction.NITRITE_REDUCTING && !terraformingService.canRevealOcean(game)
                             || cardMetadata.getCardAction() == CardAction.REGOLITH_EATERS && !terraformingService.canIncreaseOxygen(game)) {
-                        return ActionInputParamsResponse.makeActionWithParams(List.of(1));
+                        return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.ADD_DISCARD_MICROBE.getId(), List.of(1)));
                     }
-                    return ActionInputParamsResponse.makeActionWithParams((player.getCardResourcesCount().get(card.getClass()) >= actionInputData.getMax()) ? List.of(actionInputData.getMax()) : List.of(1));
+                    return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.ADD_DISCARD_MICROBE.getId(),
+                            (player.getCardResourcesCount().get(card.getClass()) >= actionInputData.getMax()) ? List.of(actionInputData.getMax()) : List.of(1)));
                 } else if (cardMetadata.getCardAction() == CardAction.POWER_INFRASTRUCTURE) {
                     if (game.getPlanet().isTemperatureMax() && player.getHeat() >= 10) {
-                        return ActionInputParamsResponse.makeActionWithParams(List.of(player.getHeat()));
+                        return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.DISCARD_HEAT.getId(), List.of(player.getHeat())));
                     } else {
                         return ActionInputParamsResponse.noAction();
                     }
                 } else if (cardMetadata.getCardAction() == CardAction.GREEN_HOUSES) {
                     if (!game.getPlanet().isOxygenMax() && player.getHeat() >= 1) {
-                        return ActionInputParamsResponse.makeActionWithParams(List.of(Math.min(4, player.getHeat())));
+                        return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.DISCARD_HEAT.getId(), List.of(Math.min(4, player.getHeat()))));
                     } else {
                         return ActionInputParamsResponse.noAction();
                     }
                 } else if (cardMetadata.getCardAction() == CardAction.SYMBIOTIC_FUNGUD) {
-                    return ActionInputParamsResponse.makeActionWithParams(List.of(getMostValuableAnimalOrMicrobeCard(game, player, Set.of(CardCollectableResource.MICROBE)).get()));
+                    return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.CARD_CHOICE.getId(), List.of(getMostValuableAnimalOrMicrobeCard(game, player, Set.of(CardCollectableResource.MICROBE)).get())));
                 }
             }
 
             if (cardMetadata.getCardAction() == CardAction.EXTREME_COLD_FUNGUS) {
                 getMostValuableAnimalOrMicrobeCard(game, player, Set.of(CardCollectableResource.MICROBE));
 
-                return ActionInputParamsResponse.makeActionWithParams(getMostValuableAnimalOrMicrobeCard(game, player, Set.of(CardCollectableResource.MICROBE)).map(value -> List.of(
-                        InputFlag.EXTREME_COLD_FUNGUS_PUT_MICROBE.getId(),
-                        value)
-                ).orElseGet(() -> List.of(InputFlag.EXTEME_COLD_FUNGUS_PICK_PLANT.getId())));
+                return ActionInputParamsResponse.makeActionWithParams(getMostValuableAnimalOrMicrobeCard(game, player,
+                        Set.of(CardCollectableResource.MICROBE)).map(value ->
+                        Map.of(InputFlag.EXTREME_COLD_FUNGUS_PUT_MICROBE.getId(), List.of(value))
+                ).orElseGet(() -> Map.of(InputFlag.EXTEME_COLD_FUNGUS_PICK_PLANT.getId(), List.of(0))));
             }
         }
 

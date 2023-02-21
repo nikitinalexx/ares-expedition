@@ -3,6 +3,7 @@ package com.terraforming.ares.processors.action;
 import com.terraforming.ares.cards.blue.ExperimentalTechnology;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
+import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.services.CardService;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by oleksii.nikitin
@@ -27,10 +29,10 @@ public class ExperimentalTechnologyActionProcessor implements BlueActionCardProc
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player, Card actionCard, List<Integer> inputParameters) {
+    public TurnResponse process(MarsGame game, Player player, Card actionCard, Map<Integer, List<Integer>> inputParameters) {
         player.setTerraformingRating(player.getTerraformingRating() - 1);
 
-        UpgradePhaseHelper.upgradePhase(cardService, game, player, inputParameters.get(0));
+        UpgradePhaseHelper.upgradePhase(cardService, game, player, inputParameters.get(InputFlag.PHASE_UPGRADE_CARD.getId()).get(0));
 
         return null;
     }
