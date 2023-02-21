@@ -8,5 +8,6 @@ export enum Tag {
   BUILDING = 'BUILDING',
   ANIMAL = 'ANIMAL',
   JUPITER = 'JUPITER',
-  MICROBE = 'MICROBE'
+  MICROBE = 'MICROBE',
+  DYNAMIC = 'DYNAMIC'
 }

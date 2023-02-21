@@ -4,7 +4,6 @@ import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
-import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 
 import java.util.Collections;
@@ -45,9 +44,12 @@ public class MayNiProductionsCorporation implements CorporationCard {
     }
 
     @Override
-    public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
         if (project.getColor() == CardColor.GREEN) {
-            List<Integer> cards = cardService.dealCards(game, 1);
+            final MarsGame game = marsContext.getGame();
+            final Player player = marsContext.getPlayer();
+
+            List<Integer> cards = marsContext.getCardService().dealCards(game, 1);
             player.getHand().addCards(cards);
             player.addFirstTurn(
                     new DiscardCardsTurn(

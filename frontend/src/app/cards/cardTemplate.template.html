@@ -614,9 +614,48 @@
     <span class="card resource"></span>
   </div>
 
-  <div *ngIf="actionUpdatePhaseUpdate(card)">
+  <div *ngIf="actionUpdatePhase(card)">
     <div class="upgrade"></div>
-    <span class="card-phase-x resource "></span>
+    <span class="card-phase-x resource" style="border-radius: 5px"></span>
+  </div>
+
+  <div *ngIf="actionDoublePhaseUpdate(card)">
+    <div class="upgrade"></div>
+    <span class="card-phase-x resource" style="border-radius: 5px"></span>
+    <br/>
+    <div class="upgrade"></div>
+    <span class="card-phase-x resource" style="border-radius: 5px"></span>
+  </div>
+
+  <div *ngIf="actionCommunicationsStreamlining(card)">
+    Play <div class="upgrade"></div>
+    <span class="card-phase-x resource" style="border-radius: 5px"></span>
+    <span style="font-size: 20px">:</span>
+    <div class="money resource">1</div>
+  </div>
+
+  <div *ngIf="actionUpgradePhase1(card)">
+    <div class="upgrade"></div>
+    <span class="phase-1 resource" style="border-radius: 5px"></span>
+  </div>
+
+  <div *ngIf="actionUpgradePhase2(card)">
+    <div class="upgrade"></div>
+    <span class="phase-2 resource" style="border-radius: 5px"></span>
+  </div>
+
+  <div *ngIf="actionUpgradePhase3(card) || actionCommunicationsStreamlining(card) ">
+    <div class="upgrade"></div>
+    <span class="phase-3 resource" style="border-radius: 5px"></span>
+  </div>
+
+  <div *ngIf="actionUpgradePhase4(card)">
+    <div class="upgrade"></div>
+    <span class="phase-4 resource" style="border-radius: 5px"></span>
+  </div>
+
+  <div *ngIf="actionAwardWinningReflector(card)">
+    <div class="milestone border border-success border-3"></div> ?  + 4 <div class="heat resource "></div>
   </div>
 
   <div *ngIf="actionAiCentral(card)">
@@ -669,6 +708,13 @@
     <span class="card resource "></span>
   </div>
 
+  <div *ngIf="actionBiomedicalImports(card)">
+    <div class="tile oxygen-tile "></div>
+    OR
+    <div class="upgrade"></div>
+    <span class="card-phase-x resource" style="border-radius: 5px"></span>
+  </div>
+
   <div *ngIf="actionAssemblyLines(card)">
     :
     <div class="red-arrow"></div>
@@ -683,6 +729,17 @@
     <span class="card resource "></span>
     <span class="card resource "></span>
     <span class="card resource "></span>
+    <br/>
+    <span style="font-size:14px; ">{{card.actionDescription}}</span>
+  </div>
+
+  <div *ngIf="actionExperimentalTechnology(card)">
+    <div class="rating tile "></div>
+    <br/>
+    <span class="red-arrow " style="margin-left:5px; "></span>
+    <br/>
+    <div class="upgrade"></div>
+    <span class="card-phase-x resource" style="border-radius: 5px"></span>
     <br/>
     <span style="font-size:14px; ">{{card.actionDescription}}</span>
   </div>
@@ -731,6 +788,14 @@
     <div class=" money resource ">2</div>
     <div></div>
     <div class=" plant resource "></div>
+    *
+  </div>
+
+  <div *ngIf="actionDroneAssistedConstruction(card)">
+    <div class="red-arrow"></div>
+    <div class=" money resource ">2</div>
+    <div></div>
+    <div class=" money resource ">2</div>
     *
   </div>
 
@@ -927,6 +992,12 @@
     <div class="resource-tag tag-jupiter"></div>
     :
     <div class="money resource ">-3</div>
+    <span class="card resource "></span>
+  </div>
+
+  <div *ngIf="actionImpactAnalysis(card)">
+    <div class="resource-tag tag-event"></div>
+    :
     <span class="card resource "></span>
   </div>
 
@@ -1208,6 +1279,10 @@
     <div class="requirements">7 TR</div>
   </div>
 
+  <div *ngIf="actionPrivateInvestorBeach(card)">
+    <div class="requirements"><div class="milestone-requirements border border-success border-2"></div></div>
+  </div>
+
   <span *ngIf="actionEosChasma(card)">
             <span class="resource animal "></span>*
           </span>
@@ -1428,6 +1503,14 @@
     <span>3</span>
     <div class="resource plant "></div>
     OR <span>3</span>
+    <div class="resource microbe "></div>
+    * OR <span>2</span>
+    <div class="resource animal "></div>
+    *
+  </div>
+
+  <div *ngIf="actionCryogenicShipment(card)">
+    <span>3</span>
     <div class="resource microbe "></div>
     * OR <span>2</span>
     <div class="resource animal "></div>

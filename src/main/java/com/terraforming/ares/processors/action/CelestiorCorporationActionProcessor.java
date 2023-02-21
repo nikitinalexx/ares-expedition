@@ -32,7 +32,7 @@ public class CelestiorCorporationActionProcessor implements BlueActionCardProces
 
         for (Integer card : cardService.dealCards(game, 3)) {
             Card projectCard = cardService.getCard(card);
-            if (projectCard.getTags().contains(Tag.EVENT)) {
+            if (projectCard.getTags().contains(Tag.EVENT) || projectCard.getTags().contains(Tag.DYNAMIC)) {
                 player.getHand().addCard(card);
                 resultBuilder.takenCard(CardDto.from(projectCard));
             } else {

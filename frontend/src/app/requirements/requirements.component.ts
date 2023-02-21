@@ -46,7 +46,7 @@ export class RequirementsComponent {
   }
 
   enoughMoney(card: Card, player: Player): boolean {
-    const discount = this.discountService.getDiscount(card, player);
+    const discount = this.discountService.getDiscount(card, player, -1);
 
     return player.mc >= card.price - discount;
   }

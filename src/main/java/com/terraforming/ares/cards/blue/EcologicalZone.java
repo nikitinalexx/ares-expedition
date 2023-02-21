@@ -1,15 +1,14 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.winPoints.WinPointsInfo;
-import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -63,14 +62,14 @@ public class EcologicalZone implements BlueCard {
     }
 
     @Override
-    public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card card, Map<Integer, List<Integer>> inputParams) {
-        long animalsToAddCount = card.getTags().stream().filter(tag -> tag == Tag.ANIMAL || tag == Tag.PLANT).count();
+    public void postProjectBuiltEffect(MarsContext marsContext, Card card, Map<Integer, List<Integer>> inputParams) {
+        long animalsToAddCount = marsContext.getCardService().countCardTags(card, Set.of(Tag.ANIMAL, Tag.PLANT), inputParams);
 
         if (animalsToAddCount == 0) {
             return;
         }
 
-        player.addResources(this, (int) animalsToAddCount);
+        marsContext.getPlayer().addResources(this, (int) animalsToAddCount);
     }
 
     @Override

@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -50,11 +51,7 @@ public class NitrogenRichAsteroid implements BaseExpansionRedCard {
         terraformingService.increaseTemperature(marsContext.getGame(), marsContext.getPlayer());
         player.setPlants(player.getPlants() + 2);
 
-        long plantsMin3 = player.getPlayed().getCards().stream().map(cardService::getCard)
-                .flatMap(card -> card.getTags().stream())
-                .filter(Tag.PLANT::equals)
-                .limit(3)
-                .count();
+        long plantsMin3 = cardService.countPlayedTags(player, Set.of(Tag.PLANT));
 
         if (plantsMin3 == 3) {
             player.setPlants(player.getPlants() + 4);

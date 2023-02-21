@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -45,11 +46,8 @@ public class MarsUniversity implements BlueCard {
     }
 
     @Override
-    public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card card, Map<Integer, List<Integer>> inputParams) {
-        long scienceTagsCount = card.getTags()
-                .stream()
-                .filter(Tag.SCIENCE::equals)
-                .count();
+    public void postProjectBuiltEffect(MarsContext marsContext, Card card, Map<Integer, List<Integer>> inputParams) {
+        long scienceTagsCount = marsContext.getCardService().countCardTags(card, Set.of(Tag.SCIENCE), inputParams);
 
         if (scienceTagsCount == 0) {
             return;
@@ -62,7 +60,7 @@ public class MarsUniversity implements BlueCard {
         }
 
         for (Integer cardToDiscard : cardsInput) {
-            discardCard(cardService, cardToDiscard, game, player);
+            discardCard(marsContext.getCardService(), cardToDiscard, marsContext.getGame(), marsContext.getPlayer());
         }
     }
 
@@ -71,7 +69,7 @@ public class MarsUniversity implements BlueCard {
 
         Card cardToDiscard = cardService.getCard(cardIdToDiscard);
 
-        int cardsToReceive = cardToDiscard.getTags().contains(Tag.PLANT) ? 2 : 1;
+        int cardsToReceive = cardToDiscard.getTags().contains(Tag.PLANT) || cardToDiscard.getTags().contains(Tag.DYNAMIC) ? 2 : 1;
 
         for (Integer dealedCard : cardService.dealCards(game, cardsToReceive)) {
             player.getHand().addCard(dealedCard);

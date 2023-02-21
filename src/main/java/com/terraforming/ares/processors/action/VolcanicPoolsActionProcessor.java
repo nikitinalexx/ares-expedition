@@ -11,6 +11,8 @@ import com.terraforming.ares.services.TerraformingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Set;
+
 /**
  * Created by oleksii.nikitin
  * Creation date 05.05.2022
@@ -28,12 +30,7 @@ public class VolcanicPoolsActionProcessor implements BlueActionCardProcessor<Vol
 
     @Override
     public TurnResponse process(MarsGame game, Player player, Card actionCard) {
-        int energyTags = (int) player.getPlayed()
-                .getCards()
-                .stream()
-                .map(cardService::getCard)
-                .flatMap(projectCard -> projectCard.getTags().stream())
-                .filter(Tag.ENERGY::equals).count();
+        int energyTags = cardService.countPlayedTags(player, Set.of(Tag.ENERGY));
 
         int flipPrice = Math.max(0, 12 - energyTags);
 

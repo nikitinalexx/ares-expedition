@@ -1,15 +1,14 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
-import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -67,12 +66,11 @@ public class AnaerobicMicroorganisms implements BlueCard {
     }
 
     @Override
-    public void postProjectBuiltEffect(CardService cardService, MarsGame marsGame, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        int affectedTagsCount = (int) project.getTags().stream().filter(tag ->
-                tag == Tag.ANIMAL || tag == Tag.MICROBE || tag == Tag.PLANT
-        ).count();
-
-        player.addResources(this, affectedTagsCount);
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
+        marsContext.getPlayer().addResources(
+                this,
+                marsContext.getCardService().countCardTags(project, Set.of(Tag.ANIMAL, Tag.MICROBE, Tag.PLANT), inputParams)
+        );
     }
 
     @Override

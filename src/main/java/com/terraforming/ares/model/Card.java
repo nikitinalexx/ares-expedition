@@ -25,6 +25,7 @@ public interface Card {
         return null;
     }
 
+
     default List<Tag> getTags() {
         return Collections.emptyList();
     }
@@ -64,7 +65,7 @@ public interface Card {
         return null;
     }
 
-    default void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
+    default void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
     }
 
     default void onOceanFlippedEffect(Player player) {
@@ -97,7 +98,7 @@ public interface Card {
         return 0;
     }
 
-    default void revertPlayedTags(CardService cardService, List<Tag> tags, Player player) {
+    default void revertPlayedTags(CardService cardService, Card card, Player player) {
     }
 
 }

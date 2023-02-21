@@ -21,6 +21,8 @@ import {RequirementsComponent} from '../../requirements/requirements.component';
 })
 export class BuildBlueRedComponent implements OnInit {
   public errorMessage: string;
+  allTags = [Tag.SPACE, Tag.EARTH, Tag.EVENT, Tag.SCIENCE, Tag.PLANT,
+    Tag.ENERGY, Tag.BUILDING, Tag.ANIMAL, Tag.JUPITER, Tag.MICROBE];
   selectedProject: Card;
   projectsToDiscard: number[];
   viralEnhancersTargetCards: number[];
@@ -32,6 +34,9 @@ export class BuildBlueRedComponent implements OnInit {
   localHeatTrappingCard = null;
   phaseInput = 0;
   phaseUpgradeType = -1;
+  extraPhaseInput = 0;
+  extraPhaseUpgradeType = -1;
+  tagInput = -1;
 
   @Input()
   game: Game;
@@ -83,6 +88,15 @@ export class BuildBlueRedComponent implements OnInit {
     return this.game?.player.played.filter(card => card.cardResource === CardResource[CardResource.ANIMAL]);
   }
 
+  expectsTagInput(): boolean {
+    return this.selectedProject?.cardAction === CardAction[CardAction.CHOOSE_TAG] ||
+      this.selectedProject?.cardAction === CardAction[CardAction.TOPOGRAPHIC_MAPPING];
+  }
+
+  expectsBiomedicalImportsInput(): boolean {
+    return this.selectedProject?.cardAction === CardAction[CardAction.BIOMEDICAL_IMPORTS];
+  }
+
   getBlueRedPlayerHand(): Card[] {
     const cards = this.game.player.hand.filter(
       card => card.cardColor === CardColor[CardColor.BLUE] || card.cardColor === CardColor[CardColor.RED]
@@ -104,6 +118,15 @@ export class BuildBlueRedComponent implements OnInit {
           this.parentForm.value.restructuredResources)
       );
     }
+  }
+
+  clickTagChoice(tagIndex: number) {
+    this.tagInput = tagIndex;
+    this.parentForm.controls.mcPrice.setValue(
+      this.getDiscountedMcPriceWithEffectsApplied(
+        this.parentForm.value.anaerobicMicroorganisms,
+        this.parentForm.value.restructuredResources)
+    );
   }
 
   importedNitrogenClick(card: Card) {
@@ -226,7 +249,8 @@ export class BuildBlueRedComponent implements OnInit {
 
   getDiscountedMcPriceOfSelectedProject(): number {
     if (this.selectedProject) {
-      return this.selectedProject.price - this.discountService.getDiscount(this.selectedProject, this.game?.player);
+      return this.selectedProject.price -
+        this.discountService.getDiscount(this.selectedProject, this.game?.player, this.expectsTagInput() ? this.tagInput : -1);
     } else {
       return 0;
     }
@@ -273,7 +297,7 @@ export class BuildBlueRedComponent implements OnInit {
   marsUniversityEffect(): boolean {
     return (this.selectedProject.cardAction === CardAction[CardAction.MARS_UNIVERSITY]
       || this.game.player.played.some(card => card.cardAction === CardAction[CardAction.MARS_UNIVERSITY]))
-      && this.selectedProject.tags.some(tag => tag === Tag[Tag.SCIENCE]);
+      && (this.selectedProject.tags.some(tag => tag === Tag[Tag.SCIENCE] || this.countTagsUsedAsInput([Tag.SCIENCE]) > 0));
   }
 
   syntheticCatastropheEffect(): boolean {
@@ -285,11 +309,16 @@ export class BuildBlueRedComponent implements OnInit {
       || this.game.player.played.some(card => card.cardAction === CardAction[CardAction.VIRAL_ENHANCERS]))
       && this.selectedProject.tags.some(tag =>
         tag === Tag[Tag.PLANT] || tag === Tag[Tag.MICROBE] || tag === Tag[Tag.ANIMAL]
+        || this.countTagsUsedAsInput([Tag.PLANT, Tag.MICROBE, Tag.ANIMAL]) > 0
       );
   }
 
   importedHydrogenEffect(): boolean {
     return this.selectedProject.cardAction === CardAction[CardAction.IMPORTED_HYDROGEN];
+  }
+
+  cryogenicShipmentEffect(): boolean {
+    return this.selectedProject.cardAction === CardAction[CardAction.CRYOGENIC_SHIPMENT];
   }
 
   localHeatTrappingEffect(): boolean {
@@ -309,21 +338,29 @@ export class BuildBlueRedComponent implements OnInit {
       ||
       this.game.player.played.some(card => card.cardAction === CardAction[CardAction.DECOMPOSERS])
       && (this.selectedProject.tags.some(tag =>
-        tag === Tag[Tag.ANIMAL] || tag === Tag[Tag.MICROBE] || tag === Tag[Tag.PLANT]));
+        tag === Tag[Tag.ANIMAL] || tag === Tag[Tag.MICROBE] || tag === Tag[Tag.PLANT]
+        || this.countTagsUsedAsInput([Tag.ANIMAL, Tag.MICROBE, Tag.PLANT]) > 0
+      ));
   }
 
   decomposersCanTakeCard(): boolean {
     const microbeCount = this.game.player.cardResources[this.game.player.played.find(
       card => card.cardAction === CardAction[CardAction.DECOMPOSERS]
     )?.id];
-    return this.selectedProject.tags.filter(tag =>
-      tag === Tag[Tag.ANIMAL] || tag === Tag[Tag.MICROBE] || tag === Tag[Tag.PLANT])?.length > 1
-      || (microbeCount && microbeCount >= 1);
+    return microbeCount && microbeCount >= 1;
   }
 
   canPayWithHeat(): boolean {
     return this.game.player.played.some(card => card.cardAction === CardAction.HELION_CORPORATION)
       && this.game.player.heat > 0;
+  }
+
+  getAllTagsArray(): Tag[] {
+    return this.allTags;
+  }
+
+  getTagClasses(tagNumber: number): string {
+    return 'tag-' + this.allTags[tagNumber].toString().toLowerCase();
   }
 
   expectsResourceInputOnBuild(): boolean {
@@ -340,7 +377,29 @@ export class BuildBlueRedComponent implements OnInit {
   }
 
   upgradePhaseCardEffect(): boolean {
-    return this.selectedProject.cardAction === CardAction[CardAction.UPDATE_PHASE_CARD];
+    return this.selectedProject.cardAction === CardAction[CardAction.UPDATE_PHASE_CARD]
+      || this.selectedProject.cardAction === CardAction[CardAction.UPDATE_PHASE_3_CARD]
+      || this.selectedProject.cardAction === CardAction[CardAction.COMMUNICATIONS_STREAMLINING]
+      || this.selectedProject.cardAction === CardAction[CardAction.TOPOGRAPHIC_MAPPING]
+      || this.selectedProject.cardAction === CardAction[CardAction.UPDATE_PHASE_CARD_TWICE]
+      || this.selectedProject.cardAction === CardAction[CardAction.CRYOGENIC_SHIPMENT]
+      || this.selectedProject.cardAction === CardAction[CardAction.UPDATE_PHASE_2_CARD]
+      || this.expectsBiomedicalImportsInput() && this.parentForm.value.biomedicalImports === 'phase';
+  }
+
+  upgradeExtraPhaseCardEffect(): boolean {
+    return this.selectedProject.cardAction === CardAction[CardAction.UPDATE_PHASE_CARD_TWICE];
+  }
+
+  getUpgradePhasesArray(): number[] {
+    if (this.selectedProject.cardAction === CardAction[CardAction.UPDATE_PHASE_3_CARD]
+      || this.selectedProject.cardAction === CardAction[CardAction.COMMUNICATIONS_STREAMLINING]) {
+      return [3];
+    }
+    if (this.selectedProject.cardAction === CardAction[CardAction.UPDATE_PHASE_2_CARD]) {
+      return [2];
+    }
+    return [1, 2, 3, 4, 5];
   }
 
   updatePhaseInput(newPhaseInput: number) {
@@ -349,6 +408,21 @@ export class BuildBlueRedComponent implements OnInit {
 
   updatePhaseUpgradeTypeInput(newPhaseUpgradeType: number) {
     this.phaseUpgradeType = newPhaseUpgradeType;
+  }
+
+  updateExtraPhaseInput(newPhaseInput: number) {
+    this.extraPhaseInput = newPhaseInput;
+  }
+
+  updateExtraPhaseUpgradeTypeInput(newPhaseUpgradeType: number) {
+    this.extraPhaseUpgradeType = newPhaseUpgradeType;
+  }
+
+  countTagsUsedAsInput(tags: Tag[]): number {
+    if (this.expectsTagInput() && this.tagInput >= 0) {
+      return tags.filter(t => t === this.allTags[this.tagInput])?.length;
+    }
+    return 0;
   }
 
   buildBlueRedProject(callback: (value: any) => void) {
@@ -366,7 +440,8 @@ export class BuildBlueRedComponent implements OnInit {
     if (this.parentForm.value.turn === 'blueRedProject' && this.parentForm.value.mcPrice !== null) {
       const inputParams = new Map<number, number[]>();
       if (this.marsUniversityEffect()) {
-        const scienceTagsCount = this.selectedProject.tags.filter(tag => tag === Tag[Tag.SCIENCE]).length;
+        const scienceTagsCount = this.selectedProject.tags.filter(tag => tag === Tag[Tag.SCIENCE]).length
+          + this.countTagsUsedAsInput([Tag.SCIENCE]);
         if (this.projectsToDiscard && this.projectsToDiscard.length > scienceTagsCount) {
           this.errorMessage = 'Mars University may only discard ' + scienceTagsCount + ' cards';
           return;
@@ -392,9 +467,10 @@ export class BuildBlueRedComponent implements OnInit {
       }
 
       if (this.expectsDecomposersInput()) {
-        const expectedInputSum = this.selectedProject.tags.filter(
+        let expectedInputSum = this.selectedProject.tags.filter(
           tag => tag === Tag[Tag.ANIMAL] || tag === Tag[Tag.MICROBE] || tag === Tag[Tag.PLANT]
         ).length;
+        expectedInputSum += this.countTagsUsedAsInput([Tag.ANIMAL, Tag.MICROBE, Tag.PLANT]);
         const takeMicrobes = this.parentForm.value.takeMicrobes ? this.parentForm.value.takeMicrobes : 0;
         const takeCards = this.parentForm.value.takeCards ? this.parentForm.value.takeCards : 0;
 
@@ -404,6 +480,17 @@ export class BuildBlueRedComponent implements OnInit {
         }
         inputParams[InputFlag.DECOMPOSERS_TAKE_MICROBE.valueOf()] = [takeMicrobes];
         inputParams[InputFlag.DECOMPOSERS_TAKE_CARD.valueOf()] = [takeCards];
+      }
+
+      if (this.expectsBiomedicalImportsInput()) {
+        if (this.parentForm.value.biomedicalImports !== 'oxygen' && this.parentForm.value.biomedicalImports !== 'phase') {
+          this.errorMessage = 'Biomedical Imports expects Oxygen or Update phase input';
+        }
+        if (this.parentForm.value.biomedicalImports === 'oxygen') {
+          inputParams[InputFlag.BIOMEDICAL_IMPORTS_RAISE_OXYGEN.valueOf()] = [-1];
+        } else {
+          inputParams[InputFlag.BIOMEDICAL_IMPORTS_UPGRADE_PHASE.valueOf()] = [-1];
+        }
       }
 
       if (this.expectsResourceInputOnBuild()) {
@@ -419,10 +506,18 @@ export class BuildBlueRedComponent implements OnInit {
         inputParams[paramId] = [this.onBuildResourceChoice.id];
       }
 
+      if (this.expectsTagInput()) {
+        if (this.tagInput < 0) {
+          this.errorMessage = 'Choose a tag to put on a Card';
+          return;
+        }
+        inputParams[InputFlag.TAG_INPUT.valueOf()] = [this.tagInput];
+      }
+
       if (this.viralEnhancersEffect()) {
         const expectedInputSum = this.selectedProject.tags.filter(
           tag => tag === Tag[Tag.ANIMAL] || tag === Tag[Tag.MICROBE] || tag === Tag[Tag.PLANT]
-        ).length;
+        ).length + this.countTagsUsedAsInput([Tag.PLANT, Tag.MICROBE, Tag.ANIMAL]);
         const takePlants = this.parentForm.value.viralEnhancersPlantInput ? this.parentForm.value.viralEnhancersPlantInput : 0;
         const cardsSelected = this.viralEnhancersTargetCards ? this.viralEnhancersTargetCards.length : 0;
         if (takePlants + cardsSelected > expectedInputSum) {
@@ -466,6 +561,22 @@ export class BuildBlueRedComponent implements OnInit {
         }
       }
 
+      if (this.cryogenicShipmentEffect()) {
+        if (this.parentForm.value.importedHydrogenForm === 'skipMicrobeAnimal') {
+          inputParams[InputFlag.CRYOGENIC_SHIPMENT_PUT_RESOURCE.valueOf()] = [InputFlag.SKIP_ACTION.valueOf()];
+        } else {
+          console.log(this.parentForm.value.importedHydrogenForm);
+          if (!this.parentForm.value.importedHydrogenForm
+            || this.parentForm.value.importedHydrogenForm !== 'microbeAnimal'
+            || this.parentForm.value.importedHydrogenForm === 'microbeAnimal'
+            && !this.importedHydrogenMicrobeAnimal) {
+            this.errorMessage = 'You need to choose an Animal/Microbe card';
+            return;
+          }
+          inputParams[InputFlag.CRYOGENIC_SHIPMENT_PUT_RESOURCE.valueOf()] = [this.importedHydrogenMicrobeAnimal.id];
+        }
+      }
+
       if (this.upgradePhaseCardEffect()) {
         if (this.phaseInput < 0 || this.phaseInput > 4) {
           this.errorMessage = 'Pick the phase you want to upgrade';
@@ -476,6 +587,18 @@ export class BuildBlueRedComponent implements OnInit {
           return;
         }
         inputParams[InputFlag.PHASE_UPGRADE_CARD.valueOf()] = [this.phaseInput * 2 + this.phaseUpgradeType];
+      }
+
+      if (this.upgradeExtraPhaseCardEffect()) {
+        if (this.extraPhaseInput < 0 || this.extraPhaseInput > 4) {
+          this.errorMessage = 'Pick the extra phase you want to upgrade';
+          return;
+        }
+        if (this.extraPhaseUpgradeType !== 0 && this.extraPhaseUpgradeType !== 1) {
+          this.errorMessage = 'Choose the type of extra phase upgrade';
+          return;
+        }
+        inputParams[InputFlag.PHASE_UPGRADE_CARD.valueOf()].push(this.extraPhaseInput * 2 + this.extraPhaseUpgradeType);
       }
 
       if (this.importedNitrogenEffect()) {

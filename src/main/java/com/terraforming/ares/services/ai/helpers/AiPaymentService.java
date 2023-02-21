@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by oleksii.nikitin
@@ -27,7 +28,7 @@ public class AiPaymentService {
     private final SpecialEffectsService specialEffectsService;
 
     public List<Payment> getCardPayments(Player player, Card card) {
-        int discount = paymentValidationService.getDiscount(card, player);
+        int discount = paymentValidationService.getDiscount(card, player, Map.of());
 
         int price = Math.max(0, card.getPrice() - discount);
 

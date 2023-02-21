@@ -34,6 +34,8 @@ public class Player {
     @Builder.Default
     private Map<Class<?>, Integer> cardResourcesCount = new HashMap<>();
     @Builder.Default
+    private Map<Class<?>, Tag> cardToTag = new HashMap<>();
+    @Builder.Default
     private int terraformingRating = Constants.STARTING_RT;
     private int actionsInSecondPhase;
     private boolean gotBonusInSecondPhase;
@@ -200,6 +202,10 @@ public class Player {
 
     public boolean hasPhaseUpgrade(int upgrade) {
         return phaseCards.get(upgrade / 3) == (upgrade % 3);
+    }
+
+    public boolean isPhaseUpgraded(int phase) {
+        return phaseCards.get(phase - 1) != 0;
     }
 
     public void clearRoundResults() {

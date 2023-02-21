@@ -173,7 +173,9 @@ export class NavbarComponent {
   }
 
   getUniqueTags() {
-    const tags = this.player?.played.map(card => card.tags).reduce((acc, val) => acc.concat(val), []);
+    const tags = this.player?.played
+      .map(card => card.tags.map(tag => tag === Tag.DYNAMIC ? this.player.cardToTag[card.id] : tag))
+      .reduce((acc, val) => acc.concat(val), []);
     if (!tags) {
       return [];
     }

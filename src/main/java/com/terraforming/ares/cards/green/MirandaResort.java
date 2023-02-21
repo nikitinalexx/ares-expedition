@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -31,12 +32,7 @@ public class MirandaResort implements BaseExpansionGreenCard {
 
     @Override
     public void payAgain(MarsGame game, CardService cardService, Player player) {
-        int earthTagCount = (int) player
-                .getPlayed()
-                .getCards().stream()
-                .map(cardService::getCard)
-                .flatMap(card -> card.getTags().stream())
-                .filter(Tag.EARTH::equals).count();
+        int earthTagCount = cardService.countPlayedTags(player, Set.of(Tag.EARTH));
 
         player.setMc(player.getMc() + earthTagCount);
     }
@@ -47,29 +43,29 @@ public class MirandaResort implements BaseExpansionGreenCard {
     }
 
     @Override
-    public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        int earthTags = (int) project.getTags().stream().filter(Tag.EARTH::equals).count();
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
+        final Player player = marsContext.getPlayer();
+
+        int earthTags = marsContext.getCardService().countCardTags(project, Set.of(Tag.EARTH), inputParams);
 
         player.setMcIncome(player.getMcIncome() + earthTags);
     }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        int earthTagCount = (int) marsContext.getPlayer()
-                .getPlayed()
-                .getCards().stream()
-                .map(marsContext.getCardService()::getCard)
-                .flatMap(card -> card.getTags().stream())
-                .filter(Tag.EARTH::equals).count();
+        final Player player = marsContext.getPlayer();
 
-        marsContext.getPlayer().setMcIncome(marsContext.getPlayer().getMcIncome() + earthTagCount + 1);
+        int earthTagCount = marsContext.getCardService().countPlayedTags(player, Set.of(Tag.EARTH));
+
+        player.setMcIncome(player.getMcIncome() + earthTagCount + 1);
 
         return null;
     }
 
     @Override
-    public void revertPlayedTags(CardService cardService, List<Tag> tags, Player player) {
-        int earthTagCount = (int) tags.stream().filter(Tag.EARTH::equals).count();
+    public void revertPlayedTags(CardService cardService, Card card, Player player) {
+        int earthTagCount = cardService.countCardTagsWithDynamic(card, player, Set.of(Tag.EARTH));
+
         player.setMcIncome(player.getMcIncome() - earthTagCount);
     }
 

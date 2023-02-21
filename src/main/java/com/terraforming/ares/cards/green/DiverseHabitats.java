@@ -32,12 +32,7 @@ public class DiverseHabitats implements BaseExpansionGreenCard {
 
     @Override
     public void payAgain(MarsGame game, CardService cardService, Player player) {
-        int tagCount = (int) player
-                .getPlayed()
-                .getCards().stream()
-                .map(cardService::getCard)
-                .flatMap(card -> card.getTags().stream())
-                .filter(tag -> tag == Tag.ANIMAL || tag == Tag.PLANT).count();
+        int tagCount = cardService.countPlayedTags(player, Set.of(Tag.ANIMAL, Tag.PLANT));
 
         player.setMc(player.getMc() + tagCount);
     }
@@ -48,8 +43,10 @@ public class DiverseHabitats implements BaseExpansionGreenCard {
     }
 
     @Override
-    public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        int projectTagsCount = (int) project.getTags().stream().filter(tag -> tag == Tag.ANIMAL || tag == Tag.PLANT).count();
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
+        int projectTagsCount = marsContext.getCardService().countCardTags(project, Set.of(Tag.ANIMAL, Tag.PLANT), inputParams);
+
+        final Player player = marsContext.getPlayer();
 
         player.setMcIncome(player.getMcIncome() + projectTagsCount);
     }
@@ -65,8 +62,9 @@ public class DiverseHabitats implements BaseExpansionGreenCard {
     }
 
     @Override
-    public void revertPlayedTags(CardService cardService, List<Tag> tags, Player player) {
-        int animalPlantTagCount = (int) tags.stream().filter(tag -> tag == Tag.ANIMAL || tag == Tag.PLANT).count();
+    public void revertPlayedTags(CardService cardService, Card card, Player player) {
+        int animalPlantTagCount = cardService.countCardTagsWithDynamic(card, player, Set.of(Tag.ANIMAL, Tag.PLANT));
+
         player.setMcIncome(player.getMcIncome() - animalPlantTagCount);
     }
 

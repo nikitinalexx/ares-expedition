@@ -1,14 +1,13 @@
 package com.terraforming.ares.cards.buffedCorporations;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.winPoints.WinPointsInfo;
-import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -56,12 +55,10 @@ public class BuffedArclightCorporation implements CorporationCard {
     }
 
     @Override
-    public void postProjectBuiltEffect(CardService cardService, MarsGame marsGame, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        int affectedTagsCount = (int) project.getTags().stream().filter(tag ->
-                tag == Tag.ANIMAL || tag == Tag.PLANT || tag == Tag.MICROBE
-        ).count();
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
+        int affectedTagsCount = marsContext.getCardService().countCardTags(project, Set.of(Tag.ANIMAL, Tag.PLANT, Tag.MICROBE), inputParams);
 
-        player.addResources(this, affectedTagsCount);
+        marsContext.getPlayer().addResources(this, affectedTagsCount);
     }
 
     @Override

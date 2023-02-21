@@ -1,5 +1,6 @@
 import {Card} from './Card';
 import {BasePlayer} from './BasePlayer';
+import {Tag} from './Tag';
 
 export class Player extends BasePlayer {
   constructor(name: string,
@@ -20,6 +21,7 @@ export class Player extends BasePlayer {
               cardIncome: number,
               blueActionExtraActivationsLeft: number,
               cardResources: Map<number, number>,
+              cardToTag: Map<number, Tag>,
               terraformingRating: number,
               winPoints: number,
               forests: number,
@@ -36,7 +38,7 @@ export class Player extends BasePlayer {
               corporationId?: number,
               phase?: number) {
     super(playerUuid, name, winPoints, mc, hand, played, heat, plants, mcIncome, heatIncome, plantsIncome,
-      steelIncome, titaniumIncome, cardIncome, terraformingRating, forests, cardResources, phaseCards, phase);
+      steelIncome, titaniumIncome, cardIncome, terraformingRating, forests, cardResources, cardToTag, phaseCards, phase);
   }
 
   corporations: Card[];

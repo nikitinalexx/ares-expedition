@@ -1,8 +1,6 @@
 package com.terraforming.ares.validation.input;
 
-import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.InputFlag;
-import com.terraforming.ares.model.Player;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -16,11 +14,15 @@ import java.util.Map;
 @Service
 public class OnBuiltEffectValidationService {
     private static final String INCORRECT_INPUT_ERROR_MESSAGE =
-            "Project requires an input with the phase card 0 to 9 to update";
+            "Project requires an input with the phase card 0 to 9 to upgrade";
 
     public String validatePhaseUpgrade(Map<Integer, List<Integer>> input) {
         List<Integer> cardInput = input.get(InputFlag.PHASE_UPGRADE_CARD.getId());
 
+        return validatePhaseUpgrade(cardInput);
+    }
+
+    public String validatePhaseUpgrade(List<Integer> cardInput) {
         if (CollectionUtils.isEmpty(cardInput)) {
             return INCORRECT_INPUT_ERROR_MESSAGE;
         }
@@ -28,7 +30,7 @@ public class OnBuiltEffectValidationService {
         Integer cardId = cardInput.get(0);
 
         if (cardId < 0 || cardId > 9) {
-            return "Invalid phase upgrade card chosen, only from 0 to 9 applicable";
+            return "Invalid phase upgrade chosen, only from 0 to 9 applicable";
         }
 
         return null;

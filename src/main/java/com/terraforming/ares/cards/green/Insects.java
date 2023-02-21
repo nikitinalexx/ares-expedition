@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -31,12 +32,7 @@ public class Insects implements BaseExpansionGreenCard {
 
     @Override
     public void payAgain(MarsGame game, CardService cardService, Player player) {
-        int plantTagCount = (int) player
-                .getPlayed()
-                .getCards().stream()
-                .map(cardService::getCard)
-                .flatMap(card -> card.getTags().stream())
-                .filter(Tag.PLANT::equals).count();
+        int plantTagCount = cardService.countPlayedTags(player, Set.of(Tag.PLANT));
 
         player.setPlants(player.getPlants() + plantTagCount);
     }
@@ -47,9 +43,10 @@ public class Insects implements BaseExpansionGreenCard {
     }
 
     @Override
-    public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        int plantTagsCount = (int) project.getTags().stream().filter(Tag.PLANT::equals).count();
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
+        int plantTagsCount = marsContext.getCardService().countCardTags(project, Set.of(Tag.PLANT), inputParams);
 
+        final Player player = marsContext.getPlayer();
         player.setPlantsIncome(player.getPlantsIncome() + plantTagsCount);
     }
 
@@ -62,20 +59,17 @@ public class Insects implements BaseExpansionGreenCard {
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
 
-        int plantTagsCount = (int) player.getPlayed().getCards().stream().map(marsContext.getCardService()::getCard)
-                .flatMap(card -> card.getTags().stream())
-                .filter(Tag.PLANT::equals)
-                .count();
+        int plantTagsCount = marsContext.getCardService().countPlayedTags(marsContext.getPlayer(), Set.of(Tag.PLANT));
 
         player.setPlantsIncome(player.getPlantsIncome() + plantTagsCount);
-
 
         return null;
     }
 
     @Override
-    public void revertPlayedTags(CardService cardService, List<Tag> tags, Player player) {
-        int plantTagCount = (int) tags.stream().filter(Tag.PLANT::equals).count();
+    public void revertPlayedTags(CardService cardService, Card card, Player player) {
+        int plantTagCount = cardService.countCardTagsWithDynamic(card, player, Set.of(Tag.PLANT));
+
         player.setPlantsIncome(player.getPlantsIncome() - plantTagCount);
     }
 

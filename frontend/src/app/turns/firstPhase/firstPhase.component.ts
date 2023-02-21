@@ -49,7 +49,8 @@ export class FirstPhaseComponent implements OnInit {
       takeMicrobes: 0,
       takeCards: 0,
       restructuredResources: [false],
-      viralEnhancersPlantInput: 0
+      viralEnhancersPlantInput: 0,
+      biomedicalImports: null
     });
   }
 

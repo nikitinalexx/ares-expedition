@@ -32,12 +32,7 @@ public class Laboratories implements BaseExpansionGreenCard {
 
     @Override
     public void payAgain(MarsGame game, CardService cardService, Player player) {
-        int scienceTagCount = (int) player
-                .getPlayed()
-                .getCards().stream()
-                .map(cardService::getCard)
-                .flatMap(card -> card.getTags().stream())
-                .filter(Tag.SCIENCE::equals).count();
+        int scienceTagCount = cardService.countPlayedTags(player, Set.of(Tag.SCIENCE));
 
         if (scienceTagCount >= 3) {
             player.getHand().addCards(cardService.dealCards(game, scienceTagCount / 3));
@@ -50,10 +45,12 @@ public class Laboratories implements BaseExpansionGreenCard {
     }
 
     @Override
-    public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        int projectTagsCount = (int) project.getTags().stream().filter(Tag.SCIENCE::equals).count();
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
+        int projectTagsCount = marsContext.getCardService().countCardTags(project, Set.of(Tag.SCIENCE), inputParams);
 
-        int tagsPlayedBefore = cardService.countPlayedTags(player, Set.of(Tag.SCIENCE));
+        final Player player = marsContext.getPlayer();
+
+        int tagsPlayedBefore = marsContext.getCardService().countPlayedTags(player, Set.of(Tag.SCIENCE));
         int tagsPlayedAfter = tagsPlayedBefore + projectTagsCount;
 
         int incomeBefore = tagsPlayedBefore / 3;
@@ -65,8 +62,8 @@ public class Laboratories implements BaseExpansionGreenCard {
     }
 
     @Override
-    public void revertPlayedTags(CardService cardService, List<Tag> tags, Player player) {
-        int scienceTagCount = (int) tags.stream().filter(Tag.SCIENCE::equals).count();
+    public void revertPlayedTags(CardService cardService, Card card, Player player) {
+        int scienceTagCount = cardService.countCardTagsWithDynamic(card, player, Set.of(Tag.SCIENCE));
 
         int tagsPlayedBefore = cardService.countPlayedTags(player, Set.of(Tag.SCIENCE));
         int tagsPlayedAfter = tagsPlayedBefore - scienceTagCount;

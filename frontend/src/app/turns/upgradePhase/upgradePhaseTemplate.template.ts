@@ -13,6 +13,8 @@ export class UpgradePhaseTemplateComponent {
   phaseUpgradeTypeInput: number;
   @Input()
   game: Game;
+  @Input()
+  phases: number[];
 
   @Output() phaseOutput = new EventEmitter<number>();
   @Output() phaseUpgradeTypeOutput = new EventEmitter<number>();

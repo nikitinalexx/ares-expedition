@@ -1,5 +1,6 @@
 package com.terraforming.ares.validation.input;
 
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
 
@@ -14,6 +15,12 @@ public interface OnBuiltEffectValidator<T extends Card> {
 
     Class<T> getType();
 
-    String validate(Card card, Player player, Map<Integer, List<Integer>> input);
+    default String validate(Card card, Player player, Map<Integer, List<Integer>> input) {
+        return null;
+    }
+
+    default String validate(MarsGame game, Card card, Player player, Map<Integer, List<Integer>> input) {
+        return validate(card, player, input);
+    }
 
 }

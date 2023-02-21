@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -31,12 +32,7 @@ public class LightningHarvest implements BaseExpansionGreenCard {
 
     @Override
     public void payAgain(MarsGame game, CardService cardService, Player player) {
-        int scienceTagCount = (int) player
-                .getPlayed()
-                .getCards().stream()
-                .map(cardService::getCard)
-                .flatMap(card -> card.getTags().stream())
-                .filter(Tag.SCIENCE::equals).count();
+        int scienceTagCount = cardService.countPlayedTags(player, Set.of(Tag.SCIENCE));
 
         player.setMc(player.getMc() + scienceTagCount);
     }
@@ -47,10 +43,10 @@ public class LightningHarvest implements BaseExpansionGreenCard {
     }
 
     @Override
-    public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        int scienceTagsCount = (int) project.getTags().stream()
-                .filter(Tag.SCIENCE::equals)
-                .count();
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
+        int scienceTagsCount = marsContext.getCardService().countCardTags(project, Set.of(Tag.SCIENCE), inputParams);
+
+        final Player player = marsContext.getPlayer();
 
         player.setMcIncome(player.getMcIncome() + scienceTagsCount);
     }
@@ -64,10 +60,7 @@ public class LightningHarvest implements BaseExpansionGreenCard {
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
 
-        int scienceTagsCount = (int) player.getPlayed().getCards().stream().map(marsContext.getCardService()::getCard)
-                .flatMap(card -> card.getTags().stream())
-                .filter(Tag.SCIENCE::equals)
-                .count();
+        int scienceTagsCount = marsContext.getCardService().countPlayedTags(marsContext.getPlayer(), Set.of(Tag.SCIENCE));
 
         player.setMcIncome(player.getMcIncome() + scienceTagsCount + 1);
 
@@ -75,8 +68,9 @@ public class LightningHarvest implements BaseExpansionGreenCard {
     }
 
     @Override
-    public void revertPlayedTags(CardService cardService, List<Tag> tags, Player player) {
-        int scienceTagCount = (int) tags.stream().filter(Tag.SCIENCE::equals).count();
+    public void revertPlayedTags(CardService cardService, Card card, Player player) {
+        int scienceTagCount = cardService.countCardTagsWithDynamic(card, player, Set.of(Tag.SCIENCE));
+
         player.setMcIncome(player.getMcIncome() - scienceTagCount);
     }
 

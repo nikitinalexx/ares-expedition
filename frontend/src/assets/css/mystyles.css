@@ -717,6 +717,10 @@ li.events::before {
   background-image: url("../images/tags/animal.png");
 }
 
+.tag-dynamic {
+  background-image: url("../images/tags/dynamic.png");
+}
+
 .tag-event {
   background-image: url("../images/tags/event.png");
 }
@@ -848,9 +852,9 @@ li.events::before {
 
 .card-phase-x {
   background: url("../images/phases/X.png");
-  height: 40px;
-  width: 40px;
-  background-size: 40px 40px;
+  height: 30px;
+  width: 30px;
+  background-size: 30px 30px;
   vertical-align: middle;
 }
 

@@ -1,13 +1,12 @@
 package com.terraforming.ares.cards.buffedCorporations;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
-import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -33,8 +32,9 @@ public class BuffedSaturnSystemsCorporation implements CorporationCard {
     }
 
     @Override
-    public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        if (project.getTags().contains(Tag.JUPITER)) {
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
+        if (marsContext.getCardService().countCardTags(project, Set.of(Tag.JUPITER), inputParams) > 0) {
+            final Player player = marsContext.getPlayer();
             player.setTerraformingRating(player.getTerraformingRating() + 1);
         }
     }

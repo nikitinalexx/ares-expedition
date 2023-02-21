@@ -4,29 +4,31 @@ import {SpecialEffect} from '../data/SpecialEffect';
 import {Player} from '../data/Player';
 import {Tag} from '../data/Tag';
 import {CardColor} from '../data/CardColor';
-import {PhaseConstants} from "../data/PhaseConstants";
+import {PhaseConstants} from '../data/PhaseConstants';
 
 @Injectable()
 export class DiscountComponent {
+  allTags = [Tag.SPACE, Tag.EARTH, Tag.EVENT, Tag.SCIENCE, Tag.PLANT,
+    Tag.ENERGY, Tag.BUILDING, Tag.ANIMAL, Tag.JUPITER, Tag.MICROBE];
 
-  isDiscountApplicable(card: Card, player: Player): boolean {
+  isDiscountApplicable(card: Card, player: Player, tagInput: number): boolean {
     if (!player) {
       return false;
     }
-    return this.getDiscount(card, player) > 0;
+    return this.getDiscount(card, player, tagInput) > 0;
   }
 
-  getDiscount(card: Card, player: Player): number {
+  getDiscount(card: Card, player: Player, tagInput: number): number {
     let discount = 0;
 
     const ownsAdvancedAlloys = this.ownsSpecialEffect(player, SpecialEffect.ADVANCED_ALLOYS);
     const ownsPhobolog = this.ownsSpecialEffect(player, SpecialEffect.PHOBOLOG);
 
-    if (this.cardHasTag(card, Tag.BUILDING)) {
+    if (this.cardHasTag(card, Tag.BUILDING, tagInput)) {
       discount += player.steelIncome * (2 + (ownsAdvancedAlloys ? 1 : 0));
     }
 
-    if (this.cardHasTag(card, Tag.SPACE)) {
+    if (this.cardHasTag(card, Tag.SPACE, tagInput)) {
       discount += player.titaniumIncome * (3 + (ownsAdvancedAlloys ? 1 : 0) + (ownsPhobolog ? 1 : 0));
     }
 
@@ -44,32 +46,32 @@ export class DiscountComponent {
       discount += 2;
     }
 
-    if (this.cardHasTag(card, Tag.ENERGY) && this.ownsSpecialEffect(player, SpecialEffect.ENERGY_SUBSIDIES_DISCOUNT_4)) {
+    if (this.cardHasTag(card, Tag.ENERGY, tagInput) && this.ownsSpecialEffect(player, SpecialEffect.ENERGY_SUBSIDIES_DISCOUNT_4)) {
       discount += 4;
     }
 
     if (this.ownsSpecialEffect(player, SpecialEffect.INTERPLANETARY_CONFERENCE)) {
-      if (this.cardHasTag(card, Tag.EARTH)) {
+      if (this.cardHasTag(card, Tag.EARTH, tagInput)) {
         discount += 3;
       }
-      if (this.cardHasTag(card, Tag.JUPITER)) {
+      if (this.cardHasTag(card, Tag.JUPITER, tagInput)) {
         discount += 3;
       }
     }
 
-    if (this.cardHasTag(card, Tag.EVENT) && this.ownsSpecialEffect(player, SpecialEffect.MEDIA_GROUP)) {
+    if (this.cardHasTag(card, Tag.EVENT, tagInput) && this.ownsSpecialEffect(player, SpecialEffect.MEDIA_GROUP)) {
       discount += 5;
     }
 
-    if (this.cardHasTag(card, Tag.EVENT) && this.ownsSpecialEffect(player, SpecialEffect.INTERPLANETARY_CINEMATICS_DISCOUNT)) {
+    if (this.cardHasTag(card, Tag.EVENT, tagInput) && this.ownsSpecialEffect(player, SpecialEffect.INTERPLANETARY_CINEMATICS_DISCOUNT)) {
       discount += 2;
     }
 
-    if (this.cardHasTag(card, Tag.ENERGY) && this.ownsSpecialEffect(player, SpecialEffect.TORGATE_ENERGY_DISCOUNT)) {
+    if (this.cardHasTag(card, Tag.ENERGY, tagInput) && this.ownsSpecialEffect(player, SpecialEffect.TORGATE_ENERGY_DISCOUNT)) {
       discount += 3;
     }
 
-    if (this.cardHasTag(card, Tag.EARTH) && this.ownsSpecialEffect(player, SpecialEffect.TERACTOR_EARTH_DISCOUNT)) {
+    if (this.cardHasTag(card, Tag.EARTH, tagInput) && this.ownsSpecialEffect(player, SpecialEffect.TERACTOR_EARTH_DISCOUNT)) {
       discount += 3;
     }
 
@@ -118,7 +120,10 @@ export class DiscountComponent {
     return player.played?.some(card => card?.specialEffects.some(effect => effect === targetEffect));
   }
 
-  private cardHasTag(card: Card, targetTag: Tag): boolean {
+  private cardHasTag(card: Card, targetTag: Tag, tagInput: number): boolean {
+    if (card.tags?.some(tag => tag === Tag.DYNAMIC) && tagInput >= 0 && targetTag === this.allTags[tagInput]) {
+      return true;
+    }
     return card.tags?.some(tag => tag === targetTag);
   }
 

@@ -1,5 +1,6 @@
 package com.terraforming.ares.dto;
 
+import com.terraforming.ares.model.Tag;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -22,6 +23,7 @@ public class AnotherPlayerDto {
     private final List<CardDto> hand;
     private final List<CardDto> played;
     private final Map<Integer, Integer> cardResources;
+    private final Map<Integer, Tag> cardToTag;
     private final List<Integer> phaseCards;
 
     private final int terraformingRating;

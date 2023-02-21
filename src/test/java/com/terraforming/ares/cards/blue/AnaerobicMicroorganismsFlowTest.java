@@ -12,6 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Map;
 
 import static com.terraforming.ares.model.Constants.AI_CENTRAL_CARD_ID;
 import static com.terraforming.ares.model.Constants.ANAEROBIC_MICROORGANISMS_CARD_ID;
@@ -45,7 +46,8 @@ class AnaerobicMicroorganismsFlowTest {
         String errorMessage = paymentValidationService.validate(
                 new AiCentral(AI_CENTRAL_CARD_ID),
                 player,
-                Collections.singletonList(new AnaerobicMicroorganismsPayment())
+                Collections.singletonList(new AnaerobicMicroorganismsPayment()),
+                Map.of()
         );
         assertEquals("Invalid payment: Anaerobic Microorganisms < 2", errorMessage);
     }
@@ -55,7 +57,7 @@ class AnaerobicMicroorganismsFlowTest {
         player.addResources(card, 3);
 
         String errorMessage = paymentValidationService.validate(
-                new AiCentral(AI_CENTRAL_CARD_ID), player, Collections.singletonList(new AnaerobicMicroorganismsPayment())
+                new AiCentral(AI_CENTRAL_CARD_ID), player, Collections.singletonList(new AnaerobicMicroorganismsPayment()), Map.of()
         );
         assertEquals("Total payment is not enough to cover the project price", errorMessage);
     }
@@ -71,7 +73,8 @@ class AnaerobicMicroorganismsFlowTest {
                 Arrays.asList(
                         new AnaerobicMicroorganismsPayment(),
                         new MegacreditsPayment(12)
-                )
+                ),
+                Map.of()
         );
         assertNull(errorMessage);
     }

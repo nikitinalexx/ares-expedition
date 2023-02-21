@@ -2,9 +2,11 @@ package com.terraforming.ares.model.milestones;
 
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.services.CardService;
 
 import java.util.Collection;
+import java.util.stream.Stream;
 
 /**
  * Created by oleksii.nikitin
@@ -23,14 +25,18 @@ public class DiversifierMilestone extends Milestone {
     }
 
     private int countUniqueTags(Player player, CardService cardService) {
-        return (int) player.getPlayed()
-                .getCards()
-                .stream()
-                .map(cardService::getCard)
-                .map(Card::getTags)
-                .flatMap(Collection::stream)
-                .distinct()
-                .count();
+        return
+                (int) Stream.concat(
+                        player.getPlayed()
+                                .getCards()
+                                .stream()
+                                .map(cardService::getCard)
+                                .map(Card::getTags)
+                                .flatMap(Collection::stream)
+                                .filter(tag -> tag != Tag.DYNAMIC),
+
+                        player.getCardToTag().values().stream()
+                ).distinct().count();
     }
 
     @Override

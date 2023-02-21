@@ -15,7 +15,8 @@
     <ul class="myUL">
       <li *ngFor="let card of getBlueRedPlayerHand();" (click)="clickProjectToBuild(card)"
           [ngClass]="blueRedCardClass(card)" class="filterDiv automated display">
-        <app-card-template [card]="card" [player]="game?.player" [showDiscount]="true"></app-card-template>
+        <app-card-template [card]="card" [player]="game?.player" [showDiscount]="true"
+                           [tagInput]="expectsTagInput() ? tagInput : -1"></app-card-template>
       </li>
     </ul>
 
@@ -34,11 +35,39 @@
         </div>
       </div>
 
+      <div *ngIf="expectsTagInput()">
+        <h1 class="text-white">Choose tag to put on a card: </h1>
+
+        <div *ngFor='let tag of getAllTagsArray(); let i = index;' class="form-check form-check-inline">
+          <div class="tag" [ngClass]="getTagClasses(i)">
+            <input class="form-check-input" (click)="clickTagChoice(i)" type="radio" [checked]="tagInput === i">
+          </div>
+        </div>
+      </div>
+
       <div class="form-row" *ngIf="anaerobicMicroorganismsCardAction()">
         <div class="col-sm-1">
           <label for="anaerobicMicroorganisms" class="text-white">Anaerobic Microorganisms</label>
           <input type="checkbox" (change)="anaerobicMicroorganismsClicked($event)" class="custom-control-input"
                  id="anaerobicMicroorganisms" formControlName="anaerobicMicroorganisms">
+        </div>
+      </div>
+
+      <div class="form-row" *ngIf="expectsBiomedicalImportsInput()">
+        <h1 class="text-white">Choose <span class="text-danger">Oxygen</span> or <span
+          class="text-danger">Phase Upgrade</span></h1>
+
+        <div class="form-check form-check-inline">
+          <label for="biomedicalImportsOxygen" class="text-white">Increase Oxygen</label>
+          <input type="radio" class="form-check-input" id="biomedicalImportsOxygen" value="oxygen"
+                 formControlName="biomedicalImports"
+                 [checked]="this.parentForm.value.biomedicalImports === 'oxygen'">
+        </div>
+        <div class="form-check form-check-inline">
+          <label for="biomedicalImportsPhase" class="text-white">Upgrade Phase</label>
+          <input type="radio" class="form-check-input" id="biomedicalImportsPhase" value="phase"
+                 formControlName="biomedicalImports"
+                 [checked]="this.parentForm.value.biomedicalImports === 'phase'">
         </div>
       </div>
 
@@ -122,10 +151,21 @@
         </div>
       </div>
 
-      <app-upgrade-phase-template *ngIf="upgradePhaseCardEffect()" [phaseInput]="phaseInput" [phaseUpgradeTypeInput]="phaseUpgradeType"
+      <app-upgrade-phase-template *ngIf="upgradePhaseCardEffect()" [phaseInput]="phaseInput"
+                                  [phaseUpgradeTypeInput]="phaseUpgradeType"
                                   [game]="game"
+                                  [phases]="getUpgradePhasesArray()"
                                   (phaseOutput)="updatePhaseInput($event)"
                                   (phaseUpgradeTypeOutput)="updatePhaseUpgradeTypeInput($event)"
+      >
+      </app-upgrade-phase-template>
+
+      <app-upgrade-phase-template *ngIf="upgradeExtraPhaseCardEffect()" [phaseInput]="extraPhaseInput"
+                                  [phaseUpgradeTypeInput]="extraPhaseUpgradeType"
+                                  [game]="game"
+                                  [phases]="getUpgradePhasesArray()"
+                                  (phaseOutput)="updateExtraPhaseInput($event)"
+                                  (phaseUpgradeTypeOutput)="updateExtraPhaseUpgradeTypeInput($event)"
       >
       </app-upgrade-phase-template>
 
@@ -141,9 +181,9 @@
         </ul>
       </div>
 
-      <div *ngIf="importedHydrogenEffect()" class="card-container">
+      <div *ngIf="importedHydrogenEffect() || cryogenicShipmentEffect()" class="card-container">
         <div class="form-group">
-          <div class="form-check">
+          <div *ngIf="importedHydrogenEffect()" class="form-check">
             <label for="importedHydrogenPlants" class="text-white">Take plants</label>
             <input type="radio" class="form-check-input" id="importedHydrogenPlants" value="plants"
                    formControlName="importedHydrogenForm"
@@ -155,6 +195,13 @@
                    formControlName="importedHydrogenForm"
                    [checked]="parentForm.value.importedHydrogenForm === 'microbeAnimal'">
             <label class="custom-control-label text-white" for="takeMicrobeAnimal">Take microbes/animals</label>
+          </div>
+
+          <div *ngIf="cryogenicShipmentEffect()" class="form-check">
+            <input id="skipMicrobeAnimal" type="radio" class="form-check-input" value="skipMicrobeAnimal"
+                   formControlName="importedHydrogenForm"
+                   [checked]="parentForm.value.importedHydrogenForm === 'skipMicrobeAnimal'">
+            <label class="custom-control-label text-white" for="skipMicrobeAnimal">Skip microbes/animals</label>
           </div>
 
 
@@ -225,8 +272,6 @@
       </div>
     </div>
   </div>
-
-
 
 
 </form><!-- Form ends -->

@@ -9,7 +9,8 @@ import {PARAMETER_COLORS, ParameterColor} from '../data/ParameterColor';
 import {DiscountComponent} from '../discount/discount.component';
 import {BasePlayer} from '../data/BasePlayer';
 import {Player} from '../data/Player';
-import {Expansion} from "../data/Expansion";
+import {Expansion} from '../data/Expansion';
+import {Tag} from '../data/Tag';
 
 @Component({
   selector: 'app-card-template',
@@ -25,6 +26,8 @@ export class CardTemplateComponent {
   showDiscount: boolean;
   @Input()
   showResources: boolean;
+  @Input()
+  tagInput: number;
 
   constructor(private discountService: DiscountComponent) {
   }
@@ -33,15 +36,18 @@ export class CardTemplateComponent {
     if (!this.showDiscount) {
       return false;
     }
-    return this.discountService.isDiscountApplicable(card, this.player as Player);
+    return this.discountService.isDiscountApplicable(card, this.player as Player, this.tagInput);
   }
 
   getDiscount(card: Card): number {
-    return this.discountService.getDiscount(card, this.player as Player);
+    return this.discountService.getDiscount(card, this.player as Player, this.tagInput);
   }
 
   getTagClasses(card: Card, tagNumber: number): string {
     if (card.tags[tagNumber]) {
+      if (card.tags[tagNumber] === Tag.DYNAMIC && this.player && this.player.cardToTag[card.id]) {
+        return 'tag-' + this.player.cardToTag[card.id].toString().toLowerCase();
+      }
       return 'tag-' + card.tags[tagNumber].toString().toLowerCase();
     }
   }
@@ -225,6 +231,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.AQUIFER_PUMPING;
   }
 
+  actionBiomedicalImports(card: Card): boolean {
+    return card.cardAction === CardAction.BIOMEDICAL_IMPORTS;
+  }
+
   actionArcticAlgae(card: Card): boolean {
     return card.cardAction === CardAction.ARCTIC_ALGAE;
   }
@@ -239,6 +249,10 @@ export class CardTemplateComponent {
 
   actionAssetLiquidation(card: Card): boolean {
     return card.cardAction === CardAction.ASSET_LIQUIDATION;
+  }
+
+  actionExperimentalTechnology(card: Card): boolean {
+    return card.cardAction === CardAction.EXPERIMENTAL_TECHNOLOGY;
   }
 
   actionAddAnimal(card: Card): boolean {
@@ -263,6 +277,10 @@ export class CardTemplateComponent {
 
   actionCommunityGardens(card: Card): boolean {
     return card.cardAction === CardAction.COMMUNITY_GARDENS;
+  }
+
+  actionDroneAssistedConstruction(card: Card): boolean {
+    return card.cardAction === CardAction.DRONE_ASSISTED_CONSTRUCTION;
   }
 
   actionCompostingFactory(card: Card): boolean {
@@ -347,6 +365,10 @@ export class CardTemplateComponent {
 
   actionInterplanetaryConference(card: Card): boolean {
     return card.cardAction === CardAction.INTERPLANETARY_CONFERENCE;
+  }
+
+  actionImpactAnalysis(card: Card): boolean {
+    return card.cardAction === CardAction.IMPACT_ANALYSIS;
   }
 
   actionInterplanetaryRelations(card: Card): boolean {
@@ -478,12 +500,46 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.IMPORTED_HYDROGEN;
   }
 
+  actionCryogenicShipment(card: Card): boolean {
+    return card.cardAction === CardAction.CRYOGENIC_SHIPMENT;
+  }
+
   actionLargeConvoy(card: Card): boolean {
     return card.cardAction === CardAction.LARGE_CONVOY;
   }
 
-  actionUpdatePhaseUpdate(card: Card): boolean {
-    return card.cardAction === CardAction.UPDATE_PHASE_CARD;
+  actionUpdatePhase(card: Card): boolean {
+    return card.cardAction === CardAction.UPDATE_PHASE_CARD
+      || card.cardAction === CardAction.TOPOGRAPHIC_MAPPING
+      || card.cardAction === CardAction.CRYOGENIC_SHIPMENT;
+  }
+
+  actionDoublePhaseUpdate(card: Card): boolean {
+    return card.cardAction === CardAction.UPDATE_PHASE_CARD_TWICE;
+  }
+
+  actionUpgradePhase1(card: Card): boolean {
+    return card.cardAction === CardAction.UPDATE_PHASE_1_CARD;
+  }
+
+  actionUpgradePhase2(card: Card): boolean {
+    return card.cardAction === CardAction.UPDATE_PHASE_2_CARD;
+  }
+
+  actionUpgradePhase3(card: Card): boolean {
+    return card.cardAction === CardAction.UPDATE_PHASE_3_CARD;
+  }
+
+  actionUpgradePhase4(card: Card): boolean {
+    return card.cardAction === CardAction.UPDATE_PHASE_4_CARD;
+  }
+
+  actionAwardWinningReflector(card: Card): boolean {
+    return card.cardAction === CardAction.AWARD_WINNING_REFLECTOR;
+  }
+
+  actionCommunicationsStreamlining(card: Card): boolean {
+    return card.cardAction === CardAction.COMMUNICATIONS_STREAMLINING;
   }
 
   actionProcessedMetals(card: Card): boolean {
@@ -590,6 +646,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.ENERGY_STORAGE;
   }
 
+  actionPrivateInvestorBeach(card: Card): boolean {
+    return card.cardAction === CardAction.PRIVATE_INVESTOR_BEACH;
+  }
+
   actionEosChasma(card: Card): boolean {
     return card.cardAction === CardAction.EOS_CHASMA;
   }
@@ -601,6 +661,7 @@ export class CardTemplateComponent {
   actionFoodFactory(card: Card): boolean {
     return card.cardAction === CardAction.FOOD_FACTORY;
   }
+
   actionMoss(card: Card): boolean {
     return card.cardAction === CardAction.MOSS;
   }

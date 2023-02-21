@@ -257,8 +257,41 @@ public class CardFactory {
         );
 
         discoveryExpansionSortedProjects = List.of(
+                new CommunicationsStreamlining(305),
+                new DroneAssistedConstruction(306),
+                new ExperimentalTechnology(307),
+                new ImpactAnalysis(308),
                 new OreLeaching(318),
-                new Warehouses(342)
+
+                new BiomedicalImports(314),
+                new CryogenicShipment(315),
+                new Exosuits(316),
+                new ImportedConstructionCrews(317),
+                new PrivateInvestorBeach(319),
+                new TopographicMapping(320),
+                new ThreeDPrinting(321),
+                new Biofoundries(322),
+                new BlastFurnaces(323),
+                new Dandelions(324),
+                new ElectricArcFurnaces(325),
+                new LocalMarket(326),
+                new ManufacturingHub(327),
+                new HeatReflectiveGlass(328),
+                new HematiteMining(329),
+                new HydroponicGardens(330),
+                new IlmeniteDeposits(331),
+                new IndustrialComplex(332),
+                new MartianMuseum(333),
+                new Metallurgy(334),
+                new AwardWinningReflectorMaterial(335),
+                new PerfluorocarbonProduction(337),
+                new MagneticFieldGenerator(338),
+                new PoliticalInfluence(339),
+                new BiologicalFactories(340),
+                new NuclearDetonationSite(341),
+                new Warehouses(342),
+
+                new MartianStudiesScholarship(377)
         );
 
         sortedCorporations = List.of(

@@ -39,10 +39,13 @@ public class Warehouses implements DiscoveryExpansionGreenCard {
     }
 
     @Override
-    public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> input) {
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> input) {
         List<Integer> cardInput = input.get(InputFlag.PHASE_UPGRADE_CARD.getId());
 
-        UpgradePhaseHelper.upgradePhase(cardService, game, player, cardInput.get(0));
+        final MarsGame game = marsContext.getGame();
+        final Player player = marsContext.getPlayer();
+
+        UpgradePhaseHelper.upgradePhase(marsContext.getCardService(), game, player, cardInput.get(0));
     }
 
     @Override
@@ -59,7 +62,7 @@ public class Warehouses implements DiscoveryExpansionGreenCard {
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
 
-        player.setMcIncome(player.getHeatIncome() + 2);
+        player.setMcIncome(player.getMcIncome() + 2);
 
         return null;
     }

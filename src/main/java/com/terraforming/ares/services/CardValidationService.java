@@ -67,8 +67,8 @@ public class CardValidationService {
                 .or(() -> validateTemperature(game.getPlanetAtTheStartOfThePhase(), card, playerMayAmplifyGlobalRequirement || builtSpecialDesignLastTurn))
                 .or(() -> validateOceans(game.getPlanetAtTheStartOfThePhase(), card))
                 .or(() -> validateTags(player, card))
-                .or(() -> validatePayments(card, player, payments))
-                .or(() -> validateInputParameters(card, player, inputParameters))
+                .or(() -> validatePayments(card, player, payments, inputParameters))
+                .or(() -> validateInputParameters(game, card, player, inputParameters))
                 .or(() -> validateCustomCards(card, player))
                 .orElse(null);
     }
@@ -165,17 +165,17 @@ public class CardValidationService {
         }
     }
 
-    private Optional<String> validatePayments(Card card, Player player, List<Payment> payments) {
-        return Optional.ofNullable(paymentValidationService.validate(card, player, payments));
+    private Optional<String> validatePayments(Card card, Player player, List<Payment> payments, Map<Integer, List<Integer>> inputParameters) {
+        return Optional.ofNullable(paymentValidationService.validate(card, player, payments, inputParameters));
     }
 
-    private Optional<String> validateInputParameters(Card card, Player player, Map<Integer, List<Integer>> inputParams) {
+    private Optional<String> validateInputParameters(MarsGame game, Card card, Player player, Map<Integer, List<Integer>> inputParams) {
         Optional<String> validationResult = Optional.empty();
 
         if (card.onBuiltEffectApplicableToItself()) {
             validationResult = validationResult.or(
                     () -> Optional.ofNullable(onBuiltEffectValidators.get(card.getClass()))
-                            .map(validator -> validator.validate(card, player, CollectionUtils.isEmpty(inputParams) ? Map.of() : inputParams))
+                            .map(validator -> validator.validate(game, card, player, CollectionUtils.isEmpty(inputParams) ? Map.of() : inputParams))
             );
         }
 
@@ -187,7 +187,7 @@ public class CardValidationService {
                         .filter(Card::onBuiltEffectApplicableToOther)
                         .map(c -> onBuiltEffectValidators.get(c.getClass()))
                         .filter(Objects::nonNull)
-                        .map(validator -> validator.validate(card, player, inputParams))
+                        .map(validator -> validator.validate(game, card, player, inputParams))
                         .filter(Objects::nonNull)
                         .findAny()
         );
@@ -212,6 +212,14 @@ public class CardValidationService {
             if (tagRequirements.isEmpty()) {
                 return Optional.empty();
             }
+        }
+
+        for (Tag dynamicTag : player.getCardToTag().values()) {
+            tagRequirements.remove(dynamicTag);
+        }
+
+        if (tagRequirements.isEmpty()) {
+            return Optional.empty();
         }
 
         return Optional.of("Project tag requirements not met");

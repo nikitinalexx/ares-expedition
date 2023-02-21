@@ -29,3 +29,24 @@
   box-shadow: 6px 6px 6px grey;
   border-radius:2px;
 }
+
+.milestone {
+  background: url(../../assets/images/milestone.png);
+  width: 67px;
+  height: 42px;
+  background-size: 67px;
+  border-radius: 5px;
+  vertical-align: middle;
+  display: inline-block;
+  margin-bottom: 5px;
+}
+
+.milestone-requirements {
+  background: url(../../assets/images/milestone.png);
+  width: 33px;
+  height: 21px;
+  background-size: 33px;
+  border-radius: 2px;
+  vertical-align: middle;
+  display: inline-block;
+}

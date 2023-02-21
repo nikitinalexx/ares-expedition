@@ -22,9 +22,11 @@ import static com.terraforming.ares.model.Constants.PHASE_1_UPGRADE_DISCOUNT;
 public class PaymentValidationService {
     private final Map<PaymentType, PaymentValidator> validators;
     private final SpecialEffectsService specialEffectsService;
+    private final CardService cardService;
 
-    public PaymentValidationService(SpecialEffectsService specialEffectsService, List<PaymentValidator> paymentValidators) {
+    public PaymentValidationService(SpecialEffectsService specialEffectsService, List<PaymentValidator> paymentValidators, CardService cardService) {
         this.specialEffectsService = specialEffectsService;
+        this.cardService = cardService;
         validators = paymentValidators.stream().collect(Collectors.toMap(
                 PaymentValidator::getType, Function.identity()
         ));
@@ -40,7 +42,7 @@ public class PaymentValidationService {
         return plantsCost;
     }
 
-    public String validate(Card card, Player player, List<Payment> payments) {
+    public String validate(Card card, Player player, List<Payment> payments, Map<Integer, List<Integer>> inputParameters) {
         for (Payment payment : payments) {
             PaymentValidator paymentValidator = validators.get(payment.getType());
             if (paymentValidator == null) {
@@ -66,7 +68,7 @@ public class PaymentValidationService {
             return "Can only build a second building with print price of 12 or less";
         }
 
-        int discount = getDiscount(card, player);
+        int discount = getDiscount(card, player, inputParameters);
         discount += payments.stream().mapToInt(Payment::getDiscount).sum();
         int discountedPrice = Math.max(0, card.getPrice() - discount);
 
@@ -81,10 +83,10 @@ public class PaymentValidationService {
         }
     }
 
-    public int getDiscount(Card card, Player player) {
+    public int getDiscount(Card card, Player player, Map<Integer, List<Integer>> inputParameters) {
         int discount = 0;
 
-        List<Tag> tags = card.getTags();
+        List<Tag> tags = cardService.getCardTags(card, inputParameters);
 
         boolean playerOwnsAdvancedAlloys = specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ADVANCED_ALLOYS);
         boolean playerOwnsPhobolog = specialEffectsService.ownsSpecialEffect(player, SpecialEffect.PHOBOLOG);
@@ -111,21 +113,21 @@ public class PaymentValidationService {
             discount += 2;
         }
 
-        if (card.getTags().contains(Tag.ENERGY) &&
+        if (tags.contains(Tag.ENERGY) &&
                 specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ENERGY_SUBSIDIES_DISCOUNT_4)) {
             discount += 4;
         }
 
         if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.INTERPLANETARY_CONFERENCE)) {
-            if (card.getTags().contains(Tag.EARTH)) {
+            if (tags.contains(Tag.EARTH)) {
                 discount += 3;
             }
-            if (card.getTags().contains(Tag.JUPITER)) {
+            if (tags.contains(Tag.JUPITER)) {
                 discount += 3;
             }
         }
 
-        if (card.getTags().contains(Tag.EVENT) &&
+        if (tags.contains(Tag.EVENT) &&
                 specialEffectsService.ownsSpecialEffect(player, SpecialEffect.MEDIA_GROUP)) {
             discount += 5;
         }
@@ -142,15 +144,15 @@ public class PaymentValidationService {
             discount += 3;
         }
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.TORGATE_ENERGY_DISCOUNT) && card.getTags().contains(Tag.ENERGY)) {
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.TORGATE_ENERGY_DISCOUNT) && tags.contains(Tag.ENERGY)) {
             discount += 3;
         }
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.TERACTOR_EARTH_DISCOUNT) && card.getTags().contains(Tag.EARTH)) {
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.TERACTOR_EARTH_DISCOUNT) && tags.contains(Tag.EARTH)) {
             discount += 3;
         }
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.INTERPLANETARY_CINEMATICS_DISCOUNT) && card.getTags().contains(Tag.EVENT)) {
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.INTERPLANETARY_CINEMATICS_DISCOUNT) && tags.contains(Tag.EVENT)) {
             discount += 2;
         }
 

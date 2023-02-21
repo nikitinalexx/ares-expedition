@@ -1,11 +1,9 @@
 package com.terraforming.ares.cards.red;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
-import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -38,7 +36,7 @@ public class ImportedNitrogen implements BaseExpansionRedCard {
     }
 
     @Override
-    public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> input) {
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> input) {
         List<Integer> animalsInput = input.get(InputFlag.IMPORTED_NITROGEN_ADD_ANIMALS.getId());
         List<Integer> microbesInput = input.get(InputFlag.IMPORTED_NITROGEN_ADD_MICROBES.getId());
 
@@ -46,13 +44,15 @@ public class ImportedNitrogen implements BaseExpansionRedCard {
         Integer animalsCardId = animalsInput.get(0);
         Integer microbesCardId = microbesInput.get(0);
 
+        final Player player = marsContext.getPlayer();
+
         if (animalsCardId != InputFlag.SKIP_ACTION.getId()) {
-            Card animalsCard = cardService.getCard(animalsCardId);
+            Card animalsCard = marsContext.getCardService().getCard(animalsCardId);
             player.addResources(animalsCard, 2);
         }
 
         if (microbesCardId != InputFlag.SKIP_ACTION.getId()) {
-            Card microbeCard = cardService.getCard(microbesCardId);
+            Card microbeCard = marsContext.getCardService().getCard(microbesCardId);
             player.addResources(microbeCard, 3);
         }
     }

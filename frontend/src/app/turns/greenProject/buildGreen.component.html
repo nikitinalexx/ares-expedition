@@ -13,7 +13,7 @@
     <ul class="myUL">
       <li *ngFor="let card of getGreenPlayerHand();" (click)="clickProjectToBuild(card)"
           [ngClass]="greenCardClass(card)" class="filterDiv automated display">
-        <app-card-template [card]="card" [player]="game?.player" [showDiscount]="true"></app-card-template>
+        <app-card-template [card]="card" [player]="game?.player" [showDiscount]="true" [tagInput]="expectsTagInput() ? tagInput : -1"></app-card-template>
       </li>
     </ul>
 
@@ -29,6 +29,16 @@
         <div class="col-sm-1">
           <label for="heatInput" class="text-white">Heat</label>
           <input type="number" class="form-control form-control-sm" id="heatInput" formControlName="heatPrice">
+        </div>
+      </div>
+
+      <div *ngIf="expectsTagInput()">
+        <h1 class="text-white">Choose tag to put on a card:  </h1>
+
+        <div *ngFor='let tag of getAllTagsArray(); let i = index;' class="form-check form-check-inline">
+          <div class="tag" [ngClass]="getTagClasses(i)">
+            <input class="form-check-input" (click)="clickTagChoice(i)" type="radio" [checked]="tagInput === i">
+          </div>
         </div>
       </div>
 
@@ -68,6 +78,7 @@
                                   [game]="game"
                                   (phaseOutput)="updatePhaseInput($event)"
                                   (phaseUpgradeTypeOutput)="updatePhaseUpgradeTypeInput($event)"
+                                  [phases]="getUpgradePhasesArray()"
       >
       </app-upgrade-phase-template>
 

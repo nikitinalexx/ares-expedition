@@ -29,6 +29,9 @@ export class ThirdPhaseComponent implements OnInit {
   selectedProject: Card;
   actionTargetCards = [];
   projectsToDiscard: number[];
+  phaseInput = 0;
+  phaseUpgradeType = -1;
+
   @ViewChild(SellCardsComponent) sellCardsService;
   @ViewChild(BuildGreenComponent) buildGreenService;
   @ViewChild(BuildBlueRedComponent) buildBlueRedService;
@@ -69,8 +72,17 @@ export class ThirdPhaseComponent implements OnInit {
       restructuredResources: [false],
       viralEnhancersPlantInput: 0,
       importedHydrogenForm: 'plants',
-      largeConvoyForm: 'plants'
+      largeConvoyForm: 'plants',
+      biomedicalImports: null
     });
+  }
+
+  updatePhaseInput(newPhaseInput: number) {
+    this.phaseInput = newPhaseInput;
+  }
+
+  updatePhaseUpgradeTypeInput(newPhaseUpgradeType: number) {
+    this.phaseUpgradeType = newPhaseUpgradeType;
   }
 
   sendToParent(data: any) {
@@ -189,6 +201,14 @@ export class ThirdPhaseComponent implements OnInit {
     return this.selectedProject && this.selectedProject?.actionInputData.some(data =>
       data.type === ActionInputDataType[ActionInputDataType.DISCARD_HEAT]
     );
+  }
+
+  expectsAnyPhaseUpgradeActionInput(): boolean {
+    return this.selectedProject && this.selectedProject.cardAction === CardAction.EXPERIMENTAL_TECHNOLOGY;
+  }
+
+  getUpgradePhasesArray(): number[] {
+    return [1, 2, 3, 4, 5];
   }
 
   expectsAddDiscardMicrobeInput(): boolean {
@@ -416,6 +436,18 @@ export class ThirdPhaseComponent implements OnInit {
             return;
           }
           inputParams.push(inputValue);
+        }
+
+        if (this.expectsAnyPhaseUpgradeActionInput()) {
+          if (this.phaseInput < 0 || this.phaseInput > 4) {
+            this.errorMessage = 'Pick the phase you want to upgrade';
+            return;
+          }
+          if (this.phaseUpgradeType !== 0 && this.phaseUpgradeType !== 1) {
+            this.errorMessage = 'Choose the type of phase upgrade';
+            return;
+          }
+          inputParams.push(this.phaseInput * 2 + this.phaseUpgradeType);
         }
 
         if (this.expectsAddDiscardMicrobeInput()) {

@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -31,12 +32,7 @@ public class PowerGrid implements BaseExpansionGreenCard {
 
     @Override
     public void payAgain(MarsGame game, CardService cardService, Player player) {
-        int energyTagCount = (int) player
-                .getPlayed()
-                .getCards().stream()
-                .map(cardService::getCard)
-                .flatMap(card -> card.getTags().stream())
-                .filter(Tag.ENERGY::equals).count();
+        int energyTagCount = cardService.countPlayedTags(player, Set.of(Tag.ENERGY));
 
         player.setMc(player.getMc() + energyTagCount);
     }
@@ -47,10 +43,10 @@ public class PowerGrid implements BaseExpansionGreenCard {
     }
 
     @Override
-    public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        int energyTagsCount = (int) project.getTags().stream()
-                .filter(Tag.ENERGY::equals)
-                .count();
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
+        int energyTagsCount = marsContext.getCardService().countCardTags(project, Set.of(Tag.ENERGY), inputParams);
+
+        final Player player = marsContext.getPlayer();
 
         player.setMcIncome(player.getMcIncome() + energyTagsCount);
     }
@@ -64,19 +60,17 @@ public class PowerGrid implements BaseExpansionGreenCard {
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
 
-        int energyTagsCount = (int) player.getPlayed().getCards().stream().map(marsContext.getCardService()::getCard)
-                .flatMap(card -> card.getTags().stream())
-                .filter(Tag.ENERGY::equals)
-                .count();
+        int energyTagCount = marsContext.getCardService().countPlayedTags(player, Set.of(Tag.ENERGY));
 
-        player.setMcIncome(player.getMcIncome() + energyTagsCount + 1);
+        player.setMcIncome(player.getMcIncome() + energyTagCount + 1);
 
         return null;
     }
 
     @Override
-    public void revertPlayedTags(CardService cardService, List<Tag> tags, Player player) {
-        int energyTagCount = (int) tags.stream().filter(Tag.ENERGY::equals).count();
+    public void revertPlayedTags(CardService cardService, Card card, Player player) {
+        int energyTagCount = cardService.countCardTagsWithDynamic(card, player, Set.of(Tag.ENERGY));
+
         player.setMcIncome(player.getMcIncome() - energyTagCount);
     }
 

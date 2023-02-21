@@ -546,6 +546,7 @@ public class GameController {
                 .hand(player.getHand().getCards().stream().map(cardService::getCard).map(CardDto::from).collect(Collectors.toList()))
                 .played(player.getPlayed().getCards().stream().map(cardService::getCard).map(CardDto::from).collect(Collectors.toList()))
                 .cardResources(getPlayerCardResources(player))
+                .cardToTag(getPlayerCardToTag(player))
                 .phaseCards(player.getPhaseCards())
                 .build();
     }
@@ -573,6 +574,7 @@ public class GameController {
                 .titaniumIncome(player.getTitaniumIncome())
                 .nextTurn(buildTurnDto(player.getNextTurn()))
                 .cardResources(getPlayerCardResources(player))
+                .cardToTag(getPlayerCardToTag(player))
                 .activatedBlueCards(player.getActivatedBlueCards().getCards())
                 .blueActionExtraActivationsLeft(player.getBlueActionExtraActivationsLeft())
                 .terraformingRating(player.getTerraformingRating())
@@ -588,6 +590,16 @@ public class GameController {
                 .canBuildInFirstPhase(player.getCanBuildInFirstPhase())
                 .phaseCards(player.getPhaseCards())
                 .build();
+    }
+
+
+    private Map<Integer, Tag> getPlayerCardToTag(Player player) {
+        return player.getPlayed().getCards().stream().map(cardService::getCard)
+                .filter(card -> card.getTags().contains(Tag.DYNAMIC))
+                .collect(Collectors.toMap(
+                        Card::getId,
+                        card -> player.getCardToTag().get(card.getClass())
+                ));
     }
 
     private Map<Integer, Integer> getPlayerCardResources(Player player) {

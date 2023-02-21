@@ -1,9 +1,9 @@
 <h1 class="text-white">Upgrade phase <span class="text-danger">BONUS</span>: </h1>
 
-<div *ngFor='let pc of phaseCounter(5) ;let i = index' class="form-check form-check-inline">
-  <input class="form-check-input" (click)="outputPhaseId(i); (-1)" type="radio" id="phaseUpdate{{i}}" value="{{i}}"
-         [checked]="phaseInput === i">
-  <label class="form-check-label text-white" for="phaseUpdate{{i}}">{{i + 1}}</label>
+<div *ngFor='let pc of phases ;' class="form-check form-check-inline">
+  <input class="form-check-input" (click)="outputPhaseId(pc - 1); (-1)" type="radio" id="phaseUpdate{{pc - 1}}" value="{{pc - 1}}"
+         [checked]="phaseInput === pc - 1">
+  <label class="form-check-label text-white" for="phaseUpdate{{pc - 1}}">{{pc}}</label>
 </div>
 
 <br/>

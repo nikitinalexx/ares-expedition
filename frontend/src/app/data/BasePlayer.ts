@@ -1,4 +1,5 @@
 import {Card} from './Card';
+import {Tag} from "./Tag";
 
 export class BasePlayer {
   constructor(playerUuid: string,
@@ -18,6 +19,7 @@ export class BasePlayer {
               terraformingRating: number,
               forests: number,
               cardResources: Map<number, number>,
+              cardToTag: Map<number, Tag>,
               phaseCards: number[],
               phase?: number) {
   }
@@ -41,5 +43,6 @@ export class BasePlayer {
   phaseCards: number[];
   phase?: number;
   cardResources: Map<number, number>;
+  cardToTag: Map<number, Tag>;
 
 }

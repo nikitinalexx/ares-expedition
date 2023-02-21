@@ -46,7 +46,7 @@ public class ProcessingPlant implements BaseExpansionGreenCard {
         do {
             List<Integer> cards = cardService.dealCards(marsContext.getGame(), 1);
             card = cardService.getCard(cards.get(0));
-        } while (!card.getTags().contains(Tag.BUILDING));
+        } while (!card.getTags().contains(Tag.BUILDING) && !card.getTags().contains(Tag.DYNAMIC));
 
         player.getHand().addCard(card.getId());
 

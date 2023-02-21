@@ -32,7 +32,7 @@ public class AdvancedScreeningTechnologyActionProcessor implements BlueActionCar
 
         for (Integer card : cardService.dealCards(game, 3)) {
             Card projectCard = cardService.getCard(card);
-            if (projectCard.getTags().contains(Tag.SCIENCE) || projectCard.getTags().contains(Tag.PLANT)) {
+            if (projectCard.getTags().contains(Tag.SCIENCE) || projectCard.getTags().contains(Tag.PLANT) || projectCard.getTags().contains(Tag.DYNAMIC)) {
                 player.getHand().addCard(card);
                 resultBuilder.takenCard(CardDto.from(projectCard));
             } else {

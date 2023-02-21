@@ -1,11 +1,9 @@
 package com.terraforming.ares.cards.buffedCorporations;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
-import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import org.springframework.util.CollectionUtils;
 
@@ -36,7 +34,7 @@ public class BuffedMiningGuildCorporation implements CorporationCard {
     }
 
     @Override
-    public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
         CardMetadata metadata = project.getCardMetadata();
         if (metadata == null) {
             return;
@@ -46,6 +44,7 @@ public class BuffedMiningGuildCorporation implements CorporationCard {
             return;
         }
         if (projectIncomes.stream().anyMatch(gain -> gain.getType() == GainType.STEEL && gain.getValue() > 0)) {
+            final Player player = marsContext.getPlayer();
             player.setTerraformingRating(player.getTerraformingRating() + 1);
         }
     }

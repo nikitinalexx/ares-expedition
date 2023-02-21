@@ -30,19 +30,19 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
 
         processInternalBeforeBuild(turn, game);
 
-        TurnResponse response = card.buildProject(
-                MarsContext.builder()
-                        .game(game)
-                        .player(player)
-                        .terraformingService(terraformingService)
-                        .cardService(cardService)
-                        .build()
-        );
+        final MarsContext marsContext = MarsContext.builder()
+                .game(game)
+                .player(player)
+                .terraformingService(terraformingService)
+                .cardService(cardService)
+                .build();
+
+        TurnResponse response = card.buildProject(marsContext);
 
         for (Integer previouslyPlayedCardId : player.getPlayed().getCards()) {
             Card previouslyPlayedCard = cardService.getCard(previouslyPlayedCardId);
             if (previouslyPlayedCard.onBuiltEffectApplicableToOther()) {
-                previouslyPlayedCard.postProjectBuiltEffect(cardService, game, player, card, turn.getInputParams());
+                previouslyPlayedCard.postProjectBuiltEffect(marsContext, card, turn.getInputParams());
             }
         }
 
@@ -52,7 +52,7 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
         processInternalAfterBuild(turn, game);
 
         if (card.onBuiltEffectApplicableToItself()) {
-            card.postProjectBuiltEffect(cardService, game, player, card, turn.getInputParams());
+            card.postProjectBuiltEffect(marsContext, card, turn.getInputParams());
         }
 
         return response;

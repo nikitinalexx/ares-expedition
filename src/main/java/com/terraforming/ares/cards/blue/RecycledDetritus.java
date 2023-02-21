@@ -3,12 +3,12 @@ package com.terraforming.ares.cards.blue;
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
-import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -35,9 +35,14 @@ public class RecycledDetritus implements BlueCard {
     }
 
     @Override
-    public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        if (project.getTags().contains(Tag.EVENT)) {
-            for (Integer card : cardService.dealCards(game, 2)) {
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
+        int eventTagCount = marsContext.getCardService().countCardTags(project, Set.of(Tag.EVENT), inputParams);
+
+        final MarsGame game = marsContext.getGame();
+        final Player player = marsContext.getPlayer();
+
+        if (eventTagCount > 0) {
+            for (Integer card : marsContext.getCardService().dealCards(game, 2)) {
                 player.getHand().addCard(card);
             }
         }

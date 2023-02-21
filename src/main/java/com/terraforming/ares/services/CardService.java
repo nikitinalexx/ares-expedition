@@ -89,18 +89,62 @@ public class CardService {
         return resultBuilder.build();
     }
 
+    public int countCardTagsWithDynamic(Card card, Player player, Set<Tag> tags) {
+        int tagCount = 0;
+
+        if (card.getTags().contains(Tag.DYNAMIC) && player.getCardToTag().containsKey(card.getClass()) && tags.contains(player.getCardToTag().get(card.getClass()))) {
+            tagCount++;
+        }
+
+        return tagCount + (int) card.getTags().stream().filter(tags::contains).count();
+    }
+
+    public int countCardTags(Card card, Set<Tag> tags, Map<Integer, List<Integer>> input) {
+        int tagCount = 0;
+
+        if (input.containsKey(InputFlag.TAG_INPUT.getId())) {
+            List<Integer> tagInput = input.get(InputFlag.TAG_INPUT.getId());
+
+            if (tags.contains(Tag.byIndex(tagInput.get(0)))) {
+                tagCount++;
+            }
+        }
+
+        return tagCount + (int) card.getTags().stream().filter(tags::contains).count();
+    }
+
+    public List<Tag> getCardTags(Card card, Map<Integer, List<Integer>> input) {
+        List<Tag> result = new ArrayList<>();
+
+        if (input.containsKey(InputFlag.TAG_INPUT.getId())) {
+            List<Integer> tagInput = input.get(InputFlag.TAG_INPUT.getId());
+            result.add(Tag.byIndex(tagInput.get(0)));
+        }
+
+        result.addAll(card.getTags());
+        return result;
+    }
+
     public int countPlayedTags(Player player, Set<Tag> tags) {
         if (player == null || player.getPlayed() == null || CollectionUtils.isEmpty(player.getPlayed().getCards())) {
             return 0;
         }
 
-        return (int) player.getPlayed()
-                .getCards()
-                .stream()
-                .map(this::getCard)
-                .flatMap(card -> card.getTags().stream())
-                .filter(tags::contains)
-                .count();
+        return (int) (
+                player.getPlayed().getCards().stream().map(this::getCard)
+                        .filter(card -> player.getCardToTag().containsKey(card.getClass()))
+                        .map(card -> player.getCardToTag().get(card.getClass()))
+                        .filter(tags::contains)
+                        .count()
+
+                        + player.getPlayed()
+                        .getCards()
+                        .stream()
+                        .map(this::getCard)
+                        .flatMap(card -> card.getTags().stream())
+                        .filter(tags::contains)
+                        .count()
+        );
     }
 
     public int countPlayedCards(Player player, Set<CardColor> colors) {
@@ -134,7 +178,9 @@ public class CardService {
             }
             Integer cardId = cards.get(0);
 
-            if (getCard(cardId).getTags().contains(tag)) {
+            final Card card = getCard(cardId);
+
+            if (card.getTags().contains(tag) || card.getTags().contains(Tag.DYNAMIC)) {
                 return cardId;
             }
         }

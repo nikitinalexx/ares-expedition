@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -32,12 +33,7 @@ public class Worms implements BaseExpansionGreenCard {
 
     @Override
     public void payAgain(MarsGame game, CardService cardService, Player player) {
-        int microbeTagCount = (int) player
-                .getPlayed()
-                .getCards().stream()
-                .map(cardService::getCard)
-                .flatMap(card -> card.getTags().stream())
-                .filter(Tag.MICROBE::equals).count();
+        int microbeTagCount = cardService.countPlayedTags(player, Set.of(Tag.MICROBE));
 
         player.setPlants(player.getPlants() + microbeTagCount);
     }
@@ -48,20 +44,16 @@ public class Worms implements BaseExpansionGreenCard {
     }
 
     @Override
-    public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
-        int microbeTagCount = (int) project.getTags().stream().filter(Tag.MICROBE::equals).count();
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
+        int microbeTagCount = marsContext.getCardService().countCardTags(project, Set.of(Tag.MICROBE), inputParams);
 
+        final Player player = marsContext.getPlayer();
         player.setPlantsIncome(player.getPlantsIncome() + microbeTagCount);
     }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        int microbeTagCount = (int) marsContext.getPlayer()
-                .getPlayed()
-                .getCards().stream()
-                .map(marsContext.getCardService()::getCard)
-                .flatMap(card -> card.getTags().stream())
-                .filter(Tag.MICROBE::equals).count();
+        int microbeTagCount = marsContext.getCardService().countPlayedTags(marsContext.getPlayer(), Set.of(Tag.MICROBE));
 
         marsContext.getPlayer().setPlantsIncome(marsContext.getPlayer().getPlantsIncome() + microbeTagCount + 1);
 
@@ -69,8 +61,9 @@ public class Worms implements BaseExpansionGreenCard {
     }
 
     @Override
-    public void revertPlayedTags(CardService cardService, List<Tag> tags, Player player) {
-        int microbeTagCount = (int) tags.stream().filter(Tag.MICROBE::equals).count();
+    public void revertPlayedTags(CardService cardService, Card card, Player player) {
+        int microbeTagCount = cardService.countCardTagsWithDynamic(card, player, Set.of(Tag.MICROBE));
+
         player.setPlantsIncome(player.getPlantsIncome() - microbeTagCount);
     }
 

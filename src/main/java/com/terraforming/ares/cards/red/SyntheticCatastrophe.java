@@ -1,9 +1,7 @@
 package com.terraforming.ares.cards.red;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
-import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -40,18 +38,20 @@ public class SyntheticCatastrophe implements BaseExpansionRedCard {
     }
 
     @Override
-    public void postProjectBuiltEffect(CardService cardService, MarsGame game, Player player, Card project, Map<Integer, List<Integer>> inputParams) {
+    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
         List<Integer> cardInput = inputParams.get(InputFlag.SYNTHETIC_CATASTROPHE_CARD.getId());
 
         int targetCardId = cardInput.get(0);
 
-        Card targetCard = cardService.getCard(targetCardId);
+        Card targetCard = marsContext.getCardService().getCard(targetCardId);
+        final Player player = marsContext.getPlayer();
+
         player.getPlayed().removeCards(List.of(targetCardId));
         player.getHand().addCard(targetCardId);
 
 
-        player.getPlayed().getCards().stream().map(cardService::getCard).forEach(
-                card -> card.revertPlayedTags(cardService, targetCard.getTags(), player)
+        player.getPlayed().getCards().stream().map(marsContext.getCardService()::getCard).forEach(
+                card -> card.revertPlayedTags(marsContext.getCardService(), targetCard, player)
         );
     }
 

@@ -146,6 +146,14 @@
     </div>
   </div>
 
+  <app-upgrade-phase-template *ngIf="expectsAnyPhaseUpgradeActionInput()" [phaseInput]="phaseInput" [phaseUpgradeTypeInput]="phaseUpgradeType"
+                              [game]="game"
+                              [phases]="getUpgradePhasesArray()"
+                              (phaseOutput)="updatePhaseInput($event)"
+                              (phaseUpgradeTypeOutput)="updatePhaseUpgradeTypeInput($event)"
+  >
+  </app-upgrade-phase-template>
+
   <div *ngIf="plantForestTurn()" class="form-check">
     <input id="plantForest" (click)="resetAllInputs()" type="radio" class="form-check-input" value="plantForest"
            formControlName="turn" [checked]="this.parentForm.value?.turn === 'plantForest'">
