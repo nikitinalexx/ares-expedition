@@ -123,6 +123,9 @@ export class BuildGreenComponent implements OnInit {
       this.resetAllInputs();
     } else {
       this.selectedProject = card;
+      if (this.upgradePhaseCardEffect()) {
+        this.phaseInput = this.getUpgradePhasesArray()[0] - 1;
+      }
       this.parentForm.controls.mcPrice.setValue(
         this.getDiscountedMcPriceWithEffectsApplied(
           this.parentForm.value.anaerobicMicroorganisms,

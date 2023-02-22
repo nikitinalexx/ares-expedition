@@ -276,6 +276,9 @@ export class ThirdPhaseComponent implements OnInit {
       this.resetAllInputs();
     } else {
       this.selectedProject = card;
+      if (this.expectsAnyPhaseUpgradeActionInput()) {
+        this.phaseInput = this.getUpgradePhasesArray()[0] - 1;
+      }
     }
   }
 

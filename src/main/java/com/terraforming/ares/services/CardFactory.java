@@ -334,11 +334,11 @@ public class CardFactory {
         );
 
         sortedDiscoveryCorporations = List.of(
-                new SultiraCorporation(10100),
-                new HyperionSystemsCorporation(10101),
-                new ExocorpCorporation(10102),
-                new ApolloIndustriesCorporation(10103),
-                new AustellarCorporation(10104)
+                new SultiraCorporation(10200),
+                new HyperionSystemsCorporation(10201),
+                new ExocorpCorporation(10202),
+                new ApolloIndustriesCorporation(10203),
+                new AustellarCorporation(10204)
         );
 
         buffedCorporationsMapping = Map.of(

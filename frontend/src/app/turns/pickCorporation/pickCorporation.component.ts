@@ -86,6 +86,9 @@ export class PickCorporationComponent implements OnInit {
     if (this.parentForm.value?.turn === 'pickCorporation' && !this.game.player.corporationId) {
       this.corporationInput = card;
       this.errorMessage = null;
+      if (this.upgradePhaseCardEffect()) {
+        this.phaseInput = this.getUpgradePhasesArray()[0] - 1;
+      }
     }
   }
 

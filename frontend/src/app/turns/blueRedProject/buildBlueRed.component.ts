@@ -112,6 +112,12 @@ export class BuildBlueRedComponent implements OnInit {
       this.selectedProject = null;
     } else {
       this.selectedProject = card;
+      if (this.upgradePhaseCardEffect()) {
+        this.phaseInput = this.getUpgradePhasesArray()[0] - 1;
+      }
+      if (this.upgradeExtraPhaseCardEffect()) {
+        this.extraPhaseInput = this.getUpgradePhasesArray()[1] - 1;
+      }
       this.parentForm.controls.mcPrice.setValue(
         this.getDiscountedMcPriceWithEffectsApplied(
           this.parentForm.value.anaerobicMicroorganisms,
