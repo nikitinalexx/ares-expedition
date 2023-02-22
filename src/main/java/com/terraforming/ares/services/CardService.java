@@ -20,13 +20,15 @@ public class CardService {
     private final ShuffleService shuffleService;
     private final Map<Expansion, Map<Integer, Card>> projects;
     private final Map<Integer, Card> baseCorporations;
+    private final Map<Integer, Card> discoveryCorporations;
     private final Map<Integer, Card> buffedCorporations;
     private final Map<Integer, Card> buffedCorporationsMapping;
 
     public CardService(CardFactory cardFactory, ShuffleService shuffleService) {
         this.shuffleService = shuffleService;
         projects = cardFactory.createAllProjects();
-        baseCorporations = cardFactory.createCorporations();
+        baseCorporations = cardFactory.createBaseCorporations();
+        discoveryCorporations = cardFactory.createDiscoveryCorporations();
         buffedCorporations = cardFactory.createBuffedCorporations();
         buffedCorporationsMapping = cardFactory.getBuffedCorporationsMapping();
     }
@@ -46,6 +48,10 @@ public class CardService {
 
         if (expansions.contains(Expansion.BUFFED_CORPORATION)) {
             corporations.putAll(this.buffedCorporationsMapping);
+        }
+
+        if (expansions.contains(Expansion.DISCOVERY)) {
+            corporations.putAll(this.discoveryCorporations);
         }
 
         return createAndShuffleDeck(
@@ -69,6 +75,11 @@ public class CardService {
             if (card != null) {
                 return card;
             }
+        }
+
+        card = discoveryCorporations.get(id);
+        if (card != null) {
+            return card;
         }
 
         card = baseCorporations.get(id);

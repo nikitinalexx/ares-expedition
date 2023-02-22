@@ -3,6 +3,7 @@ package com.terraforming.ares.cards.corporations;
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.UpgradePhaseHelper;
 import lombok.Getter;
 
@@ -15,38 +16,33 @@ import java.util.Set;
  * Creation date 21.02.2023
  */
 @Getter
-public class SultiraCorporation implements CorporationCard {
+public class ApolloIndustriesCorporation implements CorporationCard {
     private final int id;
     private final CardMetadata cardMetadata;
 
-    public SultiraCorporation(int id) {
+    public ApolloIndustriesCorporation(int id) {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
-                .name("Sultira")
-                .description("38 Mc. Upgrade your phase 1 card. When you play an Energy tag, get 2 Heat.")
-                .cardAction(CardAction.SULTIRA_CORPORATION)
+                .name("Apollo Industries")
+                .description("33 Mc. Upgrade your phase 2 card. Effect: When you play a Science tag, draw a card.")
+                .cardAction(CardAction.APOLLO_CORPORATION)
                 .build();
     }
 
     @Override
-    public boolean isActiveCard() {
-        return false;
-    }
-
-    @Override
     public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
-        final int energyTagsCount = marsContext.getCardService().countCardTags(project, Set.of(Tag.ENERGY), inputParams);
+        final CardService cardService = marsContext.getCardService();
 
-        final Player player = marsContext.getPlayer();
+        final int scienceTagsCount = cardService.countCardTags(project, Set.of(Tag.SCIENCE), inputParams);
 
-        player.setHeat(player.getHeat() + energyTagsCount * 2);
+        marsContext.getPlayer().getHand().addCards(cardService.dealCards(marsContext.getGame(), scienceTagsCount));
 
-        if (project.getClass() == SultiraCorporation.class) {
+        if (project.getClass() == ApolloIndustriesCorporation.class) {
             List<Integer> cardInput = inputParams.get(InputFlag.PHASE_UPGRADE_CARD.getId());
 
             final MarsGame game = marsContext.getGame();
 
-            UpgradePhaseHelper.upgradePhase(marsContext.getCardService(), game, player, cardInput.get(0));
+            UpgradePhaseHelper.upgradePhase(cardService, game, marsContext.getPlayer(), cardInput.get(0));
         }
     }
 
@@ -61,15 +57,25 @@ public class SultiraCorporation implements CorporationCard {
     }
 
     @Override
+    public boolean isActiveCard() {
+        return false;
+    }
+
+    @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
-        player.setMc(38);
+        player.setMc(33);
         return null;
     }
 
     @Override
+    public Set<SpecialEffect> getSpecialEffects() {
+        return Set.of(SpecialEffect.APOLLO_INDUSTRIES);
+    }
+
+    @Override
     public List<Tag> getTags() {
-        return List.of(Tag.ENERGY);
+        return List.of(Tag.SPACE);
     }
 
     @Override
@@ -79,7 +85,7 @@ public class SultiraCorporation implements CorporationCard {
 
     @Override
     public int getPrice() {
-        return 38;
+        return 33;
     }
 
 }

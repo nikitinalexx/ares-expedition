@@ -52,7 +52,7 @@ public class AiTurnService {
             throw new IllegalStateException("Can't pick corporation that is not in your choice deck");
         }
 
-        makeAsyncTurn(player, new CorporationChoiceTurn(playerUuid, corporationCardId));
+        makeAsyncTurn(player, new CorporationChoiceTurn(playerUuid, corporationCardId, Map.of()));
     }
 
     public void choosePhaseTurn(Player player, int phaseId) {

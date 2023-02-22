@@ -15,39 +15,26 @@ import java.util.Set;
  * Creation date 21.02.2023
  */
 @Getter
-public class SultiraCorporation implements CorporationCard {
+public class ExocorpCorporation implements CorporationCard {
     private final int id;
     private final CardMetadata cardMetadata;
 
-    public SultiraCorporation(int id) {
+    public ExocorpCorporation(int id) {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
-                .name("Sultira")
-                .description("38 Mc. Upgrade your phase 1 card. When you play an Energy tag, get 2 Heat.")
-                .cardAction(CardAction.SULTIRA_CORPORATION)
+                .name("Exocorp")
+                .description("26 Mc. Upgrade your phase 5 card. Effect: Cards you discard for MC are worth an additional 1 MC.")
+                .cardAction(CardAction.EXOCORP_CORPORATION)
                 .build();
     }
 
     @Override
-    public boolean isActiveCard() {
-        return false;
-    }
-
-    @Override
     public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
-        final int energyTagsCount = marsContext.getCardService().countCardTags(project, Set.of(Tag.ENERGY), inputParams);
+        List<Integer> cardInput = inputParams.get(InputFlag.PHASE_UPGRADE_CARD.getId());
 
-        final Player player = marsContext.getPlayer();
+        final MarsGame game = marsContext.getGame();
 
-        player.setHeat(player.getHeat() + energyTagsCount * 2);
-
-        if (project.getClass() == SultiraCorporation.class) {
-            List<Integer> cardInput = inputParams.get(InputFlag.PHASE_UPGRADE_CARD.getId());
-
-            final MarsGame game = marsContext.getGame();
-
-            UpgradePhaseHelper.upgradePhase(marsContext.getCardService(), game, player, cardInput.get(0));
-        }
+        UpgradePhaseHelper.upgradePhase(marsContext.getCardService(), game, marsContext.getPlayer(), cardInput.get(0));
     }
 
     @Override
@@ -56,20 +43,25 @@ public class SultiraCorporation implements CorporationCard {
     }
 
     @Override
-    public boolean onBuiltEffectApplicableToOther() {
-        return true;
+    public boolean isActiveCard() {
+        return false;
     }
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
-        player.setMc(38);
+        player.setMc(26);
         return null;
     }
 
     @Override
+    public Set<SpecialEffect> getSpecialEffects() {
+        return Set.of(SpecialEffect.EXOCORP_SOLD_CARDS_COST_1_MC_MORE);
+    }
+
+    @Override
     public List<Tag> getTags() {
-        return List.of(Tag.ENERGY);
+        return List.of(Tag.SCIENCE);
     }
 
     @Override
@@ -79,7 +71,7 @@ public class SultiraCorporation implements CorporationCard {
 
     @Override
     public int getPrice() {
-        return 38;
+        return 26;
     }
 
 }

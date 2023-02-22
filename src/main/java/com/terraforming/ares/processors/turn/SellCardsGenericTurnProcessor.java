@@ -21,10 +21,15 @@ public abstract class SellCardsGenericTurnProcessor<T extends Turn> implements T
     protected void sell(Player player, List<Integer> cards) {
         player.getHand().removeCards(cards);
 
-        int cardCost = 3 + (
-                specialEffectsService.ownsSpecialEffect(player, SpecialEffect.SOLD_CARDS_COST_1_MC_MORE)
-                        ? 1
-                        : 0);
+        int cardCost = 3;
+
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.SOLD_CARDS_COST_1_MC_MORE)) {
+            cardCost++;
+        }
+
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.EXOCORP_SOLD_CARDS_COST_1_MC_MORE)) {
+            cardCost++;
+        }
 
         player.setMc(player.getMc() + cards.size() * cardCost);
     }

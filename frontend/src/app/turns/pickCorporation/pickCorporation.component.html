@@ -35,6 +35,35 @@
         </li>
       </ul>
     </div>
+
+    <app-upgrade-phase-template *ngIf="upgradePhaseCardEffect()" [phaseInput]="phaseInput" [phaseUpgradeTypeInput]="phaseUpgradeType"
+                                [game]="game"
+                                (phaseOutput)="updatePhaseInput($event)"
+                                (phaseUpgradeTypeOutput)="updatePhaseUpgradeTypeInput($event)"
+                                [phases]="getUpgradePhasesArray()"
+    >
+    </app-upgrade-phase-template>
+
+    <div *ngIf="expectsTagInput()">
+      <h1 class="text-white">Choose tag to put on a card: </h1>
+
+      <div *ngFor='let tag of getAllTagsArray(); let i = index;' class="form-check form-check-inline">
+        <div class="tag" [ngClass]="getTagClasses(i)">
+          <input class="form-check-input" (click)="tagInput = i" type="radio" [checked]="tagInput === i">
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="expectsMilestoneInput()">
+      <h1 class="text-white">Choose milestone to put a red cube on: </h1>
+
+      <div *ngFor='let milestone of game.milestones; let i = index;' class="form-check form-check-inline">
+        <label for="milestone{{i}}" class="text-white">{{milestone.type}}</label>
+        <input class="form-check-input" id="milestone{{i}}" (click)="milestoneInput = i" type="radio" [checked]="milestoneInput === i">
+      </div>
+
+    </div>
+
   </div>
 
   <div *ngIf="mulliganTurn()" class="form-check">

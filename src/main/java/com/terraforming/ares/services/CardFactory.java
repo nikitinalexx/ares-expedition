@@ -20,10 +20,12 @@ import java.util.stream.Stream;
  */
 @Service
 public class CardFactory {
-    private final Map<Integer, Card> corporationsStorage;
+    private final Map<Integer, Card> baseExpansionCorporations;
+    private final Map<Integer, Card> discoveryExpansionCorporations;
     private final Map<Integer, Card> buffedCorporationsStorage;
     private final Map<Integer, Card> buffedCorporationsMapping;
-    private final List<Card> sortedCorporations;
+    private final List<Card> sortedBaseCorporations;
+    private final List<Card> sortedDiscoveryCorporations;
     private final List<Card> buffedCorporations;
 
     private final Map<Integer, Card> baseExpansionProjects;
@@ -310,7 +312,7 @@ public class CardFactory {
                 new Tourism(380)
         );
 
-        sortedCorporations = List.of(
+        sortedBaseCorporations = List.of(
                 new HelionCorporation(10000),
                 new CelestiorCorporation(10001),
                 new DevTechs(10002),
@@ -331,6 +333,14 @@ public class CardFactory {
                 new InterplanetaryCinematics(10017)
         );
 
+        sortedDiscoveryCorporations = List.of(
+                new SultiraCorporation(10100),
+                new HyperionSystemsCorporation(10101),
+                new ExocorpCorporation(10102),
+                new ApolloIndustriesCorporation(10103),
+                new AustellarCorporation(10104)
+        );
+
         buffedCorporationsMapping = Map.of(
                 10000, new BuffedHelionCorporation(10100),
                 10008, new BuffedArclightCorporation(10101),
@@ -347,12 +357,13 @@ public class CardFactory {
 
         baseExpansionProjects = baseExpansionSortedProjects.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
         discoveryExpansionProjects = discoveryExpansionSortedProjects.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
-        corporationsStorage = sortedCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
+        baseExpansionCorporations = sortedBaseCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
+        discoveryExpansionCorporations = sortedDiscoveryCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
         buffedCorporationsStorage = buffedCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
     }
 
-    public Map<Integer, Card> createCorporations() {
-        return corporationsStorage;
+    public Map<Integer, Card> createBaseCorporations() {
+        return baseExpansionCorporations;
     }
 
     public Map<Integer, Card> createBuffedCorporations() {
@@ -383,18 +394,27 @@ public class CardFactory {
         ).collect(Collectors.toList());
     }
 
+    public Map<Integer, Card> createDiscoveryCorporations() {
+        return discoveryExpansionCorporations;
+    }
+
     public List<Card> getAllCorporations(List<Expansion> expansions) {
         Map<Integer, Card> corporations = new HashMap<>();
 
         if (expansions.contains(Expansion.BASE)) {
-            corporations.putAll(corporationsStorage);
+            corporations.putAll(baseExpansionCorporations);
         }
 
         if (expansions.contains(Expansion.BUFFED_CORPORATION)) {
             corporations.putAll(buffedCorporationsMapping);
         }
 
+        if (expansions.contains(Expansion.DISCOVERY)) {
+            corporations.putAll(discoveryExpansionCorporations);
+        }
+
         return new ArrayList<>(corporations.values());
     }
+
 
 }

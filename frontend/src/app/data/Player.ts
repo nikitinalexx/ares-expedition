@@ -35,10 +35,12 @@ export class Player extends BasePlayer {
               canBuildInFirstPhase: number,
               activatedBlueCards: number[],
               phaseCards: number[],
+              austellarMilestone: number,
               corporationId?: number,
               phase?: number) {
     super(playerUuid, name, winPoints, mc, hand, played, heat, plants, mcIncome, heatIncome, plantsIncome,
-      steelIncome, titaniumIncome, cardIncome, terraformingRating, forests, cardResources, cardToTag, phaseCards, phase);
+      steelIncome, titaniumIncome, cardIncome, terraformingRating, forests, cardResources, cardToTag,
+      phaseCards, austellarMilestone, phase);
   }
 
   corporations: Card[];

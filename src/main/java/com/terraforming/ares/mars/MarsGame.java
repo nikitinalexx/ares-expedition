@@ -141,7 +141,8 @@ public class MarsGame {
                             .name(playerNames.get(i))
                             //.hand(Deck.builder().cards(new LinkedList<>(List.of(310, 312, 311, 313))).build())
                             .hand(projectsDeck.dealCardsDeck(playerHandSize))
-                            .corporations(corporationsDeck.dealCardsDeck(INITIAL_CORPORATIONS_SIZE))
+                            //.corporations(corporationsDeck.dealCardsDeck(INITIAL_CORPORATIONS_SIZE))
+                            .corporations(Deck.builder().cards(new LinkedList<>(List.of(10104, 10005))).build())
                             .played(Deck.builder().build())
                             .mulligan(mulligan)
                             .ai(computers.get(i))
@@ -233,17 +234,17 @@ public class MarsGame {
 
     private void assignMilestones(CardService cardService) {
         milestones.stream()
-                .filter(achievement -> !achievement.isAchieved())
-                .forEach(achievement -> {
+                .filter(milestone -> !milestone.isAchieved())
+                .forEach(milestone -> {
                             playerUuidToPlayer.values()
                                     .stream()
-                                    .filter(player -> achievement.isAchievable(player, cardService))
-                                    .forEach(achievement::setAchieved);
-                            if (achievement.isAchieved()) {
+                                    .filter(player -> milestone.isAchievable(player, cardService))
+                                    .forEach(milestone::setAchieved);
+                            if (milestone.isAchieved()) {
                                 playerUuidToPlayer.values()
                                         .forEach(player -> {
-                                            achievement.setValue(player, achievement.getValue(player, cardService));
-                                            player.getPlayed().getCards().stream().map(cardService::getCard).forEach(card -> card.onAchievementGained(player));
+                                            milestone.setValue(player, milestone.getValue(player, cardService));
+                                            player.getPlayed().getCards().stream().map(cardService::getCard).forEach(card -> card.onMilestoneGained(this, player, milestone));
                                         });
                             }
                         }

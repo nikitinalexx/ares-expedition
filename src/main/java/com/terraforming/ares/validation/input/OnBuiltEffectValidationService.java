@@ -22,6 +22,12 @@ public class OnBuiltEffectValidationService {
         return validatePhaseUpgrade(cardInput);
     }
 
+    public String validatePhaseUpgrade(Map<Integer, List<Integer>> input, int phase) {
+        List<Integer> cardInput = input.get(InputFlag.PHASE_UPGRADE_CARD.getId());
+
+        return validatePhaseUpgrade(cardInput, phase);
+    }
+
     public String validatePhaseUpgrade(List<Integer> cardInput) {
         if (CollectionUtils.isEmpty(cardInput)) {
             return INCORRECT_INPUT_ERROR_MESSAGE;
@@ -31,6 +37,24 @@ public class OnBuiltEffectValidationService {
 
         if (cardId < 0 || cardId > 9) {
             return "Invalid phase upgrade chosen, only from 0 to 9 applicable";
+        }
+
+        return null;
+    }
+
+    public String validatePhaseUpgrade(List<Integer> cardInput, int phase) {
+        if (CollectionUtils.isEmpty(cardInput)) {
+            return INCORRECT_INPUT_ERROR_MESSAGE;
+        }
+
+        Integer cardId = cardInput.get(0);
+
+        if (cardId < 0 || cardId > 9) {
+            return "Invalid phase upgrade chosen, only from 0 to 9 applicable";
+        }
+
+        if (cardId / 2 + 1 != phase) {
+            return "Invalid phase upgrade chosen, may only upgrade phase " + phase;
         }
 
         return null;

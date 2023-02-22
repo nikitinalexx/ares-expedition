@@ -23,8 +23,8 @@ export class GameRepository {
     return this.dataSource.getShortGame(playerUuid);
   }
 
-  pickCorporation(playerUuid: string, corporationId: number): Observable<any> {
-    return this.dataSource.pickCorporation(playerUuid, corporationId);
+  pickCorporation(playerUuid: string, corporationId: number, inputParams: Map<number, number[]>): Observable<any> {
+    return this.dataSource.pickCorporation(playerUuid, corporationId, inputParams);
   }
 
   pickPhase(playerUuid: string, phaseId: number): Observable<any> {

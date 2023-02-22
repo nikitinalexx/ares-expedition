@@ -73,6 +73,12 @@ public class CardValidationService {
                 .orElse(null);
     }
 
+    public String validateCorporation(Player player, MarsGame game, int cardId, Map<Integer, List<Integer>> inputParameters) {
+        Card card = cardService.getCard(cardId);
+
+        return validateInputParameters(game, card, player, inputParameters).orElse(null);
+    }
+
     private Optional<String> validateCustomCards(Card card, Player player) {
         boolean canBuildAnotherGreenWith9Discount = player.isCanBuildAnotherGreenWith9Discount();
         boolean canBuildAnotherGreenWithPrice12 = player.isCanBuildAnotherGreenWithPrice12();

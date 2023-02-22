@@ -553,6 +553,7 @@ public class GameController {
                 .cardResources(getPlayerCardResources(player))
                 .cardToTag(getPlayerCardToTag(player))
                 .phaseCards(player.getPhaseCards())
+                .austellarMilestone(player.getAustellarMilestone())
                 .build();
     }
 
@@ -594,6 +595,7 @@ public class GameController {
                 .mayNiDiscount(player.isMayNiDiscount())
                 .canBuildInFirstPhase(player.getCanBuildInFirstPhase())
                 .phaseCards(player.getPhaseCards())
+                .austellarMilestone(player.getAustellarMilestone())
                 .build();
     }
 

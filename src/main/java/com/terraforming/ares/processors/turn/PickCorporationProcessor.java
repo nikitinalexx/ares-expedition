@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class PickCorporationProcessor implements TurnProcessor<CorporationChoiceTurn> {
-    private final CardService carsService;
+    private final CardService cardService;
     private final TerraformingService terraformingService;
 
     @Override
@@ -26,15 +26,25 @@ public class PickCorporationProcessor implements TurnProcessor<CorporationChoice
         player.setMulligan(false);
         player.getPlayed().addCard(turn.getCorporationCardId());
 
-        Card card = carsService.getCard(turn.getCorporationCardId());
+        Card card = cardService.getCard(turn.getCorporationCardId());
         TurnResponse turnResponse = card.buildProject(
                 MarsContext.builder()
                         .game(game)
                         .player(player)
                         .terraformingService(terraformingService)
-                        .cardService(carsService)
+                        .cardService(cardService)
                         .build()
         );
+        if (card.onBuiltEffectApplicableToItself()) {
+            final MarsContext marsContext = MarsContext.builder()
+                    .game(game)
+                    .player(player)
+                    .terraformingService(terraformingService)
+                    .cardService(cardService)
+                    .build();
+
+            card.postProjectBuiltEffect(marsContext, card, turn.getInputParams());
+        }
         return turnResponse;
     }
 

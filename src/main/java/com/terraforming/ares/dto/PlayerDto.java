@@ -53,4 +53,6 @@ public class PlayerDto {
 
     private final int steelIncome;
     private final int titaniumIncome;
+
+    private final int austellarMilestone;
 }

@@ -9,15 +9,24 @@ import {CardColor} from '../../data/CardColor';
 import {BuildGreenComponent} from '../greenProject/buildGreen.component';
 import {SellCardsComponent} from '../sellCards/sellCards.component';
 import {BuildBlueRedComponent} from "../blueRedProject/buildBlueRed.component";
+import {CardAction} from "../../data/CardAction";
+import {InputFlag} from "../../data/InputFlag";
+import {Tag} from "../../data/Tag";
 
 @Component({
   selector: 'app-pick-corporation',
   templateUrl: './pickCorporation.component.html'
 })
 export class PickCorporationComponent implements OnInit {
-  public corporationInput: number;
+  allTags = [Tag.SPACE, Tag.EARTH, Tag.EVENT, Tag.SCIENCE, Tag.PLANT,
+    Tag.ENERGY, Tag.BUILDING, Tag.ANIMAL, Tag.JUPITER, Tag.MICROBE];
+  public corporationInput: Card;
   public errorMessage: string;
   projectsToDiscard: number[];
+  phaseInput = 0;
+  phaseUpgradeType = -1;
+  tagInput = -1;
+  milestoneInput = -1;
 
   @ViewChild(BuildGreenComponent) buildGreenService;
   @ViewChild(BuildBlueRedComponent) buildBlueRedService;
@@ -75,7 +84,7 @@ export class PickCorporationComponent implements OnInit {
 
   clickCorporation(card: Card) {
     if (this.parentForm.value?.turn === 'pickCorporation' && !this.game.player.corporationId) {
-      this.corporationInput = card.id;
+      this.corporationInput = card;
       this.errorMessage = null;
     }
   }
@@ -148,6 +157,54 @@ export class PickCorporationComponent implements OnInit {
     }
   }
 
+  upgradePhaseCardEffect(): boolean {
+    return this.corporationInput?.cardAction === CardAction[CardAction.SULTIRA_CORPORATION]
+      || this.corporationInput?.cardAction === CardAction[CardAction.HYPERION_SYSTEMS_CORPORATION]
+      || this.corporationInput?.cardAction === CardAction[CardAction.EXOCORP_CORPORATION]
+      || this.corporationInput?.cardAction === CardAction[CardAction.APOLLO_CORPORATION];
+  }
+
+  updatePhaseInput(newPhaseInput: number) {
+    this.phaseInput = newPhaseInput;
+  }
+
+  updatePhaseUpgradeTypeInput(newPhaseUpgradeType: number) {
+    this.phaseUpgradeType = newPhaseUpgradeType;
+  }
+
+  getUpgradePhasesArray(): number[] {
+    if (this.corporationInput?.cardAction === CardAction.SULTIRA_CORPORATION) {
+      return [1];
+    }
+    if (this.corporationInput?.cardAction === CardAction.APOLLO_CORPORATION) {
+      return [2];
+    }
+    if (this.corporationInput?.cardAction === CardAction.HYPERION_SYSTEMS_CORPORATION) {
+      return [3];
+    }
+    if (this.corporationInput?.cardAction === CardAction.EXOCORP_CORPORATION) {
+      return [5];
+    }
+    return [1, 2, 3, 4, 5];
+  }
+
+  expectsTagInput(): boolean {
+    return this.corporationInput?.cardAction === CardAction[CardAction.AUSTELLAR_CORPORATION];
+  }
+
+  expectsMilestoneInput(): boolean {
+    return this.corporationInput?.cardAction === CardAction[CardAction.AUSTELLAR_CORPORATION];
+  }
+
+  getAllTagsArray(): Tag[] {
+    return this.allTags;
+  }
+
+  getTagClasses(tagNumber: number): string {
+    return 'tag-' + this.allTags[tagNumber].toString().toLowerCase();
+  }
+
+
   submitForm(formGroup: FormGroup) {
     this.errorMessage = null;
     if (!formGroup.valid) {
@@ -158,8 +215,37 @@ export class PickCorporationComponent implements OnInit {
         if (!this.corporationInput) {
           this.errorMessage = 'Pick corporation';
         } else {
-          this.gameRepository.pickCorporation(this.game.player.playerUuid, this.corporationInput)
-            .subscribe(data => this.sendToParent(data));
+          const inputParams = new Map<number, number[]>();
+
+          if (this.expectsTagInput()) {
+            if (this.tagInput < 0) {
+              this.errorMessage = 'Choose a tag to put on a Card';
+              return;
+            }
+            inputParams[InputFlag.TAG_INPUT.valueOf()] = [this.tagInput];
+          }
+
+          if (this.expectsMilestoneInput()) {
+            if (this.milestoneInput < 0) {
+              this.errorMessage = 'Choose a milestone';
+              return;
+            }
+            inputParams[InputFlag.AUSTELLAR_CORPORATION_MILESTONE.valueOf()] = [this.milestoneInput];
+          }
+
+          if (this.upgradePhaseCardEffect()) {
+            if (this.phaseInput < 0 || this.phaseInput > 4) {
+              this.errorMessage = 'Pick the phase you want to upgrade';
+              return;
+            }
+            if (this.phaseUpgradeType !== 0 && this.phaseUpgradeType !== 1) {
+              this.errorMessage = 'Choose the type of phase upgrade';
+              return;
+            }
+            inputParams[InputFlag.PHASE_UPGRADE_CARD.valueOf()] = [this.phaseInput * 2 + this.phaseUpgradeType];
+          }
+          this.gameRepository.pickCorporation(this.game.player.playerUuid, this.corporationInput.id, inputParams)
+            .subscribe(data => this.sendToParent(data), error => this.errorMessage = error);
         }
       } else if (formGroup.value.turn === 'discardCards') {
         if (!this.projectsToDiscard || this.projectsToDiscard.length !== this.game.player.nextTurn.size) {
@@ -201,7 +287,7 @@ export class PickCorporationComponent implements OnInit {
   }
 
   isSelectedCard(card: Card): string {
-    if (this.corporationInput && card.id === this.corporationInput) {
+    if (this.corporationInput && card.id === this.corporationInput.id) {
       return 'clicked-card';
     }
     return '';

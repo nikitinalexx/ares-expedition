@@ -52,6 +52,69 @@
       </div>
     </div>
 
+    <div *ngIf="isSultiraCorporation(card)">
+      <div class="corporationEffectBoxLabel">EFFECT</div>
+
+      <div class="resource-tag tag-energy"></div>
+      :
+      <div class="resource heat"></div>
+      <div class="resource heat"></div>
+
+      <div class="description" style="text-align:center;margin-top:0px;">
+        (Effect: When you play an Energy tag, get 2 Heat.)
+      </div>
+    </div>
+
+    <div *ngIf="isHyperionSystemsCorporation(card)">
+      <div class="corporationEffectBoxLabel">EFFECT</div>
+
+      <div class="red-arrow"></div>
+      <div class=" money resource ">1</div>
+      <div></div>
+      <div class=" money resource ">1</div>
+      *
+
+      <div class="description" style="text-align:center;margin-top:0px;">
+        (Action: Gain 1 MC. *If you chose the action phase this turn, gain an additional 1 MC.)
+      </div>
+    </div>
+
+    <div *ngIf="isExocorpCorporation(card)">
+      <div class="corporationEffectBoxLabel">EFFECT</div>
+
+      <div class="tile globals-box" style="height: 20px;">Sell cards</div>
+      :
+      <div class="money resource">+1</div>
+
+      <div class="description" style="text-align:center;margin-top:0px;">
+        (Effect: Cards you discard for MC are worth an additional 1 MC.)
+      </div>
+    </div>
+
+    <div *ngIf="isApolloCorporation(card)">
+      <div class="corporationEffectBoxLabel">EFFECT</div>
+
+      <div class="resource-tag tag-science"></div>
+      :
+      <div class="card resource "></div>
+
+      <div class="description" style="text-align:center;margin-top:0px;">
+        (Effect: When you play a Science tag, draw a card.)
+      </div>
+    </div>
+
+    <div *ngIf="isAustellarCorporation(card)">
+      <div class="corporationEffectBoxLabel">EFFECT</div>
+
+      <span class="red-cube resource" style="border-radius: 5px"></span>
+      <div class="milestone-requirements border border-success border-2"></div>
+      : 3 <div class="tile rating"></div>
+
+      <div class="description" style="text-align:center;margin-top:0px;">
+        (Effect: When you gain the Milestone with your cube on it, gain 3 TR.)
+      </div>
+    </div>
+
     <div *ngIf="isInterplanetaryCinematics(card)">
       <div class="resource-tag tag-event"></div>
       :
@@ -292,6 +355,77 @@
     <div class="resource money" style="margin-left:20px;">{{card.price}}</div>
     <div class="description" style="text-align:center;">
       (You start with 3 heat production and {{card.price}} MC.)
+    </div>
+  </div>
+
+  <div *ngIf="isSultiraCorporation(card)">
+    <div class="corporation-name">
+      sultira
+    </div>
+    <br/>
+    <div class="resource money" style="margin-left: 50px">{{card.price}}</div>
+    <div class="upgrade" style="margin-left: 20px"></div>
+    <span class="phase-1 resource" style="border-radius: 5px"></span>
+
+    <div class="description" style="text-align:center;">
+      (You start with {{card.price}} MC. Upgrade your phase 1 card.)
+    </div>
+  </div>
+
+  <div *ngIf="isHyperionSystemsCorporation(card)">
+    <div class="corporation-name">
+      hyperion
+    </div>
+    <br/>
+    <div class="resource money" style="margin-left: 50px">{{card.price}}</div>
+    <div class="upgrade" style="margin-left: 20px"></div>
+    <span class="phase-3 resource" style="border-radius: 5px"></span>
+
+    <div class="description" style="text-align:center;">
+      (You start with {{card.price}} MC. Upgrade your phase 3 card.)
+    </div>
+  </div>
+
+  <div *ngIf="isExocorpCorporation(card)">
+    <div class="corporation-name">
+      exocorp
+    </div>
+    <br/>
+    <div class="resource money" style="margin-left: 50px">{{card.price}}</div>
+    <div class="upgrade" style="margin-left: 20px"></div>
+    <span class="phase-5 resource" style="border-radius: 5px"></span>
+
+    <div class="description" style="text-align:center;">
+      (You start with {{card.price}} MC. Upgrade your phase 5 card.)
+    </div>
+  </div>
+
+  <div *ngIf="isApolloCorporation(card)">
+    <div class="corporation-name">
+      apollo
+    </div>
+    <br/>
+    <div class="resource money" style="margin-left: 50px">{{card.price}}</div>
+    <div class="upgrade" style="margin-left: 20px"></div>
+    <span class="phase-5 resource" style="border-radius: 5px"></span>
+
+    <div class="description" style="text-align:center;">
+      (You start with {{card.price}} MC. Upgrade your phase 2 card.)
+    </div>
+  </div>
+
+  <div *ngIf="isAustellarCorporation(card)">
+    <div class="corporation-name">
+      austellar
+    </div>
+    <br/>
+    <div class="resource money" style="margin-left: 50px">{{card.price}}</div>
+    <span class="red-cube resource" style="border-radius: 5px"></span>
+    put
+    <div class="milestone-requirements border border-success border-2"></div>
+
+    <div class="description" style="text-align:center;">
+      (You start with {{card.price}} MC. Place a cube on a Milestone of your choice.)
     </div>
   </div>
 

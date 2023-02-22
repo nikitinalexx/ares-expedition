@@ -34,7 +34,7 @@ public class DiversifierMilestone extends Milestone {
                                 .map(Card::getTags)
                                 .flatMap(Collection::stream),
 
-                        player.getCardToTag().values().stream()
+                        player.getCardToTag().values().stream().flatMap(Collection::stream)
                 ).filter(tag -> tag != Tag.DYNAMIC).distinct().count();
     }
 

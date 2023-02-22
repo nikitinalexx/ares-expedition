@@ -77,9 +77,9 @@ export class RestDataSource {
     return this.sendRequest<GameShort>('GET', this.url + '/game/short/player/' + playerUuid);
   }
 
-  pickCorporation(playerUuid: string, corporationId: number): Observable<any> {
+  pickCorporation(playerUuid: string, corporationId: number, inputParams: Map<number, number[]>): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/game/player/corporation',
-      {playerUuid: playerUuid, corporationId: corporationId}
+      {playerUuid: playerUuid, corporationId: corporationId, inputParams: inputParams}
     );
   }
 

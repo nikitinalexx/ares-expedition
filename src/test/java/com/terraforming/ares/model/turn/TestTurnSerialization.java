@@ -79,7 +79,7 @@ class TestTurnSerialization {
 
     @Test
     void testCorporationChoiceTurn() throws Exception {
-        CorporationChoiceTurn expectedTurn = new CorporationChoiceTurn("uuid", 5);
+        CorporationChoiceTurn expectedTurn = new CorporationChoiceTurn("uuid", 5, Map.of());
         CorporationChoiceTurn actualTurn = (CorporationChoiceTurn) serializeDeserialize(expectedTurn);
 
         assertEquals(expectedTurn.getPlayerUuid(), actualTurn.getPlayerUuid());

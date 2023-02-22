@@ -2,6 +2,7 @@ package com.terraforming.ares.model;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.milestones.Milestone;
 import com.terraforming.ares.model.parameters.OceanRequirement;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import com.terraforming.ares.services.CardService;
@@ -101,7 +102,7 @@ public interface Card {
     default void revertPlayedTags(CardService cardService, Card card, Player player) {
     }
 
-    default void onAchievementGained(Player player) {
+    default void onMilestoneGained(MarsGame game, Player player, Milestone milestone) {
 
     }
 

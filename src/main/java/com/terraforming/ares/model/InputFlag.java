@@ -34,7 +34,8 @@ public enum InputFlag {
     CRYOGENIC_SHIPMENT_PUT_RESOURCE(23),
     DISCARD_HEAT(24),
     CARD_CHOICE(25),
-    ADD_DISCARD_MICROBE(26)
+    ADD_DISCARD_MICROBE(26),
+    AUSTELLAR_CORPORATION_MILESTONE(27)
     ;
 
     private final int id;

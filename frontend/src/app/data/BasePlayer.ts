@@ -21,6 +21,7 @@ export class BasePlayer {
               cardResources: Map<number, number>,
               cardToTag: Map<number, Tag[]>,
               phaseCards: number[],
+              austellarMilestone: number,
               phase?: number) {
   }
 
@@ -41,6 +42,7 @@ export class BasePlayer {
   hand: Card[];
   played: Card[];
   phaseCards: number[];
+  austellarMilestone: number;
   phase?: number;
   cardResources: Map<number, number>;
   cardToTag: Map<number, Tag[]>;

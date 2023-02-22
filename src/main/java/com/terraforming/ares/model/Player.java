@@ -53,6 +53,8 @@ public class Player {
     private boolean hasUnmiAction;
     private boolean didUnmiAction;
     private boolean mulligan;
+    @Builder.Default
+    private int austellarMilestone = -1;
 
     private boolean confirmedGameEndThirdPhase;
 
@@ -112,6 +114,7 @@ public class Player {
         this.hasUnmiAction = copy.hasUnmiAction;
         this.didUnmiAction = copy.didUnmiAction;
         this.mulligan = copy.mulligan;
+        this.austellarMilestone = copy.austellarMilestone;
 
         this.confirmedGameEndThirdPhase = copy.confirmedGameEndThirdPhase;
 

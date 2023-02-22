@@ -4,6 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * Created by oleksii.nikitin
  * Creation date 25.04.2022
@@ -14,6 +17,7 @@ import lombok.NoArgsConstructor;
 public class CorporationChoiceTurn implements Turn {
     private String playerUuid;
     private int corporationCardId;
+    private Map<Integer, List<Integer>> inputParams;
 
     @Override
     public TurnType getType() {

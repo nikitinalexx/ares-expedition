@@ -2,7 +2,9 @@ package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.cards.green.DiscoveryExpansionBlueCard;
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.milestones.Milestone;
 import com.terraforming.ares.model.winPoints.WinPointsInfo;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +48,7 @@ public class Zoos implements DiscoveryExpansionBlueCard {
     }
 
     @Override
-    public void onAchievementGained(Player player) {
+    public void onMilestoneGained(MarsGame game, Player player, Milestone milestone) {
         player.addResources(this, 1);
     }
 

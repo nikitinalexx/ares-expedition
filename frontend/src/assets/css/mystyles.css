@@ -130,6 +130,24 @@ body {
   background-image: url("../images/phases/5.jpg");
 }
 
+.red-cube {
+  background-image: url("../images/misc/cube.png");
+}
+
+.cube-on-milestone {
+  position: absolute;
+  display: inline-block;
+  margin-top: 5px;
+  margin-left: -58px;
+  margin-right: 3px;
+  margin-bottom: 10px;
+  width: 30px;
+  height: 30px;
+  line-height: 30px;
+  background-size: 30px;
+  filter: drop-shadow(0px 0px 1px black);
+}
+
 li.automated::before {
   content: "";
   background-size: 1000px;

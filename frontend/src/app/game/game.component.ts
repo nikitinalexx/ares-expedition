@@ -171,6 +171,19 @@ export class GameComponent implements OnInit {
     return this.game?.phase === phase;
   }
 
+  displayRedCubeOnMilestone(milestoneIndex: number): boolean {
+    if (!this.game) {
+      return false;
+    }
+    if (this.game.player.austellarMilestone === milestoneIndex) {
+      return true;
+    }
+    if (this.game.otherPlayers.find(p => p.austellarMilestone === milestoneIndex)) {
+      return true;
+    }
+    return false;
+  }
+
   phaseDisplayStyles(phase: number): string[] {
     const result = [];
     if (!this.currentPhase(phase)) {
@@ -270,13 +283,26 @@ export class GameComponent implements OnInit {
   }
 
   getUniqueTags(player: BasePlayer) {
-    const tags = player?.played.map(card => card.tags).reduce((acc, val) => acc.concat(val), []);
+    const tags = player?.played
+      .map(card => {
+        const tagsWithDynamic = [];
+        for (let i = 0; i < card.tags.length; i++) {
+          if (card.tags[i] !== Tag.DYNAMIC) {
+            tagsWithDynamic.push(card.tags[i]);
+          } else if (player.cardToTag[card.id][i] !== Tag.DYNAMIC) {
+            tagsWithDynamic.push(player.cardToTag[card.id][i]);
+          }
+        }
+        return tagsWithDynamic;
+      })
+      .reduce((acc, val) => acc.concat(val), []);
+
     if (!tags) {
       return [];
     }
 
     const result = tags?.reduce((a, c) => (a.set(c, (a.get(c) || 0) + 1), a), new Map<Tag, number>());
-    return Array.from(result?.entries());
+    return Array.from(result?.entries()).sort((a, b) => b[1] - a[1]);
   }
 
   identifyNextAction() {
@@ -410,7 +436,7 @@ export class GameComponent implements OnInit {
   }
 
   countDistinctTags(player: BasePlayer): number {
-    return [...new Set(player?.played.map(card => card.tags).reduce((acc, val) => acc.concat(val), []))].length;
+    return this.getUniqueTags(player).length;
   }
 
   milestoneSuccessClass(milestone: Milestone): string {

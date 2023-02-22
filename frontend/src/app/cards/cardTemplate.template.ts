@@ -739,6 +739,26 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.HELION_CORPORATION;
   }
 
+  isSultiraCorporation(card: Card): boolean {
+    return card.cardAction === CardAction.SULTIRA_CORPORATION;
+  }
+
+  isHyperionSystemsCorporation(card: Card): boolean {
+    return card.cardAction === CardAction.HYPERION_SYSTEMS_CORPORATION;
+  }
+
+  isExocorpCorporation(card: Card): boolean {
+    return card.cardAction === CardAction.EXOCORP_CORPORATION;
+  }
+
+  isApolloCorporation(card: Card): boolean {
+    return card.cardAction === CardAction.APOLLO_CORPORATION;
+  }
+
+  isAustellarCorporation(card: Card): boolean {
+    return card.cardAction === CardAction.AUSTELLAR_CORPORATION;
+  }
+
   isCelestiorCorporation(card: Card): boolean {
     return card.cardAction === CardAction.CELESTIOR_CORPORATION;
   }

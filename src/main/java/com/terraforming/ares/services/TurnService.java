@@ -42,13 +42,18 @@ public class TurnService {
         String playerUuid = chooseCorporationRequest.getPlayerUuid();
         Integer corporationCardId = chooseCorporationRequest.getCorporationId();
         performTurn(
-                new CorporationChoiceTurn(playerUuid, corporationCardId),
+                new CorporationChoiceTurn(playerUuid, corporationCardId, chooseCorporationRequest.getInputParams()),
                 playerUuid,
                 game -> {
                     if (!game.getPlayerByUuid(playerUuid).getCorporations().containsCard(corporationCardId)) {
                         return "Can't pick corporation that is not in your choice deck";
                     }
-                    return null;
+                    return cardValidationService.validateCorporation(
+                            game.getPlayerByUuid(playerUuid),
+                            game,
+                            corporationCardId,
+                            chooseCorporationRequest.getInputParams()
+                    );
                 },
                 ASYNC_TURN
         );

@@ -97,6 +97,8 @@
   >
     <div class="milestone achievement" [ngClass]="milestoneClass(milestone)">
 
+      <div class="red-cube cube-on-milestone" *ngIf="displayRedCubeOnMilestone(awardIndex)"></div>
+
       <div class="achievement-player-value bg-dark text-white" style="left: 10px"
            [ngStyle]="{'top.px': 88}">
         {{milestoneValue(0, milestone)}}
@@ -258,13 +260,13 @@
             <li *ngIf="player?.played.length > 0" class="filterDiv automated display shrink"
                 style="margin-left: -100px; margin-top: -106px;"
             >
-              <app-card-template [card]="player.played[player.played.length - 1]"></app-card-template>
+              <app-card-template [card]="player.played[player.played.length - 1]" [player]="player"></app-card-template>
             </li>
 
             <li *ngIf="player?.played.length > 1" class="filterDiv automated display shrink"
                 style="margin-left: -20px; margin-top: -328px;"
             >
-              <app-card-template [card]="player.played[player.played.length - 2]"></app-card-template>
+              <app-card-template [card]="player.played[player.played.length - 2]" [player]="player"></app-card-template>
             </li>
 
           </ul>
