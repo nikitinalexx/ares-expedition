@@ -103,6 +103,35 @@
       </div>
     </div>
 
+    <div *ngIf="isModProCorporation(card)">
+      <div class="corporationEffectBoxLabel">EFFECT</div>
+
+      <div class="red-arrow"></div>
+      4x
+      <span class="resource-tag tag-dynamic"></span> *
+      :
+      <span class="card resource"></span>
+
+      <div class="description" style="text-align:center;margin-top:0px;">
+        (Effect: Reveal 4 cards from the deck and take those that match Tag on your corporation.)
+      </div>
+    </div>
+
+    <div *ngIf="isNebuLabsCorporation(card)">
+      <div class="corporationEffectBoxLabel">EFFECT</div>
+
+      Play
+      <div class="upgrade"></div>
+      <span class="card-phase-x resource" style="border-radius: 5px"></span>
+      <span style="font-size: 20px">:</span>
+      <div class="money resource">2</div>
+
+      <div class="description" style="text-align:center;margin-top:0px;">
+        (Effect: When you reveal an upgraded phase card, gain 2 MC.)
+      </div>
+
+    </div>
+
     <div *ngIf="isAustellarCorporation(card)">
       <div class="corporationEffectBoxLabel">EFFECT</div>
 
@@ -411,6 +440,33 @@
 
     <div class="description" style="text-align:center;">
       (You start with {{card.price}} MC. Upgrade your phase 2 card.)
+    </div>
+  </div>
+
+  <div *ngIf="isModProCorporation(card)">
+    <div class="corporation-name">
+      modpro
+    </div>
+    <br/>
+    <div class="resource money" style="margin-left: 100px">{{card.price}}</div>
+
+    <div class="description" style="text-align:center;">
+      (You start with {{card.price}} MC. Choose a tag and add it to this card.)
+    </div>
+  </div>
+
+  <div *ngIf="isNebuLabsCorporation(card)">
+    <div class="corporation-name">
+      nebulabs
+    </div>
+    <br/>
+    <div class="resource money" style="margin-left: 60px">{{card.price}}</div>
+
+    <div class="upgrade"></div>
+    <span class="card-phase-x resource" style="border-radius: 5px"></span>
+
+    <div class="description" style="text-align:center;">
+      (You start with {{card.price}} MC. Upgrade a phase card.)
     </div>
   </div>
 

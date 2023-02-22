@@ -19,7 +19,7 @@ public class BuffedUnmiCorporation implements CorporationCard {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
                 .name("Unmi")
-                .description("45 Mc. When you first raise RT during the phase, you may spend 6 MC to get 1 extra RT.")
+                .description("50 Mc. When you first raise RT during the phase, you may spend 6 MC to get 1 extra RT.")
                 .cardAction(CardAction.UNMI_CORPORATION)
                 .build();
     }
@@ -44,7 +44,7 @@ public class BuffedUnmiCorporation implements CorporationCard {
 
     @Override
     public int getPrice() {
-        return 45;
+        return 50;
     }
 
 }

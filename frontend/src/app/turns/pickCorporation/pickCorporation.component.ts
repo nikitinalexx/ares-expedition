@@ -164,7 +164,8 @@ export class PickCorporationComponent implements OnInit {
     return this.corporationInput?.cardAction === CardAction[CardAction.SULTIRA_CORPORATION]
       || this.corporationInput?.cardAction === CardAction[CardAction.HYPERION_SYSTEMS_CORPORATION]
       || this.corporationInput?.cardAction === CardAction[CardAction.EXOCORP_CORPORATION]
-      || this.corporationInput?.cardAction === CardAction[CardAction.APOLLO_CORPORATION];
+      || this.corporationInput?.cardAction === CardAction[CardAction.APOLLO_CORPORATION]
+      || this.corporationInput?.cardAction === CardAction[CardAction.NEBU_LABS_CORPORATION];
   }
 
   updatePhaseInput(newPhaseInput: number) {
@@ -192,7 +193,8 @@ export class PickCorporationComponent implements OnInit {
   }
 
   expectsTagInput(): boolean {
-    return this.corporationInput?.cardAction === CardAction[CardAction.AUSTELLAR_CORPORATION];
+    return this.corporationInput?.cardAction === CardAction[CardAction.AUSTELLAR_CORPORATION]
+       || this.corporationInput?.cardAction === CardAction[CardAction.MODPRO_CORPORATION];
   }
 
   expectsMilestoneInput(): boolean {

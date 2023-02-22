@@ -45,6 +45,10 @@ public class PickPhaseProcessor implements TurnProcessor<PhaseChoiceTurn> {
             player.setMc(player.getMc() + 1);
         }
 
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.NEBU_LABS_CORPORATION) && player.isPhaseUpgraded(turn.getPhaseId())) {
+            player.setMc(player.getMc() + 2);
+        }
+
         return null;
     }
 

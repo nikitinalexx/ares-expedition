@@ -755,6 +755,14 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.APOLLO_CORPORATION;
   }
 
+  isModProCorporation(card: Card): boolean {
+    return card.cardAction === CardAction.MODPRO_CORPORATION;
+  }
+
+  isNebuLabsCorporation(card: Card): boolean {
+    return card.cardAction === CardAction.NEBU_LABS_CORPORATION;
+  }
+
   isAustellarCorporation(card: Card): boolean {
     return card.cardAction === CardAction.AUSTELLAR_CORPORATION;
   }

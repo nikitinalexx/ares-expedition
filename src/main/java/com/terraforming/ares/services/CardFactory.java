@@ -338,16 +338,18 @@ public class CardFactory {
                 new HyperionSystemsCorporation(10201),
                 new ExocorpCorporation(10202),
                 new ApolloIndustriesCorporation(10203),
-                new AustellarCorporation(10204)
+                new AustellarCorporation(10204),
+                new ModproCorporation(10205),
+                new NebuLabsCorporation(10206)
         );
 
         buffedCorporationsMapping = Map.of(
                 10000, new BuffedHelionCorporation(10100),
                 10008, new BuffedArclightCorporation(10101),
-                10009, new BuffedPhobologCorporation(10102),
+                //10009, new BuffedPhobologCorporation(10102),
                 10010, new BuffedMiningGuildCorporation(10103),
-                10011, new BuffedSaturnSystemsCorporation(10104),
-                10012, new BuffedZetacellCorporation(10105),
+                //10011, new BuffedSaturnSystemsCorporation(10104),
+                //10012, new BuffedZetacellCorporation(10105),
                 10013, new BuffedEcolineCorporation(10106),
                 10014, new BuffedInventrix(10107),
                 10016, new BuffedUnmiCorporation(10108)
