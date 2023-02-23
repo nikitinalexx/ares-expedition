@@ -45,7 +45,8 @@ export class FourthPhaseComponent implements OnInit {
   }
 
   hasDoubleCollectGreenCardBonus(): boolean {
-    return this.game.player.phaseCards[PhaseConstants.PHASE_4_INDEX] === PhaseConstants.PHASE_UPGRADE_2_INDEX;
+    return this.game.player.phaseCards[PhaseConstants.PHASE_4_INDEX] === PhaseConstants.PHASE_UPGRADE_2_INDEX
+      && this.game.player.phase === 4;
   }
 
   getGreenPlayedCards(): Card[] {
