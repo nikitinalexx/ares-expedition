@@ -49,7 +49,7 @@ public class Dandelions implements DiscoveryExpansionGreenCard {
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
 
-        player.getHand().addCards(marsContext.getCardService().dealCards(marsContext.getGame(), 1));
+        player.setCardIncome(player.getCardIncome() + 1);
         player.setPlantsIncome(player.getPlantsIncome() + 1);
 
         return null;
