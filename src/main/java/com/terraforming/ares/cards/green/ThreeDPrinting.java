@@ -2,16 +2,17 @@ package com.terraforming.ares.cards.green;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.MarsContext;
+import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.services.CardService;
-import com.terraforming.ares.services.UpgradePhaseHelper;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by oleksii.nikitin
@@ -35,18 +36,6 @@ public class ThreeDPrinting implements DiscoveryExpansionGreenCard {
     @Override
     public void payAgain(MarsGame game, CardService cardService, Player player) {
         player.setMc(player.getMc() + 4);
-    }
-
-    @Override
-    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> input) {
-        List<Integer> cardInput = input.get(InputFlag.PHASE_UPGRADE_CARD.getId());
-
-        UpgradePhaseHelper.upgradePhase(marsContext.getCardService(), marsContext.getGame(), marsContext.getPlayer(), cardInput.get(0));
-    }
-
-    @Override
-    public boolean onBuiltEffectApplicableToItself() {
-        return true;
     }
 
     @Override
