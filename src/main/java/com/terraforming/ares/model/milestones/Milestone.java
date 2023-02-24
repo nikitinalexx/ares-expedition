@@ -28,7 +28,8 @@ import java.util.concurrent.ConcurrentHashMap;
         @JsonSubTypes.Type(value = PlannerMilestone.class, name = "PLANNER"),
         @JsonSubTypes.Type(value = SpaceBaronMilestone.class, name = "SPACE_BARON"),
         @JsonSubTypes.Type(value = TerraformerMilestone.class, name = "TERRAFORMER"),
-        @JsonSubTypes.Type(value = TycoonMilestone.class, name = "TYCOON")
+        @JsonSubTypes.Type(value = TycoonMilestone.class, name = "TYCOON"),
+        @JsonSubTypes.Type(value = GardenerMilestone.class, name = "GARDENER")
 })
 public abstract class Milestone {
     @Getter

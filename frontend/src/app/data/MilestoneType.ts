@@ -8,5 +8,6 @@ export enum MilestoneType {
   TYCOON = 'TYCOON',
   PLANNER = 'PLANNER',
   DIVERSIFIER = 'DIVERSIFIER',
-  LEGEND = 'LEGEND'
+  LEGEND = 'LEGEND',
+  GARDENER = 'GARDENER'
 }

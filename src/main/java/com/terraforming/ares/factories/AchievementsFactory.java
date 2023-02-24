@@ -45,7 +45,8 @@ public class AchievementsFactory {
                 new PlannerMilestone(),
                 new SpaceBaronMilestone(),
                 new TerraformerMilestone(),
-                new TycoonMilestone()
+                new TycoonMilestone(),
+                new GardenerMilestone()
         ));
 
         shuffleService.shuffle(milestones);

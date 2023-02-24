@@ -14,5 +14,6 @@ public enum MilestoneType {
     TYCOON,
     PLANNER,
     DIVERSIFIER,
-    LEGEND
+    LEGEND,
+    GARDENER
 }

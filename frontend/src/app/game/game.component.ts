@@ -205,6 +205,10 @@ export class GameComponent implements OnInit {
     return milestone.type === MilestoneType.TERRAFORMER;
   }
 
+  milestoneGardener(milestone: Milestone): boolean {
+    return milestone.type === MilestoneType.GARDENER;
+  }
+
   milestoneBuilder(milestone: Milestone): boolean {
     return milestone.type === MilestoneType.BUILDER;
   }
@@ -405,6 +409,8 @@ export class GameComponent implements OnInit {
         return this.countDistinctTags(player);
       case MilestoneType.LEGEND:
         return this.getPlayedRedCards(player)?.length;
+      case MilestoneType.GARDENER:
+        return player.forests > 3 ? 3 : player.forests;
     }
 
     return 0;

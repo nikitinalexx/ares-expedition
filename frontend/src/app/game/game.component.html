@@ -119,6 +119,10 @@
           15
           <div class="tile small-rating"></div>
         </div>
+        <div *ngIf="milestoneGardener(milestone)">
+          3
+          <div class="gardener"></div>
+        </div>
         <div *ngIf="milestoneBuilder(milestone)">
           8
           <div class="resource-tag tag-building small-tag"></div>

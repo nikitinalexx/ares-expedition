@@ -102,8 +102,10 @@ public class MarsGame {
                 anotherMilestone = new SpaceBaronMilestone();
             } else if (milestone.getType() == MilestoneType.TERRAFORMER) {
                 anotherMilestone = new TerraformerMilestone();
-            } else {
+            } else if (milestone.getType() == MilestoneType.TYCOON){
                 anotherMilestone = new TycoonMilestone();
+            } else {
+                anotherMilestone = new GardenerMilestone();
             }
 
             anotherMilestone.getAchievedByPlayers().addAll(milestone.getAchievedByPlayers());
