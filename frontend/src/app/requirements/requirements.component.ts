@@ -55,6 +55,8 @@ export class RequirementsComponent {
     if (card.tagReq) {
       const allTags = player.played.map(c => c.tags).reduce((acc, val) => acc.concat(val), []);
 
+      Object.entries(player.cardToTag).forEach(entry => entry[1].forEach(dynamicTags => allTags.push(dynamicTags)));
+
       for (const tag of card.tagReq) {
         const index = allTags.indexOf(tag);
         if (index > -1) {
