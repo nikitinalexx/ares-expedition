@@ -17,6 +17,7 @@ export class NewGameComponent implements OnInit {
   public playerCount: number;
   public errorMessage: string;
   public players: PlayerReference[];
+  loading: boolean;
 
   parentForm: FormGroup;
 
@@ -63,6 +64,8 @@ export class NewGameComponent implements OnInit {
       if (this.parentForm.value.discovery) {
         expansions.push(Expansion.DISCOVERY);
       }
+      this.loading = true;
+      this.players = null;
       this.model.createNewGame(new NewGameRequest(names, computers, this.parentForm.value.mulligan, expansions))
         .subscribe(response => {
           if (response) {
@@ -71,8 +74,10 @@ export class NewGameComponent implements OnInit {
           } else {
             this.errorMessage = 'New game creation failed';
           }
+          this.loading = false;
         }, error => {
           this.errorMessage = error;
+          this.loading = false;
         });
     } else {
       this.errorMessage = 'Form Data Invalid';

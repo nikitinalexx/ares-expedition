@@ -150,20 +150,16 @@
   background-image: url(../../assets/images/surface.png);
   background-size: contain;
 
+  top: -46px;
   display: flex;
-  justify-content: center;
-  align-items: center;
+  justify-content: flex-start;
+  align-items: flex-start;
   text-align: center;
 }
 
 .view-choice {
-  position: absolute;
-  left: 5%;
-  top: 30%;
-
-  display: inline-table;
-  justify-content: center;
-  align-items: center;
+  position: relative;
+  top: 200px;
   text-align: left;
 }
 
@@ -646,4 +642,14 @@
 
 .achievement-success {
   margin-top: -4px;
+}
+
+.greyed-phase {
+  filter: grayscale(90%);
+  opacity: 0.3;
+}
+
+.upgraded-phase {
+  box-shadow: 0 0 1px 1px #444, 0 0 4px 4px gold !important;
+  opacity: 0.9;
 }

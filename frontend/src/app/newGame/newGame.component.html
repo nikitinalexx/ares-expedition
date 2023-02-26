@@ -61,13 +61,21 @@
 
     </div>
 
-    <button type="submit" class="btn btn-warning btn-lg" style="margin-top: 10px">Create</button>
+    <div style="display: flex; margin-top: 10px">
+      <button type="submit" class="btn btn-warning btn-lg">Create</button>
+
+      <div *ngIf="loading" style="margin-left: 20px; margin-top: 23px">
+        <div class="loading"></div>
+        <div class="text-white" style="margin-top: -8px; margin-left: 30px">Launching backend</div>
+      </div>
+    </div>
+
   </div>
 
 </form>
 
 <div *ngIf="playersPresent()" class="d-grid gap-2 col-6 mx-auto" style="margin-top: 10px;">
   <div *ngFor="let player of players" class="bg-warning">
-    <a href="{{getPlayerLink(player.uuid)}}" class="link-primary">{{player.name}}</a>
+    <a href="{{getPlayerLink(player.uuid)}}" class="link-primary" style="margin-left: 5px;">{{player.name}}</a>
   </div>
 </div>

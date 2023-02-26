@@ -31,6 +31,9 @@
           </label>
         </div>
       </td>
+      <td *ngFor="let phase of generateNonZeroArray(5);">
+        <span class="phase-{{phase}} resource" [ngClass]="playerPhaseInfoDisplayStyles(phase, this.game?.player)" style="border-radius: 5px"></span>
+      </td>
     </tr>
 
     <tr *ngFor="let otherPlayer of game?.otherPlayers; let i = index">
@@ -52,6 +55,9 @@
             {{otherPlayerTurnInfo(otherPlayer) ? 'WAIT' : 'TURN'}}
           </label>
         </div>
+      </td>
+      <td *ngFor="let phase of generateNonZeroArray(5);">
+        <span class="phase-{{phase}} resource" [ngClass]="playerPhaseInfoDisplayStyles(phase, otherPlayer)" style="border-radius: 5px"></span>
       </td>
     </tr>
     </tbody>

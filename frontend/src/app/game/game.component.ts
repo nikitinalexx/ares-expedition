@@ -197,6 +197,17 @@ export class GameComponent implements OnInit {
     return result;
   }
 
+  playerPhaseInfoDisplayStyles(phase: number, player: BasePlayer): string[] {
+    const result = [];
+    if (player?.phase !== phase) {
+      result.push('greyed-phase');
+    }
+    if (player?.phaseCards[phase - 1] !== 0) {
+      result.push('upgraded-phase');
+    }
+    return result;
+  }
+
   milestoneMagnate(milestone: Milestone): boolean {
     return milestone.type === MilestoneType.MAGNATE;
   }
@@ -307,6 +318,14 @@ export class GameComponent implements OnInit {
 
     const result = tags?.reduce((a, c) => (a.set(c, (a.get(c) || 0) + 1), a), new Map<Tag, number>());
     return Array.from(result?.entries()).sort((a, b) => b[1] - a[1]);
+  }
+
+  generateNonZeroArray(size: number): number[] {
+    const result = [];
+    for (let i = 1; i <= size; i++) {
+      result.push(i);
+    }
+    return result;
   }
 
   identifyNextAction() {
