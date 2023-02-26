@@ -150,16 +150,20 @@
   background-image: url(../../assets/images/surface.png);
   background-size: contain;
 
-  top: -46px;
   display: flex;
-  justify-content: flex-start;
-  align-items: flex-start;
+  justify-content: center;
+  align-items: center;
   text-align: center;
 }
 
 .view-choice {
-  position: relative;
+  position: absolute;
+  left: 1%;
   top: 200px;
+
+  display: inline-table;
+  justify-content: center;
+  align-items: center;
   text-align: left;
 }
 
