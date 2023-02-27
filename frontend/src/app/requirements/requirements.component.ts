@@ -98,7 +98,7 @@ export class RequirementsComponent {
     }
 
     return !(card.cardAction && card.cardAction === CardAction.PRIVATE_INVESTOR_BEACH
-      && !game.milestones.find(m => m.playerToValue[game.player.playerUuid] !== undefined));
+      && !game.milestones.find(m => m.players.find(p => p === game.player.playerUuid)));
   }
 
   canBuildCard(card: Card, player: Player, game: Game): boolean {
