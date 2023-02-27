@@ -297,29 +297,6 @@ export class GameComponent implements OnInit {
     }
   }
 
-  getUniqueTags(player: BasePlayer) {
-    const tags = player?.played
-      .map(card => {
-        const tagsWithDynamic = [];
-        for (let i = 0; i < card.tags.length; i++) {
-          if (card.tags[i] !== Tag.DYNAMIC) {
-            tagsWithDynamic.push(card.tags[i]);
-          } else if (player.cardToTag[card.id][i] !== Tag.DYNAMIC) {
-            tagsWithDynamic.push(player.cardToTag[card.id][i]);
-          }
-        }
-        return tagsWithDynamic;
-      })
-      .reduce((acc, val) => acc.concat(val), []);
-
-    if (!tags) {
-      return [];
-    }
-
-    const result = tags?.reduce((a, c) => (a.set(c, (a.get(c) || 0) + 1), a), new Map<Tag, number>());
-    return Array.from(result?.entries()).sort((a, b) => b[1] - a[1]);
-  }
-
   generateNonZeroArray(size: number): number[] {
     const result = [];
     for (let i = 1; i <= size; i++) {
@@ -425,7 +402,7 @@ export class GameComponent implements OnInit {
       case MilestoneType.PLANNER:
         return player.played.length === 0 ? 0 : player.played.length - 1;
       case MilestoneType.DIVERSIFIER:
-        return this.countDistinctTags(player);
+        return this.getUniqueTags(player).length;
       case MilestoneType.LEGEND:
         return this.getPlayedRedCards(player)?.length;
       case MilestoneType.GARDENER:
@@ -450,18 +427,42 @@ export class GameComponent implements OnInit {
       case AwardType.COLLECTOR:
         return Object.values(player.cardResources).reduce((acc, val) => acc + val, 0);
       case AwardType.RESEARCHER:
-        return player?.played.map(card => card.tags).reduce((acc, val) => acc.concat(val), [])?.filter(tag => tag === Tag.SCIENCE).length;
+        return this.countPlayedTags(player, Tag.SCIENCE);
     }
 
     return 0;
   }
 
-  countPlayedTags(player: BasePlayer, tag: Tag): number {
-    return player?.played.map(card => card.tags).reduce((acc, val) => acc.concat(val), [])?.filter(t => t === tag).length;
+  getUniqueTags(player: BasePlayer) {
+    const tags = this.getPlayedTags(player);
+
+    if (!tags) {
+      return [];
+    }
+
+    const result = tags?.reduce((a, c) => (a.set(c, (a.get(c) || 0) + 1), a), new Map<Tag, number>());
+    return Array.from(result?.entries()).sort((a, b) => b[1] - a[1]);
   }
 
-  countDistinctTags(player: BasePlayer): number {
-    return this.getUniqueTags(player).length;
+  countPlayedTags(player: BasePlayer, tag: Tag): number {
+    return this.getPlayedTags(player)
+      ?.filter(t => t === tag).length;
+  }
+
+  getPlayedTags(player: BasePlayer): Tag[] {
+    return player?.played
+      .map(card => {
+        const tagsWithDynamic = [];
+        for (let i = 0; i < card.tags.length; i++) {
+          if (card.tags[i] !== Tag.DYNAMIC) {
+            tagsWithDynamic.push(card.tags[i]);
+          } else if (player.cardToTag[card.id][i] !== Tag.DYNAMIC) {
+            tagsWithDynamic.push(player.cardToTag[card.id][i]);
+          }
+        }
+        return tagsWithDynamic;
+      })
+      .reduce((acc, val) => acc.concat(val), []);
   }
 
   milestoneSuccessClass(milestone: Milestone): string {
