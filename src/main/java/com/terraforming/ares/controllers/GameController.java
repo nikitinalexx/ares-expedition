@@ -485,6 +485,8 @@ public class GameController {
                 .phaseOceans(phasePlanet != null ? phasePlanet.getRevealedOceans().size() : null)
                 .otherPlayers(buildOtherPlayers(game, playerUuid))
                 .turns(game.getTurns())
+                .dummyHandMode(game.isDummyHandMode())
+                .usedDummyHand(game.getUsedDummyHand())
                 .awards(game.getAwards().stream().map(AwardDto::from).collect(Collectors.toList()))
                 .milestones(game.getMilestones().stream().map(MilestoneDto::from).collect(Collectors.toList()))
                 .build();
@@ -587,14 +589,8 @@ public class GameController {
                 .winPoints(winPointsService.countWinPoints(player, game))
                 .forests(player.getForests())
                 .builtSpecialDesignLastTurn(player.isBuiltSpecialDesignLastTurn())
-                .builtWorkCrewsLastTurn(player.isBuiltWorkCrewsLastTurn())
-                .canBuildAnotherGreenWith9Discount(player.isCanBuildAnotherGreenWith9Discount())
-                .canBuildAnotherGreenWithPrice12(player.isCanBuildAnotherGreenWithPrice12())
-                .assortedEnterprisesDiscount(player.isAssortedEnterprisesDiscount())
-                .selfReplicatingDiscount(player.isSelfReplicatingDiscount())
-                .mayNiDiscount(player.isMayNiDiscount())
-                .canBuildInFirstPhase(player.getCanBuildInFirstPhase())
                 .phaseCards(player.getPhaseCards())
+                .builds(player.getBuilds())
                 .austellarMilestone(player.getAustellarMilestone())
                 .build();
     }

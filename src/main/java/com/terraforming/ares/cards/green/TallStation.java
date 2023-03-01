@@ -2,10 +2,7 @@ package com.terraforming.ares.cards.green;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.CardAction;
-import com.terraforming.ares.model.MarsContext;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.services.CardService;
@@ -49,8 +46,7 @@ public class TallStation implements BaseExpansionGreenCard {
         Player player = marsContext.getPlayer();
 
         player.setMcIncome(player.getMcIncome() + 3);
-        player.setCanBuildInFirstPhase(player.getCanBuildInFirstPhase() + 1);
-        player.setCanBuildAnotherGreenWith9Discount(true);
+        player.getBuilds().add(new BuildDto(BuildType.GREEN, 9, 9));
 
         return null;
     }

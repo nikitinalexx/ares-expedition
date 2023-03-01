@@ -4,7 +4,8 @@ import {SpecialEffect} from '../data/SpecialEffect';
 import {Player} from '../data/Player';
 import {Tag} from '../data/Tag';
 import {CardColor} from '../data/CardColor';
-import {PhaseConstants} from '../data/PhaseConstants';
+import {BuildType} from '../data/BuildType';
+import {Build} from '../data/Build';
 
 @Injectable()
 export class DiscountComponent {
@@ -15,7 +16,7 @@ export class DiscountComponent {
     if (!player) {
       return false;
     }
-    return this.getDiscount(card, player, tagInput) > 0;
+    return this.getDiscountWithOptimal(card, player, tagInput) > 0;
   }
 
   getDiscount(card: Card, player: Player, tagInput: number): number {
@@ -30,16 +31,6 @@ export class DiscountComponent {
 
     if (this.cardHasTag(card, Tag.SPACE, tagInput)) {
       discount += player.titaniumIncome * (3 + (ownsAdvancedAlloys ? 1 : 0) + (ownsPhobolog ? 1 : 0));
-    }
-
-    if (card.cardColor === CardColor.GREEN && player.phase === 1
-      && !player.canBuildAnotherGreenWith9Discount
-      && !(player.canBuildAnotherGreenWithPrice12 && player.canBuildInFirstPhase === 1)) {
-      discount += 3;
-
-      if (player.phaseCards[PhaseConstants.PHASE_1_INDEX] === PhaseConstants.PHASE_UPGRADE_1_INDEX) {
-        discount += 3;
-      }
     }
 
     if (this.ownsSpecialEffect(player, SpecialEffect.EARTH_CATAPULT_DISCOUNT_2)) {
@@ -101,27 +92,44 @@ export class DiscountComponent {
       discount += 4;
     }
 
-    if (player.builtWorkCrewsLastTurn) {
-      discount += 11;
-    }
+    return Math.min(card.price, discount);
+  }
 
-    if (player.canBuildAnotherGreenWith9Discount && card.price < 10) {
-      discount += 9;
-    }
 
-    if (player.assortedEnterprisesDiscount) {
-      discount += 2;
-    }
+  getDiscountWithOptimal(card: Card, player: Player, tagInput: number): number {
+    let discount = this.getDiscount(card, player, tagInput);
 
-    if (player.selfReplicatingDiscount) {
-      discount += 25;
-    }
+    const optimalBuild = this.getOptimalBuilding(card, player, discount);
 
-    if (player.mayNiDiscount) {
-      discount += 12;
+    if (optimalBuild) {
+      discount += optimalBuild.extraDiscount;
     }
 
     return Math.min(card.price, discount);
+  }
+
+  getOptimalBuilding(card: Card, player: Player, discount: number): Build {
+    let optimalBuild = null;
+    for (const build of player.builds) {
+      if ((build.priceLimit === 0 || build.priceLimit >= card.price)
+        && (build.type === BuildType.GREEN_OR_BLUE
+          || (card.cardColor === CardColor.GREEN && build.type === BuildType.GREEN)
+          || (card.cardColor !== CardColor.GREEN && (build.type === BuildType.BLUE_RED
+            || build.type === BuildType.BLUE_RED_OR_CARD
+            || build.type === BuildType.BLUE_RED_OR_MC)))) {
+        if (optimalBuild === null) {
+          optimalBuild = build;
+        }
+        const buildRealDiscount = Math.min(card.price - Math.min(card.price, discount), build.extraDiscount);
+        const optimalBuildRealDiscount = Math.min(card.price - Math.min(card.price, discount), optimalBuild.extraDiscount);
+        if ((buildRealDiscount > optimalBuildRealDiscount || build.priceLimit < optimalBuild.priceLimit)
+          || (buildRealDiscount === optimalBuildRealDiscount && build.priceLimit === optimalBuild.priceLimit
+            && build.type === BuildType.BLUE_RED)) {
+          optimalBuild = build;
+        }
+      }
+    }
+    return optimalBuild;
   }
 
   private ownsSpecialEffect(player: Player, targetEffect: SpecialEffect): boolean {

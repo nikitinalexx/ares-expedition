@@ -69,7 +69,6 @@ public class CardValidationService {
                 .or(() -> validateTags(player, card))
                 .or(() -> validatePayments(card, player, payments, inputParameters))
                 .or(() -> validateInputParameters(game, card, player, inputParameters))
-                .or(() -> validateCustomCards(card, player))
                 .orElse(null);
     }
 
@@ -77,22 +76,6 @@ public class CardValidationService {
         Card card = cardService.getCard(cardId);
 
         return validateInputParameters(game, card, player, inputParameters).orElse(null);
-    }
-
-    private Optional<String> validateCustomCards(Card card, Player player) {
-        boolean canBuildAnotherGreenWith9Discount = player.isCanBuildAnotherGreenWith9Discount();
-        boolean canBuildAnotherGreenWithPrice12 = player.isCanBuildAnotherGreenWithPrice12();
-        boolean mayNiDiscount = player.isMayNiDiscount();
-
-        return Optional.ofNullable(
-                card.getColor() == CardColor.GREEN
-                        && canBuildAnotherGreenWith9Discount
-                        && !canBuildAnotherGreenWithPrice12
-                        && card.getPrice() >= 10 ? "You may only build a card with a price of 9 or less" : null
-        ).or(() -> Optional.ofNullable(
-                (mayNiDiscount || player.getCanBuildInFirstPhase() == 1 && canBuildAnotherGreenWithPrice12)
-                        && card.getPrice() > 12 ? "You may only build a card with a price of 12 or less" : null
-        ));
     }
 
     @SuppressWarnings("unchecked")

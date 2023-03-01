@@ -58,9 +58,11 @@ class AssetLiquidationFlowTest {
                 null,
                 null,
                 null,
-                List.of(Expansion.BASE)
+                List.of(Expansion.BASE),
+                false,
+                null
         );
-        marsGame.setStateType(StateType.PICK_PHASE, null, true);
+        marsGame.setStateType(StateType.PICK_PHASE, null);
 
         players = new ArrayList<>(marsGame.getPlayerUuidToPlayer().values());
         firstPlayer = players.get(0);
@@ -73,98 +75,6 @@ class AssetLiquidationFlowTest {
         }
 
         gameRepository.newGame(marsGame);
-    }
-
-
-    @Test
-    void test() {
-        firstPlayer.setMc(100);
-        secondPlayer.setMc(100);
-
-        assertEquals(0, firstPlayer.getActionsInSecondPhase());
-        assertEquals(0, secondPlayer.getActionsInSecondPhase());
-
-        assertTrue(
-                players.stream()
-                        .map(Player::getUuid)
-                        .map(playController::getNextAction)
-                        .allMatch("TURN"::equals)
-        );
-
-        playController.choosePhase(ChoosePhaseRequest.builder().playerUuid(firstPlayer.getUuid()).phaseId(2).build());
-        playController.choosePhase(ChoosePhaseRequest.builder().playerUuid(secondPlayer.getUuid()).phaseId(3).build());
-
-        gameProcessorService.asyncUpdate();
-
-        assertEquals(2, firstPlayer.getActionsInSecondPhase());
-        assertEquals(1, secondPlayer.getActionsInSecondPhase());
-
-        assertTrue(
-                players.stream()
-                        .map(Player::getUuid)
-                        .map(playController::getPossibleTurns)
-                        .allMatch(
-                                Arrays.asList(
-                                        TurnType.BUILD_BLUE_RED_PROJECT,
-                                        TurnType.SELL_CARDS,
-                                        TurnType.SKIP_TURN
-                                )::equals
-                        )
-        );
-
-        playController.buildBlueRedProject(BuildProjectRequest.builder().playerUuid(firstPlayer.getUuid()).cardId(ASSET_LIQUIDATION_CARD_ID).build());
-        playController.buildBlueRedProject(
-                BuildProjectRequest.builder()
-                        .playerUuid(secondPlayer.getUuid())
-                        .cardId(ADAPTATION_TECHNOLOGY_CARD_ID)
-                        .payments(Collections.singletonList(new MegacreditsPayment(12)))
-                        .build()
-        );
-
-        gameProcessorService.asyncUpdate();
-
-        assertFalse(playController.getPossibleTurns(firstPlayer.getUuid()).isEmpty());
-        assertTrue(playController.getPossibleTurns(secondPlayer.getUuid()).isEmpty());
-
-        assertEquals(2, firstPlayer.getActionsInSecondPhase());
-        assertEquals(0, secondPlayer.getActionsInSecondPhase());
-
-        playController.buildBlueRedProject(
-                BuildProjectRequest.builder()
-                        .playerUuid(firstPlayer.getUuid())
-                        .cardId(ASSEMBLY_LINES_CARD_ID)
-                        .payments(Collections.singletonList(new MegacreditsPayment(13)))
-                        .build()
-        );
-
-        gameProcessorService.asyncUpdate();
-
-        assertEquals(1, firstPlayer.getActionsInSecondPhase());
-
-        playController.buildBlueRedProject(
-                BuildProjectRequest.builder()
-                        .playerUuid(firstPlayer.getUuid())
-                        .cardId(ARTIFICIAL_JUNGLE_CARD_ID)
-                        .payments(Collections.singletonList(new MegacreditsPayment(5)))
-                        .build()
-        );
-
-        gameProcessorService.asyncUpdate();
-
-        assertEquals(0, firstPlayer.getActionsInSecondPhase());
-
-        assertTrue(
-                players.stream()
-                        .map(Player::getUuid)
-                        .map(playController::getPossibleTurns)
-                        .allMatch(
-                                Arrays.asList(
-                                        TurnType.PERFORM_BLUE_ACTION,
-                                        TurnType.SELL_CARDS,
-                                        TurnType.SKIP_TURN
-                                )::equals
-                        )
-        );
     }
 
     private Deck buildProjectsDeck() {

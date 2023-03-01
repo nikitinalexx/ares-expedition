@@ -1,6 +1,7 @@
 import {Card} from './Card';
 import {BasePlayer} from './BasePlayer';
 import {Tag} from './Tag';
+import {Build} from "./Build";
 
 export class Player extends BasePlayer {
   constructor(name: string,
@@ -26,16 +27,10 @@ export class Player extends BasePlayer {
               winPoints: number,
               forests: number,
               builtSpecialDesignLastTurn: boolean,
-              builtWorkCrewsLastTurn: boolean,
-              canBuildAnotherGreenWith9Discount: boolean,
-              canBuildAnotherGreenWithPrice12: boolean,
-              assortedEnterprisesDiscount: boolean,
-              selfReplicatingDiscount: boolean,
-              mayNiDiscount: boolean,
-              canBuildInFirstPhase: number,
               activatedBlueCards: number[],
               phaseCards: number[],
               austellarMilestone: number,
+              builds: Build[],
               corporationId?: number,
               phase?: number) {
     super(playerUuid, name, winPoints, mc, hand, played, heat, plants, mcIncome, heatIncome, plantsIncome,
@@ -50,12 +45,6 @@ export class Player extends BasePlayer {
   activatedBlueCards: number[];
   blueActionExtraActivationsLeft: number;
   builtSpecialDesignLastTurn: boolean;
-  builtWorkCrewsLastTurn: boolean;
-  canBuildAnotherGreenWith9Discount: boolean;
-  canBuildAnotherGreenWithPrice12: boolean;
-  assortedEnterprisesDiscount: boolean;
-  selfReplicatingDiscount: boolean;
-  mayNiDiscount: boolean;
-  canBuildInFirstPhase: number;
+  builds: Build[];
 
 }

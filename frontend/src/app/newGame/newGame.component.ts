@@ -39,7 +39,8 @@ export class NewGameComponent implements OnInit {
       computer4: false,
       mulligan: false,
       discovery: false,
-      improveWeakCorp: false
+      improveWeakCorp: false,
+      dummyHand: false
     });
   }
 
@@ -66,7 +67,14 @@ export class NewGameComponent implements OnInit {
       }
       this.loading = true;
       this.players = null;
-      this.model.createNewGame(new NewGameRequest(names, computers, this.parentForm.value.mulligan, expansions))
+      this.model.createNewGame(
+        new NewGameRequest(
+          names,
+          computers,
+          this.parentForm.value.mulligan,
+          this.parentForm.value.dummyHand,
+          expansions)
+      )
         .subscribe(response => {
           if (response) {
             this.errorMessage = null;

@@ -19,10 +19,13 @@ export class RequirementsComponent {
     cards.sort((a, b) => {
       const canBuildA = this.enoughRequirements(a, player, game);
       const canBuildB = this.enoughRequirements(b, player, game);
+
       if (canBuildA && !canBuildB) {
         return -1;
       } else if (!canBuildA && canBuildB) {
         return 1;
+      } else if (!canBuildA && !canBuildB) {
+        return 0;
       }
       const enoughRequirements = canBuildA || canBuildB;
 
@@ -46,7 +49,7 @@ export class RequirementsComponent {
   }
 
   enoughMoney(card: Card, player: Player): boolean {
-    const discount = this.discountService.getDiscount(card, player, -1);
+    const discount = this.discountService.getDiscountWithOptimal(card, player, -1);
 
     return player.mc >= card.price - discount;
   }
@@ -97,20 +100,20 @@ export class RequirementsComponent {
       return false;
     }
 
+    if (!this.discountService.getOptimalBuilding(card, player, this.discountService.getDiscount(card, player, -1))) {
+      return false;
+    }
+
     return !(card.cardAction && card.cardAction === CardAction.PRIVATE_INVESTOR_BEACH
       && !game.milestones.find(m => m.players.find(p => p === game.player.playerUuid)));
   }
 
   canBuildCard(card: Card, player: Player, game: Game): boolean {
-    if (!this.enoughMoney(card, player)) {
+    if (!this.enoughRequirements(card, player, game)) {
       return false;
     }
 
-    return this.enoughRequirements(card, player, game);
-  }
-
-  getDiscount(card: Card, player: Player): number {
-    return 0;
+    return this.enoughMoney(card, player);
   }
 
   private ownsSpecialEffect(player: Player, targetEffect: SpecialEffect): boolean {

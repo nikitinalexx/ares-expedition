@@ -16,6 +16,8 @@ export class Game {
               phaseOxygenColor: ParameterColor,
               awards: Award[],
               milestones: Milestone[],
+              dummyHandMode: boolean,
+              usedDummyHand: number[],
               phaseTemperature?: number,
               phaseOxygen?: number,
               phaseOceans?: number,
@@ -33,6 +35,8 @@ export class Game {
   oceans: Ocean[];
   phaseTemperatureColor: ParameterColor;
   phaseOxygenColor: ParameterColor;
+  dummyHandMode: boolean;
+  usedDummyHand: number[];
   phaseTemperature?: number;
   phaseOxygen?: number;
   phaseOceans?: number;

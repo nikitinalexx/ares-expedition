@@ -13,6 +13,7 @@ import {Tag} from '../../data/Tag';
 import {InputFlag} from '../../data/InputFlag';
 import {CardResource} from '../../data/CardResource';
 import {RequirementsComponent} from '../../requirements/requirements.component';
+import {BuildType} from "../../data/BuildType";
 
 @Component({
   selector: 'app-build-blue-red',
@@ -98,9 +99,17 @@ export class BuildBlueRedComponent implements OnInit {
   }
 
   getBlueRedPlayerHand(): Card[] {
-    const cards = this.game.player.hand.filter(
-      card => card.cardColor === CardColor[CardColor.BLUE] || card.cardColor === CardColor[CardColor.RED]
-    );
+    const cards = this.game?.player.hand.filter(card => card.cardColor !== CardColor[CardColor.GREEN])
+      .filter(card => {
+        for (const build of this.game?.player.builds) {
+          if ((build.type === BuildType.BLUE_RED || build.type === BuildType.GREEN_OR_BLUE
+            || build.type === BuildType.BLUE_RED_OR_MC || build.type === BuildType.BLUE_RED_OR_CARD)
+            && (build.priceLimit === 0 || build.priceLimit >= card.price)) {
+            return true;
+          }
+        }
+        return false;
+      });
 
     this.requirementsService.sortCardsForBuilding(cards, this.game.player, this.game);
 
@@ -256,7 +265,7 @@ export class BuildBlueRedComponent implements OnInit {
   getDiscountedMcPriceOfSelectedProject(): number {
     if (this.selectedProject) {
       return this.selectedProject.price -
-        this.discountService.getDiscount(this.selectedProject, this.game?.player, this.expectsTagInput() ? this.tagInput : -1);
+        this.discountService.getDiscountWithOptimal(this.selectedProject, this.game?.player, this.expectsTagInput() ? this.tagInput : -1);
     } else {
       return 0;
     }

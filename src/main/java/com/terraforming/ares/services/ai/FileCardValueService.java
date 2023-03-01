@@ -11,6 +11,7 @@ import com.terraforming.ares.dto.GameStatistics;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.DiscountService;
 import com.terraforming.ares.services.PaymentValidationService;
 import com.terraforming.ares.services.SpecialEffectsService;
 import com.terraforming.ares.services.ai.dto.CardValue;
@@ -32,6 +33,7 @@ public class FileCardValueService implements ICardValueService {
     private static final double MAX_PRIORITY = 10.0;
     private final CardService cardService;
     private final PaymentValidationService paymentValidationService;
+    private final DiscountService discountService;
     private final SpecialEffectsService specialEffectsService;
     private final AiBalanceService aiBalanceService;
 
@@ -39,12 +41,16 @@ public class FileCardValueService implements ICardValueService {
     private Map<Integer, Map<Integer, CardValue>> cardIdToTurnToValueFourPlayer;
 
 
-
-    public FileCardValueService(CardService cardService, PaymentValidationService paymentValidationService, SpecialEffectsService specialEffectsService, AiBalanceService aiBalanceService) throws IOException {
+    public FileCardValueService(CardService cardService,
+                                PaymentValidationService paymentValidationService,
+                                SpecialEffectsService specialEffectsService,
+                                AiBalanceService aiBalanceService,
+                                DiscountService discountService) throws IOException {
         this.cardService = cardService;
         this.paymentValidationService = paymentValidationService;
         this.specialEffectsService = specialEffectsService;
         this.aiBalanceService = aiBalanceService;
+        this.discountService = discountService;
 
         this.cardIdToTurnToValueTwoPlayer = initCardStatsFromFile("cardStatsSmartVsSmart.txt");
         this.cardIdToTurnToValueFourPlayer = initCardStatsFromFile("cardStatsRandom.txt");
@@ -348,7 +354,7 @@ public class FileCardValueService implements ICardValueService {
     }
 
     private int getTotalCardDiscount(Card card, MarsGame game, Player player) {
-        int cardDiscount = paymentValidationService.getDiscount(card, player, Map.of());
+        int cardDiscount = discountService.getDiscount(card, player, Map.of());
 
         if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ENERGY_SUBSIDIES_DISCOUNT_4)) {
             cardDiscount += countCardTags(card, Tag.ENERGY) * 4;

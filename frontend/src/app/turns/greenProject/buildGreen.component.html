@@ -7,7 +7,7 @@
 
   <input id="greenProject" (click)="resetAllInputs()" type="radio" class="form-check-input" value="greenProject"
          formControlName="turn">
-  <label class="custom-control-label text-white" for="greenProject">Build green project <span style="color: black; background-color: red">{{this.game.player.canBuildInFirstPhase == 2 ? '(can build extra <= 12 MC)' : ''}}</span></label>
+  <label class="custom-control-label text-white" for="greenProject">Build green project <span style="color: black; background-color: red">{{this.canBuildExtraOfPriceTwelve()}}</span></label>
 
   <div *ngIf="parentForm.value?.turn === 'greenProject'" class="card-container">
     <ul class="myUL">

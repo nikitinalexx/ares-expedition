@@ -37,9 +37,9 @@ public class MayNiProductionsCorporation implements CorporationCard {
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
         player.setMc(48);
-        player.setCanBuildInFirstPhase(1);
-        player.setActionsInSecondPhase(1);
-        player.setMayNiDiscount(true);
+
+        player.getBuilds().add(new BuildDto(BuildType.GREEN_OR_BLUE, 0, 12));
+
         return null;
     }
 

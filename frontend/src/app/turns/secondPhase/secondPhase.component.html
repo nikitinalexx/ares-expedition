@@ -20,8 +20,7 @@
     <input id="pickExtraBonus" (click)="resetAllInputs()" type="radio" class="form-check-input" value="pickExtraBonus"
            formControlName="turn">
     <label class="custom-control-label text-white" for="pickExtraBonus">
-      {{hasNoUpgradeBonusInSecondPhase() ? 'Take card' : ''}}
-      {{hasSixMcBonusInSecondPhase() ? 'Take 6 MC' : ''}}
+      {{hasTakeCardBonus() ? 'Take card' : (hasTakeMcBonus() ? 'Take 6 MC' : '')}}
     </label>
   </div>
 

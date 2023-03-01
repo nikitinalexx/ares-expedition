@@ -36,7 +36,9 @@ public class AssetLiquidation implements BlueCard {
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
-        player.setActionsInSecondPhase(player.getActionsInSecondPhase() + 1);
+
+        marsContext.getBuildService().addExtraActionFromSecondPhase(player);
+
         return null;
     }
 

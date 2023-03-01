@@ -34,9 +34,7 @@ public class AssortedEnterprises implements BaseExpansionRedCard {
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
-        player.setAssortedEnterprisesDiscount(true);
-        player.setAssortedEnterprisesGreenAvailable(true);
-        player.setActionsInSecondPhase(player.getActionsInSecondPhase() + 1);
+        player.getBuilds().add(new BuildDto(BuildType.GREEN_OR_BLUE, 2));
         return null;
     }
 

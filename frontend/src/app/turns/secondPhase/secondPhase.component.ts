@@ -12,6 +12,7 @@ import {BuildGreenComponent} from '../greenProject/buildGreen.component';
 import {ScrollComponent} from '../../scroll/scroll.component';
 import {BuildBlueRedComponent} from '../blueRedProject/buildBlueRed.component';
 import {PhaseConstants} from "../../data/PhaseConstants";
+import {BuildType} from "../../data/BuildType";
 
 @Component({
   selector: 'app-second-phase',
@@ -137,12 +138,12 @@ export class SecondPhaseComponent implements OnInit {
     this.scrollService.scrollToPlayerChoice();
   }
 
-  hasNoUpgradeBonusInSecondPhase(): boolean {
-    return this.game.player.phaseCards[PhaseConstants.PHASE_2_INDEX] === PhaseConstants.PHASE_NO_UPGRADE_INDEX;
+  hasTakeCardBonus(): boolean {
+    return this.game.player.builds.some(build => build.type === BuildType.BLUE_RED_OR_CARD);
   }
 
-  hasSixMcBonusInSecondPhase(): boolean {
-    return this.game.player.phaseCards[PhaseConstants.PHASE_2_INDEX] === PhaseConstants.PHASE_UPGRADE_1_INDEX;
+  hasTakeMcBonus(): boolean {
+    return this.game.player.builds.some(build => build.type === BuildType.BLUE_RED_OR_MC);
   }
 
   submitForm(formGroup: FormGroup) {

@@ -1,10 +1,12 @@
 package com.terraforming.ares.states;
 
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.BuildType;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateContext;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.StateTransitionService;
 
 import java.util.Collections;
 import java.util.List;
@@ -15,8 +17,8 @@ import java.util.List;
  */
 public class BuildGreenProjectsState extends AbstractState {
 
-    public BuildGreenProjectsState(MarsGame marsGame, CardService cardService) {
-        super(marsGame, cardService);
+    public BuildGreenProjectsState(MarsGame marsGame, CardService cardService, StateTransitionService stateTransitionService) {
+        super(marsGame, cardService, stateTransitionService);
     }
 
     @Override
@@ -27,7 +29,7 @@ public class BuildGreenProjectsState extends AbstractState {
             return List.of(player.getNextTurn().getType());
         } else if (player.getNextTurn() != null) {
             return Collections.emptyList();
-        } else if (player.getCanBuildInFirstPhase() == 0) {
+        } else if (!player.canBuildGreen()) {
             if (player.isUnmiCorporation() && player.isHasUnmiAction()) {
                 return List.of(TurnType.UNMI_RT, TurnType.SELL_CARDS, TurnType.SKIP_TURN);
             }
@@ -44,11 +46,11 @@ public class BuildGreenProjectsState extends AbstractState {
     @Override
     public void updateState() {
         if (marsGame.getPlayerUuidToPlayer().values().stream().allMatch(
-                player -> player.getCanBuildInFirstPhase() == 0
+                player -> player.cantBuildAnything()
                         && player.getNextTurn() == null
                         && !player.isHasUnmiAction()
         )) {
-            performStateTransferFromPhase(2);
+            stateTransitionService.performStateTransferFromPhase(marsGame, 2);
         }
     }
 

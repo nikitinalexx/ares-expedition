@@ -3,26 +3,33 @@
   {{errorMessage}}
 </div>
 <form [formGroup]="parentForm" (submit)="submitForm(parentForm)" novalidate>
-  <div class="form-group col-6 mx-auto" style="margin-top: 100px;">
+  <div class="form-group col-6 mx-auto" style="margin-top: 100px; width: 800px">
 
-    <div class="bg-warning text-dark new-game-label" style="width: 250px; border-radius: 5px;">
-      <label title="You may discard any number of initial cards to get the same amount of cards" for="improveWeakCorp"
+    <div class="bg-warning text-dark new-game-label" style="width: 260px; border-radius: 5px;">
+      <label title="Improves certain corporations that from developer point of view are weak" for="improveWeakCorp"
              class="form-label">Improve weak corporations</label>
-      <input type="checkbox" class="form-check-input" id="improveWeakCorp" style="margin-left: 10px;"
+      <input type="checkbox" class="form-check-input" id="improveWeakCorp" style="margin-left: 10px; float: right"
              formControlName="improveWeakCorp">
     </div>
-    <div class="bg-warning text-dark new-game-label" style="width: 100px; border-radius: 5px; margin-top: 10px;">
+    <div class="bg-warning text-dark new-game-label" style="width: 260px; border-radius: 5px; margin-top: 10px;">
       <label title="You may discard any number of initial cards to get the same amount of cards" for="mulliganChoice"
              class="form-label">Mulligan</label>
-      <input type="checkbox" class="form-check-input" id="mulliganChoice" style="margin-left: 10px;"
+      <input type="checkbox" class="form-check-input" id="mulliganChoice" style="margin-left: 10px; float: right"
              formControlName="mulligan">
     </div>
 
-    <div class="bg-warning text-dark new-game-label" style="width: 200px; border-radius: 5px; margin-top: 10px;">
+    <div class="bg-warning text-dark new-game-label" style="width: 260px; border-radius: 5px; margin-top: 10px;">
       <label for="discoveryChoice"
-             class="form-label">Discovery <span class="progress-bar bg-danger">(new expansion!)</span></label>
-      <input type="checkbox" class="form-check-input" id="discoveryChoice" style="margin-left: 10px;"
+             class="form-label">Discovery <span class="bg-danger text-white">(new expansion!)</span></label>
+      <input type="checkbox" class="form-check-input" id="discoveryChoice" style="margin-left: 10px; float: right"
              formControlName="discovery">
+    </div>
+
+    <div class="bg-warning text-dark new-game-label" style="width: 260px; border-radius: 5px; margin-top: 10px;">
+      <label for="dummyHand"
+             class="form-label">Dummy hand <span class="bg-danger text-white">(plays 5 phases)</span></label>
+      <input type="checkbox" class="form-check-input" id="dummyHand" style="margin-left: 10px; float: right"
+             formControlName="dummyHand">
     </div>
     <br/>
 

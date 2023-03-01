@@ -1,7 +1,8 @@
 package com.terraforming.ares.processors.turn;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Constants;
+import com.terraforming.ares.model.BuildDto;
+import com.terraforming.ares.model.BuildType;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.turn.PickExtraBonusSecondPhase;
@@ -30,20 +31,24 @@ public class PickExtraBonusTurnProcessor implements TurnProcessor<PickExtraBonus
     public TurnResponse processTurn(PickExtraBonusSecondPhase turn, MarsGame game) {
         Player player = game.getPlayerByUuid(turn.getPlayerUuid());
 
-        if (player.hasPhaseUpgrade(Constants.PHASE_2_NO_UPGRADE)) {
+        final BuildDto getCardDto = player.getBuilds().stream().filter(build -> build.getType() == BuildType.BLUE_RED_OR_CARD).findAny().orElse(null);
+
+        if (getCardDto != null) {
             List<Integer> cards = cardService.dealCards(game, 1);
 
             for (Integer card : cards) {
                 player.getHand().addCard(card);
             }
-        }
+            player.getBuilds().remove(getCardDto);
+        } else {
+            final BuildDto getMcDto = player.getBuilds().stream().filter(build -> build.getType() == BuildType.BLUE_RED_OR_MC).findAny().orElse(null);
 
-        if (player.hasPhaseUpgrade(Constants.PHASE_2_UPGRADE_PROJECT_AND_MC)) {
-            player.setMc(player.getMc() + 6);
-        }
+            if (getMcDto != null) {
+                player.setMc(player.getMc() + 6);
 
-        player.setGotBonusInSecondPhase(true);
-        player.setActionsInSecondPhase(player.getActionsInSecondPhase() - 1);
+                player.getBuilds().remove(getMcDto);
+            }
+        }
 
         return null;
     }

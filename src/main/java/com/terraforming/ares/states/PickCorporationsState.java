@@ -2,11 +2,13 @@ package com.terraforming.ares.states;
 
 
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.BuildType;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateContext;
 import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.StateTransitionService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,8 +19,8 @@ import java.util.List;
  */
 public class PickCorporationsState extends AbstractState {
 
-    public PickCorporationsState(MarsGame marsGame, CardService cardService) {
-        super(marsGame, cardService);
+    public PickCorporationsState(MarsGame marsGame, CardService cardService, StateTransitionService stateTransitionService) {
+        super(marsGame, cardService, stateTransitionService);
     }
 
     @Override
@@ -36,11 +38,11 @@ public class PickCorporationsState extends AbstractState {
         } else {
             List<TurnType> turns = new ArrayList<>();
 
-            if (player.getActionsInSecondPhase() > 0) {
+            if (player.canBuildBlueRed()) {
                 turns.add(TurnType.BUILD_BLUE_RED_PROJECT);
             }
 
-            if (player.isAssortedEnterprisesGreenAvailable() || player.getCanBuildInFirstPhase() > 0) {
+            if (player.canBuildGreen()) {
                 turns.add(TurnType.BUILD_GREEN_PROJECT);
             }
 
@@ -55,9 +57,9 @@ public class PickCorporationsState extends AbstractState {
     @Override
     public void updateState() {
         if (marsGame.getPlayerUuidToPlayer().values().stream().allMatch(
-                player -> player.getActionsInSecondPhase() == 0 && player.getCanBuildInFirstPhase() == 0 && player.getNextTurn() == null
+                player -> player.cantBuildAnything() && player.getNextTurn() == null
         )) {
-            marsGame.setStateType(StateType.PICK_PHASE, cardService, true);
+            marsGame.setStateType(StateType.PICK_PHASE, cardService);
         }
     }
 

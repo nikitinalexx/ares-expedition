@@ -34,8 +34,7 @@ public class WorkCrews implements BaseExpansionRedCard {
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
-        player.setBuiltWorkCrewsLastTurn(true);
-        player.setActionsInSecondPhase(player.getActionsInSecondPhase() + 1);
+        player.getBuilds().add(new BuildDto(BuildType.BLUE_RED, 11));
         return null;
     }
 

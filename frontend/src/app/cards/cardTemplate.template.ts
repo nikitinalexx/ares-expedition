@@ -40,7 +40,7 @@ export class CardTemplateComponent {
   }
 
   getDiscount(card: Card): number {
-    return this.discountService.getDiscount(card, this.player as Player, this.tagInput);
+    return this.discountService.getDiscountWithOptimal(card, this.player as Player, this.tagInput);
   }
 
   getTagClasses(card: Card, tagNumber: number): string {

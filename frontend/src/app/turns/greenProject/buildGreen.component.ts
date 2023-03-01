@@ -13,6 +13,7 @@ import {CardAction} from '../../data/CardAction';
 import {Tag} from '../../data/Tag';
 import {InputFlag} from '../../data/InputFlag';
 import {RequirementsComponent} from '../../requirements/requirements.component';
+import {BuildType} from "../../data/BuildType";
 
 @Component({
   selector: 'app-build-green',
@@ -55,23 +56,31 @@ export class BuildGreenComponent implements OnInit {
   }
 
   getGreenPlayerHand(): Card[] {
-    let cards;
-    if (this.game.player.canBuildAnotherGreenWithPrice12
-      && (this.game.player.canBuildInFirstPhase === 1 || this.game.player.canBuildAnotherGreenWith9Discount)) {
-      cards = this.game?.player.hand.filter(card => {
-        return card.cardColor === CardColor[CardColor.GREEN] && card.price <= 12;
+    const cards = this.game?.player.hand.filter(card => card.cardColor === CardColor[CardColor.GREEN])
+      .filter(card => {
+        for (const build of this.game?.player.builds) {
+          if ((build.type === BuildType.GREEN || build.type === BuildType.GREEN_OR_BLUE)
+            && (build.priceLimit === 0 || build.priceLimit >= card.price)) {
+            return true;
+          }
+        }
+        return false;
       });
-    } else if (this.game.player.canBuildAnotherGreenWith9Discount && this.game.player.canBuildInFirstPhase === 1) {
-      cards = this.game?.player.hand.filter(card => {
-        return card.cardColor === CardColor[CardColor.GREEN] && card.price < 10;
-      });
-    } else {
-      cards = this.game?.player.hand.filter(card => card.cardColor === CardColor[CardColor.GREEN]);
-    }
 
     this.requirementsService.sortCardsForBuilding(cards, this.game.player, this.game);
 
     return cards;
+  }
+
+  canBuildExtraOfPriceTwelve(): string {
+    for (const build of this.game?.player.builds) {
+      if ((build.type === BuildType.GREEN || build.type === BuildType.GREEN_OR_BLUE)
+        && build.priceLimit === 12
+        && this.game?.player.builds.length >= 2) {
+        return '(can build extra <= 12 MC)';
+      }
+    }
+    return '';
   }
 
   canBuildCard(card: Card) {
@@ -197,7 +206,7 @@ export class BuildGreenComponent implements OnInit {
     console.log(this.expectsTagInput() ? this.tagInput : -1);
     if (this.selectedProject) {
       return this.selectedProject.price
-        - this.discountService.getDiscount(this.selectedProject, this.game?.player, this.expectsTagInput() ? this.tagInput : -1);
+        - this.discountService.getDiscountWithOptimal(this.selectedProject, this.game?.player, this.expectsTagInput() ? this.tagInput : -1);
     } else {
       return 0;
     }

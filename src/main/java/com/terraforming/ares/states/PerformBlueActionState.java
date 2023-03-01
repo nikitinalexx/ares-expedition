@@ -1,11 +1,13 @@
 package com.terraforming.ares.states;
 
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.BuildType;
 import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateContext;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.StateTransitionService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,8 +18,8 @@ import java.util.List;
  */
 public class PerformBlueActionState extends AbstractState {
 
-    public PerformBlueActionState(MarsGame marsGame, CardService cardService) {
-        super(marsGame, cardService);
+    public PerformBlueActionState(MarsGame marsGame, CardService cardService, StateTransitionService stateTransitionService) {
+        super(marsGame, cardService, stateTransitionService);
     }
 
     @Override
@@ -31,11 +33,11 @@ public class PerformBlueActionState extends AbstractState {
         } else {
             List<TurnType> turns = new ArrayList<>();
 
-            if (player.getActionsInSecondPhase() > 0) {
+            if (player.canBuildBlueRed()) {
                 turns.add(TurnType.BUILD_BLUE_RED_PROJECT);
             }
 
-            if (player.getCanBuildInFirstPhase() > 0 || player.isAssortedEnterprisesGreenAvailable()) {
+            if (player.canBuildGreen()) {
                 turns.add(TurnType.BUILD_GREEN_PROJECT);
             }
 
@@ -81,7 +83,7 @@ public class PerformBlueActionState extends AbstractState {
                 );
 
         if (gameNotEndedOrPlayersConfirmedEnd && noPendingTurns) {
-            performStateTransferFromPhase(4);
+            stateTransitionService.performStateTransferFromPhase(marsGame, 4);
         }
     }
 }

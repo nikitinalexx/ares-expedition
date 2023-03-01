@@ -1,0 +1,7 @@
+export enum BuildType {
+  GREEN = 'GREEN',
+  BLUE_RED = 'BLUE_RED',
+  BLUE_RED_OR_CARD = 'BLUE_RED_OR_CARD',
+  BLUE_RED_OR_MC = 'BLUE_RED_OR_MC',
+  GREEN_OR_BLUE = 'GREEN_OR_BLUE'
+}

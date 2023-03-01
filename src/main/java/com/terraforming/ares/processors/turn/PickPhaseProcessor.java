@@ -28,11 +28,6 @@ public class PickPhaseProcessor implements TurnProcessor<PhaseChoiceTurn> {
         player.setPreviousChosenPhase(turn.getPhaseId());
         player.setChosenPhase(turn.getPhaseId());
 
-        if (turn.getPhaseId() == 1 && player.hasPhaseUpgrade(Constants.PHASE_1_UPGRADE_BUILD_EXTRA)) {
-            player.setCanBuildInFirstPhase(player.getCanBuildInFirstPhase() + 1);
-            player.setCanBuildAnotherGreenWithPrice12(true);
-        }
-
         if (turn.getPhaseId() == 3) {
             player.setBlueActionExtraActivationsLeft(1);
 

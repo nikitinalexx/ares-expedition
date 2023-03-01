@@ -3,7 +3,8 @@
 <div style="padding-top: 100px;"></div>
 
 <div class="form-check bg-primary" style="width: 200px; position: absolute; border-radius: 5px; margin: 5px">
-  <input class="form-check-input" style="margin-left: -20px" type="checkbox" id="alert" (change)="alertCheckEvent($event)" [checked]="this.isAlertAlwaysOn()">
+  <input class="form-check-input" style="margin-left: -20px" type="checkbox" id="alert"
+         (change)="alertCheckEvent($event)" [checked]="this.isAlertAlwaysOn()">
   <label class="form-check-label" for="alert">
     Turn alert always ON
   </label>
@@ -32,7 +33,8 @@
         </div>
       </td>
       <td *ngFor="let phase of generateNonZeroArray(5);">
-        <span class="phase-{{phase}} resource" [ngClass]="playerPhaseInfoDisplayStyles(phase, this.game?.player)" style="border-radius: 5px"></span>
+        <span class="phase-{{phase}} resource" [ngClass]="playerPhaseInfoDisplayStyles(phase, this.game?.player)"
+              style="border-radius: 5px"></span>
       </td>
     </tr>
 
@@ -57,9 +59,29 @@
         </div>
       </td>
       <td *ngFor="let phase of generateNonZeroArray(5);">
-        <span class="phase-{{phase}} resource" [ngClass]="playerPhaseInfoDisplayStyles(phase, otherPlayer)" style="border-radius: 5px"></span>
+        <span class="phase-{{phase}} resource" [ngClass]="playerPhaseInfoDisplayStyles(phase, otherPlayer)"
+              style="border-radius: 5px"></span>
       </td>
     </tr>
+
+    <tr *ngIf="this.game?.dummyHandMode">
+      <td>
+        <div class="form-check">
+          <input id="dummy" type="radio" class="form-check-input" value="You" formControlName="player" disabled>
+          <label class="custom-control-label text-white" for="dummy">
+            Dummy
+          </label>
+        </div>
+      </td>
+      <td>
+      </td>
+      <td *ngFor="let phase of this.game?.usedDummyHand;">
+        <span class="phase-{{phase}} resource"
+              [ngClass]="phase !== this.game?.usedDummyHand[this.game?.usedDummyHand.length - 1] ? 'greyed-phase' : ''"
+              style="border-radius: 5px"></span>
+      </td>
+    </tr>
+
     </tbody>
   </table>
 
@@ -110,7 +132,8 @@
         {{milestoneValue(0, milestone)}}
       </div>
 
-      <div *ngFor="let player of this.game?.otherPlayers; let otherPlayerIndex = index;" class="achievement-player-value text-white"
+      <div *ngFor="let player of this.game?.otherPlayers; let otherPlayerIndex = index;"
+           class="achievement-player-value text-white"
            [ngClass]="otherPlayerBackgroundClass(otherPlayerIndex)"
            [ngStyle]="{'left.px': 40 + 30 * otherPlayerIndex, 'top.px': 88}"
       >
@@ -166,7 +189,8 @@
         {{awardValue(0, award)}}
       </div>
 
-      <div *ngFor="let player of this.game?.otherPlayers; let otherPlayerIndex = index;" class="achievement-player-value text-white"
+      <div *ngFor="let player of this.game?.otherPlayers; let otherPlayerIndex = index;"
+           class="achievement-player-value text-white"
            [ngClass]="otherPlayerBackgroundClass(otherPlayerIndex)"
            [ngStyle]="{'left.px': 40 + 30 * otherPlayerIndex, 'top.px': 88}"
       >

@@ -46,8 +46,7 @@ public class AutomatedFactories implements BaseExpansionGreenCard {
         Player player = marsContext.getPlayer();
 
         player.setCardIncome(player.getCardIncome() + 1);
-        player.setCanBuildInFirstPhase(player.getCanBuildInFirstPhase() + 1);
-        player.setCanBuildAnotherGreenWith9Discount(true);
+        player.getBuilds().add(new BuildDto(BuildType.GREEN, 9, 9));
 
         return null;
     }

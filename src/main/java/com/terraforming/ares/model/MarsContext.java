@@ -3,6 +3,7 @@ package com.terraforming.ares.model;
 import com.terraforming.ares.dto.CardDto;
 import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.services.BuildService;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.TerraformingService;
 import lombok.Builder;
@@ -19,6 +20,7 @@ public class MarsContext {
     Player player;
     TerraformingService terraformingService;
     CardService cardService;
+    BuildService buildService;
 
     public AutoPickCardsAction dealCards(int count) {
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();

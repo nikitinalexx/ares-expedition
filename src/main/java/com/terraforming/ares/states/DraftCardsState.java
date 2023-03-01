@@ -5,6 +5,7 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateContext;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.StateTransitionService;
 
 import java.util.List;
 
@@ -14,8 +15,8 @@ import java.util.List;
  */
 public class DraftCardsState extends AbstractState {
 
-    public DraftCardsState(MarsGame marsGame, CardService cardService) {
-        super(marsGame, cardService);
+    public DraftCardsState(MarsGame marsGame, CardService cardService, StateTransitionService stateTransitionService) {
+        super(marsGame, cardService, stateTransitionService);
     }
 
     public List<TurnType> getPossibleTurns(StateContext stateContext) {
@@ -32,7 +33,7 @@ public class DraftCardsState extends AbstractState {
         if (marsGame.getPlayerUuidToPlayer().values().stream().allMatch(
                 player -> player.getNextTurn() == null
         )) {
-            performStateTransferFromPhase(6);
+            stateTransitionService.performStateTransferFromPhase(marsGame, 6);
         }
     }
 

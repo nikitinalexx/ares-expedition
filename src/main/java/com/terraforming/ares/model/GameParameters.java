@@ -17,4 +17,5 @@ public class GameParameters {
     private List<Boolean> computers;
     private boolean mulligan;
     private List<Expansion> expansions;
+    private boolean dummyHand;
 }

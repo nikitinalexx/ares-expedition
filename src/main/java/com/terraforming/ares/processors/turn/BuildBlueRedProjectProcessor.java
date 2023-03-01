@@ -1,11 +1,10 @@
 package com.terraforming.ares.processors.turn;
 
-import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Constants;
-import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.BuildBlueRedProjectTurn;
 import com.terraforming.ares.model.turn.TurnType;
+import com.terraforming.ares.services.BuildService;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.DiscountService;
 import com.terraforming.ares.services.TerraformingService;
 import org.springframework.stereotype.Service;
 
@@ -16,40 +15,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class BuildBlueRedProjectProcessor extends GenericBuildProjectProcessor<BuildBlueRedProjectTurn> {
 
-    public BuildBlueRedProjectProcessor(CardService marsDeckService, TerraformingService terraformingService) {
-        super(marsDeckService, terraformingService);
-    }
-
-    @Override
-    protected void processInternalBeforeBuild(BuildBlueRedProjectTurn turn, MarsGame game) {
-        Player player = game.getPlayerUuidToPlayer().get(turn.getPlayerUuid());
-
-        player.setBuiltSpecialDesignLastTurn(false);
-        player.setBuiltWorkCrewsLastTurn(false);
-        player.setAssortedEnterprisesDiscount(false);
-        player.setSelfReplicatingDiscount(false);
-        player.setMayNiDiscount(false);
-
-        if (game.getCurrentPhase() == 3) {
-            player.setAssortedEnterprisesGreenAvailable(false);
-        }
-    }
-
-    @Override
-    protected void processInternalAfterBuild(BuildBlueRedProjectTurn turn, MarsGame game) {
-        Player player = game.getPlayerUuidToPlayer().get(turn.getPlayerUuid());
-
-        if (player.getActionsInSecondPhase() < 1) {
-            throw new IllegalStateException("Can't build a project while project limit for this phase is < 1");
-        }
-
-        player.setActionsInSecondPhase(player.getActionsInSecondPhase() - 1);
-
-        if ((game.getCurrentPhase() == Constants.PERFORM_BLUE_ACTION_PHASE
-                || game.getCurrentPhase() == Constants.PICK_CORPORATIONS_PHASE)
-                && player.getCanBuildInFirstPhase() > 0) {
-            player.setCanBuildInFirstPhase(player.getCanBuildInFirstPhase() - 1);
-        }
+    public BuildBlueRedProjectProcessor(CardService marsDeckService,
+                                        TerraformingService terraformingService,
+                                        BuildService buildService,
+                                        DiscountService discountService) {
+        super(marsDeckService, terraformingService, buildService, discountService);
     }
 
     @Override

@@ -2,10 +2,7 @@ package com.terraforming.ares.processors.action;
 
 import com.terraforming.ares.cards.blue.SelfReplicatingBacteria;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Card;
-import com.terraforming.ares.model.InputFlag;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -34,9 +31,7 @@ public class SelfReplicatingBacteriaActionProcessor implements BlueActionCardPro
         } else if (input == 5) {
             player.addResources(actionCard, -5);
 
-            player.setCanBuildInFirstPhase(1);
-            player.setActionsInSecondPhase(1);
-            player.setSelfReplicatingDiscount(true);
+            player.getBuilds().add(new BuildDto(BuildType.GREEN_OR_BLUE, 25));
         }
 
         return null;

@@ -1,12 +1,10 @@
 package com.terraforming.ares.processors.turn;
 
-import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Card;
-import com.terraforming.ares.model.Constants;
-import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.BuildGreenProjectTurn;
 import com.terraforming.ares.model.turn.TurnType;
+import com.terraforming.ares.services.BuildService;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.DiscountService;
 import com.terraforming.ares.services.TerraformingService;
 import org.springframework.stereotype.Service;
 
@@ -17,49 +15,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class BuildGreenProjectProcessor extends GenericBuildProjectProcessor<BuildGreenProjectTurn> {
 
-    public BuildGreenProjectProcessor(CardService marsDeckService, TerraformingService terraformingService) {
-        super(marsDeckService, terraformingService);
-    }
-
-    @Override
-    protected void processInternalBeforeBuild(BuildGreenProjectTurn turn, MarsGame game) {
-        Player player = game.getPlayerUuidToPlayer().get(turn.getPlayerUuid());
-
-        final Card card = cardService.getCard(turn.getProjectId());
-        if (player.isCanBuildAnotherGreenWithPrice12()
-                && ((!player.isCanBuildAnotherGreenWith9Discount() && card.getPrice() <= 12)
-                || (player.isCanBuildAnotherGreenWith9Discount() && card.getPrice() > 9 && card.getPrice() <= 12))) {
-            player.setCanBuildAnotherGreenWithPrice12(false);
-        } else if (player.isCanBuildAnotherGreenWith9Discount() && card.getPrice() <= 9) {
-            player.setCanBuildAnotherGreenWith9Discount(false);
-        }
-
-        player.setAssortedEnterprisesDiscount(false);
-        player.setSelfReplicatingDiscount(false);
-        player.setMayNiDiscount(false);
-    }
-
-    @Override
-    protected void processInternalAfterBuild(BuildGreenProjectTurn turn, MarsGame game) {
-        Player player = game.getPlayerUuidToPlayer().get(turn.getPlayerUuid());
-
-        if (player.getCanBuildInFirstPhase() < 1 && !player.isAssortedEnterprisesGreenAvailable()) {
-            throw new IllegalStateException("Can't build a project while project limit for this phase is < 1");
-        }
-
-        if (player.isAssortedEnterprisesGreenAvailable()) {
-            player.setAssortedEnterprisesGreenAvailable(false);
-            if (player.getActionsInSecondPhase() > 0) {
-                player.setActionsInSecondPhase(player.getActionsInSecondPhase() - 1);
-            }
-        } else if (player.getCanBuildInFirstPhase() >= 1) {
-            player.setCanBuildInFirstPhase(player.getCanBuildInFirstPhase() - 1);
-            if ((game.getCurrentPhase() == Constants.PERFORM_BLUE_ACTION_PHASE
-                    || game.getCurrentPhase() == Constants.PICK_CORPORATIONS_PHASE)
-                    && player.getActionsInSecondPhase() == 1) {
-                player.setActionsInSecondPhase(0);
-            }
-        }
+    public BuildGreenProjectProcessor(CardService marsDeckService,
+                                      TerraformingService terraformingService,
+                                      BuildService buildService,
+                                      DiscountService discountService) {
+        super(marsDeckService, terraformingService, buildService, discountService);
     }
 
     @Override

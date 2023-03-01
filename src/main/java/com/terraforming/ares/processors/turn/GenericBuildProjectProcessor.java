@@ -4,7 +4,9 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.turn.GenericBuildProjectTurn;
+import com.terraforming.ares.services.BuildService;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.DiscountService;
 import com.terraforming.ares.services.TerraformingService;
 import lombok.RequiredArgsConstructor;
 
@@ -18,6 +20,8 @@ import java.util.Collections;
 public abstract class GenericBuildProjectProcessor<T extends GenericBuildProjectTurn> implements TurnProcessor<T> {
     protected final CardService cardService;
     private final TerraformingService terraformingService;
+    private final BuildService buildService;
+    private final DiscountService discountService;
 
     @Override
     public TurnResponse processTurn(T turn, MarsGame game) {
@@ -28,13 +32,19 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
             payment.pay(cardService, player);
         }
 
-        processInternalBeforeBuild(turn, game);
+        player.setBuiltSpecialDesignLastTurn(false);
+
+        int discount = discountService.getDiscount(card, player, turn.getInputParams());
+        discount += turn.getPayments().stream().mapToInt(Payment::getDiscount).sum();
+
+        final BuildDto buildOption = buildService.findMostOptimalBuild(card, player, discount);
 
         final MarsContext marsContext = MarsContext.builder()
                 .game(game)
                 .player(player)
                 .terraformingService(terraformingService)
                 .cardService(cardService)
+                .buildService(buildService)
                 .build();
 
         TurnResponse response = card.buildProject(marsContext);
@@ -49,19 +59,13 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
         player.getHand().removeCards(Collections.singletonList(turn.getProjectId()));
         player.getPlayed().addCard(turn.getProjectId(), game.getTurns());
 
-        processInternalAfterBuild(turn, game);
-
         if (card.onBuiltEffectApplicableToItself()) {
             card.postProjectBuiltEffect(marsContext, card, turn.getInputParams());
         }
 
+        player.getBuilds().remove(buildOption);
+
         return response;
-    }
-
-    protected void processInternalAfterBuild(T turn, MarsGame game) {
-    }
-
-    protected void processInternalBeforeBuild(T turn, MarsGame game) {
     }
 
 }

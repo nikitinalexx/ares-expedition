@@ -117,7 +117,7 @@ public class AiBuildProjectService extends BaseProcessorService {
         if (projectionStrategy == ProjectionStrategy.FROM_PICK_PHASE) {
             player.setPreviousChosenPhase(null);
             getAnotherPlayer(game, player).setPreviousChosenPhase(null);
-            game.setStateType(StateType.PICK_PHASE, cardService, true);
+            game.setStateType(StateType.PICK_PHASE, cardService);
             game.getPlayerUuidToPlayer().values().forEach(
                     p -> aiTurnService.choosePhaseTurn(p, card.getColor() == CardColor.GREEN ? 1 : 2)
             );

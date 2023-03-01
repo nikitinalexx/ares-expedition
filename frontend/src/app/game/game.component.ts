@@ -160,7 +160,9 @@ export class GameComponent implements OnInit {
   chosenPhases(): number[] {
     const phases = [];
     for (let i = 1; i <= 5; i++) {
-      if (this.phaseChosenByAnyone(i)) {
+      if (this.phaseChosenByAnyone(i)
+        || this.game?.dummyHandMode && this.game?.usedDummyHand && this.game.usedDummyHand.length > 0
+        && this.game.usedDummyHand[this.game.usedDummyHand.length - 1] === i) {
         phases.push(i);
       }
     }

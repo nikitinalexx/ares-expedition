@@ -37,18 +37,8 @@ public class Player {
     private Map<Class<?>, List<Tag>> cardToTag = new HashMap<>();
     @Builder.Default
     private int terraformingRating = Constants.STARTING_RT;
-    private int actionsInSecondPhase;
-    private boolean gotBonusInSecondPhase;
-    private int canBuildInFirstPhase;
     private int forests;
     private boolean builtSpecialDesignLastTurn;
-    private boolean builtWorkCrewsLastTurn;
-    private boolean canBuildAnotherGreenWith9Discount;
-    private boolean canBuildAnotherGreenWithPrice12;
-    private boolean assortedEnterprisesDiscount;
-    private boolean assortedEnterprisesGreenAvailable;
-    private boolean selfReplicatingDiscount;
-    private boolean mayNiDiscount;
     private boolean unmiCorporation;
     private boolean hasUnmiAction;
     private boolean didUnmiAction;
@@ -83,6 +73,9 @@ public class Player {
     @Builder.Default
     private List<Integer> phaseCards = new ArrayList<>(List.of(0, 0, 0, 0, 0));
 
+    @Builder.Default
+    private List<BuildDto> builds = new ArrayList<>();
+
     public Player(Player copy) {
         this.uuid = copy.uuid;
         this.name = copy.name;
@@ -98,18 +91,8 @@ public class Player {
         this.cardToTag = new HashMap<>(copy.getCardToTag());
 
         this.terraformingRating = copy.terraformingRating;
-        this.actionsInSecondPhase = copy.actionsInSecondPhase;
-        this.gotBonusInSecondPhase = copy.gotBonusInSecondPhase;
-        this.canBuildInFirstPhase = copy.canBuildInFirstPhase;
         this.forests = copy.forests;
         this.builtSpecialDesignLastTurn = copy.builtSpecialDesignLastTurn;
-        this.builtWorkCrewsLastTurn = copy.builtWorkCrewsLastTurn;
-        this.canBuildAnotherGreenWith9Discount = copy.canBuildAnotherGreenWith9Discount;
-        this.canBuildAnotherGreenWithPrice12 = copy.canBuildAnotherGreenWithPrice12;
-        this.assortedEnterprisesDiscount = copy.assortedEnterprisesDiscount;
-        this.assortedEnterprisesGreenAvailable = copy.assortedEnterprisesGreenAvailable;
-        this.selfReplicatingDiscount = copy.selfReplicatingDiscount;
-        this.mayNiDiscount = copy.mayNiDiscount;
         this.unmiCorporation = copy.unmiCorporation;
         this.hasUnmiAction = copy.hasUnmiAction;
         this.didUnmiAction = copy.didUnmiAction;
@@ -122,7 +105,7 @@ public class Player {
 
         this.chosenPhase = copy.chosenPhase;
 
-        this.nextTurns = (copy.nextTurns == null ? null: new LinkedList<>(copy.nextTurns));
+        this.nextTurns = (copy.nextTurns == null ? null : new LinkedList<>(copy.nextTurns));
 
         this.ai = copy.ai;
 
@@ -141,6 +124,8 @@ public class Player {
         this.titaniumIncome = copy.titaniumIncome;
 
         this.phaseCards = new ArrayList<>(copy.phaseCards);
+
+        this.builds = new ArrayList<>(copy.builds);
     }
 
     public void setTerraformingRating(int terraformingRating) {
@@ -164,7 +149,7 @@ public class Player {
         nextTurns.add(0, turn);
     }
 
-    @JsonIgnore//todo is it needed
+    @JsonIgnore
     public Turn getNextTurn() {
         if (CollectionUtils.isEmpty(nextTurns)) {
             return null;
@@ -177,13 +162,6 @@ public class Player {
         if (!CollectionUtils.isEmpty(nextTurns)) {
             nextTurns.remove(0);
         }
-    }
-
-    public void setActionsInSecondPhase(int actionsInSecondPhase) {
-        if (this.actionsInSecondPhase == 1) {
-            setGotBonusInSecondPhase(true);
-        }
-        this.actionsInSecondPhase = actionsInSecondPhase;
     }
 
     public void addResources(Card toCard, int count) {
@@ -212,34 +190,45 @@ public class Player {
         return phaseCards.get(phase - 1) != 0;
     }
 
+    public boolean canBuildAny(List<BuildType> types) {
+        for (BuildDto availableBuild : builds) {
+            if (types.contains(availableBuild.getType())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean canBuildGreen() {
+        return builds.stream().anyMatch(build -> build.getType().isGreen());
+    }
+
+    public boolean canBuildBlueRed() {
+        return builds.stream().anyMatch(build -> build.getType().isBlueRed());
+    }
+
+    public boolean cantBuildAnything() {
+        return builds.isEmpty();
+    }
+
     public void clearRoundResults() {
+        builds = new ArrayList<>();
+
         chosenPhase = null;
         activatedBlueCards = Deck.builder().build();
         blueActionExtraActivationsLeft = 0;
-        actionsInSecondPhase = 0;
-        canBuildInFirstPhase = 0;
-        gotBonusInSecondPhase = false;
-        assortedEnterprisesDiscount = false;
-        selfReplicatingDiscount = false;
-        mayNiDiscount = false;
-        assortedEnterprisesGreenAvailable = false;
         hasUnmiAction = false;
         didUnmiAction = false;
         mulligan = true;
     }
 
     public void clearPhaseResults() {
+        builds = new ArrayList<>();
+
         hasUnmiAction = false;
         didUnmiAction = false;
 
         builtSpecialDesignLastTurn = false;
-        builtWorkCrewsLastTurn = false;
-        canBuildAnotherGreenWith9Discount = false;
-        canBuildAnotherGreenWithPrice12 = false;
-        assortedEnterprisesDiscount = false;
-        selfReplicatingDiscount = false;
-        mayNiDiscount = false;
-        assortedEnterprisesGreenAvailable = false;
     }
 
 }

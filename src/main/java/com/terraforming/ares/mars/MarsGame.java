@@ -5,14 +5,17 @@ import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.awards.*;
 import com.terraforming.ares.model.milestones.*;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.ShuffleService;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Created by oleksii.nikitin
@@ -40,6 +43,9 @@ public class MarsGame {
     private List<Milestone> milestones;
     private boolean hasAi;
     private List<Expansion> expansions;
+    private boolean dummyHandMode;
+    private List<Integer> dummyHand;
+    private List<Integer> usedDummyHand = new ArrayList<>();
 
 
     public MarsGame(MarsGame copy) {
@@ -55,6 +61,11 @@ public class MarsGame {
         this.milestones = copyMilestones(copy);
         this.hasAi = copy.hasAi;
         this.expansions = copy.expansions;
+        this.dummyHandMode = copy.dummyHandMode;
+        if (copy.dummyHandMode) {
+            this.dummyHand = new ArrayList<>(copy.dummyHand);
+            this.usedDummyHand = new ArrayList<>(copy.usedDummyHand);
+        }
     }
 
     private List<BaseAward> copyAwards(MarsGame marsGame) {
@@ -102,7 +113,7 @@ public class MarsGame {
                 anotherMilestone = new SpaceBaronMilestone();
             } else if (milestone.getType() == MilestoneType.TERRAFORMER) {
                 anotherMilestone = new TerraformerMilestone();
-            } else if (milestone.getType() == MilestoneType.TYCOON){
+            } else if (milestone.getType() == MilestoneType.TYCOON) {
                 anotherMilestone = new TycoonMilestone();
             } else {
                 anotherMilestone = new GardenerMilestone();
@@ -125,7 +136,9 @@ public class MarsGame {
                     List<BaseAward> awards,
                     List<Milestone> milestones,
                     List<Boolean> computers,
-                    List<Expansion> expansions) {
+                    List<Expansion> expansions,
+                    boolean dummyHandMode,
+                    List<Integer> dummyHand) {
         this.projectsDeck = projectsDeck;
         this.corporationsDeck = corporationsDeck;
         this.planet = planet;
@@ -133,6 +146,8 @@ public class MarsGame {
         this.milestones = milestones;
         this.expansions = expansions;
         this.hasAi = (computers.stream().anyMatch(item -> item));
+        this.dummyHandMode = dummyHandMode;
+        this.dummyHand = new ArrayList<>(dummyHand);
 
         List<Player> players = new ArrayList<>();
 
@@ -183,10 +198,8 @@ public class MarsGame {
         projectsDeck.addCards(cards);
     }
 
-    public void setStateType(StateType stateType, CardService cardService, boolean clearPhaseResults) {
-        if (clearPhaseResults) {
-            playerUuidToPlayer.values().forEach(Player::clearPhaseResults);
-        }
+    public void setStateType(StateType stateType, CardService cardService) {
+        playerUuidToPlayer.values().forEach(Player::clearPhaseResults);
 
         assignMilestones(cardService);
         if (stateType == StateType.GAME_END) {
@@ -259,6 +272,30 @@ public class MarsGame {
 
     public boolean timeToSave() {
         return gameEndCondition() || this.updateCounter % 10 == 0;
+    }
+
+    @JsonIgnore
+    public int getCurrentDummyHand() {
+        if (!isDummyHandMode()) {
+            throw new IllegalStateException("Dummy hand only available in dummy hand mode");
+        }
+        if (CollectionUtils.isEmpty(usedDummyHand)) {
+            throw new IllegalStateException("Calling get from dummy hand before it was initialized");
+        }
+        return usedDummyHand.get(usedDummyHand.size() - 1);
+    }
+
+    public void updateDummyHand(ShuffleService shuffleService) {
+        if (!isDummyHandMode()) {
+            throw new IllegalStateException("Dummy hand only available in dummy hand mode");
+        }
+        if (CollectionUtils.isEmpty(dummyHand)) {
+            dummyHand = IntStream.rangeClosed(1, 5).boxed().collect(Collectors.toList());
+            shuffleService.shuffle(dummyHand);
+            usedDummyHand = new ArrayList<>();
+        }
+        usedDummyHand.add(dummyHand.get(0));
+        dummyHand.remove(0);
     }
 
     @JsonIgnore

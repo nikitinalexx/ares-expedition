@@ -37,7 +37,7 @@ public class ResearchGrant implements DiscoveryExpansionBlueCard {
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
-        player.setActionsInSecondPhase(player.getActionsInSecondPhase() + 1);
+        marsContext.getBuildService().addExtraActionFromSecondPhase(player);
         player.getCardToTag().put(this.getClass(), new ArrayList<>(List.of(Tag.DYNAMIC, Tag.DYNAMIC, Tag.DYNAMIC)));
         return null;
     }

@@ -14,7 +14,6 @@ import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
 import lombok.RequiredArgsConstructor;
-import lombok.val;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -112,16 +111,23 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
     }
 
     private int chooseBetweenFirstAndSecondPhase(MarsGame game, Player player) {
+        Player copy = new Player(player);
+
         List<Card> playableCards = player.getHand()
                 .getCards()
                 .stream()
                 .map(cardService::getCard)
                 .filter(card ->
                 {
+                    if (card.getColor() == CardColor.GREEN) {
+                        copy.setBuilds(List.of(new BuildDto(BuildType.GREEN, 3)));
+                    } else {
+                        copy.setBuilds(List.of(new BuildDto(BuildType.BLUE_RED)));
+                    }
                     String errorMessage = cardValidationService.validateCard(
-                            player, game, card.getId(),
-                            aiPaymentHelper.getCardPayments(player, card),
-                            aiCardParamsHelper.getInputParamsForValidation(player, card)
+                            copy, game, card.getId(),
+                            aiPaymentHelper.getCardPayments(copy, card),
+                            aiCardParamsHelper.getInputParamsForValidation(copy, card)
                     );
                     return errorMessage == null;
                 }).collect(Collectors.toList());
@@ -150,10 +156,12 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                 .filter(card -> card.getColor() == CardColor.GREEN)
                 .filter(card ->
                 {
+                    Player copy = new Player(player);
+                    copy.setBuilds(List.of(new BuildDto(BuildType.GREEN, 3)));
                     String errorMessage = cardValidationService.validateCard(
-                            player, game, card.getId(),
-                            aiPaymentHelper.getCardPayments(player, card),
-                            aiCardParamsHelper.getInputParamsForValidation(player, card)
+                            copy, game, card.getId(),
+                            aiPaymentHelper.getCardPayments(copy, card),
+                            aiCardParamsHelper.getInputParamsForValidation(copy, card)
                     );
                     return errorMessage == null;
                 })
@@ -175,10 +183,12 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                 .filter(card -> card.getColor() == CardColor.BLUE || card.getColor() == CardColor.RED)
                 .filter(card ->
                 {
+                    Player copy = new Player(player);
+                    copy.setBuilds(List.of(new BuildDto(BuildType.BLUE_RED)));
                     String errorMessage = cardValidationService.validateCard(
-                            player, game, card.getId(),
-                            aiPaymentHelper.getCardPayments(player, card),
-                            aiCardParamsHelper.getInputParamsForValidation(player, card)
+                            copy, game, card.getId(),
+                            aiPaymentHelper.getCardPayments(copy, card),
+                            aiCardParamsHelper.getInputParamsForValidation(copy, card)
                     );
                     return errorMessage == null;
                 })
@@ -375,10 +385,12 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                 .filter(card -> card.getColor() == CardColor.GREEN)
                 .filter(card ->
                 {
+                    Player copy = new Player(player);
+                    copy.setBuilds(List.of(new BuildDto(BuildType.GREEN, 3)));
                     String errorMessage = cardValidationService.validateCard(
-                            player, game, card.getId(),
-                            aiPaymentHelper.getCardPayments(player, card),
-                            aiCardParamsHelper.getInputParamsForValidation(player, card)
+                            copy, game, card.getId(),
+                            aiPaymentHelper.getCardPayments(copy, card),
+                            aiCardParamsHelper.getInputParamsForValidation(copy, card)
                     );
                     return errorMessage == null;
                 })
@@ -393,10 +405,12 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                     .filter(card -> card.getColor() == CardColor.BLUE || card.getColor() == CardColor.RED)
                     .filter(card ->
                     {
+                        Player copy = new Player(player);
+                        copy.setBuilds(List.of(new BuildDto(BuildType.BLUE_RED, 0)));
                         String errorMessage = cardValidationService.validateCard(
-                                player, game, card.getId(),
-                                aiPaymentHelper.getCardPayments(player, card),
-                                aiCardParamsHelper.getInputParamsForValidation(player, card)
+                                copy, game, card.getId(),
+                                aiPaymentHelper.getCardPayments(copy, card),
+                                aiCardParamsHelper.getInputParamsForValidation(copy, card)
                         );
                         return errorMessage == null;
                     })

@@ -1,11 +1,13 @@
 package com.terraforming.ares.states;
 
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.BuildType;
 import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateContext;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.StateTransitionService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,8 +18,8 @@ import java.util.List;
  */
 public class BuildBlueRedProjectsState extends AbstractState {
 
-    public BuildBlueRedProjectsState(MarsGame marsGame, CardService cardService) {
-        super(marsGame, cardService);
+    public BuildBlueRedProjectsState(MarsGame marsGame, CardService cardService, StateTransitionService stateTransitionService) {
+        super(marsGame, cardService, stateTransitionService);
     }
 
     @Override
@@ -27,7 +29,7 @@ public class BuildBlueRedProjectsState extends AbstractState {
             return List.of(player.getNextTurn().getType());
         } else if (player.getNextTurn() != null) {
             return List.of();
-        } else if ((player.getActionsInSecondPhase() == 0 && player.getCanBuildInFirstPhase() == 0)) {
+        } else if (player.cantBuildAnything()) {
             if (player.isUnmiCorporation() && player.isHasUnmiAction()) {
                 return List.of(TurnType.UNMI_RT, TurnType.SELL_CARDS, TurnType.SKIP_TURN);
             }
@@ -37,13 +39,13 @@ public class BuildBlueRedProjectsState extends AbstractState {
                     TurnType.SELL_CARDS,
                     TurnType.SKIP_TURN
             ));
-            if (player.getChosenPhase() == 2 && !player.isGotBonusInSecondPhase() && !player.hasPhaseUpgrade(Constants.PHASE_2_UPGRADE_PROJECT_AND_CARD)) {
+            if (player.canBuildAny(List.of(BuildType.BLUE_RED_OR_MC, BuildType.BLUE_RED_OR_CARD))) {
                 actions.add(TurnType.PICK_EXTRA_BONUS_SECOND_PHASE);
             }
-            if (player.isAssortedEnterprisesGreenAvailable() || player.getCanBuildInFirstPhase() > 0) {
+            if (player.canBuildGreen()) {
                 actions.add(TurnType.BUILD_GREEN_PROJECT);
             }
-            if (player.getActionsInSecondPhase() > 0) {
+            if (player.canBuildBlueRed()) {
                 actions.add(TurnType.BUILD_BLUE_RED_PROJECT);
             }
             if (player.isUnmiCorporation() && player.isHasUnmiAction()) {
@@ -56,12 +58,11 @@ public class BuildBlueRedProjectsState extends AbstractState {
     @Override
     public void updateState() {
         if (marsGame.getPlayerUuidToPlayer().values().stream().allMatch(
-                player -> player.getActionsInSecondPhase() == 0
-                        && player.getCanBuildInFirstPhase() == 0
+                player -> player.cantBuildAnything()
                         && player.getNextTurn() == null
                         && !player.isHasUnmiAction()
         )) {
-            performStateTransferFromPhase(3);
+            stateTransitionService.performStateTransferFromPhase(marsGame, 3);
         }
     }
 }
