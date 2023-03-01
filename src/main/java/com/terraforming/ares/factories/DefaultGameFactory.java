@@ -10,6 +10,7 @@ import com.terraforming.ares.services.ShuffleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -33,7 +34,7 @@ public class DefaultGameFactory implements GameFactory {
 
         Planet mars = planetFactory.createMars(gameParameters);
 
-        List<Integer> dummyHand = null;
+        List<Integer> dummyHand = new ArrayList<>();
         if (gameParameters.isDummyHand()) {
             dummyHand = IntStream.rangeClosed(1, 5).boxed().collect(Collectors.toList());
             shuffleService.shuffle(dummyHand);
