@@ -29,15 +29,6 @@ public class TopographicMapping implements DiscoveryExpansionRedCard {
     }
 
     @Override
-    public TurnResponse buildProject(MarsContext marsContext) {
-        final Player player = marsContext.getPlayer();
-
-        player.setMcIncome(player.getMcIncome() + 3);
-
-        return null;
-    }
-
-    @Override
     public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> input) {
         List<Integer> tagInput = input.get(InputFlag.TAG_INPUT.getId());
         final Tag tag = Tag.byIndex(tagInput.get(0));
