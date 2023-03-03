@@ -35,11 +35,6 @@ public class AiPaymentService {
 
         int price = Math.max(0, card.getPrice() - discount);
 
-        if (!specialEffectsService.ownsSpecialEffect(player, SpecialEffect.RESTRUCTURED_RESOURCES)
-                && !player.getCardResourcesCount().containsKey(AnaerobicMicroorganisms.class)) {
-            return List.of(new MegacreditsPayment(price));
-        }
-
         boolean applyRestructuredResources = false;
 
         if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.RESTRUCTURED_RESOURCES)) {
