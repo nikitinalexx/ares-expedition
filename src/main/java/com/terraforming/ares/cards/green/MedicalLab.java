@@ -87,6 +87,13 @@ public class MedicalLab implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void revertCardIncome(MarsContext marsContext) {
+        final Player player = marsContext.getPlayer();
+        int buildingTagCount = marsContext.getCardService().countPlayedTags(player, Set.of(Tag.BUILDING));
+        player.setMcIncome(player.getMcIncome() - buildingTagCount / 2);
+    }
+
+    @Override
     public int getWinningPoints() {
         return 1;
     }

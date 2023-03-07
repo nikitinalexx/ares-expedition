@@ -46,6 +46,8 @@ public class MarsGame {
     private boolean dummyHandMode;
     private List<Integer> dummyHand;
     private List<Integer> usedDummyHand = new ArrayList<>();
+    private CrysisData crysisData;
+    private String stateReason;
 
 
     public MarsGame(MarsGame copy) {
@@ -138,7 +140,8 @@ public class MarsGame {
                     List<Boolean> computers,
                     List<Expansion> expansions,
                     boolean dummyHandMode,
-                    List<Integer> dummyHand) {
+                    List<Integer> dummyHand,
+                    Deck crysisCards) {
         this.projectsDeck = projectsDeck;
         this.corporationsDeck = corporationsDeck;
         this.planet = planet;
@@ -148,6 +151,10 @@ public class MarsGame {
         this.hasAi = (computers.stream().anyMatch(item -> item));
         this.dummyHandMode = dummyHandMode;
         this.dummyHand = new ArrayList<>(dummyHand);
+        if (expansions.contains(Expansion.CRYSIS)) {
+            this.crysisData = new CrysisData();
+            this.crysisData.setCrysisCards(crysisCards);
+        }
 
         List<Player> players = new ArrayList<>();
 
@@ -156,11 +163,12 @@ public class MarsGame {
                     Player.builder()
                             .uuid(UUID.randomUUID().toString() + i)
                             .name(playerNames.get(i))
-                            //.hand(Deck.builder().cards(new LinkedList<>(List.of(310, 312, 311, 313))).build())
+                            //.hand(Deck.builder().cards(new LinkedList<>(List.of(69))).build())
                             .hand(projectsDeck.dealCardsDeck(playerHandSize))
                             .corporations(corporationsDeck.dealCardsDeck(INITIAL_CORPORATIONS_SIZE))
                             //.corporations(Deck.builder().cards(new LinkedList<>(List.of(10206, 10005))).build())
                             .played(Deck.builder().build())
+                            //.heat(100)
                             .mulligan(mulligan)
                             .ai(computers.get(i))
                             .build()
@@ -198,14 +206,20 @@ public class MarsGame {
         projectsDeck.addCards(cards);
     }
 
-    public void setStateType(StateType stateType, CardService cardService) {
+    public void setStateType(StateType stateType, MarsContext context, String stateReason) {
+        this.stateReason = stateReason;
+        setStateType(stateType, context);
+    }
+
+    public void setStateType(StateType stateType, MarsContext context) {
+        final CardService cardService = context.getCardService();
+
         playerUuidToPlayer.values().forEach(Player::clearPhaseResults);
 
-        assignMilestones(cardService);
+        assignMilestones(context);
         if (stateType == StateType.GAME_END) {
             assignAwards(cardService);
         }
-
 
         this.stateType = stateType;
         switch (stateType) {
@@ -247,7 +261,8 @@ public class MarsGame {
         awards.forEach(award -> award.assignWinners(playerUuidToPlayer.values(), cardService));
     }
 
-    private void assignMilestones(CardService cardService) {
+    private void assignMilestones(MarsContext context) {
+        final CardService cardService = context.getCardService();
         milestones.stream()
                 .filter(milestone -> !milestone.isAchieved())
                 .forEach(milestone -> {
@@ -259,7 +274,7 @@ public class MarsGame {
                                 playerUuidToPlayer.values()
                                         .forEach(player -> {
                                             milestone.setValue(player, milestone.getValue(player, cardService));
-                                            player.getPlayed().getCards().stream().map(cardService::getCard).forEach(card -> card.onMilestoneGained(this, player, milestone));
+                                            player.getPlayed().getCards().stream().map(cardService::getCard).forEach(card -> card.onMilestoneGained(context, player, milestone));
                                         });
                             }
                         }
@@ -271,7 +286,7 @@ public class MarsGame {
     }
 
     public boolean timeToSave() {
-        return gameEndCondition() || this.updateCounter % 10 == 0;
+        return this.stateType == StateType.GAME_END || this.updateCounter % 10 == 0;
     }
 
     @JsonIgnore
@@ -299,7 +314,12 @@ public class MarsGame {
     }
 
     @JsonIgnore
+    public boolean isCrysis() {
+        return crysisData != null;
+    }
+
+    @JsonIgnore
     public boolean gameEndCondition() {
-        return planet.isOceansMax() && planet.isTemperatureMax() && planet.isOxygenMax();
+        return !isCrysis() && planet.isOceansMax() && planet.isTemperatureMax() && planet.isOxygenMax();
     }
 }

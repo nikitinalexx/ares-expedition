@@ -75,6 +75,13 @@ public class LightningHarvest implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void revertCardIncome(MarsContext marsContext) {
+        final Player player = marsContext.getPlayer();
+        int scienceTagCount = marsContext.getCardService().countPlayedTags(player, Set.of(Tag.SCIENCE));
+        player.setMcIncome(player.getMcIncome() - scienceTagCount);
+    }
+
+    @Override
     public int getWinningPoints() {
         return 1;
     }

@@ -7,6 +7,7 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.MarsContextProvider;
 import com.terraforming.ares.services.TerraformingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ import java.util.Set;
 public class VolcanicPoolsActionProcessor implements BlueActionCardProcessor<VolcanicPools> {
     private final TerraformingService terraformingService;
     private final CardService cardService;
+    private final MarsContextProvider contextProvider;
 
     @Override
     public Class<VolcanicPools> getType() {
@@ -36,7 +38,7 @@ public class VolcanicPoolsActionProcessor implements BlueActionCardProcessor<Vol
 
         player.setMc(player.getMc() - flipPrice);
 
-        terraformingService.revealOcean(game, player);
+        terraformingService.revealOcean(contextProvider.provide(game, player));
 
         return null;
     }

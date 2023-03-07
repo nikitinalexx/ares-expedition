@@ -6,6 +6,8 @@ import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.services.CardResourceService;
+import com.terraforming.ares.services.MarsContextProvider;
 import com.terraforming.ares.services.TerraformingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -21,6 +23,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class RegolithEatersActionProcessor implements BlueActionCardProcessor<RegolithEaters> {
     private final TerraformingService terraformingService;
+    private final MarsContextProvider marsContextProvider;
+    private final CardResourceService cardResourceService;
 
     @Override
     public Class<RegolithEaters> getType() {
@@ -32,11 +36,11 @@ public class RegolithEatersActionProcessor implements BlueActionCardProcessor<Re
         Integer input = inputParameters.get(InputFlag.ADD_DISCARD_MICROBE.getId()).get(0);
 
         if (input == 1) {
-            player.addResources(actionCard, 1);
+            cardResourceService.addResources(player, actionCard, 1);
         } else if (input == 2) {
-            player.addResources(actionCard, -2);
+            player.removeResources(actionCard, 2);
 
-            terraformingService.raiseOxygen(game, player);
+            terraformingService.raiseOxygen(marsContextProvider.provide(game, player));
         }
 
         return null;

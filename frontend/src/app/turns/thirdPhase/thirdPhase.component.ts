@@ -16,8 +16,9 @@ import {CardColor} from '../../data/CardColor';
 import {BuildGreenComponent} from '../greenProject/buildGreen.component';
 import {DiscardCardsTurn} from '../../data/DiscardCardsTurn';
 import {ScrollComponent} from '../../scroll/scroll.component';
-import {BuildBlueRedComponent} from "../blueRedProject/buildBlueRed.component";
-import {Tag} from "../../data/Tag";
+import {BuildBlueRedComponent} from '../blueRedProject/buildBlueRed.component';
+import {Tag} from '../../data/Tag';
+import {DiscardCardsRequest} from "../../data/DiscardCardsRequest";
 
 @Component({
   selector: 'app-third-phase',
@@ -119,6 +120,11 @@ export class ThirdPhaseComponent implements OnInit {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.UNMI_RT])?.length > 0;
   }
 
+  sellVpTurn(): boolean {
+    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.SELL_VP])?.length > 0
+      && this.game?.player.winPoints > 0;
+  }
+
   skipTurn(): boolean {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.SKIP_TURN])?.length > 0;
   }
@@ -137,6 +143,24 @@ export class ThirdPhaseComponent implements OnInit {
 
   increaseTemperatureTurn(): boolean {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.INCREASE_TEMPERATURE])?.length > 0;
+  }
+
+  plantsToCrisisTokenTurn(): boolean {
+    return this.nextTurns
+      && this.nextTurns.find(turn => turn === TurnType[TurnType.PLANTS_TO_CRISIS_TOKEN])?.length > 0
+      && this.game?.player.plants >= 4;
+  }
+
+  heatToCrisisTokenTurn(): boolean {
+    return this.nextTurns
+      && this.nextTurns.find(turn => turn === TurnType[TurnType.HEAT_TO_CRISIS_TOKEN])?.length > 0
+      && this.game?.player.heat >= 6;
+  }
+
+  cardsToCrisisTokenTurn(): boolean {
+    return this.nextTurns
+      && this.nextTurns.find(turn => turn === TurnType[TurnType.CARDS_TO_CRISIS_TOKEN])?.length > 0
+      && this.game?.player.hand.length >= 3;
   }
 
   standardProjectTurn(): boolean {
@@ -239,7 +263,8 @@ export class ThirdPhaseComponent implements OnInit {
     return this.selectedProject
       && (this.selectedProject.cardAction === CardAction.EXPERIMENTAL_TECHNOLOGY
         || this.selectedProject.cardAction === CardAction.VIRTUAL_EMPLOYEE_DEVELOPMENT
-        || this.selectedProject.cardAction === CardAction.FIBROUS_COMPOSITE_MATERIAL && this.parentForm.value?.addOrUseMicrobe === 'useMicrobe');
+        || this.selectedProject.cardAction === CardAction.FIBROUS_COMPOSITE_MATERIAL
+        && this.parentForm.value?.addOrUseMicrobe === 'useMicrobe');
   }
 
   getUpgradePhasesArray(): number[] {
@@ -479,6 +504,22 @@ export class ThirdPhaseComponent implements OnInit {
         this.gameRepository.increaseTemperature(this.game.player.playerUuid).subscribe(
           data => this.sendToParent(data)
         );
+      } else if (formGroup.value.turn === 'heatToCrisisToken') {
+        this.gameRepository.heatToCrisisToken(this.game.player.playerUuid).subscribe(
+          data => this.sendToParent(data)
+        );
+      } else if (formGroup.value.turn === 'cardsToCrisisToken') {
+        if (!this.projectsToDiscard || this.projectsToDiscard.length !== 3) {
+          this.errorMessage = 'Invalid number of cards to discard, 3 expected';
+        } else {
+          this.gameRepository.cardsToCrisisToken(new DiscardCardsRequest(this.game.player.playerUuid, this.projectsToDiscard)).subscribe(
+            data => this.sendToParent(data)
+          );
+        }
+      } else if (formGroup.value.turn === 'plantsToCrisisToken') {
+        this.gameRepository.plantsToCrisisToken(this.game.player.playerUuid).subscribe(
+          data => this.sendToParent(data)
+        );
       } else if (formGroup.value.turn === 'skipTurn') {
         this.gameRepository.skipTurn(this.game.player.playerUuid).subscribe(
           data => this.sendToParent(data), error => {
@@ -488,6 +529,13 @@ export class ThirdPhaseComponent implements OnInit {
       } else if (formGroup.value.turn === 'unmiRaiseRt') {
         this.gameRepository.raiseUnmiRt(this.game.player.playerUuid).subscribe(
           data => this.sendToParent(data)
+        );
+      } else if (formGroup.value.turn === 'sellVpTurn') {
+        this.gameRepository.sellVp(this.game.player.playerUuid).subscribe(
+          data => this.sendToParent(data),
+          error => {
+            this.errorMessage = error;
+          }
         );
       } else if (formGroup.value.turn === 'sellCards') {
         this.sellCardsService.sellCards(this.game, data => this.sendToParent(data));
@@ -657,6 +705,7 @@ export class ThirdPhaseComponent implements OnInit {
       }
       if (formGroup.value.turn !== 'plantForest'
         && formGroup.value.turn !== 'increaseTemperature'
+        && formGroup.value.turn !== 'plantsToCrisisToken'
         && formGroup.value.turn !== 'standardProject'
         && formGroup.value.turn !== 'blueAction'
         && formGroup.value.turn !== 'extraBlueAction') {

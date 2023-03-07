@@ -1,0 +1,40 @@
+<div class="bg-danger mt-2 p-2 text-center text-white"
+     *ngIf="errorMessage != null">
+  {{errorMessage}}
+</div>
+
+<form [formGroup]="parentForm">
+  <div class="radio-container">
+    <h1>Crisis Leaderboard</h1>
+    <input type="radio" formControlName="playerCount" (click)="clickPlayerCount(1)" value="1" id="p1">
+    <label for="p1">1 Player</label>
+    <input type="radio" formControlName="playerCount" (click)="clickPlayerCount(2)" value="2" id="p2">
+    <label for="p2">2 Players</label>
+    <input type="radio" formControlName="playerCount" (click)="clickPlayerCount(3)" value="3" id="p3">
+    <label for="p3">3 Players</label>
+    <input type="radio" formControlName="playerCount" (click)="clickPlayerCount(4)" value="4" id="p4">
+    <label for="p4">4 Players</label>
+  </div>
+</form>
+<table class="table table-dark">
+  <thead>
+  <tr>
+    <th>#</th>
+    <th class="board-link">LINK</th>
+    <th>VP</th>
+    <th>TR</th>
+    <th>TOTAL</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr *ngFor="let record of records; let i = index;">
+    <td>{{i + 1}}</td>
+    <td class="board-link"><a href="{{getPlayerLink(record.uuid)}}" class="text-warning" style="margin-left: 5px; font-weight: bold; font-size: 20px">{{record.playerName}}</a></td>
+    <td>{{record.victoryPoints}}</td>
+    <td>{{record.terraformingPoints}}</td>
+    <td>{{record.victoryPoints + record.terraformingPoints}}</td>
+  </tr>
+  </tbody>
+</table>
+
+<button type="button" class="btn btn-warning btn-lg back-button" routerLink="/">Main Menu</button>

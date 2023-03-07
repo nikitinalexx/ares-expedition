@@ -1,0 +1,175 @@
+/************** Style the Content ************/
+.name {
+  font-family: Prototype;
+  position: relative;
+  width: 240px;
+  height: 50px;
+  font-size: 18px;
+  line-height: 20px;
+  text-align: center;
+  margin-top: 25px;
+}
+
+.persistent {
+  font-family: Prototype;
+  position: absolute;
+  width: 100px;
+  height: 50px;
+  font-size: 9px;
+  line-height: 20px;
+  text-align: center;
+  top: 99px;
+  left: 8px;
+}
+
+.persistent-box {
+  font-family: Prototype;
+  position: absolute;
+  width: 134px;
+  height: 44px;
+  font-size: 9px;
+  line-height: 20px;
+  text-align: center;
+  top: 56px;
+  left: 28px;
+}
+
+.immediately {
+  font-family: Prototype;
+  position: absolute;
+  width: 100px;
+  height: 50px;
+  font-size: 9px;
+  line-height: 20px;
+  text-align: center;
+  top: 129px;
+  left: 8px;
+}
+
+.immediate-box {
+  font-family: Prototype;
+  position: absolute;
+  width: 165px;
+  height: 60px;
+  font-size: 10px;
+  text-align: center;
+  top: 145px;
+  left: 28px;
+}
+
+.immediate-box-long {
+  font-family: Prototype;
+  position: absolute;
+  width: 165px;
+  height: 60px;
+  font-size: 10px;
+  text-align: center;
+  top: 127px;
+  left: 28px;
+}
+
+.immediate-box-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: auto;
+  width: 100%;
+  text-align: center;
+}
+
+.goal {
+  font-family: Prototype;
+  position: absolute;
+  width: 100px;
+  height: 50px;
+  font-size: 10px;
+  line-height: 20px;
+  text-align: center;
+  top: 280px;
+  left: 7px;
+}
+
+.goal-box {
+  font-family: Prototype;
+  position: absolute;
+  width: 116px;
+  height: 44px;
+  font-size: 12px;
+  text-align: center;
+  top: 237px;
+  left: 36px;
+}
+
+.goal-text-box {
+  font-family: Prototype;
+  position: absolute;
+  width: 116px;
+  height: 45px;
+  font-size: 10px;
+  text-align: center;
+  line-height: 10px;
+  top: 220px;
+  left: 23px;
+}
+
+.counter-box {
+  font-family: Prototype;
+  position: absolute;
+  width: 34px;
+  height: 44px;
+  font-size: 35px;
+  line-height: 44px;
+  text-align: center;
+  top: 232px;
+  left: 169px;
+}
+
+.tier-box {
+  font-family: Prototype;
+  position: absolute;
+  width: 34px;
+  height: 16px;
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+  top: 288px;
+  left: 198px;
+}
+
+.white-arrow-tile {
+  background-image: url(../../../assets/images/misc/whiteArrow.png);
+  width: 30px;
+  background-size: 30px;
+
+  position: relative;
+  vertical-align: middle;
+  display: inline-block;
+  height: 30px;
+  margin-left: -10px;
+}
+
+.white-arrow-small-tile {
+  background-image: url(../../../assets/images/misc/whiteArrow.png);
+  width: 20px;
+  background-size: 20px;
+
+  position: relative;
+  vertical-align: middle;
+  display: inline-block;
+  height: 20px;
+  margin-left: -10px;
+}
+
+.oxygen-small {
+  background-image: url(../../../assets/images/global-parameters/oxygen.png);
+  width: 30px;
+  height: 30px;
+  background-size: 30px;
+}
+
+.ocean-small {
+  background-image: url(../../../assets/images/tiles/ocean.png);
+  width: 26px;
+  height: 30px;
+  background-size: 26px;
+}

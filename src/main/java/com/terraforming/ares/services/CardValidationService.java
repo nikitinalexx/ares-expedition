@@ -6,6 +6,8 @@ import com.terraforming.ares.model.parameters.ParameterColor;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.validation.action.ActionValidator;
 import com.terraforming.ares.validation.input.OnBuiltEffectValidator;
+import com.terraforming.ares.validation.input.crysis.ImmediateEffectValidator;
+import com.terraforming.ares.validation.input.crysis.PersistentEffectValidator;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -24,12 +26,16 @@ public class CardValidationService {
     private final SpecialEffectsService specialEffectsService;
     private final Map<Class<?>, ActionValidator<?>> blueActionValidators;
     private final Map<Class<?>, OnBuiltEffectValidator<?>> onBuiltEffectValidators;
+    private final Map<Class<?>, ImmediateEffectValidator<?>> crysisImmediateEffectValidators;
+    private final Map<Class<?>, PersistentEffectValidator<?>> crysisPersistentEffectValidators;
 
     public CardValidationService(CardService cardService,
                                  PaymentValidationService paymentValidationService,
                                  SpecialEffectsService specialEffectsService,
                                  List<ActionValidator<?>> validators,
-                                 List<OnBuiltEffectValidator<?>> onBuiltEffectValidators) {
+                                 List<OnBuiltEffectValidator<?>> onBuiltEffectValidators,
+                                 List<ImmediateEffectValidator<?>> immediateEffectValidators,
+                                 List<PersistentEffectValidator<?>> persistentEffectValidators) {
         this.cardService = cardService;
         this.paymentValidationService = paymentValidationService;
         this.specialEffectsService = specialEffectsService;
@@ -44,6 +50,20 @@ public class CardValidationService {
         this.onBuiltEffectValidators = onBuiltEffectValidators.stream().collect(
                 Collectors.toMap(
                         OnBuiltEffectValidator::getType,
+                        Function.identity()
+                )
+        );
+
+        this.crysisImmediateEffectValidators = immediateEffectValidators.stream().collect(
+                Collectors.toMap(
+                        ImmediateEffectValidator::getType,
+                        Function.identity()
+                )
+        );
+
+        this.crysisPersistentEffectValidators = persistentEffectValidators.stream().collect(
+                Collectors.toMap(
+                        PersistentEffectValidator::getType,
                         Function.identity()
                 )
         );
@@ -67,7 +87,7 @@ public class CardValidationService {
                 .or(() -> validateTemperature(game.getPlanetAtTheStartOfThePhase(), card, playerMayAmplifyGlobalRequirement || builtSpecialDesignLastTurn))
                 .or(() -> validateOceans(game.getPlanetAtTheStartOfThePhase(), card))
                 .or(() -> validateTags(player, card))
-                .or(() -> validatePayments(card, player, payments, inputParameters))
+                .or(() -> validatePayments(game, card, player, payments, inputParameters))
                 .or(() -> validateInputParameters(game, card, player, inputParameters))
                 .orElse(null);
     }
@@ -154,8 +174,8 @@ public class CardValidationService {
         }
     }
 
-    private Optional<String> validatePayments(Card card, Player player, List<Payment> payments, Map<Integer, List<Integer>> inputParameters) {
-        return Optional.ofNullable(paymentValidationService.validate(card, player, payments, inputParameters));
+    private Optional<String> validatePayments(MarsGame game, Card card, Player player, List<Payment> payments, Map<Integer, List<Integer>> inputParameters) {
+        return Optional.ofNullable(paymentValidationService.validate(game, card, player, payments, inputParameters));
     }
 
     private Optional<String> validateInputParameters(MarsGame game, Card card, Player player, Map<Integer, List<Integer>> inputParams) {
@@ -216,4 +236,15 @@ public class CardValidationService {
         return Optional.of("Project tag requirements not met");
     }
 
+    public String validateCrisisImmediateEffect(MarsGame game, Player player, Integer cardId, Map<Integer, List<Integer>> inputParams) {
+        final CrysisCard crysisCard = cardService.getCrysisCard(cardId);
+
+        return crysisImmediateEffectValidators.get(crysisCard.getClass()).validate(game, crysisCard, player, inputParams);
+    }
+
+    public String validateCrisisPersistentEffect(MarsGame game, Player player, Integer cardId, Map<Integer, List<Integer>> inputParams) {
+        final CrysisCard crysisCard = cardService.getCrysisCard(cardId);
+
+        return crysisPersistentEffectValidators.get(crysisCard.getClass()).validate(game, crysisCard, player, inputParams);
+    }
 }

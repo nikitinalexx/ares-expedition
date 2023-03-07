@@ -1,10 +1,10 @@
 package com.terraforming.ares.states;
 
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateContext;
 import com.terraforming.ares.model.turn.TurnType;
-import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.StateTransitionService;
 
 import java.util.List;
@@ -15,11 +15,12 @@ import java.util.List;
  */
 public class DraftCardsState extends AbstractState {
 
-    public DraftCardsState(MarsGame marsGame, CardService cardService, StateTransitionService stateTransitionService) {
-        super(marsGame, cardService, stateTransitionService);
+    public DraftCardsState(MarsContext context, StateTransitionService stateTransitionService) {
+        super(context, stateTransitionService);
     }
 
     public List<TurnType> getPossibleTurns(StateContext stateContext) {
+        final MarsGame marsGame = context.getGame();
         Player player = marsGame.getPlayerByUuid(stateContext.getPlayerUuid());
         if (player.getNextTurn() != null && player.getNextTurn().expectedAsNextTurn()) {
             return List.of(player.getNextTurn().getType());
@@ -30,6 +31,7 @@ public class DraftCardsState extends AbstractState {
 
     @Override
     public void updateState() {
+        final MarsGame marsGame = context.getGame();
         if (marsGame.getPlayerUuidToPlayer().values().stream().allMatch(
                 player -> player.getNextTurn() == null
         )) {

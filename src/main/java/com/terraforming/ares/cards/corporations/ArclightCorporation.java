@@ -58,7 +58,11 @@ public class ArclightCorporation implements CorporationCard {
     public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
         int affectedTagsCount = marsContext.getCardService().countCardTags(project, Set.of(Tag.ANIMAL, Tag.PLANT), inputParams);
 
-        marsContext.getPlayer().addResources(this, affectedTagsCount);
+        marsContext.getCardResourceService().addResources(
+                marsContext.getPlayer(),
+                this,
+                affectedTagsCount
+        );
     }
 
     @Override
@@ -66,7 +70,7 @@ public class ArclightCorporation implements CorporationCard {
         Player player = marsContext.getPlayer();
         player.setMc(43);
         player.initResources(this);
-        player.addResources(this, 2);
+        marsContext.getCardResourceService().addResources(player, this, 2);
         return null;
     }
 

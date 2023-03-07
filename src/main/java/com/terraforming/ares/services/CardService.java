@@ -1,13 +1,12 @@
 package com.terraforming.ares.services;
 
-import com.terraforming.ares.dto.CardDto;
-import com.terraforming.ares.dto.blueAction.AutoPickCardsAction;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -23,6 +22,16 @@ public class CardService {
     private final Map<Integer, Card> discoveryCorporations;
     private final Map<Integer, Card> buffedCorporations;
     private final Map<Integer, Card> buffedCorporationsMapping;
+    private final Set<Integer> crysisExcludedCards;
+    private final Map<Integer, CrysisCard> crysisCards;
+    private final Random random = new Random();
+
+    private final Set<Integer> crysisCardsTier1;
+    private final Set<Integer> crysisCardsTier2;
+    private final Set<Integer> crysisCardsTier3;
+    private final Set<Integer> crysisCardsTier4;
+    private final Set<Integer> crysisCardsTier5;
+
 
     public CardService(CardFactory cardFactory, ShuffleService shuffleService) {
         this.shuffleService = shuffleService;
@@ -31,16 +40,38 @@ public class CardService {
         discoveryCorporations = cardFactory.createDiscoveryCorporations();
         buffedCorporations = cardFactory.createBuffedCorporations();
         buffedCorporationsMapping = cardFactory.getBuffedCorporationsMapping();
+        crysisExcludedCards = cardFactory.getCrysisExcludedCards();
+        this.crysisCards = cardFactory.getCrysisCards().stream().collect(
+                Collectors.toMap(CrysisCard::getId, Function.identity())
+        );
+
+        this.crysisCardsTier1 = getCrysisCardsByTier(cardFactory, CardTier.T1);
+        this.crysisCardsTier2 = getCrysisCardsByTier(cardFactory, CardTier.T2);
+        this.crysisCardsTier3 = getCrysisCardsByTier(cardFactory, CardTier.T3);
+        this.crysisCardsTier4 = getCrysisCardsByTier(cardFactory, CardTier.T4);
+        this.crysisCardsTier5 = getCrysisCardsByTier(cardFactory, CardTier.T5);
+    }
+
+    private Set<Integer> getCrysisCardsByTier(CardFactory cardFactory, CardTier tier) {
+        return cardFactory.getCrysisCards()
+                .stream().filter(card -> card.tier() == tier)
+                .map(CrysisCard::getId).collect(Collectors.toSet());
     }
 
     public Deck createProjectsDeck(List<Expansion> expansions) {
-        return createAndShuffleDeck(expansions.stream()
+        Stream<Integer> cardIdsStream = expansions.stream()
                 .filter(projects::containsKey)
                 .map(projects::get)
-                .flatMap(cards -> cards.keySet().stream()));
+                .flatMap(cards -> cards.keySet().stream());
+
+        if (expansions.contains(Expansion.CRYSIS)) {
+            cardIdsStream = cardIdsStream
+                    .filter(cardId -> !crysisExcludedCards.contains(cardId));
+        }
+        return createAndShuffleDeck(cardIdsStream);
     }
 
-    public Deck createCorporationsDeck(List<Expansion> expansions) {
+    public Deck createCorporationsDeck(Set<Expansion> expansions) {
         Map<Integer, Card> corporations = new HashMap<>();
         if (expansions.contains(Expansion.BASE)) {
             corporations.putAll(this.baseCorporations);
@@ -54,9 +85,81 @@ public class CardService {
             corporations.putAll(this.discoveryCorporations);
         }
 
+        corporations = corporations.values()
+                .stream()
+                .filter(card -> card.isSupportedByExpansionSet(expansions))
+                .collect(Collectors.toMap(Card::getId, Function.identity()));
+
         return createAndShuffleDeck(
                 corporations.values().stream().map(Card::getId)
         );
+    }
+
+    public Deck createCrysisDeck(List<Expansion> expansions, int playerCount) {
+        if (!expansions.contains(Expansion.CRYSIS)) {
+            return Deck.builder().build();
+        }
+
+        LinkedList<Integer> crysisDeck = new LinkedList<>();
+
+        crysisDeck.addAll(prepareCrisisTier1Cards(playerCount));
+        crysisDeck.addAll(prepareCrisisTier2Cards(playerCount));
+        crysisDeck.addAll(prepareCrisisTier3Cards(playerCount));
+        crysisDeck.addAll(prepareCrisisTier4Cards(playerCount));
+        crysisDeck.addAll(prepareCrisisTier5Cards(playerCount));
+
+        return Deck.builder()
+                .cards(crysisDeck)
+                .build();
+    }
+
+    private List<Integer> prepareCrisisTier1Cards(int playerCount) {
+        final List<Integer> tier1CardsByPlayer = filterCrysisCardsByPlayerCount(crysisCardsTier1, playerCount);
+        removeRandomCards(tier1CardsByPlayer, 1);
+        shuffleService.shuffle(tier1CardsByPlayer);
+        return tier1CardsByPlayer;
+    }
+
+    private List<Integer> prepareCrisisTier2Cards(int playerCount) {
+        final List<Integer> tier2CardsByPlayer = filterCrysisCardsByPlayerCount(crysisCardsTier2, playerCount);
+        removeRandomCards(tier2CardsByPlayer, 2);
+        shuffleService.shuffle(tier2CardsByPlayer);
+        return tier2CardsByPlayer;
+    }
+
+    private List<Integer> prepareCrisisTier3Cards(int playerCount) {
+        final List<Integer> tier3CardsByPlayer = filterCrysisCardsByPlayerCount(crysisCardsTier3, playerCount);
+        removeRandomCards(tier3CardsByPlayer, 2);
+        shuffleService.shuffle(tier3CardsByPlayer);
+        return tier3CardsByPlayer;
+    }
+
+    private List<Integer> prepareCrisisTier4Cards(int playerCount) {
+        final List<Integer> tier4CardsByPlayer = filterCrysisCardsByPlayerCount(crysisCardsTier4, playerCount);
+        shuffleService.shuffle(tier4CardsByPlayer);
+        return tier4CardsByPlayer;
+    }
+
+    private List<Integer> prepareCrisisTier5Cards(int playerCount) {
+        final List<Integer> tier5CardsByPlayer = filterCrysisCardsByPlayerCount(crysisCardsTier5, playerCount);
+        shuffleService.shuffle(tier5CardsByPlayer);
+        return tier5CardsByPlayer;
+    }
+
+    private void removeRandomCards(List<Integer> cards, int count) {
+        if (cards.size() < count) {
+            throw new IllegalStateException("Unable to create a Crisis deck");
+        }
+        for (int i = 0; i < count; i++) {
+            cards.remove(random.nextInt(cards.size()));
+        }
+    }
+
+    private List<Integer> filterCrysisCardsByPlayerCount(Set<Integer> cards, int playerCount) {
+        return cards.stream().map(this::getCrysisCard)
+                .filter(card -> card.playerCount() == playerCount)
+                .map(CrysisCard::getId)
+                .collect(Collectors.toList());
     }
 
     private Deck createAndShuffleDeck(Stream<Integer> cards) {
@@ -89,15 +192,8 @@ public class CardService {
         return buffedCorporations.get(id);
     }
 
-    public AutoPickCardsAction dealCards(Deck deck, Player player) {
-        AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
-
-        for (Integer card : deck.getCards()) {
-            player.getHand().addCard(card);
-            resultBuilder.takenCard(CardDto.from(getCard(card)));
-        }
-
-        return resultBuilder.build();
+    public CrysisCard getCrysisCard(int id) {
+        return crysisCards.get(id);
     }
 
     public int countCardTagsWithDynamic(Card card, Player player, Set<Tag> tagsToCount) {

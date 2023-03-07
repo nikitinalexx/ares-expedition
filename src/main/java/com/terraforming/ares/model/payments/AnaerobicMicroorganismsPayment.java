@@ -43,7 +43,7 @@ public class AnaerobicMicroorganismsPayment implements Payment {
         if (resources == null || resources < 2) {
             throw new IllegalStateException("Invalid payment: Anaerobic Microorganisms < 2");
         }
-        player.addResources(card, -2);
+        player.removeResources(card, 2);
     }
 
 

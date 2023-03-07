@@ -7,6 +7,7 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.MarsContextProvider;
 import com.terraforming.ares.services.TerraformingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -22,6 +23,7 @@ import java.util.Set;
 public class ProgressivePoliciesActionProcessor implements BlueActionCardProcessor<ProgressivePolicies> {
     private final TerraformingService terraformingService;
     private final CardService cardService;
+    private final MarsContextProvider marsContextProvider;
 
     @Override
     public Class<ProgressivePolicies> getType() {
@@ -35,7 +37,7 @@ public class ProgressivePoliciesActionProcessor implements BlueActionCardProcess
 
         player.setMc(player.getMc() - price);
 
-        terraformingService.raiseOxygen(game, player);
+        terraformingService.raiseOxygen(marsContextProvider.provide(game, player));
 
         return null;
     }

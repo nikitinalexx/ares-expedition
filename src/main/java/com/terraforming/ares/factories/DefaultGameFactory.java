@@ -1,16 +1,14 @@
 package com.terraforming.ares.factories;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Constants;
-import com.terraforming.ares.model.Deck;
-import com.terraforming.ares.model.GameParameters;
-import com.terraforming.ares.model.Planet;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.ShuffleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -30,7 +28,8 @@ public class DefaultGameFactory implements GameFactory {
     @Override
     public MarsGame createMarsGame(GameParameters gameParameters) {
         Deck projectsDeck = cardService.createProjectsDeck(gameParameters.getExpansions());
-        Deck corporationsDeck = cardService.createCorporationsDeck(gameParameters.getExpansions());
+        Deck corporationsDeck = cardService.createCorporationsDeck(new HashSet<>(gameParameters.getExpansions()));
+        Deck crysisDeck = cardService.createCrysisDeck(gameParameters.getExpansions(), gameParameters.getPlayerNames().size());
 
         Planet mars = planetFactory.createMars(gameParameters);
 
@@ -40,6 +39,7 @@ public class DefaultGameFactory implements GameFactory {
             shuffleService.shuffle(dummyHand);
         }
 
+        final boolean isCrysisExpansion = gameParameters.getExpansions().contains(Expansion.CRYSIS);
         return new MarsGame(
                 gameParameters.getPlayerNames(),
                 Constants.DEFAULT_START_HAND_SIZE,
@@ -47,12 +47,13 @@ public class DefaultGameFactory implements GameFactory {
                 corporationsDeck,
                 mars,
                 gameParameters.isMulligan(),
-                achievementsFactory.createAwards(Constants.ACHIEVEMENTS_SIZE),
-                achievementsFactory.createMilestones(Constants.ACHIEVEMENTS_SIZE),
+                isCrysisExpansion ? List.of() : achievementsFactory.createAwards(Constants.ACHIEVEMENTS_SIZE),
+                isCrysisExpansion ? List.of() : achievementsFactory.createMilestones(Constants.ACHIEVEMENTS_SIZE),
                 gameParameters.getComputers(),
                 gameParameters.getExpansions(),
                 gameParameters.isDummyHand(),
-                dummyHand
+                dummyHand,
+                crysisDeck
         );
 
     }

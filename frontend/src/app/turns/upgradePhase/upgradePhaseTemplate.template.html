@@ -29,7 +29,7 @@
 <div class="card-container">
   <ul class="myUL">
     <li>
-      <app-phase-card-template [phase]="phaseInput + 1" [player]="game?.player"></app-phase-card-template>
+      <app-phase-card-template [phase]="(phaseInput + 1).toString()" [player]="game?.player"></app-phase-card-template>
     </li>
   </ul>
 </div>

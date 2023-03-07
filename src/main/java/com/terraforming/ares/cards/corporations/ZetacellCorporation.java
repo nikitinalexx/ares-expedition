@@ -48,7 +48,8 @@ public class ZetacellCorporation implements CorporationCard {
     }
 
     @Override
-    public void onOceanFlippedEffect(Player player) {
+    public void onOceanFlippedEffect(MarsContext context) {
+        final Player player = context.getPlayer();
         player.setMc(player.getMc() + 2);
         player.setPlants(player.getPlants() + 2);
     }

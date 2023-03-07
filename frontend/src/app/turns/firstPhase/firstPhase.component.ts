@@ -80,6 +80,11 @@ export class FirstPhaseComponent implements OnInit {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.UNMI_RT])?.length > 0;
   }
 
+  sellVpTurn(): boolean {
+    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.SELL_VP])?.length > 0
+      && this.game?.player.winPoints > 0;
+  }
+
   getDiscardCards(): Card[] {
     const nextTurn = this.game.player.nextTurn as DiscardCardsTurn;
     if (nextTurn.onlyFromSelectedCards) {
@@ -143,6 +148,13 @@ export class FirstPhaseComponent implements OnInit {
       } else if (formGroup.value.turn === 'unmiRaiseRt') {
         this.gameRepository.raiseUnmiRt(this.game.player.playerUuid).subscribe(
           data => this.sendToParent(data)
+        );
+      } else if (formGroup.value.turn === 'sellVpTurn') {
+        this.gameRepository.sellVp(this.game.player.playerUuid).subscribe(
+          data => this.sendToParent(data),
+          error => {
+            this.errorMessage = error;
+          }
         );
       } else if (formGroup.value.turn === 'skipTurn') {
         this.gameRepository.skipTurn(this.game.player.playerUuid).subscribe(

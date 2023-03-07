@@ -6,6 +6,7 @@ import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.services.CardResourceService;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -21,6 +22,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SymbioticFungudActionProcessor implements BlueActionCardProcessor<SymbioticFungus> {
     private final CardService cardService;
+    private final CardResourceService cardResourceService;
 
     @Override
     public Class<SymbioticFungus> getType() {
@@ -33,7 +35,7 @@ public class SymbioticFungudActionProcessor implements BlueActionCardProcessor<S
 
         Card projectCard = cardService.getCard(cardIdToPutMicrobeOn);
 
-        player.addResources(projectCard, 1);
+        cardResourceService.addResources(player, projectCard, 1);
 
         return null;
     }

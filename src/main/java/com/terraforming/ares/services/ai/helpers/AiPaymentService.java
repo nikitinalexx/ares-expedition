@@ -1,6 +1,7 @@
 package com.terraforming.ares.services.ai.helpers;
 
 import com.terraforming.ares.cards.blue.AnaerobicMicroorganisms;
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.BuildDto;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
@@ -30,8 +31,8 @@ public class AiPaymentService {
     private final DiscountService discountService;
     private final BuildService buildService;
 
-    public List<Payment> getCardPayments(Player player, Card card) {
-        int discount = discountService.getDiscount(card, player, Map.of());
+    public List<Payment> getCardPayments(MarsGame game, Player player, Card card) {
+        int discount = discountService.getDiscount(game, card, player, Map.of());
 
         int price = Math.max(0, card.getPrice() - discount);
 

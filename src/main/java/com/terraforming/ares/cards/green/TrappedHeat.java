@@ -50,7 +50,7 @@ public class TrappedHeat implements BaseExpansionGreenCard {
         TerraformingService terraformingService = marsContext.getTerraformingService();
 
         Player player = marsContext.getPlayer();
-        terraformingService.revealOcean(marsContext.getGame(), player);
+        terraformingService.revealOcean(marsContext);
 
         player.setHeatIncome(player.getHeatIncome() + 2);
 

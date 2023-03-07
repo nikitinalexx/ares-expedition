@@ -40,8 +40,8 @@ public class Fish implements BlueCard {
     }
 
     @Override
-    public void onOceanFlippedEffect(Player player) {
-        player.addResources(this, 1);
+    public void onOceanFlippedEffect(MarsContext context) {
+        context.getCardResourceService().addResources(context.getPlayer(), this, 1);
     }
 
     @Override

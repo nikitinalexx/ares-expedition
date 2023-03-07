@@ -3,6 +3,7 @@ import {Game} from '../../data/Game';
 import {GameRepository} from '../../model/gameRepository.model';
 import {ScrollComponent} from "../../scroll/scroll.component";
 import {PhaseConstants} from "../../data/PhaseConstants";
+import {DetrimentToken} from "../../data/DetrimentToken";
 
 @Component({
   selector: 'app-pick-phase',
@@ -23,18 +24,21 @@ export class PickPhaseComponent {
 
   }
 
-  getAllowedPhases(): number[] {
+  getAllowedPhases(): string[] {
     const result = [];
     for (let i = 1; i <= 5; i++) {
-      if (i !== this.game?.player.previousPhase) {
-        result.push(i);
+      if (i !== this.game?.player.previousPhase
+        && (!this.game.crysisDto
+          || Object.entries(this.game.crysisDto.forbiddenPhases).find(entry => entry[0] === this.game.player.playerUuid)?.[1] !== i)
+        && !(this.game.crysisDto?.detrimentTokens.some(token => token === DetrimentToken.OXYGEN_RED) && i === 1)) {
+        result.push(i.toString());
       }
     }
     return result;
   }
 
-  clickPhase(id: number) {
-    this.phaseInput = id;
+  clickPhase(id: string) {
+    this.phaseInput = parseInt(id, 10);
   }
 
   choosePhase(corporation: number) {
@@ -51,8 +55,8 @@ export class PickPhaseComponent {
     this.outputToParent.emit(data);
   }
 
-  isSelectedPhase(phaseId: number): boolean {
-    return this.phaseInput && phaseId === this.phaseInput;
+  isSelectedPhase(phaseId: string): boolean {
+    return this.phaseInput && parseInt(phaseId, 10) === this.phaseInput;
   }
 
   phaseDescription(phase: number) {

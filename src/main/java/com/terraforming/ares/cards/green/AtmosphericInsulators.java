@@ -73,6 +73,13 @@ public class AtmosphericInsulators implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void revertCardIncome(MarsContext marsContext) {
+        final Player player = marsContext.getPlayer();
+        int earthTagCount = marsContext.getCardService().countPlayedTags(player, Set.of(Tag.EARTH));
+        player.setHeatIncome(player.getHeatIncome() - earthTagCount);
+    }
+
+    @Override
     public List<Tag> getTags() {
         return List.of(Tag.SPACE, Tag.EARTH);
     }

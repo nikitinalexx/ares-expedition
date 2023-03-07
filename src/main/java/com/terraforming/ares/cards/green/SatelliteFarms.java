@@ -67,6 +67,13 @@ public class SatelliteFarms implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void revertCardIncome(MarsContext marsContext) {
+        final Player player = marsContext.getPlayer();
+        int spaceTagCount = marsContext.getCardService().countPlayedTags(player, Set.of(Tag.SPACE));
+        player.setHeatIncome(player.getHeatIncome() - spaceTagCount);
+    }
+
+    @Override
     public boolean onBuiltEffectApplicableToOther() {
         return true;
     }

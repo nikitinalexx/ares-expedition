@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Ocean {
+    //7-9 white, 4-6 yellow, 2-3 red, 0-1 purple
     private boolean revealed;
     private int cards;
     private int mc;
@@ -32,5 +33,9 @@ public class Ocean {
 
     public void reveal() {
         revealed = true;
+    }
+
+    public void hide() {
+        revealed = false;
     }
 }

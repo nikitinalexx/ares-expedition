@@ -46,8 +46,8 @@ public class TowingAComet implements BaseExpansionRedCard {
         Player player = marsContext.getPlayer();
         TerraformingService terraformingService = marsContext.getTerraformingService();
 
-        terraformingService.raiseOxygen(marsContext.getGame(), player);
-        terraformingService.revealOcean(marsContext.getGame(), player);
+        terraformingService.raiseOxygen(marsContext);
+        terraformingService.revealOcean(marsContext);
         player.setPlants(player.getPlants() + 2);
 
         return null;

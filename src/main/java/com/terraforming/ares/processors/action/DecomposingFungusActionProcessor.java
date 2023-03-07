@@ -6,6 +6,7 @@ import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.services.CardResourceService;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -21,6 +22,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class DecomposingFungusActionProcessor implements BlueActionCardProcessor<DecomposingFungus> {
     private final CardService cardService;
+    private final CardResourceService cardResourceService;
 
     @Override
     public Class<DecomposingFungus> getType() {
@@ -33,7 +35,7 @@ public class DecomposingFungusActionProcessor implements BlueActionCardProcessor
 
         Card project = cardService.getCard(cardIdToRemoveFrom);
 
-        player.addResources(project, -1);
+        player.removeResources(project, 1);
 
         player.setPlants(player.getPlants() + 3);
 

@@ -34,7 +34,7 @@ public class BiomedicalImports implements DiscoveryExpansionRedCard {
     public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> input) {
         List<Integer> raiseOxygenInput = input.get(InputFlag.BIOMEDICAL_IMPORTS_RAISE_OXYGEN.getId());
         if (!CollectionUtils.isEmpty(raiseOxygenInput)) {
-            marsContext.getTerraformingService().raiseOxygen(marsContext.getGame(), marsContext.getPlayer());
+            marsContext.getTerraformingService().raiseOxygen(marsContext);
             return;
         }
 

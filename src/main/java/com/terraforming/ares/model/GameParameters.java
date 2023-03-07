@@ -12,10 +12,15 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
+@Setter
 public class GameParameters {
     private List<String> playerNames;
     private List<Boolean> computers;
     private boolean mulligan;
     private List<Expansion> expansions;
     private boolean dummyHand;
+
+    public boolean isCrysis() {
+        return expansions.contains(Expansion.CRYSIS);
+    }
 }

@@ -3,7 +3,6 @@ package com.terraforming.ares.services;
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.mars.MarsGameDataset;
-import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.processors.turn.TurnProcessor;

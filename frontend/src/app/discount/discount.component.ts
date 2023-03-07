@@ -6,20 +6,22 @@ import {Tag} from '../data/Tag';
 import {CardColor} from '../data/CardColor';
 import {BuildType} from '../data/BuildType';
 import {Build} from '../data/Build';
+import {Game} from '../data/Game';
+import {DetrimentToken} from '../data/DetrimentToken';
 
 @Injectable()
 export class DiscountComponent {
   allTags = [Tag.SPACE, Tag.EARTH, Tag.EVENT, Tag.SCIENCE, Tag.PLANT,
     Tag.ENERGY, Tag.BUILDING, Tag.ANIMAL, Tag.JUPITER, Tag.MICROBE];
 
-  isDiscountApplicable(card: Card, player: Player, tagInput: number): boolean {
+  isDiscountApplicable(game: Game, card: Card, player: Player, tagInput: number): boolean {
     if (!player) {
       return false;
     }
-    return this.getDiscountWithOptimal(card, player, tagInput) > 0;
+    return this.getDiscountWithOptimal(game, card, player, tagInput) !== 0;
   }
 
-  getDiscount(card: Card, player: Player, tagInput: number): number {
+  getDiscount(game: Game, card: Card, player: Player, tagInput: number): number {
     let discount = 0;
 
     const ownsAdvancedAlloys = this.ownsSpecialEffect(player, SpecialEffect.ADVANCED_ALLOYS);
@@ -92,12 +94,20 @@ export class DiscountComponent {
       discount += 4;
     }
 
+    if (game?.crysisDto?.detrimentTokens?.some(token => token === DetrimentToken.TEMPERATURE_YELLOW)) {
+      discount -= 1;
+    }
+
+    if (game?.crysisDto?.detrimentTokens?.some(token => token === DetrimentToken.TEMPERATURE_RED)) {
+      discount -= 3;
+    }
+
     return Math.min(card.price, discount);
   }
 
 
-  getDiscountWithOptimal(card: Card, player: Player, tagInput: number): number {
-    let discount = this.getDiscount(card, player, tagInput);
+  getDiscountWithOptimal(game: Game, card: Card, player: Player, tagInput: number): number {
+    let discount = this.getDiscount(game, card, player, tagInput);
 
     const optimalBuild = this.getOptimalBuilding(card, player, discount);
 
@@ -110,6 +120,7 @@ export class DiscountComponent {
 
   getOptimalBuilding(card: Card, player: Player, discount: number): Build {
     let optimalBuild = null;
+    console.log(player.builds);
     for (const build of player.builds) {
       if ((build.priceLimit === 0 || build.priceLimit >= card.price)
         && (build.type === BuildType.GREEN_OR_BLUE

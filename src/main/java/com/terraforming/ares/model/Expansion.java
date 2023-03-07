@@ -7,5 +7,6 @@ package com.terraforming.ares.model;
 public enum Expansion {
     BASE,
     DISCOVERY,
-    BUFFED_CORPORATION
+    BUFFED_CORPORATION,
+    CRYSIS
 }

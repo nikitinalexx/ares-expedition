@@ -1,0 +1,58 @@
+<div class="bg-danger mt-2 p-2 text-center text-white"
+     *ngIf="errorMessage != null">
+  {{errorMessage}}
+</div>
+<form [formGroup]="parentForm" (submit)="submitForm(parentForm)" novalidate>
+  <div class="form-group col-6 mx-auto" style="margin-top: 100px; width: 800px">
+    <label for="choices" class="form-label bg-warning text-dark new-game-label text-big">Players (2-4 players will be here in a week)</label>
+
+    <div id="choices">
+      <div class="form-check form-check-inline bg-warning" style="border-radius: 5px;">
+        <label for="playerCount" class="form-label text-dark">1</label>
+        <input id="playerCount" type="radio" class="form-check-input" value="1" formControlName="playerCount">
+      </div>
+
+<!--      <div class="form-check form-check-inline bg-warning" style="border-radius: 5px;">-->
+<!--        <label for="playerCount2" class="form-label text-dark">2</label>-->
+<!--        <input id="playerCount2" type="radio" class="form-check-input" value="2" formControlName="playerCount">-->
+<!--      </div>-->
+
+<!--      <div class="form-check form-check-inline bg-warning" style="border-radius: 5px;">-->
+<!--        <label for="playerCount3" class="form-label text-dark">3</label>-->
+<!--        <input id="playerCount3" type="radio" class="form-check-input" value="3" formControlName="playerCount">-->
+<!--      </div>-->
+
+<!--      <div class="form-check form-check-inline bg-warning" style="border-radius: 5px;">-->
+<!--        <label for="playerCount4" class="form-label text-dark">4</label>-->
+<!--        <input id="playerCount4" type="radio" class="form-check-input" value="4" formControlName="playerCount">-->
+<!--      </div>-->
+    </div>
+
+
+    <div *ngFor="let item of getPlayerCountArray(); let i = index" style="margin-top: 15px;">
+      <label for="playerName" class="form-label p-1 mb-2 bg-warning text-dark"
+             style="border-radius: 5px;">Player {{item}} name</label>
+
+      <input type="text" class="form-control" id="playerName" [formControlName]="'playerName' + item">
+
+    </div>
+
+    <div style="display: flex; margin-top: 10px">
+      <button type="submit" class="btn btn-warning btn-lg">Create</button>
+      <button type="button" class="btn btn-warning btn-lg" style="margin-left: 10px"  routerLink="/">Back</button>
+
+      <div *ngIf="loading" style="margin-left: 20px; margin-top: 23px">
+        <div class="loading"></div>
+        <div class="text-white" style="margin-top: -8px; margin-left: 30px">Launching backend</div>
+      </div>
+    </div>
+
+  </div>
+
+</form>
+
+<div *ngIf="playersPresent()" class="d-grid gap-2 col-6 mx-auto" style="margin-top: 10px;">
+  <div *ngFor="let player of players" class="bg-warning">
+    <a href="{{getPlayerLink(player.uuid)}}" class="link-primary" style="margin-left: 5px;">{{player.name}}</a>
+  </div>
+</div>

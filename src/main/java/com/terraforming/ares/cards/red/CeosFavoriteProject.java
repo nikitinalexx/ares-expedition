@@ -53,7 +53,7 @@ public class CeosFavoriteProject implements BaseExpansionRedCard {
 
         Card targetCard = marsContext.getCardService().getCard(targetCardId);
 
-        marsContext.getPlayer().addResources(targetCard, 2);
+        marsContext.getCardResourceService().addResources(marsContext.getPlayer(), targetCard, 2);
     }
 
     @Override

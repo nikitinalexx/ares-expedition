@@ -228,13 +228,40 @@
   <div *ngIf="plantForestTurn()" class="form-check">
     <input id="plantForest" (click)="resetAllInputs()" type="radio" class="form-check-input" value="plantForest"
            formControlName="turn" [checked]="this.parentForm.value?.turn === 'plantForest'">
-    <label class="custom-control-label text-white" for="plantForest">Plant forest(required)</label>
+    <label class="custom-control-label text-white" for="plantForest">Plant forest<span *ngIf="!game.crysisDto">(required)</span></label>
   </div>
 
   <div *ngIf="increaseTemperatureTurn()" class="form-check">
     <input id="increaseTemperature" (click)="resetAllInputs()" type="radio" class="form-check-input" value="increaseTemperature"
            formControlName="turn" [checked]="this.parentForm.value?.turn === 'increaseTemperature'">
-    <label class="custom-control-label text-white" for="increaseTemperature">Increase temperature(required)</label>
+    <label class="custom-control-label text-white" for="increaseTemperature">Increase temperature<span *ngIf="!game.crysisDto">(required)</span></label>
+  </div>
+
+  <div *ngIf="plantsToCrisisTokenTurn()" class="form-check">
+    <input id="plantsToCrisisToken" (click)="resetAllInputs()" type="radio" class="form-check-input" value="plantsToCrisisToken"
+           formControlName="turn" [checked]="this.parentForm.value?.turn === 'plantsToCrisisToken'">
+    <label class="custom-control-label text-white" for="plantsToCrisisToken">Spend 4 plants and remove Crisis token</label>
+  </div>
+
+  <div *ngIf="heatToCrisisTokenTurn()" class="form-check">
+    <input id="heatToCrisisToken" (click)="resetAllInputs()" type="radio" class="form-check-input" value="heatToCrisisToken"
+           formControlName="turn" [checked]="this.parentForm.value?.turn === 'heatToCrisisToken'">
+    <label class="custom-control-label text-white" for="heatToCrisisToken">Spend 6 heat and remove Crisis token</label>
+  </div>
+
+  <div *ngIf="cardsToCrisisTokenTurn()" class="form-check">
+    <input id="cardsToCrisisToken" (click)="resetAllInputs()" type="radio" class="form-check-input" value="cardsToCrisisToken"
+           formControlName="turn" [checked]="this.parentForm.value?.turn === 'cardsToCrisisToken'">
+    <label class="custom-control-label text-white" for="cardsToCrisisToken">Discard 3 Cards and remove Crisis token</label>
+
+    <div *ngIf="parentForm.value?.turn === 'cardsToCrisisToken'" class="card-container">
+      <ul class="myUL">
+        <li *ngFor="let card of getPlayerHand();" (click)="clickProjectToDiscard(card)"
+            [ngClass]="selectedProjectToDiscardClass(card)" class="filterDiv automated display">
+          <app-card-template [card]="card" [player]="game?.player"></app-card-template>
+        </li>
+      </ul>
+    </div>
   </div>
 
   <div *ngIf="standardProjectTurn()" class="form-check">
@@ -288,6 +315,12 @@
     <input id="unmiRtTurn" (click)="resetAllInputs()" type="radio" class="form-check-input" value="unmiRaiseRt"
            formControlName="turn">
     <label class="custom-control-label text-white" for="unmiRtTurn">UNMI raise RT (6MC)</label>
+  </div>
+
+  <div *ngIf="sellVpTurn()" class="form-check">
+    <input id="sellVpTurn" (click)="resetAllInputs()" type="radio" class="form-check-input" value="sellVpTurn"
+           formControlName="turn">
+    <label class="custom-control-label text-white" for="sellVpTurn">Sell 1 VP for 5 MC</label>
   </div>
 
   <div *ngIf="skipTurn()" class="form-check">

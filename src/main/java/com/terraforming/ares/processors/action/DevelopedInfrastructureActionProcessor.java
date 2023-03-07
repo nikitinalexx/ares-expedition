@@ -7,6 +7,7 @@ import com.terraforming.ares.model.CardColor;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.MarsContextProvider;
 import com.terraforming.ares.services.TerraformingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 public class DevelopedInfrastructureActionProcessor implements BlueActionCardProcessor<DevelopedInfrastructure> {
     private final CardService cardService;
     private final TerraformingService terraformingService;
+    private final MarsContextProvider marsContextProvider;
 
     @Override
     public Class<DevelopedInfrastructure> getType() {
@@ -37,7 +39,7 @@ public class DevelopedInfrastructureActionProcessor implements BlueActionCardPro
 
         player.setMc(player.getMc() - (10 - ((minFiveBlueCards == 5) ? 5 : 0)));
 
-        terraformingService.increaseTemperature(game, player);
+        terraformingService.increaseTemperature(marsContextProvider.provide(game, player));
 
         return null;
     }

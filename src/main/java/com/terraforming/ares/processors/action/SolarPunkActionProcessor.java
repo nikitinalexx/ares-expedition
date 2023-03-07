@@ -5,6 +5,7 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.services.MarsContextProvider;
 import com.terraforming.ares.services.TerraformingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class SolarPunkActionProcessor implements BlueActionCardProcessor<SolarPunk> {
     private final TerraformingService terraformingService;
+    private final MarsContextProvider marsContextProvider;
 
     @Override
     public Class<SolarPunk> getType() {
@@ -29,7 +31,7 @@ public class SolarPunkActionProcessor implements BlueActionCardProcessor<SolarPu
 
         player.setMc(player.getMc() - forestPrice);
 
-        terraformingService.buildForest(game, player);
+        terraformingService.buildForest(marsContextProvider.provide(game, player));
 
         return null;
     }

@@ -48,7 +48,7 @@ public class CryogenicShipment implements DiscoveryExpansionRedCard {
                 resourcedToAdd = 3;
             }
 
-            player.addResources(inputCard, resourcedToAdd);
+            marsContext.getCardResourceService().addResources(player, inputCard, resourcedToAdd);
         }
 
         List<Integer> cardInput = input.get(InputFlag.PHASE_UPGRADE_CARD.getId());

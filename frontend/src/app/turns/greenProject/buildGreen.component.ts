@@ -13,7 +13,7 @@ import {CardAction} from '../../data/CardAction';
 import {Tag} from '../../data/Tag';
 import {InputFlag} from '../../data/InputFlag';
 import {RequirementsComponent} from '../../requirements/requirements.component';
-import {BuildType} from "../../data/BuildType";
+import {BuildType} from '../../data/BuildType';
 
 @Component({
   selector: 'app-build-green',
@@ -206,7 +206,11 @@ export class BuildGreenComponent implements OnInit {
     console.log(this.expectsTagInput() ? this.tagInput : -1);
     if (this.selectedProject) {
       return this.selectedProject.price
-        - this.discountService.getDiscountWithOptimal(this.selectedProject, this.game?.player, this.expectsTagInput() ? this.tagInput : -1);
+        - this.discountService.getDiscountWithOptimal(
+          this.game,
+          this.selectedProject,
+          this.game?.player,
+          this.expectsTagInput() ? this.tagInput : -1);
     } else {
       return 0;
     }

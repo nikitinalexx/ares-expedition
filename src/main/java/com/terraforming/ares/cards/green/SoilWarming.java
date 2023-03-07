@@ -49,7 +49,7 @@ public class SoilWarming implements BaseExpansionGreenCard {
     public TurnResponse buildProject(MarsContext marsContext) {
         TerraformingService terraformingService = marsContext.getTerraformingService();
 
-        terraformingService.increaseTemperature(marsContext.getGame(), marsContext.getPlayer());
+        terraformingService.increaseTemperature(marsContext);
 
         Player player = marsContext.getPlayer();
 

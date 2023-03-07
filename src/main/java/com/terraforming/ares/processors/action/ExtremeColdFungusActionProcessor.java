@@ -6,6 +6,7 @@ import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.services.CardResourceService;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -22,6 +23,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ExtremeColdFungusActionProcessor implements BlueActionCardProcessor<ExtremeColdFungus> {
     private final CardService cardService;
+    private final CardResourceService cardResourceService;
 
     @Override
     public Class<ExtremeColdFungus> getType() {
@@ -37,7 +39,7 @@ public class ExtremeColdFungusActionProcessor implements BlueActionCardProcessor
 
             Card cardToAddTo = cardService.getCard(cardToAddToId);
 
-            player.addResources(cardToAddTo, 1);
+            cardResourceService.addResources(player, cardToAddTo, 1);
         }
 
         return null;

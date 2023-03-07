@@ -54,7 +54,7 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
                 {
                     String errorMessage = cardValidationService.validateCard(
                             player, game, card.getId(),
-                            aiPaymentHelper.getCardPayments(player, card),
+                            aiPaymentHelper.getCardPayments(game, player, card),
                             aiCardParamsHelper.getInputParamsForValidation(player, card)
                     );
                     return errorMessage == null;
@@ -110,7 +110,7 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
                     game,
                     player,
                     selectedCard.getId(),
-                    aiPaymentHelper.getCardPayments(player, selectedCard),
+                    aiPaymentHelper.getCardPayments(game, player, selectedCard),
                     aiCardParamsHelper.getInputParamsForBuild(player, selectedCard)
             );
         }

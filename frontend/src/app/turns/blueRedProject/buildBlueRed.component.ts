@@ -265,7 +265,11 @@ export class BuildBlueRedComponent implements OnInit {
   getDiscountedMcPriceOfSelectedProject(): number {
     if (this.selectedProject) {
       return this.selectedProject.price -
-        this.discountService.getDiscountWithOptimal(this.selectedProject, this.game?.player, this.expectsTagInput() ? this.tagInput : -1);
+        this.discountService.getDiscountWithOptimal(
+          this.game,
+          this.selectedProject,
+          this.game?.player,
+          this.expectsTagInput() ? this.tagInput : -1);
     } else {
       return 0;
     }

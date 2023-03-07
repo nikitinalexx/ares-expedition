@@ -63,6 +63,11 @@ public class PlayController {
         turnService.sellCards(sellCardsRequest.getPlayerUuid(), sellCardsRequest.getCards());
     }
 
+    @PostMapping("/game/player/sell-vp")
+    public void sellVp(@RequestBody PlayerRequest playerRequest) {
+        turnService.sellVp(playerRequest.getPlayer());
+    }
+
     @PostMapping("/game/player/mulligan")
     public void mulliganCards(@RequestBody CardsRequest mulliganCardsRequest) {
         turnService.mulliganCards(mulliganCardsRequest.getPlayerUuid(), mulliganCardsRequest.getCards());
@@ -141,6 +146,21 @@ public class PlayController {
         turnService.increaseTemperature(playerUuidRequest.getPlayer());
     }
 
+    @PostMapping("/turn/plants-crisis-token")
+    public void plantsIntoCrisisToken(@RequestBody PlayerRequest playerUuidRequest) {
+        turnService.plantsIntoCrisisToken(playerUuidRequest.getPlayer());
+    }
+
+    @PostMapping("/turn/heat-crisis-token")
+    public void heatIntoCrisisToken(@RequestBody PlayerRequest playerUuidRequest) {
+        turnService.heatIntoCrisisToken(playerUuidRequest.getPlayer());
+    }
+
+    @PostMapping("/turn/cards-crisis-token")
+    public void cardsIntoCrisisToken(@RequestBody DiscardCardsRequest cardsRequest) {
+        turnService.cardsIntoCrisisToken(cardsRequest);
+    }
+
     @PostMapping("/turn/standard")
     public void standardProject(@RequestBody StandardProjectRequest request) {
         turnService.standardProjectTurn(request.getPlayerUuid(), request.getType());
@@ -149,6 +169,41 @@ public class PlayController {
     @PostMapping("/turn/heat-exchange")
     public void exchangeHeatRequest(@RequestBody ExchangeHeatRequest request) {
         turnService.exchangeHeatRequest(request.getPlayerUuid(), request.getValue());
+    }
+
+    @PostMapping("/turn/crysis-immediate-choice")
+    public void crysisImmediateChoiceRequest(@RequestBody CrysisChoiceRequest crysisImmediateChoiceRequest) {
+        turnService.crysisImmediateChoiceTurn(crysisImmediateChoiceRequest);
+    }
+
+    @PostMapping("/turn/crysis-persistent-choice")
+    public void crysisPersistentChoiceRequest(@RequestBody CrysisChoiceRequest crysisPersistentChoiceRequest) {
+        turnService.crysisPersistentChoiceTurn(crysisPersistentChoiceRequest);
+    }
+
+    @PostMapping("/turn/crysis-persistent-all")
+    public void crysisPersistentAllTurn(@RequestBody PlayerRequest playerUuidRequest) {
+        turnService.crysisPersistentAllTurn(playerUuidRequest.getPlayer());
+    }
+
+    @PostMapping("/turn/crysis-immediate-all")
+    public void crysisImmediateAllTurn(@RequestBody PlayerRequest playerUuidRequest) {
+        turnService.crysisImmediateAllTurn(playerUuidRequest.getPlayer());
+    }
+
+    @PostMapping("/turn/crisis-dummy-choice")
+    public void crysisDummyHandChoiceTurn(@RequestBody CrisisDummyHandChoiceRequest request) {
+        turnService.crysisDummyHandChoiceTurn(request);
+    }
+
+    @PostMapping("/turn/crisis-vp-to-token")
+    public void crisisVpToTokenTurn(@RequestBody CardsRequest sellCardsRequest) {
+        turnService.crisisVpToTokenTurn(sellCardsRequest.getPlayerUuid(), sellCardsRequest.getCards());
+    }
+
+    @PostMapping("/turn/resolve-ocean-detriment")
+    public void resolveOceanDetrimentTurn(@RequestBody CrysisChoiceRequest request) {
+        turnService.resolveOceanDetrimentTurn(request);
     }
 
 }

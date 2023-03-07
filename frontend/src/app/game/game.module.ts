@@ -18,18 +18,19 @@ import {BuildGreenComponent} from '../turns/greenProject/buildGreen.component';
 import {ScrollComponent} from '../scroll/scroll.component';
 import {UpgradePhaseTemplateComponent} from '../turns/upgradePhase/upgradePhaseTemplate.template';
 import {BuildBlueRedComponent} from '../turns/blueRedProject/buildBlueRed.component';
+import {CrysisTurnComponent} from '../turns/crysisTurn/crysisTurn.component';
 
 @NgModule({
   imports: [BrowserModule, ModelModule, ReactiveFormsModule, FormsModule, CardServiceModule],
   declarations: [GameComponent, PickCorporationComponent, PickPhaseComponent,
     FirstPhaseComponent, SecondPhaseComponent, SellCardsComponent, FourthPhaseComponent,
     ThirdPhaseComponent, FifthPhaseComponent, EndRoundComponent, NavbarComponent, BuildGreenComponent,
-    BuildBlueRedComponent, UpgradePhaseTemplateComponent
+    BuildBlueRedComponent, UpgradePhaseTemplateComponent, CrysisTurnComponent
   ],
   exports: [GameComponent, PickCorporationComponent, PickPhaseComponent, ThirdPhaseComponent,
     FirstPhaseComponent, SecondPhaseComponent, SellCardsComponent, FourthPhaseComponent,
     FifthPhaseComponent, EndRoundComponent, NavbarComponent, BuildGreenComponent,
-    BuildBlueRedComponent, UpgradePhaseTemplateComponent
+    BuildBlueRedComponent, UpgradePhaseTemplateComponent, CrysisTurnComponent
   ],
   providers: [SellCardsComponent, ScrollComponent]
 })

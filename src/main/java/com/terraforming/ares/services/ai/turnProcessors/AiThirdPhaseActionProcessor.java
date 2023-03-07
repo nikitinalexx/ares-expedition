@@ -180,7 +180,7 @@ public class AiThirdPhaseActionProcessor {
                     {
                         String errorMessage = cardValidationService.validateCard(
                                 player, game, card.getId(),
-                                aiPaymentHelper.getCardPayments(player, card),
+                                aiPaymentHelper.getCardPayments(game, player, card),
                                 aiCardBuildParamsHelper.getInputParamsForValidation(player, card)
                         );
                         return errorMessage == null;
@@ -190,7 +190,7 @@ public class AiThirdPhaseActionProcessor {
             if (!availableCards.isEmpty()) {
                 final Card cardToBuild = availableCards.get(random.nextInt(availableCards.size()));
                 aiTurnService.buildProject(
-                        game, player, cardToBuild.getId(), aiPaymentHelper.getCardPayments(player, cardToBuild),
+                        game, player, cardToBuild.getId(), aiPaymentHelper.getCardPayments(game, player, cardToBuild),
                         aiCardBuildParamsHelper.getInputParamsForBuild(player, cardToBuild)
                 );
                 return true;

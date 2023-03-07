@@ -101,7 +101,7 @@ public class GameProcessorService extends BaseProcessorService {
     private Function<MarsGame, TurnResponse> getSyncGameUpdate(Turn turn) {
         return game -> {
             Player player = game.getPlayerByUuid(turn.getPlayerUuid());
-            if (player.getNextTurn() != null && player.getNextTurn().expectedAsNextTurn()) {
+            if (player.getNextTurn() != null && player.getNextTurn().expectedAsNextTurn() && player.getNextTurn().getType() == turn.getType()) {
                 player.removeNextTurn();
             }
 

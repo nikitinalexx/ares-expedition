@@ -89,6 +89,13 @@ public class Laboratories implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void revertCardIncome(MarsContext marsContext) {
+        final Player player = marsContext.getPlayer();
+        int scienceTagCount = marsContext.getCardService().countPlayedTags(player, Set.of(Tag.SCIENCE));
+        player.setCardIncome(player.getCardIncome() - scienceTagCount / 3);
+    }
+
+    @Override
     public boolean onBuiltEffectApplicableToOther() {
         return true;
     }

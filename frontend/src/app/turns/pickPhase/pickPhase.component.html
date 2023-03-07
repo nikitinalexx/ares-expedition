@@ -9,7 +9,7 @@
   <ul class="myUL">
 
     <li *ngFor="let phaseId of getAllowedPhases();" (click)="clickPhase(phaseId)">
-      <app-phase-card-template [phase]="phaseId" [player]="game?.player" [selected]="isSelectedPhase(phaseId)"></app-phase-card-template>
+      <app-phase-card-template [phase]="phaseId" [player]="game?.player" [game]="game" [selected]="isSelectedPhase(phaseId)"></app-phase-card-template>
     </li>
 
   </ul>

@@ -6,6 +6,7 @@ import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.services.CardResourceService;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -21,6 +22,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ConservedBiomeActionProcessor implements BlueActionCardProcessor<ConservedBiome> {
     private final CardService cardService;
+    private final CardResourceService cardResourceService;
 
     @Override
     public Class<ConservedBiome> getType() {
@@ -32,7 +34,7 @@ public class ConservedBiomeActionProcessor implements BlueActionCardProcessor<Co
         Integer cardIdToAddTo = inputParameters.get(InputFlag.CARD_CHOICE.getId()).get(0);
 
         Card project = cardService.getCard(cardIdToAddTo);
-        player.addResources(project, 1);
+        cardResourceService.addResources(player, project, 1);
 
         return null;
     }

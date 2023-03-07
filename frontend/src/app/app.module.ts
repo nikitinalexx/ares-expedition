@@ -14,13 +14,20 @@ import {GameComponent} from './game/game.component';
 import {GameModule} from './game/game.module';
 import {LobbyModule} from './lobby/lobby.module';
 import {LobbyComponent} from './lobby/lobby.component';
+import {NewGameCrysisComponent} from './newGameCrysis/newGameCrysis.component';
+import {NewGameCrysisModule} from './newGameCrysis/newGameCrysis.module';
+import {CrisisLeaderboardComponent} from "./crisisLeaderboard/crisisLeaderboard.component";
+import {CrisisLeaderboardModule} from "./crisisLeaderboard/crisisLeaderboard.module";
 
 @NgModule({
   imports: [
-    BrowserModule, CardServiceModule, NewGameModule, LobbyModule, IndexModule, GameModule,
+    BrowserModule, CardServiceModule, NewGameModule, NewGameCrysisModule, CrisisLeaderboardModule,
+    LobbyModule, IndexModule, GameModule,
     RouterModule.forRoot([
       {path: 'cards', component: CardServiceComponent},
       {path: 'new', component: NewGameComponent},
+      {path: 'newcrisis', component: NewGameCrysisComponent},
+      {path: 'leaderboard', component: CrisisLeaderboardComponent},
       {path: 'index', component: IndexComponent},
       {path: 'lobby', component: LobbyComponent},
       {path: 'game/:playerUuid', component: GameComponent},

@@ -39,7 +39,7 @@ public class AtmosphereFiltering implements BaseExpansionRedCard {
     public TurnResponse buildProject(MarsContext marsContext) {
         marsContext
                 .getTerraformingService()
-                .raiseOxygen(marsContext.getGame(), marsContext.getPlayer());
+                .raiseOxygen(marsContext);
         return null;
     }
 

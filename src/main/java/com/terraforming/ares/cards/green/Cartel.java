@@ -68,6 +68,13 @@ public class Cartel implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void revertCardIncome(MarsContext marsContext) {
+        final Player player = marsContext.getPlayer();
+        int earthTagCount = marsContext.getCardService().countPlayedTags(player, Set.of(Tag.EARTH));
+        player.setMcIncome(player.getMcIncome() - earthTagCount);
+    }
+
+    @Override
     public boolean onBuiltEffectApplicableToOther() {
         return true;
     }

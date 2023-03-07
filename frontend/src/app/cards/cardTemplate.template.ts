@@ -11,6 +11,7 @@ import {BasePlayer} from '../data/BasePlayer';
 import {Player} from '../data/Player';
 import {Expansion} from '../data/Expansion';
 import {Tag} from '../data/Tag';
+import {Game} from "../data/Game";
 
 @Component({
   selector: 'app-card-template',
@@ -22,6 +23,8 @@ export class CardTemplateComponent {
   card: Card;
   @Input()
   player: BasePlayer;
+  @Input()
+  game: Game;
   @Input()
   showDiscount: boolean;
   @Input()
@@ -36,11 +39,11 @@ export class CardTemplateComponent {
     if (!this.showDiscount) {
       return false;
     }
-    return this.discountService.isDiscountApplicable(card, this.player as Player, this.tagInput);
+    return this.discountService.isDiscountApplicable(this.game, card, this.player as Player, this.tagInput);
   }
 
   getDiscount(card: Card): number {
-    return this.discountService.getDiscountWithOptimal(card, this.player as Player, this.tagInput);
+    return this.discountService.getDiscountWithOptimal(this.game, card, this.player as Player, this.tagInput);
   }
 
   getTagClasses(card: Card, tagNumber: number): string {

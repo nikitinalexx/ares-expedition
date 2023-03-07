@@ -1,14 +1,15 @@
 package com.terraforming.ares.cards.corporations;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.cards.green.PoliticalInfluence;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.milestones.Milestone;
 import lombok.Getter;
+import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -45,7 +46,8 @@ public class AustellarCorporation implements CorporationCard {
     }
 
     @Override
-    public void onMilestoneGained(MarsGame game, Player player, Milestone milestone) {
+    public void onMilestoneGained(MarsContext context, Player player, Milestone milestone) {
+        final MarsGame game = context.getGame();
         if (game.getMilestones().get(player.getAustellarMilestone()) == milestone) {
             player.setTerraformingRating(player.getTerraformingRating() + 3);
         }
@@ -83,4 +85,8 @@ public class AustellarCorporation implements CorporationCard {
         return 42;
     }
 
+    @Override
+    public boolean isSupportedByExpansionSet(Set<Expansion> expansions) {
+        return CollectionUtils.isEmpty(expansions) || !expansions.contains(Expansion.CRYSIS);
+    }
 }

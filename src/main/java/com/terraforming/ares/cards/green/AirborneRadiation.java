@@ -51,7 +51,7 @@ public class AirborneRadiation implements BaseExpansionGreenCard {
         TerraformingService terraformingService = marsContext.getTerraformingService();
         Player player = marsContext.getPlayer();
 
-        terraformingService.raiseOxygen(marsContext.getGame(), player);
+        terraformingService.raiseOxygen(marsContext);
         player.setHeatIncome(player.getHeatIncome() + 2);
 
         return null;

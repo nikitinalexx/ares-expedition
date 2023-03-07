@@ -38,7 +38,7 @@ public class Mangrove implements BaseExpansionRedCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        marsContext.getTerraformingService().buildForest(marsContext.getGame(), marsContext.getPlayer());
+        marsContext.getTerraformingService().buildForest(marsContext);
 
         return null;
     }

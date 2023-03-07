@@ -8,6 +8,8 @@ public class Constants {
     public static final int MAX_OCEANS = 9;
     public static final int STARTING_RT = 5;
     public static final int TEMPERATURE_HEAT_COST = 8;
+    public static final int CRISIS_TOKEN_PLANTS_COST = 4;
+    public static final int CRISIS_TOKEN_HEAT_COST = 6;
     public static final int FOREST_PLANT_COST = 8;
 
     public static final int FOREST_MC_COST = 20;

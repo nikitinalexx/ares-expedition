@@ -6,9 +6,11 @@ import com.terraforming.ares.model.turn.PerformBlueActionTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.processors.action.BlueActionCardProcessor;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.CrysisService;
 import com.terraforming.ares.services.SpecialEffectsService;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -20,13 +22,18 @@ import java.util.stream.Collectors;
  */
 @Service
 public class BlueActionProcessor implements TurnProcessor<PerformBlueActionTurn> {
-    private final CardService deckService;
+    private final CardService cardService;
     private final SpecialEffectsService specialEffectsService;
+    private final CrysisService crysisService;
     private final Map<Class<?>, BlueActionCardProcessor<?>> blueActionProcessors;
 
-    public BlueActionProcessor(CardService deckService, SpecialEffectsService specialEffectsService, List<BlueActionCardProcessor<?>> processors) {
-        this.deckService = deckService;
+    public BlueActionProcessor(CardService cardService,
+                               SpecialEffectsService specialEffectsService,
+                               CrysisService crysisService,
+                               List<BlueActionCardProcessor<?>> processors) {
+        this.cardService = cardService;
         this.specialEffectsService = specialEffectsService;
+        this.crysisService = crysisService;
 
         blueActionProcessors = processors.stream().collect(
                 Collectors.toMap(
@@ -41,7 +48,7 @@ public class BlueActionProcessor implements TurnProcessor<PerformBlueActionTurn>
     public TurnResponse processTurn(PerformBlueActionTurn turn, MarsGame game) {
         Player player = game.getPlayerUuidToPlayer().get(turn.getPlayerUuid());
 
-        Card projectCard = deckService.getCard(turn.getProjectId());
+        Card projectCard = cardService.getCard(turn.getProjectId());
 
         BlueActionCardProcessor<ProjectCard> blueActionCardProcessor = (BlueActionCardProcessor<ProjectCard>) blueActionProcessors.get(projectCard.getClass());
 
@@ -54,6 +61,14 @@ public class BlueActionProcessor implements TurnProcessor<PerformBlueActionTurn>
             player.setBlueActionExtraActivationsLeft(player.getBlueActionExtraActivationsLeft() - 1);
         } else {
             player.getActivatedBlueCards().addCard(projectCard.getId());
+        }
+
+        if (game.isCrysis()) {
+            new ArrayList<>(game.getCrysisData().getOpenedCards())
+                    .stream()
+                    .map(cardService::getCrysisCard)
+                    .filter(card -> card.getSpecialCrysisGoal() == SpecialCrysisGoal.ACTION_IN_THIRD_PHASE)
+                    .forEach(card -> crysisService.reduceTokens(game, card, 1));
         }
 
         return response;

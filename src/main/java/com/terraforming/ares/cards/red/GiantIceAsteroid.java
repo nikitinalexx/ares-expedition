@@ -41,8 +41,8 @@ public class GiantIceAsteroid implements BaseExpansionRedCard {
         TerraformingService terraformingService = marsContext.getTerraformingService();
 
         for (int i = 0; i < 2; i++) {
-            terraformingService.increaseTemperature(marsContext.getGame(), marsContext.getPlayer());
-            terraformingService.revealOcean(marsContext.getGame(), marsContext.getPlayer());
+            terraformingService.increaseTemperature(marsContext);
+            terraformingService.revealOcean(marsContext);
         }
 
         return null;

@@ -9,7 +9,7 @@ import {WinPointsInfo} from './WinPointsInfo';
 import {CardResource} from './CardResource';
 import {PutResourceOnBuild} from './PutResourceOnBuild';
 import {ActionInputData} from './ActionInputData';
-import {Expansion} from "./Expansion";
+import {Expansion} from './Expansion';
 
 export class Card {
   constructor(id: number,

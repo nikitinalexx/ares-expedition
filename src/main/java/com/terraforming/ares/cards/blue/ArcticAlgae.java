@@ -1,10 +1,7 @@
 package com.terraforming.ares.cards.blue;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.model.CardAction;
-import com.terraforming.ares.model.Expansion;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +35,8 @@ public class ArcticAlgae implements BlueCard {
     }
 
     @Override
-    public void onOceanFlippedEffect(Player player) {
+    public void onOceanFlippedEffect(MarsContext context) {
+        final Player player = context.getPlayer();
         player.setPlants(player.getPlants() + 4);
     }
 

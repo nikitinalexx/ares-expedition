@@ -1,13 +1,13 @@
 package com.terraforming.ares.states;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.BuildType;
+import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateContext;
 import com.terraforming.ares.model.turn.TurnType;
-import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.StateTransitionService;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -17,12 +17,13 @@ import java.util.List;
  */
 public class BuildGreenProjectsState extends AbstractState {
 
-    public BuildGreenProjectsState(MarsGame marsGame, CardService cardService, StateTransitionService stateTransitionService) {
-        super(marsGame, cardService, stateTransitionService);
+    public BuildGreenProjectsState(MarsContext context, StateTransitionService stateTransitionService) {
+        super(context, stateTransitionService);
     }
 
     @Override
     public List<TurnType> getPossibleTurns(StateContext stateContext) {
+        final MarsGame marsGame = context.getGame();
         Player player = marsGame.getPlayerByUuid(stateContext.getPlayerUuid());
 
         if (player.getNextTurn() != null && stateContext.getTurnTypeService().isIntermediate(player.getNextTurn().getType())) {
@@ -31,20 +32,31 @@ public class BuildGreenProjectsState extends AbstractState {
             return Collections.emptyList();
         } else if (!player.canBuildGreen()) {
             if (player.isUnmiCorporation() && player.isHasUnmiAction()) {
-                return List.of(TurnType.UNMI_RT, TurnType.SELL_CARDS, TurnType.SKIP_TURN);
+                List<TurnType> actions = new ArrayList<>(List.of(TurnType.UNMI_RT, TurnType.SELL_CARDS, TurnType.SKIP_TURN));
+                if (isSellVpTurnAvailable()) {
+                    actions.add(TurnType.SELL_VP);
+                }
+                return actions;
             }
             return List.of();
         } else {
-            return List.of(
+            List<TurnType> actions = new ArrayList<>(List.of(
                     TurnType.BUILD_GREEN_PROJECT,
-                    TurnType.SELL_CARDS,
-                    TurnType.SKIP_TURN
-            );
+                    TurnType.SELL_CARDS
+            ));
+            if (isSellVpTurnAvailable()) {
+                actions.add(TurnType.SELL_VP);
+            }
+
+            actions.add(TurnType.SKIP_TURN);
+
+            return actions;
         }
     }
 
     @Override
     public void updateState() {
+        final MarsGame marsGame = context.getGame();
         if (marsGame.getPlayerUuidToPlayer().values().stream().allMatch(
                 player -> player.cantBuildAnything()
                         && player.getNextTurn() == null

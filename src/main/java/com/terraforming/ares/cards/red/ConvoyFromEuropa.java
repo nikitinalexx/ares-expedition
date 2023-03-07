@@ -39,7 +39,7 @@ public class ConvoyFromEuropa implements BaseExpansionRedCard {
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         MarsGame game = marsContext.getGame();
-        marsContext.getTerraformingService().revealOcean(game, marsContext.getPlayer());
+        marsContext.getTerraformingService().revealOcean(marsContext);
 
         for (Integer card : marsContext.getCardService().dealCards(game, 1)) {
             marsContext.getPlayer().getHand().addCard(card);

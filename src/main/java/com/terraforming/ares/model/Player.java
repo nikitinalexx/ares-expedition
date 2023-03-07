@@ -1,7 +1,6 @@
 package com.terraforming.ares.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.terraforming.ares.cards.blue.FilterFeeders;
 import com.terraforming.ares.model.turn.Turn;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -164,14 +163,11 @@ public class Player {
         }
     }
 
-    public void addResources(Card toCard, int count) {
+    public void removeResources(Card toCard, int count) {
         this.cardResourcesCount.put(
                 toCard.getClass(),
-                this.cardResourcesCount.get(toCard.getClass()) + count
+                this.cardResourcesCount.get(toCard.getClass()) - count
         );
-        if (count > 0 && toCard.getCollectableResource() == CardCollectableResource.MICROBE && this.cardResourcesCount.containsKey(FilterFeeders.class)) {
-            this.cardResourcesCount.put(FilterFeeders.class, this.cardResourcesCount.get(FilterFeeders.class) + 1);
-        }
     }
 
     public void initResources(Card toCard) {

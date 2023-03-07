@@ -30,7 +30,17 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
         @JsonSubTypes.Type(value = GameEndConfirmTurn.class, name = "GAME_END_CONFIRM"),
         @JsonSubTypes.Type(value = SellCardsLastRoundTurn.class, name = "SELL_CARDS_LAST_ROUND"),
         @JsonSubTypes.Type(value = UnmiRtTurn.class, name = "UNMI_RT"),
-        @JsonSubTypes.Type(value = MulliganTurn.class, name = "MULLIGAN")
+        @JsonSubTypes.Type(value = MulliganTurn.class, name = "MULLIGAN"),
+        @JsonSubTypes.Type(value = CrysisCardPersistentChoiceTurn.class, name = "RESOLVE_PERSISTENT_WITH_CHOICE"),
+        @JsonSubTypes.Type(value = CrysisCardImmediateChoiceTurn.class, name = "RESOLVE_IMMEDIATE_WITH_CHOICE"),
+        @JsonSubTypes.Type(value = CrysisPersistentAllTurn.class, name = "RESOLVE_PERSISTENT_ALL"),
+        @JsonSubTypes.Type(value = CrysisImmediateAllTurn.class, name = "RESOLVE_IMMEDIATE_ALL"),
+        @JsonSubTypes.Type(value = PlantsToCrisisTokenTurn.class, name = "PLANTS_TO_CRYSIS_TOKEN"),
+        @JsonSubTypes.Type(value = CardsToCrisisTokenTurn.class, name = "CARDS_TO_CRISIS_TOKEN"),
+        @JsonSubTypes.Type(value = SellVpTurn.class, name = "SELL_VP"),
+        @JsonSubTypes.Type(value = CrisisVpToTokenTurn.class, name = "CRISIS_VP_TO_TOKEN"),
+        @JsonSubTypes.Type(value = ResolveOceanDetrimentTurn.class, name = "RESOLVE_OCEAN_DETRIMENT")
+
 })
 public interface Turn {
 

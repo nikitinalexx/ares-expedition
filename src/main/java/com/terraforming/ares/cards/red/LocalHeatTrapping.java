@@ -50,7 +50,7 @@ public class LocalHeatTrapping implements BaseExpansionRedCard {
 
         Card inputCard = marsContext.getCardService().getCard(cardId);
 
-        marsContext.getPlayer().addResources(inputCard, 2);
+        marsContext.getCardResourceService().addResources(marsContext.getPlayer(), inputCard, 2);
     }
 
     @Override

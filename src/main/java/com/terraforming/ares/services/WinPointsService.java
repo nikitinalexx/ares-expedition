@@ -20,6 +20,9 @@ public class WinPointsService {
     private final CardService cardService;
 
     public int countWinPoints(Player player, MarsGame game) {
+        if (game.isCrysis()) {
+            return countCrysisWinPoints(game);
+        }
         int winPoints = player.getTerraformingRating();
 
         winPoints += player.getForests();
@@ -40,6 +43,28 @@ public class WinPointsService {
         winPoints += milestonesWinPoints(player, game);
 
         winPoints += awardsWinPoints(player, game);
+
+        return winPoints;
+    }
+
+    public int countCrysisWinPoints(MarsGame game) {
+        int winPoints = game.getCrysisData().getCrisisVp();
+
+        for (Player player : game.getPlayerUuidToPlayer().values()) {
+            winPoints += player.getForests();
+
+            List<Card> cards = player.getPlayed()
+                    .getCards()
+                    .stream()
+                    .map(cardService::getCard).collect(Collectors.toList());
+
+            winPoints += cards
+                    .stream()
+                    .mapToInt(Card::getWinningPoints)
+                    .sum();
+
+            winPoints += getWinPointsFromResourceCards(player, cards);
+        }
 
         return winPoints;
     }

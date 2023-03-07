@@ -66,7 +66,7 @@ public class Astrofarm implements BaseExpansionGreenCard {
 
         Card inputCard = marsContext.getCardService().getCard(cardId);
 
-        marsContext.getPlayer().addResources(inputCard, 2);
+        marsContext.getCardResourceService().addResources(marsContext.getPlayer(), inputCard, 2);
     }
 
     @Override

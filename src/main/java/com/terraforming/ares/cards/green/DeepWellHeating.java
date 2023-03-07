@@ -50,7 +50,7 @@ public class DeepWellHeating implements BaseExpansionGreenCard {
         Player player = marsContext.getPlayer();
         TerraformingService terraformingService = marsContext.getTerraformingService();
 
-        terraformingService.increaseTemperature(marsContext.getGame(), player);
+        terraformingService.increaseTemperature(marsContext);
         player.setHeatIncome(player.getHeatIncome() + 1);
 
         return null;

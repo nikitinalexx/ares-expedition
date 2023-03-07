@@ -43,7 +43,7 @@ public class TechnologyDemonstration implements BaseExpansionRedCard {
     public TurnResponse buildProject(MarsContext marsContext) {
         TerraformingService terraformingService = marsContext.getTerraformingService();
 
-        terraformingService.revealOcean(marsContext.getGame(), marsContext.getPlayer());
+        terraformingService.revealOcean(marsContext);
 
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 

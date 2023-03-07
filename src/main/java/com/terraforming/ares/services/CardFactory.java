@@ -3,9 +3,11 @@ package com.terraforming.ares.services;
 import com.terraforming.ares.cards.blue.*;
 import com.terraforming.ares.cards.buffedCorporations.*;
 import com.terraforming.ares.cards.corporations.*;
+import com.terraforming.ares.cards.crysis.*;
 import com.terraforming.ares.cards.green.*;
 import com.terraforming.ares.cards.red.*;
 import com.terraforming.ares.model.Card;
+import com.terraforming.ares.model.CrysisCard;
 import com.terraforming.ares.model.Expansion;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +29,7 @@ public class CardFactory {
     private final List<Card> sortedBaseCorporations;
     private final List<Card> sortedDiscoveryCorporations;
     private final List<Card> buffedCorporations;
+    private final List<CrysisCard> crysisCards;
 
     private final Map<Integer, Card> baseExpansionProjects;
     private final Map<Integer, Card> discoveryExpansionProjects;
@@ -34,6 +37,8 @@ public class CardFactory {
     //used for display of all projecst cards, needs sorting in advance
     private final List<Card> baseExpansionSortedProjects;
     private final List<Card> discoveryExpansionSortedProjects;
+
+    private final Set<Integer> crysisExcludedCards;
 
     public CardFactory() {
         baseExpansionSortedProjects = List.of(
@@ -355,6 +360,47 @@ public class CardFactory {
                 10016, new BuffedUnmiCorporation(10108)
         );
 
+        crysisExcludedCards = Set.of(
+                1, 18, 97,
+                8, 129, 217, 143, 33, 154, 168, 179, 205,
+                106, 12, 105, 19, 72, 68, 31, 161, 157, 39, 207, 208, 169,
+                108, 66, 121, 14, 324, 127, 132, 27, 133, 30, 142, 32, 79, 317, 86, 90, 172, 92, 50, 52, 57, 197, 198, 200,
+                370, 371, 375, 319, 335, 380, 107
+        );
+
+        crysisCards = List.of(
+                /** Tier 1 **/
+                new EmergencyShelters(8),
+                new AtmosphereRupture(9),
+                new CatastrophicErosion(10),
+                new BarrenCrater(11),
+
+                /** Tier 2 **/
+                new GreenhouseGasDegradation(12),
+                new BiodiversityLoss(13),
+                new DustClouds(14),
+                new SeismicAftershocks(15),
+                new DisruptedSupplyLines(16),
+                new AtmosphericEscape(17),
+                new LocalizedTsunami(18),
+
+                /** Tier 3 **/
+                new CollapsingCities(19),
+                new SecondImpact(20),
+                new CropFailures(21),
+                new Reglaciation(22),
+                new ImpactDesert(23),
+                new IonosphericTear(24),
+                new InfrastructureCollapse(25),
+                /** Tier 4 **/
+                new DwindlingSupplies(26),
+
+                /** Tier 5 **/
+                new NuclearMeltdown(27),
+                new PuncturedOzone(28),
+                new ExtinctionEvent(29)
+        );
+
         buffedCorporations = new ArrayList<>(buffedCorporationsMapping.values());
 
         baseExpansionProjects = baseExpansionSortedProjects.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
@@ -362,6 +408,14 @@ public class CardFactory {
         baseExpansionCorporations = sortedBaseCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
         discoveryExpansionCorporations = sortedDiscoveryCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
         buffedCorporationsStorage = buffedCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
+    }
+
+    public List<CrysisCard> getCrysisCards() {
+        return crysisCards;
+    }
+
+    public Set<Integer> getCrysisExcludedCards() {
+        return crysisExcludedCards;
     }
 
     public Map<Integer, Card> createBaseCorporations() {

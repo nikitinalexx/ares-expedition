@@ -1,11 +1,17 @@
 package com.terraforming.ares.repositories.caching;
 
+import com.terraforming.ares.entity.CrisisRecordEntity;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.GameUpdateResult;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.repositories.GameRepository;
+import com.terraforming.ares.repositories.crudRepositories.CrisisRecordEntityRepository;
+import com.terraforming.ares.services.WinPointsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -18,6 +24,8 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 public class CachingGameRepositoryImpl implements CachingGameRepository {
     private final GameRepository gameRepository;
+    private final CrisisRecordEntityRepository crisisRecordEntityRepository;
+    private final WinPointsService winPointsService;
 
     private final Map<Long, MarsGame> cache = new ConcurrentHashMap<>();
     //TODO eviction
@@ -69,6 +77,10 @@ public class CachingGameRepositoryImpl implements CachingGameRepository {
                 game.iterateUpdateCounter();
                 if (game.timeToSave()) {
                     gameRepository.save(game);
+                    if (game.isCrysis() && game.getCrysisData().isWonGame()) {
+                        crisisRecordEntityRepository.save(getCrisisRecordEntity(game));
+                    }
+
                 }
             }
 
@@ -76,6 +88,23 @@ public class CachingGameRepositoryImpl implements CachingGameRepository {
         });
 
         return resultBuilder.build();
+    }
+
+    private CrisisRecordEntity getCrisisRecordEntity(MarsGame game) {
+        CrisisRecordEntity crisisRecordEntity = new CrisisRecordEntity();
+        final Player player = game.getPlayerUuidToPlayer().values().iterator().next();
+        crisisRecordEntity.setUuid(player.getUuid());
+        crisisRecordEntity.setPlayerName(player.getName());
+        crisisRecordEntity.setVictoryPoints(winPointsService.countCrysisWinPoints(game));
+        crisisRecordEntity.setTerraformingPoints(
+                game.getPlayerUuidToPlayer().values().stream().mapToInt(
+                        Player::getTerraformingRating
+                ).sum()
+        );
+        crisisRecordEntity.setPlayerCount(game.getPlayerUuidToPlayer().size());
+        crisisRecordEntity.setTurnsLeft(game.getCrysisData().getCrysisCards().size());
+        crisisRecordEntity.setDate(LocalDateTime.now(ZoneId.of("UTC")));
+        return crisisRecordEntity;
     }
 
     @Override

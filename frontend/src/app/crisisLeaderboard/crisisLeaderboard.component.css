@@ -1,0 +1,27 @@
+table {
+  border-collapse: collapse;
+  margin: 0 auto;
+  width: 500px;
+}
+th, td {
+  border: 1px solid black;
+  padding: 10px;
+  text-align: center;
+}
+.radio-container {
+  text-align: center;
+}
+.radio-container input[type="radio"] {
+  display: inline-block;
+  margin: 10px;
+}
+
+.board-link {
+  width: 100px;
+}
+
+.back-button {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+}

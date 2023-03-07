@@ -63,7 +63,7 @@ public class AiSecondPhaseActionProcessor {
                     {
                         String errorMessage = cardValidationService.validateCard(
                                 player, game, card.getId(),
-                                aiPaymentHelper.getCardPayments(player, card),
+                                aiPaymentHelper.getCardPayments(game, player, card),
                                 aiCardParamsHelper.getInputParamsForValidation(player, card)
                         );
                         return errorMessage == null;
@@ -95,7 +95,7 @@ public class AiSecondPhaseActionProcessor {
                     game,
                     player,
                     availableTurnFlow.getCard().getId(),
-                    aiPaymentHelper.getCardPayments(player, availableTurnFlow.getCard()),
+                    aiPaymentHelper.getCardPayments(game, player, availableTurnFlow.getCard()),
                     aiCardParamsHelper.getInputParamsForBuild(player, availableTurnFlow.getCard())
             );
         } else {

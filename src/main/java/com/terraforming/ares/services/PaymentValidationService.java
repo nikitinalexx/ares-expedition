@@ -1,5 +1,6 @@
 package com.terraforming.ares.services;
 
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.payments.PaymentType;
@@ -48,7 +49,7 @@ public class PaymentValidationService {
         return plantsCost;
     }
 
-    public String validate(Card card, Player player, List<Payment> payments, Map<Integer, List<Integer>> inputParameters) {
+    public String validate(MarsGame game, Card card, Player player, List<Payment> payments, Map<Integer, List<Integer>> inputParameters) {
         for (Payment payment : payments) {
             PaymentValidator paymentValidator = validators.get(payment.getType());
             if (paymentValidator == null) {
@@ -78,7 +79,7 @@ public class PaymentValidationService {
             return String.format("Can only build a building with print price of %s or less", maximumPrice);
         }
 
-        int discount = discountService.getDiscount(card, player, inputParameters);
+        int discount = discountService.getDiscount(game, card, player, inputParameters);
         discount += payments.stream().mapToInt(Payment::getDiscount).sum();
 
         final BuildDto mostOptimalBuild = buildService.findMostOptimalBuild(card, player, discount);

@@ -55,8 +55,9 @@ public class PhysicsComplex implements BlueCard {
     }
 
     @Override
-    public void onTemperatureChangedEffect(Player player) {
-        player.addResources(this, 1);
+    public void onTemperatureChangedEffect(MarsContext context) {
+        final Player player = context.getPlayer();
+        context.getCardResourceService().addResources(player, this, 1);
     }
 
     @Override

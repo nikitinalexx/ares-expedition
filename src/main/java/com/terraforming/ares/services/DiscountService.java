@@ -1,5 +1,6 @@
 package com.terraforming.ares.services;
 
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,8 +17,9 @@ import java.util.Map;
 public class DiscountService {
     private final CardService cardService;
     private final SpecialEffectsService specialEffectsService;
+    private final CrisisDetrimentService crisisDetrimentService;
 
-    public int getDiscount(Card card, Player player, Map<Integer, List<Integer>> inputParameters) {
+    public int getDiscount(MarsGame game, Card card, Player player, Map<Integer, List<Integer>> inputParameters) {
         int discount = 0;
 
         List<Tag> tags = cardService.getCardTags(card, inputParameters);
@@ -91,6 +93,14 @@ public class DiscountService {
 
         if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.CREDICOR_DISCOUNT) && card.getPrice() >= 20) {
             discount += 4;
+        }
+
+        if (crisisDetrimentService.detrimentForPriceIncrease1(game)) {
+            discount -= 1;
+        }
+
+        if (crisisDetrimentService.detrimentForPriceIncrease3(game)) {
+            discount -= 3;
         }
 
         return discount;

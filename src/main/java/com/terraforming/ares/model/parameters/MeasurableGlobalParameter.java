@@ -46,9 +46,20 @@ public class MeasurableGlobalParameter {
         return currentLevel == levels.size() - 1;
     }
 
+    @JsonIgnore
+    public boolean isMin() {
+        return currentLevel == 0;
+    }
+
     public void increase() {
         if (!isMax()) {
             currentLevel++;
+        }
+    }
+
+    public void reduce() {
+        if (!isMin()) {
+            currentLevel--;
         }
     }
 }

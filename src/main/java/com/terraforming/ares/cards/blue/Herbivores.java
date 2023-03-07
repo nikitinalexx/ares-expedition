@@ -77,22 +77,22 @@ public class Herbivores implements BlueCard {
     }
 
     @Override
-    public void onOxygenChangedEffect(Player player) {
-        addAnimal(player);
+    public void onOxygenChangedEffect(MarsContext context) {
+        addAnimal(context);
     }
 
     @Override
-    public void onTemperatureChangedEffect(Player player) {
-        addAnimal(player);
+    public void onTemperatureChangedEffect(MarsContext context) {
+        addAnimal(context);
     }
 
     @Override
-    public void onOceanFlippedEffect(Player player) {
-        addAnimal(player);
+    public void onOceanFlippedEffect(MarsContext context) {
+        addAnimal(context);
     }
 
-    private void addAnimal(Player player) {
-        player.addResources(this, 1);
+    private void addAnimal(MarsContext context) {
+        context.getCardResourceService().addResources(context.getPlayer(), this, 1);
     }
 
     @Override

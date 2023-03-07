@@ -15,7 +15,7 @@
     <ul class="myUL">
       <li *ngFor="let card of getBlueRedPlayerHand();" (click)="clickProjectToBuild(card)"
           [ngClass]="blueRedCardClass(card)" class="filterDiv automated display">
-        <app-card-template [card]="card" [player]="game?.player" [showDiscount]="true"
+        <app-card-template [card]="card" [game]="game" [player]="game?.player" [showDiscount]="true"
                            [tagInput]="expectsTagInput() ? tagInput : -1"></app-card-template>
       </li>
     </ul>

@@ -1,16 +1,17 @@
 package com.terraforming.ares.controllers;
 
 import com.terraforming.ares.dto.*;
+import com.terraforming.ares.entity.CrisisRecordEntity;
+import com.terraforming.ares.mars.CrysisData;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.mars.MarsGameDataset;
 import com.terraforming.ares.mars.MarsGameRow;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.request.AllProjectsRequest;
-import com.terraforming.ares.model.turn.DiscardCardsTurn;
-import com.terraforming.ares.model.turn.Turn;
-import com.terraforming.ares.model.turn.TurnType;
+import com.terraforming.ares.model.turn.*;
 import com.terraforming.ares.repositories.GameRepositoryImpl;
 import com.terraforming.ares.repositories.caching.CachingGameRepository;
+import com.terraforming.ares.repositories.crudRepositories.CrisisRecordEntityRepository;
 import com.terraforming.ares.services.*;
 import com.terraforming.ares.services.ai.AiBalanceService;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +49,7 @@ public class GameController {
     private final GameRepositoryImpl gameRepository;
     private final SimulationProcessorService simulationProcessorService;
     private final AiBalanceService aiBalanceService;
+    private final CrisisRecordEntityRepository crisisRecordEntityRepository;
 
     @PostMapping("/game/new")
     public PlayerUuidsDto startNewGame(@RequestBody GameParameters gameParameters) {
@@ -55,8 +57,30 @@ public class GameController {
             int aiPlayerCount = (int) gameParameters.getComputers().stream().filter(item -> item).count();
             int playersCount = gameParameters.getPlayerNames().size();
 
+            if (gameParameters.getPlayerNames().stream().anyMatch(name -> name.length() > 10)) {
+                throw new IllegalArgumentException("Only names of length 10 or below are supported");
+            }
+
             if (playersCount == 0 || playersCount > Constants.MAX_PLAYERS) {
                 throw new IllegalArgumentException("Only 1 to 4 players are supported so far");
+            }
+
+            if (gameParameters.getExpansions().contains(Expansion.CRYSIS)) {
+                if (playersCount != 1) {
+                    throw new IllegalArgumentException("Only 1 player supported so far. Come back in a week!");
+                }
+                if (gameParameters.getComputers().stream().anyMatch(Boolean.TRUE::equals)) {
+                    throw new IllegalArgumentException("Crysis is a cooperative mode, no computers supported");
+                }
+                if (!gameParameters.isMulligan()) {
+                    throw new IllegalArgumentException("Crysis mode can be only played with mulligan option");
+                }
+                if (!gameParameters.getExpansions().contains(Expansion.DISCOVERY)) {
+                    throw new IllegalArgumentException("Crysis mode can be only played with Discovery expansion");
+                }
+                if (gameParameters.isDummyHand()) {
+                    throw new IllegalArgumentException("Crysis mode has a dummy hand option by default");
+                }
             }
 
             final List<Expansion> expansions = gameParameters.getExpansions();
@@ -481,15 +505,37 @@ public class GameController {
                 .oxygen(game.getPlanet().getOxygenValue())
                 .phaseOxygen(phasePlanet != null ? phasePlanet.getOxygenValue() : null)
                 .phaseOxygenColor(phasePlanet != null ? phasePlanet.getOxygenColor() : null)
-                .oceans(game.getPlanet().getRevealedOceans().stream().map(OceanDto::of).collect(Collectors.toList()))
+                .oceans(game.getPlanet().getOceans().stream().map(OceanDto::of).collect(Collectors.toList()))
                 .phaseOceans(phasePlanet != null ? phasePlanet.getRevealedOceans().size() : null)
                 .otherPlayers(buildOtherPlayers(game, playerUuid))
-                .turns(game.getTurns())
+                .turns(game.isCrysis() ? game.getCrysisData().getCrysisCards().size() : game.getTurns())
                 .dummyHandMode(game.isDummyHandMode())
                 .usedDummyHand(game.getUsedDummyHand())
                 .awards(game.getAwards().stream().map(AwardDto::from).collect(Collectors.toList()))
                 .milestones(game.getMilestones().stream().map(MilestoneDto::from).collect(Collectors.toList()))
+                .crysisDto(buildCrysisDto(game.getCrysisData()))
+                .stateReason(game.getStateReason())
                 .build();
+    }
+
+    private CrysisDto buildCrysisDto(CrysisData crysisData) {
+        if (crysisData == null) {
+            return null;
+        }
+        return CrysisDto.builder()
+                .detrimentTokens(crysisData.getDetrimentTokens())
+                .openedCards(crysisData.getOpenedCards().stream().map(cardService::getCrysisCard).map(CrysisCardDto::from).collect(Collectors.toList()))
+                .cardToTokensCount(crysisData.getCardToTokensCount())
+                .forbiddenPhases(crysisData.getForbiddenPhases())
+                .currentDummyCards(crysisData.getCurrentDummyCards())
+                .chosenDummyPhases(crysisData.getChosenDummyPhases())
+                .wonGame(crysisData.isWonGame())
+                .build();
+    }
+
+    @GetMapping("/crisis/records")
+    public List<CrisisRecordEntity> getCrisisRecords(@RequestParam int playerCount) {
+        return crisisRecordEntityRepository.findTopTwentyRecords(playerCount);
     }
 
     @GetMapping("/cache/reset")
@@ -508,7 +554,7 @@ public class GameController {
                 .phaseTemperature(phasePlanet != null ? phasePlanet.getTemperatureValue() : null)
                 .oxygen(game.getPlanet().getOxygenValue())
                 .phaseOxygen(phasePlanet != null ? phasePlanet.getOxygenValue() : null)
-                .oceans(game.getPlanet().getRevealedOceans().stream().map(OceanDto::of).collect(Collectors.toList()))
+                .oceans(game.getPlanet().getOceans().stream().map(OceanDto::of).collect(Collectors.toList()))
                 .phaseOceans(phasePlanet != null ? phasePlanet.getRevealedOceans().size() : null)
                 .otherPlayers(buildOtherPlayers(game, playerUuid))
                 .build();
@@ -615,14 +661,34 @@ public class GameController {
     }
 
     private TurnDto buildTurnDto(Turn turn) {
-        if (turn != null && turn.getType() == TurnType.DISCARD_CARDS) {
-            DiscardCardsTurn discardCardsTurnDto = (DiscardCardsTurn) turn;
-            return DiscardCardsTurnDto.builder()
-                    .size(discardCardsTurnDto.getSize())
-                    .onlyFromSelectedCards(discardCardsTurnDto.isOnlyFromSelectedCards())
-                    .cards(
-                            discardCardsTurnDto.getCards().stream().map(cardService::getCard).map(CardDto::from).collect(Collectors.toList())
-                    ).build();
+        if (turn != null) {
+            if (turn.getType() == TurnType.DISCARD_CARDS) {
+                DiscardCardsTurn discardCardsTurnDto = (DiscardCardsTurn) turn;
+                return DiscardCardsTurnDto.builder()
+                        .size(discardCardsTurnDto.getSize())
+                        .onlyFromSelectedCards(discardCardsTurnDto.isOnlyFromSelectedCards())
+                        .cards(
+                                discardCardsTurnDto.getCards().stream().map(cardService::getCard).map(CardDto::from).collect(Collectors.toList())
+                        ).build();
+            } else if (turn.getType() == TurnType.RESOLVE_IMMEDIATE_WITH_CHOICE) {
+                CrysisCardImmediateChoiceTurn turnWithChoice = (CrysisCardImmediateChoiceTurn) turn;
+                return CardWithChoiceTurnDto.builder()
+                        .playerUuid(turnWithChoice.getPlayerUuid())
+                        .card(turnWithChoice.getCard())
+                        .build();
+            } else if (turn.getType() == TurnType.RESOLVE_PERSISTENT_WITH_CHOICE) {
+                CrysisCardPersistentChoiceTurn turnWithChoice = (CrysisCardPersistentChoiceTurn) turn;
+                return CardWithChoiceTurnDto.builder()
+                        .playerUuid(turnWithChoice.getPlayerUuid())
+                        .card(turnWithChoice.getCard())
+                        .build();
+            } else if (turn.getType() == TurnType.RESOLVE_IMMEDIATE_ALL) {
+                CrysisImmediateAllTurn crysisImmediateAllTurn = (CrysisImmediateAllTurn) turn;
+                return CardWithChoiceTurnDto.builder()
+                        .playerUuid(crysisImmediateAllTurn.getPlayerUuid())
+                        .build();
+            }
+
         }
         return null;
 

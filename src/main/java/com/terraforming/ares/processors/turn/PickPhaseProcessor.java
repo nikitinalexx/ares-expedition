@@ -28,6 +28,10 @@ public class PickPhaseProcessor implements TurnProcessor<PhaseChoiceTurn> {
         player.setPreviousChosenPhase(turn.getPhaseId());
         player.setChosenPhase(turn.getPhaseId());
 
+        if (game.isCrysis()) {
+            game.getCrysisData().getForbiddenPhases().remove(player.getUuid());
+        }
+
         if (turn.getPhaseId() == 3) {
             player.setBlueActionExtraActivationsLeft(1);
 

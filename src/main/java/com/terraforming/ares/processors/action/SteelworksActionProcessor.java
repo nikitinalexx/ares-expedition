@@ -5,6 +5,7 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.services.MarsContextProvider;
 import com.terraforming.ares.services.TerraformingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SteelworksActionProcessor implements BlueActionCardProcessor<Steelworks> {
     private final TerraformingService terraformingService;
+    private final MarsContextProvider marsContextProvider;
 
     @Override
     public Class<Steelworks> getType() {
@@ -28,7 +30,7 @@ public class SteelworksActionProcessor implements BlueActionCardProcessor<Steelw
         player.setHeat(player.getHeat() - 6);
         player.setMc(player.getMc() + 2);
 
-        terraformingService.raiseOxygen(game, player);
+        terraformingService.raiseOxygen(marsContextProvider.provide(game, player));
 
         return null;
     }

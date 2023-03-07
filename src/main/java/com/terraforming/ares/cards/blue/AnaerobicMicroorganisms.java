@@ -66,10 +66,11 @@ public class AnaerobicMicroorganisms implements BlueCard {
     }
 
     @Override
-    public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
-        marsContext.getPlayer().addResources(
+    public void postProjectBuiltEffect(MarsContext context, Card project, Map<Integer, List<Integer>> inputParams) {
+        context.getCardResourceService().addResources(
+                context.getPlayer(),
                 this,
-                marsContext.getCardService().countCardTags(project, Set.of(Tag.ANIMAL, Tag.MICROBE, Tag.PLANT), inputParams)
+                context.getCardService().countCardTags(project, Set.of(Tag.ANIMAL, Tag.MICROBE, Tag.PLANT), inputParams)
         );
     }
 

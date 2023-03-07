@@ -1,0 +1,147 @@
+<div class="name text-white">
+  {{ card.name }}
+</div>
+
+<div *ngIf="!isPlayAndDiscardCrisis()" class="persistent text-white">
+  PERSISTENT
+</div>
+
+<div *ngIf="!isPlayAndDiscardCrisis()" class="immediately text-white">
+  IMMEDIATELY
+</div>
+
+<div *ngIf="!isPlayAndDiscardCrisis()" class="goal text-white">
+  GOAL
+</div>
+
+<div class="persistent-box">
+  <div *ngIf="reduceOxygenPersistentEffect()" style="font-size: 33px">
+    <span>{{oxygenNumberOfReductions()}}</span>
+    <div class="tile oxygen-tile "></div>
+    <div class="tile white-arrow-tile "></div>
+  </div>
+  <div *ngIf="reduceTemperaturePersistentEffect()" style="font-size: 33px">
+    <span>{{temperatureNumberOfReductions()}}</span>
+    <div class="tile temperature-tile "></div>
+    <div class="tile white-arrow-tile "></div>
+  </div>
+  <div *ngIf="closeOceanPersistentEffect()" style="font-size: 33px">
+    <span>{{oceanNumberOfReductions()}}</span>
+    <div class="tile ocean-tile "></div>
+    <div class="tile white-arrow-tile "></div>
+  </div>
+
+  <div *ngIf="oceanOrTemperatureEffect()">
+    <div class="or-tile ocean-tile "></div>
+    <div class="or-tile white-arrow-tile "></div>
+    <span style="font-size: 14px">OR</span>
+    <div class="tile temperature-tile "></div>
+    <div class="or-tile white-arrow-tile "></div>
+  </div>
+
+  <div *ngIf="oceanOrOxygenEffect()">
+    <div class="or-tile ocean-small "></div>
+    <div class="or-tile white-arrow-small-tile "></div>
+    <span style="font-size: 12px">OR</span>
+    <div class="or-tile oxygen-small "></div>
+    <div class="or-tile white-arrow-small-tile "></div>
+  </div>
+
+  <div *ngIf="temperatureOrOxygenEffect()">
+    <div class="tile temperature-tile "></div>
+    <div class="or-tile white-arrow-tile "></div>
+    <span style="font-size: 12px">OR</span>
+    <div class="or-tile oxygen-small "></div>
+    <div class="or-tile white-arrow-small-tile "></div>
+  </div>
+
+</div>
+
+<div *ngIf="!isPlayAndDiscardCrisis()" class="immediate-box">
+  <div class="immediate-box-text" [style]="immediateEffectTextStyle()">
+    {{card.immediateEffect}}
+  </div>
+</div>
+
+<div *ngIf="isPlayAndDiscardCrisis()" class="immediate-box-long">
+  <div class="immediate-box-text" [style]="immediateEffectTextStyle()">
+    <span *ngIf="!tier4Card(card)">{{card.immediateEffect}}</span>
+    <span *ngIf="tier4Card(card)">
+      {{card.immediateEffect.substring(0, card.immediateEffect.lastIndexOf('.', card.immediateEffect.length - 2) + 1)}}
+    </span>
+    <span *ngIf="tier4Card(card)" class="bg-danger text-white">
+      {{card.immediateEffect.substring(card.immediateEffect.lastIndexOf('.', card.immediateEffect.length - 2) + 1)}}
+    </span>
+  </div>
+</div>
+
+<div class="goal-text-box">
+  <div *ngIf="isPlantsIntoTokensAction()">
+    Spend 4 plants in 3rd phase or raise Oxygen
+  </div>
+  <div *ngIf="isHeatIntoTokensAction()">
+    Spend 6 heat in 3rd phase or raise Temperature
+  </div>
+  <div *ngIf="isCardsIntoTokensAction()">
+    Spend 3 cards in 3rd phase or flip an Ocean
+  </div>
+  <div *ngIf="isPlayBlueCardAction()">
+    Use an action in 3rd phase
+  </div>
+</div>
+
+<div *ngIf="!isPlayAndDiscardCrisis()" class="goal-box">
+  <div *ngIf="!isCrysisActiveCard()">
+    Play
+    <div *ngIf="playEnergyCardEffect()" class="resource-tag tag-energy"></div>
+    <div *ngIf="playPlantCardEffect()" class="resource-tag tag-plant"></div>
+    <div *ngIf="playSpaceCardEffect()" class="resource-tag tag-space"></div>
+    <div *ngIf="playBuildingCardEffect()" class="resource-tag tag-building"></div>
+    <div *ngIf="playScienceCardEffect()" class="resource-tag tag-science"></div>
+    <div *ngIf="playEventCardEffect()" class="resource-tag tag-event"></div>
+    <div *ngIf="playGreenCardEffect()" class="resource card card-green"></div>
+    <div *ngIf="playBlueCardEffect()" class="resource card card-blue"></div>
+
+    <div *ngIf="playEarthJupiterCardEffect()">
+      <div class="resource-tag tag-earth"></div>
+      /
+      <div class="resource-tag tag-jupiter"></div>
+    </div>
+
+  </div>
+
+  <div *ngIf="isPlantsIntoTokensAction()">
+    4
+    <div class="resource plant "></div>
+    /
+    <div class="tile oxygen-tile "></div>
+  </div>
+
+  <div *ngIf="isHeatIntoTokensAction()">
+    6
+    <div class="resource heat "></div>
+    /
+    <div class="tile temperature-tile "></div>
+  </div>
+
+  <div *ngIf="isCardsIntoTokensAction()">
+    3
+    <div class="resource card"></div>
+    /
+    <div class="tile ocean-tile "></div>
+  </div>
+
+  <div *ngIf="isPlayBlueCardAction()">
+    <div class="resource card card-blue"></div>
+    <div class="red-arrow"></div>
+  </div>
+
+</div>
+
+<div *ngIf="!isPlayAndDiscardCrisis()" class="counter-box text-white">
+  {{tokenCounter()}}
+</div>
+
+<div class="tier-box text-white">
+  TIER {{card.cardTier.toString()[1]}}
+</div>

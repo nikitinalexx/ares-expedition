@@ -1,10 +1,15 @@
 package com.terraforming.ares.services;
 
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.model.parameters.Ocean;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by oleksii.nikitin
@@ -27,7 +32,17 @@ public class TerraformingService {
         return !game.getPlanetAtTheStartOfThePhase().isOxygenMax();
     }
 
-    public void revealOcean(MarsGame game, Player player) {
+    public boolean canReduceOxygen(MarsGame game) {
+        return !game.getPlanet().isOxygenMin();
+    }
+
+    public boolean canReduceTemperature(MarsGame game) {
+        return !game.getPlanet().isTemperatureMin();
+    }
+
+    public void revealOcean(MarsContext context) {
+        final MarsGame game = context.getGame();
+        final Player player = context.getPlayer();
         if (!canRevealOcean(game)) {
             return;
         }
@@ -46,11 +61,29 @@ public class TerraformingService {
         player.setTerraformingRating(player.getTerraformingRating() + 1);
 
         player.getPlayed().getCards().stream().map(cardService::getCard).forEach(
-                projectCard -> projectCard.onOceanFlippedEffect(player)
+                projectCard -> projectCard.onOceanFlippedEffect(context)
         );
+
+        if (game.isCrysis()) {
+            final List<Integer> openedCards = new ArrayList<>(game.getCrysisData().getOpenedCards());
+            openedCards
+                    .stream()
+                    .map(cardService::getCrysisCard)
+                    .forEach(card -> card.onOceanFlippedEffect(context));
+        }
     }
 
-    public void raiseOxygen(MarsGame game, Player player) {
+    public void hideOcean(MarsGame game, int index) {
+        if (!game.getPlanet().canHideOcean(index)) {
+            return;
+        }
+
+        game.getPlanet().hideOcean(index);
+    }
+
+    public void raiseOxygen(MarsContext context) {
+        final MarsGame game = context.getGame();
+        final Player player = context.getPlayer();
         if (!canIncreaseOxygen(game)) {
             return;
         }
@@ -59,14 +92,22 @@ public class TerraformingService {
 
         player.setTerraformingRating(player.getTerraformingRating() + 1);
 
-        player.getPlayed()
-                .getCards()
-                .stream()
-                .map(cardService::getCard)
-                .forEach(project -> project.onOxygenChangedEffect(player));
+        onOxygenChangedEffect(context);
     }
 
-    public void increaseTemperature(MarsGame game, Player player) {
+    public void reduceOxygen(MarsContext context) {
+        final MarsGame game = context.getGame();
+        if (!canReduceOxygen(game)) {
+            game.setStateType(StateType.GAME_END, context, "No more Oxygen left on Mars");
+            return;
+        }
+
+        game.getPlanet().reduceOxygen();
+    }
+
+    public void increaseTemperature(MarsContext context) {
+        final MarsGame game = context.getGame();
+        final Player player = context.getPlayer();
         if (!canIncreaseTemperature(game)) {
             return;
         }
@@ -79,20 +120,37 @@ public class TerraformingService {
                 .getCards()
                 .stream()
                 .map(cardService::getCard)
-                .forEach(project -> project.onTemperatureChangedEffect(player));
+                .forEach(project -> project.onTemperatureChangedEffect(context));
+
+        if (game.isCrysis()) {
+            final List<Integer> openedCards = new ArrayList<>(game.getCrysisData().getOpenedCards());
+            openedCards
+                    .stream()
+                    .map(cardService::getCrysisCard)
+                    .forEach(card -> card.onTemperatureChangedEffect(context));
+        }
     }
 
-    public void buildForest(MarsGame game, Player player) {
+    public void reduceTemperature(MarsContext context) {
+        final MarsGame game = context.getGame();
+        if (!canReduceTemperature(game)) {
+            game.setStateType(StateType.GAME_END, context, "Mars became too cold");
+            return;
+        }
+
+        game.getPlanet().reduceTemperature();
+    }
+
+    public void buildForest(MarsContext context) {
+        final MarsGame game = context.getGame();
+        final Player player = context.getPlayer();
+
         if (canIncreaseOxygen(game)) {
             game.getPlanet().increaseOxygen();
 
             player.setTerraformingRating(player.getTerraformingRating() + 1);
 
-            player.getPlayed()
-                    .getCards()
-                    .stream()
-                    .map(cardService::getCard)
-                    .forEach(project -> project.onOxygenChangedEffect(player));
+            onOxygenChangedEffect(context);
         }
 
         player.setForests(player.getForests() + 1);
@@ -101,7 +159,25 @@ public class TerraformingService {
                 .getCards()
                 .stream()
                 .map(cardService::getCard)
-                .forEach(project -> project.onForestBuiltEffect(player));
+                .forEach(project -> project.onForestBuiltEffect(context));
+    }
+
+    private void onOxygenChangedEffect(MarsContext context) {
+        final MarsGame game = context.getGame();
+        final Player player = context.getPlayer();
+        player.getPlayed()
+                .getCards()
+                .stream()
+                .map(cardService::getCard)
+                .forEach(project -> project.onOxygenChangedEffect(context));
+
+        if (game.isCrysis()) {
+            final List<Integer> openedCards = new ArrayList<>(game.getCrysisData().getOpenedCards());
+            openedCards
+                    .stream()
+                    .map(cardService::getCrysisCard)
+                    .forEach(card -> card.onOxygenChangedEffect(context));
+        }
     }
 
 }

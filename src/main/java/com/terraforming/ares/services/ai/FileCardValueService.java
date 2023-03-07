@@ -354,7 +354,7 @@ public class FileCardValueService implements ICardValueService {
     }
 
     private int getTotalCardDiscount(Card card, MarsGame game, Player player) {
-        int cardDiscount = discountService.getDiscount(card, player, Map.of());
+        int cardDiscount = discountService.getDiscount(game, card, player, Map.of());
 
         if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ENERGY_SUBSIDIES_DISCOUNT_4)) {
             cardDiscount += countCardTags(card, Tag.ENERGY) * 4;

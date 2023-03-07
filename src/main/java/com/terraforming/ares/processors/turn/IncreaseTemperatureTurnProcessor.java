@@ -6,6 +6,7 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.turn.IncreaseTemperatureTurn;
 import com.terraforming.ares.model.turn.TurnType;
+import com.terraforming.ares.services.MarsContextProvider;
 import com.terraforming.ares.services.TerraformingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class IncreaseTemperatureTurnProcessor implements TurnProcessor<IncreaseTemperatureTurn> {
     private final TerraformingService terraformingService;
+    private final MarsContextProvider marsContextProvider;
 
     @Override
     public TurnType getType() {
@@ -29,7 +31,7 @@ public class IncreaseTemperatureTurnProcessor implements TurnProcessor<IncreaseT
         Player player = game.getPlayerByUuid(turn.getPlayerUuid());
 
         player.setHeat(player.getHeat() - Constants.TEMPERATURE_HEAT_COST);
-        terraformingService.increaseTemperature(game, player);
+        terraformingService.increaseTemperature(marsContextProvider.provide(game, player));
 
         return null;
     }

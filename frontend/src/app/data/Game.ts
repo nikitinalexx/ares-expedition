@@ -4,6 +4,7 @@ import {BasePlayer} from './BasePlayer';
 import {ParameterColor} from './ParameterColor';
 import {Milestone} from './Milestone';
 import {Award} from './Award';
+import {CrysisDto} from './CrysisDto';
 
 export class Game {
   constructor(turns: number,
@@ -18,10 +19,12 @@ export class Game {
               milestones: Milestone[],
               dummyHandMode: boolean,
               usedDummyHand: number[],
+              stateReason: string,
               phaseTemperature?: number,
               phaseOxygen?: number,
               phaseOceans?: number,
-              otherPlayers?: BasePlayer[]) {
+              otherPlayers?: BasePlayer[],
+              crysisDto?: CrysisDto) {
   }
 
   turns: number;
@@ -37,7 +40,9 @@ export class Game {
   phaseOxygenColor: ParameterColor;
   dummyHandMode: boolean;
   usedDummyHand: number[];
+  stateReason: string;
   phaseTemperature?: number;
   phaseOxygen?: number;
   phaseOceans?: number;
+  crysisDto?: CrysisDto;
 }

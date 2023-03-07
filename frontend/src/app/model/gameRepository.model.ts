@@ -8,6 +8,9 @@ import {BuildProjectRequest} from "../data/BuildProjectRequest";
 import {BlueActionRequest} from "../data/BlueActionRequest";
 import {StandardProjectType} from "../data/StandardProjectType";
 import {GameShort} from "../data/GameShort";
+import {CrysisChoiceRequest} from "../data/CrysisChoiceRequest";
+import {DiscardCardsRequest} from "../data/DiscardCardsRequest";
+import {CrisisRecordEntity} from "../data/CrisisRecordEntity";
 
 @Injectable()
 export class GameRepository {
@@ -25,6 +28,10 @@ export class GameRepository {
 
   pickCorporation(playerUuid: string, corporationId: number, inputParams: Map<number, number[]>): Observable<any> {
     return this.dataSource.pickCorporation(playerUuid, corporationId, inputParams);
+  }
+
+  resolveOceanDetrimentTurn(playerUuid: string, inputParams: Map<number, number[]>): Observable<any> {
+    return this.dataSource.resolveOceanDetrimentTurn(playerUuid, inputParams);
   }
 
   pickPhase(playerUuid: string, phaseId: number): Observable<any> {
@@ -47,6 +54,14 @@ export class GameRepository {
     return this.dataSource.raiseUnmiRt(playerUuid);
   }
 
+  sellVp(playerUuid: string): Observable<any> {
+    return this.dataSource.sellVp(playerUuid);
+  }
+
+  crisisDummyChoiceTurn(playerUuid: string, choiceOptions: string[]): Observable<any> {
+    return this.dataSource.crisisDummyChoiceTurn(playerUuid, choiceOptions);
+  }
+
   sellCards = (playerUuid: string, cards: number[]) => {
     return this.dataSource.sellCards(playerUuid, cards);
   }
@@ -61,6 +76,10 @@ export class GameRepository {
 
   discardCards(playerUuid: string, cards: number[]): Observable<any> {
     return this.dataSource.discardCards(playerUuid, cards);
+  }
+
+  crisisVpToTokenTurn(playerUuid: string, cards: number[]): Observable<any> {
+    return this.dataSource.crisisVpToTokenTurn(playerUuid, cards);
   }
 
   collectIncome(playerUuid: string, doubleCollectProject: number): Observable<any> {
@@ -79,12 +98,28 @@ export class GameRepository {
     return this.dataSource.increaseTemperature(playerUuid);
   }
 
+  plantsToCrisisToken(playerUuid: string): Observable<any> {
+    return this.dataSource.plantsToCrisisToken(playerUuid);
+  }
+
+  heatToCrisisToken(playerUuid: string): Observable<any> {
+    return this.dataSource.heatToCrisisToken(playerUuid);
+  }
+
+  cardsToCrisisToken(request: DiscardCardsRequest): Observable<any> {
+    return this.dataSource.cardsToCrisisToken(request);
+  }
+
   standardProject(playerUuid: string, type: StandardProjectType): Observable<any> {
     return this.dataSource.standardProject(playerUuid, type);
   }
 
   exchangeHeat(playerUuid: string, value: number): Observable<any> {
     return this.dataSource.exchangeHeat(playerUuid, value);
+  }
+
+  getCrisisRecords(playerCount: number): Observable<CrisisRecordEntity[]> {
+    return this.dataSource.getCrisisRecords(playerCount);
   }
 
   nextActions(playerUuid: string): Observable<ActionsDto> {
@@ -101,6 +136,22 @@ export class GameRepository {
 
   buildBlueRedProject(requestBody: BuildProjectRequest): Observable<any> {
     return this.dataSource.buildBlueRedProject(requestBody);
+  }
+
+  crysisImmediateChoice(requestBody: CrysisChoiceRequest): Observable<any> {
+    return this.dataSource.crysisImmediateChoice(requestBody);
+  }
+
+  crysisPersistentChoice(requestBody: CrysisChoiceRequest): Observable<any> {
+    return this.dataSource.crysisPersistentChoice(requestBody);
+  }
+
+  crysisPersistentAll(playerUuid: string): Observable<any> {
+    return this.dataSource.crysisPersistentAll(playerUuid);
+  }
+
+  crysisImmediateAll(playerUuid: string): Observable<any> {
+    return this.dataSource.crysisImmediateAll(playerUuid);
   }
 
   blueAction(requestBody: BlueActionRequest): Observable<any> {

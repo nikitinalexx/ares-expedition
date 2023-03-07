@@ -3,6 +3,7 @@ package com.terraforming.ares.cards.blue;
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.cards.green.DiscoveryExpansionBlueCard;
 import com.terraforming.ares.model.CardAction;
+import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import lombok.Getter;
@@ -35,7 +36,8 @@ public class VolcanicSoil implements DiscoveryExpansionBlueCard {
     }
 
     @Override
-    public void onTemperatureChangedEffect(Player player) {
+    public void onTemperatureChangedEffect(MarsContext context) {
+        final Player player = context.getPlayer();
         player.setPlants(player.getPlants() + 2);
     }
 

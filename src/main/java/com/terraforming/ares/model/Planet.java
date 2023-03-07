@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 public class Planet {
     private Map<GlobalParameter, MeasurableGlobalParameter> measurableGlobalParameters;
     private List<Ocean> oceans;
+    private int lastOpenedOceanIndex;
 
     public Planet(Planet copy) {
         this.measurableGlobalParameters =
@@ -32,10 +33,15 @@ public class Planet {
                 );
 
         this.oceans = copy.oceans.stream().map(Ocean::new).collect(Collectors.toList());
+        this.lastOpenedOceanIndex = copy.lastOpenedOceanIndex;
     }
 
     public boolean allOceansRevealed() {
         return oceans.stream().allMatch(Ocean::isRevealed);
+    }
+
+    public boolean canHideOcean(int index) {
+        return index >= 0 && index <= oceans.size() - 1 && oceans.get(index).isRevealed();
     }
 
     @JsonIgnore
@@ -78,9 +84,18 @@ public class Planet {
         return measurableGlobalParameters.get(GlobalParameter.OXYGEN).getCurrentColor();
     }
 
+    public List<Ocean> getOceans() {
+        return oceans;
+    }
+
     @JsonIgnore
     public boolean isTemperatureMax() {
         return measurableGlobalParameters.get(GlobalParameter.TEMPERATURE).isMax();
+    }
+
+    @JsonIgnore
+    public boolean isTemperatureMin() {
+        return measurableGlobalParameters.get(GlobalParameter.TEMPERATURE).isMin();
     }
 
     @JsonIgnore
@@ -94,8 +109,29 @@ public class Planet {
     }
 
     @JsonIgnore
+    public boolean isOxygenMin() {
+        return measurableGlobalParameters.get(GlobalParameter.OXYGEN).isMin();
+    }
+
+    @JsonIgnore
     public boolean isValidTemperatute(List<ParameterColor> validParameters) {
         return isValidParameter(validParameters, GlobalParameter.TEMPERATURE);
+    }
+
+    @JsonIgnore
+    public boolean isValidOcean(ParameterColor parameterColor) {
+        final int oceansLeft = oceansLeft();
+        final int oceansOpened = oceans.size() - oceansLeft;
+        if (parameterColor == ParameterColor.W) {
+            return oceansOpened >= 7;
+        } else if (parameterColor == ParameterColor.Y) {
+            return oceansOpened >= 4 && oceansOpened <= 6;
+        } else if (parameterColor == ParameterColor.R) {
+            return oceansOpened >= 2 && oceansOpened <= 3;
+        } else if (parameterColor == ParameterColor.P) {
+            return oceansOpened <= 1;
+        }
+        throw new IllegalArgumentException("Unreachable ocean check");
     }
 
     @JsonIgnore
@@ -115,8 +151,23 @@ public class Planet {
 
     public Ocean revealOcean() {
         Optional<Ocean> result = oceans.stream().filter(ocean -> !ocean.isRevealed()).findAny();
-        result.ifPresent(Ocean::reveal);
-        return result.orElse(oceans.get(oceans.size() - 1));
+        result.ifPresent(ocean -> {
+                    ocean.reveal();
+                    if (allOceansRevealed()) {
+                        lastOpenedOceanIndex = oceans.indexOf(ocean);
+                    }
+                }
+        );
+        return result.orElseGet(() -> oceans.get(lastOpenedOceanIndex));
+    }
+
+    public boolean hideOcean(int index) {
+        if (!canHideOcean(index)) {
+            return false;
+        }
+        oceans.get(index).hide();
+        lastOpenedOceanIndex = -1;
+        return true;
     }
 
     public void increaseTemperature() {
@@ -125,6 +176,14 @@ public class Planet {
 
     public void increaseOxygen() {
         measurableGlobalParameters.get(GlobalParameter.OXYGEN).increase();
+    }
+
+    public void reduceOxygen() {
+        measurableGlobalParameters.get(GlobalParameter.OXYGEN).reduce();
+    }
+
+    public void reduceTemperature() {
+        measurableGlobalParameters.get(GlobalParameter.TEMPERATURE).reduce();
     }
 
     private boolean isValidParameter(List<ParameterColor> validColors, GlobalParameter globalParameter) {

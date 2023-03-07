@@ -29,8 +29,8 @@ export class RequirementsComponent {
       }
       const enoughRequirements = canBuildA || canBuildB;
 
-      const enoughMoneyA = this.enoughMoney(a, player);
-      const enoughMoneyB = this.enoughMoney(b, player);
+      const enoughMoneyA = this.enoughMoney(game, a, player);
+      const enoughMoneyB = this.enoughMoney(game, b, player);
       if (!enoughMoneyA && enoughMoneyB) {
         if (enoughRequirements) {
           return 1;
@@ -48,8 +48,8 @@ export class RequirementsComponent {
     });
   }
 
-  enoughMoney(card: Card, player: Player): boolean {
-    const discount = this.discountService.getDiscountWithOptimal(card, player, -1);
+  enoughMoney(game: Game, card: Card, player: Player): boolean {
+    const discount = this.discountService.getDiscountWithOptimal(game, card, player, -1);
 
     return player.mc >= card.price - discount;
   }
@@ -100,7 +100,7 @@ export class RequirementsComponent {
       return false;
     }
 
-    if (!this.discountService.getOptimalBuilding(card, player, this.discountService.getDiscount(card, player, -1))) {
+    if (!this.discountService.getOptimalBuilding(card, player, this.discountService.getDiscount(game, card, player, -1))) {
       return false;
     }
 
@@ -113,7 +113,7 @@ export class RequirementsComponent {
       return false;
     }
 
-    return this.enoughMoney(card, player);
+    return this.enoughMoney(game, card, player);
   }
 
   private ownsSpecialEffect(player: Player, targetEffect: SpecialEffect): boolean {
@@ -127,8 +127,10 @@ export class RequirementsComponent {
   amplifyRequirement(initialRequirement: ParameterColor[]): ParameterColor[] {
     const resultRequirement = Object.assign([], initialRequirement);
 
-    const minRequirement = initialRequirement.map(value => value.valueOf()).reduce((a, b) => (ParameterColor[a] < ParameterColor[b]) ? a : b);
-    const maxRequirement = initialRequirement.map(value => value.valueOf()).reduce((a, b) => (ParameterColor[a] > ParameterColor[b]) ? a : b);
+    const minRequirement = initialRequirement.map(value => value.valueOf())
+      .reduce((a, b) => (ParameterColor[a] < ParameterColor[b]) ? a : b);
+    const maxRequirement = initialRequirement.map(value => value.valueOf())
+      .reduce((a, b) => (ParameterColor[a] > ParameterColor[b]) ? a : b);
 
     if (ParameterColor[minRequirement] > ParameterColor.P.toString()) {
       resultRequirement.push(ParameterColor[Number.parseInt(ParameterColor[minRequirement], 0) - 1]);

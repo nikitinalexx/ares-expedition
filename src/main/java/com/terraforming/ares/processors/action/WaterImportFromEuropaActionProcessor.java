@@ -5,6 +5,7 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.services.MarsContextProvider;
 import com.terraforming.ares.services.TerraformingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class WaterImportFromEuropaActionProcessor implements BlueActionCardProcessor<WaterImportFromEuropa> {
     private final TerraformingService terraformingService;
+    private final MarsContextProvider contextProvider;
 
     @Override
     public Class<WaterImportFromEuropa> getType() {
@@ -29,7 +31,7 @@ public class WaterImportFromEuropaActionProcessor implements BlueActionCardProce
 
         player.setMc(player.getMc() - flipPrice);
 
-        terraformingService.revealOcean(game, player);
+        terraformingService.revealOcean(contextProvider.provide(game, player));
 
         return null;
     }

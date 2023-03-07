@@ -126,7 +126,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                     }
                     String errorMessage = cardValidationService.validateCard(
                             copy, game, card.getId(),
-                            aiPaymentHelper.getCardPayments(copy, card),
+                            aiPaymentHelper.getCardPayments(game, copy, card),
                             aiCardParamsHelper.getInputParamsForValidation(copy, card)
                     );
                     return errorMessage == null;
@@ -160,7 +160,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                     copy.setBuilds(List.of(new BuildDto(BuildType.GREEN, 3)));
                     String errorMessage = cardValidationService.validateCard(
                             copy, game, card.getId(),
-                            aiPaymentHelper.getCardPayments(copy, card),
+                            aiPaymentHelper.getCardPayments(game, copy, card),
                             aiCardParamsHelper.getInputParamsForValidation(copy, card)
                     );
                     return errorMessage == null;
@@ -187,7 +187,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                     copy.setBuilds(List.of(new BuildDto(BuildType.BLUE_RED)));
                     String errorMessage = cardValidationService.validateCard(
                             copy, game, card.getId(),
-                            aiPaymentHelper.getCardPayments(copy, card),
+                            aiPaymentHelper.getCardPayments(game, copy, card),
                             aiCardParamsHelper.getInputParamsForValidation(copy, card)
                     );
                     return errorMessage == null;
@@ -389,7 +389,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                     copy.setBuilds(List.of(new BuildDto(BuildType.GREEN, 3)));
                     String errorMessage = cardValidationService.validateCard(
                             copy, game, card.getId(),
-                            aiPaymentHelper.getCardPayments(copy, card),
+                            aiPaymentHelper.getCardPayments(game, copy, card),
                             aiCardParamsHelper.getInputParamsForValidation(copy, card)
                     );
                     return errorMessage == null;
@@ -409,7 +409,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                         copy.setBuilds(List.of(new BuildDto(BuildType.BLUE_RED, 0)));
                         String errorMessage = cardValidationService.validateCard(
                                 copy, game, card.getId(),
-                                aiPaymentHelper.getCardPayments(copy, card),
+                                aiPaymentHelper.getCardPayments(game, copy, card),
                                 aiCardParamsHelper.getInputParamsForValidation(copy, card)
                         );
                         return errorMessage == null;

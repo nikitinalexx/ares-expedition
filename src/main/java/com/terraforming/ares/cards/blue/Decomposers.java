@@ -101,12 +101,12 @@ public class Decomposers implements BlueCard {
         final Player player = marsContext.getPlayer();
 
         if (inputParams.containsKey(DECOMPOSERS_TAKE_MICROBE.getId()) && !CollectionUtils.isEmpty(inputParams.get(DECOMPOSERS_TAKE_MICROBE.getId()))) {
-            player.addResources(this, inputParams.get(DECOMPOSERS_TAKE_MICROBE.getId()).get(0));
+            marsContext.getCardResourceService().addResources(player, this, inputParams.get(DECOMPOSERS_TAKE_MICROBE.getId()).get(0));
         }
 
         if (inputParams.containsKey(DECOMPOSERS_TAKE_CARD.getId()) && !CollectionUtils.isEmpty(inputParams.get(DECOMPOSERS_TAKE_CARD.getId()))) {
             Integer takeCardsCount = inputParams.get(DECOMPOSERS_TAKE_CARD.getId()).get(0);
-            player.addResources(this, -takeCardsCount);
+            player.removeResources(this, takeCardsCount);
 
             for (Integer cardId : marsContext.getCardService().dealCards(marsContext.getGame(), takeCardsCount)) {
                 player.getHand().addCard(cardId);

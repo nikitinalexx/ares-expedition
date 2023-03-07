@@ -45,7 +45,7 @@ public class ImportedHydrogen implements BaseExpansionRedCard {
     public TurnResponse buildProject(MarsContext marsContext) {
         TerraformingService terraformingService = marsContext.getTerraformingService();
 
-        terraformingService.revealOcean(marsContext.getGame(), marsContext.getPlayer());
+        terraformingService.revealOcean(marsContext);
 
         return null;
     }
@@ -62,12 +62,12 @@ public class ImportedHydrogen implements BaseExpansionRedCard {
         int inputCardId = input.get(InputFlag.IMPORTED_HYDROGEN_PUT_RESOURCE.getId()).get(0);
 
         Card inputCard = marsContext.getCardService().getCard(inputCardId);
-        int resourcedToAdd = 2;
+        int resourcesToAdd = 2;
         if (inputCard.getCollectableResource() == CardCollectableResource.MICROBE) {
-            resourcedToAdd = 3;
+            resourcesToAdd = 3;
         }
 
-        player.addResources(inputCard, resourcedToAdd);
+        marsContext.getCardResourceService().addResources(player, inputCard, resourcesToAdd);
     }
 
     @Override

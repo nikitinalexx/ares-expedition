@@ -58,6 +58,11 @@ public class NuclearPlants implements BaseExpansionGreenCard {
     }
 
     @Override
+    public boolean onBuiltEffectApplicableToItself() {
+        return true;
+    }
+
+    @Override
     public int getWinningPoints() {
         return -1;
     }

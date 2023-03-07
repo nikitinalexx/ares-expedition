@@ -57,7 +57,7 @@ public class LargeConvoy implements BaseExpansionRedCard {
 
         Card animalsCard = marsContext.getCardService().getCard(animalsCardId);
 
-        player.addResources(animalsCard, 3);
+        marsContext.getCardResourceService().addResources(player, animalsCard, 3);
     }
 
     @Override
@@ -65,7 +65,7 @@ public class LargeConvoy implements BaseExpansionRedCard {
         TerraformingService terraformingService = marsContext.getTerraformingService();
         MarsGame game = marsContext.getGame();
 
-        terraformingService.revealOcean(game, marsContext.getPlayer());
+        terraformingService.revealOcean(marsContext);
 
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();
 

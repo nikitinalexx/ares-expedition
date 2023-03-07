@@ -9,6 +9,7 @@ import com.terraforming.ares.model.turn.CorporationChoiceTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.BuildService;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.MarsContextProvider;
 import com.terraforming.ares.services.TerraformingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,8 +22,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class PickCorporationProcessor implements TurnProcessor<CorporationChoiceTurn> {
     private final CardService cardService;
-    private final TerraformingService terraformingService;
-    private final BuildService buildService;
+    private final MarsContextProvider marsContextProvider;
 
     @Override
     public TurnResponse processTurn(CorporationChoiceTurn turn, MarsGame game) {
@@ -32,13 +32,7 @@ public class PickCorporationProcessor implements TurnProcessor<CorporationChoice
         player.getPlayed().addCard(turn.getCorporationCardId());
 
         Card card = cardService.getCard(turn.getCorporationCardId());
-        final MarsContext marsContext = MarsContext.builder()
-                .game(game)
-                .player(player)
-                .terraformingService(terraformingService)
-                .cardService(cardService)
-                .buildService(buildService)
-                .build();
+        final MarsContext marsContext = marsContextProvider.provide(game, player);
         TurnResponse turnResponse = card.buildProject(marsContext);
         if (card.onBuiltEffectApplicableToItself()) {
             card.postProjectBuiltEffect(marsContext, card, turn.getInputParams());

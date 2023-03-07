@@ -40,8 +40,8 @@ public class Comet implements BaseExpansionRedCard {
     public TurnResponse buildProject(MarsContext marsContext) {
         TerraformingService terraformingService = marsContext.getTerraformingService();
 
-        terraformingService.increaseTemperature(marsContext.getGame(), marsContext.getPlayer());
-        terraformingService.revealOcean(marsContext.getGame(), marsContext.getPlayer());
+        terraformingService.increaseTemperature(marsContext);
+        terraformingService.revealOcean(marsContext);
 
         return null;
     }

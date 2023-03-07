@@ -31,7 +31,7 @@ public class PlanetFactory {
                 .measurableGlobalParameters(
                         Map.of(
                                 GlobalParameter.TEMPERATURE, MeasurableGlobalParameter.builder()
-                                        .currentLevel(0)
+                                        .currentLevel(gameParameters.isCrysis() ? 19 : 0)
                                         .level(ParameterGradation.of(-30, P))
                                         .level(ParameterGradation.of(-28, P))
                                         .level(ParameterGradation.of(-26, P))
@@ -54,7 +54,7 @@ public class PlanetFactory {
                                         .level(ParameterGradation.of(8, W))
                                         .build(),
                                 GlobalParameter.OXYGEN, MeasurableGlobalParameter.builder()
-                                        .currentLevel(0)
+                                        .currentLevel(gameParameters.isCrysis() ? 14 : 0)
                                         .level(ParameterGradation.of(0, P))
                                         .level(ParameterGradation.of(1, P))
                                         .level(ParameterGradation.of(2, P))
@@ -73,11 +73,11 @@ public class PlanetFactory {
                                         .build()
                         )
                 )
-                .oceans(generateOceans())
+                .oceans(generateOceans(gameParameters))
                 .build();
     }
 
-    private List<Ocean> generateOceans() {
+    private List<Ocean> generateOceans(GameParameters gameParameters) {
         List<Ocean> oceans = new ArrayList<>(Arrays.asList(
                 new Ocean(0, 0, 2),
                 new Ocean(0, 4, 0),
@@ -89,6 +89,10 @@ public class PlanetFactory {
                 new Ocean(1, 0, 0),
                 new Ocean(0, 0, 2)
         ));
+
+        if (gameParameters.isCrysis()) {
+            oceans.forEach(Ocean::reveal);
+        }
 
         shuffleService.shuffle(oceans);
 

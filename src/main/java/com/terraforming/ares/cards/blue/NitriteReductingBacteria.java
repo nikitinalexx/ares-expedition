@@ -62,7 +62,12 @@ public class NitriteReductingBacteria implements BlueCard {
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         marsContext.getPlayer().initResources(this);
-        marsContext.getPlayer().addResources(this, 3);
+
+        marsContext.getCardResourceService().addResources(
+                marsContext.getPlayer(), this, 3
+        );
+
+
         return null;
     }
 

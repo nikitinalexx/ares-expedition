@@ -1,6 +1,7 @@
 package com.terraforming.ares.states;
 
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.StateContext;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
@@ -14,8 +15,8 @@ import java.util.List;
  */
 public class GameEndState extends AbstractState {
 
-    public GameEndState(MarsGame marsGame, CardService cardService, StateTransitionService stateTransitionService) {
-        super(marsGame, cardService, stateTransitionService);
+    public GameEndState(MarsContext context, StateTransitionService stateTransitionService) {
+        super(context, stateTransitionService);
     }
 
     @Override

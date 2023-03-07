@@ -1,12 +1,12 @@
 <div class="filterDiv display phase-size phase-{{phase}}" [ngClass]="selected ? 'clicked-card': ''">
 
-  <div class="{{phase <= 3 ? 'text-white' : 'text-black'}} phase-{{phase}}-description">
-    {{phaseDescription(phase)}}
+  <div class="{{phaseBelowOrEqual3(phase) ? 'text-white' : 'text-black'}} phase-{{phase[0]}}-description">
+    {{phaseDescription(phase[0])}}
   </div>
 
-  <div class="{{phase <= 3 ? 'text-white' : 'text-black'}}
-              {{phase === 3 &&player.phaseCards[2] === 2 ? 'phase-3-bonus-description' : 'phase-bonus-description'}}
-              {{player.phaseCards[phase - 1] !== 0 ? 'upgraded-phase-bonus' : ''}}">
+  <div *ngIf="phase.length === 1 && !(phase === '1' && firstPhaseNoBonusByDetriment())" class="{{phaseBelowOrEqual3(phase) ? 'text-white' : 'text-black'}}
+              {{phaseEqual3(phase) && player.phaseCards[2] === 2 ? 'phase-3-bonus-description' : 'phase-bonus-description'}}
+              {{player.phaseCards[parseInt(phase) - 1] !== 0 ? 'upgraded-phase-bonus' : ''}}">
     Bonus: {{phaseBonusDescription(phase)}}
   </div>
 

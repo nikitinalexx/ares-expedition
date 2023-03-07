@@ -5,6 +5,7 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.turn.StandardProjectTurn;
 import com.terraforming.ares.model.turn.TurnType;
+import com.terraforming.ares.services.MarsContextProvider;
 import com.terraforming.ares.services.StandardProjectService;
 import com.terraforming.ares.services.TerraformingService;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 public class StandardProjectTurnProcessor implements TurnProcessor<StandardProjectTurn> {
     private final StandardProjectService standardProjectService;
     private final TerraformingService terraformingService;
+    private final MarsContextProvider marsContextProvider;
 
     @Override
     public TurnResponse processTurn(StandardProjectTurn turn, MarsGame game) {
@@ -29,13 +31,13 @@ public class StandardProjectTurnProcessor implements TurnProcessor<StandardProje
 
         switch (turn.getProjectType()) {
             case OCEAN:
-                terraformingService.revealOcean(game, player);
+                terraformingService.revealOcean(marsContextProvider.provide(game, player));
                 break;
             case FOREST:
-                terraformingService.buildForest(game, player);
+                terraformingService.buildForest(marsContextProvider.provide(game, player));
                 break;
             case TEMPERATURE:
-                terraformingService.increaseTemperature(game, player);
+                terraformingService.increaseTemperature(marsContextProvider.provide(game, player));
                 break;
             default:
                 throw new IllegalStateException("Unknown project type");

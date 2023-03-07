@@ -51,7 +51,7 @@ public class BiothermalPower implements BaseExpansionGreenCard {
         TerraformingService terraformingService = marsContext.getTerraformingService();
 
         player.setHeatIncome(player.getHeatIncome() + 1);
-        terraformingService.buildForest(marsContext.getGame(), player);
+        terraformingService.buildForest(marsContext);
 
         return null;
     }

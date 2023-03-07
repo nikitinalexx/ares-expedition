@@ -64,7 +64,7 @@
       </td>
     </tr>
 
-    <tr *ngIf="this.game?.dummyHandMode">
+    <tr *ngIf="this.game?.dummyHandMode || this.game?.crysisDto && this.game.crysisDto.chosenDummyPhases?.length > 0">
       <td>
         <div class="form-check">
           <input id="dummy" type="radio" class="form-check-input" value="You" formControlName="player" disabled>
@@ -75,7 +75,7 @@
       </td>
       <td>
       </td>
-      <td *ngFor="let phase of this.game?.usedDummyHand;">
+      <td *ngFor="let phase of dummyCards();">
         <span class="phase-{{phase}} resource"
               [ngClass]="phase !== this.game?.usedDummyHand[this.game?.usedDummyHand.length - 1] ? 'greyed-phase' : ''"
               style="border-radius: 5px"></span>
@@ -112,11 +112,77 @@
     <span style="font-size: 10px">(at phase start)</span>
   </div>
 
-  <div *ngFor="let ocean of game?.oceans; let i = index" class="ocean-tracker ocean_{{i + 1}}">
-    <div style="margin-top: 8px;"></div>
-    <div *ngFor="let item of [].constructor(ocean.plants); let i = index" class="resource plant"></div>
-    <div *ngIf="ocean.mc" class="resource money">{{ocean.mc}}</div>
-    <div *ngIf="ocean.cards" class="resource card"></div>
+  <div *ngIf="game?.crysisDto" class="ocean-color-purple" [ngClass]="oceanTrackerStyle(0,1)">
+    0-1
+  </div>
+  <div *ngIf="game?.crysisDto" class="ocean-color-red" [ngClass]="oceanTrackerStyle(2,3)">
+    2-3
+  </div>
+  <div *ngIf="game?.crysisDto" class="ocean-color-yellow" [ngClass]="oceanTrackerStyle(4,6)">
+    4-6
+  </div>
+  <div *ngIf="game?.crysisDto" class="ocean-color-white" [ngClass]="oceanTrackerStyle(7,9)">
+    7-9
+  </div>
+
+  <div *ngFor="let ocean of game?.oceans; let i = index">
+    <div *ngIf="ocean.revealed" class="ocean-tracker ocean_{{i + 1}}">
+      <div style="margin-top: 8px;"></div>
+      <div *ngFor="let item of [].constructor(ocean.plants); let i = index" class="resource plant"></div>
+      <div *ngIf="ocean.mc" class="resource money">{{ocean.mc}}</div>
+      <div *ngIf="ocean.cards" class="resource card"></div>
+    </div>
+  </div>
+
+  <div *ngIf="getOxygenDetrimentToken() !== undefined" class="oxygen-detriment detriment-{{getOxygenDetrimentToken()}}">
+    <div [ngClass]="oxygenTitleClass()" style="font-size: 25px; font-weight: bold">Oxygen</div>
+    <div class="oxygen-detriment-tile "></div>
+    <div *ngIf="getOxygenDetrimentToken() === 0" class="bg-warning text-white" style="font-size: 18px">
+      No bonus in 1st phase.
+    </div>
+    <div *ngIf="getOxygenDetrimentToken() === 1" class="bg-danger text-white" style="font-size: 18px">
+      No 1st phase.
+    </div>
+    <div *ngIf="getOxygenDetrimentToken() === 2" class="bg-success text-white" style="font-size: 18px">
+      No crisis effect
+    </div>
+  </div>
+
+  <div *ngIf="getTemperatureDetrimentToken() !== undefined"
+       class="temperature-detriment detriment-{{getTemperatureDetrimentToken()}}">
+    <div [ngClass]="temperatureTitleClass()" style="font-size: 25px; font-weight: bold">Temperature</div>
+    <div class="temperature-detriment-tile "></div>
+    <div *ngIf="getTemperatureDetrimentToken() === 0" class="bg-warning text-white">
+      Cards you play cost +1 MC.
+    </div>
+    <div *ngIf="getTemperatureDetrimentToken() === 1" class="bg-danger text-white">
+      Cards you play cost +3 MC.
+    </div>
+    <div *ngIf="getTemperatureDetrimentToken() === 2" class="bg-success text-white">
+      No crisis effect
+    </div>
+  </div>
+
+  <div *ngIf="getOceanDetrimentToken() !== undefined" class="ocean-detriment detriment-{{getOceanDetrimentToken()}}">
+    <div [ngClass]="oceanTitleClass()" style="font-size: 25px; font-weight: bold">Ocean</div>
+    <div class="ocean-detriment-tile "></div>
+    <div *ngIf="getOceanDetrimentToken() === 0" class="text-white"
+         style="margin-top: -10px; font-size: 20px; font-weight: bold">
+      x1 --
+      <div class="tile temperature-tile "></div>
+      OR
+      <div class="tile oxygen-tile "></div>
+    </div>
+    <div *ngIf="getOceanDetrimentToken() === 1" class="text-white"
+         style="margin-top: -10px; font-size: 20px; font-weight: bold">
+      x2 --
+      <div class="tile temperature-tile "></div>
+      OR
+      <div class="tile oxygen-tile "></div>
+    </div>
+    <div *ngIf="getOceanDetrimentToken() === 2" class="bg-success text-white">
+      No crisis effect
+    </div>
   </div>
 
   <div *ngFor="let milestone of game?.milestones; let awardIndex = index" class="achievement-border"
@@ -331,6 +397,8 @@
   </div>
 
   <div *ngIf="nextTurns && nextTurns.length > 0">
+    <h4 *ngIf="anyParameterIsVeryLowInCrisis()"
+        class="bg-danger text-white top-level-warning">{{parameterVeryLowInCrisisMessage()}}</h4>
     <div>
       <app-pick-corporation *ngIf="pickCorporationTurn()" (outputToParent)="GetOutputVal($event)"
                             [game]="game" [nextTurns]="this.nextTurns"></app-pick-corporation>
@@ -338,6 +406,13 @@
 
     <div>
       <app-pick-phase *ngIf="pickPhaseTurn()" (outputToParent)="GetOutputVal($event)" [game]="game"></app-pick-phase>
+    </div>
+
+    <div>
+      <app-crysis-turn *ngIf="crisisTurn()"
+                       (outputToParent)="GetOutputVal($event)"
+                       [game]="game"
+                       [nextTurns]="this.nextTurns"></app-crysis-turn>
     </div>
 
     <div>
@@ -375,10 +450,26 @@
 
 
 <div *ngIf="gameEnd()" class="text-white" style="margin-left: 20px;">
-  <div style="font-size: 30px;">Game Finished</div>
-  <div>Your score: {{this.game.player.winPoints}}</div>
-  <div *ngFor="let player of this.game?.otherPlayers">
-    Another player score: {{player.winPoints}}
+  <div style="font-size: 30px;" [ngClass]="gameFinishedClass()">Game Finished</div>
+  <div style="font-size: 20px;" class="text-warning">
+    <span *ngIf="!game.crysisDto">Your score: {{this.game.player.winPoints}}</span>
+    <span *ngIf="game.crysisDto && game.crysisDto.wonGame">Your Team score:
+      <span class="text-white">{{this.game.player.winPoints}}</span> VP and
+      <span class="text-white">{{sumTerraformingRatingForCrisis()}}</span> TR,
+      total <span class="text-white">{{this.game.player.winPoints + sumTerraformingRatingForCrisis()}}</span> Points
+    </span>
+    <span *ngIf="game.crysisDto && !game.crysisDto.wonGame">
+      Better luck next time!
+    </span>
+  </div>
+  <br/>
+  <div *ngIf="game.crysisDto && game.stateReason">
+    <p style="width: 500px">{{game.stateReason}}</p>
+  </div>
+  <div *ngIf="!game.crysisDto">
+    <div *ngFor="let player of this.game?.otherPlayers">
+      Another player score: {{player.winPoints}}
+    </div>
   </div>
 </div>
 
@@ -391,6 +482,20 @@
         <app-card-template [card]="card"></app-card-template>
       </li>
     </ul>
+  </div>
+
+  <div *ngIf="this.game?.crysisDto">
+    <h2 class="text-white">Crises</h2>
+
+    <div class="card-container">
+      <ul class="myUL">
+        <li *ngFor="let card of this.game?.crysisDto.openedCards;"
+            class="filterDiv display"
+            [ngClass]="card.initialTokens === 0 ? 'immediate-crysis' : 'crysis'">
+          <app-crysis-card-template [card]="card" [game]="this.game"></app-crysis-card-template>
+        </li>
+      </ul>
+    </div>
   </div>
 </div>
 

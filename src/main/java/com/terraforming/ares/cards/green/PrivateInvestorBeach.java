@@ -34,7 +34,7 @@ public class PrivateInvestorBeach implements DiscoveryExpansionRedCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        marsContext.getTerraformingService().revealOcean(marsContext.getGame(), marsContext.getPlayer());
+        marsContext.getTerraformingService().revealOcean(marsContext);
 
         return null;
     }

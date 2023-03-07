@@ -1,19 +1,14 @@
 package com.terraforming.ares.services.ai.turnProcessors;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Card;
-import com.terraforming.ares.model.CardColor;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.StateType;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.processors.turn.TurnProcessor;
 import com.terraforming.ares.services.*;
 import com.terraforming.ares.services.ai.DeepNetwork;
 import com.terraforming.ares.services.ai.ProjectionStrategy;
 import com.terraforming.ares.services.ai.RandomBotHelper;
 import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
-import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
 import org.springframework.stereotype.Service;
@@ -37,6 +32,7 @@ public class AiBuildProjectService extends BaseProcessorService {
     private final DeepNetwork deepNetwork;
     private final AiTurnService aiTurnService;
     private final StateFactory stateFactory;
+    private final MarsContextProvider contextProvider;
 
     protected AiBuildProjectService(TurnTypeService turnTypeService,
                                     StateFactory stateFactory,
@@ -46,7 +42,9 @@ public class AiBuildProjectService extends BaseProcessorService {
                                     AiPaymentService aiPaymentService,
                                     AiCardBuildParamsHelper aiCardBuildParamsHelper,
                                     CardValidationService cardValidationService,
-                                    DeepNetwork deepNetwork, CardService cardService) {
+                                    DeepNetwork deepNetwork,
+                                    CardService cardService,
+                                    MarsContextProvider contextProvider) {
         super(turnTypeService, stateFactory, stateContextProvider, turnProcessor);
         this.aiTurnService = aiTurnService;
         this.aiPaymentService = aiPaymentService;
@@ -55,6 +53,7 @@ public class AiBuildProjectService extends BaseProcessorService {
         this.deepNetwork = deepNetwork;
         this.cardService = cardService;
         this.stateFactory = stateFactory;
+        this.contextProvider = contextProvider;
     }
 
     public BuildProjectPrediction getBestProjectToBuild(MarsGame game, Player player, Set<CardColor> cardColors, ProjectionStrategy projectionStrategy) {
@@ -67,7 +66,7 @@ public class AiBuildProjectService extends BaseProcessorService {
                 {
                     String errorMessage = cardValidationService.validateCard(
                             player, game, card.getId(),
-                            aiPaymentService.getCardPayments(player, card),
+                            aiPaymentService.getCardPayments(game, player, card),
                             aiCardBuildParamsHelper.getInputParamsForValidation(player, card)
                     );
                     return errorMessage == null;
@@ -113,11 +112,12 @@ public class AiBuildProjectService extends BaseProcessorService {
     public MarsGame projectBuildCard(MarsGame game, Player player, Card card, ProjectionStrategy projectionStrategy) {
         game = new MarsGame(game);
         player = game.getPlayerByUuid(player.getUuid());
+        final MarsContext context = contextProvider.provide(game, player);
 
         if (projectionStrategy == ProjectionStrategy.FROM_PICK_PHASE) {
             player.setPreviousChosenPhase(null);
             getAnotherPlayer(game, player).setPreviousChosenPhase(null);
-            game.setStateType(StateType.PICK_PHASE, cardService);
+            game.setStateType(StateType.PICK_PHASE, context);
             game.getPlayerUuidToPlayer().values().forEach(
                     p -> aiTurnService.choosePhaseTurn(p, card.getColor() == CardColor.GREEN ? 1 : 2)
             );
@@ -126,7 +126,7 @@ public class AiBuildProjectService extends BaseProcessorService {
             }
             String errorMessage = cardValidationService.validateCard(
                     player, game, card.getId(),
-                    aiPaymentService.getCardPayments(player, card),
+                    aiPaymentService.getCardPayments(game, player, card),
                     aiCardBuildParamsHelper.getInputParamsForValidation(player, card)
             );
             if (errorMessage != null) {
@@ -139,7 +139,7 @@ public class AiBuildProjectService extends BaseProcessorService {
                     game,
                     player,
                     card.getId(),
-                    aiPaymentService.getCardPayments(player, card),
+                    aiPaymentService.getCardPayments(game, player, card),
                     aiCardBuildParamsHelper.getInputParamsForBuild(player, card)
             );
         } else {
@@ -147,7 +147,7 @@ public class AiBuildProjectService extends BaseProcessorService {
                     game,
                     player,
                     card.getId(),
-                    aiPaymentService.getCardPayments(player, card),
+                    aiPaymentService.getCardPayments(game, player, card),
                     aiCardBuildParamsHelper.getInputParamsForBuild(player, card)
             );
         }

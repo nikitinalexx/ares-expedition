@@ -56,7 +56,7 @@ public class ViralEnhancers implements BlueCard {
         if (!CollectionUtils.isEmpty(microbeAnimalsInput)) {
             for (Integer cardId : microbeAnimalsInput) {
                 Card projectCard = marsContext.getCardService().getCard(cardId);
-                player.addResources(projectCard, 1);
+                marsContext.getCardResourceService().addResources(player, projectCard, 1);
             }
         }
     }

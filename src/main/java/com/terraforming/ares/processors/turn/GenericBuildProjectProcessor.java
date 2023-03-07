@@ -4,12 +4,10 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.turn.GenericBuildProjectTurn;
-import com.terraforming.ares.services.BuildService;
-import com.terraforming.ares.services.CardService;
-import com.terraforming.ares.services.DiscountService;
-import com.terraforming.ares.services.TerraformingService;
+import com.terraforming.ares.services.*;
 import lombok.RequiredArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.Collections;
 
 /**
@@ -19,9 +17,9 @@ import java.util.Collections;
 @RequiredArgsConstructor
 public abstract class GenericBuildProjectProcessor<T extends GenericBuildProjectTurn> implements TurnProcessor<T> {
     protected final CardService cardService;
-    private final TerraformingService terraformingService;
     private final BuildService buildService;
     private final DiscountService discountService;
+    private final MarsContextProvider marsContextProvider;
 
     @Override
     public TurnResponse processTurn(T turn, MarsGame game) {
@@ -34,18 +32,12 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
 
         player.setBuiltSpecialDesignLastTurn(false);
 
-        int discount = discountService.getDiscount(card, player, turn.getInputParams());
+        int discount = discountService.getDiscount(game, card, player, turn.getInputParams());
         discount += turn.getPayments().stream().mapToInt(Payment::getDiscount).sum();
 
         final BuildDto buildOption = buildService.findMostOptimalBuild(card, player, discount);
 
-        final MarsContext marsContext = MarsContext.builder()
-                .game(game)
-                .player(player)
-                .terraformingService(terraformingService)
-                .cardService(cardService)
-                .buildService(buildService)
-                .build();
+        final MarsContext marsContext = marsContextProvider.provide(game, player);
 
         TurnResponse response = card.buildProject(marsContext);
 
@@ -54,6 +46,14 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
             if (previouslyPlayedCard.onBuiltEffectApplicableToOther()) {
                 previouslyPlayedCard.postProjectBuiltEffect(marsContext, card, turn.getInputParams());
             }
+        }
+
+        if (game.isCrysis()) {
+            new ArrayList<>(game.getCrysisData()
+                    .getOpenedCards())
+                    .stream()
+                    .map(cardService::getCrysisCard)
+                    .forEach(c -> c.postProjectBuiltEffect(marsContext, card, turn.getInputParams()));
         }
 
         player.getHand().removeCards(Collections.singletonList(turn.getProjectId()));

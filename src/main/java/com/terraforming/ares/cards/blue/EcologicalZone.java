@@ -69,7 +69,7 @@ public class EcologicalZone implements BlueCard {
             return;
         }
 
-        marsContext.getPlayer().addResources(this, (int) animalsToAddCount);
+        marsContext.getCardResourceService().addResources(marsContext.getPlayer(), this, (int) animalsToAddCount);
     }
 
     @Override

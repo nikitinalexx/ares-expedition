@@ -40,7 +40,8 @@ public class Zeppelins implements BaseExpansionGreenCard {
     }
 
     @Override
-    public void onForestBuiltEffect(Player player) {
+    public void onForestBuiltEffect(MarsContext context) {
+        final Player player = context.getPlayer();
         player.setMcIncome(player.getMcIncome() + 1);
     }
 

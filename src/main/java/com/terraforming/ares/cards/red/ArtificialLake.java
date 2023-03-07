@@ -43,7 +43,7 @@ public class ArtificialLake implements BaseExpansionRedCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        marsContext.getTerraformingService().revealOcean(marsContext.getGame(), marsContext.getPlayer());
+        marsContext.getTerraformingService().revealOcean(marsContext);
         return null;
     }
 

@@ -1,0 +1,212 @@
+<div class="bg-danger mt-2 p-2 text-center text-white"
+     *ngIf="errorMessage != null">
+  {{errorMessage}}
+</div>
+
+
+<form [formGroup]="parentForm" (submit)="submitForm(parentForm)" novalidate>
+
+  <div *ngIf="resolveImmediateWithChoiceAction()">
+    <div class="form-check">
+      <input id="crysis" type="radio" class="form-check-input" value="immediate-choice"
+             formControlName="turn">
+      <label class="custom-control-label text-white" for="crysis"> New Crisis - choose immediate effect</label>
+    </div>
+
+    <div *ngIf="parentForm.value?.turn === 'immediate-choice'" class="card-container">
+      <div class="card-container">
+        <ul class="myUL">
+          <li class="filterDiv crysis display">
+            <app-crysis-card-template [card]="getCrysisCardWithChoice()" [game]="game"></app-crysis-card-template>
+          </li>
+        </ul>
+      </div>
+
+      <div *ngIf="getCrysisCardWithChoice().immediateOptions?.length > 0">
+        <div class="form-check" style="margin-left: 20px;">
+
+          <div *ngIf="!(expectsSeismicAftershockGreenCardInput() && getGreenPlayedPlayerHand().length === 0)">
+            <input id="firstChoice" type="radio" class="form-check-input" value="first"
+                   formControlName="choice">
+            <label class="custom-control-label text-white"
+                   for="firstChoice">{{getCrysisCardWithChoice().immediateOptions[0]}}</label>
+          </div>
+
+          <div *ngIf="expectsSeismicAftershockGreenCardInput() && parentForm.value?.choice === 'first'">
+            <div class="card-container">
+              <ul class="myUL">
+                <li *ngFor="let card of getGreenPlayedPlayerHand();" (click)="selectProject(card.id)"
+                    [ngClass]="selectedProjectClass(card.id)" class="filterDiv automated display">
+                  <app-card-template [card]="card"></app-card-template>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <input id="secondChoice" type="radio" class="form-check-input" value="second"
+                 formControlName="choice">
+          <label class="custom-control-label text-white"
+                 for="secondChoice">{{getCrysisCardWithChoice().immediateOptions[1]}}</label>
+        </div>
+      </div>
+
+      <div *ngIf="expectsHandCardInput() && this.game.player.hand.length > 0">
+        <h1 class="text-white">Discard a card</h1>
+        <div class="card-container">
+          <ul class="myUL">
+            <li *ngFor="let card of getPlayerHand();" (click)="selectProject(card.id)"
+                [ngClass]="selectedProjectClass(card.id)" class="filterDiv automated display">
+              <app-card-template [card]="card"></app-card-template>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+
+    </div>
+
+    <div *ngIf="sellCardsTurn()" class="form-check">
+      <app-sell-cards [game]="game" [parentForm]="parentForm"></app-sell-cards>
+    </div>
+  </div>
+
+  <div *ngIf="resolveOceanDetrimentTurn()" style="margin-left: 20px;">
+    <h3 class="text-white">Ocean Detriment Effect</h3>
+
+    <div class="form-check">
+      <input id="temperatureChoice" type="radio" class="form-check-input" value="first"
+             formControlName="choice">
+      <label class="custom-control-label text-white"
+             for="temperatureChoice">Reduce Temperature x {{oceanDetrimentCount()}}</label>
+
+      <br/>
+
+      <input id="oxygenChoice" type="radio" class="form-check-input" value="second"
+             formControlName="choice">
+      <label class="custom-control-label text-white"
+             for="oxygenChoice">Reduce Oxygen x {{oceanDetrimentCount()}}</label>
+    </div>
+
+  </div>
+
+  <div *ngIf="discardCardsTurn()" class="form-check">
+    <input id="discardCards" type="radio" class="form-check-input" value="discardCards"
+           formControlName="turn">
+    <label class="custom-control-label text-white" for="discardCards">Discard {{game.player.nextTurn.size }}
+      cards</label>
+
+    <div *ngIf="parentForm.value?.turn === 'discardCards'" class="card-container">
+      <ul class="myUL">
+        <li *ngFor="let card of getDiscardCards();" (click)="clickProjectToDiscard(card)"
+            [ngClass]="selectedProjectToDiscardClass(card.id)" class="filterDiv automated display">
+          <app-card-template [card]="card" [player]="game?.player"></app-card-template>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div *ngIf="crisisVpToTokenTurn()" class="form-check">
+    <h3 class="text-white">Crisis End Phase</h3>
+    <input id="crisisVpToToken" type="radio" class="form-check-input" value="vpToToken"
+           formControlName="turn">
+    <label class="custom-control-label text-white" for="crisisVpToToken">Lose 2 VP and remove 1 Crisis token</label>
+
+    <div *ngIf="parentForm.value?.turn === 'vpToToken'" class="card-container">
+      <ul class="myUL">
+        <li *ngFor="let card of getCrisisCardsWithTokens();" (click)="selectProject(card.id)"
+            [ngClass]="selectedProjectClass(card.id)" class="filterDiv crysis display">
+          <app-crysis-card-template [card]="card" [game]="game"></app-crysis-card-template>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div *ngIf="skipTurn()" class="form-check">
+    <input id="skipTurn" type="radio" class="form-check-input" value="skipTurn"
+           formControlName="turn">
+    <label class="custom-control-label text-white" for="skipTurn">Finish turn</label>
+  </div>
+
+  <div *ngIf="crisisChooseDummyHandTurn()" class="card-container">
+    <h4 *ngIf="firstPhaseForbiddenByDetriment()" class="text-white bg-danger top-level-warning">No first phase this round
+      because of Oxygen yellow detriment</h4>
+    <h4 *ngIf="firstPhaseNoBonusByDetriment()" class="text-white bg-warning top-level-warning">No first phase bonus this
+      round because of Oxygen red detriment</h4>
+    <h2 class="text-white">Dummy hand this round (click card to change your choice)</h2>
+
+
+    <ul class="myUL">
+
+      <li *ngFor="let phaseId of getAllowedPhases(); let i = index" (click)="clickPhase(i)">
+        <app-phase-card-template [phase]="phaseId" [player]="game?.player"></app-phase-card-template>
+      </li>
+
+    </ul>
+  </div>
+
+  <div *ngIf="resolvePersistentWithChoiceAction()">
+    <div class="form-check">
+      <input id="crysisPersistent" type="radio" class="form-check-input" value="persistent-choice"
+             formControlName="turn">
+      <label class="custom-control-label text-white" for="crysisPersistent"> Old Crisis - choose persistent
+        effect</label>
+    </div>
+
+    <div *ngIf="parentForm.value?.turn === 'persistent-choice'" class="card-container">
+      <div class="card-container">
+        <ul class="myUL">
+          <li class="filterDiv crysis display">
+            <app-crysis-card-template [card]="getCrysisCardWithChoice()" [game]="game"></app-crysis-card-template>
+          </li>
+        </ul>
+      </div>
+
+      <div class="form-check" style="margin-left: 20px;">
+        <input id="firstOption" type="radio" class="form-check-input" value="first"
+               formControlName="choice">
+        <label class="custom-control-label text-white"
+               for="firstOption">{{getCrysisCardWithChoice().persistentOptions[0]}}</label>
+
+        <br/>
+
+        <input id="secondOption" type="radio" class="form-check-input" value="second"
+               formControlName="choice">
+        <label class="custom-control-label text-white"
+               for="secondOption">{{getCrysisCardWithChoice().persistentOptions[1]}}</label>
+      </div>
+    </div>
+
+    <div *ngIf="sellCardsTurn()" class="form-check">
+      <app-sell-cards [game]="game" [parentForm]="parentForm"></app-sell-cards>
+    </div>
+  </div>
+
+  <div *ngIf="resolvePersistentAllAction()">
+    <h1 class="text-white">Old Crisis - apply all persistent effects</h1>
+    <div class="card-container">
+      <ul class="myUL">
+        <li *ngFor="let card of getCrysisCardsWithoutPersistentChoice();" class="filterDiv crysis display">
+          <app-crysis-card-template [card]="card" [game]="game"></app-crysis-card-template>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div *ngIf="resolveImmediateAllAction()">
+    <h1 class="text-white">New Crisis - apply immediate effect</h1>
+    <div class="card-container">
+      <ul class="myUL">
+        <li class="filterDiv display"
+            [ngClass]="getCardWithImmediateAllEffect()?.initialTokens === 0 ? 'immediate-crysis' : 'crysis'">
+          <app-crysis-card-template [card]="getCardWithImmediateAllEffect()" [game]="game"></app-crysis-card-template>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Submit Button -->
+  <button type="submit" class="btn btn-danger btn-lg btn-block" style="margin-left: 20px">Confirm</button>
+
+</form>
+
+

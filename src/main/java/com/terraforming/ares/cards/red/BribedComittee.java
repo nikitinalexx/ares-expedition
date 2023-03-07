@@ -44,6 +44,11 @@ public class BribedComittee implements BaseExpansionRedCard {
     }
 
     @Override
+    public boolean onBuiltEffectApplicableToItself() {
+        return true;
+    }
+
+    @Override
     public int getWinningPoints() {
         return -2;
     }

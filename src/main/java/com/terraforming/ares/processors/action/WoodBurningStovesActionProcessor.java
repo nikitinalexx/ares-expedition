@@ -5,6 +5,7 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.services.MarsContextProvider;
 import com.terraforming.ares.services.TerraformingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class WoodBurningStovesActionProcessor implements BlueActionCardProcessor<WoodBurningStoves> {
     private final TerraformingService terraformingService;
+    private final MarsContextProvider marsContextProvider;
 
     @Override
     public Class<WoodBurningStoves> getType() {
@@ -29,7 +31,7 @@ public class WoodBurningStovesActionProcessor implements BlueActionCardProcessor
 
         player.setPlants(player.getPlants() - price);
 
-        terraformingService.increaseTemperature(game, player);
+        terraformingService.increaseTemperature(marsContextProvider.provide(game, player));
 
         return null;
     }

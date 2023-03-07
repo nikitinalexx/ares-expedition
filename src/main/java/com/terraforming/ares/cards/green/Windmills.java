@@ -70,6 +70,13 @@ public class Windmills implements BaseExpansionGreenCard {
     }
 
     @Override
+    public void revertCardIncome(MarsContext marsContext) {
+        final Player player = marsContext.getPlayer();
+        int energyTagCount = marsContext.getCardService().countPlayedTags(player, Set.of(Tag.ENERGY));
+        player.setHeatIncome(player.getHeatIncome() - energyTagCount);
+    }
+
+    @Override
     public boolean onBuiltEffectApplicableToOther() {
         return true;
     }

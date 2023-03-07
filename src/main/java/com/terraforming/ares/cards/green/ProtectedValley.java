@@ -50,7 +50,7 @@ public class ProtectedValley implements BaseExpansionGreenCard {
         TerraformingService terraformingService = marsContext.getTerraformingService();
         Player player = marsContext.getPlayer();
 
-        terraformingService.buildForest(marsContext.getGame(), player);
+        terraformingService.buildForest(marsContext);
 
         player.setMcIncome(player.getMcIncome() + 2);
 

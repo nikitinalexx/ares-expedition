@@ -41,7 +41,7 @@ public class IceAsteroid implements BaseExpansionRedCard {
         TerraformingService terraformingService = marsContext.getTerraformingService();
 
         for (int i = 0; i < 2; i++) {
-            terraformingService.revealOcean(marsContext.getGame(), marsContext.getPlayer());
+            terraformingService.revealOcean(marsContext);
         }
 
         return null;

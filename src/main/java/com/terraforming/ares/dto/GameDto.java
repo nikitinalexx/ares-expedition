@@ -1,10 +1,12 @@
 package com.terraforming.ares.dto;
 
+import com.terraforming.ares.model.DetrimentToken;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import lombok.Builder;
 import lombok.Data;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -29,4 +31,6 @@ public class GameDto {
     private List<Integer> usedDummyHand;
     private List<AwardDto> awards;
     private List<MilestoneDto> milestones;
+    private CrysisDto crysisDto;
+    private String stateReason;
 }

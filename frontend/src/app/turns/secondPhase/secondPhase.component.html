@@ -34,6 +34,12 @@
     <label class="custom-control-label text-white" for="unmiRtTurn">UNMI raise RT (6MC)</label>
   </div>
 
+  <div *ngIf="sellVpTurn()" class="form-check">
+    <input id="sellVpTurn" (click)="resetAllInputs()" type="radio" class="form-check-input" value="sellVpTurn"
+           formControlName="turn">
+    <label class="custom-control-label text-white" for="sellVpTurn">Sell 1 VP for 5 MC</label>
+  </div>
+
   <div *ngIf="skipTurn()" class="form-check">
     <input id="skipTurn" (click)="resetAllInputs()" type="radio" class="form-check-input" value="skipTurn"
            formControlName="turn">

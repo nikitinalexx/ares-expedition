@@ -2,7 +2,7 @@ package com.terraforming.ares.states;
 
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.BuildType;
+import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateContext;
 import com.terraforming.ares.model.StateType;
@@ -19,13 +19,14 @@ import java.util.List;
  */
 public class PickCorporationsState extends AbstractState {
 
-    public PickCorporationsState(MarsGame marsGame, CardService cardService, StateTransitionService stateTransitionService) {
-        super(marsGame, cardService, stateTransitionService);
+    public PickCorporationsState(MarsContext context, StateTransitionService stateTransitionService) {
+        super(context, stateTransitionService);
     }
 
     @Override
     public List<TurnType> getPossibleTurns(StateContext stateContext) {
-        Player player = marsGame.getPlayerByUuid(stateContext.getPlayerUuid());
+        final MarsGame game = context.getGame();
+        Player player = game.getPlayerByUuid(stateContext.getPlayerUuid());
         if (player.getNextTurn() != null && player.getNextTurn().expectedAsNextTurn()) {
             return List.of(player.getNextTurn().getType());
         } else if (player.getNextTurn() != null) {
@@ -56,10 +57,15 @@ public class PickCorporationsState extends AbstractState {
 
     @Override
     public void updateState() {
-        if (marsGame.getPlayerUuidToPlayer().values().stream().allMatch(
+        final MarsGame game = context.getGame();
+        if (game.getPlayerUuidToPlayer().values().stream().allMatch(
                 player -> player.cantBuildAnything() && player.getNextTurn() == null
         )) {
-            marsGame.setStateType(StateType.PICK_PHASE, cardService);
+            if (game.isCrysis()) {
+                stateTransitionService.performStateTransferIntoResolveDetrimentTokens(game);
+            } else {
+                game.setStateType(StateType.PICK_PHASE, context);
+            }
         }
     }
 

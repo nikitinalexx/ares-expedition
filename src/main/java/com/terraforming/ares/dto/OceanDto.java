@@ -12,12 +12,14 @@ public class OceanDto {
     int cards;
     int mc;
     int plants;
+    boolean revealed;
 
     public static OceanDto of(Ocean ocean) {
         return new OceanDto(
                 ocean.getCards(),
                 ocean.getMc(),
-                ocean.getPlants()
+                ocean.getPlants(),
+                ocean.isRevealed()
         );
     }
 }

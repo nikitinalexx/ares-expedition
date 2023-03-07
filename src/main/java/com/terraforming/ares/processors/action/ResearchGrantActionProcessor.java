@@ -5,10 +5,11 @@ import com.terraforming.ares.cards.corporations.DummyCard;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
-import com.terraforming.ares.services.TerraformingService;
+import com.terraforming.ares.services.MarsContextProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -20,7 +21,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ResearchGrantActionProcessor implements BlueActionCardProcessor<ResearchGrant> {
     private final CardService cardService;
-    private final TerraformingService terraformingService;
+    private final MarsContextProvider marsContextProvider;
 
     @Override
     public Class<ResearchGrant> getType() {
@@ -42,17 +43,20 @@ public class ResearchGrantActionProcessor implements BlueActionCardProcessor<Res
             }
         }
 
-        final MarsContext marsContext = MarsContext.builder()
-                .game(game)
-                .player(player)
-                .terraformingService(terraformingService)
-                .cardService(cardService)
-                .build();
+        final MarsContext marsContext = marsContextProvider.provide(game, player);
 
         player.getPlayed().getCards().stream()
                 .map(cardService::getCard)
                 .filter(Card::onBuiltEffectApplicableToOther)
                 .forEach(card -> card.postProjectBuiltEffect(marsContext, new DummyCard(), inputParameters));
+
+        if (game.isCrysis()) {
+            new ArrayList<>(game.getCrysisData()
+                    .getOpenedCards())
+                    .stream()
+                    .map(cardService::getCrysisCard)
+                    .forEach(c -> c.postProjectBuiltEffect(marsContext, new DummyCard(), inputParameters));
+        }
 
 
         return null;

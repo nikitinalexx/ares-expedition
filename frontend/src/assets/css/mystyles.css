@@ -114,6 +114,38 @@ body {
   background-image: url("../images/phases/1.jpg");
 }
 
+.phase-1_4 {
+  background-image: url("../images/phases/1_4.jpg");
+}
+
+.phase-4_1 {
+  background-image: url("../images/phases/4_1.jpg");
+}
+
+.phase-2_4 {
+  background-image: url("../images/phases/2_4.jpg");
+}
+
+.phase-4_2 {
+  background-image: url("../images/phases/4_2.jpg");
+}
+
+.phase-3_5 {
+  background-image: url("../images/phases/3_5.jpg");
+}
+
+.phase-5_3 {
+  background-image: url("../images/phases/5_3.jpg");
+}
+
+.phase-3_4 {
+  background-image: url("../images/phases/3_4.jpg");
+}
+
+.phase-4_3 {
+  background-image: url("../images/phases/4_3.jpg");
+}
+
 .phase-2 {
   background-image: url("../images/phases/2.jpg");
 }
@@ -178,6 +210,32 @@ li.active::before {
   background-position: -245px -162px;
   border-radius: 15px;
   filter: grayscale(1) brightness(1.9) contrast(0.6) hue-rotate(180deg);
+}
+
+li.crysis::before {
+  content: "";
+  background-image: url(../images/crysis.jpg);
+  background-size: contain;
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  width: 240px;
+  height: 310px;
+  left: 0;
+  border-radius: 15px;
+}
+
+li.immediate-crysis::before {
+  content: "";
+  background-image: url("../images/crysisDiscard.jpg");
+  background-size: contain;
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  width: 240px;
+  height: 310px;
+  left: 0;
+  border-radius: 15px;
 }
 
 li.events::before {
@@ -522,6 +580,23 @@ li.events::before {
   width: 40px;
   height: 46px;
   background-size: 40px 46px;
+  line-height: 16px;
+  text-align: center;
+  margin-bottom: 10px;
+  margin-left: 5px;
+  margin-right: 5px;
+  margin-top: 5px;
+  filter: drop-shadow(0px 0px 1px black);
+  background-image: url(../images/tiles/empty.png);
+}
+
+.or-tile {
+  position: relative;
+  vertical-align: middle;
+  display: inline-block;
+  width: 30px;
+  height: 34px;
+  background-size: 30px 34px;
   line-height: 16px;
   text-align: center;
   margin-bottom: 10px;
@@ -979,7 +1054,7 @@ li.events::before {
 
 /************** Extras ************/
 .red-arrow {
-  background-image: url(../images/misc/arrow.png);
+  background-image: url(../images/misc/actionArrow.png);
   background-size: 30px;
   width: 30px;
   height: 30px;
@@ -1000,6 +1075,56 @@ li.events::before {
   margin-bottom: 5px;
   background-repeat: no-repeat;
   background-position: 0px;
+}
+
+.oxygen-detriment-tile {
+  background-image: url(../images/global-parameters/oxygen.png);
+
+  position: absolute;
+  vertical-align: middle;
+  width: 40px;
+  height: 46px;
+  background-size: 40px 46px;
+  line-height: 16px;
+  text-align: center;
+  top: -3px;
+  left: 162px;
+  filter: drop-shadow(0px 0px 1px black);
+}
+
+.temperature-detriment-tile {
+  background-image: url(../images/global-parameters/temperature.png);
+
+  position: absolute;
+  vertical-align: middle;
+  width: 14px;
+  height: 46px;
+  background-size: 14px 46px;
+  line-height: 16px;
+  text-align: center;
+  top: -3px;
+  left: 174px;
+  filter: drop-shadow(0px 0px 1px black);
+}
+
+.ocean-detriment-tile {
+  background-image: url(../images/tiles/ocean.png);
+
+  position: absolute;
+  vertical-align: middle;
+  width: 40px;
+  height: 40px;
+  background-size: 40px 40px;
+  line-height: 16px;
+  text-align: center;
+  top: -3px;
+  left: 162px;
+  filter: drop-shadow(0px 0px 1px black);
+}
+
+.top-level-warning {
+  border-radius: 10px;
+  margin-left: 10px;
 }
 
 /*********** Background colors************/

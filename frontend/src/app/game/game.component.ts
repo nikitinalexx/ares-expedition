@@ -15,6 +15,7 @@ import {Award} from "../data/Award";
 import {AwardType} from "../data/AwardType";
 import {Milestone} from "../data/Milestone";
 import {MilestoneType} from "../data/MilestoneType";
+import {DetrimentToken} from "../data/DetrimentToken";
 
 
 @Component({
@@ -120,6 +121,25 @@ export class GameComponent implements OnInit {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.PICK_PHASE])?.length > 0;
   }
 
+  crisisTurn(): boolean {
+    return this.nextTurns && this.nextTurns.some(turn => turn === TurnType.RESOLVE_IMMEDIATE_WITH_CHOICE
+      || turn === TurnType.RESOLVE_IMMEDIATE_ALL
+      || turn === TurnType.RESOLVE_PERSISTENT_WITH_CHOICE
+      || turn === TurnType.RESOLVE_PERSISTENT_ALL
+      || turn === TurnType.CRISIS_CHOOSE_DUMMY_HAND
+      || turn === TurnType.CRISIS_VP_TO_TOKEN
+      || turn === TurnType.RESOLVE_OCEAN_DETRIMENT
+      || turn === TurnType.DISCARD_CARDS && this.game.phase === -1);
+  }
+
+  dummyCards(): number[] {
+    if (this.game?.crysisDto) {
+      return this.game?.crysisDto.chosenDummyPhases;
+    } else {
+      return this.game?.usedDummyHand;
+    }
+  }
+
   firstPhaseTurn(): boolean {
     return this.game && this.game.phase === 1 && this.playersToNextActions[this.game.player.playerUuid] === 'TURN';
   }
@@ -160,9 +180,12 @@ export class GameComponent implements OnInit {
   chosenPhases(): number[] {
     const phases = [];
     for (let i = 1; i <= 5; i++) {
-      if (this.phaseChosenByAnyone(i)
+      if (this.phaseChosenByAnyone(i) && (!this.game.crysisDto || this.game.phase > 0)
         || this.game?.dummyHandMode && this.game?.usedDummyHand && this.game.usedDummyHand.length > 0
-        && this.game.usedDummyHand[this.game.usedDummyHand.length - 1] === i) {
+        && this.game.usedDummyHand[this.game.usedDummyHand.length - 1] === i
+        || this.game?.crysisDto
+        && this.game.crysisDto.chosenDummyPhases
+        && this.game.crysisDto.chosenDummyPhases.find(phase => phase === i)) {
         phases.push(i);
       }
     }
@@ -171,6 +194,103 @@ export class GameComponent implements OnInit {
 
   currentPhase(phase: number): boolean {
     return this.game?.phase === phase;
+  }
+
+  sumTerraformingRatingForCrisis(): number {
+    let sum = this.game.player.terraformingRating;
+
+    for (const otherPlayer of this.game?.otherPlayers) {
+      sum += otherPlayer.terraformingRating;
+    }
+    return sum;
+  }
+
+  gameFinishedClass(): string {
+    if (this.game.crysisDto) {
+      if (this.game.crysisDto.wonGame) {
+        return 'bg-success text-white';
+      } else {
+        return 'bg-danger text-white';
+      }
+    } else {
+      if (!this.game.otherPlayers || this.game.otherPlayers.length === 0) {
+        return 'text-success';
+      } else {
+        const playerScore = this.game.player.winPoints;
+        for (const otherPlayer of this.game.otherPlayers) {
+          if (otherPlayer.winPoints > playerScore) {
+            return 'bg-danger text-white';
+          }
+        }
+        return 'bg-success text-white';
+      }
+    }
+  }
+
+  getOxygenDetrimentToken(): number {
+    if (!this.game?.crysisDto || !this.game.crysisDto.detrimentTokens) {
+      return undefined;
+    }
+    const detrimentTokens = this.game.crysisDto.detrimentTokens;
+
+    if (detrimentTokens.find(token => token === DetrimentToken.OXYGEN_YELLOW)) {
+      return 0;
+    } else if (detrimentTokens.find(token => token === DetrimentToken.OXYGEN_RED)) {
+      return 1;
+    }
+    return 2;
+  }
+
+  oxygenTitleClass(): string {
+    if (this.getOxygenDetrimentToken() === 2) {
+      return 'text-danger';
+    } else {
+      return '';
+    }
+  }
+
+  temperatureTitleClass(): string {
+    if (this.getTemperatureDetrimentToken() === 2) {
+      return 'text-danger';
+    } else {
+      return '';
+    }
+  }
+
+  oceanTitleClass(): string {
+    if (this.getOceanDetrimentToken() === 2) {
+      return 'text-danger';
+    } else {
+      return '';
+    }
+  }
+
+  getTemperatureDetrimentToken(): number {
+    if (!this.game?.crysisDto || !this.game.crysisDto.detrimentTokens) {
+      return undefined;
+    }
+    const detrimentTokens = this.game.crysisDto.detrimentTokens;
+
+    if (detrimentTokens.find(token => token === DetrimentToken.TEMPERATURE_YELLOW)) {
+      return 0;
+    } else if (detrimentTokens.find(token => token === DetrimentToken.TEMPERATURE_RED)) {
+      return 1;
+    }
+    return 2;
+  }
+
+  getOceanDetrimentToken(): number {
+    if (!this.game?.crysisDto || !this.game.crysisDto.detrimentTokens) {
+      return undefined;
+    }
+    const detrimentTokens = this.game.crysisDto.detrimentTokens;
+
+    if (detrimentTokens.find(token => token === DetrimentToken.OCEAN_YELLOW)) {
+      return 0;
+    } else if (detrimentTokens.find(token => token === DetrimentToken.OCEAN_RED)) {
+      return 1;
+    }
+    return 2;
   }
 
   displayRedCubeOnMilestone(milestoneIndex: number): boolean {
@@ -206,6 +326,11 @@ export class GameComponent implements OnInit {
     }
     if (player?.phaseCards[phase - 1] !== 0) {
       result.push('upgraded-phase');
+    }
+    if (this.game?.crysisDto &&
+      Object.entries(this.game.crysisDto.forbiddenPhases).find(entry => entry[0] === this.game?.player.playerUuid)?.[1] === phase) {
+      console.log('forbidden');
+      result.push('forbidden-phase');
     }
     return result;
   }
@@ -305,6 +430,57 @@ export class GameComponent implements OnInit {
       result.push(i);
     }
     return result;
+  }
+
+  oceanTrackerStyle(min: number, max: number): string {
+    const oceanCount = this.game?.oceans.filter(ocean => ocean.revealed)?.length;
+    if (oceanCount >= min && oceanCount <= max) {
+      return '';
+    } else {
+      return 'ocean-counter-grey';
+    }
+  }
+
+  anyParameterIsVeryLowInCrisis(): boolean {
+    if (!this.game || !this.game.crysisDto || this.gameEnd()) {
+      return;
+    }
+    const oceanCount = this.game?.oceans.filter(ocean => ocean.revealed)?.length;
+    if (oceanCount <= 1) {
+      return true;
+    }
+    if (this.game.temperature <= -20) {
+      return true;
+    }
+    if (this.game.oxygen <= 2) {
+      return true;
+    }
+    return false;
+  }
+
+  parameterVeryLowInCrisisMessage(): string {
+    if (!this.game || !this.game.crysisDto) {
+      return '';
+    }
+    let message = '';
+    const oceanCount = this.game?.oceans.filter(ocean => ocean.revealed)?.length;
+    if (oceanCount <= 1) {
+      message += 'Ocean';
+    }
+    if (this.game.temperature <= -20) {
+      if (message.length !== 0) {
+        message += ', ';
+      }
+      message += 'Temperature';
+    }
+    if (this.game.oxygen <= 2) {
+      if (message.length !== 0) {
+        message += ', ';
+      }
+      message += 'Oxygen';
+    }
+    message += ' level is dangerously low. Terraform before the round ends';
+    return message;
   }
 
   identifyNextAction() {

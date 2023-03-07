@@ -69,16 +69,16 @@ public interface Card {
     default void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
     }
 
-    default void onOceanFlippedEffect(Player player) {
+    default void onOceanFlippedEffect(MarsContext context) {
     }
 
-    default void onTemperatureChangedEffect(Player player) {
+    default void onTemperatureChangedEffect(MarsContext context) {
     }
 
-    default void onOxygenChangedEffect(Player player) {
+    default void onOxygenChangedEffect(MarsContext context) {
     }
 
-    default void onForestBuiltEffect(Player player) {
+    default void onForestBuiltEffect(MarsContext context) {
     }
 
     default CardCollectableResource getCollectableResource() {
@@ -102,12 +102,45 @@ public interface Card {
     default void revertPlayedTags(CardService cardService, Card card, Player player) {
     }
 
-    default void onMilestoneGained(MarsGame game, Player player, Milestone milestone) {
+    default void revertCardIncome(MarsContext context) {
+        final Player player = context.getPlayer();
+        getCardMetadata().getIncomes().forEach(income -> {
+            switch (income.getType()) {
+                case MC:
+                    player.setMcIncome(player.getMcIncome() - income.getValue());
+                    break;
+                case HEAT:
+                    player.setHeatIncome(player.getHeatIncome() - income.getValue());
+                    break;
+                case PLANT:
+                    player.setPlantsIncome(player.getPlantsIncome() - income.getValue());
+                    break;
+                case STEEL:
+                    player.setSteelIncome(player.getSteelIncome() - income.getValue());
+                    break;
+                case TITANIUM:
+                    player.setTitaniumIncome(player.getTitaniumIncome() - income.getValue());
+                    break;
+                case CARD:
+                    player.setCardIncome(player.getCardIncome() - income.getValue());
+                    break;
+                default:
+                    break;
+            }
+        });
+    }
+
+    default void onMilestoneGained(MarsContext context, Player player, Milestone milestone) {
 
     }
 
     default boolean isBlankCard() {
         return false;
     }
+
+    default boolean isSupportedByExpansionSet(Set<Expansion> expansions) {
+        return true;
+    }
+
 
 }

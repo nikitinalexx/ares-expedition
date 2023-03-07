@@ -38,7 +38,7 @@ public class Plantation implements BaseExpansionRedCard {
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         for (int i = 0; i < 2; i++) {
-            marsContext.getTerraformingService().buildForest(marsContext.getGame(), marsContext.getPlayer());
+            marsContext.getTerraformingService().buildForest(marsContext);
         }
         return null;
     }

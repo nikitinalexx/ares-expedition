@@ -11,7 +11,6 @@ import {DiscardCardsTurn} from '../../data/DiscardCardsTurn';
 import {BuildGreenComponent} from '../greenProject/buildGreen.component';
 import {ScrollComponent} from '../../scroll/scroll.component';
 import {BuildBlueRedComponent} from '../blueRedProject/buildBlueRed.component';
-import {PhaseConstants} from "../../data/PhaseConstants";
 import {BuildType} from "../../data/BuildType";
 
 @Component({
@@ -95,6 +94,11 @@ export class SecondPhaseComponent implements OnInit {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.UNMI_RT])?.length > 0;
   }
 
+  sellVpTurn(): boolean {
+    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.SELL_VP])?.length > 0
+      && this.game?.player.winPoints > 0;
+  }
+
   skipTurn(): boolean {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.SKIP_TURN])?.length > 0;
   }
@@ -168,6 +172,13 @@ export class SecondPhaseComponent implements OnInit {
       } else if (formGroup.value.turn === 'unmiRaiseRt') {
         this.gameRepository.raiseUnmiRt(this.game.player.playerUuid).subscribe(
           data => this.sendToParent(data)
+        );
+      } else if (formGroup.value.turn === 'sellVpTurn') {
+        this.gameRepository.sellVp(this.game.player.playerUuid).subscribe(
+          data => this.sendToParent(data),
+          error => {
+            this.errorMessage = error;
+          }
         );
       } else if (formGroup.value.turn === 'sellCards') {
         this.sellCardsService.sellCards(this.game, data => this.sendToParent(data));
