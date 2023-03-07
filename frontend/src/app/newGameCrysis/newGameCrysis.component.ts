@@ -32,7 +32,8 @@ export class NewGameCrysisComponent implements OnInit {
       playerName1: '',
       playerName2: '',
       playerName3: '',
-      playerName4: ''
+      playerName4: '',
+      beginner: false
     });
   }
 
@@ -58,6 +59,7 @@ export class NewGameCrysisComponent implements OnInit {
           computers,
           true,
           false,
+          this.parentForm.value.beginner,
           expansions)
       )
         .subscribe(response => {

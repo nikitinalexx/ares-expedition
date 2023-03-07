@@ -10,7 +10,11 @@ public class Constants {
     public static final int TEMPERATURE_HEAT_COST = 8;
     public static final int CRISIS_TOKEN_PLANTS_COST = 4;
     public static final int CRISIS_TOKEN_HEAT_COST = 6;
+    public static final int CRISIS_EASY_MODE_TURNS = 3;
     public static final int FOREST_PLANT_COST = 8;
+
+    public static final int CRISIS_NORMAL_DIFFICULTY = 0;
+    public static final int CRISIS_BEGINNER_DIFFICULTY = -1;
 
     public static final int FOREST_MC_COST = 20;
     public static final int TEMPERATURE_MC_COST = 14;

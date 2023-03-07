@@ -2,6 +2,7 @@ package com.terraforming.ares.repositories.caching;
 
 import com.terraforming.ares.entity.CrisisRecordEntity;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.GameUpdateResult;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.repositories.GameRepository;
@@ -104,6 +105,10 @@ public class CachingGameRepositoryImpl implements CachingGameRepository {
         crisisRecordEntity.setPlayerCount(game.getPlayerUuidToPlayer().size());
         crisisRecordEntity.setTurnsLeft(game.getCrysisData().getCrysisCards().size());
         crisisRecordEntity.setDate(LocalDateTime.now(ZoneId.of("UTC")));
+        crisisRecordEntity.setDifficulty(
+                game.getCrysisData().isEasyMode()
+                        ? Constants.CRISIS_BEGINNER_DIFFICULTY
+                        : Constants.CRISIS_NORMAL_DIFFICULTY);
         return crisisRecordEntity;
     }
 

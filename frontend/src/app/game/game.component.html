@@ -104,11 +104,11 @@
   <div *ngIf="game?.phaseOxygen !== null && game?.phaseOxygen !== game?.oxygen && game?.phase === 2"
        class="tracker tracker-transparent oxygen_{{game ? game.phaseOxygen : 0}}"></div>
 
-  <div *ngIf="game?.phaseOceans !== null && game?.phaseOceans !== game?.oceans.length
+  <div *ngIf="game?.phaseOceans !== null && game?.phaseOceans !== countRevealedOceans()
       && game?.phase === 2"
        class="phase-ocean-tracker text-white"
   >
-    {{game.oceans.length}}({{game.phaseOceans}}) <br/>
+    {{countRevealedOceans()}}({{game.phaseOceans}}) <br/>
     <span style="font-size: 10px">(at phase start)</span>
   </div>
 
@@ -467,10 +467,12 @@
     <p style="width: 500px">{{game.stateReason}}</p>
   </div>
   <div *ngIf="!game.crysisDto">
-    <div *ngFor="let player of this.game?.otherPlayers">
-      Another player score: {{player.winPoints}}
+    <div *ngFor="let player of this.game?.otherPlayers" style="font-size: 20px" class="text-warning">
+      {{player.name}} score: <span class="text-white">{{player.winPoints}}</span>
     </div>
   </div>
+  <br/>
+  <button type="button" class="btn btn-warning btn-lg back-button" style="margin: 5px" routerLink="/">Main Menu</button>
 </div>
 
 <div *ngIf="this.parentForm.value?.player === 'You'">

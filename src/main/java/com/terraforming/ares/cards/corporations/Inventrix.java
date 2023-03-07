@@ -4,6 +4,7 @@ import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.util.CollectionUtils;
 
 import java.util.Collections;
 import java.util.List;
@@ -60,4 +61,10 @@ public class Inventrix implements CorporationCard {
     public int getPrice() {
         return 33;
     }
+
+    @Override
+    public boolean isSupportedByExpansionSet(Set<Expansion> expansions) {
+        return CollectionUtils.isEmpty(expansions) || !expansions.contains(Expansion.CRYSIS);
+    }
+
 }

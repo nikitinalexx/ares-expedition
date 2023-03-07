@@ -4,6 +4,15 @@
 </div>
 <form [formGroup]="parentForm" (submit)="submitForm(parentForm)" novalidate>
   <div class="form-group col-6 mx-auto" style="margin-top: 100px; width: 800px">
+
+    <div class="bg-warning text-dark new-game-label" style="width: 370px; border-radius: 5px; margin-top: 10px; font-size: 20px">
+      <label title="First 3 turns no Crisis" for="beginner"
+             class="form-label">Beginner mode(first 3 turns no Crisis)</label>
+      <input type="checkbox" class="form-check-input" id="beginner" style="margin-left: 10px; float: right"
+             formControlName="beginner">
+    </div>
+    <br/>
+
     <label for="choices" class="form-label bg-warning text-dark new-game-label text-big">Players (2-4 players will be here in a week)</label>
 
     <div id="choices">

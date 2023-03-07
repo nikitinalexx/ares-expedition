@@ -496,6 +496,7 @@ public class GameController {
 
         Planet phasePlanet = game.getPlanetAtTheStartOfThePhase();
 
+        final CrysisData crysisData = game.getCrysisData();
         return GameDto.builder()
                 .phase(game.getCurrentPhase())
                 .player(buildCurrentPlayer(game.getPlayerByUuid(playerUuid), game))
@@ -508,12 +509,12 @@ public class GameController {
                 .oceans(game.getPlanet().getOceans().stream().map(OceanDto::of).collect(Collectors.toList()))
                 .phaseOceans(phasePlanet != null ? phasePlanet.getRevealedOceans().size() : null)
                 .otherPlayers(buildOtherPlayers(game, playerUuid))
-                .turns(game.isCrysis() ? game.getCrysisData().getCrysisCards().size() : game.getTurns())
+                .turns(game.isCrysis() ? crysisData.getCrysisCards().size() + crysisData.getEasyModeTurnsLeft() : game.getTurns())
                 .dummyHandMode(game.isDummyHandMode())
                 .usedDummyHand(game.getUsedDummyHand())
                 .awards(game.getAwards().stream().map(AwardDto::from).collect(Collectors.toList()))
                 .milestones(game.getMilestones().stream().map(MilestoneDto::from).collect(Collectors.toList()))
-                .crysisDto(buildCrysisDto(game.getCrysisData()))
+                .crysisDto(buildCrysisDto(crysisData))
                 .stateReason(game.getStateReason())
                 .build();
     }
@@ -534,7 +535,7 @@ public class GameController {
     }
 
     @GetMapping("/crisis/records")
-    public List<CrisisRecordEntity> getCrisisRecords(@RequestParam int playerCount) {
+    public List<CrisisRecordEntity> getCrisisRecords(@RequestParam int playerCount) throws InterruptedException {
         return crisisRecordEntityRepository.findTopTwentyRecords(playerCount);
     }
 

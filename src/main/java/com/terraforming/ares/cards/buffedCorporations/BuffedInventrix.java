@@ -4,6 +4,7 @@ import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.util.CollectionUtils;
 
 import java.util.Collections;
 import java.util.List;
@@ -59,5 +60,10 @@ public class BuffedInventrix implements CorporationCard {
     @Override
     public int getPrice() {
         return 39;
+    }
+
+    @Override
+    public boolean isSupportedByExpansionSet(Set<Expansion> expansions) {
+        return CollectionUtils.isEmpty(expansions) || !expansions.contains(Expansion.CRYSIS);
     }
 }

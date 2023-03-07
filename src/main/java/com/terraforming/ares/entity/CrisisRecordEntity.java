@@ -1,6 +1,7 @@
 package com.terraforming.ares.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.terraforming.ares.model.Constants;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -26,6 +27,8 @@ public class CrisisRecordEntity {
     private int turnsLeft;
     @JsonIgnore
     private LocalDateTime date;
+    //0=default, -1=beginner
+    private int difficulty = Constants.CRISIS_NORMAL_DIFFICULTY;
 
 
     public CrisisRecordEntity() {

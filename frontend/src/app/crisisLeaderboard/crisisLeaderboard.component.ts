@@ -2,6 +2,7 @@ import {Component, Inject, InjectionToken, OnInit} from '@angular/core';
 import {CrisisRecordEntity} from '../data/CrisisRecordEntity';
 import {GameRepository} from '../model/gameRepository.model';
 import {FormBuilder, FormGroup, Validators} from "@angular/forms";
+import {Subscription} from "rxjs";
 
 export const BASE_URL = new InjectionToken('rest_url');
 
@@ -13,6 +14,8 @@ export const BASE_URL = new InjectionToken('rest_url');
 export class CrisisLeaderboardComponent implements OnInit {
   records: CrisisRecordEntity[];
   errorMessage: string;
+  loading: boolean;
+  loadingResult: Subscription;
 
   parentForm: FormGroup;
 
@@ -30,11 +33,16 @@ export class CrisisLeaderboardComponent implements OnInit {
   }
 
   loadCrisisRecords(playerCount: number) {
-    this.model.getCrisisRecords(playerCount).subscribe(response => {
+    this.records = null;
+    this.loading = true;
+    this.loadingResult?.unsubscribe();
+    this.loadingResult = this.model.getCrisisRecords(playerCount).subscribe(response => {
       if (response) {
+        this.loading = false;
         this.records = response;
       }
     }, error => {
+      this.loading = false;
       this.errorMessage = error;
     });
   }

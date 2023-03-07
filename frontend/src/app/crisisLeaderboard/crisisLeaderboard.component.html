@@ -24,15 +24,21 @@
     <th>VP</th>
     <th>TR</th>
     <th>TOTAL</th>
+    <th>DIFFICULTY</th>
   </tr>
   </thead>
   <tbody>
+  <div *ngIf="loading" style="margin-top: 20px; margin-left: 46px">
+    <div class="loading"></div>
+    <div class="text-white launching-text-box">Loading</div>
+  </div>
   <tr *ngFor="let record of records; let i = index;">
     <td>{{i + 1}}</td>
     <td class="board-link"><a href="{{getPlayerLink(record.uuid)}}" class="text-warning" style="margin-left: 5px; font-weight: bold; font-size: 20px">{{record.playerName}}</a></td>
     <td>{{record.victoryPoints}}</td>
     <td>{{record.terraformingPoints}}</td>
     <td>{{record.victoryPoints + record.terraformingPoints}}</td>
+    <td>{{record.difficulty === 0 ? 'NORMAL': 'EASY'}}</td>
   </tr>
   </tbody>
 </table>

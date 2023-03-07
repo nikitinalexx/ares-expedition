@@ -158,6 +158,12 @@ public class StateTransitionService {
         }
 
         final CrysisData crysisData = game.getCrysisData();
+        if (crysisData.getEasyModeTurnsLeft() != 0) {
+            crysisData.setEasyModeTurnsLeft(crysisData.getEasyModeTurnsLeft() - 1);
+            performStateTransferIntoCrisisDrawDummyHand(game);
+            return;
+        }
+
         final List<Integer> openedCrysisCards = crysisData.getCrysisCards().dealCards(1);
 
         final CrysisCard crysisCard = cardService.getCrysisCard(openedCrysisCards.get(0));

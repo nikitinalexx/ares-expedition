@@ -19,9 +19,10 @@ import {ScrollComponent} from '../scroll/scroll.component';
 import {UpgradePhaseTemplateComponent} from '../turns/upgradePhase/upgradePhaseTemplate.template';
 import {BuildBlueRedComponent} from '../turns/blueRedProject/buildBlueRed.component';
 import {CrysisTurnComponent} from '../turns/crysisTurn/crysisTurn.component';
+import {RouterModule} from "@angular/router";
 
 @NgModule({
-  imports: [BrowserModule, ModelModule, ReactiveFormsModule, FormsModule, CardServiceModule],
+    imports: [BrowserModule, ModelModule, ReactiveFormsModule, FormsModule, CardServiceModule, RouterModule],
   declarations: [GameComponent, PickCorporationComponent, PickPhaseComponent,
     FirstPhaseComponent, SecondPhaseComponent, SellCardsComponent, FourthPhaseComponent,
     ThirdPhaseComponent, FifthPhaseComponent, EndRoundComponent, NavbarComponent, BuildGreenComponent,

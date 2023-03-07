@@ -73,6 +73,7 @@ export class NewGameComponent implements OnInit {
           computers,
           this.parentForm.value.mulligan,
           this.parentForm.value.dummyHand,
+          false,
           expansions)
       )
         .subscribe(response => {

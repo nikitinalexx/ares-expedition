@@ -4,7 +4,8 @@ export class CrisisRecordEntity {
               victoryPoints: number,
               terraformingPoints: number,
               playerCount: number,
-              turnsLeft: number) {
+              turnsLeft: number,
+              difficulty: number) {
   }
 
   uuid: string;
@@ -13,4 +14,5 @@ export class CrisisRecordEntity {
   terraformingPoints: number;
   playerCount: number;
   turnsLeft: number;
+  difficulty: number;
 }

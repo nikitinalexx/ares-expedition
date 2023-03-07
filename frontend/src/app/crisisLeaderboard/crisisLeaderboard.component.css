@@ -3,14 +3,17 @@ table {
   margin: 0 auto;
   width: 500px;
 }
+
 th, td {
   border: 1px solid black;
   padding: 10px;
   text-align: center;
 }
+
 .radio-container {
   text-align: center;
 }
+
 .radio-container input[type="radio"] {
   display: inline-block;
   margin: 10px;
@@ -24,4 +27,12 @@ th, td {
   position: absolute;
   top: 20px;
   left: 20px;
+}
+
+.launching-text-box {
+  margin-left: 30px;
+  margin-top: -33px;
+  background: unset;
+  font-size: 20px;
+  font-weight: bold;
 }

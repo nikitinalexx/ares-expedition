@@ -19,6 +19,7 @@ public class GameParameters {
     private boolean mulligan;
     private List<Expansion> expansions;
     private boolean dummyHand;
+    private boolean beginner;
 
     public boolean isCrysis() {
         return expansions.contains(Expansion.CRYSIS);

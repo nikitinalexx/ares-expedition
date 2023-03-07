@@ -141,7 +141,7 @@ public class MarsGame {
                     List<Expansion> expansions,
                     boolean dummyHandMode,
                     List<Integer> dummyHand,
-                    Deck crysisCards) {
+                    CrysisData crysisData) {
         this.projectsDeck = projectsDeck;
         this.corporationsDeck = corporationsDeck;
         this.planet = planet;
@@ -151,10 +151,7 @@ public class MarsGame {
         this.hasAi = (computers.stream().anyMatch(item -> item));
         this.dummyHandMode = dummyHandMode;
         this.dummyHand = new ArrayList<>(dummyHand);
-        if (expansions.contains(Expansion.CRYSIS)) {
-            this.crysisData = new CrysisData();
-            this.crysisData.setCrysisCards(crysisCards);
-        }
+        this.crysisData = crysisData;
 
         List<Player> players = new ArrayList<>();
 

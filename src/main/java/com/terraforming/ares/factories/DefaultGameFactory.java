@@ -1,5 +1,6 @@
 package com.terraforming.ares.factories;
 
+import com.terraforming.ares.mars.CrysisData;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
@@ -39,7 +40,17 @@ public class DefaultGameFactory implements GameFactory {
             shuffleService.shuffle(dummyHand);
         }
 
+        CrysisData crysisData = null;
         final boolean isCrysisExpansion = gameParameters.getExpansions().contains(Expansion.CRYSIS);
+        if (isCrysisExpansion) {
+            crysisData = new CrysisData();
+            crysisData.setCrysisCards(crysisDeck);
+            if (gameParameters.isBeginner()) {
+                crysisData.setEasyModeTurnsLeft(Constants.CRISIS_EASY_MODE_TURNS);
+                crysisData.setEasyMode(true);
+            }
+        }
+
         return new MarsGame(
                 gameParameters.getPlayerNames(),
                 Constants.DEFAULT_START_HAND_SIZE,
@@ -53,7 +64,7 @@ public class DefaultGameFactory implements GameFactory {
                 gameParameters.getExpansions(),
                 gameParameters.isDummyHand(),
                 dummyHand,
-                crysisDeck
+                crysisData
         );
 
     }

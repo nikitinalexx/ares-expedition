@@ -15,6 +15,6 @@ public interface CrisisRecordEntityRepository extends CrudRepository<CrisisRecor
     CrisisRecordEntity findByUuid(String uuid);
 
     @Query(value = "SELECT * FROM crisis_record_entity m WHERE player_count = ? " +
-            "ORDER BY (m.victory_points + m.terraforming_points) DESC, date, turns_left DESC LIMIT 20", nativeQuery = true)
+            "ORDER BY difficulty DESC, (m.victory_points + m.terraforming_points) DESC, date, turns_left DESC LIMIT 20", nativeQuery = true)
     List<CrisisRecordEntity> findTopTwentyRecords(int playerCount);
 }

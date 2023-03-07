@@ -5,11 +5,13 @@ export class NewGameRequest {
               computers: boolean[],
               mulligan: boolean,
               dummyHand: boolean,
+              beginner: boolean,
               expansions: Expansion[]) {
     this.playerNames = playerNames;
     this.computers = computers;
     this.mulligan = mulligan;
     this.dummyHand = dummyHand;
+    this.beginner = beginner;
     this.expansions = expansions;
   }
 
@@ -17,5 +19,6 @@ export class NewGameRequest {
   computers: boolean[];
   mulligan: boolean;
   dummyHand: boolean;
+  beginner: boolean;
   expansions: Expansion[];
 }

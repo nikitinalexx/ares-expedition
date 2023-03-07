@@ -28,4 +28,6 @@ public class CrysisData {
     private List<CrisisDummyCard> currentDummyCards;
     private List<Integer> chosenDummyPhases;
     private boolean wonGame;
+    private int easyModeTurnsLeft;
+    private boolean easyMode;
 }

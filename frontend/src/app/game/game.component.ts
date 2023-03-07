@@ -441,6 +441,10 @@ export class GameComponent implements OnInit {
     }
   }
 
+  countRevealedOceans(): number {
+    return this.game?.oceans.filter(ocean => ocean.revealed)?.length;
+  }
+
   anyParameterIsVeryLowInCrisis(): boolean {
     if (!this.game || !this.game.crysisDto || this.gameEnd()) {
       return;
