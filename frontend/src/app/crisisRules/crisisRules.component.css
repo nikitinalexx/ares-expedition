@@ -1,0 +1,32 @@
+.rules {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+}
+
+.rules-body {
+  border-radius: 10px;
+  background-color: rgba(255, 165, 0, 0.5);
+}
+
+h1 {
+  margin-bottom: 20px;
+}
+
+ol {
+  list-style-type: decimal;
+  padding: 0;
+  margin: 0 auto;
+  max-width: 600px;
+}
+
+li {
+  margin-bottom: 10px;
+  font-size: 18px;
+  line-height: 1.5;
+}

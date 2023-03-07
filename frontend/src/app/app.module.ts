@@ -16,18 +16,21 @@ import {LobbyModule} from './lobby/lobby.module';
 import {LobbyComponent} from './lobby/lobby.component';
 import {NewGameCrysisComponent} from './newGameCrysis/newGameCrysis.component';
 import {NewGameCrysisModule} from './newGameCrysis/newGameCrysis.module';
-import {CrisisLeaderboardComponent} from "./crisisLeaderboard/crisisLeaderboard.component";
-import {CrisisLeaderboardModule} from "./crisisLeaderboard/crisisLeaderboard.module";
+import {CrisisLeaderboardComponent} from './crisisLeaderboard/crisisLeaderboard.component';
+import {CrisisLeaderboardModule} from './crisisLeaderboard/crisisLeaderboard.module';
+import {CrisisRulesModule} from './crisisRules/crisisRules.module';
+import {CrisisRulesComponent} from './crisisRules/crisisRules.component';
 
 @NgModule({
   imports: [
     BrowserModule, CardServiceModule, NewGameModule, NewGameCrysisModule, CrisisLeaderboardModule,
-    LobbyModule, IndexModule, GameModule,
+    LobbyModule, IndexModule, GameModule, CrisisRulesModule,
     RouterModule.forRoot([
       {path: 'cards', component: CardServiceComponent},
       {path: 'new', component: NewGameComponent},
       {path: 'newcrisis', component: NewGameCrysisComponent},
       {path: 'leaderboard', component: CrisisLeaderboardComponent},
+      {path: 'crisisrules', component: CrisisRulesComponent},
       {path: 'index', component: IndexComponent},
       {path: 'lobby', component: LobbyComponent},
       {path: 'game/:playerUuid', component: GameComponent},
