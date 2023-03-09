@@ -260,8 +260,12 @@ export class RestDataSource {
     );
   }
 
-  getCrisisRecords(playerCount: number): Observable<CrisisRecordEntity[]> {
-    return this.sendRequest<any>('GET', this.url + '/crisis/records?playerCount=' + playerCount);
+  getCrisisRecordsByPoints(playerCount: number): Observable<CrisisRecordEntity[]> {
+    return this.sendRequest<any>('GET', this.url + '/crisis/records/points?playerCount=' + playerCount);
+  }
+
+  getCrisisRecordsByTurns(playerCount: number): Observable<CrisisRecordEntity[]> {
+    return this.sendRequest<any>('GET', this.url + '/crisis/records/turns?playerCount=' + playerCount);
   }
 
 

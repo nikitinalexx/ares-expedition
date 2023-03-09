@@ -534,9 +534,14 @@ public class GameController {
                 .build();
     }
 
-    @GetMapping("/crisis/records")
-    public List<CrisisRecordEntity> getCrisisRecords(@RequestParam int playerCount) throws InterruptedException {
-        return crisisRecordEntityRepository.findTopTwentyRecords(playerCount);
+    @GetMapping("/crisis/records/points")
+    public List<CrisisRecordEntity> findTopTwentyRecordsByPoints(@RequestParam int playerCount) {
+        return crisisRecordEntityRepository.findTopTwentyRecordsByPoints(playerCount);
+    }
+
+    @GetMapping("/crisis/records/turns")
+    public List<CrisisRecordEntity> findTopTwentyRecordsByTurns(@RequestParam int playerCount) {
+        return crisisRecordEntityRepository.findTopTwentyRecordsByTurns(playerCount);
     }
 
     @GetMapping("/cache/reset")

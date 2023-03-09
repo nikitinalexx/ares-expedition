@@ -26,17 +26,21 @@ export class CrisisLeaderboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.parentForm = this.formBuilder.group({
-      playerCount: ['1', Validators.required]
+      playerCount: ['1', Validators.required],
+      sortType: '1'
     });
 
-    this.loadCrisisRecords(1);
+    this.loadCrisisRecords(1, 1);
   }
 
-  loadCrisisRecords(playerCount: number) {
+  loadCrisisRecords(playerCount: number, sortType: number) {
     this.records = null;
     this.loading = true;
     this.loadingResult?.unsubscribe();
-    this.loadingResult = this.model.getCrisisRecords(playerCount).subscribe(response => {
+    const observable = (sortType === 1
+      ? this.model.getCrisisRecordsByPoints(playerCount)
+      : this.model.getCrisisRecordsByTurns(playerCount));
+    this.loadingResult = observable.subscribe(response => {
       if (response) {
         this.loading = false;
         this.records = response;
@@ -48,7 +52,11 @@ export class CrisisLeaderboardComponent implements OnInit {
   }
 
   clickPlayerCount(playerCount: number) {
-    this.loadCrisisRecords(playerCount);
+    this.loadCrisisRecords(playerCount, this.parentForm.value.sortType);
+  }
+
+  clickSortType(sortType: number) {
+    this.loadCrisisRecords(this.parentForm.value.playerCount, sortType);
   }
 
   getPlayerLink(player: string): string {

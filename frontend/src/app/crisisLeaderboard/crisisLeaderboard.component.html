@@ -15,6 +15,12 @@
     <input type="radio" formControlName="playerCount" (click)="clickPlayerCount(4)" value="4" id="p4">
     <label for="p4">4 Players</label>
   </div>
+  <div class="radio-container">
+    <input type="radio" formControlName="sortType" (click)="clickSortType(1)" value="1" id="points">
+    <label for="points">by points</label>
+    <input type="radio" formControlName="sortType" (click)="clickSortType(2)" value="2" id="fastest">
+    <label for="fastest">by turns</label>
+  </div>
 </form>
 <table class="table table-dark">
   <thead>
@@ -25,6 +31,7 @@
     <th>TR</th>
     <th>TOTAL</th>
     <th>DIFFICULTY</th>
+    <th>TURNS LEFT</th>
   </tr>
   </thead>
   <tbody>
@@ -39,6 +46,7 @@
     <td>{{record.terraformingPoints}}</td>
     <td>{{record.victoryPoints + record.terraformingPoints}}</td>
     <td>{{record.difficulty === 0 ? 'NORMAL': 'EASY'}}</td>
+    <td>{{record.turnsLeft}}</td>
   </tr>
   </tbody>
 </table>

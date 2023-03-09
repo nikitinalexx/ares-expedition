@@ -118,8 +118,11 @@ export class GameRepository {
     return this.dataSource.exchangeHeat(playerUuid, value);
   }
 
-  getCrisisRecords(playerCount: number): Observable<CrisisRecordEntity[]> {
-    return this.dataSource.getCrisisRecords(playerCount);
+  getCrisisRecordsByPoints(playerCount: number): Observable<CrisisRecordEntity[]> {
+    return this.dataSource.getCrisisRecordsByPoints(playerCount);
+  }
+  getCrisisRecordsByTurns(playerCount: number): Observable<CrisisRecordEntity[]> {
+    return this.dataSource.getCrisisRecordsByTurns(playerCount);
   }
 
   nextActions(playerUuid: string): Observable<ActionsDto> {
