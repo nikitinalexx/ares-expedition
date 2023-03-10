@@ -263,6 +263,7 @@ export class CrysisTurnComponent implements OnInit {
             }
           );
         }
+        this.parentForm?.patchValue({turn: ''}, {onlySelf: true, emitEvent: false});
       } else if (this.expectsHandCardInput()) {
         if (this.game.player.hand.length > 0 && !this.selectedProject) {
           this.errorMessage = 'Choose a Card to discard';
