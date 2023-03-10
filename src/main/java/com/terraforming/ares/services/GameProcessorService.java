@@ -47,7 +47,7 @@ public class GameProcessorService extends BaseProcessorService {
         this.aiService = aiService;
     }
 
-    @Scheduled(fixedRate = 200)
+    @Scheduled(fixedRate = 20)
     public void asyncUpdate() {
         while (!gamesToProcess.isEmpty()) {
             Long gameId = gamesToProcess.poll();
