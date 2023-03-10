@@ -329,7 +329,6 @@ export class GameComponent implements OnInit {
     }
     if (this.game?.crysisDto &&
       Object.entries(this.game.crysisDto.forbiddenPhases).find(entry => entry[0] === this.game?.player.playerUuid)?.[1] === phase) {
-      console.log('forbidden');
       result.push('forbidden-phase');
     }
     return result;

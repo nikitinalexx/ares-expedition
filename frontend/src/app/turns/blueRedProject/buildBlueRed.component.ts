@@ -585,7 +585,6 @@ export class BuildBlueRedComponent implements OnInit {
         if (this.parentForm.value.importedHydrogenForm === 'skipMicrobeAnimal') {
           inputParams[InputFlag.CRYOGENIC_SHIPMENT_PUT_RESOURCE.valueOf()] = [InputFlag.SKIP_ACTION.valueOf()];
         } else {
-          console.log(this.parentForm.value.importedHydrogenForm);
           if (!this.parentForm.value.importedHydrogenForm
             || this.parentForm.value.importedHydrogenForm !== 'microbeAnimal'
             || this.parentForm.value.importedHydrogenForm === 'microbeAnimal'

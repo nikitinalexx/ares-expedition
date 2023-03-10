@@ -21,15 +21,15 @@ public class TerraformingService {
     private final CardService cardService;
 
     public boolean canRevealOcean(MarsGame game) {
-        return !game.getPlanetAtTheStartOfThePhase().allOceansRevealed();
+        return !game.getPlanetAtTheStartOfThePhase().allOceansRevealed() || game.isCrysis();
     }
 
     public boolean canIncreaseTemperature(MarsGame game) {
-        return !game.getPlanetAtTheStartOfThePhase().isTemperatureMax();
+        return !game.getPlanetAtTheStartOfThePhase().isTemperatureMax() || game.isCrysis();
     }
 
     public boolean canIncreaseOxygen(MarsGame game) {
-        return !game.getPlanetAtTheStartOfThePhase().isOxygenMax();
+        return !game.getPlanetAtTheStartOfThePhase().isOxygenMax() || game.isCrysis();
     }
 
     public boolean canReduceOxygen(MarsGame game) {

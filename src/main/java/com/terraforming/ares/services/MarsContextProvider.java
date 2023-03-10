@@ -18,6 +18,7 @@ public class MarsContextProvider {
     private final BuildService buildService;
     private final CrysisService crysisService;
     private final CardResourceService cardResourceService;
+    private final WinPointsService winPointsService;
 
     public MarsContext provide(MarsGame game, Player player) {
         return MarsContext.builder()
@@ -28,6 +29,7 @@ public class MarsContextProvider {
                 .buildService(buildService)
                 .crysisService(crysisService)
                 .cardResourceService(cardResourceService)
+                .winPointsService(winPointsService)
                 .build();
     }
 
@@ -39,6 +41,7 @@ public class MarsContextProvider {
                 .buildService(buildService)
                 .crysisService(crysisService)
                 .cardResourceService(cardResourceService)
+                .winPointsService(winPointsService)
                 .build();
     }
 

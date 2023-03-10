@@ -25,9 +25,14 @@ public class CrisisEndStepState extends AbstractState {
         final Player player = marsGame.getPlayerByUuid(stateContext.getPlayerUuid());
         if (player.getNextTurn() != null) {
             return List.of();
-        } else {
+        }
+
+        final int winPoints = context.getWinPointsService().countCrysisWinPoints(marsGame);
+        if (winPoints >= 2 && !marsGame.getCrysisData().getCardToTokensCount().isEmpty()) {
             return List.of(TurnType.CRISIS_VP_TO_TOKEN, TurnType.SKIP_TURN);
         }
+
+        return List.of();
     }
 
     @Override

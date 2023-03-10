@@ -203,7 +203,6 @@ export class BuildGreenComponent implements OnInit {
   }
 
   getDiscountedMcPriceOfSelectedProject(): number {
-    console.log(this.expectsTagInput() ? this.tagInput : -1);
     if (this.selectedProject) {
       return this.selectedProject.price
         - this.discountService.getDiscountWithOptimal(

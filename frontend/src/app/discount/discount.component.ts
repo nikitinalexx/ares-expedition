@@ -120,7 +120,6 @@ export class DiscountComponent {
 
   getOptimalBuilding(card: Card, player: Player, discount: number): Build {
     let optimalBuild = null;
-    console.log(player.builds);
     for (const build of player.builds) {
       if ((build.priceLimit === 0 || build.priceLimit >= card.price)
         && (build.type === BuildType.GREEN_OR_BLUE

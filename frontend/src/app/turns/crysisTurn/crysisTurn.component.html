@@ -32,6 +32,11 @@
                    for="firstChoice">{{getCrysisCardWithChoice().immediateOptions[0]}}</label>
           </div>
 
+          <input id="secondChoice" type="radio" class="form-check-input" value="second"
+                 formControlName="choice">
+          <label class="custom-control-label text-white"
+                 for="secondChoice">{{getCrysisCardWithChoice().immediateOptions[1]}}</label>
+
           <div *ngIf="expectsSeismicAftershockGreenCardInput() && parentForm.value?.choice === 'first'">
             <div class="card-container">
               <ul class="myUL">
@@ -42,11 +47,6 @@
               </ul>
             </div>
           </div>
-
-          <input id="secondChoice" type="radio" class="form-check-input" value="second"
-                 formControlName="choice">
-          <label class="custom-control-label text-white"
-                 for="secondChoice">{{getCrysisCardWithChoice().immediateOptions[1]}}</label>
         </div>
       </div>
 
@@ -61,11 +61,9 @@
           </ul>
         </div>
       </div>
-
-
     </div>
 
-    <div *ngIf="sellCardsTurn()" class="form-check">
+    <div *ngIf="sellCardsTurn()" (click)="resetAllInputs()" class="form-check">
       <app-sell-cards [game]="game" [parentForm]="parentForm"></app-sell-cards>
     </div>
   </div>
@@ -121,7 +119,7 @@
     </div>
   </div>
 
-  <div *ngIf="skipTurn()" class="form-check">
+  <div *ngIf="skipTurn()" (click)="resetAllInputs()" class="form-check">
     <input id="skipTurn" type="radio" class="form-check-input" value="skipTurn"
            formControlName="turn">
     <label class="custom-control-label text-white" for="skipTurn">Finish turn</label>
@@ -176,7 +174,7 @@
       </div>
     </div>
 
-    <div *ngIf="sellCardsTurn()" class="form-check">
+    <div *ngIf="sellCardsTurn()" (click)="resetAllInputs()" class="form-check">
       <app-sell-cards [game]="game" [parentForm]="parentForm"></app-sell-cards>
     </div>
   </div>

@@ -21,6 +21,7 @@ public class MarsContext {
     BuildService buildService;
     CrysisService crysisService;
     CardResourceService cardResourceService;
+    WinPointsService winPointsService;
 
     public AutoPickCardsAction dealCards(int count) {
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();

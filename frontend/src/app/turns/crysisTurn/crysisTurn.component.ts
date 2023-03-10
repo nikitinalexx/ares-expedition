@@ -13,7 +13,7 @@ import {ScrollComponent} from '../../scroll/scroll.component';
 import {CardColor} from '../../data/CardColor';
 import {DiscardCardsTurn} from '../../data/DiscardCardsTurn';
 import {CrisisDummyCard} from '../../data/CrisisDummyCard';
-import {DetrimentToken} from "../../data/DetrimentToken";
+import {DetrimentToken} from '../../data/DetrimentToken';
 
 @Component({
   selector: 'app-crysis-turn',
@@ -22,10 +22,19 @@ import {DetrimentToken} from "../../data/DetrimentToken";
 export class CrysisTurnComponent implements OnInit {
   @Input()
   game: Game;
-  @Input()
-  nextTurns: TurnType[];
+  turns: TurnType[];
   @Output() outputToParent = new EventEmitter<any>();
   @ViewChild(SellCardsComponent) sellCardsService;
+
+  @Input() set nextTurns(value: TurnType[]) {
+    this.turns = value;
+    if (this.resolveImmediateWithChoiceAction()) {
+      this.parentForm?.patchValue({turn: 'immediate-choice'}, {onlySelf: true, emitEvent: false});
+    }
+    if (this.resolvePersistentWithChoiceAction()) {
+      this.parentForm?.patchValue({turn: 'persistent-choice'}, {onlySelf: true, emitEvent: false});
+    }
+  }
 
   selectedProject: number;
   projectsToDiscard: number[];
@@ -47,39 +56,39 @@ export class CrysisTurnComponent implements OnInit {
   }
 
   discardCardsTurn(): boolean {
-    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.DISCARD_CARDS])?.length > 0;
+    return this.turns && this.turns.find(turn => turn === TurnType[TurnType.DISCARD_CARDS])?.length > 0;
   }
 
   crisisVpToTokenTurn(): boolean {
-    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.CRISIS_VP_TO_TOKEN])?.length > 0;
+    return this.turns && this.turns.find(turn => turn === TurnType[TurnType.CRISIS_VP_TO_TOKEN])?.length > 0;
   }
 
   skipTurn(): boolean {
-    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.SKIP_TURN])?.length > 0;
+    return this.turns && this.turns.find(turn => turn === TurnType[TurnType.SKIP_TURN])?.length > 0;
   }
 
   resolveOceanDetrimentTurn(): boolean {
-    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.RESOLVE_OCEAN_DETRIMENT])?.length > 0;
+    return this.turns && this.turns.find(turn => turn === TurnType[TurnType.RESOLVE_OCEAN_DETRIMENT])?.length > 0;
   }
 
   resolveImmediateWithChoiceAction(): boolean {
-    return this.nextTurns && this.nextTurns.some(turn => turn === TurnType.RESOLVE_IMMEDIATE_WITH_CHOICE);
+    return this.turns && this.turns.some(turn => turn === TurnType.RESOLVE_IMMEDIATE_WITH_CHOICE);
   }
 
   crisisChooseDummyHandTurn(): boolean {
-    return this.nextTurns && this.nextTurns.some(turn => turn === TurnType.CRISIS_CHOOSE_DUMMY_HAND);
+    return this.turns && this.turns.some(turn => turn === TurnType.CRISIS_CHOOSE_DUMMY_HAND);
   }
 
   resolvePersistentWithChoiceAction(): boolean {
-    return this.nextTurns && this.nextTurns.some(turn => turn === TurnType.RESOLVE_PERSISTENT_WITH_CHOICE);
+    return this.turns && this.turns.some(turn => turn === TurnType.RESOLVE_PERSISTENT_WITH_CHOICE);
   }
 
   resolvePersistentAllAction(): boolean {
-    return this.nextTurns && this.nextTurns.some(turn => turn === TurnType.RESOLVE_PERSISTENT_ALL);
+    return this.turns && this.turns.some(turn => turn === TurnType.RESOLVE_PERSISTENT_ALL);
   }
 
   resolveImmediateAllAction(): boolean {
-    return this.nextTurns && this.nextTurns.some(turn => turn === TurnType.RESOLVE_IMMEDIATE_ALL);
+    return this.turns && this.turns.some(turn => turn === TurnType.RESOLVE_IMMEDIATE_ALL);
   }
 
   getCrysisCardsWithoutPersistentChoice(): CrysisCard[] {
@@ -88,7 +97,7 @@ export class CrysisTurnComponent implements OnInit {
   }
 
   sellCardsTurn(): boolean {
-    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.SELL_CARDS])?.length > 0;
+    return this.turns && this.turns.find(turn => turn === TurnType[TurnType.SELL_CARDS])?.length > 0;
   }
 
   getCrysisCardWithChoice(): CrysisCard {
@@ -226,6 +235,8 @@ export class CrysisTurnComponent implements OnInit {
   }
 
   resetAllInputs() {
+    this.selectedProject = null;
+    this.parentForm.patchValue({choice: ''}, {onlySelf: true, emitEvent: false});
   }
 
   submitForm(formGroup: FormGroup) {
@@ -283,8 +294,7 @@ export class CrysisTurnComponent implements OnInit {
               : InputFlag.CRYSIS_INPUT_OPTION_2.valueOf()
           ];
 
-          if (this.expectsSeismicAftershockGreenCardInput()
-            && this.parentForm.value?.choice === 'first') {
+          if (this.expectsSeismicAftershockGreenCardInput() && this.parentForm.value?.choice === 'first') {
             if (!this.selectedProject) {
               this.errorMessage = 'Choose a Card to discard';
               this.scrollService.scrollToPlayerChoice();
@@ -372,7 +382,7 @@ export class CrysisTurnComponent implements OnInit {
           }
         );
       }
-      formGroup.value.turn = null;
+      this.resetAllInputs();
       this.scrollService.scrollToPlayerChoice();
     }
   }

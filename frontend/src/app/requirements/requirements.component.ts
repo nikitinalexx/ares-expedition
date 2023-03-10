@@ -139,7 +139,6 @@ export class RequirementsComponent {
       resultRequirement.push(ParameterColor[Number.parseInt(ParameterColor[maxRequirement], 0) + 1]);
     }
 
-    console.log(resultRequirement);
     return resultRequirement;
   }
 
