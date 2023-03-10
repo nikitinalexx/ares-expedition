@@ -169,7 +169,7 @@ export class GameComponent implements OnInit {
   }
 
   GetOutputVal(newX) {
-    this.identifyNextAction();
+    this.checkNextTurns(true);
   }
 
   phaseChosenByAnyone(phase: number): boolean {
@@ -487,6 +487,49 @@ export class GameComponent implements OnInit {
     return message;
   }
 
+  checkNextTurns(callNextTurnOnFail: boolean) {
+    this.model.nextTurns(this.playerUuid).subscribe(turns => {
+      if (callNextTurnOnFail && !turns?.length) {
+        this.identifyNextAction();
+        return;
+      }
+      const previousAction = this.playersToNextActions
+        ? this.playersToNextActions[this.game.player.playerUuid]
+        : null;
+
+      if (previousAction && previousAction === 'WAIT' && (document.hidden || this.isAlertAlwaysOn())) {
+        this.audio.play();
+      }
+
+      if (this.subscription) {
+        this.subscription.unsubscribe();
+      }
+
+      const globalParamReachedMax = !this.nextTurns
+        && previousAction === 'WAIT'
+        && this.game.phase === 3
+        && turns.find(t => t === TurnType.PERFORM_BLUE_ACTION);
+
+      if (globalParamReachedMax) {
+        this.errorMessage = 'One of the global parameters reached maximum';
+      }
+      this.model.getGame(this.playerUuid).subscribe(game => {
+        this.nextTurns = turns;
+        this.game = game;
+        if (!globalParamReachedMax) {
+          this.errorMessage = null;
+        }
+        if (this.game.phase === 3 && (!this.thirdPhaseSubscription || this.thirdPhaseSubscription.closed)) {
+          this.thirdPhaseSubscription = timer(2000, 2000).subscribe(
+            val => this.updateGameShort()
+          );
+        } else if (this.game.phase !== 3 && this.thirdPhaseSubscription) {
+          this.thirdPhaseSubscription.unsubscribe();
+        }
+      });
+    });
+  }
+
   identifyNextAction() {
     this.model.nextActions(this.playerUuid).subscribe(data => {
       const previousAction = this.playersToNextActions
@@ -497,29 +540,7 @@ export class GameComponent implements OnInit {
         if (previousAction && previousAction === 'WAIT' && (document.hidden || this.isAlertAlwaysOn())) {
           this.audio.play();
         }
-        this.model.nextTurns(this.playerUuid).subscribe(turns => {
-          const globalParamReachedMax = !this.nextTurns
-            && previousAction === 'WAIT'
-            && this.game.phase === 3
-            && turns.find(t => t === TurnType.PERFORM_BLUE_ACTION);
-          if (globalParamReachedMax) {
-            this.errorMessage = 'One of the global parameters reached maximum';
-          }
-          this.model.getGame(this.playerUuid).subscribe(game => {
-            this.nextTurns = turns;
-            this.game = game;
-            if (!globalParamReachedMax) {
-              this.errorMessage = null;
-            }
-            if (this.game.phase === 3 && (!this.thirdPhaseSubscription || this.thirdPhaseSubscription.closed)) {
-              this.thirdPhaseSubscription = timer(2000, 2000).subscribe(
-                val => this.updateGameShort()
-              );
-            } else if (this.game.phase !== 3 && this.thirdPhaseSubscription) {
-              this.thirdPhaseSubscription.unsubscribe();
-            }
-          });
-        });
+        this.checkNextTurns(false);
         if (this.subscription) {
           this.subscription.unsubscribe();
         }

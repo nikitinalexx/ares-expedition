@@ -20,7 +20,6 @@ public class AnotherPlayerDto {
     private final Integer phase;
     private final String name;
     private final int winPoints;
-    private final List<CardDto> hand;
     private final List<CardDto> played;
     private final Map<Integer, Integer> cardResources;
     private final Map<Integer, List<Tag>> cardToTag;

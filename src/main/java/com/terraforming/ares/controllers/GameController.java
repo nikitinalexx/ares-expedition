@@ -602,7 +602,6 @@ public class GameController {
                 .titaniumIncome(player.getTitaniumIncome())
                 .terraformingRating(player.getTerraformingRating())
                 .forests(player.getForests())
-                .hand(player.getHand().getCards().stream().map(cardService::getCard).map(CardDto::from).collect(Collectors.toList()))
                 .played(player.getPlayed().getCards().stream().map(cardService::getCard).map(CardDto::from).collect(Collectors.toList()))
                 .cardResources(getPlayerCardResources(player))
                 .cardToTag(getPlayerCardToTag(player))
