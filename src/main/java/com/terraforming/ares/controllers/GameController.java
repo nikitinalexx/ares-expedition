@@ -2,6 +2,7 @@ package com.terraforming.ares.controllers;
 
 import com.terraforming.ares.dto.*;
 import com.terraforming.ares.entity.CrisisRecordEntity;
+import com.terraforming.ares.entity.SoloRecordEntity;
 import com.terraforming.ares.mars.CrysisData;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.mars.MarsGameDataset;
@@ -12,6 +13,7 @@ import com.terraforming.ares.model.turn.*;
 import com.terraforming.ares.repositories.GameRepositoryImpl;
 import com.terraforming.ares.repositories.caching.CachingGameRepository;
 import com.terraforming.ares.repositories.crudRepositories.CrisisRecordEntityRepository;
+import com.terraforming.ares.repositories.crudRepositories.SoloRecordEntityRepository;
 import com.terraforming.ares.services.*;
 import com.terraforming.ares.services.ai.AiBalanceService;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +52,7 @@ public class GameController {
     private final SimulationProcessorService simulationProcessorService;
     private final AiBalanceService aiBalanceService;
     private final CrisisRecordEntityRepository crisisRecordEntityRepository;
+    private final SoloRecordEntityRepository soloRecordEntityRepository;
 
     @PostMapping("/game/new")
     public PlayerUuidsDto startNewGame(@RequestBody GameParameters gameParameters) {
@@ -542,6 +545,11 @@ public class GameController {
     @GetMapping("/crisis/records/turns")
     public List<CrisisRecordEntity> findTopTwentyRecordsByTurns(@RequestParam int playerCount) {
         return crisisRecordEntityRepository.findTopTwentyRecordsByTurns(playerCount);
+    }
+
+    @GetMapping("/solo/records")
+    public List<SoloRecordEntity> findTopTwentyRecordsByTurns() {
+        return soloRecordEntityRepository.findTopTwentyRecordsByTurns();
     }
 
     @GetMapping("/cache/reset")

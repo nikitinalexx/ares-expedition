@@ -19,6 +19,7 @@ import {Expansion} from '../data/Expansion';
 import {CrysisChoiceRequest} from '../data/CrysisChoiceRequest';
 import {DiscardCardsRequest} from "../data/DiscardCardsRequest";
 import {CrisisRecordEntity} from "../data/CrisisRecordEntity";
+import {SoloRecordEntity} from "../data/SoloRecordEntity";
 
 
 @Injectable()
@@ -266,6 +267,10 @@ export class RestDataSource {
 
   getCrisisRecordsByTurns(playerCount: number): Observable<CrisisRecordEntity[]> {
     return this.sendRequest<any>('GET', this.url + '/crisis/records/turns?playerCount=' + playerCount);
+  }
+
+  getSoloRecords(): Observable<SoloRecordEntity[]> {
+    return this.sendRequest<any>('GET', this.url + '/solo/records');
   }
 
 
