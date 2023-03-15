@@ -52,7 +52,7 @@ public class FileCardValueService implements ICardValueService {
         this.aiBalanceService = aiBalanceService;
         this.discountService = discountService;
 
-        this.cardIdToTurnToValueTwoPlayer = initCardStatsFromFile("cardStatsSmartVsSmart.txt");
+        this.cardIdToTurnToValueTwoPlayer = initCardStatsFromFile("cardStatsGreenRed.txt");
         this.cardIdToTurnToValueFourPlayer = initCardStatsFromFile("cardStatsRandom.txt");
     }
 

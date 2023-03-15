@@ -85,6 +85,15 @@ public class AiTurnService {
         );
     }
 
+    public void buildGreenProjectSyncNoRequirements(MarsGame game, Player player, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
+        buildProjectWithoutRequirements(
+                game,
+                player,
+                new BuildGreenProjectTurn(player.getUuid(), projectId, payments, inputParams),
+                true
+        );
+    }
+
     public void buildGreenProject(MarsGame game, Player player, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
         buildProject(
                 game, player, projectId, payments, inputParams,
@@ -101,11 +110,12 @@ public class AiTurnService {
         );
     }
 
-    public void buildBlueRedProject(MarsGame game, Player player, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
-        buildProject(
-                game, player, projectId, payments, inputParams,
+    public void buildBlueRedProjectSyncNoRequirements(MarsGame game, Player player, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
+        buildProjectWithoutRequirements(
+                game,
+                player,
                 new BuildBlueRedProjectTurn(player.getUuid(), projectId, payments, inputParams),
-                game.getCurrentPhase() == 3
+                true
         );
     }
 
@@ -115,6 +125,14 @@ public class AiTurnService {
             throw new IllegalStateException(errorMessage);
         }
 
+        if (syncTurn) {
+            makeSyncTurn(player, game, turn);
+        } else {
+            makeAsyncTurn(player, turn);
+        }
+    }
+
+    private void buildProjectWithoutRequirements(MarsGame game, Player player, Turn turn, boolean syncTurn) {
         if (syncTurn) {
             makeSyncTurn(player, game, turn);
         } else {

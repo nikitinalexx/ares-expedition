@@ -1,8 +1,9 @@
 package com.terraforming.ares.services;
 
+import com.terraforming.ares.dataset.DatasetCollectionService;
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.mars.MarsGameDataset;
+import com.terraforming.ares.dataset.MarsGameDataset;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.processors.turn.TurnProcessor;
@@ -21,16 +22,22 @@ public class SimulationProcessorService extends BaseProcessorService {
     private final AiService aiService;
     private final StateFactory stateFactory;
     private final WinPointsService winPointsService;
+    private final CardService cardService;
+    private final DatasetCollectionService datasetCollectionService;
 
     public SimulationProcessorService(List<TurnProcessor<?>> turnProcessor,
                                       TurnTypeService turnTypeService,
                                       StateFactory stateFactory,
                                       StateContextProvider stateContextProvider,
-                                      AiService aiService, WinPointsService winPointsService) {
+                                      AiService aiService, WinPointsService winPointsService,
+                                      CardService cardService,
+                                      DatasetCollectionService datasetCollectionService) {
         super(turnTypeService, stateFactory, stateContextProvider, turnProcessor);
         this.aiService = aiService;
         this.stateFactory = stateFactory;
         this.winPointsService = winPointsService;
+        this.cardService = cardService;
+        this.datasetCollectionService = datasetCollectionService;
     }
 
     public MarsGameDataset runSimulationWithDataset(MarsGame game) {
@@ -39,13 +46,13 @@ public class SimulationProcessorService extends BaseProcessorService {
         while (game.getStateType() != StateType.GAME_END) {
             while (aiService.waitingAiTurns(game)) {
                 aiService.makeAiTurns(game);
-                dataSet.collectData(winPointsService, game);
+                datasetCollectionService.collectData(dataSet, game);
             }
 
             while (processFinalTurns(game)) {
                 stateFactory.getCurrentState(game).updateState();
             }
-            dataSet.collectData(winPointsService, game);
+            datasetCollectionService.collectData(dataSet, game);
         }
 
         String winner = null;

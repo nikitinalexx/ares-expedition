@@ -7,8 +7,10 @@ import com.terraforming.ares.cards.crysis.*;
 import com.terraforming.ares.cards.green.*;
 import com.terraforming.ares.cards.red.*;
 import com.terraforming.ares.model.Card;
+import com.terraforming.ares.model.CardColor;
 import com.terraforming.ares.model.CrysisCard;
 import com.terraforming.ares.model.Expansion;
+import lombok.Getter;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -26,6 +28,7 @@ public class CardFactory {
     private final Map<Integer, Card> discoveryExpansionCorporations;
     private final Map<Integer, Card> buffedCorporationsStorage;
     private final Map<Integer, Card> buffedCorporationsMapping;
+    @Getter
     private final List<Card> sortedBaseCorporations;
     private final List<Card> sortedDiscoveryCorporations;
     private final List<Card> buffedCorporations;
@@ -34,11 +37,14 @@ public class CardFactory {
     private final Map<Integer, Card> baseExpansionProjects;
     private final Map<Integer, Card> discoveryExpansionProjects;
 
-    //used for display of all projecst cards, needs sorting in advance
+    //used for display of all projects cards, needs sorting in advance
     private final List<Card> baseExpansionSortedProjects;
     private final List<Card> discoveryExpansionSortedProjects;
 
     private final Set<Integer> crysisExcludedCards;
+
+    private final List<Card> redAndGreenCards;
+    private final Map<Integer, Integer> redGreenCardIdToIndex;
 
     public CardFactory() {
         baseExpansionSortedProjects = List.of(
@@ -263,6 +269,20 @@ public class CardFactory {
                 new SelfReplicatingBacteria(219)
         );
 
+        redAndGreenCards = new ArrayList<>();
+        redGreenCardIdToIndex = new HashMap<>();
+
+        for (Card card : baseExpansionSortedProjects) {
+            if (card.getColor() == CardColor.GREEN || card.getColor() == CardColor.RED) {
+                redAndGreenCards.add(card);
+            }
+        }
+
+        for (int i = 0; i < redAndGreenCards.size(); i++) {
+            Card card = redAndGreenCards.get(i);
+            redGreenCardIdToIndex.put(card.getId(), i);
+        }
+
         discoveryExpansionSortedProjects = List.of(
                 new CommunicationsStreamlining(305),
                 new DroneAssistedConstruction(306),
@@ -321,7 +341,7 @@ public class CardFactory {
                 new HelionCorporation(10000),
                 new CelestiorCorporation(10001),
                 new DevTechs(10002),
-                new LaunchStarIncorporated(10003),
+                //new LaunchStarIncorporated(10003),
                 new ThorgateCorporation(10004),
                 new TeractorCorporation(10005),
                 new TharsisCorporation(10006),
@@ -408,6 +428,10 @@ public class CardFactory {
         baseExpansionCorporations = sortedBaseCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
         discoveryExpansionCorporations = sortedDiscoveryCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
         buffedCorporationsStorage = buffedCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
+    }
+
+    public Map<Integer, Integer> getRedGreenCardIdToIndex() {
+        return redGreenCardIdToIndex;
     }
 
     public List<CrysisCard> getCrysisCards() {

@@ -7,7 +7,9 @@ import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.CardValidationService;
 import com.terraforming.ares.services.StandardProjectService;
+import com.terraforming.ares.services.ai.DeepNetwork;
 import com.terraforming.ares.services.ai.RandomBotHelper;
+import com.terraforming.ares.services.ai.TestAiService;
 import com.terraforming.ares.services.ai.dto.ActionInputParamsResponse;
 import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
@@ -34,11 +36,15 @@ public class AiThirdPhaseActionProcessor {
     private final AiCardActionHelper aiCardActionHelper;
     private final StandardProjectService standardProjectService;
     private final AiCardBuildParamsHelper aiCardBuildParamsHelper;
+    private final TestAiService testAiService;
+    private final DeepNetwork deepNetwork;
 
     public AiThirdPhaseActionProcessor(AiTurnService aiTurnService,
                                        CardService cardService,
                                        CardValidationService cardValidationService,
-                                       AiPaymentService aiPaymentHelper, AiCardActionHelper aiCardActionHelper, StandardProjectService standardProjectService, AiCardBuildParamsHelper aiCardBuildParamsHelper) {
+                                       AiPaymentService aiPaymentHelper, AiCardActionHelper aiCardActionHelper, StandardProjectService standardProjectService, AiCardBuildParamsHelper aiCardBuildParamsHelper,
+                                       TestAiService testAiService,
+                                       DeepNetwork deepNetwork) {
 
         this.aiTurnService = aiTurnService;
         this.cardService = cardService;
@@ -47,6 +53,8 @@ public class AiThirdPhaseActionProcessor {
         this.aiCardActionHelper = aiCardActionHelper;
         this.standardProjectService = standardProjectService;
         this.aiCardBuildParamsHelper = aiCardBuildParamsHelper;
+        this.testAiService = testAiService;
+        this.deepNetwork = deepNetwork;
     }
 
     public boolean processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
@@ -145,6 +153,46 @@ public class AiThirdPhaseActionProcessor {
             }
             if ((playedActions.contains(CardAction.PHYSICS_COMPLEX))
                     && player.getMc() > 70) {
+                aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
+                return true;
+            }
+        }
+
+        if (player.isSecondBot() && player.getMc() > 50) {
+
+            float bestState = deepNetwork.testState(game, player);
+            int actionType = -1;
+
+
+            if (game.getPlanet().oceansLeft() > 0) {
+                float state = testAiService.projectPlayStandardAction(game, player.getUuid(), 1);
+                if (state > bestState) {
+                    bestState = state;
+                    actionType = 1;
+                }
+            }
+            if (game.getPlanet().oxygenLeft() > 0) {
+                float state = testAiService.projectPlayStandardAction(game, player.getUuid(), 2);
+                if (state > bestState) {
+                    bestState = state;
+                    actionType = 2;
+                }
+            }
+            if (game.getPlanet().temperatureLeft() > 0) {
+                float state = testAiService.projectPlayStandardAction(game, player.getUuid(), 3);
+                if (state > bestState) {
+                    bestState = state;
+                    actionType = 3;
+                }
+            }
+
+            if (actionType == 1) {
+                aiTurnService.standardProjectTurn(game, player, StandardProjectType.OCEAN);
+                return true;
+            } else if (actionType == 2) {
+                aiTurnService.standardProjectTurn(game, player, StandardProjectType.FOREST);
+                return true;
+            } else if (actionType == 3) {
                 aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
                 return true;
             }

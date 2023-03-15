@@ -75,6 +75,21 @@ public class AiSecondPhaseActionProcessor {
                         ? availableCards.get(random.nextInt(availableCards.size()))
                         : cardValueService.getBestCardToBuild(game, player, availableCards, game.getTurns(), true);
 
+
+                if (Constants.BOTH_COMPUTERS_USE_NETWORK || Constants.ONE_COMPUTER_USES_NETWORK && player.getUuid().endsWith("1")) {
+                    final BuildProjectPrediction bestProjectToBuild =
+                            player.getBuilds().stream().filter(build -> build.getType().isBlueRed()).count() >= 2
+                                    ? aiBuildProjectService.getBestProjectToBuildSecondPhase(game, player, Set.of(CardColor.RED), ProjectionStrategy.FROM_PHASE)
+                                    : aiBuildProjectService.getBestProjectToBuild(game, player, Set.of(CardColor.RED), ProjectionStrategy.FROM_PHASE);
+
+                    if (bestProjectToBuild.isCanBuild()) {
+                        selectedCard = bestProjectToBuild.getCard();
+                    } else {
+                        //TODO turned to be bad
+                        selectedCard = null;
+                    }
+                }
+
                 logComputerCardSelection(availableCards, selectedCard, game, player);
 
                 if (selectedCard != null) {

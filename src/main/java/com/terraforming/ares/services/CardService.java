@@ -62,7 +62,10 @@ public class CardService {
         Stream<Integer> cardIdsStream = expansions.stream()
                 .filter(projects::containsKey)
                 .map(projects::get)
-                .flatMap(cards -> cards.keySet().stream());
+                .flatMap(cards -> cards.keySet().stream())
+                .map(card -> getCard(card))
+                .filter(card -> card.getColor() != CardColor.BLUE)
+                .map(Card::getId);
 
         if (expansions.contains(Expansion.CRYSIS)) {
             cardIdsStream = cardIdsStream

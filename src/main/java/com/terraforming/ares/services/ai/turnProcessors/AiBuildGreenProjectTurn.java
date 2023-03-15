@@ -73,7 +73,6 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
         } else {
             selectedCard = cardValueService.getBestCardToBuild(game, player, availableCards, game.getTurns(), true);
 
-            final float currentState = deepNetwork.testState(game, player);
 
             if (Constants.LOG_NET_COMPARISON) {
                 System.out.println("Available cards: " + availableCards.stream().map(Card::getClass).map(Class::getSimpleName).collect(Collectors.joining(",")));
@@ -81,24 +80,28 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
                 System.out.println("Chosen card with % " + (selectedCard != null ? selectedCard.getClass().getSimpleName() : null));
             }
 
-            final BuildProjectPrediction bestProjectToBuild = aiBuildProjectService.getBestProjectToBuild(game, player, Set.of(CardColor.GREEN), ProjectionStrategy.FROM_PHASE);
 
-//            if (player.getUuid().endsWith("0")) {
-//                if (bestProjectToBuild.isCanBuild() && game.getTurns() < 10 && bestProjectToBuild.getExpectedValue() >= currentState * aiBalanceService.getExtraRatio(player)) {
-//                    selectedCard = bestProjectToBuild.getCard();
-//                }
-//            }
+            if (Constants.BOTH_COMPUTERS_USE_NETWORK || Constants.ONE_COMPUTER_USES_NETWORK && player.getUuid().endsWith("1")) {
+                final BuildProjectPrediction bestProjectToBuild = aiBuildProjectService.getBestProjectToBuild(game, player, Set.of(CardColor.GREEN), ProjectionStrategy.FROM_PHASE);
 
-
-
-            if (Constants.LOG_NET_COMPARISON) {
                 if (bestProjectToBuild.isCanBuild()) {
-                    System.out.println("Deep network state " + currentState);
-                    System.out.println("Deep network card " + bestProjectToBuild.getCard().getClass().getSimpleName() + " with projected chance " + bestProjectToBuild.getExpectedValue());
+                    selectedCard = bestProjectToBuild.getCard();
                 } else {
-                    System.out.println("Deep network : do not build");
+                    //TODO turned to be bad
+                    selectedCard = null;
                 }
-                System.out.println();
+
+                if (Constants.LOG_NET_COMPARISON) {
+                    if (bestProjectToBuild.isCanBuild()) {
+                        final float currentState = deepNetwork.testState(game, player);
+
+                        System.out.println("Deep network state " + currentState);
+                        System.out.println("Deep network card " + bestProjectToBuild.getCard().getClass().getSimpleName() + " with projected chance " + bestProjectToBuild.getExpectedValue());
+                    } else {
+                        System.out.println("Deep network : do not build");
+                    }
+                    System.out.println();
+                }
             }
         }
 

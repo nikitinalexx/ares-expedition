@@ -1,7 +1,10 @@
 package com.terraforming.ares.services.ai.turnProcessors;
 
+import com.terraforming.ares.dataset.DatasetCollectionService;
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.dataset.MarsGameDataset;
+import com.terraforming.ares.dataset.MarsGameRow;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.processors.turn.TurnProcessor;
 import com.terraforming.ares.services.*;
@@ -13,10 +16,14 @@ import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static com.terraforming.ares.model.Constants.GREEN_CARDS_RATIO;
+import static com.terraforming.ares.model.Constants.RED_CARDS_RATIO;
 
 /**
  * Created by oleksii.nikitin
@@ -33,6 +40,8 @@ public class AiBuildProjectService extends BaseProcessorService {
     private final AiTurnService aiTurnService;
     private final StateFactory stateFactory;
     private final MarsContextProvider contextProvider;
+    private final WinPointsService winPointsService;
+    private final DatasetCollectionService datasetCollectionService;
 
     protected AiBuildProjectService(TurnTypeService turnTypeService,
                                     StateFactory stateFactory,
@@ -44,7 +53,9 @@ public class AiBuildProjectService extends BaseProcessorService {
                                     CardValidationService cardValidationService,
                                     DeepNetwork deepNetwork,
                                     CardService cardService,
-                                    MarsContextProvider contextProvider) {
+                                    MarsContextProvider contextProvider,
+                                    WinPointsService winPointsService,
+                                    DatasetCollectionService datasetCollectionService) {
         super(turnTypeService, stateFactory, stateContextProvider, turnProcessor);
         this.aiTurnService = aiTurnService;
         this.aiPaymentService = aiPaymentService;
@@ -54,24 +65,12 @@ public class AiBuildProjectService extends BaseProcessorService {
         this.cardService = cardService;
         this.stateFactory = stateFactory;
         this.contextProvider = contextProvider;
+        this.winPointsService = winPointsService;
+        this.datasetCollectionService = datasetCollectionService;
     }
 
     public BuildProjectPrediction getBestProjectToBuild(MarsGame game, Player player, Set<CardColor> cardColors, ProjectionStrategy projectionStrategy) {
-        List<Card> availableCards = player.getHand()
-                .getCards()
-                .stream()
-                .map(cardService::getCard)
-                .filter(card -> cardColors.contains(card.getColor()))
-                .filter(card ->
-                {
-                    String errorMessage = cardValidationService.validateCard(
-                            player, game, card.getId(),
-                            aiPaymentService.getCardPayments(game, player, card),
-                            aiCardBuildParamsHelper.getInputParamsForValidation(player, card)
-                    );
-                    return errorMessage == null;
-                })
-                .collect(Collectors.toList());
+        List<Card> availableCards = getHandAvailableCards(game, player, cardColors);
 
         if (availableCards.isEmpty()) {
             return BuildProjectPrediction.builder().canBuild(false).build();
@@ -107,6 +106,143 @@ public class AiBuildProjectService extends BaseProcessorService {
         } else {
             return BuildProjectPrediction.builder().canBuild(true).expectedValue(bestChance).card(selectedCard).build();
         }
+    }
+
+    public BuildProjectPrediction getBestProjectToBuildSecondPhase(MarsGame game, Player player, Set<CardColor> cardColors, ProjectionStrategy projectionStrategy) {
+        List<Card> availableCards = getHandAvailableCards(game, player, cardColors);
+
+        if (availableCards.isEmpty()) {
+            return BuildProjectPrediction.builder().canBuild(false).build();
+        }
+
+        Card selectedCard = null;
+        float bestChance =  deepNetwork.testState(game, player);
+        for (Card playableCard : availableCards) {
+            MarsGame stateAfterPlayingTheCard = projectBuildCard(game, player, playableCard, projectionStrategy);
+
+            if (stateAfterPlayingTheCard == null) {
+                continue;
+            }
+
+            float projectedChance = deepNetwork.testState(stateAfterPlayingTheCard, stateAfterPlayingTheCard.getPlayerByUuid(player.getUuid()));
+
+
+            if (availableCards.size() > 1) {
+                Float stateAfterPlayingSecondCard = projectSecondCardPlayed(stateAfterPlayingTheCard, player.getUuid(), cardColors, projectionStrategy);
+
+                if (stateAfterPlayingSecondCard != null && stateAfterPlayingSecondCard > projectedChance) {
+                    projectedChance = stateAfterPlayingSecondCard;
+                }
+            } else {
+                BuildProjectPrediction stateAfterTakingCard = projectTakeCardSecondPhase(stateAfterPlayingTheCard, stateAfterPlayingTheCard.getPlayerByUuid(player.getUuid()));
+
+                projectedChance = stateAfterTakingCard.getExpectedValue();
+            }
+
+            if (projectedChance > bestChance) {
+                bestChance = projectedChance;
+                selectedCard = playableCard;
+            }
+        }
+
+        if (selectedCard == null) {
+            return BuildProjectPrediction.builder().canBuild(false).build();
+        } else {
+            return BuildProjectPrediction.builder().canBuild(true).expectedValue(bestChance).card(selectedCard).build();
+        }
+    }
+
+    private Float projectSecondCardPlayed(MarsGame game, String playerUuid, Set<CardColor> cardColors, ProjectionStrategy projectionStrategy) {
+        Player player = game.getPlayerByUuid(playerUuid);
+
+        List<Card> availableCards = getHandAvailableCards(game, player, cardColors);
+
+        if (availableCards.isEmpty()) {
+            return null;
+        }
+
+        float bestChance =  deepNetwork.testState(game, player);
+
+        for (Card playableCard : availableCards) {
+            MarsGame stateAfterPlayingTheCard = projectBuildCard(game, player, playableCard, projectionStrategy);
+
+            if (stateAfterPlayingTheCard == null) {
+                continue;
+            }
+
+            float projectedChance = deepNetwork.testState(stateAfterPlayingTheCard, stateAfterPlayingTheCard.getPlayerByUuid(player.getUuid()));
+
+            if (projectedChance > bestChance) {
+                bestChance = projectedChance;
+            }
+        }
+
+        return bestChance;
+
+    }
+
+    private List<Card> getHandAvailableCards(MarsGame game, Player player, Set<CardColor> cardColors) {
+        return player.getHand()
+                .getCards()
+                .stream()
+                .map(cardService::getCard)
+                .filter(card -> cardColors.contains(card.getColor()))
+                .filter(card ->
+                {
+                    String errorMessage = cardValidationService.validateCard(
+                            player, game, card.getId(),
+                            aiPaymentService.getCardPayments(game, player, card),
+                            aiCardBuildParamsHelper.getInputParamsForValidation(player, card)
+                    );
+                    return errorMessage == null;
+                })
+                .collect(Collectors.toList());
+    }
+
+    private BuildProjectPrediction projectTakeCardSecondPhase(MarsGame game, Player player) {
+        final List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
+
+        final MarsGameRow marsGameRow = datasetCollectionService.collectPlayerData(
+                game,
+                player,
+                players.get(0) == player
+                        ? players.get(1)
+                        : players.get(0)
+        );
+
+        if (marsGameRow == null) {
+            return BuildProjectPrediction.builder().canBuild(true).card(null).expectedValue(0.5f).build();
+        }
+
+        marsGameRow.setGreenCards(marsGameRow.getGreenCards() + GREEN_CARDS_RATIO);
+        marsGameRow.setRedCards(marsGameRow.getRedCards() + RED_CARDS_RATIO);
+
+        return BuildProjectPrediction.builder().canBuild(true).card(null).expectedValue(deepNetwork.testState(marsGameRow, 2)).build();
+    }
+
+    public MarsGame projectBuildCardNoRequirements(MarsGame game, Player player, Card card) {
+        game = new MarsGame(game);
+        player = game.getPlayerByUuid(player.getUuid());
+
+        if (card.getColor() == CardColor.GREEN) {
+            aiTurnService.buildGreenProjectSyncNoRequirements(
+                    game,
+                    player,
+                    card.getId(),
+                    aiPaymentService.getCardPayments(game, player, card),
+                    aiCardBuildParamsHelper.getInputParamsForBuild(player, card)
+            );
+        } else {
+            aiTurnService.buildBlueRedProjectSyncNoRequirements(
+                    game,
+                    player,
+                    card.getId(),
+                    aiPaymentService.getCardPayments(game, player, card),
+                    aiCardBuildParamsHelper.getInputParamsForBuild(player, card)
+            );
+        }
+
+        return game;
     }
 
     public MarsGame projectBuildCard(MarsGame game, Player player, Card card, ProjectionStrategy projectionStrategy) {

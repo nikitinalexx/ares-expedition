@@ -26,10 +26,6 @@ public class MegacreditsPayment extends GenericPayment {
     @Override
     public void pay(CardService deckService, Player player) {
         player.setMc(player.getMc() - getValue());
-
-        if (player.getMc() < 0) {
-            throw new IllegalStateException("Invalid payment: mc < 0");
-        }
     }
 
 }

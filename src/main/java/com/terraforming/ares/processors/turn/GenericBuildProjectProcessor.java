@@ -5,6 +5,8 @@ import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.turn.GenericBuildProjectTurn;
 import com.terraforming.ares.services.*;
+import com.terraforming.ares.services.ai.CardsCollectService;
+import com.terraforming.ares.services.ai.TestAiService;
 import lombok.RequiredArgsConstructor;
 
 import java.util.ArrayList;

@@ -3,6 +3,7 @@ package com.terraforming.ares.processors.turn;
 import com.terraforming.ares.model.turn.BuildBlueRedProjectTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.*;
+import com.terraforming.ares.services.ai.CardsCollectService;
 import org.springframework.stereotype.Service;
 
 /**

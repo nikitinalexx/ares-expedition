@@ -227,4 +227,14 @@ public class Player {
         builtSpecialDesignLastTurn = false;
     }
 
+    @JsonIgnore
+    public boolean isFirstBot() {
+        return this.uuid.endsWith("0");
+    }
+
+    @JsonIgnore
+    public boolean isSecondBot() {
+        return this.uuid.endsWith("1");
+    }
+
 }

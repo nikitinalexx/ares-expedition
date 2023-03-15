@@ -1,10 +1,17 @@
 package com.terraforming.ares.model;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * Created by oleksii.nikitin
  * Creation date 05.05.2022
  */
 public class Constants {
+    public static Map<Integer, Integer> FIRST_PLAYER_PHASES = new ConcurrentHashMap<>();
+    public static Map<Integer, Integer> SECOND_PLAYER_PHASES = new ConcurrentHashMap<>();
+
+
     public static final int MAX_OCEANS = 9;
     public static final int STARTING_RT = 5;
     public static final int TEMPERATURE_HEAT_COST = 8;
@@ -70,15 +77,22 @@ public class Constants {
     public static final int PHASE_5_UPGRADE_KEEP_EXTRA = 13;
     public static final int PHASE_5_UPGRADE_SEE_EXTRA = 14;
 
-    public static final boolean COLLECT_DATASET = false;
-
-    public static final boolean LOG_NET_COMPARISON = false;
 
     public static final boolean WRITE_STATISTICS_TO_FILE = false;
     public static final boolean WRITE_STATISTICS_TO_CONSOLE = false;
     public static final boolean SAVE_SIMULATION_GAMES_TO_DB = false;
 
+    public static final boolean COLLECT_CARDS_DATASET = true;
+    public static final boolean COLLECT_DATASET = true;
+    public static final boolean LOG_NET_COMPARISON = false;
+    public static final boolean ONE_COMPUTER_USES_NETWORK = true;
+    public static final boolean BOTH_COMPUTERS_USE_NETWORK = false;
 
-    private Constants() {}
+    public static final float RED_CARDS_RATIO = 40f / 151;
+    public static final float GREEN_CARDS_RATIO = 111f / 151;
+
+
+    private Constants() {
+    }
 
 }

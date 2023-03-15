@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class WinPointsService {
-    private final CardService cardService;
+    public final CardService cardService;
 
     public int countWinPoints(Player player, MarsGame game) {
         if (game.isCrysis()) {

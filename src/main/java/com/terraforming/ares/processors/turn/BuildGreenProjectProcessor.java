@@ -6,6 +6,7 @@ import com.terraforming.ares.services.BuildService;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.DiscountService;
 import com.terraforming.ares.services.MarsContextProvider;
+import com.terraforming.ares.services.ai.CardsCollectService;
 import org.springframework.stereotype.Service;
 
 /**
