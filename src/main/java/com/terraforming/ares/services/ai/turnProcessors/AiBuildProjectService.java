@@ -1,10 +1,10 @@
 package com.terraforming.ares.services.ai.turnProcessors;
 
 import com.terraforming.ares.dataset.DatasetCollectionService;
+import com.terraforming.ares.dataset.MarsGameRow;
+import com.terraforming.ares.dto.GameWithState;
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.dataset.MarsGameDataset;
-import com.terraforming.ares.dataset.MarsGameRow;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.processors.turn.TurnProcessor;
 import com.terraforming.ares.services.*;
@@ -16,10 +16,7 @@ import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.terraforming.ares.model.Constants.GREEN_CARDS_RATIO;
@@ -83,13 +80,13 @@ public class AiBuildProjectService extends BaseProcessorService {
         } else {
             Card bestCard = null;
             for (Card playableCard : availableCards) {
-                MarsGame stateAfterPlayingTheCard = projectBuildCard(game, player, playableCard, projectionStrategy);
+                GameWithState stateAfterPlayingTheCard = projectBuildCard(game, player, playableCard, projectionStrategy);
 
                 if (stateAfterPlayingTheCard == null) {
                     continue;
                 }
 
-                float projectedChance = deepNetwork.testState(stateAfterPlayingTheCard, stateAfterPlayingTheCard.getPlayerByUuid(player.getUuid()));
+                float projectedChance = deepNetwork.testState(stateAfterPlayingTheCard.getGame(), stateAfterPlayingTheCard.getGame().getPlayerByUuid(player.getUuid()));
 
                 if (projectedChance > bestChance) {
                     bestChance = projectedChance;
@@ -116,27 +113,29 @@ public class AiBuildProjectService extends BaseProcessorService {
         }
 
         Card selectedCard = null;
-        float bestChance =  deepNetwork.testState(game, player);
+        float bestChance = deepNetwork.testState(game, player);
         for (Card playableCard : availableCards) {
-            MarsGame stateAfterPlayingTheCard = projectBuildCard(game, player, playableCard, projectionStrategy);
+            GameWithState stateAfterPlayingTheCard = projectBuildCard(game, player, playableCard, projectionStrategy);
 
             if (stateAfterPlayingTheCard == null) {
                 continue;
             }
 
-            float projectedChance = deepNetwork.testState(stateAfterPlayingTheCard, stateAfterPlayingTheCard.getPlayerByUuid(player.getUuid()));
+            float projectedChance = deepNetwork.testState(stateAfterPlayingTheCard.getGame(), stateAfterPlayingTheCard.getGame().getPlayerByUuid(player.getUuid()));
 
 
             if (availableCards.size() > 1) {
-                Float stateAfterPlayingSecondCard = projectSecondCardPlayed(stateAfterPlayingTheCard, player.getUuid(), cardColors, projectionStrategy);
+                Float stateAfterPlayingSecondCard = projectSecondCardPlayed(stateAfterPlayingTheCard.getGame(), player.getUuid(), cardColors, projectionStrategy);
 
                 if (stateAfterPlayingSecondCard != null && stateAfterPlayingSecondCard > projectedChance) {
                     projectedChance = stateAfterPlayingSecondCard;
                 }
             } else {
-                BuildProjectPrediction stateAfterTakingCard = projectTakeCardSecondPhase(stateAfterPlayingTheCard, stateAfterPlayingTheCard.getPlayerByUuid(player.getUuid()));
+                BuildProjectPrediction stateAfterTakingCard = projectTakeCardSecondPhase(stateAfterPlayingTheCard.getGame(), stateAfterPlayingTheCard.getGame().getPlayerByUuid(player.getUuid()));
 
-                projectedChance = stateAfterTakingCard.getExpectedValue();
+                if (stateAfterTakingCard.isCanBuild() && stateAfterTakingCard.getExpectedValue() > projectedChance) {
+                    projectedChance = stateAfterTakingCard.getExpectedValue();
+                }
             }
 
             if (projectedChance > bestChance) {
@@ -161,16 +160,16 @@ public class AiBuildProjectService extends BaseProcessorService {
             return null;
         }
 
-        float bestChance =  deepNetwork.testState(game, player);
+        float bestChance = deepNetwork.testState(game, player);
 
         for (Card playableCard : availableCards) {
-            MarsGame stateAfterPlayingTheCard = projectBuildCard(game, player, playableCard, projectionStrategy);
+            GameWithState stateAfterPlayingTheCard = projectBuildCard(game, player, playableCard, projectionStrategy);
 
             if (stateAfterPlayingTheCard == null) {
                 continue;
             }
 
-            float projectedChance = deepNetwork.testState(stateAfterPlayingTheCard, stateAfterPlayingTheCard.getPlayerByUuid(player.getUuid()));
+            float projectedChance = deepNetwork.testState(stateAfterPlayingTheCard.getGame(), stateAfterPlayingTheCard.getGame().getPlayerByUuid(player.getUuid()));
 
             if (projectedChance > bestChance) {
                 bestChance = projectedChance;
@@ -210,6 +209,8 @@ public class AiBuildProjectService extends BaseProcessorService {
                         : players.get(0)
         );
 
+        deepNetwork.testState(game, player);
+
         if (marsGameRow == null) {
             return BuildProjectPrediction.builder().canBuild(true).card(null).expectedValue(0.5f).build();
         }
@@ -217,7 +218,9 @@ public class AiBuildProjectService extends BaseProcessorService {
         marsGameRow.setGreenCards(marsGameRow.getGreenCards() + GREEN_CARDS_RATIO);
         marsGameRow.setRedCards(marsGameRow.getRedCards() + RED_CARDS_RATIO);
 
-        return BuildProjectPrediction.builder().canBuild(true).card(null).expectedValue(deepNetwork.testState(marsGameRow, 2)).build();
+        marsGameRow.setCardsInHand(marsGameRow.getCardsInHand() + 1);
+
+        return BuildProjectPrediction.builder().canBuild(true).card(null).expectedValue(deepNetwork.testState(marsGameRow, player.isFirstBot() ? 1 : 2)).build();
     }
 
     public MarsGame projectBuildCardNoRequirements(MarsGame game, Player player, Card card) {
@@ -245,7 +248,7 @@ public class AiBuildProjectService extends BaseProcessorService {
         return game;
     }
 
-    public MarsGame projectBuildCard(MarsGame game, Player player, Card card, ProjectionStrategy projectionStrategy) {
+    public GameWithState projectBuildCard(MarsGame game, Player player, Card card, ProjectionStrategy projectionStrategy) {
         game = new MarsGame(game);
         player = game.getPlayerByUuid(player.getUuid());
         final MarsContext context = contextProvider.provide(game, player);
@@ -288,7 +291,11 @@ public class AiBuildProjectService extends BaseProcessorService {
             );
         }
 
-        return game;
+
+        GameWithState gameWithState = new GameWithState();
+        gameWithState.setGame(game);
+
+        return gameWithState;
     }
 
     private Player getAnotherPlayer(MarsGame game, Player player) {

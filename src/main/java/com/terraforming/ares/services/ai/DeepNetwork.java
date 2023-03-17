@@ -29,7 +29,7 @@ public class DeepNetwork {
     private final CardService cardService;
     private final DatasetCollectionService datasetCollectionService;
 
-    private static final float[] MAX_INPUTS  = new float[]{39.0f, 143.0f, 143.0f, 591.0f, 11.0f, 14.0f, 15.0f, 57.0f, 61.0f, 378.0f, 8.0f, 26.0f, 43.0f, 22.0f, 12.0f, 1.0f, 1.0f, 1.0f, 2.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 14.0f, 30.0f, 9.0f, 143.0f, 143.0f, 591.0f, 11.0f, 14.0f, 15.0f, 57.0f, 61.0f, 378.0f, 8.0f, 43.0f};
+    private static final float[] MAX_INPUTS = new float[]{39.0f, 143.0f, 143.0f, 591.0f, 11.0f, 14.0f, 15.0f, 57.0f, 61.0f, 378.0f, 8.0f, 26.0f, 43.0f, 22.0f, 12.0f, 1.0f, 1.0f, 1.0f, 2.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 14.0f, 30.0f, 9.0f, 143.0f, 143.0f, 591.0f, 11.0f, 14.0f, 15.0f, 57.0f, 61.0f, 378.0f, 8.0f, 43.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
 
 
     private static final Tensor MAX_INPUTS_TENSOR = new Tensor(MAX_INPUTS);
@@ -77,7 +77,7 @@ public class DeepNetwork {
 
         someInput.div(MAX_INPUTS_TENSOR);
 
-        FeedForwardNetwork network = ((Constants.ONE_COMPUTER_USES_NETWORK || Constants.BOTH_COMPUTERS_USE_NETWORK) && player.getUuid().endsWith("1"))
+        FeedForwardNetwork network = player.isFirstBot()
                 ? firstNetwork.get()
                 : secondNetwork.get();
 

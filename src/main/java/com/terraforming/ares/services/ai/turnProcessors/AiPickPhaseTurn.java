@@ -56,14 +56,13 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
 
         List<Integer> possiblePhases = new ArrayList<>();
 
-        if (player.isSecondBot()) {
+        if (Constants.BOTH_COMPUTERS_USE_NETWORK || player.isSecondBot()) {
             PhaseChoiceProjection projection = PhaseChoiceProjection.SKIP_PHASE;
             if (previousChosenPhase == null || previousChosenPhase != 1 && previousChosenPhase != 2) {
                 projection = projection.applyIfBetter(chooseBetweenFirstAndSecondPhaseAi(game, player));
             } else {
                 projection = projection.applyIfBetter(mayPlayPhaseOneAi(game, player));
                 projection = projection.applyIfBetter(mayPlayPhaseTwoAi(game, player));
-
             }
 
 //            if (mayPlayPhaseThree(game, player)) {
@@ -282,7 +281,9 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
         float stateBeforeIncome = deepNetwork.testState(game, player);
         float stateAfterIncome = testAiService.projectPlayPhase4(game, player);
 
-        if (stateAfterIncome > stateBeforeIncome) {
+        //*1 Ratio: 0.4560819462227913
+        //*1.05 Ratio: 0.4270063694267516
+        if (stateAfterIncome > stateBeforeIncome * 1.05) {
             return PhaseChoiceProjection.builder().pickPhase(true).phase(4).chance(stateAfterIncome).build();
         } else {
             return PhaseChoiceProjection.SKIP_PHASE;

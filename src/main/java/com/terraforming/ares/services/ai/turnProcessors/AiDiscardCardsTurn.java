@@ -54,7 +54,7 @@ public class AiDiscardCardsTurn implements AiTurnProcessor {
             Integer bestCard = null;
             if (RandomBotHelper.isRandomBot(player)) {
                 bestCard = cardsToDiscard.get(random.nextInt(cardsToDiscard.size()));
-            } else if (player.isSecondBot()) {
+            } else if (Constants.BOTH_COMPUTERS_USE_NETWORK || player.isSecondBot()) {
                 bestCard = cardsCollectService.getBestCard(game, player.getUuid(), cardsToDiscard);
                 if (bestCard != null && Constants.LOG_NET_COMPARISON) {
                     System.out.println("Keeping ai " + cardService.getCard(bestCard).getClass().getSimpleName());

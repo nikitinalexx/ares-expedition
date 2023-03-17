@@ -50,8 +50,9 @@ public class AiPickCorporationTurn implements AiTurnProcessor {
 
     @Override
     public boolean processTurn(MarsGame game, Player player) {
-        int selectedCorporationId = player.getCorporations().getCards().stream().min(Comparator.comparingInt(corporation -> CORPORATION_PRIORITY.indexOf(corporation))).orElseThrow();
-
+        LinkedList<Integer> corporations = player.getCorporations().getCards();
+        //int selectedCorporationId = corporations.stream().min(Comparator.comparingInt(corporation -> CORPORATION_PRIORITY.indexOf(corporation))).orElseThrow();
+        int selectedCorporationId = corporations.get(random.nextInt(corporations.size()));
         aiTurnService.chooseCorporationTurn(game, ChooseCorporationRequest.builder()
                 .playerUuid(player.getUuid())
                 .corporationId(selectedCorporationId)

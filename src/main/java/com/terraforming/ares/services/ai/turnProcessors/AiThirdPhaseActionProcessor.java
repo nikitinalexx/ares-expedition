@@ -104,6 +104,12 @@ public class AiThirdPhaseActionProcessor {
 
 
     private boolean makeATurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
+        if (player.getSelectedCorporationCard() == 10000 || player.getSelectedCorporationCard() == 10100) {
+            if (game.getPlanetAtTheStartOfThePhase().isTemperatureMax() && player.getHeat() > 0) {
+                player.setMc(player.getMc() + player.getHeat());
+                player.setHeat(0);
+            }
+        }
         Deck activatedBlueCards = player.getActivatedBlueCards();
 
         List<Card> notUsedBlueCards = player.getPlayed().getCards().stream()

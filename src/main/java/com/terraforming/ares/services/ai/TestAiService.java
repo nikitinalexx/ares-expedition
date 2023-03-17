@@ -169,8 +169,10 @@ public class TestAiService {
         marsGameRow.setGreenCards(Math.max(0, marsGameRow.getGreenCards() + greenCardsIncome));
         marsGameRow.setRedCards(Math.max(0, marsGameRow.getRedCards() + redCardsIncome));
 
+        marsGameRow.setCardsInHand(marsGameRow.getCardsInHand() + cardIncome);
 
-        return deepNetwork.testState(marsGameRow, 2);
+
+        return deepNetwork.testState(marsGameRow, player.isFirstBot() ? 1 : 2);
     }
 
     private void addMainIncome(Player player) {

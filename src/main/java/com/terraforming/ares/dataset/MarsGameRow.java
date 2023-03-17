@@ -24,7 +24,7 @@ public class MarsGameRow {
     int heatIncome;
     int heat;
     int cardsIncome;
-    int cardsInHand;
+    float cardsInHand;
     int cardsBuilt;
 
     float greenCards;

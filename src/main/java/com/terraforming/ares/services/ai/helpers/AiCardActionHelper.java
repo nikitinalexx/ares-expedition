@@ -121,9 +121,9 @@ public class AiCardActionHelper {
                 } else if (actionInputData.getType() == ActionInputDataType.ADD_DISCARD_MICROBE) {
                     return isUsefulAddDiscardMicrobeAction(game, card);
                 } else if (cardMetadata.getCardAction() == CardAction.POWER_INFRASTRUCTURE) {
-                    return game.getPlanet().isTemperatureMax() && player.getHeat() >= 10;
+                    return game.getPlanetAtTheStartOfThePhase().isTemperatureMax() && player.getHeat() >= 10;
                 } else if (cardMetadata.getCardAction() == CardAction.GREEN_HOUSES) {
-                    return !game.getPlanet().isOxygenMax() && player.getHeat() >= 4;
+                    return !game.getPlanetAtTheStartOfThePhase().isOxygenMax() && player.getHeat() >= 4;
                 } else if (cardMetadata.getCardAction() == CardAction.SYMBIOTIC_FUNGUD) {
                     return hasProfitableCardWithCollectableResource(game, player, Set.of(CardCollectableResource.MICROBE));
                 }
@@ -213,13 +213,13 @@ public class AiCardActionHelper {
                     return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.ADD_DISCARD_MICROBE.getId(),
                             (player.getCardResourcesCount().get(card.getClass()) >= actionInputData.getMax()) ? List.of(actionInputData.getMax()) : List.of(1)));
                 } else if (cardMetadata.getCardAction() == CardAction.POWER_INFRASTRUCTURE) {
-                    if (game.getPlanet().isTemperatureMax() && player.getHeat() >= 10) {
+                    if (game.getPlanetAtTheStartOfThePhase().isTemperatureMax() && player.getHeat() >= 10) {
                         return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.DISCARD_HEAT.getId(), List.of(player.getHeat())));
                     } else {
                         return ActionInputParamsResponse.noAction();
                     }
                 } else if (cardMetadata.getCardAction() == CardAction.GREEN_HOUSES) {
-                    if (!game.getPlanet().isOxygenMax() && player.getHeat() >= 1) {
+                    if (!game.getPlanetAtTheStartOfThePhase().isOxygenMax() && player.getHeat() >= 1) {
                         return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.DISCARD_HEAT.getId(), List.of(Math.min(4, player.getHeat()))));
                     } else {
                         return ActionInputParamsResponse.noAction();
