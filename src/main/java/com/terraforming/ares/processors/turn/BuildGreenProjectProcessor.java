@@ -1,12 +1,12 @@
 package com.terraforming.ares.processors.turn;
 
+import com.terraforming.ares.dataset.CardsAiService;
 import com.terraforming.ares.model.turn.BuildGreenProjectTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.BuildService;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.DiscountService;
 import com.terraforming.ares.services.MarsContextProvider;
-import com.terraforming.ares.services.ai.CardsCollectService;
 import org.springframework.stereotype.Service;
 
 /**
@@ -19,8 +19,9 @@ public class BuildGreenProjectProcessor extends GenericBuildProjectProcessor<Bui
     public BuildGreenProjectProcessor(CardService marsDeckService,
                                       BuildService buildService,
                                       DiscountService discountService,
-                                      MarsContextProvider marsContextProvider) {
-        super(marsDeckService, buildService, discountService, marsContextProvider);
+                                      MarsContextProvider marsContextProvider,
+                                      CardsAiService cardsAiService) {
+        super(marsDeckService, buildService, discountService, marsContextProvider, cardsAiService);
     }
 
     @Override

@@ -1,5 +1,7 @@
 package com.terraforming.ares.model;
 
+import com.terraforming.ares.model.ai.AiTurnChoice;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -77,6 +79,10 @@ public class Constants {
     public static final int PHASE_5_UPGRADE_KEEP_EXTRA = 13;
     public static final int PHASE_5_UPGRADE_SEE_EXTRA = 14;
 
+    public static final float RED_CARDS_RATIO = 40f / 217;
+    public static final float GREEN_CARDS_RATIO = 111f / 217;
+    public static final float BLUE_CARDS_RATIO = 66f/ 217;
+
 
     public static final boolean WRITE_STATISTICS_TO_FILE = false;
     public static final boolean WRITE_STATISTICS_TO_CONSOLE = false;
@@ -85,11 +91,27 @@ public class Constants {
     public static final boolean COLLECT_CARDS_DATASET = false;
     public static final boolean COLLECT_DATASET = false;
     public static final boolean LOG_NET_COMPARISON = false;
-    public static final boolean ONE_COMPUTER_USES_NETWORK = true;
-    public static final boolean BOTH_COMPUTERS_USE_NETWORK = false;
 
-    public static final float RED_CARDS_RATIO = 40f / 151;
-    public static final float GREEN_CARDS_RATIO = 111f / 151;
+
+
+    /** AI TURNS **/
+    public static final AiTurnChoice FIRST_MULLIGAN_OR_THIRD_PHASE_TURN = AiTurnChoice.RANDOM;
+    public static final AiTurnChoice SECOND_MULLIGAN_OR_THIRD_PHASE_TURN = AiTurnChoice.FILE_VALUE;
+
+    public static final AiTurnChoice FIRST_DISCARD_OR_SELL_CARDS_TURN = AiTurnChoice.RANDOM;
+    public static final AiTurnChoice SECOND_DISCARD_OR_SELL_CARDS_TURN = AiTurnChoice.FILE_VALUE;
+
+
+
+    public static final AiTurnChoice FIRST_PICK_PHASE = AiTurnChoice.NETWORK;
+    public static final AiTurnChoice SECOND_PICK_PHASE = AiTurnChoice.NETWORK;
+
+    public static final AiTurnChoice FIRST_BUILD_PROJECT = AiTurnChoice.NETWORK;
+    public static final AiTurnChoice SECOND_BUILD_PROJECT = AiTurnChoice.NETWORK;
+
+    public static final AiTurnChoice FIRST_THIRD_PHASE = AiTurnChoice.FILE_VALUE;
+    public static final AiTurnChoice SECOND_THIRD_PHASE = AiTurnChoice.FILE_VALUE;
+
 
 
     private Constants() {

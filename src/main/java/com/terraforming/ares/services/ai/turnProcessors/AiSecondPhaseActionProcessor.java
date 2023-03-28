@@ -5,13 +5,13 @@ import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardColor;
 import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.ai.AiTurnChoice;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.CardValidationService;
 import com.terraforming.ares.services.ai.DeepNetwork;
 import com.terraforming.ares.services.ai.ICardValueService;
 import com.terraforming.ares.services.ai.ProjectionStrategy;
-import com.terraforming.ares.services.ai.RandomBotHelper;
 import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
@@ -64,29 +64,29 @@ public class AiSecondPhaseActionProcessor {
                         String errorMessage = cardValidationService.validateCard(
                                 player, game, card.getId(),
                                 aiPaymentHelper.getCardPayments(game, player, card),
-                                aiCardParamsHelper.getInputParamsForValidation(player, card)
+                                aiCardParamsHelper.getInputParamsForValidation(game, player, card)
                         );
                         return errorMessage == null;
                     })
                     .collect(Collectors.toList());
 
             if (!availableCards.isEmpty()) {
-                Card selectedCard = RandomBotHelper.isRandomBot(player)
+                Card selectedCard = (player.isFirstBot() && Constants.FIRST_BUILD_PROJECT == AiTurnChoice.RANDOM || player.isSecondBot() && Constants.SECOND_BUILD_PROJECT == AiTurnChoice.RANDOM)
                         ? availableCards.get(random.nextInt(availableCards.size()))
                         : cardValueService.getBestCardToBuild(game, player, availableCards, game.getTurns(), true);
 
 
-                if (Constants.BOTH_COMPUTERS_USE_NETWORK || Constants.ONE_COMPUTER_USES_NETWORK && player.getUuid().endsWith("1")) {
+                if (player.isFirstBot() && Constants.FIRST_PICK_PHASE == AiTurnChoice.NETWORK || player.isSecondBot() && Constants.SECOND_PICK_PHASE == AiTurnChoice.NETWORK) {
                     final BuildProjectPrediction bestProjectToBuild =
                             player.getBuilds().stream().filter(build -> build.getType().isBlueRed()).count() >= 2
-                                    ? aiBuildProjectService.getBestProjectToBuildSecondPhase(game, player, Set.of(CardColor.RED), ProjectionStrategy.FROM_PHASE)
-                                    : aiBuildProjectService.getBestProjectToBuild(game, player, Set.of(CardColor.RED), ProjectionStrategy.FROM_PHASE);
+                                    ? aiBuildProjectService.getBestProjectToBuildSecondPhase(game, player, Set.of(CardColor.RED,  CardColor.BLUE), ProjectionStrategy.FROM_PHASE)
+                                    : aiBuildProjectService.getBestProjectToBuild(game, player, Set.of(CardColor.RED, CardColor.BLUE), ProjectionStrategy.FROM_PHASE);
 
                     if (bestProjectToBuild.isCanBuild()) {
                         selectedCard = bestProjectToBuild.getCard();
                     } else {
                         //TODO turned to be bad
-                        selectedCard = null;
+                        //selectedCard = null;
                     }
                 }
 
@@ -111,7 +111,7 @@ public class AiSecondPhaseActionProcessor {
                     player,
                     availableTurnFlow.getCard().getId(),
                     aiPaymentHelper.getCardPayments(game, player, availableTurnFlow.getCard()),
-                    aiCardParamsHelper.getInputParamsForBuild(player, availableTurnFlow.getCard())
+                    aiCardParamsHelper.getInputParamsForBuild(game, player, availableTurnFlow.getCard())
             );
         } else {
             throw new IllegalStateException("Not reachable");

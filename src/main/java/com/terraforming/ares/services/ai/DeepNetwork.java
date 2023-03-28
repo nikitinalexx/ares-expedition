@@ -2,9 +2,7 @@ package com.terraforming.ares.services.ai;
 
 import com.terraforming.ares.dataset.DatasetCollectionService;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.dataset.MarsGameDataset;
 import com.terraforming.ares.dataset.MarsGameRow;
-import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.WinPointsService;
@@ -29,10 +27,16 @@ public class DeepNetwork {
     private final CardService cardService;
     private final DatasetCollectionService datasetCollectionService;
 
-    private static final float[] MAX_INPUTS = new float[]{39.0f, 143.0f, 143.0f, 591.0f, 11.0f, 14.0f, 15.0f, 57.0f, 61.0f, 378.0f, 8.0f, 26.0f, 43.0f, 22.0f, 12.0f, 1.0f, 1.0f, 1.0f, 2.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 14.0f, 30.0f, 9.0f, 143.0f, 143.0f, 591.0f, 11.0f, 14.0f, 15.0f, 57.0f, 61.0f, 378.0f, 8.0f, 43.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
+
+    private static final float[] MAX_INPUTS_FIRST = new float[]{46.0f, 167.0f, 149.0f, 430.0f, 12.0f, 12.0f, 31.0f, 166.0f, 65.0f, 266.0f, 11.0f, 60.0f, 23.0f, 11.0f, 16.0f, 18.0f, 16.0f, 13.0f, 8.0f, 22.0f, 9.0f, 10.0f, 19.0f, 5.0f, 4.0f, 1.0f, 1.0f, 1.0f, 2.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 14.0f, 30.0f, 9.0f, 167.0f, 149.0f, 430.0f, 12.0f, 12.0f, 31.0f, 166.0f, 65.0f, 266.0f, 11.0f, 60.0f, 5.0f, 4.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
+
+    private static final float[] MAX_INPUTS_SECOND = new float[]{46.0f, 148.0f, 129.0f, 406.0f, 12.0f, 11.0f, 29.0f, 162.0f, 65.0f, 214.0f, 11.0f, 60.0f, 23.0f, 11.0f, 16.0f, 18.0f, 16.0f, 11.0f, 8.0f, 22.0f, 9.0f, 10.0f, 18.0f, 5.0f, 4.0f, 1.0f, 1.0f, 1.0f, 2.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 14.0f, 30.0f, 9.0f, 148.0f, 129.0f, 406.0f, 12.0f, 11.0f, 29.0f, 162.0f, 65.0f, 214.0f, 11.0f, 60.0f, 5.0f, 4.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
 
 
-    private static final Tensor MAX_INPUTS_TENSOR = new Tensor(MAX_INPUTS);
+
+    private static final Tensor MAX_INPUTS_TENSOR_FIRST = new Tensor(MAX_INPUTS_FIRST);
+    private static final Tensor MAX_INPUTS_TENSOR_SECOND = new Tensor(MAX_INPUTS_SECOND);
+
 
     //the same, both very good
     public DeepNetwork(WinPointsService winPointsService, CardService cardService, DatasetCollectionService datasetCollectionService) throws IOException, ClassNotFoundException {
@@ -56,9 +60,6 @@ public class DeepNetwork {
     }
 
     public float testState(MarsGame game, Player player) {
-        if (!Constants.ONE_COMPUTER_USES_NETWORK && !Constants.BOTH_COMPUTERS_USE_NETWORK) {
-            return 0.5f;
-        }
         final List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
         final MarsGameRow marsGameRow = datasetCollectionService.collectPlayerData(
                 game,
@@ -75,7 +76,12 @@ public class DeepNetwork {
 
         Tensor someInput = new Tensor(datasetCollectionService.getMarsGameRowForUse(marsGameRow));
 
-        someInput.div(MAX_INPUTS_TENSOR);
+        if (player.isFirstBot()) {
+            someInput.div(MAX_INPUTS_TENSOR_FIRST);
+        } else {
+            someInput.div(MAX_INPUTS_TENSOR_SECOND);
+        }
+
 
         FeedForwardNetwork network = player.isFirstBot()
                 ? firstNetwork.get()
@@ -88,7 +94,11 @@ public class DeepNetwork {
 
     public float testState(MarsGameRow row, int networknumber) {
         Tensor someInput = new Tensor(datasetCollectionService.getMarsGameRowForUse(row));
-        someInput.div(MAX_INPUTS_TENSOR);
+        if (networknumber == 1) {
+            someInput.div(MAX_INPUTS_TENSOR_FIRST);
+        } else {
+            someInput.div(MAX_INPUTS_TENSOR_SECOND);
+        }
 
         FeedForwardNetwork network = firstNetwork.get();
         if (networknumber == 2) {

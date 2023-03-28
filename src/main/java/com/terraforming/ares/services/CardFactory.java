@@ -43,8 +43,10 @@ public class CardFactory {
 
     private final Set<Integer> crysisExcludedCards;
 
-    private final List<Card> redAndGreenCards;
-    private final Map<Integer, Integer> redGreenCardIdToIndex;
+    private final Map<Integer, Integer> allCardsToIndex;
+
+    @Getter
+    private final List<Integer> blueCardsForAi;
 
     public CardFactory() {
         baseExpansionSortedProjects = List.of(
@@ -269,18 +271,79 @@ public class CardFactory {
                 new SelfReplicatingBacteria(219)
         );
 
-        redAndGreenCards = new ArrayList<>();
-        redGreenCardIdToIndex = new HashMap<>();
+        blueCardsForAi = List.of(
+                1,//adaptation technology, effect similar to inventrix
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                17,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23,
+                24,
+                25,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                37,
+                38,
+                39,
+                40,
+                41,
+                42,//combine with corporation
+                43,
+                44,
+                45,
+                46,
+                47,
+                48,
+                49,
+                50,
+                51,
+                52,
+                53,
+                54,
+                55,
+                56,
+                57,
+                58,
+                59,
+                61,
+                62,
+                63,
+                64,
+                213,
+                216,
+                217,
+                219//add ai
+        );
 
-        for (Card card : baseExpansionSortedProjects) {
-            if (card.getColor() == CardColor.GREEN || card.getColor() == CardColor.RED) {
-                redAndGreenCards.add(card);
-            }
-        }
+        allCardsToIndex = new HashMap<>();
 
-        for (int i = 0; i < redAndGreenCards.size(); i++) {
-            Card card = redAndGreenCards.get(i);
-            redGreenCardIdToIndex.put(card.getId(), i);
+        for (int i = 0; i < baseExpansionSortedProjects.size(); i++) {
+            Card card = baseExpansionSortedProjects.get(i);
+            allCardsToIndex.put(card.getId(), i);
         }
 
         discoveryExpansionSortedProjects = List.of(
@@ -341,7 +404,7 @@ public class CardFactory {
                 new HelionCorporation(10000),
                 new CelestiorCorporation(10001),
                 new DevTechs(10002),
-                //new LaunchStarIncorporated(10003),
+                new LaunchStarIncorporated(10003),
                 new ThorgateCorporation(10004),
                 new TeractorCorporation(10005),
                 new TharsisCorporation(10006),
@@ -430,8 +493,8 @@ public class CardFactory {
         buffedCorporationsStorage = buffedCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
     }
 
-    public Map<Integer, Integer> getRedGreenCardIdToIndex() {
-        return redGreenCardIdToIndex;
+    public Map<Integer, Integer> getAllCardIdToIndex() {
+        return allCardsToIndex;
     }
 
     public List<CrysisCard> getCrysisCards() {

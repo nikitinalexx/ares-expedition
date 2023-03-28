@@ -8,9 +8,11 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.action.ActionInputData;
 import com.terraforming.ares.model.action.ActionInputDataType;
+import com.terraforming.ares.model.ai.AiTurnChoice;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.TerraformingService;
 import com.terraforming.ares.services.ai.AiBalanceService;
+import com.terraforming.ares.dataset.CardsAiService;
 import com.terraforming.ares.services.ai.ICardValueService;
 import com.terraforming.ares.services.ai.dto.ActionInputParamsResponse;
 import com.terraforming.ares.services.ai.dto.CardValueResponse;
@@ -34,8 +36,9 @@ public class AiCardActionHelper {
     private final Random random = new Random();
     private final ICardValueService cardValueService;
     private final AiBalanceService aiBalanceService;
+    private final CardsAiService cardsAiService;
 
-    public AiCardActionHelper(List<ActionValidator<?>> validators, CardService cardService, TerraformingService terraformingService, ICardValueService cardValueService, AiBalanceService aiBalanceService) {
+    public AiCardActionHelper(List<ActionValidator<?>> validators, CardService cardService, TerraformingService terraformingService, ICardValueService cardValueService, AiBalanceService aiBalanceService, CardsAiService cardsAiService) {
         blueActionValidators = validators.stream().collect(
                 Collectors.toMap(
                         ActionValidator::getType,
@@ -46,6 +49,7 @@ public class AiCardActionHelper {
         this.terraformingService = terraformingService;
         this.cardValueService = cardValueService;
         this.aiBalanceService = aiBalanceService;
+        this.cardsAiService = cardsAiService;
     }
 
     private Set<Class<?>> ACTIONS_WITHOUT_INPUT_PARAMS = Set.of(
@@ -284,13 +288,29 @@ public class AiCardActionHelper {
             if (cards.isEmpty()) {
                 break;
             }
-            CardValueResponse cardValueResponse = cardValueService.getWorstCard(game, player, cards, game.getTurns());
 
-            if (aiBalanceService.isCardWorthToDiscard(player, cardValueResponse.getWorth())) {
-                cardsToDiscard.add(cardValueResponse.getCardId());
-                cards.remove(cardValueResponse.getCardId());
-            } else {
-                break;
+            if (player.isFirstBot() && Constants.FIRST_MULLIGAN_OR_THIRD_PHASE_TURN == AiTurnChoice.FILE_VALUE || player.isSecondBot() && Constants.SECOND_MULLIGAN_OR_THIRD_PHASE_TURN == AiTurnChoice.FILE_VALUE) {
+                CardValueResponse cardValueResponse = cardValueService.getWorstCard(game, player, cards, game.getTurns());
+
+                if (aiBalanceService.isCardWorthToDiscard(player, cardValueResponse.getWorth())) {
+                    cardsToDiscard.add(cardValueResponse.getCardId());
+                    cards.remove(cardValueResponse.getCardId());
+                } else {
+                    break;
+                }
+            } else if (player.isFirstBot() && Constants.FIRST_MULLIGAN_OR_THIRD_PHASE_TURN == AiTurnChoice.RANDOM || player.isSecondBot() && Constants.SECOND_MULLIGAN_OR_THIRD_PHASE_TURN == AiTurnChoice.RANDOM) {
+                Integer card = cards.get(random.nextInt(cards.size()));
+
+                cardsToDiscard.add(card);
+                cards.remove(card);
+            } else if (player.isFirstBot() && Constants.FIRST_MULLIGAN_OR_THIRD_PHASE_TURN == AiTurnChoice.NETWORK || player.isSecondBot() && Constants.SECOND_MULLIGAN_OR_THIRD_PHASE_TURN == AiTurnChoice.NETWORK) {
+                Integer cardToRemove = cardsAiService.getWorstCard(game, player.getUuid(), cards, true);//TODO if the worst card is still good, maybe don't discard it?
+                if (cardToRemove != null) {
+                    cardsToDiscard.add(cardToRemove);
+                    cards.remove(cardToRemove);
+                } else {
+                    break;
+                }
             }
         }
         return cardsToDiscard;

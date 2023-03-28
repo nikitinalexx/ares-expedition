@@ -2,6 +2,8 @@ package com.terraforming.ares.dataset;
 
 import lombok.*;
 
+import java.util.List;
+
 /**
  * Created by oleksii.nikitin
  * Creation date 26.11.2022
@@ -13,182 +15,78 @@ import lombok.*;
 @NoArgsConstructor
 public class MarsCardRow {
     //player
-    private float turn;
 
-    private float[] cards;
+    float[] cards;
 
-    private int winPoints;
-    private int mcIncome;
-    private int mc;
-    private int steelIncome;
-    private int titaniumIncome;
-    private int plantsIncome;
-    private int plants;
-    private int heatIncome;
-    private int heat;
-    private int cardsIncome;
-    private int cardsInHand;
-    private int cardsBuilt;
+    int turn;
 
-    private float greenCards;
-    private float redCards;
+    float winPoints;
+    int mcIncome;
+    int mc;
+    int steelIncome;
+    int titaniumIncome;
+    int plantsIncome;
+    int plants;
+    int heatIncome;
+    int heat;
+    int cardsIncome;
+    int cardsBuilt;
+    int extraSeeCards;
+    int extraTakeCards;
 
-    private int heatEarthIncome;
-    private int mcAnimalPlantIncome;
-    private int cardScienceIncome;
-    private int mcEarthIncome;
-    private int plantPlantIncome;
-    private int mcScienceIncome;
-    private int mcTwoBuildingIncome;
-    private int mcEnergyIncome;
-    private int mcSpaceIncome;
-    private int heatSpaceIncome;
-    private int mcEventIncome;
-    private int heatEnergyIncome;
-    private int plantMicrobeIncome;
-    private int mcForestIncome;
+    float greenCards;
+    float redCards;
+    float blueCards;
 
-    private int oxygenLevel;
-    private int temperatureLevel;
-    private int oceansLevel;
+    List<Integer> blueCardsList;
+
+    int heatEarthIncome;
+    int mcAnimalPlantIncome;
+    int cardScienceIncome;
+    int mcEarthIncome;
+    int plantPlantIncome;
+    int mcScienceIncome;
+    int mcTwoBuildingIncome;
+    int mcEnergyIncome;
+    int mcSpaceIncome;
+    int heatSpaceIncome;
+    int mcEventIncome;
+    int heatEnergyIncome;
+    int plantMicrobeIncome;
+    int mcForestIncome;
+
+    int spaceTags;
+    int earthTags;
+    int eventTags;
+    int scienceTags;
+    int plantTags;
+    int energyTags;
+    int buildingTags;
+    int animalTags;
+    int jupiterTags;
+    int microbeTags;
+
+    //todo all blue cards?
+
+    int oxygenLevel;
+    int temperatureLevel;
+    int oceansLevel;
 
     //his opponent
-    private int opponentWinPoints;
-    private int opponentMcIncome;
-    private int opponentMc;
-    private int opponentSteelIncome;
-    private int opponentTitaniumIncome;
-    private int opponentPlantsIncome;
-    private int opponentPlants;
-    private int opponentHeatIncome;
-    private int opponentHeat;
-    private int opponentCardsIncome;
-    private int opponentCardsBuilt;
+    float opponentWinPoints;
+    int opponentMcIncome;
+    int opponentMc;
+    int opponentSteelIncome;
+    int opponentTitaniumIncome;
+    int opponentPlantsIncome;
+    int opponentPlants;
+    int opponentHeatIncome;
+    int opponentHeat;
+    int opponentCardsIncome;
+    int opponentCardsBuilt;
+    int opponentExtraSeeCards;
+    int opponentExtraTakeCards;
 
-    private float winner;
-
-    public float[] getAsOutput() {
-        float[] result = new float[cards.length + 44];
-        for (int i = 0; i < cards.length; i++) {
-            result[i] = cards[i];
-        }
-        int counter = cards.length;
-
-        result[counter++] = turn;
-
-        result[counter++] = winPoints;
-        result[counter++] = mcIncome;
-        result[counter++] = mc;
-        result[counter++] = steelIncome;
-        result[counter++] = titaniumIncome;
-        result[counter++] = plantsIncome;
-        result[counter++] = plants;
-        result[counter++] = heatIncome;
-        result[counter++] = heat;
-        result[counter++] = cardsIncome;
-        result[counter++] = cardsInHand;
-        result[counter++] = cardsBuilt;
-
-        result[counter++] = greenCards;
-        result[counter++] = redCards;
-
-        result[counter++] = heatEarthIncome;
-        result[counter++] = mcAnimalPlantIncome;
-        result[counter++] = cardScienceIncome;
-        result[counter++] = mcEarthIncome;
-        result[counter++] = plantPlantIncome;
-        result[counter++] = mcScienceIncome;
-        result[counter++] = mcTwoBuildingIncome;
-        result[counter++] = mcEnergyIncome;
-        result[counter++] = mcSpaceIncome;
-        result[counter++] = heatSpaceIncome;
-        result[counter++] = mcEventIncome;
-        result[counter++] = heatEnergyIncome;
-        result[counter++] = plantMicrobeIncome;
-        result[counter++] = mcForestIncome;
-
-        result[counter++] = oxygenLevel;
-        result[counter++] = temperatureLevel;
-        result[counter++] = oceansLevel;
-
-
-        result[counter++] = opponentWinPoints;
-        result[counter++] = opponentMcIncome;
-        result[counter++] = opponentMc;
-        result[counter++] = opponentSteelIncome;
-        result[counter++] = opponentTitaniumIncome;
-        result[counter++] = opponentPlantsIncome;
-        result[counter++] = opponentPlants;
-        result[counter++] = opponentHeatIncome;
-        result[counter++] = opponentHeat;
-        result[counter++] = opponentCardsIncome;
-        result[counter++] = opponentCardsBuilt;
-
-        result[counter++] = winner;
-
-
-        return result;
-    }
-
-    public float[] getAsInput() {
-        float[] result = new float[cards.length + 43];
-        for (int i = 0; i < cards.length; i++) {
-            result[i] = cards[i];
-        }
-        int counter = cards.length;
-
-        result[counter++] = turn;
-
-        result[counter++] = winPoints;
-        result[counter++] = mcIncome;
-        result[counter++] = mc;
-        result[counter++] = steelIncome;
-        result[counter++] = titaniumIncome;
-        result[counter++] = plantsIncome;
-        result[counter++] = plants;
-        result[counter++] = heatIncome;
-        result[counter++] = heat;
-        result[counter++] = cardsIncome;
-        result[counter++] = cardsInHand;
-        result[counter++] = cardsBuilt;
-
-        result[counter++] = greenCards;
-        result[counter++] = redCards;
-
-        result[counter++] = heatEarthIncome;
-        result[counter++] = mcAnimalPlantIncome;
-        result[counter++] = cardScienceIncome;
-        result[counter++] = mcEarthIncome;
-        result[counter++] = plantPlantIncome;
-        result[counter++] = mcScienceIncome;
-        result[counter++] = mcTwoBuildingIncome;
-        result[counter++] = mcEnergyIncome;
-        result[counter++] = mcSpaceIncome;
-        result[counter++] = heatSpaceIncome;
-        result[counter++] = mcEventIncome;
-        result[counter++] = heatEnergyIncome;
-        result[counter++] = plantMicrobeIncome;
-        result[counter++] = mcForestIncome;
-
-        result[counter++] = oxygenLevel;
-        result[counter++] = temperatureLevel;
-        result[counter++] = oceansLevel;
-
-
-        result[counter++] = opponentWinPoints;
-        result[counter++] = opponentMcIncome;
-        result[counter++] = opponentMc;
-        result[counter++] = opponentSteelIncome;
-        result[counter++] = opponentTitaniumIncome;
-        result[counter++] = opponentPlantsIncome;
-        result[counter++] = opponentPlants;
-        result[counter++] = opponentHeatIncome;
-        result[counter++] = opponentHeat;
-        result[counter++] = opponentCardsIncome;
-        result[counter++] = opponentCardsBuilt;
-
-
-        return result;
-    }
+    int winner;
 
 }

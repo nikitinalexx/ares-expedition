@@ -19,8 +19,7 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.terraforming.ares.model.Constants.GREEN_CARDS_RATIO;
-import static com.terraforming.ares.model.Constants.RED_CARDS_RATIO;
+import static com.terraforming.ares.model.Constants.*;
 
 /**
  * Created by oleksii.nikitin
@@ -191,7 +190,7 @@ public class AiBuildProjectService extends BaseProcessorService {
                     String errorMessage = cardValidationService.validateCard(
                             player, game, card.getId(),
                             aiPaymentService.getCardPayments(game, player, card),
-                            aiCardBuildParamsHelper.getInputParamsForValidation(player, card)
+                            aiCardBuildParamsHelper.getInputParamsForValidation(game, player, card)
                     );
                     return errorMessage == null;
                 })
@@ -217,8 +216,8 @@ public class AiBuildProjectService extends BaseProcessorService {
 
         marsGameRow.setGreenCards(marsGameRow.getGreenCards() + GREEN_CARDS_RATIO);
         marsGameRow.setRedCards(marsGameRow.getRedCards() + RED_CARDS_RATIO);
+        marsGameRow.setBlueCards(marsGameRow.getBlueCards() + BLUE_CARDS_RATIO);
 
-        marsGameRow.setCardsInHand(marsGameRow.getCardsInHand() + 1);
 
         return BuildProjectPrediction.builder().canBuild(true).card(null).expectedValue(deepNetwork.testState(marsGameRow, player.isFirstBot() ? 1 : 2)).build();
     }
@@ -233,7 +232,7 @@ public class AiBuildProjectService extends BaseProcessorService {
                     player,
                     card.getId(),
                     aiPaymentService.getCardPayments(game, player, card),
-                    aiCardBuildParamsHelper.getInputParamsForBuild(player, card)
+                    aiCardBuildParamsHelper.getInputParamsForBuild(game, player, card)
             );
         } else {
             aiTurnService.buildBlueRedProjectSyncNoRequirements(
@@ -241,7 +240,7 @@ public class AiBuildProjectService extends BaseProcessorService {
                     player,
                     card.getId(),
                     aiPaymentService.getCardPayments(game, player, card),
-                    aiCardBuildParamsHelper.getInputParamsForBuild(player, card)
+                    aiCardBuildParamsHelper.getInputParamsForBuild(game, player, card)
             );
         }
 
@@ -266,7 +265,7 @@ public class AiBuildProjectService extends BaseProcessorService {
             String errorMessage = cardValidationService.validateCard(
                     player, game, card.getId(),
                     aiPaymentService.getCardPayments(game, player, card),
-                    aiCardBuildParamsHelper.getInputParamsForValidation(player, card)
+                    aiCardBuildParamsHelper.getInputParamsForValidation(game, player, card)
             );
             if (errorMessage != null) {
                 return null;
@@ -279,7 +278,7 @@ public class AiBuildProjectService extends BaseProcessorService {
                     player,
                     card.getId(),
                     aiPaymentService.getCardPayments(game, player, card),
-                    aiCardBuildParamsHelper.getInputParamsForBuild(player, card)
+                    aiCardBuildParamsHelper.getInputParamsForBuild(game, player, card)
             );
         } else {
             aiTurnService.buildBlueRedProjectSync(
@@ -287,7 +286,7 @@ public class AiBuildProjectService extends BaseProcessorService {
                     player,
                     card.getId(),
                     aiPaymentService.getCardPayments(game, player, card),
-                    aiCardBuildParamsHelper.getInputParamsForBuild(player, card)
+                    aiCardBuildParamsHelper.getInputParamsForBuild(game, player, card)
             );
         }
 

@@ -574,7 +574,7 @@ public class TurnService {
 
     public TurnResponse buildGreenProjectCard(String playerUuid, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
         return performTurn(
-                new BuildGreenProjectTurn(playerUuid, projectId, payments, inputParams),
+                new BuildGreenProjectTurn(playerUuid, projectId, payments, inputParams, false),
                 playerUuid,
                 game -> {
                     Player player = game.getPlayerByUuid(playerUuid);
@@ -587,7 +587,7 @@ public class TurnService {
 
     public TurnResponse buildBlueRedProjectCard(String playerUuid, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
         return performTurn(
-                new BuildBlueRedProjectTurn(playerUuid, projectId, payments, inputParams),
+                new BuildBlueRedProjectTurn(playerUuid, projectId, payments, inputParams, false),
                 playerUuid,
                 game -> {
                     Player player = game.getPlayerByUuid(playerUuid);

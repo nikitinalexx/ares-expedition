@@ -71,8 +71,8 @@ public class AiTurnService {
         buildProject(
                 game, player, projectId, payments, inputParams,
                 cardService.getCard(projectId).getColor() == CardColor.GREEN
-                        ? new BuildGreenProjectTurn(player.getUuid(), projectId, payments, inputParams)
-                        : new BuildBlueRedProjectTurn(player.getUuid(), projectId, payments, inputParams),
+                        ? new BuildGreenProjectTurn(player.getUuid(), projectId, payments, inputParams, false)
+                        : new BuildBlueRedProjectTurn(player.getUuid(), projectId, payments, inputParams, false),
                 game.getCurrentPhase() == 3
         );
     }
@@ -80,7 +80,7 @@ public class AiTurnService {
     public void buildGreenProjectSync(MarsGame game, Player player, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
         buildProject(
                 game, player, projectId, payments, inputParams,
-                new BuildGreenProjectTurn(player.getUuid(), projectId, payments, inputParams),
+                new BuildGreenProjectTurn(player.getUuid(), projectId, payments, inputParams, true),
                 true
         );
     }
@@ -89,7 +89,7 @@ public class AiTurnService {
         buildProjectWithoutRequirements(
                 game,
                 player,
-                new BuildGreenProjectTurn(player.getUuid(), projectId, payments, inputParams),
+                new BuildGreenProjectTurn(player.getUuid(), projectId, payments, inputParams, true),
                 true
         );
     }
@@ -97,7 +97,7 @@ public class AiTurnService {
     public void buildGreenProject(MarsGame game, Player player, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
         buildProject(
                 game, player, projectId, payments, inputParams,
-                new BuildGreenProjectTurn(player.getUuid(), projectId, payments, inputParams),
+                new BuildGreenProjectTurn(player.getUuid(), projectId, payments, inputParams, false),
                 game.getCurrentPhase() == 3
         );
     }
@@ -105,7 +105,7 @@ public class AiTurnService {
     public void buildBlueRedProjectSync(MarsGame game, Player player, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
         buildProject(
                 game, player, projectId, payments, inputParams,
-                new BuildBlueRedProjectTurn(player.getUuid(), projectId, payments, inputParams),
+                new BuildBlueRedProjectTurn(player.getUuid(), projectId, payments, inputParams, true),
                 true
         );
     }
@@ -114,7 +114,7 @@ public class AiTurnService {
         buildProjectWithoutRequirements(
                 game,
                 player,
-                new BuildBlueRedProjectTurn(player.getUuid(), projectId, payments, inputParams),
+                new BuildBlueRedProjectTurn(player.getUuid(), projectId, payments, inputParams, true),
                 true
         );
     }

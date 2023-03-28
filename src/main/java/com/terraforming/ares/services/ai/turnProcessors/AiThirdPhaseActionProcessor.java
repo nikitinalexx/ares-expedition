@@ -8,7 +8,6 @@ import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.CardValidationService;
 import com.terraforming.ares.services.StandardProjectService;
 import com.terraforming.ares.services.ai.DeepNetwork;
-import com.terraforming.ares.services.ai.RandomBotHelper;
 import com.terraforming.ares.services.ai.TestAiService;
 import com.terraforming.ares.services.ai.dto.ActionInputParamsResponse;
 import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
@@ -235,7 +234,7 @@ public class AiThirdPhaseActionProcessor {
                         String errorMessage = cardValidationService.validateCard(
                                 player, game, card.getId(),
                                 aiPaymentHelper.getCardPayments(game, player, card),
-                                aiCardBuildParamsHelper.getInputParamsForValidation(player, card)
+                                aiCardBuildParamsHelper.getInputParamsForValidation(game, player, card)
                         );
                         return errorMessage == null;
                     })
@@ -245,7 +244,7 @@ public class AiThirdPhaseActionProcessor {
                 final Card cardToBuild = availableCards.get(random.nextInt(availableCards.size()));
                 aiTurnService.buildProject(
                         game, player, cardToBuild.getId(), aiPaymentHelper.getCardPayments(game, player, cardToBuild),
-                        aiCardBuildParamsHelper.getInputParamsForBuild(player, cardToBuild)
+                        aiCardBuildParamsHelper.getInputParamsForBuild(game, player, cardToBuild)
                 );
                 return true;
             }
@@ -293,9 +292,10 @@ public class AiThirdPhaseActionProcessor {
             Card selectedCard = cards.get(selectedIndex);
 
             if (aiCardActionHelper.isSmartPlayAction(game, player, selectedCard)) {
-                ActionInputParamsResponse inputParams = RandomBotHelper.isRandomBot(player)
-                        ? aiCardActionHelper.getActionInputParamsForRandom(game, player, selectedCard)
-                        : aiCardActionHelper.getActionInputParamsForSmart(game, player, selectedCard);
+//                ActionInputParamsResponse inputParams = Constants.THIRD_PHASE_BOTH_PLAYERS_SMART
+//                        ? aiCardActionHelper.getActionInputParamsForSmart(game, player, selectedCard)
+//                        : aiCardActionHelper.getActionInputParamsForRandom(game, player, selectedCard);
+                ActionInputParamsResponse inputParams = aiCardActionHelper.getActionInputParamsForSmart(game, player, selectedCard);
 
                 if (inputParams.isMakeAction()) {
                     aiTurnService.performBlueAction(

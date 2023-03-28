@@ -1,12 +1,11 @@
 package com.terraforming.ares.processors.turn;
 
+import com.terraforming.ares.dataset.CardsAiService;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.turn.GenericBuildProjectTurn;
 import com.terraforming.ares.services.*;
-import com.terraforming.ares.services.ai.CardsCollectService;
-import com.terraforming.ares.services.ai.TestAiService;
 import lombok.RequiredArgsConstructor;
 
 import java.util.ArrayList;
@@ -22,6 +21,7 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
     private final BuildService buildService;
     private final DiscountService discountService;
     private final MarsContextProvider marsContextProvider;
+    private final CardsAiService cardsAiService;
 
     @Override
     public TurnResponse processTurn(T turn, MarsGame game) {
@@ -66,6 +66,10 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
         }
 
         player.getBuilds().remove(buildOption);
+
+        if (Constants.COLLECT_CARDS_DATASET && !turn.isProjection()) {
+            cardsAiService.collectData(game, player, card.getId());
+        }
 
         return response;
     }

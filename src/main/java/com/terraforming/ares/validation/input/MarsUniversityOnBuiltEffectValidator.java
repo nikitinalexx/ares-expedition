@@ -33,11 +33,18 @@ public class MarsUniversityOnBuiltEffectValidator implements OnBuiltEffectValida
             return null;
         }
 
+        //TODO why ai sends null?
+        if (input == null || !input.containsKey(InputFlag.MARS_UNIVERSITY_CARD.getId())) {
+            return "You need to provide input for the Mars University for the science tags";
+        }
+
         List<Integer> cardsInput = input.get(InputFlag.MARS_UNIVERSITY_CARD.getId());
+
 
         if (CollectionUtils.isEmpty(cardsInput)) {
             return "You need to provide input for the Mars University for the science tags";
         }
+
 
         if (cardsInput.contains(InputFlag.SKIP_ACTION.getId())) {
             return null;

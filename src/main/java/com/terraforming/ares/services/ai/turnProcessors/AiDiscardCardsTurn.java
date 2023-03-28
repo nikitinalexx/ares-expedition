@@ -3,12 +3,12 @@ package com.terraforming.ares.services.ai.turnProcessors;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.ai.AiTurnChoice;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
-import com.terraforming.ares.services.ai.CardsCollectService;
+import com.terraforming.ares.dataset.CardsAiService;
 import com.terraforming.ares.services.ai.ICardValueService;
-import com.terraforming.ares.services.ai.RandomBotHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -28,7 +28,7 @@ public class AiDiscardCardsTurn implements AiTurnProcessor {
     private final AiTurnService aiTurnService;
     private final ICardValueService cardValueService;
     private final CardService cardService;
-    private final CardsCollectService cardsCollectService;
+    private final CardsAiService cardsAiService;
 
     @Override
     public TurnType getType() {
@@ -52,23 +52,25 @@ public class AiDiscardCardsTurn implements AiTurnProcessor {
         for (int i = 0; i < cardsToKeep; i++) {
             //keep best card
             Integer bestCard = null;
-            if (RandomBotHelper.isRandomBot(player)) {
-                bestCard = cardsToDiscard.get(random.nextInt(cardsToDiscard.size()));
-            } else if (Constants.BOTH_COMPUTERS_USE_NETWORK || player.isSecondBot()) {
-                bestCard = cardsCollectService.getBestCard(game, player.getUuid(), cardsToDiscard);
-                if (bestCard != null && Constants.LOG_NET_COMPARISON) {
-                    System.out.println("Keeping ai " + cardService.getCard(bestCard).getClass().getSimpleName());
-                }
-            }
-            if (bestCard == null) {
+
+            if (player.isFirstBot() && Constants.FIRST_DISCARD_OR_SELL_CARDS_TURN == AiTurnChoice.FILE_VALUE || player.isSecondBot() && Constants.SECOND_DISCARD_OR_SELL_CARDS_TURN == AiTurnChoice.FILE_VALUE) {
                 bestCard = cardValueService.getBestCard(game, player, cardsToDiscard, game.getTurns());
                 if (bestCard != null && Constants.LOG_NET_COMPARISON) {
                     System.out.println("Keeping statistics " + cardService.getCard(bestCard).getClass().getSimpleName());
                 }
             }
-            if (Constants.COLLECT_CARDS_DATASET && nextTurn.isOnlyFromSelectedCards()) {
-                cardsCollectService.collectData(game, player, bestCard, game.getTurns());
+
+            if (player.isFirstBot() && Constants.FIRST_DISCARD_OR_SELL_CARDS_TURN == AiTurnChoice.RANDOM || player.isSecondBot() && Constants.SECOND_DISCARD_OR_SELL_CARDS_TURN == AiTurnChoice.RANDOM) {
+                bestCard = cardsToDiscard.get(random.nextInt(cardsToDiscard.size()));
             }
+
+            if (player.isFirstBot() && Constants.FIRST_DISCARD_OR_SELL_CARDS_TURN == AiTurnChoice.NETWORK || player.isSecondBot() && Constants.SECOND_DISCARD_OR_SELL_CARDS_TURN == AiTurnChoice.NETWORK) {
+                bestCard = cardsAiService.getBestCard(game, player.getUuid(), cardsToDiscard);
+                if (Constants.LOG_NET_COMPARISON) {
+                    System.out.println("Keeping ai " + cardService.getCard(bestCard).getClass().getSimpleName());
+                }
+            }
+
             cardsToDiscard.remove(bestCard);
         }
         if (Constants.LOG_NET_COMPARISON) {

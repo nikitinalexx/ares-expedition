@@ -17,8 +17,9 @@ public class BuildGreenProjectTurn extends GenericBuildProjectTurn {
     public BuildGreenProjectTurn(@JsonProperty("playerUuid") String playerUuid,
                                  @JsonProperty("projectId") int projectId,
                                  @JsonProperty("payments") List<Payment> payments,
-                                 @JsonProperty("inputParams") Map<Integer, List<Integer>> inputParams) {
-        super(playerUuid, projectId, payments, inputParams);
+                                 @JsonProperty("inputParams") Map<Integer, List<Integer>> inputParams,
+                                 @JsonProperty("projection") boolean projection) {
+        super(playerUuid, projectId, payments, inputParams, projection);
     }
 
     @Override

@@ -5,6 +5,7 @@ import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardColor;
 import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.ai.AiTurnChoice;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.CardValidationService;
@@ -55,7 +56,7 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
                     String errorMessage = cardValidationService.validateCard(
                             player, game, card.getId(),
                             aiPaymentHelper.getCardPayments(game, player, card),
-                            aiCardParamsHelper.getInputParamsForValidation(player, card)
+                            aiCardParamsHelper.getInputParamsForValidation(game, player, card)
                     );
                     return errorMessage == null;
                 })
@@ -68,7 +69,7 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
 
         Card selectedCard;
 
-        if (RandomBotHelper.isRandomBot(player)) {
+        if (player.isFirstBot() && Constants.FIRST_BUILD_PROJECT == AiTurnChoice.RANDOM || player.isSecondBot() && Constants.SECOND_BUILD_PROJECT == AiTurnChoice.RANDOM) {
             selectedCard = availableCards.get(random.nextInt(availableCards.size()));
         } else {
             selectedCard = cardValueService.getBestCardToBuild(game, player, availableCards, game.getTurns(), true);
@@ -81,14 +82,14 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
             }
 
 
-            if (Constants.BOTH_COMPUTERS_USE_NETWORK || Constants.ONE_COMPUTER_USES_NETWORK && player.getUuid().endsWith("1")) {
+            if (player.isFirstBot() && Constants.FIRST_PICK_PHASE == AiTurnChoice.NETWORK || player.isSecondBot() && Constants.SECOND_PICK_PHASE == AiTurnChoice.NETWORK) {
                 final BuildProjectPrediction bestProjectToBuild = aiBuildProjectService.getBestProjectToBuild(game, player, Set.of(CardColor.GREEN), ProjectionStrategy.FROM_PHASE);
 
                 if (bestProjectToBuild.isCanBuild()) {
                     selectedCard = bestProjectToBuild.getCard();
                 } else {
                     //TODO turned to be bad
-                    selectedCard = null;
+                    //selectedCard = null;
                 }
 
                 if (Constants.LOG_NET_COMPARISON) {
@@ -114,7 +115,7 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
                     player,
                     selectedCard.getId(),
                     aiPaymentHelper.getCardPayments(game, player, selectedCard),
-                    aiCardParamsHelper.getInputParamsForBuild(player, selectedCard)
+                    aiCardParamsHelper.getInputParamsForBuild(game, player, selectedCard)
             );
         }
 

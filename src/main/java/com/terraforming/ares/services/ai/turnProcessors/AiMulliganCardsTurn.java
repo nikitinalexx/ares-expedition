@@ -1,13 +1,25 @@
 package com.terraforming.ares.services.ai.turnProcessors;
 
+import com.terraforming.ares.dataset.CardsAiService;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.ai.AiTurnChoice;
+import com.terraforming.ares.model.turn.CorporationChoiceTurn;
 import com.terraforming.ares.model.turn.TurnType;
+import com.terraforming.ares.processors.turn.PickCorporationProcessor;
+import com.terraforming.ares.services.ai.AiBalanceService;
+import com.terraforming.ares.services.ai.CardValueService;
+import com.terraforming.ares.services.ai.DeepNetwork;
+import com.terraforming.ares.services.ai.ICardValueService;
+import com.terraforming.ares.services.ai.dto.CardValueResponse;
 import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Created by oleksii.nikitin
@@ -17,7 +29,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AiMulliganCardsTurn implements AiTurnProcessor {
     private final AiTurnService aiTurnService;
-    private final AiCardActionHelper aiCardActionHelper;
+    private final ICardValueService cardValueService;
+    private final AiBalanceService aiBalanceService;
+    private final CardsAiService cardsAiService;
+    private final PickCorporationProcessor pickCorporationProcessor;
+    private final Random random = new Random();
+
 
     @Override
     public TurnType getType() {
@@ -26,9 +43,65 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
 
     @Override
     public boolean processTurn(MarsGame game, Player player) {
-        List<Integer> cardsToDiscardSmart = aiCardActionHelper.getCardsToDiscardSmart(game, player, player.getHand().getCards().size());
+        List<Integer> cardsToDiscardSmart = getCardsToDiscardSmart(game, player, player.getHand().getCards().size());
         aiTurnService.mulliganCards(game, player, cardsToDiscardSmart);
         return true;
+    }
+
+    public List<Integer> getCardsToDiscardSmart(MarsGame game, Player player, int max) {
+        List<Integer> cards = new ArrayList<>(player.getHand().getCards());
+
+        List<Integer> cardsToDiscard = new ArrayList<>();
+
+        if (player.isFirstBot() && Constants.FIRST_MULLIGAN_OR_THIRD_PHASE_TURN == AiTurnChoice.RANDOM || player.isSecondBot() && Constants.SECOND_MULLIGAN_OR_THIRD_PHASE_TURN == AiTurnChoice.RANDOM) {
+            int toDiscard = random.nextInt(cards.size());
+            cardsToDiscard.addAll(cards.subList(0, toDiscard));
+        } else {
+            if (player.isFirstBot() && Constants.FIRST_MULLIGAN_OR_THIRD_PHASE_TURN == AiTurnChoice.NETWORK || player.isSecondBot() && Constants.SECOND_MULLIGAN_OR_THIRD_PHASE_TURN == AiTurnChoice.NETWORK) {
+
+                float average = 0;
+                for (Integer card : cards) {
+                    average += cardsAiService.getCardChance(game, player.getUuid(), card);
+                }
+                average /= 8;
+                average *= 1.04f;
+
+                while (cardsToDiscard.size() != max) {
+                    if (cards.isEmpty()) {
+                        break;
+                    }
+
+                    Integer cardToRemove = cardsAiService.getWorstCard(game, player.getUuid(), cards, average);//TODO if the worst card is still good, maybe don't discard it?
+                    if (cardToRemove != null) {
+                        cardsToDiscard.add(cardToRemove);
+                        cards.remove(cardToRemove);
+                    } else {
+                        break;
+                    }
+                }
+            }
+            if (player.isFirstBot() && Constants.FIRST_MULLIGAN_OR_THIRD_PHASE_TURN == AiTurnChoice.FILE_VALUE || player.isSecondBot() && Constants.SECOND_MULLIGAN_OR_THIRD_PHASE_TURN == AiTurnChoice.FILE_VALUE) {
+                while (cardsToDiscard.size() != max) {
+                    if (cards.isEmpty()) {
+                        break;
+                    }
+                    CardValueResponse cardValueResponse = cardValueService.getWorstCard(game, player, cards, game.getTurns());
+
+                    if (aiBalanceService.isCardWorthToDiscard(player, cardValueResponse.getWorth())) {
+                        cardsToDiscard.add(cardValueResponse.getCardId());
+                        cards.remove(cardValueResponse.getCardId());
+                    } else {
+                        break;
+                    }
+
+
+                }
+            }
+
+        }
+
+
+        return cardsToDiscard;
     }
 
 }

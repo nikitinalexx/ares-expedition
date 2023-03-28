@@ -21,9 +21,6 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class TestAiService {
-    private static final float RED_CARDS_RATIO = 40f / 151;
-    private static final float GREEN_CARDS_RATIO = 111f / 151;
-
     private final AiBuildProjectService aiBuildProjectService;
     private final CardService cardService;
     private final WinPointsService winPointsService;
@@ -49,9 +46,9 @@ public class TestAiService {
             bestProject = greenProject;
         }
 
-        if (colors.contains(CardColor.RED)) {
+        if (colors.contains(CardColor.RED) || colors.contains(CardColor.BLUE)) {
             player.setBuilds(List.of(new BuildDto(BuildType.BLUE_RED), new BuildDto(BuildType.BLUE_RED)));
-            BuildProjectPrediction redProject = aiBuildProjectService.getBestProjectToBuildSecondPhase(game, player, Set.of(CardColor.RED), ProjectionStrategy.FROM_PHASE);
+            BuildProjectPrediction redProject = aiBuildProjectService.getBestProjectToBuildSecondPhase(game, player, Set.of(CardColor.RED, CardColor.BLUE), ProjectionStrategy.FROM_PHASE);
             if (Constants.LOG_NET_COMPARISON && redProject.isCanBuild()) {
                 if (redProject.getCard() != null) {
                     System.out.println("Best RED " + (redProject.getCard().getClass().getSimpleName()) + " " + redProject.getExpectedValue());
@@ -163,13 +160,13 @@ public class TestAiService {
 
         int cardIncome = player.getCardIncome() - anotherPlayer.getCardIncome();
 
-        float greenCardsIncome = cardIncome * GREEN_CARDS_RATIO;
-        float redCardsIncome = cardIncome * RED_CARDS_RATIO;
+        float greenCardsIncome = cardIncome * Constants.GREEN_CARDS_RATIO;
+        float redCardsIncome = cardIncome * Constants.RED_CARDS_RATIO;
+        float blueCardsIncome = cardIncome * Constants.BLUE_CARDS_RATIO;
 
         marsGameRow.setGreenCards(Math.max(0, marsGameRow.getGreenCards() + greenCardsIncome));
         marsGameRow.setRedCards(Math.max(0, marsGameRow.getRedCards() + redCardsIncome));
-
-        marsGameRow.setCardsInHand(marsGameRow.getCardsInHand() + cardIncome);
+        marsGameRow.setBlueCards(Math.max(0, marsGameRow.getBlueCards() + blueCardsIncome));
 
 
         return deepNetwork.testState(marsGameRow, player.isFirstBot() ? 1 : 2);

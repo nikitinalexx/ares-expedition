@@ -38,7 +38,7 @@ public class MayNiProductionsCorporation implements CorporationCard {
         Player player = marsContext.getPlayer();
         player.setMc(48);
 
-        player.getBuilds().add(new BuildDto(BuildType.GREEN_OR_BLUE, 0, 12));
+        player.getBuilds().add(new BuildDto(BuildType.GREEN_OR_BLUE, 12, 12));
 
         return null;
     }

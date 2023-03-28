@@ -6,7 +6,8 @@ import com.terraforming.ares.dataset.MarsGameDataset;
 import com.terraforming.ares.dataset.MarsGameRow;
 import com.terraforming.ares.dto.*;
 import com.terraforming.ares.entity.CrisisRecordEntity;
-import com.terraforming.ares.mars.*;
+import com.terraforming.ares.mars.CrysisData;
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.request.AllProjectsRequest;
 import com.terraforming.ares.model.turn.*;
@@ -15,7 +16,7 @@ import com.terraforming.ares.repositories.caching.CachingGameRepository;
 import com.terraforming.ares.repositories.crudRepositories.CrisisRecordEntityRepository;
 import com.terraforming.ares.services.*;
 import com.terraforming.ares.services.ai.AiBalanceService;
-import com.terraforming.ares.services.ai.CardsCollectService;
+import com.terraforming.ares.dataset.CardsAiService;
 import com.terraforming.ares.services.ai.DeepNetwork;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -43,7 +44,7 @@ import static com.terraforming.ares.model.Constants.WRITE_STATISTICS_TO_FILE;
 @RequiredArgsConstructor
 @CrossOrigin
 public class GameController {
-    public static final boolean BREAK_SIMULATIONS_EARLY = false;
+    public static boolean BREAK_SIMULATIONS_EARLY = false;
     private final GameService gameService;
     private final CardFactory cardFactory;
     private final CardService cardService;
@@ -55,12 +56,17 @@ public class GameController {
     private final AiBalanceService aiBalanceService;
     private final CrisisRecordEntityRepository crisisRecordEntityRepository;
     private final DeepNetwork deepNetwork;
-    private final CardsCollectService cardsCollectService;
+    private final CardsAiService cardsAiService;
     private final DatasetCollectionService datasetCollectionService;
 
     @PostMapping("/state/test/{networkNumber}")
     public float testGameState(@RequestBody MarsGameRow row, @PathVariable int networkNumber) {
         return deepNetwork.testState(row, networkNumber);
+    }
+
+    @PostMapping("/state/test/{cardId}/{networkNumber}")
+    public float testCard(@RequestBody MarsCardRow row, @PathVariable int cardId, @PathVariable int networkNumber) {
+        return cardsAiService.testState(row, cardId, networkNumber);
     }
 
     @PostMapping("/game/new")
@@ -150,7 +156,7 @@ public class GameController {
     }
 
     @GetMapping("/simulations")
-    public void runSimulations(@RequestBody SimulationsRequest request) throws FileNotFoundException {
+    public void runSimulations(@RequestBody SimulationsRequest request) throws IOException {
         Constants.FIRST_PLAYER_PHASES = new ConcurrentHashMap<>();
         Constants.SECOND_PLAYER_PHASES = new ConcurrentHashMap<>();
 
@@ -175,7 +181,7 @@ public class GameController {
 
                 ExecutorService executor = Executors.newFixedThreadPool(threads);
                 for (int i = 0; i < threads; i++) {
-                    Runnable worker = new WorkerThread(request.getSimulationsCount() / threads, gameStatistics, request.isWithParamCalibration());
+                    Runnable worker = new WorkerThread(request.getSimulationsCount() / threads, gameStatistics, request.isWithParamCalibration(), request.getFileIndex(), i);
                     executor.execute(worker);
                 }
                 executor.shutdown();
@@ -193,7 +199,7 @@ public class GameController {
 
             ExecutorService executor = Executors.newFixedThreadPool(threads);
             for (int i = 0; i < threads; i++) {
-                Runnable worker = new WorkerThread(request.getSimulationsCount() / threads, gameStatistics, request.isWithParamCalibration());
+                Runnable worker = new WorkerThread(request.getSimulationsCount() / threads, gameStatistics, request.isWithParamCalibration(), request.getFileIndex(), i);
                 executor.execute(worker);
             }
             executor.shutdown();
@@ -206,24 +212,61 @@ public class GameController {
         }
 
         if (Constants.COLLECT_CARDS_DATASET) {
-            saveCardsDatasets();
+            saveCardsDatasets(request.getFileIndex());
         }
+
+        if (Constants.COLLECT_DATASET) {
+            List<String> fileNames = new ArrayList<>();
+
+            for (int threadIndex = 0; threadIndex < availableProcessors; threadIndex++) {
+                fileNames.add("dataset_" + request.getFileIndex() + "_" + threadIndex + ".csv");
+            }
+
+            combineAndDelete(fileNames, "dataset_" + request.getFileIndex() + ".csv");
+        }
+
 
         System.out.println(Constants.FIRST_PLAYER_PHASES);
         System.out.println(Constants.SECOND_PLAYER_PHASES);
+        System.out.println("Finished");
     }
+
+    public static void combineAndDelete(List<String> filePaths, String combinedFilePath) throws IOException {
+        // Create the combined CSV file
+        FileWriter writer = new FileWriter(combinedFilePath);
+        for (String filePath : filePaths) {
+            BufferedReader reader = new BufferedReader(new FileReader(filePath));
+            String line = reader.readLine();
+            while (line != null) {
+                writer.write(line + "\n");
+                line = reader.readLine();
+            }
+            reader.close();
+
+            // Delete the old file
+            File fileToDelete = new File(filePath);
+            if (!fileToDelete.delete()) {
+                System.err.println("Failed to delete file: " + filePath);
+            }
+        }
+        writer.close();
+    }
+
+
 
     class WorkerThread implements Runnable {
         int simulationCount;
         GameStatistics gameStatistics;
         boolean withCalibration;
+        int fileIndex;
+        int threadIndex;
 
-        WorkerThread(int simulationCount, GameStatistics gameStatistics, boolean withCalibration) {
+        WorkerThread(int simulationCount, GameStatistics gameStatistics, boolean withCalibration, int fileIndex, int threadIndex) {
             this.simulationCount = simulationCount;
             this.gameStatistics = gameStatistics;
             this.withCalibration = withCalibration;
-
-
+            this.fileIndex = fileIndex;
+            this.threadIndex = threadIndex;
         }
 
         @Override
@@ -272,6 +315,7 @@ public class GameController {
                     if (Constants.SAVE_SIMULATION_GAMES_TO_DB) {
                         games.forEach(gameRepository::save);
                     }
+                    saveExceptionalGames(games);
                     games.clear();
                 }
             }
@@ -280,16 +324,35 @@ public class GameController {
             if (Constants.SAVE_SIMULATION_GAMES_TO_DB) {
                 games.forEach(gameRepository::save);
             }
+            saveExceptionalGames(games);
 
             if (Constants.COLLECT_DATASET) {
                 try {
-                    saveDatasets(marsGameDatasets);
+                    saveDatasets(marsGameDatasets, fileIndex, threadIndex);
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                 }
             }
         }
+    }
 
+    private void saveExceptionalGames(List<MarsGame> games) {
+        games.stream().filter(game -> game.getTurns() < 34 && game.getPlayerUuidToPlayer().values().stream().anyMatch(
+                player -> {
+
+                    int winPoints = winPointsService.countWinPoints(player, game);
+
+                    long activeCardsCount = player.getPlayed().getCards().stream().map(cardService::getCard).filter(Card::isActiveCard).count();
+                    long greenCardsCount = player.getPlayed().getCards().stream().map(cardService::getCard).filter(card -> card.getColor() == CardColor.GREEN).count();
+
+                    if (activeCardsCount > 5 && winPoints > 80 && greenCardsCount < 13) {
+                        System.out.println("Active cards " + player.getUuid());
+                    }
+
+
+                    return (activeCardsCount > 5 && winPoints > 80 && greenCardsCount < 13);
+                }
+        )).forEach(gameRepository::save);
     }
 
     private void gatherStatistics(List<MarsGame> games, GameStatistics gameStatistics) {
@@ -339,7 +402,7 @@ public class GameController {
                 Player anotherPlayer = (secondPlayerPoints > firstPlayerPoints ? firstPlayer : secondPlayer);
 
                 if (Constants.COLLECT_CARDS_DATASET) {
-                    cardsCollectService.markWinner(winCardsPlayer.getUuid());
+                    cardsAiService.markWinner(winCardsPlayer.getUuid());
                 }
 
                 if (winCardsPlayer.getUuid().endsWith("0")) {
@@ -366,8 +429,8 @@ public class GameController {
         }
     }
 
-    private synchronized void saveDatasets(List<MarsGameDataset> marsGameDatasets) throws FileNotFoundException {
-        File csvOutputFile = new File("dataset.csv");
+    private synchronized void saveDatasets(List<MarsGameDataset> marsGameDatasets, int index, int threadIndex) throws FileNotFoundException {
+        File csvOutputFile = new File("dataset_" + index + "_" + threadIndex + ".csv");
         try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
             for (MarsGameDataset dataset : marsGameDatasets) {
                 writeMarsGameRows(dataset.getFirstPlayerRows(), pw);
@@ -376,13 +439,13 @@ public class GameController {
         }
     }
 
-    private void saveCardsDatasets() throws FileNotFoundException {
-        File csvOutputFile = new File("cardsDataset.csv");
-        Map<String, List<MarsCardRow>> data = cardsCollectService.getData();
+    private void saveCardsDatasets(int index) throws FileNotFoundException {
+        File csvOutputFile = new File("cardsDataset_" + index + ".csv");
+        Map<String, List<MarsCardRow>> data = cardsAiService.getData();
         try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
             for (List<MarsCardRow> values : data.values()) {
                 for (MarsCardRow value : values) {
-                    float[] output = value.getAsOutput();
+                    float[] output = cardsAiService.getForStudy(value);
 
                     for (int i = 0; i < output.length; i++) {
                         pw.write(getFloatForWrite(output[i]));

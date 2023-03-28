@@ -1,17 +1,16 @@
 package com.terraforming.ares.dataset;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.cards.blue.*;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardFactory;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.DraftCardsService;
 import com.terraforming.ares.services.WinPointsService;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -19,15 +18,20 @@ import java.util.stream.Collectors;
 public class DatasetCollectionService {
     private final CardService cardService;
     private final WinPointsService winPointsService;
-    private final CardFactory cardFactory;
-    private final Map<Integer, Integer> corporationIdToIndex = new HashMap<>();
+    private final DraftCardsService draftCardsService;
 
-    public DatasetCollectionService(CardService cardService, WinPointsService winPointsService, CardFactory cardFactory) {
+    private final Map<Integer, Integer> corporationIdToIndex = new HashMap<>();
+    private final Map<Integer, Integer> blueCardIdToIndex = new HashMap<>();
+
+    public DatasetCollectionService(CardService cardService, WinPointsService winPointsService, CardFactory cardFactory, DraftCardsService draftCardsService) {
         this.cardService = cardService;
         this.winPointsService = winPointsService;
-        this.cardFactory = cardFactory;
+        this.draftCardsService = draftCardsService;
 
-        List<Card> sortedBaseCorporations = cardFactory.getSortedBaseCorporations();
+        List<Card> sortedBaseCorporations = cardFactory.getSortedBaseCorporations()
+                .stream()
+                .filter(card -> card.getSpecialEffects() == null || !card.getSpecialEffects().contains(SpecialEffect.THARSIS_REPUBLIC))
+                .collect(Collectors.toList());
         Map<Integer, Card> buffedCorporationsMapping = cardFactory.getBuffedCorporationsMapping();
 
         for (int i = 0; i < sortedBaseCorporations.size(); i++) {
@@ -40,12 +44,18 @@ public class DatasetCollectionService {
 
             corporationIdToIndex.put(entry.getValue().getId(), index);
         }
-        System.out.println(corporationIdToIndex);
+
+        List<Integer> blueCardsForAi = cardFactory.getBlueCardsForAi();
+
+        for (int i = 0; i < blueCardsForAi.size(); i++) {
+            blueCardIdToIndex.put(blueCardsForAi.get(i), i);
+        }
     }
 
     public float[] getMarsGameRowForUse(MarsGameRow marsGameRow) {
         int corporationsSize = corporationIdToIndex.size();
-        float[] result = new float[43 + corporationsSize];
+        int blueCardsSize = blueCardIdToIndex.size();
+        float[] result = new float[55 + corporationsSize + blueCardsSize];
         int counter = 0;
 
         //input
@@ -60,11 +70,24 @@ public class DatasetCollectionService {
         result[counter++] = marsGameRow.heatIncome;
         result[counter++] = marsGameRow.heat;
         result[counter++] = marsGameRow.cardsIncome;
-        result[counter++] = marsGameRow.cardsInHand;
         result[counter++] = marsGameRow.cardsBuilt;
 
         result[counter++] = marsGameRow.greenCards;
         result[counter++] = marsGameRow.redCards;
+        result[counter++] = marsGameRow.blueCards;
+
+        result[counter++] = marsGameRow.anaerobicMicroorganisms;
+        result[counter++] = marsGameRow.decomposers;
+        result[counter++] = marsGameRow.decomposingFungus;
+        result[counter++] = marsGameRow.ghgProduction;
+        result[counter++] = marsGameRow.nitriteReducting;
+        result[counter++] = marsGameRow.regolithEaters;
+        result[counter++] = marsGameRow.selfReplicatingBacteria;
+
+        result[counter++] = marsGameRow.scienceTagsCount;
+
+        result[counter++] = marsGameRow.extraSeeCards;
+        result[counter++] = marsGameRow.extraTakeCards;
 
         result[counter++] = marsGameRow.heatEarthIncome;
         result[counter++] = marsGameRow.mcAnimalPlantIncome;
@@ -94,24 +117,36 @@ public class DatasetCollectionService {
         result[counter++] = marsGameRow.opponentHeatIncome;
         result[counter++] = marsGameRow.opponentHeat;
         result[counter++] = marsGameRow.opponentCardsIncome;
-        result[counter++] = marsGameRow.opponentCardsBuilt;
+        result[counter++] = marsGameRow.opponentCardsBuilt;//is it needed?
+        result[counter++] = marsGameRow.opponentExtraSeeCards;
+        result[counter++] = marsGameRow.opponentExtraTakeCards;
 
-        int corporationIndex = corporationIdToIndex.get(marsGameRow.getCorporationId());
-        if (corporationIndex < 0 || corporationIndex >= corporationsSize) {
-            throw new IllegalStateException("Invalid corporation index " + corporationIndex);
+        if (corporationIdToIndex.containsKey(marsGameRow.getCorporationId())) {
+            int corporationIndex = corporationIdToIndex.get(marsGameRow.getCorporationId());
+            if (corporationIndex < 0 || corporationIndex >= corporationsSize) {
+                throw new IllegalStateException("Invalid corporation index " + corporationIndex);
+            }
+            result[counter + corporationIndex] = 1;
+            counter += corporationsSize;
         }
 
-        for (int i = 0; i < corporationsSize; i++) {
-            result[counter++] = (corporationIndex == i ? 1 : 0);
+
+        for (Integer blueCard : marsGameRow.getBlueCardsList()) {
+            if (!blueCardIdToIndex.containsKey(blueCard)) {
+                continue;
+            }
+            result[counter + blueCardIdToIndex.get(blueCard)] = 1;
         }
 
+        counter += blueCardsSize;
 
         return result;
     }
 
     public float[] getMarsGameRowForStudy(MarsGameRow marsGameRow) {
         int corporationsSize = corporationIdToIndex.size();
-        float[] result = new float[44 + corporationsSize];
+        int blueCardsSize = blueCardIdToIndex.size();
+        float[] result = new float[56 + corporationsSize + blueCardsSize];
         int counter = 0;
 
         //input
@@ -126,11 +161,24 @@ public class DatasetCollectionService {
         result[counter++] = marsGameRow.heatIncome;
         result[counter++] = marsGameRow.heat;
         result[counter++] = marsGameRow.cardsIncome;
-        result[counter++] = marsGameRow.cardsInHand;
         result[counter++] = marsGameRow.cardsBuilt;
 
         result[counter++] = marsGameRow.greenCards;
         result[counter++] = marsGameRow.redCards;
+        result[counter++] = marsGameRow.blueCards;
+
+        result[counter++] = marsGameRow.anaerobicMicroorganisms;
+        result[counter++] = marsGameRow.decomposers;
+        result[counter++] = marsGameRow.decomposingFungus;
+        result[counter++] = marsGameRow.ghgProduction;
+        result[counter++] = marsGameRow.nitriteReducting;
+        result[counter++] = marsGameRow.regolithEaters;
+        result[counter++] = marsGameRow.selfReplicatingBacteria;
+
+        result[counter++] = marsGameRow.scienceTagsCount;
+
+        result[counter++] = marsGameRow.extraSeeCards;
+        result[counter++] = marsGameRow.extraTakeCards;
 
         result[counter++] = marsGameRow.heatEarthIncome;
         result[counter++] = marsGameRow.mcAnimalPlantIncome;
@@ -160,20 +208,31 @@ public class DatasetCollectionService {
         result[counter++] = marsGameRow.opponentHeatIncome;
         result[counter++] = marsGameRow.opponentHeat;
         result[counter++] = marsGameRow.opponentCardsIncome;
-        result[counter++] = marsGameRow.opponentCardsBuilt;
+        result[counter++] = marsGameRow.opponentCardsBuilt;//is it needed?
+        result[counter++] = marsGameRow.opponentExtraSeeCards;
+        result[counter++] = marsGameRow.opponentExtraTakeCards;
 
-        int corporationIndex = corporationIdToIndex.get(marsGameRow.getCorporationId());
-        if (corporationIndex < 0 || corporationIndex >= corporationsSize) {
-            throw new IllegalStateException("Invalid corporation index " + corporationIndex);
+        if (corporationIdToIndex.containsKey(marsGameRow.getCorporationId())) {
+            int corporationIndex = corporationIdToIndex.get(marsGameRow.getCorporationId());
+            if (corporationIndex < 0 || corporationIndex >= corporationsSize) {
+                throw new IllegalStateException("Invalid corporation index " + corporationIndex);
+            }
+            result[counter + corporationIndex] = 1;
+            counter += corporationsSize;
         }
 
-        for (int i = 0; i < corporationsSize; i++) {
-            result[counter++] = (corporationIndex == i ? 1 : 0);
+
+        for (Integer blueCard : marsGameRow.getBlueCardsList()) {
+            if (!blueCardIdToIndex.containsKey(blueCard)) {
+                continue;
+            }
+            result[counter + blueCardIdToIndex.get(blueCard)] = 1;
         }
 
+        counter += blueCardsSize;
 
         //output
-        result[counter++] = marsGameRow.winner;
+        result[counter] = marsGameRow.winner;
 
         return result;
     }
@@ -212,9 +271,16 @@ public class DatasetCollectionService {
                 .map(Card::getColor)
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.summingInt(e -> 1)));
 
+        List<Integer> blueCardsList = currentPlayer.getPlayed().getCards().stream()
+                .map(cardService::getCard)
+                .filter(card -> card.getColor() == CardColor.BLUE)
+                .map(Card::getId)
+                .collect(Collectors.toList());
+
+
         return MarsGameRow.builder()
                 .turn(game.getTurns())
-                .winPoints(winPointsService.countWinPoints(currentPlayer, game))
+                .winPoints(winPointsService.countWinPointsWithFloats(currentPlayer, game))
                 .mcIncome(currentPlayer.getMcIncome() + currentPlayer.getTerraformingRating())
                 .mc(currentPlayer.getMc())
                 .steelIncome(currentPlayer.getSteelIncome())
@@ -224,10 +290,21 @@ public class DatasetCollectionService {
                 .heatIncome(currentPlayer.getHeatIncome())
                 .heat(currentPlayer.getHeat())
                 .cardsIncome(currentPlayer.getCardIncome())
-                .cardsInHand(currentPlayer.getHand().size())
                 .cardsBuilt(currentPlayer.getPlayed().size() - 1)
+                .extraSeeCards(draftCardsService.countExtraCardsToDraft(currentPlayer))
+                .extraTakeCards(draftCardsService.countExtraCardsToTake(currentPlayer))
                 .greenCards(colorToCount.getOrDefault(CardColor.GREEN, 0))
                 .redCards(colorToCount.getOrDefault(CardColor.RED, 0))
+                .blueCards(colorToCount.getOrDefault(CardColor.BLUE, 0))
+                .anaerobicMicroorganisms(currentPlayer.getCardResourcesCount().getOrDefault(AnaerobicMicroorganisms.class, 0))
+                .decomposers(currentPlayer.getCardResourcesCount().getOrDefault(Decomposers.class, 0))
+                .decomposingFungus(currentPlayer.getCardResourcesCount().getOrDefault(DecomposingFungus.class, 0))
+                .ghgProduction(currentPlayer.getCardResourcesCount().getOrDefault(GhgProductionBacteria.class, 0))
+                .nitriteReducting(currentPlayer.getCardResourcesCount().getOrDefault(NitriteReductingBacteria.class, 0))
+                .regolithEaters(currentPlayer.getCardResourcesCount().getOrDefault(RegolithEaters.class, 0))
+                .selfReplicatingBacteria(currentPlayer.getCardResourcesCount().getOrDefault(SelfReplicatingBacteria.class, 0))
+                .scienceTagsCount(cardService.countPlayedTags(currentPlayer, Set.of(Tag.SCIENCE)))
+                .blueCardsList(blueCardsList)
                 .heatEarthIncome(cardActionToCount.getOrDefault(CardAction.HEAT_EARTH_INCOME, 0))
                 .mcAnimalPlantIncome(cardActionToCount.getOrDefault(CardAction.MC_ANIMAL_PLANT_INCOME, 0))
                 .cardScienceIncome(cardActionToCount.getOrDefault(CardAction.CARD_SCIENCE_INCOME, 0))
@@ -245,7 +322,7 @@ public class DatasetCollectionService {
                 .oxygenLevel(game.getPlanet().getOxygenValue())
                 .temperatureLevel(game.getPlanet().getTemperatureValue())
                 .oceansLevel(Constants.MAX_OCEANS - game.getPlanet().oceansLeft())
-                .opponentWinPoints(winPointsService.countWinPoints(anotherPlayer, game))
+                .opponentWinPoints(winPointsService.countWinPointsWithFloats(anotherPlayer, game))
                 .opponentMcIncome(anotherPlayer.getMcIncome() + anotherPlayer.getTerraformingRating())
                 .opponentMc(anotherPlayer.getMc())
                 .opponentSteelIncome(anotherPlayer.getSteelIncome())
@@ -256,6 +333,8 @@ public class DatasetCollectionService {
                 .opponentHeat(anotherPlayer.getHeat())
                 .opponentCardsIncome(anotherPlayer.getCardIncome())
                 .opponentCardsBuilt(anotherPlayer.getPlayed().size() - 1)
+                .opponentExtraSeeCards(draftCardsService.countExtraCardsToDraft(currentPlayer))
+                .opponentExtraTakeCards(draftCardsService.countExtraCardsToTake(currentPlayer))
                 .corporationId(currentPlayer.getSelectedCorporationCard())
                 .build();
     }
