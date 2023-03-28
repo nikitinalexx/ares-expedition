@@ -2,7 +2,6 @@ package com.terraforming.ares.services.ai;
 
 import com.terraforming.ares.dataset.DatasetCollectionService;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.dataset.MarsGameDataset;
 import com.terraforming.ares.dataset.MarsGameRow;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
@@ -146,7 +145,7 @@ public class TestAiService {
 
         player.setMc(player.getMc() + 4);
 
-        final MarsGameRow marsGameRow = datasetCollectionService.collectPlayerData(
+        final MarsGameRow marsGameRow = datasetCollectionService.collectGameData(
                 game,
                 player,
                 players.get(0) == player

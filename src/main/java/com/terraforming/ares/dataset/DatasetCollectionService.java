@@ -55,71 +55,14 @@ public class DatasetCollectionService {
     public float[] getMarsGameRowForUse(MarsGameRow marsGameRow) {
         int corporationsSize = corporationIdToIndex.size();
         int blueCardsSize = blueCardIdToIndex.size();
-        float[] result = new float[55 + corporationsSize + blueCardsSize];
+        float[] result = new float[4 + corporationsSize + 2 * (MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize)];
         int counter = 0;
 
         //input
         result[counter++] = marsGameRow.turn;
-        result[counter++] = marsGameRow.winPoints;
-        result[counter++] = marsGameRow.mcIncome;
-        result[counter++] = marsGameRow.mc;
-        result[counter++] = marsGameRow.steelIncome;
-        result[counter++] = marsGameRow.titaniumIncome;
-        result[counter++] = marsGameRow.plantsIncome;
-        result[counter++] = marsGameRow.plants;
-        result[counter++] = marsGameRow.heatIncome;
-        result[counter++] = marsGameRow.heat;
-        result[counter++] = marsGameRow.cardsIncome;
-        result[counter++] = marsGameRow.cardsBuilt;
-
-        result[counter++] = marsGameRow.greenCards;
-        result[counter++] = marsGameRow.redCards;
-        result[counter++] = marsGameRow.blueCards;
-
-        result[counter++] = marsGameRow.anaerobicMicroorganisms;
-        result[counter++] = marsGameRow.decomposers;
-        result[counter++] = marsGameRow.decomposingFungus;
-        result[counter++] = marsGameRow.ghgProduction;
-        result[counter++] = marsGameRow.nitriteReducting;
-        result[counter++] = marsGameRow.regolithEaters;
-        result[counter++] = marsGameRow.selfReplicatingBacteria;
-
-        result[counter++] = marsGameRow.scienceTagsCount;
-
-        result[counter++] = marsGameRow.extraSeeCards;
-        result[counter++] = marsGameRow.extraTakeCards;
-
-        result[counter++] = marsGameRow.heatEarthIncome;
-        result[counter++] = marsGameRow.mcAnimalPlantIncome;
-        result[counter++] = marsGameRow.cardScienceIncome;
-        result[counter++] = marsGameRow.mcEarthIncome;
-        result[counter++] = marsGameRow.plantPlantIncome;
-        result[counter++] = marsGameRow.mcScienceIncome;
-        result[counter++] = marsGameRow.mcTwoBuildingIncome;
-        result[counter++] = marsGameRow.mcEnergyIncome;
-        result[counter++] = marsGameRow.mcSpaceIncome;
-        result[counter++] = marsGameRow.heatSpaceIncome;
-        result[counter++] = marsGameRow.mcEventIncome;
-        result[counter++] = marsGameRow.heatEnergyIncome;
-        result[counter++] = marsGameRow.plantMicrobeIncome;
-        result[counter++] = marsGameRow.mcForestIncome;
-
         result[counter++] = marsGameRow.oxygenLevel;
         result[counter++] = marsGameRow.temperatureLevel;
         result[counter++] = marsGameRow.oceansLevel;
-        result[counter++] = marsGameRow.opponentWinPoints;
-        result[counter++] = marsGameRow.opponentMcIncome;
-        result[counter++] = marsGameRow.opponentMc;
-        result[counter++] = marsGameRow.opponentSteelIncome;
-        result[counter++] = marsGameRow.opponentTitaniumIncome;
-        result[counter++] = marsGameRow.opponentPlantsIncome;
-        result[counter++] = marsGameRow.opponentPlants;
-        result[counter++] = marsGameRow.opponentHeatIncome;
-        result[counter++] = marsGameRow.opponentHeat;
-        result[counter++] = marsGameRow.opponentCardsIncome;
-        result[counter++] = marsGameRow.opponentCardsBuilt;//is it needed?
-        result[counter++] = marsGameRow.opponentExtraSeeCards;
-        result[counter++] = marsGameRow.opponentExtraTakeCards;
 
         if (corporationIdToIndex.containsKey(marsGameRow.getCorporationId())) {
             int corporationIndex = corporationIdToIndex.get(marsGameRow.getCorporationId());
@@ -128,89 +71,82 @@ public class DatasetCollectionService {
             }
             result[counter + corporationIndex] = 1;
             counter += corporationsSize;
+        } else {
+            throw new IllegalStateException("Corporation not found");
         }
 
+        collectGameData(result, counter, marsGameRow.getPlayer());
+        counter += MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize;
 
-        for (Integer blueCard : marsGameRow.getBlueCardsList()) {
+        collectGameData(result, counter, marsGameRow.getOpponent());
+
+        return result;
+    }
+
+    private void collectGameData(float[] result, int counter, MarsPlayerRow player) {
+        result[counter++] = player.winPoints;
+        result[counter++] = player.mcIncome;
+        result[counter++] = player.mc;
+        result[counter++] = player.steelIncome;
+        result[counter++] = player.titaniumIncome;
+        result[counter++] = player.plantsIncome;
+        result[counter++] = player.plants;
+        result[counter++] = player.heatIncome;
+        result[counter++] = player.heat;
+        result[counter++] = player.cardsIncome;
+        result[counter++] = player.cardsBuilt;
+
+        result[counter++] = player.greenCards;
+        result[counter++] = player.redCards;
+        result[counter++] = player.blueCards;
+
+        result[counter++] = player.anaerobicMicroorganisms;
+        result[counter++] = player.decomposers;
+        result[counter++] = player.decomposingFungus;
+        result[counter++] = player.ghgProduction;
+        result[counter++] = player.nitriteReducting;
+        result[counter++] = player.regolithEaters;
+        result[counter++] = player.selfReplicatingBacteria;
+
+        result[counter++] = player.scienceTagsCount;
+
+        result[counter++] = player.extraSeeCards;
+        result[counter++] = player.extraTakeCards;
+
+        result[counter++] = player.heatEarthIncome;
+        result[counter++] = player.mcAnimalPlantIncome;
+        result[counter++] = player.cardScienceIncome;
+        result[counter++] = player.mcEarthIncome;
+        result[counter++] = player.plantPlantIncome;
+        result[counter++] = player.mcScienceIncome;
+        result[counter++] = player.mcTwoBuildingIncome;
+        result[counter++] = player.mcEnergyIncome;
+        result[counter++] = player.mcSpaceIncome;
+        result[counter++] = player.heatSpaceIncome;
+        result[counter++] = player.mcEventIncome;
+        result[counter++] = player.heatEnergyIncome;
+        result[counter++] = player.plantMicrobeIncome;
+        result[counter++] = player.mcForestIncome;
+
+        for (Integer blueCard : player.getBlueCardsList()) {
             if (!blueCardIdToIndex.containsKey(blueCard)) {
                 continue;
             }
             result[counter + blueCardIdToIndex.get(blueCard)] = 1;
         }
-
-        counter += blueCardsSize;
-
-        return result;
     }
 
     public float[] getMarsGameRowForStudy(MarsGameRow marsGameRow) {
         int corporationsSize = corporationIdToIndex.size();
         int blueCardsSize = blueCardIdToIndex.size();
-        float[] result = new float[56 + corporationsSize + blueCardsSize];
+        float[] result = new float[4 + corporationsSize + 2 * (MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize) + 1];
         int counter = 0;
 
         //input
         result[counter++] = marsGameRow.turn;
-        result[counter++] = marsGameRow.winPoints;
-        result[counter++] = marsGameRow.mcIncome;
-        result[counter++] = marsGameRow.mc;
-        result[counter++] = marsGameRow.steelIncome;
-        result[counter++] = marsGameRow.titaniumIncome;
-        result[counter++] = marsGameRow.plantsIncome;
-        result[counter++] = marsGameRow.plants;
-        result[counter++] = marsGameRow.heatIncome;
-        result[counter++] = marsGameRow.heat;
-        result[counter++] = marsGameRow.cardsIncome;
-        result[counter++] = marsGameRow.cardsBuilt;
-
-        result[counter++] = marsGameRow.greenCards;
-        result[counter++] = marsGameRow.redCards;
-        result[counter++] = marsGameRow.blueCards;
-
-        result[counter++] = marsGameRow.anaerobicMicroorganisms;
-        result[counter++] = marsGameRow.decomposers;
-        result[counter++] = marsGameRow.decomposingFungus;
-        result[counter++] = marsGameRow.ghgProduction;
-        result[counter++] = marsGameRow.nitriteReducting;
-        result[counter++] = marsGameRow.regolithEaters;
-        result[counter++] = marsGameRow.selfReplicatingBacteria;
-
-        result[counter++] = marsGameRow.scienceTagsCount;
-
-        result[counter++] = marsGameRow.extraSeeCards;
-        result[counter++] = marsGameRow.extraTakeCards;
-
-        result[counter++] = marsGameRow.heatEarthIncome;
-        result[counter++] = marsGameRow.mcAnimalPlantIncome;
-        result[counter++] = marsGameRow.cardScienceIncome;
-        result[counter++] = marsGameRow.mcEarthIncome;
-        result[counter++] = marsGameRow.plantPlantIncome;
-        result[counter++] = marsGameRow.mcScienceIncome;
-        result[counter++] = marsGameRow.mcTwoBuildingIncome;
-        result[counter++] = marsGameRow.mcEnergyIncome;
-        result[counter++] = marsGameRow.mcSpaceIncome;
-        result[counter++] = marsGameRow.heatSpaceIncome;
-        result[counter++] = marsGameRow.mcEventIncome;
-        result[counter++] = marsGameRow.heatEnergyIncome;
-        result[counter++] = marsGameRow.plantMicrobeIncome;
-        result[counter++] = marsGameRow.mcForestIncome;
-
         result[counter++] = marsGameRow.oxygenLevel;
         result[counter++] = marsGameRow.temperatureLevel;
         result[counter++] = marsGameRow.oceansLevel;
-        result[counter++] = marsGameRow.opponentWinPoints;
-        result[counter++] = marsGameRow.opponentMcIncome;
-        result[counter++] = marsGameRow.opponentMc;
-        result[counter++] = marsGameRow.opponentSteelIncome;
-        result[counter++] = marsGameRow.opponentTitaniumIncome;
-        result[counter++] = marsGameRow.opponentPlantsIncome;
-        result[counter++] = marsGameRow.opponentPlants;
-        result[counter++] = marsGameRow.opponentHeatIncome;
-        result[counter++] = marsGameRow.opponentHeat;
-        result[counter++] = marsGameRow.opponentCardsIncome;
-        result[counter++] = marsGameRow.opponentCardsBuilt;//is it needed?
-        result[counter++] = marsGameRow.opponentExtraSeeCards;
-        result[counter++] = marsGameRow.opponentExtraTakeCards;
 
         if (corporationIdToIndex.containsKey(marsGameRow.getCorporationId())) {
             int corporationIndex = corporationIdToIndex.get(marsGameRow.getCorporationId());
@@ -219,17 +155,15 @@ public class DatasetCollectionService {
             }
             result[counter + corporationIndex] = 1;
             counter += corporationsSize;
+        } else {
+            throw new IllegalStateException("Corporation not found");
         }
 
+        collectGameData(result, counter, marsGameRow.getPlayer());
+        counter += MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize;
 
-        for (Integer blueCard : marsGameRow.getBlueCardsList()) {
-            if (!blueCardIdToIndex.containsKey(blueCard)) {
-                continue;
-            }
-            result[counter + blueCardIdToIndex.get(blueCard)] = 1;
-        }
-
-        counter += blueCardsSize;
+        collectGameData(result, counter, marsGameRow.getOpponent());
+        counter += MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize;
 
         //output
         result[counter] = marsGameRow.winner;
@@ -243,14 +177,14 @@ public class DatasetCollectionService {
         for (int i = 0; i < 2; i++) {
             Player currentPlayer = marsGame.getPlayerByUuid(players.get(i));
             Player anotherPlayer = marsGame.getPlayerByUuid(players.get(i == 0 ? 1 : 0));
-            MarsGameRow playerData = collectPlayerData(marsGame, currentPlayer, anotherPlayer);
+            MarsGameRow playerData = collectGameData(marsGame, currentPlayer, anotherPlayer);
             if (playerData != null) {
                 marsGameDataset.getPlayerToRows().get(currentPlayer.getUuid()).add(playerData);
             }
         }
     }
 
-    public MarsGameRow collectPlayerData(MarsGame game, Player currentPlayer, Player anotherPlayer) {
+    public MarsGameRow collectGameData(MarsGame game, Player currentPlayer, Player anotherPlayer) {
         if (game.getTurns() == 1 && currentPlayer.getSelectedCorporationCard() != null && currentPlayer.getMc() == winPointsService.cardService.getCard(currentPlayer.getSelectedCorporationCard()).getPrice()) {
             return null;
         }
@@ -259,6 +193,18 @@ public class DatasetCollectionService {
             return null;
         }
 
+        return MarsGameRow.builder()
+                .turn(game.getTurns())
+                .oxygenLevel(game.getPlanet().getOxygenValue())
+                .temperatureLevel(game.getPlanet().getTemperatureValue())
+                .oceansLevel(Constants.MAX_OCEANS - game.getPlanet().oceansLeft())
+                .player(collectPlayerData(game, currentPlayer))
+                .opponent(collectPlayerData(game, anotherPlayer))
+                .corporationId(currentPlayer.getSelectedCorporationCard())
+                .build();
+    }
+
+    private MarsPlayerRow collectPlayerData(MarsGame game, Player currentPlayer) {
         Map<CardAction, Integer> cardActionToCount = currentPlayer.getPlayed().getCards().stream()
                 .map(cardService::getCard)
                 .map(Card::getCardMetadata)
@@ -277,9 +223,7 @@ public class DatasetCollectionService {
                 .map(Card::getId)
                 .collect(Collectors.toList());
 
-
-        return MarsGameRow.builder()
-                .turn(game.getTurns())
+        return MarsPlayerRow.builder()
                 .winPoints(winPointsService.countWinPointsWithFloats(currentPlayer, game))
                 .mcIncome(currentPlayer.getMcIncome() + currentPlayer.getTerraformingRating())
                 .mc(currentPlayer.getMc())
@@ -319,23 +263,6 @@ public class DatasetCollectionService {
                 .heatEnergyIncome(cardActionToCount.getOrDefault(CardAction.HEAT_ENERGY_INCOME, 0))
                 .plantMicrobeIncome(cardActionToCount.getOrDefault(CardAction.PLANT_MICROBE_INCOME, 0))
                 .mcForestIncome(cardActionToCount.getOrDefault(CardAction.MC_FOREST_INCOME, 0))
-                .oxygenLevel(game.getPlanet().getOxygenValue())
-                .temperatureLevel(game.getPlanet().getTemperatureValue())
-                .oceansLevel(Constants.MAX_OCEANS - game.getPlanet().oceansLeft())
-                .opponentWinPoints(winPointsService.countWinPointsWithFloats(anotherPlayer, game))
-                .opponentMcIncome(anotherPlayer.getMcIncome() + anotherPlayer.getTerraformingRating())
-                .opponentMc(anotherPlayer.getMc())
-                .opponentSteelIncome(anotherPlayer.getSteelIncome())
-                .opponentTitaniumIncome(anotherPlayer.getTitaniumIncome())
-                .opponentPlantsIncome(anotherPlayer.getPlantsIncome())
-                .opponentPlants(anotherPlayer.getPlants())
-                .opponentHeatIncome(anotherPlayer.getHeatIncome())
-                .opponentHeat(anotherPlayer.getHeat())
-                .opponentCardsIncome(anotherPlayer.getCardIncome())
-                .opponentCardsBuilt(anotherPlayer.getPlayed().size() - 1)
-                .opponentExtraSeeCards(draftCardsService.countExtraCardsToDraft(currentPlayer))
-                .opponentExtraTakeCards(draftCardsService.countExtraCardsToTake(currentPlayer))
-                .corporationId(currentPlayer.getSelectedCorporationCard())
                 .build();
     }
 

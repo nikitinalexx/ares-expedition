@@ -4,14 +4,11 @@ import com.terraforming.ares.dataset.DatasetCollectionService;
 import com.terraforming.ares.dataset.MarsGameRow;
 import com.terraforming.ares.dataset.MarsGameRowDifference;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Card;
-import com.terraforming.ares.model.Deck;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.SpecialEffect;
-import com.terraforming.ares.services.CardService;
-import com.terraforming.ares.services.SpecialEffectsService;
+import com.terraforming.ares.model.*;
+import com.terraforming.ares.services.*;
 import com.terraforming.ares.services.ai.DeepNetwork;
 import com.terraforming.ares.services.ai.dto.PhaseChoiceProjection;
+import com.terraforming.ares.services.ai.dto.ProjectionWithGame;
 import com.terraforming.ares.services.ai.thirdPhaseCards.AiCardProjection;
 import org.springframework.stereotype.Service;
 
@@ -28,8 +25,18 @@ public class AiThirdPhaseProjectionService {
     private final DeepNetwork deepNetwork;
     private final DatasetCollectionService datasetCollectionService;
     private final SpecialEffectsService specialEffectsService;
+    private final PaymentValidationService paymentValidationService;
+    private final TerraformingService terraformingService;
+    private final MarsContextProvider marsContextProvider;
 
-    public AiThirdPhaseProjectionService(List<AiCardProjection<?>> actionProjections, CardService cardService, DeepNetwork deepNetwork, DatasetCollectionService datasetCollectionService, SpecialEffectsService specialEffectsService) {
+    public AiThirdPhaseProjectionService(List<AiCardProjection<?>> actionProjections,
+                                         CardService cardService,
+                                         DeepNetwork deepNetwork,
+                                         DatasetCollectionService datasetCollectionService,
+                                         SpecialEffectsService specialEffectsService,
+                                         PaymentValidationService paymentValidationService,
+                                         TerraformingService terraformingService,
+                                         MarsContextProvider marsContextProvider) {
         this.actionProjections = actionProjections.stream().collect(
                 Collectors.toMap(
                         AiCardProjection::getType,
@@ -40,16 +47,73 @@ public class AiThirdPhaseProjectionService {
         this.deepNetwork = deepNetwork;
         this.datasetCollectionService = datasetCollectionService;
         this.specialEffectsService = specialEffectsService;
+        this.paymentValidationService = paymentValidationService;
+        this.terraformingService = terraformingService;
+        this.marsContextProvider = marsContextProvider;
     }
 
     public PhaseChoiceProjection projectThirdPhase(MarsGame game, Player player) {
         game = new MarsGame(game);
         player = game.getPlayerByUuid(player.getUuid());
         player.setBlueActionExtraActivationsLeft(1);
-        return projectThirdPhase(game, player, new MarsGameRowDifference());
+        //project plants/heat  exchange
+        //project opponent
+        ProjectionWithGame projectionWithGame = projectThirdPhase(game, player, new MarsGameRowDifference(), null);
+        if (projectionWithGame.isPickPhase()) {
+            spendPlantsAndHeat(projectionWithGame.getGame(), projectionWithGame.getGame().getPlayerByUuid(player.getUuid()));
+
+            List<Player> players = new ArrayList<>(projectionWithGame.getGame().getPlayerUuidToPlayer().values());
+            Player anotherPlayer = players.get(0) == player ? players.get(1) : players.get(0);
+
+            float futureState = deepNetwork.testState(
+                    datasetCollectionService.collectGameData(
+                            projectionWithGame.getGame(),
+                            projectionWithGame.getGame().getPlayerByUuid(player.getUuid()),
+                            anotherPlayer
+                    ).applyDifference(projectionWithGame.getDifference()), player.isFirstBot() ? 1 : 2);
+
+            projectionWithGame.getProjection().setChance(futureState);
+
+            game = new MarsGame(projectionWithGame.getGame());
+            Player opponent = game.getPlayerByUuid(anotherPlayer.getUuid());
+
+            ProjectionWithGame opponentProjection = projectThirdPhase(game, opponent, new MarsGameRowDifference(), projectionWithGame.getDifference());
+            if (!opponentProjection.isPickPhase()) {
+                spendPlantsAndHeat(projectionWithGame.getGame(), projectionWithGame.getGame().getPlayerByUuid(anotherPlayer.getUuid()));
+
+                futureState = deepNetwork.testState(
+                        datasetCollectionService.collectGameData(
+                                projectionWithGame.getGame(),
+                                projectionWithGame.getGame().getPlayerByUuid(player.getUuid()),
+                                anotherPlayer
+                        ).applyDifference(projectionWithGame.getDifference()), player.isFirstBot() ? 1 : 2);
+
+                projectionWithGame.getProjection().setChance(futureState);
+
+                return projectionWithGame.getProjection();
+            } else {
+                spendPlantsAndHeat(opponentProjection.getGame(), opponentProjection.getGame().getPlayerByUuid(anotherPlayer.getUuid()));
+
+                futureState = deepNetwork.testState(
+                        datasetCollectionService.collectGameData(
+                                opponentProjection.getGame(),
+                                opponentProjection.getGame().getPlayerByUuid(player.getUuid()),
+                                anotherPlayer
+                        )
+                                .applyDifference(projectionWithGame.getDifference())
+                                .applyOpponentDifference(opponentProjection.getDifference()), player.isFirstBot() ? 1 : 2);
+
+                projectionWithGame.getProjection().setChance(futureState);
+
+                return projectionWithGame.getProjection();
+            }
+        }
+
+        //todo what if spending heat,plants + standard project is a better turn than skip phase?
+        return PhaseChoiceProjection.SKIP_PHASE;
     }
 
-    public PhaseChoiceProjection projectThirdPhase(MarsGame game, Player player, MarsGameRowDifference initialDifference) {
+    public ProjectionWithGame projectThirdPhase(MarsGame game, Player player, MarsGameRowDifference initialDifference, MarsGameRowDifference opponentDifference) {
         //TODO where to put Heat Exchange?
         //TODO project UNMI action
         //TODO project standard action
@@ -60,11 +124,11 @@ public class AiThirdPhaseProjectionService {
         List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
         Player anotherPlayer = players.get(0) == player ? players.get(1) : players.get(0);
 
-        MarsGameRow playerData = datasetCollectionService.collectPlayerData(game, player, anotherPlayer);
+        MarsGameRow playerData = datasetCollectionService.collectGameData(game, player, anotherPlayer);
         if (playerData == null) {
-            return PhaseChoiceProjection.SKIP_PHASE;
+            return ProjectionWithGame.SKIP_PHASE;
         }
-        float bestState = deepNetwork.testState(playerData.applyDifference(initialDifference), player.isFirstBot() ? 1 : 2);
+        float bestState = deepNetwork.testState(playerData.applyDifference(initialDifference).applyOpponentDifference(opponentDifference), player.isFirstBot() ? 1 : 2);
 
         MarsGameRowDifference bestProjectionRow = null;
         MarsGame bestGameProjection = null;
@@ -83,7 +147,7 @@ public class AiThirdPhaseProjectionService {
 
             //TODO is it better to project 2 steps ahead? implement and compare 2 computers
             //TODO reuse anotherPlayer
-            float futureState = deepNetwork.testState(datasetCollectionService.collectPlayerData(gameCopy, playerCopy, anotherPlayer).applyDifference(difference), player.isFirstBot() ? 1 : 2);
+            float futureState = deepNetwork.testState(datasetCollectionService.collectGameData(gameCopy, playerCopy, anotherPlayer).applyDifference(difference).applyOpponentDifference(opponentDifference), player.isFirstBot() ? 1 : 2);
 
             if (futureState > bestState) {
                 bestState = futureState;
@@ -93,9 +157,6 @@ public class AiThirdPhaseProjectionService {
             }
         }
 
-        //project plants/heat  exchange
-        //project opponent
-
         if (bestProjectionRow != null) {
             Player bestProjectionPlayer = bestGameProjection.getPlayerByUuid(player.getUuid());
             Deck activatedBlueCards = bestProjectionPlayer.getActivatedBlueCards();
@@ -104,14 +165,35 @@ public class AiThirdPhaseProjectionService {
             } else {
                 activatedBlueCards.addCard(bestCard.getId());
             }
-            PhaseChoiceProjection anotherProjection = projectThirdPhase(bestGameProjection, bestProjectionPlayer, bestProjectionRow);
+            ProjectionWithGame anotherProjection = projectThirdPhase(bestGameProjection, bestProjectionPlayer, bestProjectionRow, opponentDifference);
             if (anotherProjection.isPickPhase()) {
                 return anotherProjection;
             }
-            return PhaseChoiceProjection.builder().phase(3).pickPhase(true).chance(bestState).build();
+            return ProjectionWithGame.builder()
+                    .projection(PhaseChoiceProjection.builder().phase(3).pickPhase(true).chance(bestState).build())
+                    .game(bestGameProjection)
+                    .difference(bestProjectionRow)
+                    .build();
         }
 
-        return PhaseChoiceProjection.SKIP_PHASE;
+        return ProjectionWithGame.SKIP_PHASE;
+    }
+
+    private void spendPlantsAndHeat(MarsGame game, Player player) {
+        final MarsContext context = marsContextProvider.provide(game, player);
+        final int plantsPrice = paymentValidationService.forestPriceInPlants(player);
+
+        while (player.getPlants() >= plantsPrice) {
+            terraformingService.buildForest(context);
+            player.setPlants(player.getPlants() - plantsPrice);
+        }
+
+        if (terraformingService.canIncreaseTemperature(game)) {
+            while (player.getHeat() >= Constants.TEMPERATURE_HEAT_COST) {
+                terraformingService.increaseTemperature(context);
+                player.setHeat(player.getHeat() - 8);
+            }
+        }
     }
 
 }
