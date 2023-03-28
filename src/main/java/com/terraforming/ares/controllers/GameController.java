@@ -64,9 +64,9 @@ public class GameController {
         return deepNetwork.testState(row, networkNumber);
     }
 
-    @PostMapping("/state/test/{cardId}/{networkNumber}")
-    public float testCard(@RequestBody MarsCardRow row, @PathVariable int cardId, @PathVariable int networkNumber) {
-        return cardsAiService.testState(row, cardId, networkNumber);
+    @PostMapping("/card-state/test/{networkNumber}")
+    public float testCard(@RequestBody MarsCardRow row,@PathVariable int networkNumber,  @RequestParam int card, @RequestParam int discount) {
+        return cardsAiService.testState(row, card, networkNumber, discount);
     }
 
     @PostMapping("/game/new")

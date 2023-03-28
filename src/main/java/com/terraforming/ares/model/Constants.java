@@ -88,18 +88,18 @@ public class Constants {
     public static final boolean WRITE_STATISTICS_TO_CONSOLE = false;
     public static final boolean SAVE_SIMULATION_GAMES_TO_DB = false;
 
-    public static final boolean COLLECT_CARDS_DATASET = false;
-    public static final boolean COLLECT_DATASET = false;
+    public static final boolean COLLECT_CARDS_DATASET = true;
+    public static final boolean COLLECT_DATASET = true;
     public static final boolean LOG_NET_COMPARISON = false;
 
 
 
     /** AI TURNS **/
-    public static final AiTurnChoice FIRST_MULLIGAN_OR_THIRD_PHASE_TURN = AiTurnChoice.RANDOM;
-    public static final AiTurnChoice SECOND_MULLIGAN_OR_THIRD_PHASE_TURN = AiTurnChoice.FILE_VALUE;
+    public static final AiTurnChoice FIRST_MULLIGAN_OR_THIRD_PHASE_TURN = AiTurnChoice.NETWORK;
+    public static final AiTurnChoice SECOND_MULLIGAN_OR_THIRD_PHASE_TURN = AiTurnChoice.NETWORK;
 
-    public static final AiTurnChoice FIRST_DISCARD_OR_SELL_CARDS_TURN = AiTurnChoice.RANDOM;
-    public static final AiTurnChoice SECOND_DISCARD_OR_SELL_CARDS_TURN = AiTurnChoice.FILE_VALUE;
+    public static final AiTurnChoice FIRST_DISCARD_OR_SELL_CARDS_TURN = AiTurnChoice.NETWORK;
+    public static final AiTurnChoice SECOND_DISCARD_OR_SELL_CARDS_TURN = AiTurnChoice.NETWORK;
 
 
 

@@ -28,6 +28,10 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
         Player player = game.getPlayerUuidToPlayer().get(turn.getPlayerUuid());
         Card card = cardService.getCard(turn.getProjectId());
 
+        if (Constants.COLLECT_CARDS_DATASET && !turn.isProjection()) {
+            cardsAiService.collectData(game, player, card.getId());
+        }
+
         for (Payment payment : turn.getPayments()) {
             payment.pay(cardService, player);
         }
@@ -66,10 +70,6 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
         }
 
         player.getBuilds().remove(buildOption);
-
-        if (Constants.COLLECT_CARDS_DATASET && !turn.isProjection()) {
-            cardsAiService.collectData(game, player, card.getId());
-        }
 
         return response;
     }

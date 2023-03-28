@@ -1,10 +1,12 @@
 package com.terraforming.ares.services.ai.helpers;
 
 import com.terraforming.ares.cards.blue.Decomposers;
+import com.terraforming.ares.dataset.CardsAiService;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.ai.AiTurnChoice;
 import com.terraforming.ares.services.CardService;
-import com.terraforming.ares.dataset.CardsAiService;
+import com.terraforming.ares.services.ai.ICardValueService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +25,7 @@ import static com.terraforming.ares.model.InputFlag.DECOMPOSERS_TAKE_MICROBE;
 public class AiCardBuildParamsHelper {
     private final CardService cardService;
     private final CardsAiService cardsAiService;
+    private final ICardValueService cardValueService;
     private final Random random = new Random();
 
     public Map<Integer, List<Integer>> getInputParamsForValidation(MarsGame game, Player player, Card card) {
@@ -377,9 +380,15 @@ public class AiCardBuildParamsHelper {
     }
 
     private List<Integer> getWorstCards(MarsGame game, String playerUuid, List<Integer> cards, int count) {
+        Player player = game.getPlayerByUuid(playerUuid);
         List<Integer> result = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            Integer card = cardsAiService.getWorstCard(game, playerUuid, cards, true);
+            if (cards.isEmpty()) {
+                break;
+            }
+            Integer card = player.isFirstBot() && Constants.FIRST_THIRD_PHASE == AiTurnChoice.NETWORK || player.isSecondBot() && Constants.SECOND_THIRD_PHASE == AiTurnChoice.NETWORK
+                    ? cardsAiService.getWorstCard(game, playerUuid, cards, true)
+                    : cardValueService.getWorstCard(game, player, cards, game.getTurns()).getCardId();
             if (card != null) {
                 result.add(card);
                 cards.remove(card);

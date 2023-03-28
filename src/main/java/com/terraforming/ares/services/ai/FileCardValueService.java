@@ -87,7 +87,7 @@ public class FileCardValueService implements ICardValueService {
     }
 
     public CardValueResponse getWorstCard(MarsGame game, Player player, List<Integer> cards, int turn) {
-        double worstCardValue = 500.0;
+        double worstCardValue = Float.MAX_VALUE;
         int worstCardIndex = 0;
 
         for (int i = 0; i < cards.size(); i++) {

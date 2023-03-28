@@ -1,12 +1,17 @@
 package com.terraforming.ares.dataset;
 
-import lombok.Builder;
+import lombok.*;
 
+@Setter
+@Getter
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class MarsCardAiData {
-    public static final int LENGTH = 143;
+    public static final int LENGTH = 144;
 
     int price;
+    int discount;
     int spaceTags;
     int earthTags;
     int eventTags;
