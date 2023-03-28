@@ -16,7 +16,7 @@ import java.util.List;
 public class MarsCardRow {
     //player
 
-    float[] cards;
+    MarsCardAiData cardData;
 
     int turn;
 
