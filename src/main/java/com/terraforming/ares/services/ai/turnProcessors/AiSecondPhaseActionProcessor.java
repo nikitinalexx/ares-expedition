@@ -86,7 +86,7 @@ public class AiSecondPhaseActionProcessor {
                         selectedCard = bestProjectToBuild.getCard();
                     } else {
                         //TODO turned to be bad
-                        //selectedCard = null;
+                        selectedCard = null;
                     }
                 }
 

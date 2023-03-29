@@ -88,8 +88,8 @@ public class Constants {
     public static final boolean WRITE_STATISTICS_TO_CONSOLE = false;
     public static final boolean SAVE_SIMULATION_GAMES_TO_DB = false;
 
-    public static final boolean COLLECT_CARDS_DATASET = true;
-    public static final boolean COLLECT_DATASET = true;
+    public static final boolean COLLECT_CARDS_DATASET = false;
+    public static final boolean COLLECT_DATASET = false;
     public static final boolean LOG_NET_COMPARISON = false;
 
 

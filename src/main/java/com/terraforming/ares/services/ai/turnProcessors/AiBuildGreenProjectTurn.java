@@ -89,7 +89,7 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
                     selectedCard = bestProjectToBuild.getCard();
                 } else {
                     //TODO turned to be bad
-                    //selectedCard = null;
+                    selectedCard = null;
                 }
 
                 if (Constants.LOG_NET_COMPARISON) {

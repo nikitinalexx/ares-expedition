@@ -9,10 +9,7 @@ import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.CardValidationService;
 import com.terraforming.ares.services.DraftCardsService;
 import com.terraforming.ares.services.SpecialEffectsService;
-import com.terraforming.ares.services.ai.DeepNetwork;
-import com.terraforming.ares.services.ai.ICardValueService;
-import com.terraforming.ares.services.ai.RandomBotHelper;
-import com.terraforming.ares.services.ai.TestAiService;
+import com.terraforming.ares.services.ai.*;
 import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.dto.PhaseChoiceProjection;
 import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
@@ -67,9 +64,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                 projection = projection.applyIfBetter(mayPlayPhaseTwoAi(game, player));
             }
 
-            if (mayPlayPhaseThree(game, player).isPickPhase()) {
-                possiblePhases.add(3);
-            }
+            projection = projection.applyIfBetter(mayPlayPhaseThree(game, player));
 
             projection = projection.applyIfBetter(mayPlayPhaseFourAi(game, player));
 
@@ -294,6 +289,9 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
         //*1 Ratio: 0.4560819462227913
         //*1.05 Ratio: 0.4270063694267516
         if (stateAfterIncome > stateBeforeIncome * 1.05) {
+            if (Constants.LOG_NET_COMPARISON) {
+                System.out.println("Deep network state " + stateBeforeIncome + ". And after income " + stateAfterIncome);
+            }
             return PhaseChoiceProjection.builder().pickPhase(true).phase(4).chance(stateAfterIncome).build();
         } else {
             return PhaseChoiceProjection.SKIP_PHASE;

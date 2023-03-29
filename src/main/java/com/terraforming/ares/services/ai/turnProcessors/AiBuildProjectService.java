@@ -2,6 +2,7 @@ package com.terraforming.ares.services.ai.turnProcessors;
 
 import com.terraforming.ares.dataset.DatasetCollectionService;
 import com.terraforming.ares.dataset.MarsGameRow;
+import com.terraforming.ares.dataset.MarsPlayerRow;
 import com.terraforming.ares.dto.GameWithState;
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
@@ -214,10 +215,12 @@ public class AiBuildProjectService extends BaseProcessorService {
             return BuildProjectPrediction.builder().canBuild(true).card(null).expectedValue(0.5f).build();
         }
 
-        marsGameRow.setGreenCards(marsGameRow.getGreenCards() + GREEN_CARDS_RATIO);
-        marsGameRow.setRedCards(marsGameRow.getRedCards() + RED_CARDS_RATIO);
-        marsGameRow.setBlueCards(marsGameRow.getBlueCards() + BLUE_CARDS_RATIO);
+        MarsPlayerRow marsPlayerRow = marsGameRow.getPlayer();
 
+
+        marsPlayerRow.setGreenCards(marsPlayerRow.getGreenCards() + GREEN_CARDS_RATIO);
+        marsPlayerRow.setRedCards(marsPlayerRow.getRedCards() + RED_CARDS_RATIO);
+        marsPlayerRow.setBlueCards(marsPlayerRow.getBlueCards() + BLUE_CARDS_RATIO);
 
         return BuildProjectPrediction.builder().canBuild(true).card(null).expectedValue(deepNetwork.testState(marsGameRow, player.isFirstBot() ? 1 : 2)).build();
     }

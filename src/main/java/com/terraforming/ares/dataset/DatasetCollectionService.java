@@ -70,10 +70,8 @@ public class DatasetCollectionService {
                 throw new IllegalStateException("Invalid corporation index " + corporationIndex);
             }
             result[counter + corporationIndex] = 1;
-            counter += corporationsSize;
-        } else {
-            throw new IllegalStateException("Corporation not found");
         }
+        counter += corporationsSize;
 
         collectGameData(result, counter, marsGameRow.getPlayer());
         counter += MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize;
@@ -154,10 +152,8 @@ public class DatasetCollectionService {
                 throw new IllegalStateException("Invalid corporation index " + corporationIndex);
             }
             result[counter + corporationIndex] = 1;
-            counter += corporationsSize;
-        } else {
-            throw new IllegalStateException("Corporation not found");
         }
+        counter += corporationsSize;
 
         collectGameData(result, counter, marsGameRow.getPlayer());
         counter += MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize;

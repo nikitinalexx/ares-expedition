@@ -163,46 +163,6 @@ public class AiThirdPhaseActionProcessor {
             }
         }
 
-        if (player.isSecondBot() && player.getMc() > 50) {
-
-            float bestState = deepNetwork.testState(game, player);
-            int actionType = -1;
-
-
-            if (game.getPlanet().oceansLeft() > 0) {
-                float state = testAiService.projectPlayStandardAction(game, player.getUuid(), 1);
-                if (state > bestState) {
-                    bestState = state;
-                    actionType = 1;
-                }
-            }
-            if (game.getPlanet().oxygenLeft() > 0) {
-                float state = testAiService.projectPlayStandardAction(game, player.getUuid(), 2);
-                if (state > bestState) {
-                    bestState = state;
-                    actionType = 2;
-                }
-            }
-            if (game.getPlanet().temperatureLeft() > 0) {
-                float state = testAiService.projectPlayStandardAction(game, player.getUuid(), 3);
-                if (state > bestState) {
-                    bestState = state;
-                    actionType = 3;
-                }
-            }
-
-            if (actionType == 1) {
-                aiTurnService.standardProjectTurn(game, player, StandardProjectType.OCEAN);
-                return true;
-            } else if (actionType == 2) {
-                aiTurnService.standardProjectTurn(game, player, StandardProjectType.FOREST);
-                return true;
-            } else if (actionType == 3) {
-                aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
-                return true;
-            }
-        }
-
         if (!game.gameEndCondition() && canFinishGame(game, player)) {
             if (player.getHand().size() != 0) {
                 aiTurnService.sellAllCards(player, game, player.getHand().getCards());

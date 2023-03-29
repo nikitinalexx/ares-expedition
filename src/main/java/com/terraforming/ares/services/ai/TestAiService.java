@@ -1,6 +1,7 @@
 package com.terraforming.ares.services.ai;
 
 import com.terraforming.ares.dataset.DatasetCollectionService;
+import com.terraforming.ares.dataset.MarsPlayerRow;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.dataset.MarsGameRow;
 import com.terraforming.ares.model.*;
@@ -157,18 +158,17 @@ public class TestAiService {
             return 0;
         }
 
-        int cardIncome = player.getCardIncome() - anotherPlayer.getCardIncome();
-
-        float greenCardsIncome = cardIncome * Constants.GREEN_CARDS_RATIO;
-        float redCardsIncome = cardIncome * Constants.RED_CARDS_RATIO;
-        float blueCardsIncome = cardIncome * Constants.BLUE_CARDS_RATIO;
-
-        marsGameRow.setGreenCards(Math.max(0, marsGameRow.getGreenCards() + greenCardsIncome));
-        marsGameRow.setRedCards(Math.max(0, marsGameRow.getRedCards() + redCardsIncome));
-        marsGameRow.setBlueCards(Math.max(0, marsGameRow.getBlueCards() + blueCardsIncome));
+        addCardIncome(player, marsGameRow.getPlayer());
+        addCardIncome(anotherPlayer, marsGameRow.getOpponent());
 
 
         return deepNetwork.testState(marsGameRow, player.isFirstBot() ? 1 : 2);
+    }
+
+    private void addCardIncome(Player player, MarsPlayerRow marsPlayerRow) {
+        marsPlayerRow.setGreenCards(Math.max(0, marsPlayerRow.getGreenCards() + player.getCardIncome() * Constants.GREEN_CARDS_RATIO));
+        marsPlayerRow.setRedCards(Math.max(0, marsPlayerRow.getRedCards() + player.getCardIncome() * Constants.RED_CARDS_RATIO));
+        marsPlayerRow.setBlueCards(Math.max(0, marsPlayerRow.getBlueCards() + player.getCardIncome() * Constants.BLUE_CARDS_RATIO));
     }
 
     private void addMainIncome(Player player) {

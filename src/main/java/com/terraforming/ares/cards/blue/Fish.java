@@ -67,7 +67,6 @@ public class Fish implements BlueCard {
 
     @Override
     public int getWinningPoints() {
-        //TODO
         return 0;
     }
 
