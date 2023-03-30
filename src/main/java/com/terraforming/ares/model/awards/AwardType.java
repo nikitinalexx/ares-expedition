@@ -5,10 +5,10 @@ package com.terraforming.ares.model.awards;
  * Creation date 13.06.2022
  */
 public enum AwardType {
-    INDUSTRIALIST,
-    PROJECT_MANAGER,
-    GENERATOR,
-    CELEBRITY,
-    COLLECTOR,
-    RESEARCHER
+    CELEBRITY,//mc income
+    GENERATOR,//heat income
+    RESEARCHER,//science tags
+    PROJECT_MANAGER,//played cards
+    INDUSTRIALIST,//steel+titanium
+    COLLECTOR,//resources
 }

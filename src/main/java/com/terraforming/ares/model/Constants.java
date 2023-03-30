@@ -88,11 +88,10 @@ public class Constants {
     public static final boolean WRITE_STATISTICS_TO_CONSOLE = false;
     public static final boolean SAVE_SIMULATION_GAMES_TO_DB = false;
 
+    public static final boolean COLLECT_FIFTH_PHASE_STATISTICS = false;//makes sense only in debug mode!!!
     public static final boolean COLLECT_CARDS_DATASET = false;
-    public static final boolean COLLECT_DATASET = false;
+    public static final boolean COLLECT_DATASET = true;
     public static final boolean LOG_NET_COMPARISON = false;
-
-
 
     /** AI TURNS **/
     public static final AiTurnChoice FIRST_MULLIGAN_OR_THIRD_PHASE_TURN = AiTurnChoice.NETWORK;
@@ -110,7 +109,7 @@ public class Constants {
     public static final AiTurnChoice SECOND_BUILD_PROJECT = AiTurnChoice.NETWORK;
 
     public static final AiTurnChoice FIRST_THIRD_PHASE = AiTurnChoice.FILE_VALUE;
-    public static final AiTurnChoice SECOND_THIRD_PHASE = AiTurnChoice.FILE_VALUE;
+    public static final AiTurnChoice SECOND_THIRD_PHASE = AiTurnChoice.NETWORK;
 
 
 

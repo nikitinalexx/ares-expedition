@@ -4,6 +4,9 @@ import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.cards.blue.*;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.awards.AbstractAward;
+import com.terraforming.ares.model.awards.BaseAward;
+import com.terraforming.ares.model.milestones.Milestone;
 import com.terraforming.ares.services.CardFactory;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.DraftCardsService;
@@ -55,7 +58,7 @@ public class DatasetCollectionService {
     public float[] getMarsGameRowForUse(MarsGameRow marsGameRow) {
         int corporationsSize = corporationIdToIndex.size();
         int blueCardsSize = blueCardIdToIndex.size();
-        float[] result = new float[4 + corporationsSize + 2 * (MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize)];
+        float[] result = new float[4 + corporationsSize + 2 * (MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize) + marsGameRow.awards.length + marsGameRow.milestones.length];
         int counter = 0;
 
         //input
@@ -77,6 +80,15 @@ public class DatasetCollectionService {
         counter += MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize;
 
         collectGameData(result, counter, marsGameRow.getOpponent());
+        counter += MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize;
+
+        for (int i = 0; i < marsGameRow.awards.length; i++) {
+            result[counter++] = marsGameRow.awards[i];
+        }
+
+        for (int i = 0; i < marsGameRow.milestones.length; i++) {
+            result[counter++] = marsGameRow.milestones[i];
+        }
 
         return result;
     }
@@ -137,7 +149,7 @@ public class DatasetCollectionService {
     public float[] getMarsGameRowForStudy(MarsGameRow marsGameRow) {
         int corporationsSize = corporationIdToIndex.size();
         int blueCardsSize = blueCardIdToIndex.size();
-        float[] result = new float[4 + corporationsSize + 2 * (MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize) + 1];
+        float[] result = new float[4 + corporationsSize + 2 * (MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize) + 1 + marsGameRow.awards.length + marsGameRow.milestones.length];
         int counter = 0;
 
         //input
@@ -161,6 +173,14 @@ public class DatasetCollectionService {
         collectGameData(result, counter, marsGameRow.getOpponent());
         counter += MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize;
 
+        for (int i = 0; i < marsGameRow.awards.length; i++) {
+            result[counter++] = marsGameRow.awards[i];
+        }
+
+        for (int i = 0; i < marsGameRow.milestones.length; i++) {
+            result[counter++] = marsGameRow.milestones[i];
+        }
+
         //output
         result[counter] = marsGameRow.winner;
 
@@ -173,24 +193,44 @@ public class DatasetCollectionService {
         for (int i = 0; i < 2; i++) {
             Player currentPlayer = marsGame.getPlayerByUuid(players.get(i));
             Player anotherPlayer = marsGame.getPlayerByUuid(players.get(i == 0 ? 1 : 0));
+
+            if (marsGame.getTurns() == 1 && currentPlayer.getSelectedCorporationCard() != null && currentPlayer.getMc() == winPointsService.cardService.getCard(currentPlayer.getSelectedCorporationCard()).getPrice()) {
+                return;
+            }
             MarsGameRow playerData = collectGameData(marsGame, currentPlayer, anotherPlayer);
-            if (playerData != null) {
+            if (playerData != null ) {
                 marsGameDataset.getPlayerToRows().get(currentPlayer.getUuid()).add(playerData);
             }
         }
     }
 
     public MarsGameRow collectGameData(MarsGame game, Player currentPlayer, Player anotherPlayer) {
-        if (game.getTurns() == 1 && currentPlayer.getSelectedCorporationCard() != null && currentPlayer.getMc() == winPointsService.cardService.getCard(currentPlayer.getSelectedCorporationCard()).getPrice()) {
-            return null;
-        }
-
         if (currentPlayer.getSelectedCorporationCard() == null || anotherPlayer.getSelectedCorporationCard() == null) {
             return null;
         }
 
+        List<Milestone> milestones = game.getMilestones();
+        float[] milestonesResult = new float[milestones.size()];
+        for (int i = 0; i < milestones.size(); i++) {
+            Milestone milestone = milestones.get(i);
+            if (!milestone.isAchieved()) {
+                milestonesResult[i] = ((float) milestone.getValue(currentPlayer, cardService) / milestone.getMaxValue()) - ((float) milestone.getValue(anotherPlayer, cardService) / milestone.getMaxValue());
+            }
+        }
+
+        List<BaseAward> awards = game.getAwards();
+        float[] awardsResult = new float[awards.size()];
+        for (int i = 0; i < awards.size(); i++) {
+            AbstractAward award = (AbstractAward) awards.get(i);
+            awardsResult[i] = ((float) award.comparableParamExtractor(cardService).applyAsInt(currentPlayer) / award.getMaxValue()) - ((float) award.comparableParamExtractor(cardService).applyAsInt(anotherPlayer) / award.getMaxValue());
+        }
+
+
         return MarsGameRow.builder()
+                .resources(currentPlayer.getCardResourcesCount().values().stream().mapToInt(i -> i).sum())
                 .turn(game.getTurns())
+                .milestones(milestonesResult)
+                .awards(awardsResult)
                 .oxygenLevel(game.getPlanet().getOxygenValue())
                 .temperatureLevel(game.getPlanet().getTemperatureValue())
                 .oceansLevel(Constants.MAX_OCEANS - game.getPlanet().oceansLeft())

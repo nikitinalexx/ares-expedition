@@ -75,12 +75,18 @@ public class AiSecondPhaseActionProcessor {
                         ? availableCards.get(random.nextInt(availableCards.size()))
                         : cardValueService.getBestCardToBuild(game, player, availableCards, game.getTurns(), true);
 
+                if (Constants.LOG_NET_COMPARISON) {
+                    System.out.println("Available cards: " + availableCards.stream().map(Card::getClass).map(Class::getSimpleName).collect(Collectors.joining(",")));
+                    System.out.println("Chosen card with % " + (selectedCard != null ? selectedCard.getClass().getSimpleName() : null));
+                }
 
                 if (player.isFirstBot() && Constants.FIRST_PICK_PHASE == AiTurnChoice.NETWORK || player.isSecondBot() && Constants.SECOND_PICK_PHASE == AiTurnChoice.NETWORK) {
                     final BuildProjectPrediction bestProjectToBuild =
                             player.getBuilds().stream().filter(build -> build.getType().isBlueRed()).count() >= 2
                                     ? aiBuildProjectService.getBestProjectToBuildSecondPhase(game, player, Set.of(CardColor.RED,  CardColor.BLUE), ProjectionStrategy.FROM_PHASE)
                                     : aiBuildProjectService.getBestProjectToBuild(game, player, Set.of(CardColor.RED, CardColor.BLUE), ProjectionStrategy.FROM_PHASE);
+
+                    logComputerCardSelection(bestProjectToBuild, game, player);
 
                     if (bestProjectToBuild.isCanBuild()) {
                         selectedCard = bestProjectToBuild.getCard();
@@ -89,8 +95,6 @@ public class AiSecondPhaseActionProcessor {
                         selectedCard = null;
                     }
                 }
-
-                logComputerCardSelection(availableCards, selectedCard, game, player);
 
                 if (selectedCard != null) {
                     availableTurnFlow.addScenarioToFlow(BestTurnType.PROJECT, selectedCard);
@@ -118,11 +122,8 @@ public class AiSecondPhaseActionProcessor {
         }
     }
 
-    private void logComputerCardSelection(List<Card> availableCards, Card selectedCard, MarsGame game, Player player) {
+    private void logComputerCardSelection(BuildProjectPrediction bestProjectToBuild, MarsGame game, Player player) {
         if (Constants.LOG_NET_COMPARISON) {
-            System.out.println("Available cards: " + availableCards.stream().map(Card::getClass).map(Class::getSimpleName).collect(Collectors.joining(",")));
-            System.out.println("Chosen card with % " + (selectedCard != null ? selectedCard.getClass().getSimpleName() : null));
-            final BuildProjectPrediction bestProjectToBuild = aiBuildProjectService.getBestProjectToBuild(game, player, Set.of(CardColor.BLUE, CardColor.RED), ProjectionStrategy.FROM_PHASE);
             if (bestProjectToBuild.isCanBuild()) {
                 System.out.println("Deep network state " + deepNetwork.testState(game, player));
                 System.out.println("Deep network card " + bestProjectToBuild.getCard().getClass().getSimpleName() + " with projected chance " + bestProjectToBuild.getExpectedValue());

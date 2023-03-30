@@ -26,4 +26,9 @@ public class LegendMilestone extends Milestone {
     public MilestoneType getType() {
         return MilestoneType.LEGEND;
     }
+
+    @Override
+    public int getMaxValue() {
+        return 6;
+    }
 }

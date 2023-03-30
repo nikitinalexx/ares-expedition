@@ -12,8 +12,9 @@ import java.util.function.ToIntFunction;
  * Creation date 13.06.2022
  */
 public class ResearcherAward extends AbstractAward {
+
     @Override
-    protected ToIntFunction<Player> comparableParamExtractor(CardService cardService) {
+    public ToIntFunction<Player> comparableParamExtractor(CardService cardService) {
         return player -> cardService.countPlayedTags(player, Set.of(Tag.SCIENCE));
     }
 
@@ -21,4 +22,10 @@ public class ResearcherAward extends AbstractAward {
     public AwardType getType() {
         return AwardType.RESEARCHER;
     }
+
+    @Override
+    public int getMaxValue() {
+        return 18;//22
+    }
+
 }

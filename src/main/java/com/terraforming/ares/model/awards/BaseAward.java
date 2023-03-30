@@ -73,5 +73,8 @@ public abstract class BaseAward {
         players.forEach(player -> winPoints.put(player.getUuid(), points));
     }
 
+    @JsonIgnore
+    public abstract int getMaxValue();
+
 
 }

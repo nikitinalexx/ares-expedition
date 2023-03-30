@@ -2,6 +2,7 @@ package com.terraforming.ares.services.ai.turnProcessors;
 
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Constants;
+import com.terraforming.ares.model.Deck;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ai.AiTurnChoice;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
@@ -10,11 +11,12 @@ import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.dataset.CardsAiService;
 import com.terraforming.ares.services.ai.ICardValueService;
 import lombok.RequiredArgsConstructor;
+import lombok.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -30,6 +32,20 @@ public class AiDiscardCardsTurn implements AiTurnProcessor {
     private final CardService cardService;
     private final CardsAiService cardsAiService;
 
+    public static final Map<AiDiscardCardsKey, List<AiDiscardCardsValue>> AI_DISCARD_CARDS_STATS = new ConcurrentHashMap<>();
+
+    @Value
+    private static class AiDiscardCardsKey {
+        int initialScore;
+        int turn;
+    }
+
+    @Value
+    private static class AiDiscardCardsValue {
+        double initialScore;
+        double finalScore;
+    }
+
     @Override
     public TurnType getType() {
         return TurnType.DISCARD_CARDS;
@@ -44,6 +60,19 @@ public class AiDiscardCardsTurn implements AiTurnProcessor {
             cardsToDiscard = new ArrayList<>(nextTurn.getCards());
         } else {
             cardsToDiscard = new ArrayList<>(player.getHand().getCards());
+        }
+
+        double initialScore = 0;
+        if (Constants.COLLECT_FIFTH_PHASE_STATISTICS && nextTurn.isOnlyFromSelectedCards()) {
+            LinkedList<Integer> handBeforeFifthPhase = new LinkedList<>(player.getHand().getCards());
+            handBeforeFifthPhase.removeAll(cardsToDiscard);
+
+            MarsGame gameCopy = new MarsGame(game);
+            gameCopy.getPlayerByUuid(player.getUuid()).setHand(Deck.builder().cards(handBeforeFifthPhase).build());
+
+            initialScore = handBeforeFifthPhase.stream().map(
+                    card -> cardsAiService.getCardChance(gameCopy, player.getUuid(), card)
+            ).sorted(Collections.reverseOrder()).limit(10).mapToDouble(Double::doubleValue).sum() * 100;
         }
 
 
@@ -84,6 +113,34 @@ public class AiDiscardCardsTurn implements AiTurnProcessor {
                 new DiscardCardsTurn(player.getUuid(), cardsToDiscard, cardsToDiscard.size(), false, false),
                 cardsToDiscard
         );
+
+        if (Constants.COLLECT_FIFTH_PHASE_STATISTICS && nextTurn.isOnlyFromSelectedCards()) {
+            LinkedList<Integer> handAfterFifthPhase = new LinkedList<>(player.getHand().getCards());
+            handAfterFifthPhase.removeAll(cardsToDiscard);
+
+            MarsGame gameCopy = new MarsGame(game);
+            gameCopy.getPlayerByUuid(player.getUuid()).setHand(Deck.builder().cards(handAfterFifthPhase).build());
+
+            double finalScore = handAfterFifthPhase.stream().map(
+                    card -> cardsAiService.getCardChance(gameCopy, player.getUuid(), card)
+            ).sorted(Collections.reverseOrder()).limit(10).mapToDouble(Double::doubleValue).sum() * 100;
+
+            if (finalScore < initialScore) {
+                finalScore = initialScore;
+            }
+
+            AiDiscardCardsValue e = new AiDiscardCardsValue(initialScore, finalScore);
+
+            AI_DISCARD_CARDS_STATS.compute(new AiDiscardCardsKey((int) initialScore, game.getTurns()), (key, value) -> {
+                if (value == null) {
+                    value = new ArrayList<>();
+                }
+                value.add(e);
+                return value;
+            });
+        }
+
+
         return true;
     }
 

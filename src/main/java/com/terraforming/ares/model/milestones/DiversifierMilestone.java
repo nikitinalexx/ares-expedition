@@ -43,4 +43,8 @@ public class DiversifierMilestone extends Milestone {
         return MilestoneType.DIVERSIFIER;
     }
 
+    @Override
+    public int getMaxValue() {
+        return 9;
+    }
 }

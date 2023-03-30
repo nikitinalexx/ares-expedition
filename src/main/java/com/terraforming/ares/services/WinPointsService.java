@@ -134,6 +134,20 @@ public class WinPointsService {
                 ).sum();
     }
 
+    private static final List<Class<?>> CARDS_TO_EXCLUDE_FROM_FLOAT_WIN_POINTS_CHECK = List.of(
+            ArclightCorporation.class,
+            BuffedArclightCorporation.class,
+            EcologicalZone.class,
+            Herbivores.class,
+            PhysicsComplex.class,
+            SmallAnimals.class,
+            Birds.class,
+            Fish.class,
+            Livestock.class,
+            FilterFeeders.class,
+            Tardigrades.class
+    );
+
     private float getWinPointsFromResourceCardsWithFloats(MarsGame game, Player player, List<Card> cards) {
         Map<Class<?>, Integer> collectableResources = player.getCardResourcesCount();
 
@@ -158,7 +172,32 @@ public class WinPointsService {
             oneThirdPointResources += collectableResources.getOrDefault(RegolithEaters.class, 0);
         }
 
-        return halfPointResources * 0.5f + onePointAnimals + oneThirdPointResources * 0.33f;
+        return halfPointResources * 0.5f + onePointAnimals + oneThirdPointResources * 0.33f + cards.stream()
+                .filter(card -> card.getCardMetadata().getWinPointsInfo() != null)
+                .filter(card -> !CARDS_TO_EXCLUDE_FROM_FLOAT_WIN_POINTS_CHECK.contains(card.getClass()))
+                .mapToInt(
+                        card -> {
+                            WinPointsInfo winPointsInfo = card.getCardMetadata().getWinPointsInfo();
+
+                            int resources = (winPointsInfo.getType() == card.getCollectableResource())
+                                    ? player.getCardResourcesCount().get(card.getClass())
+                                    : 0;
+
+                            if (winPointsInfo.getType() == CardCollectableResource.FOREST) {
+                                resources = player.getForests();
+                            } else if (winPointsInfo.getType() == CardCollectableResource.JUPITER) {
+                                resources = cardService.countPlayedTags(player, Set.of(Tag.JUPITER));
+                            } else if (winPointsInfo.getType() == CardCollectableResource.BLUE_CARD) {
+                                resources = cardService.countPlayedCards(player, Set.of(CardColor.BLUE));
+                            } else if (winPointsInfo.getType() == CardCollectableResource.ANY_CARD) {
+                                resources = cardService.countPlayedCards(player, Set.of(CardColor.BLUE, CardColor.GREEN, CardColor.RED));
+                            } else if (winPointsInfo.getType() == CardCollectableResource.EARTH) {
+                                resources = cardService.countPlayedTags(player, Set.of(Tag.EARTH));
+                            }
+
+                            return getWinPoints(resources, winPointsInfo.getPoints(), winPointsInfo.getResources());
+                        }
+                ).sum();
     }
 
     private int getWinPoints(int resources, int pointsRatio, int resourcesRatio) {

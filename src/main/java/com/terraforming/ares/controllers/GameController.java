@@ -1,9 +1,6 @@
 package com.terraforming.ares.controllers;
 
-import com.terraforming.ares.dataset.DatasetCollectionService;
-import com.terraforming.ares.dataset.MarsCardRow;
-import com.terraforming.ares.dataset.MarsGameDataset;
-import com.terraforming.ares.dataset.MarsGameRow;
+import com.terraforming.ares.dataset.*;
 import com.terraforming.ares.dto.*;
 import com.terraforming.ares.entity.CrisisRecordEntity;
 import com.terraforming.ares.mars.CrysisData;
@@ -16,7 +13,6 @@ import com.terraforming.ares.repositories.caching.CachingGameRepository;
 import com.terraforming.ares.repositories.crudRepositories.CrisisRecordEntityRepository;
 import com.terraforming.ares.services.*;
 import com.terraforming.ares.services.ai.AiBalanceService;
-import com.terraforming.ares.dataset.CardsAiService;
 import com.terraforming.ares.services.ai.DeepNetwork;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -65,7 +61,7 @@ public class GameController {
     }
 
     @PostMapping("/card-state/test/{networkNumber}")
-    public float testCard(@RequestBody MarsCardRow row,@PathVariable int networkNumber,  @RequestParam int card, @RequestParam int discount) {
+    public float testCard(@RequestBody MarsCardRow row, @PathVariable int networkNumber, @RequestParam int card, @RequestParam int discount) {
         return cardsAiService.testState(row, card, networkNumber, discount);
     }
 
@@ -229,6 +225,13 @@ public class GameController {
         System.out.println(Constants.FIRST_PLAYER_PHASES);
         System.out.println(Constants.SECOND_PLAYER_PHASES);
         System.out.println("Finished");
+
+        System.out.println(maxMcIncome);
+        System.out.println(maxHeatIncome);
+        System.out.println(maxScience);
+        System.out.println(maxCardsPlayed);
+        System.out.println(maxSteelTitanium);
+        System.out.println(maxResources );
     }
 
     public static void combineAndDelete(List<String> filePaths, String combinedFilePath) throws IOException {
@@ -251,7 +254,6 @@ public class GameController {
         }
         writer.close();
     }
-
 
 
     class WorkerThread implements Runnable {
@@ -301,7 +303,7 @@ public class GameController {
 
                 games.add(marsGame);
 
-                if (i != 0 && i % 50 == 0) {
+                if (i != 0 && i % 10 == 0) {
                     long spentTime = System.currentTimeMillis() - startTime;
 
                     long timePerGame = (spentTime / i);
@@ -479,9 +481,34 @@ public class GameController {
         }
     }
 
+    float maxMcIncome = 0;
+    float maxHeatIncome = 0;
+    float maxScience = 0;
+    float maxCardsPlayed = 0;
+    float maxSteelTitanium = 0;
+    float maxResources = 0;
+
     private void writeMarsGameRows(List<MarsGameRow> rows, PrintWriter pw) {
         String previousString = null;
         for (MarsGameRow row : rows) {
+            if (row.getPlayer().getMcIncome() > maxMcIncome) {
+                maxMcIncome = row.getPlayer().getMcIncome();
+            }
+            if (row.getPlayer().getHeatIncome() > maxHeatIncome) {
+                maxHeatIncome = row.getPlayer().getHeatIncome();
+            }
+            if (row.getPlayer().getScienceTagsCount() > maxScience) {
+                maxScience = row.getPlayer().getScienceTagsCount();
+            }
+            if (row.getPlayer().getCardsBuilt() > maxCardsPlayed) {
+                maxCardsPlayed = row.getPlayer().getCardsBuilt();
+            }
+            if (row.getPlayer().getSteelIncome() + row.getPlayer().getTitaniumIncome() > maxSteelTitanium) {
+                maxSteelTitanium = row.getPlayer().getSteelIncome() + row.getPlayer().getTitaniumIncome();
+            }
+            if (row.getResources() > maxResources) {
+                maxResources = row.getResources();
+            }
             String newString = getMarsGameRowString(row);
             if (newString != null && (!newString.equals(previousString))) {
                 pw.println(newString);

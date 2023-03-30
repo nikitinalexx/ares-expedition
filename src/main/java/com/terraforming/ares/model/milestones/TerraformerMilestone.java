@@ -1,5 +1,6 @@
 package com.terraforming.ares.model.milestones;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardService;
 
@@ -22,5 +23,10 @@ public class TerraformerMilestone extends Milestone {
     @Override
     public MilestoneType getType() {
         return MilestoneType.TERRAFORMER;
+    }
+
+    @Override
+    public int getMaxValue() {
+        return 15;
     }
 }

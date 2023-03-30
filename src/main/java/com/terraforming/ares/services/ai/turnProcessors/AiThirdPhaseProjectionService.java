@@ -11,6 +11,7 @@ import com.terraforming.ares.services.ai.dto.PhaseChoiceProjection;
 import com.terraforming.ares.services.ai.dto.ProjectionWithGame;
 import com.terraforming.ares.services.ai.thirdPhaseCards.AiCardProjection;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -92,6 +93,7 @@ public class AiThirdPhaseProjectionService {
 //                return true;
 //            }
 //        }
+        float stateBeforePhase = deepNetwork.testState(game, player);
 
         game = new MarsGame(game);
         player = game.getPlayerByUuid(player.getUuid());
@@ -103,19 +105,26 @@ public class AiThirdPhaseProjectionService {
             spendPlantsAndHeat(projectionWithGame.getGame(), projectionWithGame.getGame().getPlayerByUuid(player.getUuid()));
 
             List<Player> players = new ArrayList<>(projectionWithGame.getGame().getPlayerUuidToPlayer().values());
-            Player anotherPlayer = players.get(0) == player ? players.get(1) : players.get(0);
+            Player anotherPlayer = players.get(0).getUuid().equals(player.getUuid()) ? players.get(1) : players.get(0);
+
 
             float futureState = deepNetwork.testState(
                     datasetCollectionService.collectGameData(
                             projectionWithGame.getGame(),
                             projectionWithGame.getGame().getPlayerByUuid(player.getUuid()),
-                            anotherPlayer
+                            projectionWithGame.getGame().getPlayerByUuid(anotherPlayer.getUuid())
                     ).applyDifference(projectionWithGame.getDifference()), player.isFirstBot() ? 1 : 2);
+
+            if (Constants.LOG_NET_COMPARISON) {
+                System.out.println("3 phase before  " + stateBeforePhase + "; after  " + futureState);
+            }
 
             projectionWithGame.getProjection().setChance(futureState);
 
             game = new MarsGame(projectionWithGame.getGame());
             Player opponent = game.getPlayerByUuid(anotherPlayer.getUuid());
+            opponent.setBlueActionExtraActivationsLeft(0);
+            opponent.setActivatedBlueCards(Deck.builder().build());
 
             ProjectionWithGame opponentProjection = projectThirdPhase(game, opponent, new MarsGameRowDifference(), projectionWithGame.getDifference());
             if (!opponentProjection.isPickPhase()) {
@@ -125,8 +134,18 @@ public class AiThirdPhaseProjectionService {
                         datasetCollectionService.collectGameData(
                                 projectionWithGame.getGame(),
                                 projectionWithGame.getGame().getPlayerByUuid(player.getUuid()),
-                                anotherPlayer
+                                projectionWithGame.getGame().getPlayerByUuid(anotherPlayer.getUuid())
                         ).applyDifference(projectionWithGame.getDifference()), player.isFirstBot() ? 1 : 2);
+                if (stateBeforePhase > futureState) {
+                    if (Constants.LOG_NET_COMPARISON) {
+                        System.out.println("3 phase skip because bad chance " + futureState);
+                    }
+                    return PhaseChoiceProjection.SKIP_PHASE;
+                }
+
+                if (Constants.LOG_NET_COMPARISON) {
+                    System.out.println("3 phase opponent will skip, main chance " + futureState);
+                }
 
                 projectionWithGame.getProjection().setChance(futureState);
 
@@ -138,10 +157,20 @@ public class AiThirdPhaseProjectionService {
                         datasetCollectionService.collectGameData(
                                 opponentProjection.getGame(),
                                 opponentProjection.getGame().getPlayerByUuid(player.getUuid()),
-                                anotherPlayer
+                                        opponentProjection.getGame().getPlayerByUuid(anotherPlayer.getUuid())
                         )
                                 .applyDifference(projectionWithGame.getDifference())
                                 .applyOpponentDifference(opponentProjection.getDifference()), player.isFirstBot() ? 1 : 2);
+                if (stateBeforePhase > futureState) {
+                    if (Constants.LOG_NET_COMPARISON) {
+                        System.out.println("3 phase skip because bad chance " + futureState);
+                    }
+                    return PhaseChoiceProjection.SKIP_PHASE;
+                }
+
+                if (Constants.LOG_NET_COMPARISON) {
+                    System.out.println("3 phase opponent will play, main chance " + futureState);
+                }
 
                 projectionWithGame.getProjection().setChance(futureState);
 
@@ -160,6 +189,10 @@ public class AiThirdPhaseProjectionService {
 
         //project cards
         List<Card> activeCards = player.getPlayed().getCards().stream().map(cardService::getCard).filter(Card::isActiveCard).filter(card -> !player.getActivatedBlueCards().containsCard(card.getId()) || player.getBlueActionExtraActivationsLeft() != 0).collect(Collectors.toList());
+
+        if (CollectionUtils.isEmpty(activeCards)) {
+            return ProjectionWithGame.SKIP_PHASE;
+        }
 
         List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
         Player anotherPlayer = players.get(0) == player ? players.get(1) : players.get(0);

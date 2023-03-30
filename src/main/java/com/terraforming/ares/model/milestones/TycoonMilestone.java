@@ -26,4 +26,9 @@ public class TycoonMilestone extends Milestone {
     public MilestoneType getType() {
         return MilestoneType.TYCOON;
     }
+
+    @Override
+    public int getMaxValue() {
+        return 6;
+    }
 }

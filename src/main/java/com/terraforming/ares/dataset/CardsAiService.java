@@ -189,7 +189,7 @@ public class CardsAiService {
         return worstCardId;
     }
 
-    public float getCardChance(MarsGame game, String playerUuid, Integer card) {
+    public double getCardChance(MarsGame game, String playerUuid, Integer card) {
         final List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
 
         Player currentPlayer = game.getPlayerByUuid(playerUuid);

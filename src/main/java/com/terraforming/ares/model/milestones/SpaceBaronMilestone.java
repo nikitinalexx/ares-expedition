@@ -26,4 +26,9 @@ public class SpaceBaronMilestone extends Milestone {
     public MilestoneType getType() {
         return MilestoneType.SPACE_BARON;
     }
+
+    @Override
+    public int getMaxValue() {
+        return 7;
+    }
 }

@@ -68,4 +68,6 @@ public abstract class Milestone {
 
     public abstract boolean isAchievable(Player player, CardService cardService);
     public abstract int getValue(Player player, CardService cardService);
+    @JsonIgnore
+    public abstract int getMaxValue();
 }

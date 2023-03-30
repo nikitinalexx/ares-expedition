@@ -286,12 +286,14 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
         float stateBeforeIncome = deepNetwork.testState(game, player);
         float stateAfterIncome = testAiService.projectPlayPhase4(game, player);
 
+        if (Constants.LOG_NET_COMPARISON) {
+            System.out.println("Deep network state income before " + stateBeforeIncome + ". After " + stateAfterIncome);
+        }
+
         //*1 Ratio: 0.4560819462227913
         //*1.05 Ratio: 0.4270063694267516
+        //TODO remove 1.05 when phase 5 is picked smart
         if (stateAfterIncome > stateBeforeIncome * 1.05) {
-            if (Constants.LOG_NET_COMPARISON) {
-                System.out.println("Deep network state " + stateBeforeIncome + ". And after income " + stateAfterIncome);
-            }
             return PhaseChoiceProjection.builder().pickPhase(true).phase(4).chance(stateAfterIncome).build();
         } else {
             return PhaseChoiceProjection.SKIP_PHASE;
