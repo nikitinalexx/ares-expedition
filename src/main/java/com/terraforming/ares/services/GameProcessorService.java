@@ -9,6 +9,10 @@ import com.terraforming.ares.model.turn.Turn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.processors.turn.TurnProcessor;
 import com.terraforming.ares.repositories.caching.CachingGameRepository;
+import com.terraforming.ares.repositories.crudRepositories.CrisisRecordEntityRepository;
+import com.terraforming.ares.repositories.crudRepositories.GameEntityRepository;
+import com.terraforming.ares.repositories.crudRepositories.PlayerEntityRepository;
+import com.terraforming.ares.repositories.crudRepositories.SoloRecordEntityRepository;
 import com.terraforming.ares.services.ai.AiService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -29,13 +33,21 @@ public class GameProcessorService extends BaseProcessorService {
     private final StateFactory stateFactory;
     private final AiService aiService;
     private final Queue<Long> gamesToProcess = new ArrayBlockingQueue<>(3200);
+    private final SoloRecordEntityRepository soloRecordEntityRepository;
+    private final CrisisRecordEntityRepository crisisRecordEntityRepository;
+    private final GameEntityRepository gameEntityRepository;
+    private final PlayerEntityRepository playerEntityRepository;
 
     public GameProcessorService(List<TurnProcessor<?>> turnProcessor,
                                 CachingGameRepository gameRepository,
                                 StateContextProvider stateContextProvider,
                                 TurnTypeService turnTypeService,
                                 StateFactory stateFactory,
-                                AiService aiService) {
+                                AiService aiService,
+                                SoloRecordEntityRepository soloRecordEntityRepository,
+                                CrisisRecordEntityRepository crisisRecordEntityRepository,
+                                GameEntityRepository gameEntityRepository,
+                                PlayerEntityRepository playerEntityRepository) {
         super(
                 turnTypeService,
                 stateFactory,
@@ -45,6 +57,10 @@ public class GameProcessorService extends BaseProcessorService {
         this.gameRepository = gameRepository;
         this.stateFactory = stateFactory;
         this.aiService = aiService;
+        this.soloRecordEntityRepository = soloRecordEntityRepository;
+        this.crisisRecordEntityRepository = crisisRecordEntityRepository;
+        this.gameEntityRepository = gameEntityRepository;
+        this.playerEntityRepository = playerEntityRepository;
     }
 
     @Scheduled(fixedRate = 20)
@@ -68,6 +84,14 @@ public class GameProcessorService extends BaseProcessorService {
                 return null;
             });
         }
+    }
+
+    @Scheduled(fixedRate = 1800000)
+    public void clearMemory() {
+        soloRecordEntityRepository.clearSoloRecordMemory();
+        crisisRecordEntityRepository.clearCrisisRecordMemory();
+        playerEntityRepository.clearPlayerMemory();
+        gameEntityRepository.clearGameMemory();
     }
 
     public GameUpdateResult<TurnResponse> performTurn(long gameId,
