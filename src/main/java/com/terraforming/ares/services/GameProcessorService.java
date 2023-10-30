@@ -16,6 +16,7 @@ import com.terraforming.ares.repositories.crudRepositories.SoloRecordEntityRepos
 import com.terraforming.ares.services.ai.AiService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Queue;
@@ -86,6 +87,7 @@ public class GameProcessorService extends BaseProcessorService {
         }
     }
 
+    @Transactional
     @Scheduled(fixedRate = 1800000)
     public void clearMemory() {
         soloRecordEntityRepository.clearSoloRecordMemory();

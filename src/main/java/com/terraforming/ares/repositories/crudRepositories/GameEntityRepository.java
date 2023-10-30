@@ -18,7 +18,7 @@ public interface GameEntityRepository extends CrudRepository<GameEntity, Long> {
 
     List<GameEntity> findAllBy();
 
-    @Transactional
+
     @Modifying
     @Query(value = "DELETE FROM game_entity g WHERE NOT EXISTS " +
             "(SELECT 1 FROM player_entity p WHERE p.game_id = g.id)",

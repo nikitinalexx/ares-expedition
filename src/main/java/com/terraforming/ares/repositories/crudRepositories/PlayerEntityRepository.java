@@ -14,19 +14,21 @@ public interface PlayerEntityRepository extends CrudRepository<PlayerEntity, Lon
 
     PlayerEntity findByUuid(String uuid);
 
-    @Transactional
+
     @Modifying
     @Query(value = "DELETE FROM player_entity " +
             "WHERE id NOT IN (" +
-            "    SELECT id FROM (" +
-            "                       SELECT id FROM player_entity ORDER BY id DESC LIMIT 100" +
-            "                   ) AS latest_players" +
+            "    SELECT id" +
+            "    FROM (" +
+            "        SELECT id FROM player_entity" +
+            "        ORDER BY id DESC LIMIT 100" +
+            "    ) AS latest_players" +
             "    UNION" +
             "    SELECT player_entity.id FROM player_entity" +
-            "                                     JOIN crisis_record_entity ON player_entity.uuid = crisis_record_entity.uuid" +
-            "    UNION" +
-            "    SELECT player_entity.id FROM player_entity" +
-            "                                     JOIN solo_record_entity ON player_entity.uuid = solo_record_entity.uuid)",
+            "    WHERE player_entity.uuid IN (" +
+            "        SELECT uuid FROM crisis_record_entity" +
+            "        UNION" +
+            "        SELECT uuid FROM solo_record_entity))",
             nativeQuery = true)
     void clearPlayerMemory();
 }

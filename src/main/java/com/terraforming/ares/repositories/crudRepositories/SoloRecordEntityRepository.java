@@ -20,14 +20,11 @@ public interface SoloRecordEntityRepository extends CrudRepository<SoloRecordEnt
             "ORDER BY turns ASC, m.victory_points DESC, date LIMIT 20", nativeQuery = true)
     List<SoloRecordEntity> findTopTwentyRecordsByTurns();
 
-    @Transactional
     @Modifying
-    @Query(value = "DELETE FROM ares_db.public.solo_record_entity" +
-            " WHERE uuid NOT IN (" +
+    @Query(value = "DELETE FROM solo_record_entity m " +
+            "WHERE uuid NOT IN (" +
             "    SELECT uuid" +
-            "    FROM ares_db.public.solo_record_entity" +
-            "    ORDER BY turns ASC" +
-            "    LIMIT 20" +
-            ")",nativeQuery = true)
+            "    FROM solo_record_entity" +
+            "    ORDER BY turns ASC, m.victory_points DESC, date LIMIT 20)",nativeQuery = true)
     void clearSoloRecordMemory();
 }
