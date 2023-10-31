@@ -17,12 +17,9 @@ public interface PlayerEntityRepository extends CrudRepository<PlayerEntity, Lon
 
     @Modifying
     @Query(value = "DELETE FROM player_entity " +
-            "WHERE id NOT IN (" +
-            "    SELECT id" +
-            "    FROM (" +
+            "WHERE id NOT IN ((" +
             "        SELECT id FROM player_entity" +
-            "        ORDER BY id DESC LIMIT 100" +
-            "    ) AS latest_players" +
+            "        ORDER BY id DESC LIMIT 100)" +
             "    UNION" +
             "    SELECT player_entity.id FROM player_entity" +
             "    WHERE player_entity.uuid IN (" +

@@ -27,20 +27,15 @@ public interface CrisisRecordEntityRepository extends CrudRepository<CrisisRecor
 
     @Modifying
     @Query(value = "DELETE FROM crisis_record_entity m " +
-            "WHERE uuid NOT IN (" +
-            "    SELECT uuid" +
-            "    FROM (" +
+            "WHERE uuid NOT IN ((" +
             "        SELECT uuid" +
             "        FROM crisis_record_entity" +
-            "        ORDER BY difficulty DESC, turns_left DESC, (m.victory_points + m.terraforming_points) DESC, date LIMIT 20" +
-            "    ) AS top_turns" +
-            "    UNION" +
-            "    SELECT uuid" +
-            "    FROM (" +
+            "        ORDER BY difficulty DESC, turns_left DESC, (m.victory_points + m.terraforming_points) DESC, date LIMIT 20)" +
+            "    UNION (" +
             "        SELECT uuid" +
             "        FROM crisis_record_entity" +
             "        ORDER BY difficulty DESC, (m.victory_points + m.terraforming_points) DESC, date, turns_left DESC LIMIT 20" +
-            "    ) AS top_victory_points)",
+            "    ))",
             nativeQuery = true)
     void clearCrisisRecordMemory();
 }
