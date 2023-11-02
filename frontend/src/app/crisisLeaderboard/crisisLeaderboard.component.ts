@@ -41,9 +41,9 @@ export class CrisisLeaderboardComponent implements OnInit {
     this.crisisRecords = null;
     this.loading = true;
     this.loadingResult?.unsubscribe();
-    const observable = (sortType === 1
-      ? this.model.getCrisisRecordsByPoints(playerCount)
-      : this.model.getCrisisRecordsByTurns(playerCount));
+    const observable = (sortType === 2
+      ? this.model.getCrisisRecordsByTurns(playerCount)
+      : this.model.getCrisisRecordsByPoints(playerCount));
     this.loadingResult = observable.subscribe(response => {
       if (response) {
         this.loading = false;
