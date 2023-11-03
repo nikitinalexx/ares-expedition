@@ -37,6 +37,14 @@ export class NewGameComponent implements OnInit {
       computer2: false,
       computer3: false,
       computer4: false,
+      advantageFlag1: false,
+      advantageFlag2: false,
+      advantageFlag3: false,
+      advantageFlag4: false,
+      extraPoints1: 0,
+      extraPoints2: 0,
+      extraPoints3: 0,
+      extraPoints4: 0,
       mulligan: false,
       discovery: false,
       improveWeakCorp: false,
@@ -48,6 +56,7 @@ export class NewGameComponent implements OnInit {
     if (formGroup.valid) {
       const names = [];
       const computers = [];
+      const extraPoints = [];
       for (let i = 1; i <= this.parentForm.value.playerCount; i++) {
         const name = this.parentForm.get('playerName' + i)?.value;
         if (!name) {
@@ -57,6 +66,8 @@ export class NewGameComponent implements OnInit {
         computers.push(this.parentForm.value.discovery ? false : this.parentForm.get('computer' + i)?.value);
 
         names.push(name);
+
+        extraPoints.push(this.parentForm.get('advantageFlag' + i)?.value && this.parentForm.get('extraPoints' + i)?.value ? this.parentForm.get('extraPoints' + i)?.value : 0);
       }
       const expansions = [Expansion.BASE];
       if (this.parentForm.value.improveWeakCorp) {
@@ -71,6 +82,7 @@ export class NewGameComponent implements OnInit {
         new NewGameRequest(
           names,
           computers,
+          extraPoints,
           this.parentForm.value.mulligan,
           this.parentForm.value.dummyHand,
           false,
