@@ -20,11 +20,11 @@ public interface PlayerEntityRepository extends CrudRepository<PlayerEntity, Lon
             "WHERE id NOT IN ((" +
             "        SELECT id FROM player_entity" +
             "        ORDER BY id DESC LIMIT 500)" +
-            "    UNION ALL" +
+            "    UNION ALL " +
             "    SELECT player_entity.id FROM player_entity" +
             "    WHERE player_entity.uuid IN (" +
             "        SELECT uuid FROM crisis_record_entity" +
-            "        UNION ALL" +
+            "        UNION ALL " +
             "        SELECT uuid FROM solo_record_entity))",
             nativeQuery = true)
     void clearPlayerMemory();
