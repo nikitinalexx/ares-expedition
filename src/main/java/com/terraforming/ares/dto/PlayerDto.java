@@ -34,6 +34,7 @@ public class PlayerDto {
     private final boolean builtSpecialDesignLastTurn;
     private final List<Integer> phaseCards;
     private final List<BuildDto> builds;
+    private int extraPoints;
 
     private final int mc;
     private final int mcIncome;

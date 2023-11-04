@@ -20,6 +20,7 @@ public class GameParameters {
     private List<Expansion> expansions;
     private boolean dummyHand;
     private boolean beginner;
+    private int[] extraPoints;
 
     public boolean isCrysis() {
         return expansions.contains(Expansion.CRYSIS);

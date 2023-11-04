@@ -69,6 +69,8 @@ public class Player {
     private int steelIncome;
     private int titaniumIncome;
 
+    private int extraPoints;
+
     @Builder.Default
     private List<Integer> phaseCards = new ArrayList<>(List.of(0, 0, 0, 0, 0));
 
@@ -79,6 +81,7 @@ public class Player {
         this.uuid = copy.uuid;
         this.name = copy.name;
         this.hand = new Deck(copy.hand);
+        this.extraPoints = copy.extraPoints;
 
         this.played = new Deck(copy.played);
 

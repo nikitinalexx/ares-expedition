@@ -33,4 +33,5 @@ public class GameDto {
     private List<MilestoneDto> milestones;
     private CrysisDto crysisDto;
     private String stateReason;
+    private int[] extraPoints;
 }
