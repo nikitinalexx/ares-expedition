@@ -67,7 +67,9 @@ export class NewGameComponent implements OnInit {
 
         names.push(name);
 
-        extraPoints.push(this.parentForm.get('advantageFlag' + i)?.value && this.parentForm.get('extraPoints' + i)?.value ? this.parentForm.get('extraPoints' + i)?.value : 0);
+        if (this.parentForm.value.playerCount > 1) {
+          extraPoints.push(this.parentForm.get('advantageFlag' + i)?.value && this.parentForm.get('extraPoints' + i)?.value ? this.parentForm.get('extraPoints' + i)?.value : 0);
+        }
       }
       const expansions = [Expansion.BASE];
       if (this.parentForm.value.improveWeakCorp) {
