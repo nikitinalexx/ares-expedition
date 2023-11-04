@@ -53,6 +53,7 @@ public class DefaultGameFactory implements GameFactory {
 
         return new MarsGame(
                 gameParameters.getPlayerNames(),
+                gameParameters.getExtraPoints(),
                 Constants.DEFAULT_START_HAND_SIZE,
                 projectsDeck,
                 corporationsDeck,

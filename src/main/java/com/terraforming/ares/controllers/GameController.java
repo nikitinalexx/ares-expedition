@@ -22,10 +22,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
@@ -59,6 +56,7 @@ public class GameController {
         try {
             int aiPlayerCount = (int) gameParameters.getComputers().stream().filter(item -> item).count();
             int playersCount = gameParameters.getPlayerNames().size();
+            int[] extraPoints = gameParameters.getExtraPoints();
 
             if (gameParameters.getPlayerNames().stream().anyMatch(name -> name.length() > 10)) {
                 throw new IllegalArgumentException("Only names of length 10 or below are supported");
@@ -67,6 +65,21 @@ public class GameController {
             if (playersCount == 0 || playersCount > Constants.MAX_PLAYERS) {
                 throw new IllegalArgumentException("Only 1 to 4 players are supported so far");
             }
+            if (extraPoints != null && extraPoints.length >= 1 && extraPoints.length <= 4) {
+
+                if (playersCount == 1 && extraPoints[0] != 0) {
+                    throw new IllegalArgumentException("You can't play with a handicap in solo mode");
+                }
+
+                if (Arrays.stream(extraPoints).anyMatch(x -> x < 0)) {
+                    throw new IllegalArgumentException("A handicap cannot be less than zero");
+                }
+
+            }else {
+                throw new IllegalArgumentException("Invalid extra points provided");
+            }
+
+
 
             if (gameParameters.getExpansions().contains(Expansion.CRYSIS)) {
                 if (playersCount != 1) {
@@ -92,6 +105,7 @@ public class GameController {
             }
 
             MarsGame marsGame = gameService.startNewGame(gameParameters);
+
 
             if (aiPlayerCount == playersCount) {
                 turnService.pushGame(marsGame.getId());
@@ -404,7 +418,6 @@ public class GameController {
         pw.println();
     }
 
-
     private void printStatistics(GameStatistics gameStatistics) {
         /*
         if (Constants.STATISTICS_BY_TURN) {
@@ -653,7 +666,6 @@ public class GameController {
                 .austellarMilestone(player.getAustellarMilestone())
                 .build();
     }
-
 
     private Map<Integer, List<Tag>> getPlayerCardToTag(Player player) {
         return player.getPlayed().getCards().stream().map(cardService::getCard)
