@@ -163,7 +163,7 @@ public class MarsGame {
                             .name(playerNames.get(i))
                             //.hand(Deck.builder().cards(new LinkedList<>(List.of(69))).build())
                             .hand(projectsDeck.dealCardsDeck(playerHandSize))
-                            .extraPoints(extraPoints[i])
+                            .extraPoints(extraPoints != null && extraPoints.length > i ? extraPoints[i] : 0)
                             .corporations(corporationsDeck.dealCardsDeck(INITIAL_CORPORATIONS_SIZE))
                             //.corporations(Deck.builder().cards(new LinkedList<>(List.of(10206, 10005))).build())
                             .played(Deck.builder().build())
