@@ -65,7 +65,11 @@ public class GameController {
             if (playersCount == 0 || playersCount > Constants.MAX_PLAYERS) {
                 throw new IllegalArgumentException("Only 1 to 4 players are supported so far");
             }
-            if (extraPoints != null && extraPoints.length >= 1 && extraPoints.length <= 4) {
+            if (extraPoints != null && extraPoints.length > 0) {
+                if (extraPoints.length > 4) {
+                    throw new IllegalArgumentException("Invalid extra points provided");
+
+                }
 
                 if (playersCount == 1 && extraPoints[0] != 0) {
                     throw new IllegalArgumentException("You can't play with a handicap in solo mode");
@@ -75,8 +79,9 @@ public class GameController {
                     throw new IllegalArgumentException("A handicap cannot be less than zero");
                 }
 
-            }else {
-                throw new IllegalArgumentException("Invalid extra points provided");
+                if (gameParameters.getExpansions().contains(Expansion.CRYSIS)) {
+                    throw new IllegalArgumentException("No extra points allowed in Crisis mode");
+                }
             }
 
 
