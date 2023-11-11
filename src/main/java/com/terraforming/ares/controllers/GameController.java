@@ -84,9 +84,10 @@ public class GameController {
                 }
             }
 
-
-
             if (gameParameters.getExpansions().contains(Expansion.CRYSIS)) {
+                if (!gameParameters.getExpansions().contains(Expansion.BUFFED_CORPORATION)) {
+                    gameParameters.getExpansions().add(Expansion.BUFFED_CORPORATION);
+                }
                 if (playersCount != 1) {
                     throw new IllegalArgumentException("Only 1 player supported so far. Come back in a week!");
                 }

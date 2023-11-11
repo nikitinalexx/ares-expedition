@@ -5,6 +5,7 @@ import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.StateTransitionService;
+import com.terraforming.ares.services.TerraformingService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +24,7 @@ public class PerformBlueActionState extends AbstractState {
     @Override
     public List<TurnType> getPossibleTurns(StateContext stateContext) {
         final MarsGame marsGame = context.getGame();
+        final TerraformingService terraformingService = context.getTerraformingService();
         Player player = marsGame.getPlayerByUuid(stateContext.getPlayerUuid());
 
         if (player.getNextTurn() != null && stateContext.getTurnTypeService().isIntermediate(player.getNextTurn().getType())) {
@@ -56,7 +58,7 @@ public class PerformBlueActionState extends AbstractState {
             if (player.getPlants() >= forestPlantCost) {
                 turns.add(TurnType.PLANT_FOREST);
             }
-            if (player.getHeat() >= Constants.TEMPERATURE_HEAT_COST && !marsGame.getPlanetAtTheStartOfThePhase().isTemperatureMax()) {
+            if (player.getHeat() >= Constants.TEMPERATURE_HEAT_COST && terraformingService.canIncreaseTemperature(marsGame)) {
                 turns.add(TurnType.INCREASE_TEMPERATURE);
             }
 
