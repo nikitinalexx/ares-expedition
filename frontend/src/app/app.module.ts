@@ -20,16 +20,19 @@ import {CrisisLeaderboardComponent} from './crisisLeaderboard/crisisLeaderboard.
 import {CrisisLeaderboardModule} from './crisisLeaderboard/crisisLeaderboard.module';
 import {CrisisRulesModule} from './crisisRules/crisisRules.module';
 import {CrisisRulesComponent} from './crisisRules/crisisRules.component';
+import {RecentGamesModule} from "./recentGames/recentGames.module";
+import {RecentGamesComponent} from "./recentGames/recentGames.component";
 
 @NgModule({
   imports: [
     BrowserModule, CardServiceModule, NewGameModule, NewGameCrysisModule, CrisisLeaderboardModule,
-    LobbyModule, IndexModule, GameModule, CrisisRulesModule,
+    LobbyModule, IndexModule, GameModule, CrisisRulesModule, RecentGamesModule,
     RouterModule.forRoot([
       {path: 'cards', component: CardServiceComponent},
       {path: 'new', component: NewGameComponent},
       {path: 'newcrisis', component: NewGameCrysisComponent},
       {path: 'leaderboard', component: CrisisLeaderboardComponent},
+      {path: 'recent', component: RecentGamesComponent},
       {path: 'crisisrules', component: CrisisRulesComponent},
       {path: 'index', component: IndexComponent},
       {path: 'lobby', component: LobbyComponent},

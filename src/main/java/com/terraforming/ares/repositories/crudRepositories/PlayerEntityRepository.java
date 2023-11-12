@@ -25,7 +25,10 @@ public interface PlayerEntityRepository extends CrudRepository<PlayerEntity, Lon
             "    WHERE player_entity.uuid IN (" +
             "        SELECT uuid FROM crisis_record_entity" +
             "        UNION ALL " +
-            "        SELECT uuid FROM solo_record_entity))",
+            "        SELECT uuid FROM solo_record_entity" +
+            "        UNION ALL " +
+            "        SELECT uuid FROM player_entity WHERE game_id IN (SELECT id FROM game_entity WHERE finished = true ORDER BY finished_date DESC, id DESC LIMIT 20)" +
+            "))",
             nativeQuery = true)
     void clearPlayerMemory();
 }

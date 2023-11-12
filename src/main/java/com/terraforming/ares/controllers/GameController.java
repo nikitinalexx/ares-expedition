@@ -571,6 +571,11 @@ public class GameController {
         return soloRecordEntityRepository.findTopTwentyRecordsByTurns();
     }
 
+    @GetMapping("/recent")
+    public List<RecentGameDto> findRecentTwentyGames() {
+        return gameRepository.findRecentTwentyGames();
+    }
+
     @GetMapping("/cache/reset")
     public int resetGameCache() {
         return cachingGameRepository.evictGameCache();
