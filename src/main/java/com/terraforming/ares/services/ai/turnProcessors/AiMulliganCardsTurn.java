@@ -4,16 +4,13 @@ import com.terraforming.ares.dataset.CardsAiService;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.ai.AiCardsChoice;
 import com.terraforming.ares.model.ai.AiTurnChoice;
-import com.terraforming.ares.model.turn.CorporationChoiceTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.processors.turn.PickCorporationProcessor;
 import com.terraforming.ares.services.ai.AiBalanceService;
-import com.terraforming.ares.services.ai.CardValueService;
-import com.terraforming.ares.services.ai.DeepNetwork;
 import com.terraforming.ares.services.ai.ICardValueService;
 import com.terraforming.ares.services.ai.dto.CardValueResponse;
-import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -53,11 +50,11 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
 
         List<Integer> cardsToDiscard = new ArrayList<>();
 
-        if (player.isFirstBot() && Constants.FIRST_MULLIGAN_OR_THIRD_PHASE_TURN == AiTurnChoice.RANDOM || player.isSecondBot() && Constants.SECOND_MULLIGAN_OR_THIRD_PHASE_TURN == AiTurnChoice.RANDOM) {
+        if (player.isFirstBot() && Constants.CARDS_PICK_PLAYER_1 == AiCardsChoice.RANDOM || player.isSecondBot() && Constants.CARDS_PICK_PLAYER_2 == AiCardsChoice.RANDOM) {
             int toDiscard = random.nextInt(cards.size());
             cardsToDiscard.addAll(cards.subList(0, toDiscard));
         } else {
-            if (player.isFirstBot() && Constants.FIRST_MULLIGAN_OR_THIRD_PHASE_TURN == AiTurnChoice.NETWORK || player.isSecondBot() && Constants.SECOND_MULLIGAN_OR_THIRD_PHASE_TURN == AiTurnChoice.NETWORK) {
+            if (player.isFirstBot() && Constants.CARDS_PICK_PLAYER_1 == AiCardsChoice.NETWORK || player.isSecondBot() && Constants.CARDS_PICK_PLAYER_2 == AiCardsChoice.NETWORK) {
 
                 float average = 0;
                 for (Integer card : cards) {
@@ -80,7 +77,7 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
                     }
                 }
             }
-            if (player.isFirstBot() && Constants.FIRST_MULLIGAN_OR_THIRD_PHASE_TURN == AiTurnChoice.FILE_VALUE || player.isSecondBot() && Constants.SECOND_MULLIGAN_OR_THIRD_PHASE_TURN == AiTurnChoice.FILE_VALUE) {
+            if (player.isFirstBot() && Constants.CARDS_PICK_PLAYER_1 == AiCardsChoice.FILE_VALUE || player.isSecondBot() && Constants.CARDS_PICK_PLAYER_2 == AiCardsChoice.FILE_VALUE) {
                 while (cardsToDiscard.size() != max) {
                     if (cards.isEmpty()) {
                         break;

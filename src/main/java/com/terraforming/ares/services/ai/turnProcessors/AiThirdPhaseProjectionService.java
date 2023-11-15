@@ -187,13 +187,6 @@ public class AiThirdPhaseProjectionService {
         //TODO project UNMI action
         //TODO project standard action
 
-        //project cards
-        List<Card> activeCards = player.getPlayed().getCards().stream().map(cardService::getCard).filter(Card::isActiveCard).filter(card -> !player.getActivatedBlueCards().containsCard(card.getId()) || player.getBlueActionExtraActivationsLeft() != 0).collect(Collectors.toList());
-
-        if (CollectionUtils.isEmpty(activeCards)) {
-            return ProjectionWithGame.SKIP_PHASE;
-        }
-
         List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
         Player anotherPlayer = players.get(0) == player ? players.get(1) : players.get(0);
 
@@ -203,49 +196,71 @@ public class AiThirdPhaseProjectionService {
         }
         float bestState = deepNetwork.testState(playerData.applyDifference(initialDifference).applyOpponentDifference(opponentDifference), player.isFirstBot() ? 1 : 2);
 
-        MarsGameRowDifference bestProjectionRow = null;
-        MarsGame bestGameProjection = null;
-        Card bestCard = null;
+        //project cards
+        List<Card> activeCards = player.getPlayed().getCards().stream().map(cardService::getCard).filter(Card::isActiveCard).filter(card -> !player.getActivatedBlueCards().containsCard(card.getId()) || player.getBlueActionExtraActivationsLeft() != 0).collect(Collectors.toList());
 
-        for (Card activeCard : activeCards) {
-            MarsGame gameCopy = new MarsGame(game);
-            Player playerCopy = gameCopy.getPlayerByUuid(player.getUuid());
+        if (!CollectionUtils.isEmpty(activeCards)) {
 
-            MarsGameRowDifference difference = actionProjections.get(activeCard.getClass()).project(initialDifference, gameCopy, playerCopy, activeCard);
-            difference.add(initialDifference);
 
-            if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ASSEMBLY_LINES)) {
-                playerCopy.setMc(playerCopy.getMc() + 1);
+            MarsGameRowDifference bestProjectionRow = null;
+            MarsGame bestGameProjection = null;
+            Card bestCard = null;
+
+            for (Card activeCard : activeCards) {
+                MarsGame gameCopy = new MarsGame(game);
+                Player playerCopy = gameCopy.getPlayerByUuid(player.getUuid());
+
+                MarsGameRowDifference difference = actionProjections.get(activeCard.getClass()).project(initialDifference, gameCopy, playerCopy, activeCard);
+                difference.add(initialDifference);
+
+                if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ASSEMBLY_LINES)) {
+                    playerCopy.setMc(playerCopy.getMc() + 1);
+                }
+
+                //TODO is it better to project 2 steps ahead? implement and compare 2 computers
+                //TODO reuse anotherPlayer
+                float futureState = deepNetwork.testState(datasetCollectionService.collectGameData(gameCopy, playerCopy, anotherPlayer).applyDifference(difference).applyOpponentDifference(opponentDifference), player.isFirstBot() ? 1 : 2);
+
+                if (futureState > bestState) {
+                    bestState = futureState;
+                    bestProjectionRow = difference;
+                    bestGameProjection = gameCopy;
+                    bestCard = activeCard;
+                }
             }
 
-            //TODO is it better to project 2 steps ahead? implement and compare 2 computers
-            //TODO reuse anotherPlayer
-            float futureState = deepNetwork.testState(datasetCollectionService.collectGameData(gameCopy, playerCopy, anotherPlayer).applyDifference(difference).applyOpponentDifference(opponentDifference), player.isFirstBot() ? 1 : 2);
-
-            if (futureState > bestState) {
-                bestState = futureState;
-                bestProjectionRow = difference;
-                bestGameProjection = gameCopy;
-                bestCard = activeCard;
+            if (bestProjectionRow != null) {
+                Player bestProjectionPlayer = bestGameProjection.getPlayerByUuid(player.getUuid());
+                Deck activatedBlueCards = bestProjectionPlayer.getActivatedBlueCards();
+                if (activatedBlueCards.containsCard(bestCard.getId())) {
+                    bestProjectionPlayer.setBlueActionExtraActivationsLeft(bestProjectionPlayer.getBlueActionExtraActivationsLeft() - 1);
+                } else {
+                    activatedBlueCards.addCard(bestCard.getId());
+                }
+                ProjectionWithGame anotherProjection = projectThirdPhase(bestGameProjection, bestProjectionPlayer, bestProjectionRow, opponentDifference);
+                if (anotherProjection.isPickPhase()) {
+                    return anotherProjection;
+                }
+                return ProjectionWithGame.builder()
+                        .projection(PhaseChoiceProjection.builder().phase(3).pickPhase(true).chance(bestState).build())
+                        .game(bestGameProjection)
+                        .difference(bestProjectionRow)
+                        .build();
             }
         }
 
-        if (bestProjectionRow != null) {
-            Player bestProjectionPlayer = bestGameProjection.getPlayerByUuid(player.getUuid());
-            Deck activatedBlueCards = bestProjectionPlayer.getActivatedBlueCards();
-            if (activatedBlueCards.containsCard(bestCard.getId())) {
-                bestProjectionPlayer.setBlueActionExtraActivationsLeft(bestProjectionPlayer.getBlueActionExtraActivationsLeft() - 1);
-            } else {
-                activatedBlueCards.addCard(bestCard.getId());
-            }
-            ProjectionWithGame anotherProjection = projectThirdPhase(bestGameProjection, bestProjectionPlayer, bestProjectionRow, opponentDifference);
-            if (anotherProjection.isPickPhase()) {
-                return anotherProjection;
-            }
+        MarsGame gameCopy = new MarsGame(game);
+        Player playerCopy = gameCopy.getPlayerByUuid(player.getUuid());
+
+        spendPlantsAndHeat(gameCopy, playerCopy);
+
+        float futureState = deepNetwork.testState(datasetCollectionService.collectGameData(gameCopy, playerCopy, anotherPlayer).applyDifference(initialDifference).applyOpponentDifference(opponentDifference), player.isFirstBot() ? 1 : 2);
+
+        if (futureState > bestState) {
             return ProjectionWithGame.builder()
                     .projection(PhaseChoiceProjection.builder().phase(3).pickPhase(true).chance(bestState).build())
-                    .game(bestGameProjection)
-                    .difference(bestProjectionRow)
+                    .game(gameCopy)
+                    .difference(initialDifference)
                     .build();
         }
 

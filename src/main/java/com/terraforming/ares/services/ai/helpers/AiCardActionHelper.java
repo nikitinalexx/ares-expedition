@@ -8,6 +8,7 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.action.ActionInputData;
 import com.terraforming.ares.model.action.ActionInputDataType;
+import com.terraforming.ares.model.ai.AiCardsChoice;
 import com.terraforming.ares.model.ai.AiTurnChoice;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.TerraformingService;
@@ -289,7 +290,7 @@ public class AiCardActionHelper {
                 break;
             }
 
-            if (player.isFirstBot() && Constants.FIRST_MULLIGAN_OR_THIRD_PHASE_TURN == AiTurnChoice.FILE_VALUE || player.isSecondBot() && Constants.SECOND_MULLIGAN_OR_THIRD_PHASE_TURN == AiTurnChoice.FILE_VALUE) {
+            if (player.isFirstBot() && Constants.CARDS_PICK_PLAYER_1 == AiCardsChoice.FILE_VALUE || player.isSecondBot() && Constants.CARDS_PICK_PLAYER_2 == AiCardsChoice.FILE_VALUE) {
                 CardValueResponse cardValueResponse = cardValueService.getWorstCard(game, player, cards, game.getTurns());
 
                 if (aiBalanceService.isCardWorthToDiscard(player, cardValueResponse.getWorth())) {
@@ -298,12 +299,12 @@ public class AiCardActionHelper {
                 } else {
                     break;
                 }
-            } else if (player.isFirstBot() && Constants.FIRST_MULLIGAN_OR_THIRD_PHASE_TURN == AiTurnChoice.RANDOM || player.isSecondBot() && Constants.SECOND_MULLIGAN_OR_THIRD_PHASE_TURN == AiTurnChoice.RANDOM) {
+            } else if (player.isFirstBot() && Constants.CARDS_PICK_PLAYER_1 == AiCardsChoice.RANDOM || player.isSecondBot() && Constants.CARDS_PICK_PLAYER_2 == AiCardsChoice.RANDOM) {
                 Integer card = cards.get(random.nextInt(cards.size()));
 
                 cardsToDiscard.add(card);
                 cards.remove(card);
-            } else if (player.isFirstBot() && Constants.FIRST_MULLIGAN_OR_THIRD_PHASE_TURN == AiTurnChoice.NETWORK || player.isSecondBot() && Constants.SECOND_MULLIGAN_OR_THIRD_PHASE_TURN == AiTurnChoice.NETWORK) {
+            } else if (player.isFirstBot() && Constants.CARDS_PICK_PLAYER_1 == AiCardsChoice.NETWORK || player.isSecondBot() && Constants.CARDS_PICK_PLAYER_2 == AiCardsChoice.NETWORK) {
                 Integer cardToRemove = cardsAiService.getWorstCard(game, player.getUuid(), cards, true);//TODO if the worst card is still good, maybe don't discard it?
                 if (cardToRemove != null) {
                     cardsToDiscard.add(cardToRemove);

@@ -1,5 +1,6 @@
 package com.terraforming.ares.model;
 
+import com.terraforming.ares.model.ai.AiCardsChoice;
 import com.terraforming.ares.model.ai.AiTurnChoice;
 
 import java.util.Map;
@@ -90,26 +91,21 @@ public class Constants {
 
     public static final boolean COLLECT_FIFTH_PHASE_STATISTICS = false;//makes sense only in debug mode!!!
     public static final boolean COLLECT_CARDS_DATASET = false;
-    public static final boolean COLLECT_DATASET = true;
+    public static final boolean COLLECT_DATASET = false;
     public static final boolean LOG_NET_COMPARISON = false;
 
     /** AI TURNS **/
-    public static final AiTurnChoice FIRST_MULLIGAN_OR_THIRD_PHASE_TURN = AiTurnChoice.NETWORK;
-    public static final AiTurnChoice SECOND_MULLIGAN_OR_THIRD_PHASE_TURN = AiTurnChoice.NETWORK;
+    public static final AiCardsChoice CARDS_PICK_PLAYER_1 = AiCardsChoice.FILE_VALUE;
+    public static final AiCardsChoice CARDS_PICK_PLAYER_2 = AiCardsChoice.FILE_VALUE;
 
-    public static final AiTurnChoice FIRST_DISCARD_OR_SELL_CARDS_TURN = AiTurnChoice.NETWORK;
-    public static final AiTurnChoice SECOND_DISCARD_OR_SELL_CARDS_TURN = AiTurnChoice.NETWORK;
+    public static final AiTurnChoice PICK_PHASE_PLAYER_1 = AiTurnChoice.NETWORK;
+    public static final AiTurnChoice PICK_PHASE_PLAYER_2 = AiTurnChoice.NETWORK;
 
+    public static final AiTurnChoice BUILD_PLAYER_1 = AiTurnChoice.NETWORK;
+    public static final AiTurnChoice BUILD_PLAYER_2 = AiTurnChoice.NETWORK;
 
-
-    public static final AiTurnChoice FIRST_PICK_PHASE = AiTurnChoice.NETWORK;
-    public static final AiTurnChoice SECOND_PICK_PHASE = AiTurnChoice.NETWORK;
-
-    public static final AiTurnChoice FIRST_BUILD_PROJECT = AiTurnChoice.NETWORK;
-    public static final AiTurnChoice SECOND_BUILD_PROJECT = AiTurnChoice.NETWORK;
-
-    public static final AiTurnChoice FIRST_THIRD_PHASE = AiTurnChoice.FILE_VALUE;
-    public static final AiTurnChoice SECOND_THIRD_PHASE = AiTurnChoice.NETWORK;
+    public static final AiTurnChoice THIRD_PHASE_ACTIONS_PLAYER_1 = AiTurnChoice.NETWORK;
+    public static final AiTurnChoice THIRD_PHASE_ACTIONS_PLAYER_2 = AiTurnChoice.NETWORK;
 
 
 

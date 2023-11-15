@@ -1,7 +1,7 @@
 package com.terraforming.ares.model.ai;
 
-public enum AiTurnChoice {
+public enum AiCardsChoice {
     RANDOM,
-    SMART,
+    FILE_VALUE,
     NETWORK
 }

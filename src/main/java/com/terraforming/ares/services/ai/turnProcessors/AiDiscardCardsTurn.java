@@ -4,6 +4,7 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Deck;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.ai.AiCardsChoice;
 import com.terraforming.ares.model.ai.AiTurnChoice;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
 import com.terraforming.ares.model.turn.TurnType;
@@ -16,7 +17,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -82,18 +82,18 @@ public class AiDiscardCardsTurn implements AiTurnProcessor {
             //keep best card
             Integer bestCard = null;
 
-            if (player.isFirstBot() && Constants.FIRST_DISCARD_OR_SELL_CARDS_TURN == AiTurnChoice.FILE_VALUE || player.isSecondBot() && Constants.SECOND_DISCARD_OR_SELL_CARDS_TURN == AiTurnChoice.FILE_VALUE) {
+            if (player.isFirstBot() && Constants.CARDS_PICK_PLAYER_1 == AiCardsChoice.FILE_VALUE || player.isSecondBot() && Constants.CARDS_PICK_PLAYER_2 == AiCardsChoice.FILE_VALUE) {
                 bestCard = cardValueService.getBestCard(game, player, cardsToDiscard, game.getTurns());
                 if (bestCard != null && Constants.LOG_NET_COMPARISON) {
                     System.out.println("Keeping statistics " + cardService.getCard(bestCard).getClass().getSimpleName());
                 }
             }
 
-            if (player.isFirstBot() && Constants.FIRST_DISCARD_OR_SELL_CARDS_TURN == AiTurnChoice.RANDOM || player.isSecondBot() && Constants.SECOND_DISCARD_OR_SELL_CARDS_TURN == AiTurnChoice.RANDOM) {
+            if (player.isFirstBot() && Constants.CARDS_PICK_PLAYER_1 == AiCardsChoice.RANDOM || player.isSecondBot() && Constants.CARDS_PICK_PLAYER_2 == AiCardsChoice.RANDOM) {
                 bestCard = cardsToDiscard.get(random.nextInt(cardsToDiscard.size()));
             }
 
-            if (player.isFirstBot() && Constants.FIRST_DISCARD_OR_SELL_CARDS_TURN == AiTurnChoice.NETWORK || player.isSecondBot() && Constants.SECOND_DISCARD_OR_SELL_CARDS_TURN == AiTurnChoice.NETWORK) {
+            if (player.isFirstBot() && Constants.CARDS_PICK_PLAYER_1 == AiCardsChoice.NETWORK || player.isSecondBot() && Constants.CARDS_PICK_PLAYER_2 == AiCardsChoice.NETWORK) {
                 bestCard = cardsAiService.getBestCard(game, player.getUuid(), cardsToDiscard);
                 if (Constants.LOG_NET_COMPARISON) {
                     System.out.println("Keeping ai " + cardService.getCard(bestCard).getClass().getSimpleName());

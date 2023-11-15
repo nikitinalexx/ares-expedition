@@ -46,14 +46,19 @@ public class DeepNetwork {
         this.datasetCollectionService = datasetCollectionService;
         firstNetwork = ThreadLocal.withInitial(() -> {
             try {
-                return FileIO.createFromFile("first.dnet", FeedForwardNetwork.class);
+                //result0 0.6099290780141844
+                //result1 0.5524475524475524
+                //result2 0.5909090909090909
+                //result3 0.5950704225352113
+
+                return FileIO.createFromFile("iter_0_result0.dnet", FeedForwardNetwork.class);
             } catch (IOException | ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
         });
         secondNetwork = ThreadLocal.withInitial(() -> {
             try {
-                return FileIO.createFromFile("second.dnet", FeedForwardNetwork.class);
+                return FileIO.createFromFile("iter_2_result0.dnet", FeedForwardNetwork.class);
             } catch (IOException | ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }

@@ -55,7 +55,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
 
         List<Integer> possiblePhases = new ArrayList<>();
 
-        if (player.isFirstBot() && Constants.FIRST_PICK_PHASE == AiTurnChoice.NETWORK || player.isSecondBot() && Constants.SECOND_PICK_PHASE == AiTurnChoice.NETWORK) {
+        if (player.isFirstBot() && Constants.PICK_PHASE_PLAYER_1 == AiTurnChoice.NETWORK || player.isSecondBot() && Constants.PICK_PHASE_PLAYER_2 == AiTurnChoice.NETWORK) {
             PhaseChoiceProjection projection = PhaseChoiceProjection.SKIP_PHASE;
             if (previousChosenPhase == null || previousChosenPhase != 1 && previousChosenPhase != 2) {
                 projection = projection.applyIfBetter(chooseBetweenFirstAndSecondPhaseAi(game, player));
@@ -76,7 +76,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                 possiblePhases.add(projection.getPhase());
             }
         } else {
-            if (!(player.isFirstBot() && Constants.FIRST_PICK_PHASE == AiTurnChoice.RANDOM || player.isSecondBot() && Constants.SECOND_PICK_PHASE == AiTurnChoice.RANDOM)
+            if (!(player.isFirstBot() && Constants.PICK_PHASE_PLAYER_1 == AiTurnChoice.RANDOM || player.isSecondBot() && Constants.PICK_PHASE_PLAYER_2 == AiTurnChoice.RANDOM)
                     && (previousChosenPhase == null || previousChosenPhase != 1 && previousChosenPhase != 2)) {
                 int phase = chooseBetweenFirstAndSecondPhase(game, player);
                 if (phase != 0) {
@@ -241,7 +241,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                 })
                 .collect(Collectors.toList());
 
-        if (player.isFirstBot() && Constants.FIRST_PICK_PHASE == AiTurnChoice.RANDOM || player.isSecondBot() && Constants.SECOND_PICK_PHASE == AiTurnChoice.RANDOM) {
+        if (player.isFirstBot() && Constants.PICK_PHASE_PLAYER_1 == AiTurnChoice.RANDOM || player.isSecondBot() && Constants.PICK_PHASE_PLAYER_2 == AiTurnChoice.RANDOM) {
             return !playableCards.isEmpty();
         }
 
@@ -271,7 +271,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                 })
                 .collect(Collectors.toList());
 
-        if (player.isFirstBot() && Constants.FIRST_PICK_PHASE == AiTurnChoice.RANDOM || player.isSecondBot() && Constants.SECOND_PICK_PHASE == AiTurnChoice.RANDOM) {
+        if (player.isFirstBot() && Constants.PICK_PHASE_PLAYER_1 == AiTurnChoice.RANDOM || player.isSecondBot() && Constants.PICK_PHASE_PLAYER_2 == AiTurnChoice.RANDOM) {
             return !playableCards.isEmpty();
         }
 
@@ -464,14 +464,15 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             return PhaseChoiceProjection.SKIP_PHASE;
         }
 
-        if (player.isFirstBot() && Constants.FIRST_THIRD_PHASE == AiTurnChoice.RANDOM || player.isSecondBot() && Constants.SECOND_THIRD_PHASE == AiTurnChoice.RANDOM) {
-            return PhaseChoiceProjection.builder().pickPhase(mayPlayPhaseThreeRandom(game, player)).phase(3).build();
-        } else if (player.isFirstBot() && Constants.FIRST_THIRD_PHASE == AiTurnChoice.FILE_VALUE || player.isSecondBot() && Constants.SECOND_THIRD_PHASE == AiTurnChoice.FILE_VALUE) {
-            return PhaseChoiceProjection.builder().pickPhase(mayPlayPhaseThreeSmart(game, player)).phase(3).build();
-        } else if (player.isFirstBot() && Constants.FIRST_THIRD_PHASE == AiTurnChoice.NETWORK || player.isSecondBot() && Constants.SECOND_THIRD_PHASE == AiTurnChoice.NETWORK) {
-            return mayPlayPhaseThreeAi(game, player);
-        } else {
-            throw new IllegalStateException("AI can't do third phase");
+        switch (player.isFirstBot() ?  Constants.THIRD_PHASE_ACTIONS_PLAYER_1 : Constants.THIRD_PHASE_ACTIONS_PLAYER_2) {
+            case RANDOM:
+                return PhaseChoiceProjection.builder().pickPhase(mayPlayPhaseThreeRandom(game, player)).phase(3).build();
+            case SMART:
+                return PhaseChoiceProjection.builder().pickPhase(mayPlayPhaseThreeSmart(game, player)).phase(3).build();
+            case NETWORK:
+                return mayPlayPhaseThreeAi(game, player);
+            default:
+                throw new IllegalStateException("AI can't do third phase");
         }
     }
 

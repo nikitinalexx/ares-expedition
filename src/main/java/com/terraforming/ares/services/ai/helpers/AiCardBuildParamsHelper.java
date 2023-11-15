@@ -4,7 +4,7 @@ import com.terraforming.ares.cards.blue.Decomposers;
 import com.terraforming.ares.dataset.CardsAiService;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
-import com.terraforming.ares.model.ai.AiTurnChoice;
+import com.terraforming.ares.model.ai.AiCardsChoice;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.ai.ICardValueService;
 import lombok.RequiredArgsConstructor;
@@ -386,7 +386,7 @@ public class AiCardBuildParamsHelper {
             if (cards.isEmpty()) {
                 break;
             }
-            Integer card = player.isFirstBot() && Constants.FIRST_THIRD_PHASE == AiTurnChoice.NETWORK || player.isSecondBot() && Constants.SECOND_THIRD_PHASE == AiTurnChoice.NETWORK
+            Integer card = player.isFirstBot() && Constants.CARDS_PICK_PLAYER_1 == AiCardsChoice.NETWORK || player.isSecondBot() && Constants.CARDS_PICK_PLAYER_2 == AiCardsChoice.NETWORK
                     ? cardsAiService.getWorstCard(game, playerUuid, cards, true)
                     : cardValueService.getWorstCard(game, player, cards, game.getTurns()).getCardId();
             if (card != null) {

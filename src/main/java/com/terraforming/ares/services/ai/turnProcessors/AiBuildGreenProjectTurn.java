@@ -69,7 +69,7 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
 
         Card selectedCard;
 
-        if (player.isFirstBot() && Constants.FIRST_BUILD_PROJECT == AiTurnChoice.RANDOM || player.isSecondBot() && Constants.SECOND_BUILD_PROJECT == AiTurnChoice.RANDOM) {
+        if (player.isFirstBot() && Constants.BUILD_PLAYER_1 == AiTurnChoice.RANDOM || player.isSecondBot() && Constants.BUILD_PLAYER_2 == AiTurnChoice.RANDOM) {
             selectedCard = availableCards.get(random.nextInt(availableCards.size()));
         } else {
             selectedCard = cardValueService.getBestCardToBuild(game, player, availableCards, game.getTurns(), true);
@@ -82,7 +82,7 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
             }
 
 
-            if (player.isFirstBot() && Constants.FIRST_PICK_PHASE == AiTurnChoice.NETWORK || player.isSecondBot() && Constants.SECOND_PICK_PHASE == AiTurnChoice.NETWORK) {
+            if (player.isFirstBot() && Constants.BUILD_PLAYER_1 == AiTurnChoice.NETWORK || player.isSecondBot() && Constants.BUILD_PLAYER_2 == AiTurnChoice.NETWORK) {
                 final BuildProjectPrediction bestProjectToBuild = aiBuildProjectService.getBestProjectToBuild(game, player, Set.of(CardColor.GREEN), ProjectionStrategy.FROM_PHASE);
 
                 if (bestProjectToBuild.isCanBuild()) {
