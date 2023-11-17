@@ -84,6 +84,8 @@ public class Constants {
     public static final float GREEN_CARDS_RATIO = 111f / 217;
     public static final float BLUE_CARDS_RATIO = 66f/ 217;
 
+    public static final boolean PLAYER_CHOOSES_CARDS_FOR_FIRST_PLAYER = false;
+
 
     public static final boolean WRITE_STATISTICS_TO_FILE = false;
     public static final boolean WRITE_STATISTICS_TO_CONSOLE = false;

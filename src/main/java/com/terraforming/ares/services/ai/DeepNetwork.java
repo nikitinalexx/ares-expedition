@@ -51,14 +51,14 @@ public class DeepNetwork {
                 //result2 0.5909090909090909
                 //result3 0.5950704225352113
 
-                return FileIO.createFromFile("iter_0_result0.dnet", FeedForwardNetwork.class);
+                return FileIO.createFromFile("result_N^2_reg_5.dnet", FeedForwardNetwork.class);
             } catch (IOException | ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
         });
         secondNetwork = ThreadLocal.withInitial(() -> {
             try {
-                return FileIO.createFromFile("iter_2_result0.dnet", FeedForwardNetwork.class);
+                return FileIO.createFromFile("result_N^2_reg_5.dnet", FeedForwardNetwork.class);
             } catch (IOException | ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }

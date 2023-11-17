@@ -3,6 +3,7 @@ package com.terraforming.ares.services.ai;
 import com.terraforming.ares.dto.ActionsDto;
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.model.turn.TurnType;
@@ -57,6 +58,7 @@ public class AiService {
         game.getPlayerUuidToPlayer().values()
                 .stream()
                 .filter(Player::isAi)
+                .filter(player -> !passTurnToRealPlayer(player, game))
                 .forEach(player -> processAiTurn(game, player));
     }
 
@@ -70,10 +72,40 @@ public class AiService {
                 .filter(Player::isAi)
                 .allMatch(player -> {
                             State currentState = stateFactory.getCurrentState(game);
-                            return player.getNextTurn() != null && turnTypeService.isTerminal(player.getNextTurn().getType(), game) && !player.getNextTurn().expectedAsNextTurn()
-                                    || player.getNextTurn() == null && currentState.getPossibleTurns(stateContextProvider.createStateContext(player.getUuid())).isEmpty();
+                            boolean alreadyMadeATurn = player.getNextTurn() != null && turnTypeService.isTerminal(player.getNextTurn().getType(), game) && !player.getNextTurn().expectedAsNextTurn();
+                            boolean noTurnsInCurrentPhase = player.getNextTurn() == null && currentState.getPossibleTurns(stateContextProvider.createStateContext(player.getUuid())).isEmpty();
+                            if (passTurnToRealPlayer(player, game)) {
+                                alreadyMadeATurn = true;//pass it to real player
+                            }
+                            return alreadyMadeATurn || noTurnsInCurrentPhase;
                         }
                 );
+    }
+
+    private boolean passTurnToRealPlayer(Player player, MarsGame game) {
+        if (!player.isFirstBot() || !Constants.PLAYER_CHOOSES_CARDS_FOR_FIRST_PLAYER) {
+            return false;
+        }
+        State currentState = stateFactory.getCurrentState(game);
+
+        if (player.getNextTurn() == null) {
+            List<TurnType> possibleTurns = currentState.getPossibleTurns(stateContextProvider.createStateContext(player.getUuid()));
+            if (possibleTurns.contains(TurnType.MULLIGAN) || possibleTurns.contains(TurnType.SELL_CARDS_LAST_ROUND)) {
+                return true;
+            }
+        } else {
+            if (player.getNextTurn().getType() != TurnType.DISCARD_CARDS) {
+                return false;
+            }
+
+            if (game.getCurrentPhase() != Constants.PICK_CORPORATIONS_PHASE && game.getCurrentPhase() != Constants.DRAFT_CARDS_PHASE) {
+                return false;
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     private void processAiTurn(MarsGame game, Player player) {
