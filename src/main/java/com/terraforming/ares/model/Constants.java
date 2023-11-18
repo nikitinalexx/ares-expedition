@@ -116,7 +116,7 @@ public class Constants {
 
     public static final boolean COLLECT_FIFTH_PHASE_STATISTICS = false;//makes sense only in debug mode!!!
     public static final boolean COLLECT_CARDS_DATASET = false;
-    public static final boolean COLLECT_DATASET = true;
+    public static final boolean COLLECT_DATASET = false;
     public static final boolean LOG_NET_COMPARISON = false;
 
     /** AI TURNS **/

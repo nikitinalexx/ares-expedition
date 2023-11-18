@@ -624,6 +624,11 @@ public class GameController {
                 "; Ratio: " + ((double) gameStatistics.getFirstWins() / (gameStatistics.getFirstWins() + gameStatistics.getSecondWins())));
     }
 
+    @GetMapping("/simulations/stop")
+    public void getGameByPlayerUuid() {
+        BREAK_SIMULATIONS_EARLY = true;
+    }
+
     @GetMapping("/game/player/{playerUuid}")
     public GameDto getGameByPlayerUuid(@PathVariable String playerUuid) {
         MarsGame game = gameService.getGame(playerUuid);

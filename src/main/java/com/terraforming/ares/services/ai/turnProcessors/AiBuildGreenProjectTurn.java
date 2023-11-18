@@ -88,7 +88,6 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
                 if (bestProjectToBuild.isCanBuild()) {
                     selectedCard = bestProjectToBuild.getCard();
                 } else {
-                    //TODO turned to be bad
                     selectedCard = null;
                 }
 

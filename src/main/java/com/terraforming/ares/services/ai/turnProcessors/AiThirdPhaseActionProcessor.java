@@ -69,26 +69,22 @@ public class AiThirdPhaseActionProcessor {
                 aiTurnService.sellAllCards(player, game, player.getHand().getCards());
                 return true;
             } else {
-                if (!game.getPlanetAtTheStartOfThePhase().isOxygenMax()) {
-                    String validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.FOREST);
+                StandardProjectType type = null;
+                float bestState = -1;
+
+                for (StandardProjectType standardProjectType : List.of(StandardProjectType.FOREST, StandardProjectType.OCEAN, StandardProjectType.TEMPERATURE)) {
+                    String validationResult = standardProjectService.validateStandardProject(game, player, standardProjectType);
                     if (validationResult == null) {
-                        aiTurnService.standardProjectTurn(game, player, StandardProjectType.FOREST);
-                        return true;
+                        float projectedChance = testAiService.projectPlayStandardAction(game, player.getUuid(), standardProjectType);
+                        if (projectedChance > bestState) {
+                            type = standardProjectType;
+                            bestState = projectedChance;
+                        }
                     }
                 }
-                String validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.OCEAN);
-                if (validationResult == null) {
-                    aiTurnService.standardProjectTurn(game, player, StandardProjectType.OCEAN);
-                    return true;
-                }
-                validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.TEMPERATURE);
-                if (validationResult == null) {
-                    aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
-                    return true;
-                }
-                validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.FOREST);
-                if (validationResult == null) {
-                    aiTurnService.standardProjectTurn(game, player, StandardProjectType.FOREST);
+
+                if (type != null) {
+                    aiTurnService.standardProjectTurn(game, player, type);
                     return true;
                 }
             }

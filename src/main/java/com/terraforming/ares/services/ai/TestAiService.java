@@ -69,7 +69,7 @@ public class TestAiService {
         return bestProject;
     }
 
-    public float projectPlayStandardAction(MarsGame game, String playerUuid, int type) {
+    public float projectPlayStandardAction(MarsGame game, String playerUuid, StandardProjectType type) {
 
         game = new MarsGame(game);
 
@@ -77,17 +77,17 @@ public class TestAiService {
 
         int mc = player.getMc();
 
-        if (type == 1 && mc > standardProjectService.getProjectPrice(player, StandardProjectType.OCEAN)) {
+        if (type == StandardProjectType.OCEAN && mc >= standardProjectService.getProjectPrice(player, type)) {
             aiTurnService.standardProjectTurn(game, player, StandardProjectType.OCEAN);
             return deepNetwork.testState(game, player);
         }
 
-        if (type == 2 && mc > standardProjectService.getProjectPrice(player, StandardProjectType.FOREST)) {
+        if (type == StandardProjectType.FOREST && mc >= standardProjectService.getProjectPrice(player, type)) {
             aiTurnService.standardProjectTurn(game, player, StandardProjectType.FOREST);
             return deepNetwork.testState(game, player);
         }
 
-        if (type == 3 && mc > standardProjectService.getProjectPrice(player, StandardProjectType.TEMPERATURE)) {
+        if (type == StandardProjectType.TEMPERATURE && mc >= standardProjectService.getProjectPrice(player, type)) {
             aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
             return deepNetwork.testState(game, player);
         }
