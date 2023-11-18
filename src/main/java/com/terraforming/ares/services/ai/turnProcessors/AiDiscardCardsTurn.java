@@ -10,6 +10,7 @@ import com.terraforming.ares.model.turn.DiscardCardsTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.dataset.CardsAiService;
+import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.ICardValueService;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
@@ -31,6 +32,7 @@ public class AiDiscardCardsTurn implements AiTurnProcessor {
     private final ICardValueService cardValueService;
     private final CardService cardService;
     private final CardsAiService cardsAiService;
+    private final AiPickCardProjectionService aiPickCardProjectionService;
 
     public static final Map<AiDiscardCardsKey, List<AiDiscardCardsValue>> AI_DISCARD_CARDS_STATS = new ConcurrentHashMap<>();
 
@@ -83,9 +85,13 @@ public class AiDiscardCardsTurn implements AiTurnProcessor {
             Integer bestCard = null;
 
             if (player.isFirstBot() && Constants.CARDS_PICK_PLAYER_1 == AiCardsChoice.FILE_VALUE || player.isSecondBot() && Constants.CARDS_PICK_PLAYER_2 == AiCardsChoice.FILE_VALUE) {
-                bestCard = cardValueService.getBestCard(game, player, cardsToDiscard, game.getTurns());
-                if (bestCard != null && Constants.LOG_NET_COMPARISON) {
-                    System.out.println("Keeping statistics " + cardService.getCard(bestCard).getClass().getSimpleName());
+                if (Constants.FIRST_PLAYER_NETWORK_PROJECTION_DISCARD_CARDS && player.isFirstBot()) {
+                    bestCard = aiPickCardProjectionService.getBestCard(game, player, cardsToDiscard);
+                } else {
+                    bestCard = cardValueService.getBestCard(game, player, cardsToDiscard, game.getTurns());
+                    if (bestCard != null && Constants.LOG_NET_COMPARISON) {
+                        System.out.println("Keeping statistics " + cardService.getCard(bestCard).getClass().getSimpleName());
+                    }
                 }
             }
 

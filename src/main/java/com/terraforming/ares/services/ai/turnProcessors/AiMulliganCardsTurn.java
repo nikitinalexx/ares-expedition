@@ -2,21 +2,20 @@ package com.terraforming.ares.services.ai.turnProcessors;
 
 import com.terraforming.ares.dataset.CardsAiService;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Constants;
-import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.ai.AiCardsChoice;
-import com.terraforming.ares.model.ai.AiTurnChoice;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.processors.turn.PickCorporationProcessor;
+import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.MarsContextProvider;
 import com.terraforming.ares.services.ai.AiBalanceService;
+import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.ICardValueService;
 import com.terraforming.ares.services.ai.dto.CardValueResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * Created by oleksii.nikitin
@@ -30,6 +29,10 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
     private final AiBalanceService aiBalanceService;
     private final CardsAiService cardsAiService;
     private final PickCorporationProcessor pickCorporationProcessor;
+    private final AiPickCardProjectionService aiPickCardProjectionService;
+    private final CardService cardService;
+    private final MarsContextProvider marsContextProvider;
+
     private final Random random = new Random();
 
 
@@ -78,27 +81,78 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
                 }
             }
             if (player.isFirstBot() && Constants.CARDS_PICK_PLAYER_1 == AiCardsChoice.FILE_VALUE || player.isSecondBot() && Constants.CARDS_PICK_PLAYER_2 == AiCardsChoice.FILE_VALUE) {
-                while (cardsToDiscard.size() != max) {
-                    if (cards.isEmpty()) {
-                        break;
-                    }
-                    CardValueResponse cardValueResponse = cardValueService.getWorstCard(game, player, cards, game.getTurns());
+                if (Constants.FIRST_PLAYER_NETWORK_PROJECTION_MULLIGAN && player.isFirstBot()) {
+                    MarsGame projectCorporationBuild = projectCorporationBuild(game);
 
-                    if (aiBalanceService.isCardWorthToDiscard(player, cardValueResponse.getWorth())) {
-                        cardsToDiscard.add(cardValueResponse.getCardId());
-                        cards.remove(cardValueResponse.getCardId());
-                    } else {
-                        break;
+                    Player playerByUuid = projectCorporationBuild.getPlayerByUuid(player.getUuid());
+
+                    Map<Integer, Float> cardToChance = new HashMap<>();
+
+                    for (int i = 0; i < cards.size(); i++) {
+                        cardToChance.put(cards.get(i), aiPickCardProjectionService.cardExtraChanceIfBuilt(projectCorporationBuild, playerByUuid, cards.get(i)));
                     }
 
+                    List<Integer> cardsByChance = new ArrayList<>(cards);
+                    cardsByChance.sort(Comparator.comparingDouble(cardToChance::get));
 
+                    for (int i = 0; i < cardsByChance.size(); i++) {
+                        float chance = cardToChance.get(cardsByChance.get(i));
+
+                        if (chance < 0.01f) {
+                            cardsToDiscard.add(cardsByChance.get(i));
+                        } else {
+                            break;
+                        }
+                    }
+                } else {
+                    while (cardsToDiscard.size() != max) {
+                        if (cards.isEmpty()) {
+                            break;
+                        }
+                        CardValueResponse cardValueResponse = cardValueService.getWorstCard(game, player, cards, game.getTurns());
+
+                        if (aiBalanceService.isCardWorthToDiscard(player, cardValueResponse.getWorth())) {
+                            cardsToDiscard.add(cardValueResponse.getCardId());
+                            cards.remove(cardValueResponse.getCardId());
+                        } else {
+                            break;
+                        }
+
+
+                    }
                 }
+
             }
 
         }
 
-
         return cardsToDiscard;
+    }
+
+    private MarsGame projectCorporationBuild(MarsGame game) {
+        game = new MarsGame(game);
+
+        for (Player player : game.getPlayerUuidToPlayer().values()) {
+            projectPlayerBuildCorporation(game, player);
+        }
+
+        return game;
+    }
+
+    private void projectPlayerBuildCorporation(MarsGame game, Player player) {
+        LinkedList<Integer> corporations = player.getCorporations().getCards();
+        int selectedCorporationId = corporations.stream().min(Comparator.comparingInt(Constants.CORPORATION_PRIORITY::indexOf)).orElseThrow();
+
+        player.setSelectedCorporationCard(selectedCorporationId);
+        player.setMulligan(false);
+        player.getPlayed().addCard(selectedCorporationId);
+
+        Card card = cardService.getCard(selectedCorporationId);
+        final MarsContext marsContext = marsContextProvider.provide(game, player);
+        card.buildProject(marsContext);
+        if (card.onBuiltEffectApplicableToItself()) {
+            card.postProjectBuiltEffect(marsContext, card, Map.of());
+        }
     }
 
 }

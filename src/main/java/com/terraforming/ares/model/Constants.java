@@ -3,6 +3,7 @@ package com.terraforming.ares.model;
 import com.terraforming.ares.model.ai.AiCardsChoice;
 import com.terraforming.ares.model.ai.AiTurnChoice;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -13,6 +14,28 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Constants {
     public static Map<Integer, Integer> FIRST_PLAYER_PHASES = new ConcurrentHashMap<>();
     public static Map<Integer, Integer> SECOND_PLAYER_PHASES = new ConcurrentHashMap<>();
+
+    //TODO update
+    public static final List<Integer> CORPORATION_PRIORITY = List.of(
+            10006, /* Tharsis */
+            10015, /* MayNi */
+            10104, 10011, /* Saturn */
+            10105, 10012, /* Zetacell */
+            10102, 10009, /* Phobolog */
+            10017, /* Interplanetary */
+            10003, /* LaunchStar */
+            10002, /* DevTechs */
+            10007, /* Credicor */
+            10005, /* Teractor */
+            10107, 10014, /* Inventrix */
+            10004, /* Thorgate */
+            10103, 10010, /* Mining */
+            10106, 10013, /* Ecoline */
+            10001, /* Celestior */
+            10101, 10008, /* Arclight */
+            10108, 10016, /* UNMI */
+            10100, 10000 /* Helion */
+    );
 
 
     public static final int MAX_OCEANS = 9;
@@ -95,6 +118,10 @@ public class Constants {
     public static final boolean COLLECT_CARDS_DATASET = false;
     public static final boolean COLLECT_DATASET = false;
     public static final boolean LOG_NET_COMPARISON = false;
+
+    public static final boolean FIRST_PLAYER_NETWORK_PROJECTION_MULLIGAN = true;
+    public static final boolean FIRST_PLAYER_NETWORK_PROJECTION_SELL_CARDS = true;
+    public static final boolean FIRST_PLAYER_NETWORK_PROJECTION_DISCARD_CARDS = true;
 
     /** AI TURNS **/
     public static final AiCardsChoice CARDS_PICK_PLAYER_1 = AiCardsChoice.FILE_VALUE;

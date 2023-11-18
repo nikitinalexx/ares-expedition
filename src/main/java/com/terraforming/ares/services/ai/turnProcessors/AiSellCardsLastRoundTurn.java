@@ -4,10 +4,10 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ai.AiCardsChoice;
-import com.terraforming.ares.model.ai.AiTurnChoice;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.dataset.CardsAiService;
+import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.ICardValueService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -28,6 +28,7 @@ public class AiSellCardsLastRoundTurn implements AiTurnProcessor {
     private final ICardValueService cardValueService;
     private final CardsAiService cardsAiService;
     private final CardService cardService;
+    private final AiPickCardProjectionService aiPickCardProjectionService;
 
     @Override
     public TurnType getType() {
@@ -47,7 +48,11 @@ public class AiSellCardsLastRoundTurn implements AiTurnProcessor {
             if (player.isFirstBot() && Constants.CARDS_PICK_PLAYER_1 == AiCardsChoice.RANDOM || player.isSecondBot() && Constants.CARDS_PICK_PLAYER_2 == AiCardsChoice.RANDOM) {
                 cardToSell = allCards.get(random.nextInt(allCards.size()));
             } else if (player.isFirstBot() && Constants.CARDS_PICK_PLAYER_1 == AiCardsChoice.FILE_VALUE || player.isSecondBot() && Constants.CARDS_PICK_PLAYER_2 == AiCardsChoice.FILE_VALUE){
-                cardToSell = cardValueService.getWorstCard(game, player, allCards, game.getTurns()).getCardId();
+                if (Constants.FIRST_PLAYER_NETWORK_PROJECTION_SELL_CARDS && player.isFirstBot()) {
+                    cardToSell = aiPickCardProjectionService.getWorstCard(game, player, allCards, game.getTurns()).getCardId();
+                } else {
+                    cardToSell = cardValueService.getWorstCard(game, player, allCards, game.getTurns()).getCardId();
+                }
             } else if (player.isFirstBot() && Constants.CARDS_PICK_PLAYER_1 == AiCardsChoice.NETWORK || player.isSecondBot() && Constants.CARDS_PICK_PLAYER_2 == AiCardsChoice.NETWORK){
                 cardToSell = cardsAiService.getWorstCard(game, player.getUuid(), allCards, false);
                 if (Constants.LOG_NET_COMPARISON) {

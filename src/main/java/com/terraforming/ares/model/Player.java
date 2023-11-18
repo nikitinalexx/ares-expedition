@@ -85,6 +85,7 @@ public class Player {
         this.activatedBlueCards = new Deck(copy.activatedBlueCards);
         this.blueActionExtraActivationsLeft = copy.blueActionExtraActivationsLeft;
         this.selectedCorporationCard = copy.selectedCorporationCard;
+        this.corporations = copy.corporations;
 
         this.cardResourcesCount = new HashMap<>(copy.getCardResourcesCount());
         this.cardToTag = new HashMap<>(copy.getCardToTag());

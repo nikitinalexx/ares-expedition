@@ -69,42 +69,6 @@ public class TestAiService {
         return bestProject;
     }
 
-    public Integer getBestCard(MarsGame game, String playerUuid, List<Integer> cards) {
-
-        game = new MarsGame(game);
-
-        Player player = game.getPlayerByUuid(playerUuid);
-
-        float bestChance = deepNetwork.testState(game, player);
-
-
-        Card bestCard = null;
-
-        for (Integer cardId : cards) {
-            Card card = cardService.getCard(cardId);
-            if (card.getColor() == CardColor.GREEN) {
-                player.setBuilds(List.of(new BuildDto(BuildType.GREEN, 3)));
-            } else {
-                player.setBuilds(List.of(new BuildDto(BuildType.BLUE_RED)));
-            }
-
-            MarsGame stateAfterPlayingTheCard = aiBuildProjectService.projectBuildCardNoRequirements(game, player, card);
-
-            if (stateAfterPlayingTheCard.getPlayerByUuid(playerUuid).getMc() < 0) {
-                stateAfterPlayingTheCard.getPlayerByUuid(playerUuid).setMc(0);
-            }
-
-            float projectedChance = deepNetwork.testState(stateAfterPlayingTheCard, stateAfterPlayingTheCard.getPlayerByUuid(player.getUuid()));
-
-            if (projectedChance > bestChance) {
-                bestChance = projectedChance;
-                bestCard = card;
-            }
-        }
-
-        return (bestCard != null ? bestCard.getId() : null);
-    }
-
     public float projectPlayStandardAction(MarsGame game, String playerUuid, int type) {
 
         game = new MarsGame(game);

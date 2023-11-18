@@ -58,6 +58,9 @@ public class Deck {
     }
 
     public void addCard(Integer card) {
+        if (card == -1) {
+            System.out.println("WTF");
+        }
         cards.add(card);
     }
 
