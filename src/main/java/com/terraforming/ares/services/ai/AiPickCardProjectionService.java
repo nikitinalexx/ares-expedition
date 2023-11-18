@@ -4,6 +4,7 @@ import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.build.PutResourceOnBuild;
+import com.terraforming.ares.model.parameters.ParameterColor;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.ai.dto.CardValueResponse;
 import com.terraforming.ares.services.ai.turnProcessors.AiBuildProjectService;
@@ -77,6 +78,14 @@ public class AiPickCardProjectionService {
                 return 0;
             }
         }
+
+        if (!CollectionUtils.isEmpty(card.getTemperatureRequirement()) && card.getTemperatureRequirement().get(0) == ParameterColor.W && !game.getPlanetAtTheStartOfThePhase().isValidTemperatute(List.of(ParameterColor.Y, ParameterColor.W))) {
+            return -1;
+        }
+
+        //farming  card
+        //mangrove
+        //ice cap melting
 
         if (card.getColor() == CardColor.GREEN) {
             player.setBuilds(List.of(new BuildDto(BuildType.GREEN)));

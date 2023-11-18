@@ -17,7 +17,10 @@ import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.terraforming.ares.model.Constants.*;
@@ -69,6 +72,11 @@ public class AiBuildProjectService extends BaseProcessorService {
     public BuildProjectPrediction getBestProjectToBuild(MarsGame game, Player player, Set<CardColor> cardColors, ProjectionStrategy projectionStrategy) {
         List<Card> availableCards = getHandAvailableCards(game, player, cardColors);
 
+
+        BuildProjectPrediction bestProjectToBuildSecondPhaseBeforeBuildingGreen =
+                player.getChosenPhase() == 2 && cardColors.size() == 1 && cardColors.contains(CardColor.GREEN) ?
+                        getSecondPhasePrediction(game, player, projectionStrategy) : BuildProjectPrediction.builder().build();
+
         if (availableCards.isEmpty()) {
             return BuildProjectPrediction.builder().canBuild(false).build();
         }
@@ -94,6 +102,22 @@ public class AiBuildProjectService extends BaseProcessorService {
                 }
             }
             if (bestCard != null) {
+                GameWithState stateAfterPlayingTheCard = projectBuildCard(game, player, bestCard, projectionStrategy);
+
+                BuildProjectPrediction bestProjectToBuildSecondPhaseAfterBuildingGreen =
+                        player.getChosenPhase() == 2 && cardColors.size() == 1 && cardColors.contains(CardColor.GREEN) ?
+                                getSecondPhasePrediction(stateAfterPlayingTheCard.getGame(), stateAfterPlayingTheCard.getGame().getPlayerByUuid(player.getUuid()), projectionStrategy)
+                                : BuildProjectPrediction.builder().build();
+
+                if (player.getChosenPhase() == 2
+                        && bestProjectToBuildSecondPhaseBeforeBuildingGreen.isCanBuild()
+                        && (!bestProjectToBuildSecondPhaseAfterBuildingGreen.isCanBuild())
+                        && bestProjectToBuildSecondPhaseBeforeBuildingGreen.getExpectedValue() > bestChance) {
+                    if (LOG_NET_COMPARISON) {
+                        System.out.println("Skipping " + bestCard + " to be able to build " + bestProjectToBuildSecondPhaseBeforeBuildingGreen.getCard());
+                    }
+                    bestCard = null;
+                }
                 selectedCard = bestCard;
             }
         }
@@ -103,6 +127,15 @@ public class AiBuildProjectService extends BaseProcessorService {
         } else {
             return BuildProjectPrediction.builder().canBuild(true).expectedValue(bestChance).card(selectedCard).build();
         }
+    }
+
+    private BuildProjectPrediction getSecondPhasePrediction(MarsGame game, Player player, ProjectionStrategy projectionStrategy) {
+        game = new MarsGame(game);
+        player = game.getPlayerByUuid(player.getUuid());
+
+        player.setBuilds(new ArrayList<>(List.of(new BuildDto(BuildType.BLUE_RED), new BuildDto(BuildType.BLUE_RED))));
+
+        return getBestProjectToBuildSecondPhase(game, player, Set.of(CardColor.BLUE, CardColor.RED), projectionStrategy);
     }
 
     public BuildProjectPrediction getBestProjectToBuildSecondPhase(MarsGame game, Player player, Set<CardColor> cardColors, ProjectionStrategy projectionStrategy) {

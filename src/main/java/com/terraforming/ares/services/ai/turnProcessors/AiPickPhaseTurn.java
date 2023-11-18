@@ -485,8 +485,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             return random.nextInt(5) == 0;
         }
 
-        if (draftCardsService.countExtraCardsToTake(player) >= 2
-                || draftCardsService.countExtraCardsToDraft(player) >= 2) {
+        if (draftCardsService.countExtraCardsToTake(player) >= 2 || draftCardsService.countExtraCardsToDraft(player) >= 2) {
             return true;
         }
 
