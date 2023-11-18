@@ -556,14 +556,22 @@ public class GameController {
                 .build();
     }
 
-    @GetMapping("/crisis/records/points")
-    public List<CrisisRecordEntity> findTopTwentyRecordsByPoints(@RequestParam int playerCount) {
-        return crisisRecordEntityRepository.findTopTwentyRecordsByPoints(playerCount);
-    }
+//    @GetMapping("/crisis/records/points")
+//    public List<CrisisRecordEntity> findTopTwentyRecordsByPoints(@RequestParam int playerCount) {
+//        return crisisRecordEntityRepository.findTopTwentyRecordsByPoints(playerCount);
+//    }
+//
+//    @GetMapping("/crisis/records/turns")
+//    public List<CrisisRecordEntity> findTopTwentyRecordsByTurns(@RequestParam int playerCount) {
+//        return crisisRecordEntityRepository.findTopTwentyRecordsByTurns(playerCount);
+//    }
 
-    @GetMapping("/crisis/records/turns")
-    public List<CrisisRecordEntity> findTopTwentyRecordsByTurns(@RequestParam int playerCount) {
-        return crisisRecordEntityRepository.findTopTwentyRecordsByTurns(playerCount);
+    @GetMapping("/crisis/records")
+    public CrisisRecordsDto findTopTwentyRecords(@RequestParam int playerCount, @RequestParam int difficultyLevel) {
+        List<CrisisRecordEntity> crisisRecordEntityByTurns = crisisRecordEntityRepository.findTopTwentyRecordsByTurns(playerCount,difficultyLevel);
+        List<CrisisRecordEntity> crisisRecordEntityByPoints = crisisRecordEntityRepository.findTopTwentyRecordsByPoints(playerCount,difficultyLevel);
+
+        return new CrisisRecordsDto(crisisRecordEntityByPoints, crisisRecordEntityByTurns);
     }
 
     @GetMapping("/solo/records")

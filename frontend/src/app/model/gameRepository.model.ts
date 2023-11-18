@@ -13,6 +13,7 @@ import {DiscardCardsRequest} from "../data/DiscardCardsRequest";
 import {CrisisRecordEntity} from "../data/CrisisRecordEntity";
 import {SoloRecordEntity} from "../data/SoloRecordEntity";
 import {RecentGameDto} from "../data/RecentGameDto";
+import {CrisisRecordsDto} from "../data/CrisisRecordsDto";
 
 @Injectable()
 export class GameRepository {
@@ -120,12 +121,16 @@ export class GameRepository {
     return this.dataSource.exchangeHeat(playerUuid, value);
   }
 
-  getCrisisRecordsByPoints(playerCount: number): Observable<CrisisRecordEntity[]> {
-    return this.dataSource.getCrisisRecordsByPoints(playerCount);
-  }
+  // getCrisisRecordsByPoints(playerCount: number): Observable<CrisisRecordEntity[]> {
+  //   return this.dataSource.getCrisisRecordsByPoints(playerCount);
+  // }
+  //
+  // getCrisisRecordsByTurns(playerCount: number): Observable<CrisisRecordEntity[]> {
+  //   return this.dataSource.getCrisisRecordsByTurns(playerCount);
+  // }
 
-  getCrisisRecordsByTurns(playerCount: number): Observable<CrisisRecordEntity[]> {
-    return this.dataSource.getCrisisRecordsByTurns(playerCount);
+  getCrisisRecords(playerCount: number, difficultyLevel: number): Observable<CrisisRecordsDto> {
+    return this.dataSource.getCrisisRecords(playerCount, difficultyLevel);
   }
 
   getSoloRecordsByTurns(): Observable<SoloRecordEntity[]> {
