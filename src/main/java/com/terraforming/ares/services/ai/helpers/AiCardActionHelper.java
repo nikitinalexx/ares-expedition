@@ -4,16 +4,15 @@ import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.cards.blue.*;
 import com.terraforming.ares.cards.buffedCorporations.BuffedArclightCorporation;
 import com.terraforming.ares.cards.corporations.ArclightCorporation;
+import com.terraforming.ares.dataset.CardsAiService;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.action.ActionInputData;
 import com.terraforming.ares.model.action.ActionInputDataType;
-import com.terraforming.ares.model.ai.AiCardsChoice;
-import com.terraforming.ares.model.ai.AiTurnChoice;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.TerraformingService;
 import com.terraforming.ares.services.ai.AiBalanceService;
-import com.terraforming.ares.dataset.CardsAiService;
+import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.ICardValueService;
 import com.terraforming.ares.services.ai.dto.ActionInputParamsResponse;
 import com.terraforming.ares.services.ai.dto.CardValueResponse;
@@ -38,8 +37,9 @@ public class AiCardActionHelper {
     private final ICardValueService cardValueService;
     private final AiBalanceService aiBalanceService;
     private final CardsAiService cardsAiService;
+    private final AiPickCardProjectionService aiPickCardProjectionService;
 
-    public AiCardActionHelper(List<ActionValidator<?>> validators, CardService cardService, TerraformingService terraformingService, ICardValueService cardValueService, AiBalanceService aiBalanceService, CardsAiService cardsAiService) {
+    public AiCardActionHelper(List<ActionValidator<?>> validators, CardService cardService, TerraformingService terraformingService, ICardValueService cardValueService, AiBalanceService aiBalanceService, CardsAiService cardsAiService, AiPickCardProjectionService aiPickCardProjectionService) {
         blueActionValidators = validators.stream().collect(
                 Collectors.toMap(
                         ActionValidator::getType,
@@ -51,6 +51,7 @@ public class AiCardActionHelper {
         this.cardValueService = cardValueService;
         this.aiBalanceService = aiBalanceService;
         this.cardsAiService = cardsAiService;
+        this.aiPickCardProjectionService = aiPickCardProjectionService;
     }
 
     private Set<Class<?>> ACTIONS_WITHOUT_INPUT_PARAMS = Set.of(
@@ -285,31 +286,49 @@ public class AiCardActionHelper {
         List<Integer> cards = new ArrayList<>(player.getHand().getCards());
 
         List<Integer> cardsToDiscard = new ArrayList<>();
+
+        outer:
         while (cardsToDiscard.size() != max) {
             if (cards.isEmpty()) {
                 break;
             }
 
-            if (player.isFirstBot() && Constants.CARDS_PICK_PLAYER_1 == AiCardsChoice.FILE_VALUE || player.isSecondBot() && Constants.CARDS_PICK_PLAYER_2 == AiCardsChoice.FILE_VALUE) {
-                CardValueResponse cardValueResponse = cardValueService.getWorstCard(game, player, cards, game.getTurns());
+            switch (player.isFirstBot() ? Constants.CARDS_PICK_PLAYER_1 : Constants.CARDS_PICK_PLAYER_2) {
+                case FILE_VALUE: {
+                    CardValueResponse cardValueResponse = cardValueService.getWorstCard(game, player, cards, game.getTurns());
 
-                if (aiBalanceService.isCardWorthToDiscard(player, cardValueResponse.getWorth())) {
-                    cardsToDiscard.add(cardValueResponse.getCardId());
-                    cards.remove(cardValueResponse.getCardId());
-                } else {
+                    if (aiBalanceService.isCardWorthToDiscard(player, cardValueResponse.getWorth())) {
+                        cardsToDiscard.add(cardValueResponse.getCardId());
+                        cards.remove(cardValueResponse.getCardId());
+                    } else {
+                        break outer;
+                    }
                     break;
                 }
-            } else if (player.isFirstBot() && Constants.CARDS_PICK_PLAYER_1 == AiCardsChoice.RANDOM || player.isSecondBot() && Constants.CARDS_PICK_PLAYER_2 == AiCardsChoice.RANDOM) {
-                Integer card = cards.get(random.nextInt(cards.size()));
+                case RANDOM:
+                    Integer card = cards.get(random.nextInt(cards.size()));
 
-                cardsToDiscard.add(card);
-                cards.remove(card);
-            } else if (player.isFirstBot() && Constants.CARDS_PICK_PLAYER_1 == AiCardsChoice.NETWORK || player.isSecondBot() && Constants.CARDS_PICK_PLAYER_2 == AiCardsChoice.NETWORK) {
-                Integer cardToRemove = cardsAiService.getWorstCard(game, player.getUuid(), cards, true);//TODO if the worst card is still good, maybe don't discard it?
-                if (cardToRemove != null) {
-                    cardsToDiscard.add(cardToRemove);
-                    cards.remove(cardToRemove);
-                } else {
+                    cardsToDiscard.add(card);
+                    cards.remove(card);
+                    break;
+                case NETWORK:
+                    Integer cardToRemove = cardsAiService.getWorstCard(game, player.getUuid(), cards, true);//TODO if the worst card is still good, maybe don't discard it?
+                    if (cardToRemove != null) {
+                        cardsToDiscard.add(cardToRemove);
+                        cards.remove(cardToRemove);
+                    } else {
+                        break outer;
+                    }
+                    break;
+                case NETWORK_PROJECTION: {
+                    CardValueResponse cardValueResponse = aiPickCardProjectionService.getWorstCard(game, player, cards);
+
+                    if (cardValueResponse.getWorth() <= 0.02f) {
+                        cardsToDiscard.add(cardValueResponse.getCardId());
+                        cards.remove(cardValueResponse.getCardId());
+                    } else {
+                        break outer;
+                    }
                     break;
                 }
             }

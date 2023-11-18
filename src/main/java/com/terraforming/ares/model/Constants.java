@@ -116,16 +116,12 @@ public class Constants {
 
     public static final boolean COLLECT_FIFTH_PHASE_STATISTICS = false;//makes sense only in debug mode!!!
     public static final boolean COLLECT_CARDS_DATASET = false;
-    public static final boolean COLLECT_DATASET = false;
+    public static final boolean COLLECT_DATASET = true;
     public static final boolean LOG_NET_COMPARISON = false;
 
-    public static final boolean FIRST_PLAYER_NETWORK_PROJECTION_MULLIGAN = true;
-    public static final boolean FIRST_PLAYER_NETWORK_PROJECTION_SELL_CARDS = true;
-    public static final boolean FIRST_PLAYER_NETWORK_PROJECTION_DISCARD_CARDS = true;
-
     /** AI TURNS **/
-    public static final AiCardsChoice CARDS_PICK_PLAYER_1 = AiCardsChoice.FILE_VALUE;
-    public static final AiCardsChoice CARDS_PICK_PLAYER_2 = AiCardsChoice.FILE_VALUE;
+    public static final AiCardsChoice CARDS_PICK_PLAYER_1 = AiCardsChoice.NETWORK_PROJECTION;
+    public static final AiCardsChoice CARDS_PICK_PLAYER_2 = AiCardsChoice.NETWORK_PROJECTION;
 
     public static final AiTurnChoice PICK_PHASE_PLAYER_1 = AiTurnChoice.NETWORK;
     public static final AiTurnChoice PICK_PHASE_PLAYER_2 = AiTurnChoice.NETWORK;

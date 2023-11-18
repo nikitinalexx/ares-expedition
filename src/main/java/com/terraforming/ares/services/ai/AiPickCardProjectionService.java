@@ -6,14 +6,13 @@ import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.build.PutResourceOnBuild;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.ai.dto.CardValueResponse;
-import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
 import com.terraforming.ares.services.ai.turnProcessors.AiBuildProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -21,9 +20,8 @@ public class AiPickCardProjectionService {
     private final DeepNetwork deepNetwork;
     private final CardService cardService;
     private final AiBuildProjectService aiBuildProjectService;
-    private final AiCardBuildParamsHelper aiCardBuildParamsHelper;
 
-    public CardValueResponse getWorstCard(MarsGame game, Player player, List<Integer> cards, int turn) {
+    public CardValueResponse getWorstCard(MarsGame game, Player player, List<Integer> cards) {
         double worstCardValue = Float.MAX_VALUE;
         int worstCardIndex = 0;
 
@@ -73,8 +71,9 @@ public class AiPickCardProjectionService {
             }
         }
         if (card.getCardMetadata().getCardAction() == CardAction.SYNTHETIC_CATASTROPHE) {
-            Map<Integer, List<Integer>> inputParamsForBuild = aiCardBuildParamsHelper.getInputParamsForBuild(game, player, card);
-            if (inputParamsForBuild.get(InputFlag.SYNTHETIC_CATASTROPHE_CARD.getId()).get(0) == -1) {
+            List<Card> playedRedCards = player.getPlayed().getCards().stream().map(cardService::getCard).filter(c -> c.getColor() == CardColor.RED)
+                    .collect(Collectors.toList());
+            if (playedRedCards.isEmpty()) {
                 return 0;
             }
         }
@@ -91,7 +90,6 @@ public class AiPickCardProjectionService {
 
         return projectedChance - initialChance;
     }
-
 
 
 }
