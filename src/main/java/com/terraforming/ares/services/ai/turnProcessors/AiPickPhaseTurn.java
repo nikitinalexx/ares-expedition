@@ -52,7 +52,6 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
     public boolean processTurn(MarsGame game, Player player) {
         Integer previousChosenPhase = player.getPreviousChosenPhase();
 
-
         List<Integer> possiblePhases = new ArrayList<>();
 
         if (player.isFirstBot() && Constants.PICK_PHASE_PLAYER_1 == AiTurnChoice.NETWORK || player.isSecondBot() && Constants.PICK_PHASE_PLAYER_2 == AiTurnChoice.NETWORK) {
@@ -316,10 +315,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             System.out.println("Deep network state phase 5 before " + stateBeforePhase + ". After " + stateAfterPhase);
         }
 
-        //*1 Ratio: 0.4560819462227913
-        //*1.05 Ratio: 0.4270063694267516
-        //TODO remove 1.05 when phase 5 is picked smart
-        if (stateAfterPhase > stateBeforePhase * 1.05) {
+        if (stateAfterPhase > stateBeforePhase) {
             return PhaseChoiceProjection.builder().pickPhase(true).phase(5).chance(stateAfterPhase).build();
         } else {
             return PhaseChoiceProjection.SKIP_PHASE;

@@ -153,22 +153,29 @@ public class TestAiService {
             return 0;
         }
 
-        addDraftedCards(player, marsGameRow.getPlayer());
-        addDraftedCards(anotherPlayer, marsGameRow.getOpponent());
+        addDraftedCards(player, marsGameRow.getPlayer(), true);
+        addDraftedCards(anotherPlayer, marsGameRow.getOpponent(), false);
 
 
         return deepNetwork.testState(marsGameRow, player.isFirstBot() ? 1 : 2);
     }
 
-    private void addDraftedCards(Player player, MarsPlayerRow marsPlayerRow) {
-        int cardsToTake = draftCardsService.countExtraCardsToTake(player);
-        int cardsToDraft = draftCardsService.countExtraCardsToDraft(player);
-
-        float total = cardsToTake + cardsToDraft * 0.33f;
+    private void addDraftedCards(Player player, MarsPlayerRow marsPlayerRow, boolean chooseFifthPhase) {
+        float total = countTotalCardsToTake(player, chooseFifthPhase);
 
         marsPlayerRow.setGreenCards(Math.max(0, marsPlayerRow.getGreenCards() + total * Constants.GREEN_CARDS_RATIO));
         marsPlayerRow.setRedCards(Math.max(0, marsPlayerRow.getRedCards() + total * Constants.RED_CARDS_RATIO));
         marsPlayerRow.setBlueCards(Math.max(0, marsPlayerRow.getBlueCards() + total * Constants.BLUE_CARDS_RATIO));
+    }
+
+    private float countTotalCardsToTake(Player player, boolean chooseFifthPhase) {
+        int initialCardsToTake = (chooseFifthPhase ? 2 : 1);
+        int initialCardsToDraft = (chooseFifthPhase ? 5 : 2);
+
+        int cardsToTake = draftCardsService.countExtraCardsToTake(player);
+        int cardsToDraft = draftCardsService.countExtraCardsToDraft(player);
+
+        return (initialCardsToTake + cardsToTake) + (initialCardsToDraft + cardsToDraft) * 0.33f;
     }
 
     private void addCardIncome(Player player, MarsPlayerRow marsPlayerRow) {
