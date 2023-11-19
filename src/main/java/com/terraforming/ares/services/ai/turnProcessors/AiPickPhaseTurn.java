@@ -70,7 +70,13 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
 
             projection = projection.applyIfBetter(mayPlayPhaseFourAi(game, player));
 
-            projection = projection.applyIfBetter(mayPlayPhaseFiveAi(game, player));
+            if (player.isFirstBot()) {
+                projection = projection.applyIfBetter(mayPlayPhaseFiveAi(game, player));
+            } else {
+                if (mayPlayPhaseFive(game, player)) {
+                    possiblePhases.add(5);
+                }
+            }
 
             if (projection.isPickPhase()) {
                 possiblePhases.add(projection.getPhase());
