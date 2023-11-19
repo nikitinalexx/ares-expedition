@@ -50,6 +50,9 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
 
     @Override
     public boolean processTurn(MarsGame game, Player player) {
+        if (Constants.LOG_NET_COMPARISON) {
+            System.out.println("======================New Round========================");
+        }
         Integer previousChosenPhase = player.getPreviousChosenPhase();
 
         List<Integer> possiblePhases = new ArrayList<>();
@@ -67,13 +70,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
 
             projection = projection.applyIfBetter(mayPlayPhaseFourAi(game, player));
 
-            if (player.isFirstBot()) {
-                projection = projection.applyIfBetter(mayPlayPhaseFiveAi(game, player));
-            } else {
-                if (mayPlayPhaseFive(game, player)) {
-                    possiblePhases.add(5);
-                }
-            }
+            projection = projection.applyIfBetter(mayPlayPhaseFiveAi(game, player));
 
             if (projection.isPickPhase()) {
                 possiblePhases.add(projection.getPhase());
