@@ -97,11 +97,6 @@ public class GameController {
                 }
             }
 
-            final List<Expansion> expansions = gameParameters.getExpansions();
-            if (expansions.contains(Expansion.DISCOVERY) && aiPlayerCount > 0) {
-                throw new IllegalArgumentException("Computer is not smart enough to play the Discovery expansion lol!");
-            }
-
             MarsGame marsGame = gameService.startNewGame(gameParameters);
 
             if (aiPlayerCount == playersCount) {

@@ -120,18 +120,20 @@ public class Constants {
     public static final boolean LOG_NET_COMPARISON = true;
 
     /** AI TURNS **/
-    public static final AiCardsChoice CARDS_PICK_PLAYER_1 = AiCardsChoice.NETWORK_PROJECTION;
-    public static final AiCardsChoice CARDS_PICK_PLAYER_2 = AiCardsChoice.NETWORK_PROJECTION;
+    public static final AiCardsChoice CARDS_PICK_PLAYER_1 = AiCardsChoice.RANDOM;
+    public static final AiCardsChoice CARDS_PICK_PLAYER_2 = AiCardsChoice.RANDOM;
 
-    public static final AiTurnChoice PICK_PHASE_PLAYER_1 = AiTurnChoice.NETWORK;
-    public static final AiTurnChoice PICK_PHASE_PLAYER_2 = AiTurnChoice.NETWORK;
+    public static final AiTurnChoice PICK_PHASE_PLAYER_1 = AiTurnChoice.RANDOM;
+    public static final AiTurnChoice PICK_PHASE_PLAYER_2 = AiTurnChoice.RANDOM;
 
-    public static final AiTurnChoice BUILD_PLAYER_1 = AiTurnChoice.NETWORK;
-    public static final AiTurnChoice BUILD_PLAYER_2 = AiTurnChoice.NETWORK;
+    public static final AiTurnChoice BUILD_PLAYER_1 = AiTurnChoice.RANDOM;
+    public static final AiTurnChoice BUILD_PLAYER_2 = AiTurnChoice.RANDOM;
 
-    public static final AiTurnChoice THIRD_PHASE_ACTIONS_PLAYER_1 = AiTurnChoice.NETWORK;
-    public static final AiTurnChoice THIRD_PHASE_ACTIONS_PLAYER_2 = AiTurnChoice.NETWORK;
+    public static final AiTurnChoice THIRD_PHASE_ACTIONS_PLAYER_1 = AiTurnChoice.RANDOM;
+    public static final AiTurnChoice THIRD_PHASE_ACTIONS_PLAYER_2 = AiTurnChoice.RANDOM;
 
+    public static final AiTurnChoice PHASE_UPGRADE_PLAYER_1 = AiTurnChoice.RANDOM;
+    public static final AiTurnChoice PHASE_UPGRADE_PLAYER_2 = AiTurnChoice.RANDOM;
 
 
     private Constants() {

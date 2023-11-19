@@ -21,31 +21,6 @@ public class UpgradePhaseHelper {
         //0 is default phase. 1 is first upgrade, 2 is second upgrade.
         int upgradeType = upgrade % 2 + 1;
 
-        //todo remove after testing
-//        if (!player.hasPhaseUpgrade(Constants.PHASE_2_UPGRADE_PROJECT_AND_CARD)
-//                && phaseIndex == 1 && upgradeType == 2 //second phase and second upgrade
-//                && !player.isGotBonusInSecondPhase()
-//                && player.getActionsInSecondPhase() >= 1
-//                && player.getChosenPhase() == 2) {
-//            player.getHand().addCards(cardService.dealCards(game, 1));
-//        }
-//
-//        if (player.hasPhaseUpgrade(Constants.PHASE_3_NO_UPGRADE)
-//                && game.getCurrentPhase() == 3
-//                && player.getChosenPhase() == 3) {
-//            if (phaseIndex == 2 && upgradeType == 1) { //third phase and first upgrade)
-//                player.setBlueActionExtraActivationsLeft(player.getBlueActionExtraActivationsLeft() + 1);
-//            } else if (phaseIndex == 2 && upgradeType == 2) { //third phase and second upgrade)
-//                final List<Integer> cards = cardService.dealCards(game, 3);
-//                for (Integer cardId : cards) {
-//                    final Card card = cardService.getCard(cardId);
-//                    if (card.getColor() == CardColor.BLUE || card.getColor() == CardColor.RED) {
-//                        player.getHand().addCard(cardId);
-//                    }
-//                }
-//            }
-//        }
-
         player.updatePhaseCard(phaseIndex, upgradeType);
     }
 }

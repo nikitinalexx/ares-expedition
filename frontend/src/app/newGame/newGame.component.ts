@@ -54,7 +54,7 @@ export class NewGameComponent implements OnInit {
           this.errorMessage = 'Invalid names';
           return;
         }
-        computers.push(this.parentForm.value.discovery ? false : this.parentForm.get('computer' + i)?.value);
+        computers.push(this.parentForm.get('computer' + i)?.value);
 
         names.push(name);
       }
