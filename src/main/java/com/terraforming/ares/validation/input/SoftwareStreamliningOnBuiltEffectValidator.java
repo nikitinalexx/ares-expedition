@@ -18,6 +18,7 @@ import java.util.Map;
 public class SoftwareStreamliningOnBuiltEffectValidator implements OnBuiltEffectValidator<SoftwareStreamlining> {
     private final OnBuiltEffectValidationService onBuiltEffectValidationService;
 
+
     @Override
     public Class<SoftwareStreamlining> getType() {
         return SoftwareStreamlining.class;

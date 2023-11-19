@@ -247,7 +247,7 @@ public class AiThirdPhaseActionProcessor {
             int selectedIndex = random.nextInt(cards.size());
             Card selectedCard = cards.get(selectedIndex);
 
-            if (aiCardActionHelper.isSmartPlayAction(game, player, selectedCard)) {
+            if (aiCardActionHelper.isUsablePlayAction(game, player, selectedCard)) {
 //                ActionInputParamsResponse inputParams = Constants.THIRD_PHASE_BOTH_PLAYERS_SMART
 //                        ? aiCardActionHelper.getActionInputParamsForSmart(game, player, selectedCard)
 //                        : aiCardActionHelper.getActionInputParamsForRandom(game, player, selectedCard);

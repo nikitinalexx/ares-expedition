@@ -6,8 +6,7 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 @Service
 public class AiDiscoveryDecisionService {
@@ -42,7 +41,7 @@ public class AiDiscoveryDecisionService {
             default:
                 throw new IllegalStateException("Unable to choose phase upgrade for AI");
         }
-        return phaseOffset + (chooseSecondUpgrade ?  1 : 0);
+        return phaseOffset + (chooseSecondUpgrade ? 1 : 0);
     }
 
     public List<Integer> chooseTwoPhaseUpgrades(MarsGame game, Player player) {
@@ -64,7 +63,17 @@ public class AiDiscoveryDecisionService {
     public int choosePhaseUpgrade(MarsGame game, Player player) {
         switch (player.isFirstBot() ? Constants.PHASE_UPGRADE_PLAYER_1 : Constants.PHASE_UPGRADE_PLAYER_2) {
             case RANDOM:
-                return choosePhaseUpgrade(game, player, random.nextInt(5) + 1);
+                List<Integer> phases = new ArrayList<>();
+                List<Integer> phaseCards = player.getPhaseCards();
+                for (int i = 1; i <= phaseCards.size(); i++) {
+                    if (phaseCards.get(i - 1) == 0) {
+                        phases.add(i);
+                    }
+                }
+                if (phases.isEmpty()) {
+                    phases = List.of(1, 2, 3, 4, 5);
+                }
+                return choosePhaseUpgrade(game, player, phases.get(random.nextInt(phases.size())));
             case SMART://TODO expansion
             case NETWORK://TODO expansion
             default:

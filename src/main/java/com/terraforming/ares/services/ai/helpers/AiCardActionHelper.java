@@ -12,11 +12,13 @@ import com.terraforming.ares.model.action.ActionInputDataType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.TerraformingService;
 import com.terraforming.ares.services.ai.AiBalanceService;
+import com.terraforming.ares.services.ai.AiDiscoveryDecisionService;
 import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.ICardValueService;
 import com.terraforming.ares.services.ai.dto.ActionInputParamsResponse;
 import com.terraforming.ares.services.ai.dto.CardValueResponse;
 import com.terraforming.ares.validation.action.ActionValidator;
+import com.terraforming.ares.validation.action.FibrousCompositeActionValidator;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -38,8 +40,9 @@ public class AiCardActionHelper {
     private final AiBalanceService aiBalanceService;
     private final CardsAiService cardsAiService;
     private final AiPickCardProjectionService aiPickCardProjectionService;
+    private final AiDiscoveryDecisionService aiDiscoveryDecisionService;
 
-    public AiCardActionHelper(List<ActionValidator<?>> validators, CardService cardService, TerraformingService terraformingService, ICardValueService cardValueService, AiBalanceService aiBalanceService, CardsAiService cardsAiService, AiPickCardProjectionService aiPickCardProjectionService) {
+    public AiCardActionHelper(List<ActionValidator<?>> validators, CardService cardService, TerraformingService terraformingService, ICardValueService cardValueService, AiBalanceService aiBalanceService, CardsAiService cardsAiService, AiPickCardProjectionService aiPickCardProjectionService, AiDiscoveryDecisionService aiDiscoveryDecisionService) {
         blueActionValidators = validators.stream().collect(
                 Collectors.toMap(
                         ActionValidator::getType,
@@ -52,6 +55,7 @@ public class AiCardActionHelper {
         this.aiBalanceService = aiBalanceService;
         this.cardsAiService = cardsAiService;
         this.aiPickCardProjectionService = aiPickCardProjectionService;
+        this.aiDiscoveryDecisionService = aiDiscoveryDecisionService;
     }
 
     private Set<Class<?>> ACTIONS_WITHOUT_INPUT_PARAMS = Set.of(
@@ -76,13 +80,19 @@ public class AiCardActionHelper {
             VolcanicPools.class,
             WaterImportFromEuropa.class,
             WoodBurningStoves.class,
-            ProgressivePolicies.class
+            ProgressivePolicies.class,
+            DroneAssistedConstruction.class,
+            FibrousCompositeActionValidator.class,
+            SoftwareStreamlining.class,
+            CityCouncil.class,
+            CommunityAfforestation.class,
+            GasCooledReactors.class
     );
 
     /**
      * Shows if card is smart to play in advance. At the moment of making that blue action the situation might be different
      */
-    public boolean isSmartPlayAction(MarsGame game, Player player, Card card) {
+    public boolean isUsablePlayAction(MarsGame game, Player player, Card card) {
         ActionValidator<Card> validator = (ActionValidator<Card>) blueActionValidators.get(card.getClass());
 
         if (validator == null) {
@@ -107,12 +117,15 @@ public class AiCardActionHelper {
                                             .count() == 5;
                                 } else if (cardAction == CardAction.PROGRESSIVE_POLICIES) {
                                     return cardService.countPlayedTags(player, Set.of(Tag.EVENT)) >= 4;
+                                } else if (cardAction == CardAction.EXPERIMENTAL_TECHNOLOGY) {
+                                    return player.getPhaseCards().stream().anyMatch(phase -> phase == 0);//there is at least one not upgraded phase card
                                 }
                                 return true;
                             }
                     ).orElse(true);
         }
 
+        //acions with input params
         CardMetadata cardMetadata = card.getCardMetadata();
         if (cardMetadata != null) {
             List<ActionInputData> actionsInputData = cardMetadata.getActionsInputData();
@@ -142,6 +155,10 @@ public class AiCardActionHelper {
         throw new IllegalStateException("NOT REACHABLE");
     }
 
+    /**
+     * @deprecated doesn't make sense to use random useless moves even for a random computer
+     */
+    @Deprecated
     public ActionInputParamsResponse getActionInputParamsForRandom(MarsGame game, Player player, Card card) {
         ActionValidator<Card> validator = (ActionValidator<Card>) blueActionValidators.get(card.getClass());
 
@@ -199,53 +216,80 @@ public class AiCardActionHelper {
         }
 
         CardMetadata cardMetadata = card.getCardMetadata();
-        if (cardMetadata != null) {
-            List<ActionInputData> actionsInputData = cardMetadata.getActionsInputData();
-            if (!actionsInputData.isEmpty()) {
-                ActionInputData actionInputData = actionsInputData.get(0);
-                if (cardMetadata.getCardAction() == CardAction.DECOMPOSING_FUNGUS) {
-                    return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.CARD_CHOICE.getId(), List.of(getLeastValuableCardWithAnimalOrMicrobePresent(game, player))));
-                } else if (cardMetadata.getCardAction() == CardAction.CONSERVED_BIOME) {
-                    return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.CARD_CHOICE.getId(), List.of(getMostValuableAnimalOrMicrobeCard(game, player, Set.of(CardCollectableResource.ANIMAL, CardCollectableResource.MICROBE)).get())));
-                } else if (actionInputData.getType() == ActionInputDataType.DISCARD_CARD) {
-                    List<Integer> cardsToDiscard = getCardsToDiscardSmart(game, player, actionInputData.getMax());
-                    return ActionInputParamsResponse.builder().makeAction(!cardsToDiscard.isEmpty()).inputParams(Map.of(InputFlag.CARD_CHOICE.getId(), cardsToDiscard)).build();
-                } else if (actionInputData.getType() == ActionInputDataType.ADD_DISCARD_MICROBE) {
-                    if (cardMetadata.getCardAction() == CardAction.GHG_PRODUCTION && !terraformingService.canIncreaseTemperature(game)
-                            || cardMetadata.getCardAction() == CardAction.NITRITE_REDUCTING && !terraformingService.canRevealOcean(game)
-                            || cardMetadata.getCardAction() == CardAction.REGOLITH_EATERS && !terraformingService.canIncreaseOxygen(game)) {
-                        return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.ADD_DISCARD_MICROBE.getId(), List.of(1)));
-                    }
-                    return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.ADD_DISCARD_MICROBE.getId(),
-                            (player.getCardResourcesCount().get(card.getClass()) >= actionInputData.getMax()) ? List.of(actionInputData.getMax()) : List.of(1)));
-                } else if (cardMetadata.getCardAction() == CardAction.POWER_INFRASTRUCTURE) {
-                    if (game.getPlanetAtTheStartOfThePhase().isTemperatureMax() && player.getHeat() >= 10) {
-                        return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.DISCARD_HEAT.getId(), List.of(player.getHeat())));
-                    } else {
-                        return ActionInputParamsResponse.noAction();
-                    }
-                } else if (cardMetadata.getCardAction() == CardAction.GREEN_HOUSES) {
-                    if (!game.getPlanetAtTheStartOfThePhase().isOxygenMax() && player.getHeat() >= 1) {
-                        return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.DISCARD_HEAT.getId(), List.of(Math.min(4, player.getHeat()))));
-                    } else {
-                        return ActionInputParamsResponse.noAction();
-                    }
-                } else if (cardMetadata.getCardAction() == CardAction.SYMBIOTIC_FUNGUD) {
-                    return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.CARD_CHOICE.getId(), List.of(getMostValuableAnimalOrMicrobeCard(game, player, Set.of(CardCollectableResource.MICROBE)).get())));
+
+        if (cardMetadata == null) {
+            throw new IllegalStateException("Card with input has no metadata");
+        }
+
+        List<ActionInputData> actionsInputData = cardMetadata.getActionsInputData();
+        CardAction cardAction = cardMetadata.getCardAction();
+
+        if (!actionsInputData.isEmpty()) {
+            ActionInputData actionInputData = actionsInputData.get(0);
+            if (cardAction == CardAction.DECOMPOSING_FUNGUS) {
+                return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.CARD_CHOICE.getId(), List.of(getLeastValuableCardWithAnimalOrMicrobePresent(game, player))));
+            } else if (cardAction == CardAction.CONSERVED_BIOME) {
+                return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.CARD_CHOICE.getId(), List.of(getMostValuableAnimalOrMicrobeCard(game, player, Set.of(CardCollectableResource.ANIMAL, CardCollectableResource.MICROBE)).get())));
+            } else if (actionInputData.getType() == ActionInputDataType.DISCARD_CARD) {
+                List<Integer> cardsToDiscard = getCardsToDiscardSmart(game, player, actionInputData.getMax());
+                return ActionInputParamsResponse.builder().makeAction(!cardsToDiscard.isEmpty()).inputParams(Map.of(InputFlag.CARD_CHOICE.getId(), cardsToDiscard)).build();
+            } else if (actionInputData.getType() == ActionInputDataType.ADD_DISCARD_MICROBE) {
+                if (cardAction == CardAction.GHG_PRODUCTION && !terraformingService.canIncreaseTemperature(game)
+                        || cardAction == CardAction.NITRITE_REDUCTING && !terraformingService.canRevealOcean(game)
+                        || cardAction == CardAction.REGOLITH_EATERS && !terraformingService.canIncreaseOxygen(game)) {
+                    return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.ADD_DISCARD_MICROBE.getId(), List.of(1)));
                 }
-            }
+                return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.ADD_DISCARD_MICROBE.getId(),
+                        (player.getCardResourcesCount().get(card.getClass()) >= actionInputData.getMax()) ? List.of(actionInputData.getMax()) : List.of(1)));
+            } else if (cardAction == CardAction.POWER_INFRASTRUCTURE) {
+                if (game.getPlanetAtTheStartOfThePhase().isTemperatureMax() && player.getHeat() >= 10) {
+                    return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.DISCARD_HEAT.getId(), List.of(player.getHeat())));
+                } else {
+                    return ActionInputParamsResponse.noAction();
+                }
+            } else if (cardAction == CardAction.GREEN_HOUSES) {
+                if (!game.getPlanetAtTheStartOfThePhase().isOxygenMax() && player.getHeat() >= 1) {
+                    return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.DISCARD_HEAT.getId(), List.of(Math.min(4, player.getHeat()))));
+                } else {
+                    return ActionInputParamsResponse.noAction();
+                }
+            } else if (cardAction == CardAction.SYMBIOTIC_FUNGUD) {
+                return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.CARD_CHOICE.getId(), List.of(getMostValuableAnimalOrMicrobeCard(game, player, Set.of(CardCollectableResource.MICROBE)).get())));
+            }  else if (cardAction == CardAction.FIBROUS_COMPOSITE_MATERIAL) {
+                Map<Integer, List<Integer>> result = new HashMap<>();
 
-            if (cardMetadata.getCardAction() == CardAction.EXTREME_COLD_FUNGUS) {
-                getMostValuableAnimalOrMicrobeCard(game, player, Set.of(CardCollectableResource.MICROBE));
+                List<Integer> microbeInput = (player.getCardResourcesCount().get(card.getClass()) >= actionInputData.getMax()) ? List.of(actionInputData.getMax()) : List.of(1);
 
-                return ActionInputParamsResponse.makeActionWithParams(getMostValuableAnimalOrMicrobeCard(game, player,
-                        Set.of(CardCollectableResource.MICROBE)).map(value ->
-                        Map.of(InputFlag.EXTREME_COLD_FUNGUS_PUT_MICROBE.getId(), List.of(value))
-                ).orElseGet(() -> Map.of(InputFlag.EXTEME_COLD_FUNGUS_PICK_PLANT.getId(), List.of(0))));
+                if (microbeInput.get(0) == actionInputData.getMax()) {
+                    result.put(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(aiDiscoveryDecisionService.choosePhaseUpgrade(game, player)));
+                }
+
+                result.put(InputFlag.ADD_DISCARD_MICROBE.getId(), microbeInput);
+
+                return ActionInputParamsResponse.makeActionWithParams(result);
             }
         }
 
-        throw new IllegalStateException("NOT REACHABLE");
+        if (cardAction == CardAction.EXTREME_COLD_FUNGUS) {
+            getMostValuableAnimalOrMicrobeCard(game, player, Set.of(CardCollectableResource.MICROBE));
+
+            return ActionInputParamsResponse.makeActionWithParams(getMostValuableAnimalOrMicrobeCard(game, player,
+                    Set.of(CardCollectableResource.MICROBE)).map(value ->
+                    Map.of(InputFlag.EXTREME_COLD_FUNGUS_PUT_MICROBE.getId(), List.of(value))
+            ).orElseGet(() -> Map.of(InputFlag.EXTEME_COLD_FUNGUS_PICK_PLANT.getId(), List.of(0))));
+        } else if (cardAction == CardAction.EXPERIMENTAL_TECHNOLOGY || cardAction == CardAction.VIRTUAL_EMPLOYEE_DEVELOPMENT) {
+            return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(aiDiscoveryDecisionService.choosePhaseUpgrade(game, player))));
+        } else if (cardAction == CardAction.RESEARCH_GRANT) {
+            final List<Tag> cardTags = player.getCardToTag().get(ResearchGrant.class);
+
+            int tagToPut = aiDiscoveryDecisionService.chooseDynamicTagValue(cardTags);
+
+
+        }
+
+
+
+        throw new IllegalStateException("Invalid blue action");
     }
 
     private boolean isUsefulAddDiscardMicrobeAction(MarsGame game, Card card) {

@@ -51,6 +51,8 @@ public class AiPickCorporationTurn implements AiTurnProcessor {
             inputParams.put(InputFlag.TAG_INPUT.getId(), List.of(aiDiscoveryDecisionService.chooseModProTagValue()));
         } else if (corporationCardAction == CardAction.NEBU_LABS_CORPORATION) {
             inputParams.put(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(aiDiscoveryDecisionService.choosePhaseUpgrade(game, player)));
+        } else if (corporationCardAction == CardAction.SULTIRA_CORPORATION) {
+            inputParams.put(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(aiDiscoveryDecisionService.choosePhaseUpgrade(game, player, Constants.BUILD_GREEN_PROJECTS_PHASE)));
         }
 
         aiTurnService.chooseCorporationTurn(game, ChooseCorporationRequest.builder()

@@ -111,7 +111,7 @@ public class AiCardBuildParamsHelper {
             result = Map.of(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(6));
         }
 
-        if (CARDS_WITH_PHASE_UPGRADE_EFFECT.contains(cardAction)) {
+        if (cardAction != null && CARDS_WITH_PHASE_UPGRADE_EFFECT.contains(cardAction)) {
             result = Map.of(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(0));
         }
 
@@ -224,7 +224,7 @@ public class AiCardBuildParamsHelper {
             result.put(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(aiDiscoveryDecisionService.choosePhaseUpgrade(game, player, Constants.COLLECT_INCOME_PHASE)));
         }
 
-        if (CARDS_WITH_PHASE_UPGRADE_EFFECT.contains(cardAction)) {
+        if (cardAction != null && CARDS_WITH_PHASE_UPGRADE_EFFECT.contains(cardAction)) {
             result.put(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(aiDiscoveryDecisionService.choosePhaseUpgrade(game, player)));
         }
 
