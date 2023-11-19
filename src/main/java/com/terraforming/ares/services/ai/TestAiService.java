@@ -6,6 +6,7 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.dataset.MarsGameRow;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.DraftCardsService;
 import com.terraforming.ares.services.StandardProjectService;
 import com.terraforming.ares.services.WinPointsService;
 import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
@@ -28,6 +29,7 @@ public class TestAiService {
     private final StandardProjectService standardProjectService;
     private final AiTurnService aiTurnService;
     private final DatasetCollectionService datasetCollectionService;
+    private final DraftCardsService draftCardsService;
 
 
     public BuildProjectPrediction getBestCardToBuild(MarsGame game, Player player, Set<CardColor> colors) {
@@ -127,6 +129,46 @@ public class TestAiService {
 
 
         return deepNetwork.testState(marsGameRow, player.isFirstBot() ? 1 : 2);
+    }
+
+    public float projectPlayPhase5(MarsGame game, Player player) {
+
+        game = new MarsGame(game);
+
+        final List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
+        player = game.getPlayerByUuid(player.getUuid());
+        Player anotherPlayer = players.get(0) == player
+                ? players.get(1)
+                : players.get(0);
+
+        final MarsGameRow marsGameRow = datasetCollectionService.collectGameData(
+                game,
+                player,
+                players.get(0) == player
+                        ? players.get(1)
+                        : players.get(0)
+        );
+
+        if (marsGameRow == null) {
+            return 0;
+        }
+
+        addDraftedCards(player, marsGameRow.getPlayer());
+        addDraftedCards(anotherPlayer, marsGameRow.getOpponent());
+
+
+        return deepNetwork.testState(marsGameRow, player.isFirstBot() ? 1 : 2);
+    }
+
+    private void addDraftedCards(Player player, MarsPlayerRow marsPlayerRow) {
+        int cardsToTake = draftCardsService.countExtraCardsToTake(player);
+        int cardsToDraft = draftCardsService.countExtraCardsToDraft(player);
+
+        float total = cardsToTake + cardsToDraft * 0.33f;
+
+        marsPlayerRow.setGreenCards(Math.max(0, marsPlayerRow.getGreenCards() + total * Constants.GREEN_CARDS_RATIO));
+        marsPlayerRow.setRedCards(Math.max(0, marsPlayerRow.getRedCards() + total * Constants.RED_CARDS_RATIO));
+        marsPlayerRow.setBlueCards(Math.max(0, marsPlayerRow.getBlueCards() + total * Constants.BLUE_CARDS_RATIO));
     }
 
     private void addCardIncome(Player player, MarsPlayerRow marsPlayerRow) {
