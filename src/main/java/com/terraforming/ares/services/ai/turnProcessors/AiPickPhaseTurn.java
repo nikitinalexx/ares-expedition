@@ -50,6 +50,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
 
     @Override
     public boolean processTurn(MarsGame game, Player player) {
+        System.out.println("======================New Round========================");
         Integer previousChosenPhase = player.getPreviousChosenPhase();
 
         List<Integer> possiblePhases = new ArrayList<>();
