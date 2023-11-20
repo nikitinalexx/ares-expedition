@@ -49,15 +49,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.deepnetts</groupId>
-            <artifactId>deepnetts-core-pro</artifactId>
-            <version>3.0.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.deepnetts</groupId>
-            <artifactId>deepnetts-license</artifactId>
-            <version>1.0</version>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <version>2.15.3</version>
         </dependency>
 
     </dependencies>

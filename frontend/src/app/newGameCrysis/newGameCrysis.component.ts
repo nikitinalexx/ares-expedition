@@ -57,6 +57,7 @@ export class NewGameCrysisComponent implements OnInit {
         new NewGameRequest(
           names,
           computers,
+          [],
           true,
           false,
           this.parentForm.value.beginner,

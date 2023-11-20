@@ -5,6 +5,7 @@ import com.terraforming.ares.dataset.MarsGameDataset;
 import com.terraforming.ares.dataset.MarsGameRow;
 import com.terraforming.ares.dto.*;
 import com.terraforming.ares.entity.CrisisRecordEntity;
+import com.terraforming.ares.entity.SoloRecordEntity;
 import com.terraforming.ares.mars.CrysisData;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
@@ -13,6 +14,7 @@ import com.terraforming.ares.model.turn.*;
 import com.terraforming.ares.repositories.GameRepositoryImpl;
 import com.terraforming.ares.repositories.caching.CachingGameRepository;
 import com.terraforming.ares.repositories.crudRepositories.CrisisRecordEntityRepository;
+import com.terraforming.ares.repositories.crudRepositories.SoloRecordEntityRepository;
 import com.terraforming.ares.services.*;
 import com.terraforming.ares.services.ai.AiBalanceService;
 import com.terraforming.ares.services.ai.DeepNetwork;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.*;
+import java.util.*;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
@@ -54,6 +57,7 @@ public class GameController {
     private final SimulationProcessorService simulationProcessorService;
     private final AiBalanceService aiBalanceService;
     private final CrisisRecordEntityRepository crisisRecordEntityRepository;
+    private final SoloRecordEntityRepository soloRecordEntityRepository;
     private final DeepNetwork deepNetwork;
     private final DatasetCollectionService datasetCollectionService;
 
@@ -82,6 +86,7 @@ public class GameController {
 
             int aiPlayerCount = (int) gameParameters.getComputers().stream().filter(item -> item != PlayerDifficulty.NONE).count();
             int playersCount = gameParameters.getPlayerNames().size();
+            int[] extraPoints = gameParameters.getExtraPoints();
 
             if (gameParameters.getPlayerNames().stream().anyMatch(name -> name.length() > 10)) {
                 throw new IllegalArgumentException("Only names of length 10 or below are supported");
@@ -90,8 +95,29 @@ public class GameController {
             if (playersCount > Constants.MAX_PLAYERS) {
                 throw new IllegalArgumentException("Only 1 to 4 players are supported so far");
             }
+            if (extraPoints != null && extraPoints.length > 0) {
+                if (extraPoints.length > 4) {
+                    throw new IllegalArgumentException("Invalid extra points provided");
+
+                }
+
+                if (playersCount == 1 && extraPoints[0] != 0) {
+                    throw new IllegalArgumentException("You can't play with a handicap in solo mode");
+                }
+
+                if (Arrays.stream(extraPoints).anyMatch(x -> x < 0)) {
+                    throw new IllegalArgumentException("A handicap cannot be less than zero");
+                }
+
+                if (gameParameters.getExpansions().contains(Expansion.CRYSIS)) {
+                    throw new IllegalArgumentException("No extra points allowed in Crisis mode");
+                }
+            }
 
             if (gameParameters.getExpansions().contains(Expansion.CRYSIS)) {
+                if (!gameParameters.getExpansions().contains(Expansion.BUFFED_CORPORATION)) {
+                    gameParameters.getExpansions().add(Expansion.BUFFED_CORPORATION);
+                }
                 if (playersCount != 1) {
                     throw new IllegalArgumentException("Only 1 player supported so far. Come back in a week!");
                 }
@@ -107,6 +133,7 @@ public class GameController {
             }
 
             MarsGame marsGame = gameService.startNewGame(gameParameters);
+
 
             if (aiPlayerCount == playersCount) {
                 turnService.pushGame(marsGame.getId());
@@ -510,7 +537,6 @@ public class GameController {
         return sb.toString();
     }
 
-
     private void printStatistics(GameStatistics gameStatistics) {
         if (WRITE_STATISTICS_TO_FILE) {
             try (FileWriter fw = new FileWriter("cardStats.txt");
@@ -626,6 +652,16 @@ public class GameController {
         return crisisRecordEntityRepository.findTopTwentyRecordsByTurns(playerCount);
     }
 
+    @GetMapping("/solo/records")
+    public List<SoloRecordEntity> findTopTwentyRecordsByTurns() {
+        return soloRecordEntityRepository.findTopTwentyRecordsByTurns();
+    }
+
+    @GetMapping("/recent")
+    public List<RecentGameDto> findRecentTwentyGames() {
+        return gameRepository.findRecentTwentyGames();
+    }
+
     @GetMapping("/cache/reset")
     public int resetGameCache() {
         return cachingGameRepository.evictGameCache();
@@ -727,7 +763,6 @@ public class GameController {
                 .austellarMilestone(player.getAustellarMilestone())
                 .build();
     }
-
 
     private Map<Integer, List<Tag>> getPlayerCardToTag(Player player) {
         return player.getPlayed().getCards().stream().map(cardService::getCard)

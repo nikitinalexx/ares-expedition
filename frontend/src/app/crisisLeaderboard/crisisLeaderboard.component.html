@@ -5,24 +5,35 @@
 
 <form [formGroup]="parentForm">
   <div class="radio-container">
-    <h1>Crisis Leaderboard</h1>
-    <input type="radio" formControlName="playerCount" (click)="clickPlayerCount(1)" value="1" id="p1">
-    <label for="p1">1 Player</label>
-    <input type="radio" formControlName="playerCount" (click)="clickPlayerCount(2)" value="2" id="p2">
-    <label for="p2">2 Players</label>
-    <input type="radio" formControlName="playerCount" (click)="clickPlayerCount(3)" value="3" id="p3">
-    <label for="p3">3 Players</label>
-    <input type="radio" formControlName="playerCount" (click)="clickPlayerCount(4)" value="4" id="p4">
-    <label for="p4">4 Players</label>
+    <input type="radio" formControlName="recordType" (click)="clickRecordType(1)" value="solo" id="solo">
+    <label for="solo">Solo</label>
+    <input type="radio" formControlName="recordType" (click)="clickRecordType(2)" value="crisis" id="crisis">
+    <label for="crisis">Crisis</label>
   </div>
-  <div class="radio-container">
-    <input type="radio" formControlName="sortType" (click)="clickSortType(1)" value="1" id="points">
-    <label for="points">by points</label>
-    <input type="radio" formControlName="sortType" (click)="clickSortType(2)" value="2" id="fastest">
-    <label for="fastest">by turns</label>
+  <div *ngIf="parentForm.value.recordType === 'crisis'">
+    <div class="radio-container">
+      <h1>Crisis Leaderboard</h1>
+      <input type="radio" formControlName="playerCount" (click)="clickPlayerCount(1)" value="1" id="p1">
+      <label for="p1">1 Player</label>
+      <input type="radio" formControlName="playerCount" (click)="clickPlayerCount(2)" value="2" id="p2">
+      <label for="p2">2 Players</label>
+      <input type="radio" formControlName="playerCount" (click)="clickPlayerCount(3)" value="3" id="p3">
+      <label for="p3">3 Players</label>
+      <input type="radio" formControlName="playerCount" (click)="clickPlayerCount(4)" value="4" id="p4">
+      <label for="p4">4 Players</label>
+    </div>
+    <div class="radio-container">
+      <input type="radio" formControlName="sortType" (click)="clickSortType(1)" value="1" id="points">
+      <label for="points">by points</label>
+      <input type="radio" formControlName="sortType" (click)="clickSortType(2)" value="2" id="fastest">
+      <label for="fastest">by turns</label>
+    </div>
+  </div>
+  <div *ngIf="parentForm.value.recordType === 'solo'" class="radio-container">
+    <h1>Solo Leaderboard (with dummy hand)</h1>
   </div>
 </form>
-<table class="table table-dark">
+<table class="table table-dark" *ngIf="parentForm.value.recordType === 'crisis'">
   <thead>
   <tr>
     <th>#</th>
@@ -39,7 +50,7 @@
     <div class="loading"></div>
     <div class="text-white launching-text-box">Loading</div>
   </div>
-  <tr *ngFor="let record of records; let i = index;">
+  <tr *ngFor="let record of crisisRecords; let i = index;">
     <td>{{i + 1}}</td>
     <td class="board-link"><a href="{{getPlayerLink(record.uuid)}}" class="text-warning" style="margin-left: 5px; font-weight: bold; font-size: 20px">{{record.playerName}}</a></td>
     <td>{{record.victoryPoints}}</td>
@@ -47,6 +58,28 @@
     <td>{{record.victoryPoints + record.terraformingPoints}}</td>
     <td>{{record.difficulty === 0 ? 'NORMAL': 'EASY'}}</td>
     <td>{{record.turnsLeft}}</td>
+  </tr>
+  </tbody>
+</table>
+<table class="table table-dark" *ngIf="parentForm.value.recordType === 'solo'">
+  <thead>
+  <tr>
+    <th>#</th>
+    <th class="board-link">LINK</th>
+    <th>VP</th>
+    <th>TURNS</th>
+  </tr>
+  </thead>
+  <tbody>
+  <div *ngIf="loading" style="margin-top: 20px; margin-left: 46px">
+    <div class="loading"></div>
+    <div class="text-white launching-text-box">Loading</div>
+  </div>
+  <tr *ngFor="let record of soloRecords; let i = index;">
+    <td>{{i + 1}}</td>
+    <td class="board-link"><a href="{{getPlayerLink(record.uuid)}}" class="text-warning" style="margin-left: 5px; font-weight: bold; font-size: 20px">{{record.playerName}}</a></td>
+    <td>{{record.victoryPoints}}</td>
+    <td>{{record.turns}}</td>
   </tr>
   </tbody>
 </table>

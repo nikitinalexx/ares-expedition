@@ -11,6 +11,8 @@ import {GameShort} from "../data/GameShort";
 import {CrysisChoiceRequest} from "../data/CrysisChoiceRequest";
 import {DiscardCardsRequest} from "../data/DiscardCardsRequest";
 import {CrisisRecordEntity} from "../data/CrisisRecordEntity";
+import {SoloRecordEntity} from "../data/SoloRecordEntity";
+import {RecentGameDto} from "../data/RecentGameDto";
 
 @Injectable()
 export class GameRepository {
@@ -121,8 +123,17 @@ export class GameRepository {
   getCrisisRecordsByPoints(playerCount: number): Observable<CrisisRecordEntity[]> {
     return this.dataSource.getCrisisRecordsByPoints(playerCount);
   }
+
   getCrisisRecordsByTurns(playerCount: number): Observable<CrisisRecordEntity[]> {
     return this.dataSource.getCrisisRecordsByTurns(playerCount);
+  }
+
+  getSoloRecordsByTurns(): Observable<SoloRecordEntity[]> {
+    return this.dataSource.getSoloRecords();
+  }
+
+  getRecentGames(): Observable<RecentGameDto[]> {
+    return this.dataSource.getRecentGames();
   }
 
   nextActions(playerUuid: string): Observable<ActionsDto> {

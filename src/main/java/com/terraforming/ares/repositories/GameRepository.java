@@ -1,6 +1,9 @@
 package com.terraforming.ares.repositories;
 
+import com.terraforming.ares.dto.RecentGameDto;
 import com.terraforming.ares.mars.MarsGame;
+
+import java.util.List;
 
 /**
  * Created by oleksii.nikitin
@@ -13,4 +16,6 @@ public interface GameRepository {
     MarsGame getGameById(long id);
 
     long getGameIdByPlayerUuid(String playerUuid);
+
+    List<RecentGameDto> findRecentTwentyGames();
 }

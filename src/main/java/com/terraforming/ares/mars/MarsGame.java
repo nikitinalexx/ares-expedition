@@ -130,6 +130,7 @@ public class MarsGame {
     }
 
     public MarsGame(List<String> playerNames,
+                    int[] extraPoints,
                     int playerHandSize,
                     Deck projectsDeck,
                     Deck corporationsDeck,
@@ -162,6 +163,7 @@ public class MarsGame {
                             .name(playerNames.get(i))
 //                            .hand(Deck.builder().cards(new LinkedList<>(List.of(19, 24, 339))).build())
                             .hand(projectsDeck.dealCardsDeck(playerHandSize))
+                            .extraPoints(extraPoints != null && extraPoints.length > i ? extraPoints[i] : 0)
                             .corporations(corporationsDeck.dealCardsDeck(INITIAL_CORPORATIONS_SIZE))
                             //.corporations(Deck.builder().cards(new LinkedList<>(List.of(10206, 10005))).build())
                             .played(Deck.builder().build())
@@ -170,7 +172,9 @@ public class MarsGame {
                             .difficulty(computers.get(i))
                             .build()
             );
+
         }
+
         playerUuidToPlayer = players.stream().collect(Collectors.toMap(Player::getUuid, Function.identity()));
 
         this.stateType = StateType.PICK_CORPORATIONS;

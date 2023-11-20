@@ -1,7 +1,7 @@
 import {Injectable} from '@angular/core';
 import {HttpClient, HttpErrorResponse, HttpHeaders} from '@angular/common/http';
 import {Observable, throwError} from 'rxjs';
-import {catchError} from 'rxjs/operators';
+import {catchError, map} from 'rxjs/operators';
 import {Card} from '../data/Card';
 import {NewGame} from '../data/NewGame';
 import {NewGameRequest} from '../data/NewGameRequest';
@@ -19,6 +19,8 @@ import {Expansion} from '../data/Expansion';
 import {CrysisChoiceRequest} from '../data/CrysisChoiceRequest';
 import {DiscardCardsRequest} from "../data/DiscardCardsRequest";
 import {CrisisRecordEntity} from "../data/CrisisRecordEntity";
+import {SoloRecordEntity} from "../data/SoloRecordEntity";
+import {RecentGameDto} from "../data/RecentGameDto";
 
 
 @Injectable()
@@ -266,6 +268,26 @@ export class RestDataSource {
 
   getCrisisRecordsByTurns(playerCount: number): Observable<CrisisRecordEntity[]> {
     return this.sendRequest<any>('GET', this.url + '/crisis/records/turns?playerCount=' + playerCount);
+  }
+
+  getSoloRecords(): Observable<SoloRecordEntity[]> {
+    return this.sendRequest<any>('GET', this.url + '/solo/records');
+  }
+
+  getRecentGames(): Observable<RecentGameDto[]> {
+    return this.sendRequest<any>('GET', this.url + '/recent').pipe(
+      map(responseData => {
+        return responseData.map(item => new RecentGameDto(
+          item.uuid,
+          item.playerName,
+          item.playerCount,
+          item.victoryPoints,
+          item.turns,
+          item.date,
+          item.isCrisis
+        ));
+      })
+    );
   }
 
 

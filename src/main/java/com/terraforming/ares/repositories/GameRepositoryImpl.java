@@ -2,15 +2,22 @@ package com.terraforming.ares.repositories;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.terraforming.ares.dto.RecentGameDto;
 import com.terraforming.ares.entity.GameEntity;
 import com.terraforming.ares.entity.PlayerEntity;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.repositories.crudRepositories.GameEntityRepository;
 import com.terraforming.ares.repositories.crudRepositories.PlayerEntityRepository;
+import com.terraforming.ares.services.WinPointsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,6 +31,7 @@ public class GameRepositoryImpl implements GameRepository {
     private final ObjectMapper objectMapper;
     private final GameEntityRepository gameRepository;
     private final PlayerEntityRepository playerRepository;
+    private final WinPointsService winPointsService;
 
     @Override
     @Transactional
@@ -36,6 +44,12 @@ public class GameRepositoryImpl implements GameRepository {
 
         GameEntity oldGame = new GameEntity(safeSerialize(game));
         oldGame.setId(game.getId());
+
+        if (game.getStateType() == StateType.GAME_END) {
+            oldGame.setFinished(true);
+            oldGame.setFinishedDate(Instant.now());
+        }
+
         GameEntity savedGame = gameRepository.save(oldGame);
         if (newGame) {
             game.setId(savedGame.getId());
@@ -74,6 +88,49 @@ public class GameRepositoryImpl implements GameRepository {
     @Transactional(readOnly = true)
     public long getGameIdByPlayerUuid(String playerUuid) {
         return playerRepository.findByUuid(playerUuid).getGame().getId();
+    }
+
+    @Override
+    public List<RecentGameDto> findRecentTwentyGames() {
+        return gameRepository.findRecentTwentyGames()
+                .stream()
+                .map(gameEntity -> {
+                    MarsGame game = safeDeserialize(gameEntity.getGameJson());
+                    game.setId(gameEntity.getId());
+
+                    List<Player> players = new ArrayList<>();
+                    List<Integer> winPoints = new ArrayList<>();
+
+                    for (Player player : game.getPlayerUuidToPlayer().values()) {
+                        players.add(player);
+                        winPoints.add(winPointsService.countWinPoints(player, game) + (game.isCrysis() ? player.getTerraformingRating() : 0));
+                    }
+
+                    int maxWinPoints = winPoints.get(0);
+                    for (Integer winPoint : winPoints) {
+                        if (winPoint > maxWinPoints) {
+                            maxWinPoints = winPoint;
+                        }
+                    }
+
+                    Player winner = players.get(0);
+                    for (int i = 0; i < winPoints.size(); i++) {
+                        if (winPoints.get(i) == maxWinPoints) {
+                            winner = players.get(i);
+                        }
+                    }
+
+                    return RecentGameDto.builder()
+                            .uuid(winner.getUuid())
+                            .playerName(winner.getName())
+                            .playerCount(players.size())
+                            .victoryPoints(maxWinPoints)
+                            .turns(game.getTurns())
+                            .date(gameEntity.getFinishedDate() != null ? DateTimeFormatter.ISO_INSTANT.format(gameEntity.getFinishedDate()) : null)
+                            .isCrisis(game.isCrysis())
+                            .build();
+                })
+                .collect(Collectors.toList());
     }
 
     private String safeSerialize(MarsGame marsGame) {

@@ -67,6 +67,12 @@
       <label *ngIf="parentForm.get('computer' + item)?.value && this.parentForm.value.playerCount !== '1'" class="form-label p-1 mb-2 bg-warning text-dark"
              style="margin-left: 5px; border-radius: 5px;">Normal <input type="radio" value="smart" style=" width: 30px" [formControlName]="'difficulty' + item"/></label>
 
+      <label *ngIf="this.parentForm.value.playerCount !== '1'" class="form-label p-1 mb-2 bg-warning text-dark"
+             style="margin-left: 5px; border-radius: 5px;">Advantage <input type="checkbox"
+                                                                            [formControlName]="'advantageFlag' + item"/></label>
+      <label *ngIf="parentForm.get('advantageFlag' + item).value && this.parentForm.value.playerCount !== '1'" class="form-label p-1 mb-2 bg-warning text-dark"
+             style="margin-left: 5px; border-radius: 5px;">Points <input type="number" style="height: 18px; width: 30px" [formControlName]="'extraPoints' + item"/></label>
+
 
       <input type="text" class="form-control" id="playerName" [formControlName]="'playerName' + item">
 

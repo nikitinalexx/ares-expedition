@@ -1,12 +1,15 @@
 package com.terraforming.ares.repositories.caching;
 
 import com.terraforming.ares.entity.CrisisRecordEntity;
+import com.terraforming.ares.entity.SoloRecordEntity;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.GameUpdateResult;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.repositories.GameRepository;
 import com.terraforming.ares.repositories.crudRepositories.CrisisRecordEntityRepository;
+import com.terraforming.ares.repositories.crudRepositories.SoloRecordEntityRepository;
 import com.terraforming.ares.services.WinPointsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,6 +29,7 @@ import java.util.function.Function;
 public class CachingGameRepositoryImpl implements CachingGameRepository {
     private final GameRepository gameRepository;
     private final CrisisRecordEntityRepository crisisRecordEntityRepository;
+    private final SoloRecordEntityRepository soloRecordEntityRepository;
     private final WinPointsService winPointsService;
 
     private final Map<Long, MarsGame> cache = new ConcurrentHashMap<>();
@@ -81,7 +85,9 @@ public class CachingGameRepositoryImpl implements CachingGameRepository {
                     if (game.isCrysis() && game.getCrysisData().isWonGame()) {
                         crisisRecordEntityRepository.save(getCrisisRecordEntity(game));
                     }
-
+                    if (game.getStateType() == StateType.GAME_END) {
+                        saveSoloRecordIfPossible(game);
+                    }
                 }
             }
 
@@ -89,6 +95,21 @@ public class CachingGameRepositoryImpl implements CachingGameRepository {
         });
 
         return resultBuilder.build();
+    }
+
+    private void saveSoloRecordIfPossible(MarsGame game) {
+        if (!game.isDummyHandMode() || game.getPlayerUuidToPlayer().size() != 1) {
+            return;
+        }
+        SoloRecordEntity record = new SoloRecordEntity();
+        final Player player = game.getPlayerUuidToPlayer().values().iterator().next();
+        record.setUuid(player.getUuid());
+        record.setPlayerName(player.getName());
+        record.setTurns(game.getTurns());
+        record.setVictoryPoints(winPointsService.countWinPoints(player, game));
+        record.setDate(LocalDateTime.now());
+
+        soloRecordEntityRepository.save(record);
     }
 
     private CrisisRecordEntity getCrisisRecordEntity(MarsGame game) {

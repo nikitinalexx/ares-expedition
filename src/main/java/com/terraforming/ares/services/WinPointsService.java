@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 public class WinPointsService {
     public final CardService cardService;
 
+
     public int countWinPoints(Player player, MarsGame game) {
         if (game.isCrysis()) {
             return countCrysisWinPoints(game);
@@ -48,7 +49,7 @@ public class WinPointsService {
 
         winPoints += awardsWinPoints(player, game);
 
-        return winPoints;
+        return winPoints + player.getExtraPoints();
     }
 
     public float countWinPointsWithFloats(Player player, MarsGame game) {
