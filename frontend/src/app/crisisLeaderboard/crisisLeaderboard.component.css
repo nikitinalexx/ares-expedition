@@ -4,6 +4,16 @@ table {
   width: 500px;
 }
 
+.tables-container {
+  display: flex; /* Используем flexbox для контейнера */
+  justify-content: space-between; /* Размещаем таблицы внутри контейнера */
+}
+
+.left-table,
+.right-table {
+  width: 48%;
+}
+
 th, td {
   border: 1px solid black;
   padding: 10px;

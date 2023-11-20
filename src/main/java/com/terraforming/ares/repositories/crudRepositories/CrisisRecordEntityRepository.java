@@ -16,26 +16,40 @@ public interface CrisisRecordEntityRepository extends CrudRepository<CrisisRecor
 
     CrisisRecordEntity findByUuid(String uuid);
 
-    @Query(value = "SELECT * FROM crisis_record_entity m WHERE player_count = ? " +
-            "ORDER BY difficulty DESC, (m.victory_points + m.terraforming_points) DESC, date, turns_left DESC LIMIT 20", nativeQuery = true)
-    List<CrisisRecordEntity> findTopTwentyRecordsByPoints(int playerCount);
+//    @Query(value = "SELECT * FROM crisis_record_entity m WHERE player_count = ? " +
+//            "ORDER BY difficulty DESC, (m.victory_points + m.terraforming_points) DESC, date, turns_left DESC LIMIT 20", nativeQuery = true)
+//    List<CrisisRecordEntity> findTopTwentyRecordsByPoints(int playerCount);
+//
+//    @Query(value = "SELECT * FROM crisis_record_entity m WHERE player_count = ? " +
+//            "ORDER BY difficulty DESC, turns_left DESC, (m.victory_points + m.terraforming_points) DESC, date LIMIT 20", nativeQuery = true)
+//    List<CrisisRecordEntity> findTopTwentyRecordsByTurns(int playerCount);
 
-    @Query(value = "SELECT * FROM crisis_record_entity m WHERE player_count = ? " +
-            "ORDER BY difficulty DESC, turns_left DESC, (m.victory_points + m.terraforming_points) DESC, date LIMIT 20", nativeQuery = true)
-    List<CrisisRecordEntity> findTopTwentyRecordsByTurns(int playerCount);
+    @Query(value = "SELECT * FROM crisis_record_entity m WHERE player_count = ? AND difficulty = ? " +
+            "ORDER BY (m.victory_points + m.terraforming_points) DESC, date, turns_left DESC LIMIT 20", nativeQuery = true)
+    List<CrisisRecordEntity> findTopTwentyRecordsByPoints(int playerCount,int difficulty);
 
+    @Query(value = "SELECT * FROM crisis_record_entity m WHERE player_count = ? AND difficulty = ? " +
+            "ORDER BY turns_left DESC, (m.victory_points + m.terraforming_points) DESC, date LIMIT 20", nativeQuery = true)
+    List<CrisisRecordEntity> findTopTwentyRecordsByTurns(int playerCount, int difficulty);
 
     @Modifying
     @Query(value = "DELETE FROM crisis_record_entity " +
-            "WHERE uuid NOT IN ((" +
-            "        SELECT uuid" +
-            "        FROM crisis_record_entity" +
-            "        ORDER BY difficulty DESC, turns_left DESC, (victory_points + terraforming_points) DESC, date LIMIT 20)" +
+            "WHERE uuid NOT IN (( " +
+            "        SELECT uuid " +
+            "        FROM crisis_record_entity where difficulty = 0" +
+            "        ORDER BY turns_left DESC, (victory_points + terraforming_points) DESC, date LIMIT 20)" +
             "    UNION (" +
-            "        SELECT uuid" +
-            "        FROM crisis_record_entity" +
-            "        ORDER BY difficulty DESC, (victory_points + terraforming_points) DESC, date, turns_left DESC LIMIT 20" +
-            "    ))",
+            "        SELECT uuid " +
+            "        FROM crisis_record_entity where difficulty = 0" +
+            "        ORDER BY (victory_points + terraforming_points) DESC, date, turns_left DESC LIMIT 20)" +
+            "    UNION (" +
+            "        SELECT uuid " +
+            "        FROM crisis_record_entity where difficulty = -1" +
+            "        ORDER BY turns_left DESC, (victory_points + terraforming_points) DESC, date LIMIT 20)" +
+            "    UNION (" +
+            "        SELECT uuid " +
+            "        FROM crisis_record_entity where difficulty = -1" +
+            "        ORDER BY (victory_points + terraforming_points) DESC, date, turns_left DESC LIMIT 20))",
             nativeQuery = true)
     void clearCrisisRecordMemory();
 }
