@@ -13,7 +13,9 @@ export const BASE_URL = new InjectionToken('rest_url');
   styleUrls: ['./crisisLeaderboard.component.css']
 })
 export class CrisisLeaderboardComponent implements OnInit {
-  crisisRecords: CrisisRecordEntity[];
+  crisisRecordsByPoints: CrisisRecordEntity[];
+  crisisRecordsByTurns: CrisisRecordEntity[];
+
   soloRecords: SoloRecordEntity[];
   errorMessage: string;
   loading: boolean;
@@ -30,24 +32,24 @@ export class CrisisLeaderboardComponent implements OnInit {
     this.parentForm = this.formBuilder.group({
       playerCount: ['1', Validators.required],
       sortType: '1',
-      recordType: 'solo'
+      recordType: 'crisis',
+      difficultyLevel: '0'
     });
-
-    this.loadSoloRecords();
+    this.loadCrisisRecords(1, 1, 0);
   }
 
-  loadCrisisRecords(playerCount: number, sortType: number) {
+  loadCrisisRecords(playerCount: number, sortType: number, difficultyLevel: number) {
     this.soloRecords = null;
-    this.crisisRecords = null;
+    this.crisisRecordsByTurns = null;
+    this.crisisRecordsByPoints = null;
     this.loading = true;
     this.loadingResult?.unsubscribe();
-    const observable = (sortType === 2
-      ? this.model.getCrisisRecordsByTurns(playerCount)
-      : this.model.getCrisisRecordsByPoints(playerCount));
+    const observable = this.model.getCrisisRecords(playerCount, difficultyLevel);
     this.loadingResult = observable.subscribe(response => {
       if (response) {
         this.loading = false;
-        this.crisisRecords = response;
+        this.crisisRecordsByTurns = response.topTwentyRecordsByTurns;
+        this.crisisRecordsByPoints = response.topTwentyRecordsByPoints;
       }
     }, error => {
       this.loading = false;
@@ -57,7 +59,6 @@ export class CrisisLeaderboardComponent implements OnInit {
 
   loadSoloRecords() {
     this.soloRecords = null;
-    this.crisisRecords = null;
     this.loading = true;
     this.loadingResult?.unsubscribe();
     const observable = this.model.getSoloRecordsByTurns();
@@ -73,18 +74,23 @@ export class CrisisLeaderboardComponent implements OnInit {
   }
 
   clickPlayerCount(playerCount: number) {
-    this.loadCrisisRecords(playerCount, this.parentForm.value.sortType);
+    this.loadCrisisRecords(playerCount, this.parentForm.value.sortType, this.parentForm.value.difficultyLevel);
+  }
+
+  clickDifficultyLevel(difficultyLevel: number) {
+    this.loadCrisisRecords(this.parentForm.value.playerCount, this.parentForm.value.sortType, difficultyLevel);
   }
 
   clickSortType(sortType: number) {
-    this.loadCrisisRecords(this.parentForm.value.playerCount, sortType);
+    this.loadCrisisRecords(this.parentForm.value.playerCount, sortType, this.parentForm.value.difficultyLevel);
   }
+
 
   clickRecordType(type: number) {
     if (type === 1) {
       this.loadSoloRecords();
     } else if (type === 2) {
-      this.loadCrisisRecords(this.parentForm.value.playerCount, this.parentForm.value.sortType);
+      this.loadCrisisRecords(this.parentForm.value.playerCount, this.parentForm.value.sortType, this.parentForm.value.difficultyLevel);
     }
   }
 

@@ -91,6 +91,10 @@ public class GameController {
                 throw new IllegalArgumentException("Only names of length 10 or below are supported");
             }
 
+            if(gameParameters.getPlayerNames().stream().distinct().count() != gameParameters.getPlayerNames().size()){
+                throw new IllegalArgumentException("Nicknames must be unique");
+            }
+
             if (playersCount > Constants.MAX_PLAYERS) {
                 throw new IllegalArgumentException("Only 1 to 4 players are supported so far");
             }
@@ -641,14 +645,22 @@ public class GameController {
                 .build();
     }
 
-    @GetMapping("/crisis/records/points")
-    public List<CrisisRecordEntity> findTopTwentyRecordsByPoints(@RequestParam int playerCount) {
-        return crisisRecordEntityRepository.findTopTwentyRecordsByPoints(playerCount);
-    }
+//    @GetMapping("/crisis/records/points")
+//    public List<CrisisRecordEntity> findTopTwentyRecordsByPoints(@RequestParam int playerCount) {
+//        return crisisRecordEntityRepository.findTopTwentyRecordsByPoints(playerCount);
+//    }
+//
+//    @GetMapping("/crisis/records/turns")
+//    public List<CrisisRecordEntity> findTopTwentyRecordsByTurns(@RequestParam int playerCount) {
+//        return crisisRecordEntityRepository.findTopTwentyRecordsByTurns(playerCount);
+//    }
 
-    @GetMapping("/crisis/records/turns")
-    public List<CrisisRecordEntity> findTopTwentyRecordsByTurns(@RequestParam int playerCount) {
-        return crisisRecordEntityRepository.findTopTwentyRecordsByTurns(playerCount);
+    @GetMapping("/crisis/records")
+    public CrisisRecordsDto findTopTwentyRecords(@RequestParam int playerCount, @RequestParam int difficultyLevel) {
+        List<CrisisRecordEntity> crisisRecordEntityByTurns = crisisRecordEntityRepository.findTopTwentyRecordsByTurns(playerCount,difficultyLevel);
+        List<CrisisRecordEntity> crisisRecordEntityByPoints = crisisRecordEntityRepository.findTopTwentyRecordsByPoints(playerCount,difficultyLevel);
+
+        return new CrisisRecordsDto(crisisRecordEntityByPoints, crisisRecordEntityByTurns);
     }
 
     @GetMapping("/solo/records")

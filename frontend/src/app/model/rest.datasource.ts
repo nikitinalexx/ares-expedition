@@ -21,7 +21,7 @@ import {DiscardCardsRequest} from "../data/DiscardCardsRequest";
 import {CrisisRecordEntity} from "../data/CrisisRecordEntity";
 import {SoloRecordEntity} from "../data/SoloRecordEntity";
 import {RecentGameDto} from "../data/RecentGameDto";
-
+import {CrisisRecordsDto} from "../data/CrisisRecordsDto";
 
 @Injectable()
 export class RestDataSource {
@@ -268,6 +268,10 @@ export class RestDataSource {
 
   getCrisisRecordsByTurns(playerCount: number): Observable<CrisisRecordEntity[]> {
     return this.sendRequest<any>('GET', this.url + '/crisis/records/turns?playerCount=' + playerCount);
+  }
+
+  getCrisisRecords(playerCount: number, difficultyLevel:number): Observable<CrisisRecordsDto> {
+    return this.sendRequest<any>('GET', this.url + '/crisis/records?playerCount=' + playerCount + '&difficultyLevel=' + difficultyLevel);
   }
 
   getSoloRecords(): Observable<SoloRecordEntity[]> {
