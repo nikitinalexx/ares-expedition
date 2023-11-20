@@ -13,10 +13,9 @@ export const BASE_URL = new InjectionToken('rest_url');
   styleUrls: ['./crisisLeaderboard.component.css']
 })
 export class CrisisLeaderboardComponent implements OnInit {
-  crisisBeginningRecordsByPoints: CrisisRecordEntity[];
-  crisisNormalRecordsByPoints: CrisisRecordEntity[];
-  crisisBeginningRecordsByTurns: CrisisRecordEntity[];
-  crisisNormalRecordsByTurns: CrisisRecordEntity[];
+  crisisRecordsByPoints: CrisisRecordEntity[];
+  crisisRecordsByTurns: CrisisRecordEntity[];
+
   soloRecords: SoloRecordEntity[];
   errorMessage: string;
   loading: boolean;
@@ -41,24 +40,16 @@ export class CrisisLeaderboardComponent implements OnInit {
 
   loadCrisisRecords(playerCount: number, sortType: number, difficultyLevel: number) {
     this.soloRecords = null;
-    this.crisisBeginningRecordsByPoints = null;
-    this.crisisBeginningRecordsByTurns = null;
-    this.crisisNormalRecordsByPoints = null;
-    this.crisisNormalRecordsByTurns = null;
+    this.crisisRecordsByTurns = null;
+    this.crisisRecordsByPoints = null;
     this.loading = true;
     this.loadingResult?.unsubscribe();
     const observable = this.model.getCrisisRecords(playerCount, difficultyLevel);
     this.loadingResult = observable.subscribe(response => {
       if (response) {
         this.loading = false;
-        if (difficultyLevel == -1) {
-          this.crisisBeginningRecordsByTurns = response.topTwentyRecordsByTurns;
-          this.crisisBeginningRecordsByPoints = response.topTwentyRecordsByPoints;
-        } else {
-          this.crisisNormalRecordsByTurns = response.topTwentyRecordsByTurns;
-          this.crisisNormalRecordsByPoints = response.topTwentyRecordsByPoints;
-        }
-
+        this.crisisRecordsByTurns = response.topTwentyRecordsByTurns;
+        this.crisisRecordsByPoints = response.topTwentyRecordsByPoints;
       }
     }, error => {
       this.loading = false;

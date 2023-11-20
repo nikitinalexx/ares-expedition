@@ -62,6 +62,10 @@ public class GameController {
                 throw new IllegalArgumentException("Only names of length 10 or below are supported");
             }
 
+            if(gameParameters.getPlayerNames().stream().distinct().count() != gameParameters.getPlayerNames().size()){
+                throw new IllegalArgumentException("Nicknames must be unique");
+            }
+
             if (playersCount == 0 || playersCount > Constants.MAX_PLAYERS) {
                 throw new IllegalArgumentException("Only 1 to 4 players are supported so far");
             }

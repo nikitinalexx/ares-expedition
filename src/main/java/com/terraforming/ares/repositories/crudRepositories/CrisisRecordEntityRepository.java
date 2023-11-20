@@ -37,19 +37,19 @@ public interface CrisisRecordEntityRepository extends CrudRepository<CrisisRecor
             "WHERE uuid NOT IN (( " +
             "        SELECT uuid " +
             "        FROM crisis_record_entity where difficulty = 0" +
-            "        ORDER BY difficulty DESC, turns_left DESC, (victory_points + terraforming_points) DESC, date LIMIT 20)" +
+            "        ORDER BY turns_left DESC, (victory_points + terraforming_points) DESC, date LIMIT 20)" +
             "    UNION (" +
             "        SELECT uuid " +
             "        FROM crisis_record_entity where difficulty = 0" +
-            "        ORDER BY difficulty DESC, (victory_points + terraforming_points) DESC, date, turns_left DESC LIMIT 20)" +
+            "        ORDER BY (victory_points + terraforming_points) DESC, date, turns_left DESC LIMIT 20)" +
             "    UNION (" +
             "        SELECT uuid " +
             "        FROM crisis_record_entity where difficulty = -1" +
-            "        ORDER BY difficulty DESC, turns_left DESC, (victory_points + terraforming_points) DESC, date LIMIT 20)" +
+            "        ORDER BY turns_left DESC, (victory_points + terraforming_points) DESC, date LIMIT 20)" +
             "    UNION (" +
             "        SELECT uuid " +
             "        FROM crisis_record_entity where difficulty = -1" +
-            "        ORDER BY difficulty DESC, (victory_points + terraforming_points) DESC, date, turns_left DESC LIMIT 20))",
+            "        ORDER BY (victory_points + terraforming_points) DESC, date, turns_left DESC LIMIT 20))",
             nativeQuery = true)
     void clearCrisisRecordMemory();
 }

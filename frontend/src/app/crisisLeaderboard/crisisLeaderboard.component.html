@@ -58,7 +58,7 @@
       <div class="loading"></div>
       <div class="text-white launching-text-box">Loading</div>
     </div>
-    <tr *ngFor="let record of crisisNormalRecordsByPoints; let i = index;">
+    <tr *ngFor="let record of crisisRecordsByPoints; let i = index;">
       <td>{{i + 1}}</td>
       <td class="board-link"><a href="{{getPlayerLink(record.uuid)}}" class="text-warning"
                                 style="margin-left: 5px; font-weight: bold; font-size: 20px">{{record.playerName}}</a>
@@ -88,7 +88,7 @@
       <div class="loading"></div>
       <div class="text-white launching-text-box">Loading</div>
     </div>
-    <tr *ngFor="let record of crisisNormalRecordsByTurns; let i = index;">
+    <tr *ngFor="let record of crisisRecordsByTurns; let i = index;">
       <td>{{i + 1}}</td>
       <td class="board-link"><a href="{{getPlayerLink(record.uuid)}}" class="text-warning"
                                 style="margin-left: 5px; font-weight: bold; font-size: 20px">{{record.playerName}}</a>
@@ -120,7 +120,7 @@
       <div class="loading"></div>
       <div class="text-white launching-text-box">Loading</div>
     </div>
-    <tr *ngFor="let record of crisisBeginningRecordsByPoints; let i = index;">
+    <tr *ngFor="let record of crisisRecordsByPoints; let i = index;">
       <td>{{i + 1}}</td>
       <td class="board-link"><a href="{{getPlayerLink(record.uuid)}}" class="text-warning"
                                 style="margin-left: 5px; font-weight: bold; font-size: 20px">{{record.playerName}}</a>
@@ -150,7 +150,7 @@
       <div class="loading"></div>
       <div class="text-white launching-text-box">Loading</div>
     </div>
-    <tr *ngFor="let record of crisisBeginningRecordsByTurns; let i = index;">
+    <tr *ngFor="let record of crisisRecordsByTurns; let i = index;">
       <td>{{i + 1}}</td>
       <td class="board-link"><a href="{{getPlayerLink(record.uuid)}}" class="text-warning"
                                 style="margin-left: 5px; font-weight: bold; font-size: 20px">{{record.playerName}}</a>
