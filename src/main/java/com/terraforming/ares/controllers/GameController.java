@@ -399,6 +399,9 @@ public class GameController {
 
 
             List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
+
+            players.sort(Comparator.comparing(player -> player.getUuid().charAt(player.getUuid().length() - 1)));
+
             List<Integer> winPoints = players.stream().map(player -> winPointsService.countWinPoints(player, game)).collect(Collectors.toList());
 
             int maxWinPoints = Collections.max(winPoints);

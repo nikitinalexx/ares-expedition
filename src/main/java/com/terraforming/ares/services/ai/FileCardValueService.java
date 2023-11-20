@@ -48,8 +48,8 @@ public class FileCardValueService implements ICardValueService {
         this.aiBalanceService = aiBalanceService;
         this.discountService = discountService;
 
-        this.cardIdToTurnToValueTwoPlayer = initCardStatsFromFile("cardStatsExpansionRandom.txt", 1);
-        this.cardIdToTurnToValueFourPlayer = initCardStatsFromFile("cardStatsRandom.txt", 2);
+        this.cardIdToTurnToValueTwoPlayer = initCardStatsFromFile("cardStatsExpansionRandom2p.txt", 1);
+        this.cardIdToTurnToValueFourPlayer = initCardStatsFromFile("cardStatsExpansionRandom4p.txt", 2);
     }
 
     private Map<Integer, Map<Integer, CardValue>> initCardStatsFromFile(String fileName, int multiplier) throws IOException {

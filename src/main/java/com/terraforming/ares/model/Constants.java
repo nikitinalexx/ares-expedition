@@ -101,8 +101,8 @@ public class Constants {
 
     public static final boolean PLAYER_CHOOSES_CARDS_FOR_FIRST_PLAYER = false;
 
-    public static final List<PlayerDifficulty> SIMULATION_PLAYERS = List.of(PlayerDifficulty.RANDOM, PlayerDifficulty.RANDOM, PlayerDifficulty.RANDOM, PlayerDifficulty.RANDOM);
-    public static final boolean WRITE_STATISTICS_TO_FILE = true;
+    public static final List<PlayerDifficulty> SIMULATION_PLAYERS = List.of(PlayerDifficulty.SMART, PlayerDifficulty.SMART, PlayerDifficulty.SMART, PlayerDifficulty.SMART);
+    public static final boolean WRITE_STATISTICS_TO_FILE = false;
     public static final boolean WRITE_STATISTICS_TO_CONSOLE = false;
     public static final boolean SAVE_SIMULATION_GAMES_TO_DB = false;
 
