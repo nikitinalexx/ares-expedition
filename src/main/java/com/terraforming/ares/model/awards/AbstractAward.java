@@ -46,6 +46,6 @@ public abstract class AbstractAward extends BaseAward {
                 .collect(Collectors.toSet());
     }
 
-    protected abstract ToIntFunction<Player> comparableParamExtractor(CardService cardService);
+    public abstract ToIntFunction<Player> comparableParamExtractor(CardService cardService);
 
 }

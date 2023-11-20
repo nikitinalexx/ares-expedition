@@ -7,8 +7,10 @@ import com.terraforming.ares.cards.crysis.*;
 import com.terraforming.ares.cards.green.*;
 import com.terraforming.ares.cards.red.*;
 import com.terraforming.ares.model.Card;
+import com.terraforming.ares.model.CardColor;
 import com.terraforming.ares.model.CrysisCard;
 import com.terraforming.ares.model.Expansion;
+import lombok.Getter;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -26,6 +28,7 @@ public class CardFactory {
     private final Map<Integer, Card> discoveryExpansionCorporations;
     private final Map<Integer, Card> buffedCorporationsStorage;
     private final Map<Integer, Card> buffedCorporationsMapping;
+    @Getter
     private final List<Card> sortedBaseCorporations;
     private final List<Card> sortedDiscoveryCorporations;
     private final List<Card> buffedCorporations;
@@ -34,11 +37,16 @@ public class CardFactory {
     private final Map<Integer, Card> baseExpansionProjects;
     private final Map<Integer, Card> discoveryExpansionProjects;
 
-    //used for display of all projecst cards, needs sorting in advance
+    //used for display of all projects cards, needs sorting in advance
     private final List<Card> baseExpansionSortedProjects;
     private final List<Card> discoveryExpansionSortedProjects;
 
     private final Set<Integer> crysisExcludedCards;
+
+    private final Map<Integer, Integer> allCardsToIndex;
+
+    @Getter
+    private final List<Integer> blueCardsForAi;
 
     public CardFactory() {
         baseExpansionSortedProjects = List.of(
@@ -263,6 +271,81 @@ public class CardFactory {
                 new SelfReplicatingBacteria(219)
         );
 
+        blueCardsForAi = List.of(
+                1,//adaptation technology, effect similar to inventrix
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                17,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23,
+                24,
+                25,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                37,
+                38,
+                39,
+                40,
+                41,
+                42,//combine with corporation
+                43,
+                44,
+                45,
+                46,
+                47,
+                48,
+                49,
+                50,
+                51,
+                52,
+                53,
+                54,
+                55,
+                56,
+                57,
+                58,
+                59,
+                61,
+                62,
+                63,
+                64,
+                213,
+                216,
+                217,
+                219//add ai
+        );
+
+        allCardsToIndex = new HashMap<>();
+
+        for (int i = 0; i < baseExpansionSortedProjects.size(); i++) {
+            Card card = baseExpansionSortedProjects.get(i);
+            allCardsToIndex.put(card.getId(), i);
+        }
+
         discoveryExpansionSortedProjects = List.of(
                 new CommunicationsStreamlining(305),
                 new DroneAssistedConstruction(306),
@@ -273,12 +356,11 @@ public class CardFactory {
                 new SoftwareStreamlining(311),
                 new VirtualEmployeeDevelopment(312),
                 new VolcanicSoil(313),
-                new OreLeaching(318),
-
                 new BiomedicalImports(314),
                 new CryogenicShipment(315),
                 new Exosuits(316),
                 new ImportedConstructionCrews(317),
+                new OreLeaching(318),
                 new PrivateInvestorBeach(319),
                 new TopographicMapping(320),
                 new ThreeDPrinting(321),
@@ -408,6 +490,10 @@ public class CardFactory {
         baseExpansionCorporations = sortedBaseCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
         discoveryExpansionCorporations = sortedDiscoveryCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
         buffedCorporationsStorage = buffedCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
+    }
+
+    public Map<Integer, Integer> getAllCardIdToIndex() {
+        return allCardsToIndex;
     }
 
     public List<CrysisCard> getCrysisCards() {

@@ -1,10 +1,42 @@
 package com.terraforming.ares.model;
 
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * Created by oleksii.nikitin
  * Creation date 05.05.2022
  */
 public class Constants {
+    public static Map<Integer, Integer> FIRST_PLAYER_PHASES = new ConcurrentHashMap<>();
+    public static Map<Integer, Integer> SECOND_PLAYER_PHASES = new ConcurrentHashMap<>();
+
+    //TODO update
+    public static final List<Integer> CORPORATION_PRIORITY = List.of(
+            10006, /* Tharsis */
+            10015, /* MayNi */
+            10104, 10011, /* Saturn */
+            10105, 10012, /* Zetacell */
+            10102, 10009, /* Phobolog */
+            10017, /* Interplanetary */
+            10003, /* LaunchStar */
+            10002, /* DevTechs */
+            10007, /* Credicor */
+            10005, /* Teractor */
+            10107, 10014, /* Inventrix */
+            10004, /* Thorgate */
+            10103, 10010, /* Mining */
+            10106, 10013, /* Ecoline */
+            10001, /* Celestior */
+            10101, 10008, /* Arclight */
+            10108, 10016, /* UNMI */
+            10100, 10000 /* Helion */
+    );
+
+    public static final int CORPORATION_ID_OFFSET = 10000;
+
+
     public static final int MAX_OCEANS = 9;
     public static final int STARTING_RT = 5;
     public static final int TEMPERATURE_HEAT_COST = 8;
@@ -23,18 +55,6 @@ public class Constants {
     public static final int DEFAULT_START_HAND_SIZE = 8;
     public static final int MAX_HAND_SIZE_LAST_ROUND = 10;
 
-
-    public static final int ADAPTATION_TECHNOLOGY_CARD_ID = 1;
-    public static final int ADVANCED_ALLOYS_CARD_ID = 2;
-    public static final int ADVANCED_SCREENING_TECHNOLOGY_CARD_ID = 3;
-    public static final int AI_CENTRAL_CARD_ID = 4;
-    public static final int ANAEROBIC_MICROORGANISMS_CARD_ID = 5;
-
-    public static final int ARTIFICIAL_JUNGLE_CARD_ID = 9;
-    public static final int ASSEMBLY_LINES_CARD_ID = 10;
-    public static final int ASSET_LIQUIDATION_CARD_ID = 11;
-
-
     public static final int BUILD_GREEN_PROJECTS_PHASE = 1;
     public static final int BUILD_BLUE_RED_PROJECTS_PHASE = 2;
     public static final int PERFORM_BLUE_ACTION_PHASE = 3;
@@ -42,6 +62,8 @@ public class Constants {
     public static final int DRAFT_CARDS_PHASE = 5;
     public static final int SELL_EXTRA_CARDS_PHASE = 6;
     public static final int PICK_CORPORATIONS_PHASE = 7;
+
+    public static final int UPGRADEABLE_PHASES_COUNT = 5;
 
     public static final int MAX_PLAYERS = 4;
 
@@ -70,15 +92,24 @@ public class Constants {
     public static final int PHASE_5_UPGRADE_KEEP_EXTRA = 13;
     public static final int PHASE_5_UPGRADE_SEE_EXTRA = 14;
 
-    public static final boolean COLLECT_DATASET = false;
+    public static final float RED_CARDS_RATIO = 40f / 217;
+    public static final float GREEN_CARDS_RATIO = 111f / 217;
+    public static final float BLUE_CARDS_RATIO = 66f / 217;
 
-    public static final boolean LOG_NET_COMPARISON = false;
+    public static final boolean DISCOVERY_SIMULATIONS = true;
 
+
+    public static final boolean PLAYER_CHOOSES_CARDS_FOR_FIRST_PLAYER = false;
+
+    public static final List<PlayerDifficulty> SIMULATION_PLAYERS = List.of(PlayerDifficulty.SMART, PlayerDifficulty.SMART, PlayerDifficulty.SMART, PlayerDifficulty.SMART);
     public static final boolean WRITE_STATISTICS_TO_FILE = false;
     public static final boolean WRITE_STATISTICS_TO_CONSOLE = false;
     public static final boolean SAVE_SIMULATION_GAMES_TO_DB = false;
 
+    public static final boolean COLLECT_DATASET = false;
+    public static final boolean LOG_NET_COMPARISON = false;
 
-    private Constants() {}
+    private Constants() {
+    }
 
 }

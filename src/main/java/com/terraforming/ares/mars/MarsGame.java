@@ -138,7 +138,7 @@ public class MarsGame {
                     boolean mulligan,
                     List<BaseAward> awards,
                     List<Milestone> milestones,
-                    List<Boolean> computers,
+                    List<PlayerDifficulty> computers,
                     List<Expansion> expansions,
                     boolean dummyHandMode,
                     List<Integer> dummyHand,
@@ -149,7 +149,7 @@ public class MarsGame {
         this.awards = awards;
         this.milestones = milestones;
         this.expansions = expansions;
-        this.hasAi = (computers.stream().anyMatch(item -> item));
+        this.hasAi = (computers.stream().anyMatch(item -> item != null && item != PlayerDifficulty.NONE));
         this.dummyHandMode = dummyHandMode;
         this.dummyHand = new ArrayList<>(dummyHand);
         this.crysisData = crysisData;
@@ -161,7 +161,7 @@ public class MarsGame {
                     Player.builder()
                             .uuid(UUID.randomUUID().toString() + i)
                             .name(playerNames.get(i))
-                            //.hand(Deck.builder().cards(new LinkedList<>(List.of(69))).build())
+//                            .hand(Deck.builder().cards(new LinkedList<>(List.of(19, 24, 339))).build())
                             .hand(projectsDeck.dealCardsDeck(playerHandSize))
                             .extraPoints(extraPoints != null && extraPoints.length > i ? extraPoints[i] : 0)
                             .corporations(corporationsDeck.dealCardsDeck(INITIAL_CORPORATIONS_SIZE))
@@ -169,7 +169,7 @@ public class MarsGame {
                             .played(Deck.builder().build())
                             //.heat(100)
                             .mulligan(mulligan)
-                            .ai(computers.get(i))
+                            .difficulty(computers.get(i))
                             .build()
             );
 

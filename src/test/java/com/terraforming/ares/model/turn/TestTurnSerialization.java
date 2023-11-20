@@ -33,7 +33,8 @@ class TestTurnSerialization {
                         new HeatPayment(6),
                         new RestructuredResourcesPayment()
                 ),
-                Map.of(6, List.of(7, 8, 9))
+                Map.of(6, List.of(7, 8, 9)),
+                false
         );
 
         BuildBlueRedProjectTurn actualTurn = (BuildBlueRedProjectTurn) serializeDeserialize(expectedTurn);
@@ -56,7 +57,8 @@ class TestTurnSerialization {
                         new HeatPayment(6),
                         new RestructuredResourcesPayment()
                 ),
-                Map.of(6, List.of(7, 8, 9))
+                Map.of(6, List.of(7, 8, 9)),
+                false
         );
 
         BuildGreenProjectTurn actualTurn = (BuildGreenProjectTurn) serializeDeserialize(expectedTurn);

@@ -10,6 +10,7 @@ import java.util.function.ToIntFunction;
  * Creation date 13.06.2022
  */
 public class CelebrityAward extends AbstractAward {
+    public static final ToIntFunction<Player> valueExtractor = Player::getMcIncome;
 
     @Override
     public AwardType getType() {
@@ -17,7 +18,13 @@ public class CelebrityAward extends AbstractAward {
     }
 
     @Override
-    protected ToIntFunction<Player> comparableParamExtractor(CardService cardService) {
-        return Player::getMcIncome;
+    public ToIntFunction<Player> comparableParamExtractor(CardService cardService) {
+        return valueExtractor;
     }
+
+    @Override
+    public int getMaxValue() {
+        return 96;//121
+    }
+
 }

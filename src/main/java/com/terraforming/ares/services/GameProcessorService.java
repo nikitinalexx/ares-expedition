@@ -2,9 +2,7 @@ package com.terraforming.ares.services;
 
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.GameUpdateResult;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.TurnResponse;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.turn.Turn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.processors.turn.TurnProcessor;
@@ -14,6 +12,7 @@ import com.terraforming.ares.repositories.crudRepositories.GameEntityRepository;
 import com.terraforming.ares.repositories.crudRepositories.PlayerEntityRepository;
 import com.terraforming.ares.repositories.crudRepositories.SoloRecordEntityRepository;
 import com.terraforming.ares.services.ai.AiService;
+import com.terraforming.ares.services.ai.DeepNetwork;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +32,7 @@ public class GameProcessorService extends BaseProcessorService {
     private final CachingGameRepository gameRepository;
     private final StateFactory stateFactory;
     private final AiService aiService;
+    private final DeepNetwork deepNetwork;
     private final Queue<Long> gamesToProcess = new ArrayBlockingQueue<>(3200);
     private final SoloRecordEntityRepository soloRecordEntityRepository;
     private final CrisisRecordEntityRepository crisisRecordEntityRepository;
@@ -48,7 +48,8 @@ public class GameProcessorService extends BaseProcessorService {
                                 SoloRecordEntityRepository soloRecordEntityRepository,
                                 CrisisRecordEntityRepository crisisRecordEntityRepository,
                                 GameEntityRepository gameEntityRepository,
-                                PlayerEntityRepository playerEntityRepository) {
+                                PlayerEntityRepository playerEntityRepository,
+                                DeepNetwork deepNetwork) {
         super(
                 turnTypeService,
                 stateFactory,
@@ -62,6 +63,7 @@ public class GameProcessorService extends BaseProcessorService {
         this.crisisRecordEntityRepository = crisisRecordEntityRepository;
         this.gameEntityRepository = gameEntityRepository;
         this.playerEntityRepository = playerEntityRepository;
+        this.deepNetwork = deepNetwork;
     }
 
     @Scheduled(fixedRate = 20)
@@ -80,6 +82,12 @@ public class GameProcessorService extends BaseProcessorService {
 
                 if (aiService.waitingAiTurns(game)) {
                     registerAsyncGameUpdate(gameId);
+                }
+
+                if (Constants.LOG_NET_COMPARISON && game.getStateType() == StateType.GAME_END) {
+                    game.getPlayerUuidToPlayer().values().stream().filter(Player::isSecondBot).findFirst().ifPresent(
+                            player -> System.out.println("Computer prediction after the game end " + deepNetwork.testState(game, player))
+                    );
                 }
 
                 return null;

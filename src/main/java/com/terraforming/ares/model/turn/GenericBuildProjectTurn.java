@@ -18,4 +18,5 @@ public abstract class GenericBuildProjectTurn implements Turn {
     private final int projectId;
     private final List<Payment> payments;
     private final Map<Integer, List<Integer>> inputParams;
+    private final boolean projection;
 }

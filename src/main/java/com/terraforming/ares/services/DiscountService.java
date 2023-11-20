@@ -19,6 +19,30 @@ public class DiscountService {
     private final SpecialEffectsService specialEffectsService;
     private final CrisisDetrimentService crisisDetrimentService;
 
+    public int getDiscountForAiStudy(MarsGame game, Card card, Player player) {
+        int discount = getDiscount(game, card, player, Map.of());
+
+        discount = card.getPrice() - Math.max(0, card.getPrice() - discount);
+
+        //TODO expansion
+        if (card.getTags().contains(Tag.ENERGY) &&
+                specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ENERGY_SUBSIDIES_DISCOUNT_4)) {
+            discount += 3;//for card
+        }
+
+        //TODO expansion
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.INTERPLANETARY_CONFERENCE)) {
+            if (card.getTags().contains(Tag.EARTH)) {
+                discount += 3;//for card
+            }
+            if (card.getTags().contains(Tag.JUPITER)) {
+                discount += 3;//for card
+            }
+        }
+
+        return discount;
+    }
+
     public int getDiscount(MarsGame game, Card card, Player player, Map<Integer, List<Integer>> inputParameters) {
         int discount = 0;
 

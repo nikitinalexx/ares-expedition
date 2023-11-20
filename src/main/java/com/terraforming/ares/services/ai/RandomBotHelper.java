@@ -11,6 +11,7 @@ public class RandomBotHelper {
 
     public static boolean isRandomBot(Player player) {
         return false;
+       //return player.isFirstBot();
         //return true;
         // return player.isAi();
         //return player.isAi() && player.getUuid().endsWith("0") && FIRST_BOT_IS_RANDOM;

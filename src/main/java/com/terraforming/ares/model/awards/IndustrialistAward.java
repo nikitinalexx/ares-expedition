@@ -10,9 +10,12 @@ import java.util.function.ToIntFunction;
  * Creation date 13.06.2022
  */
 public class IndustrialistAward extends AbstractAward {
+    public static final ToIntFunction<Player> valueExtractor = (player -> player.getSteelIncome() + player.getTitaniumIncome());
+
+
     @Override
-    protected ToIntFunction<Player> comparableParamExtractor(CardService cardService) {
-        return player -> player.getSteelIncome() + player.getTitaniumIncome();
+    public ToIntFunction<Player> comparableParamExtractor(CardService cardService) {
+        return valueExtractor;
     }
 
     @Override
@@ -20,4 +23,8 @@ public class IndustrialistAward extends AbstractAward {
         return AwardType.INDUSTRIALIST;
     }
 
+    @Override
+    public int getMaxValue() {
+        return 23;//25
+    }
 }

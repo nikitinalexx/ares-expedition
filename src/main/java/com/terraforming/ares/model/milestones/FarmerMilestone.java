@@ -23,4 +23,9 @@ public class FarmerMilestone extends Milestone {
     public MilestoneType getType() {
         return MilestoneType.FARMER;
     }
+
+    @Override
+    public int getMaxValue() {
+        return 5;
+    }
 }

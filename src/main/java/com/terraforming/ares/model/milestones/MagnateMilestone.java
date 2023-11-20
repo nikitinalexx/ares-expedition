@@ -26,4 +26,9 @@ public class MagnateMilestone extends Milestone {
     public MilestoneType getType() {
         return MilestoneType.MAGNATE;
     }
+
+    @Override
+    public int getMaxValue() {
+        return 8;
+    }
 }

@@ -36,7 +36,6 @@ public class Herbivores implements BlueCard {
 
     @Override
     public int getWinningPoints() {
-        //TODO
         return 0;
     }
 

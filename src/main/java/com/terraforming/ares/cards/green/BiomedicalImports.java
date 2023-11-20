@@ -28,8 +28,6 @@ public class BiomedicalImports implements DiscoveryExpansionRedCard {
                 .cardAction(CardAction.BIOMEDICAL_IMPORTS)
                 .build();
     }
-
-
     @Override
     public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> input) {
         List<Integer> raiseOxygenInput = input.get(InputFlag.BIOMEDICAL_IMPORTS_RAISE_OXYGEN.getId());

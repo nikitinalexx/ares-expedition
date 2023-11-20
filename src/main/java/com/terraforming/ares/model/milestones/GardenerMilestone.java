@@ -23,4 +23,9 @@ public class GardenerMilestone extends Milestone {
     public MilestoneType getType() {
         return MilestoneType.GARDENER;
     }
+
+    @Override
+    public int getMaxValue() {
+        return 3;
+    }
 }

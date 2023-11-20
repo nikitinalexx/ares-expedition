@@ -2,10 +2,7 @@ package com.terraforming.ares.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.terraforming.ares.model.turn.Turn;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
@@ -53,7 +50,10 @@ public class Player {
 
     private List<Turn> nextTurns;
 
+    //TODO left here for back compatibility, remove later
     private boolean ai;
+
+    private PlayerDifficulty difficulty;
 
     private int mc;
     private int mcIncome;
@@ -88,6 +88,7 @@ public class Player {
         this.activatedBlueCards = new Deck(copy.activatedBlueCards);
         this.blueActionExtraActivationsLeft = copy.blueActionExtraActivationsLeft;
         this.selectedCorporationCard = copy.selectedCorporationCard;
+        this.corporations = copy.corporations;
 
         this.cardResourcesCount = new HashMap<>(copy.getCardResourcesCount());
         this.cardToTag = new HashMap<>(copy.getCardToTag());
@@ -110,6 +111,7 @@ public class Player {
         this.nextTurns = (copy.nextTurns == null ? null : new LinkedList<>(copy.nextTurns));
 
         this.ai = copy.ai;
+        this.difficulty = copy.difficulty;
 
         this.mc = copy.mc;
         this.mcIncome = copy.mcIncome;
@@ -189,6 +191,16 @@ public class Player {
         return phaseCards.get(phase - 1) != 0;
     }
 
+    public int countPhaseUpgrades() {
+        int upgrades = 0;
+        for (int i = 0; i < phaseCards.size(); i++) {
+            if (phaseCards.get(i) != 0) {
+                upgrades++;
+            }
+        }
+        return upgrades;
+    }
+
     public boolean canBuildAny(List<BuildType> types) {
         for (BuildDto availableBuild : builds) {
             if (types.contains(availableBuild.getType())) {
@@ -228,6 +240,21 @@ public class Player {
         didUnmiAction = false;
 
         builtSpecialDesignLastTurn = false;
+    }
+
+    @JsonIgnore
+    public boolean isFirstBot() {
+        return this.uuid.endsWith("0");
+    }
+
+    @JsonIgnore
+    public boolean isSecondBot() {
+        return this.uuid.endsWith("1");
+    }
+
+    @JsonIgnore
+    public boolean isComputer() {
+        return difficulty != null && difficulty != PlayerDifficulty.NONE;
     }
 
 }

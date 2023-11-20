@@ -47,7 +47,7 @@ export class NewGameCrysisComponent implements OnInit {
           this.errorMessage = 'Invalid names';
           return;
         }
-        computers.push(false);
+        computers.push('NONE');
         names.push(name);
       }
       const expansions = [Expansion.BASE, Expansion.DISCOVERY, Expansion.CRYSIS];

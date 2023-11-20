@@ -3,15 +3,17 @@ package com.terraforming.ares.services.ai.turnProcessors;
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.ai.AiTurnChoice;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.CardValidationService;
 import com.terraforming.ares.services.DraftCardsService;
 import com.terraforming.ares.services.SpecialEffectsService;
-import com.terraforming.ares.services.ai.ICardValueService;
-import com.terraforming.ares.services.ai.RandomBotHelper;
+import com.terraforming.ares.services.ai.*;
+import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
+import com.terraforming.ares.services.ai.dto.PhaseChoiceProjection;
 import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
-import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
+import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsService;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -32,10 +34,14 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
     private final AiCardActionHelper aiCardActionHelper;
     private final CardValidationService cardValidationService;
     private final AiPaymentService aiPaymentHelper;
-    private final AiCardBuildParamsHelper aiCardParamsHelper;
+    private final AiCardBuildParamsService aiCardParamsHelper;
     private final SpecialEffectsService specialEffectsService;
     private final DraftCardsService draftCardsService;
     private final ICardValueService cardValueService;
+    private final TestAiService testAiService;
+    private final DeepNetwork deepNetwork;
+    private final AiThirdPhaseProjectionService aiThirdPhaseProjectionService;
+    private final AiCardValidationService aiCardValidationService;
 
 
     @Override
@@ -45,37 +51,61 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
 
     @Override
     public boolean processTurn(MarsGame game, Player player) {
+        if (Constants.LOG_NET_COMPARISON) {
+            System.out.println("======================New Round========================");
+        }
         Integer previousChosenPhase = player.getPreviousChosenPhase();
-
 
         List<Integer> possiblePhases = new ArrayList<>();
 
-        if (!RandomBotHelper.isRandomBot(player) && (previousChosenPhase == null || previousChosenPhase != 1 && previousChosenPhase != 2)) {
-            int phase = chooseBetweenFirstAndSecondPhase(game, player);
-            if (phase != 0) {
-                possiblePhases.add(phase);
+        if (player.getDifficulty().PICK_PHASE == AiTurnChoice.NETWORK) {
+            PhaseChoiceProjection projection = PhaseChoiceProjection.SKIP_PHASE;
+            if (previousChosenPhase == null || previousChosenPhase != 1 && previousChosenPhase != 2) {
+                projection = projection.applyIfBetter(chooseBetweenFirstAndSecondPhaseAi(game, player));
+            } else {
+                projection = projection.applyIfBetter(mayPlayPhaseOneAi(game, player));
+                projection = projection.applyIfBetter(mayPlayPhaseTwoAi(game, player));
+            }
+
+            projection = projection.applyIfBetter(mayPlayPhaseThree(game, player));
+
+            projection = projection.applyIfBetter(mayPlayPhaseFourAi(game, player));
+
+            projection = projection.applyIfBetter(mayPlayPhaseFiveAi(game, player));
+
+            if (projection.isPickPhase()) {
+                possiblePhases.add(projection.getPhase());
             }
         } else {
-            if (mayPlayPhaseOne(game, player)) {
-                possiblePhases.add(1);
+            if (!(player.getDifficulty().PICK_PHASE == AiTurnChoice.RANDOM)
+                    && (previousChosenPhase == null || previousChosenPhase != 1 && previousChosenPhase != 2)) {
+                int phase = chooseBetweenFirstAndSecondPhase(game, player);
+                if (phase != 0) {
+                    possiblePhases.add(phase);
+                }
+            } else {
+                if (mayPlayPhaseOne(game, player)) {
+                    possiblePhases.add(1);
+                }
+
+                if (mayPlayPhaseTwo(game, player)) {
+                    possiblePhases.add(2);
+                }
             }
 
-            if (mayPlayPhaseTwo(game, player)) {
-                possiblePhases.add(2);
+            if (mayPlayPhaseThree(game, player).isPickPhase()) {
+                possiblePhases.add(3);
+            }
+
+            if (mayPlayPhaseFour(game, player)) {
+                possiblePhases.add(4);
+            }
+
+            if (mayPlayPhaseFive(game, player)) {
+                possiblePhases.add(5);
             }
         }
 
-        if (mayPlayPhaseThree(game, player)) {
-            possiblePhases.add(3);
-        }
-
-        if (mayPlayPhaseFour(game, player)) {
-            possiblePhases.add(4);
-        }
-
-        if (mayPlayPhaseFive(game, player)) {
-            possiblePhases.add(5);
-        }
 
         int chosenPhase;
 
@@ -105,9 +135,34 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             chosenPhase = possiblePhases.get(random.nextInt(possiblePhases.size()));
         }
 
+        if (player.isFirstBot()) {
+            Constants.FIRST_PLAYER_PHASES.compute(chosenPhase, (key, value) -> {
+                if (value == null) {
+                    value = 0;
+                }
+                return value + 1;
+            });
+        }
+        if (player.isSecondBot()) {
+            Constants.SECOND_PLAYER_PHASES.compute(chosenPhase, (key, value) -> {
+                if (value == null) {
+                    value = 0;
+                }
+                return value + 1;
+            });
+        }
+
         aiTurnService.choosePhaseTurn(player, chosenPhase);
 
         return true;
+    }
+
+    private PhaseChoiceProjection chooseBetweenFirstAndSecondPhaseAi(MarsGame game, Player player) {
+        BuildProjectPrediction prediction = testAiService.getBestCardToBuild(game, player, Set.of(CardColor.GREEN, CardColor.RED, CardColor.BLUE));
+        if (!prediction.isCanBuild()) {
+            return PhaseChoiceProjection.SKIP_PHASE;
+        }
+        return PhaseChoiceProjection.builder().pickPhase(true).phase(prediction.getCard() == null ? 2 : prediction.getCard().getColor() == CardColor.GREEN ? 1 : 2).chance(prediction.getExpectedValue()).build();
     }
 
     private int chooseBetweenFirstAndSecondPhase(MarsGame game, Player player) {
@@ -124,12 +179,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                     } else {
                         copy.setBuilds(List.of(new BuildDto(BuildType.BLUE_RED)));
                     }
-                    String errorMessage = cardValidationService.validateCard(
-                            copy, game, card.getId(),
-                            aiPaymentHelper.getCardPayments(game, copy, card),
-                            aiCardParamsHelper.getInputParamsForValidation(copy, card)
-                    );
-                    return errorMessage == null;
+                    return aiCardValidationService.isValid(game, copy, card);
                 }).collect(Collectors.toList());
 
         if (playableCards.isEmpty()) {
@@ -142,6 +192,26 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
         }
 
         return (bestCard.getColor() == CardColor.GREEN ? 1 : 2);
+    }
+
+    private PhaseChoiceProjection mayPlayPhaseOneAi(MarsGame game, Player player) {
+        if (player.getPreviousChosenPhase() != null && player.getPreviousChosenPhase() == 1) {
+            return PhaseChoiceProjection.SKIP_PHASE;
+        }
+
+        BuildProjectPrediction prediction = testAiService.getBestCardToBuild(game, player, Set.of(CardColor.GREEN));
+
+        return PhaseChoiceProjection.builder().pickPhase(prediction.isCanBuild()).phase(1).chance(prediction.getExpectedValue()).build();
+    }
+
+    private PhaseChoiceProjection mayPlayPhaseTwoAi(MarsGame game, Player player) {
+        if (player.getPreviousChosenPhase() != null && player.getPreviousChosenPhase() == 2) {
+            return PhaseChoiceProjection.SKIP_PHASE;
+        }
+
+        BuildProjectPrediction prediction = testAiService.getBestCardToBuild(game, player, Set.of(CardColor.RED, CardColor.BLUE));
+
+        return PhaseChoiceProjection.builder().pickPhase(prediction.isCanBuild()).phase(2).chance(prediction.getExpectedValue()).build();
     }
 
     private boolean mayPlayPhaseOne(MarsGame game, Player player) {
@@ -158,14 +228,13 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                 {
                     Player copy = new Player(player);
                     copy.setBuilds(List.of(new BuildDto(BuildType.GREEN, 3)));
-                    String errorMessage = cardValidationService.validateCard(
-                            copy, game, card.getId(),
-                            aiPaymentHelper.getCardPayments(game, copy, card),
-                            aiCardParamsHelper.getInputParamsForValidation(copy, card)
-                    );
-                    return errorMessage == null;
+                    return aiCardValidationService.isValid(game, copy, card);
                 })
                 .collect(Collectors.toList());
+
+        if (player.getDifficulty().PICK_PHASE == AiTurnChoice.RANDOM) {
+            return !playableCards.isEmpty();
+        }
 
         return cardValueService.getBestCardToBuild(game, player, playableCards, game.getTurns(), true) != null;
     }
@@ -174,7 +243,6 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
         if (player.getPreviousChosenPhase() != null && player.getPreviousChosenPhase() == 2) {
             return false;
         }
-
 
         List<Card> playableCards = player.getHand()
                 .getCards()
@@ -185,16 +253,56 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                 {
                     Player copy = new Player(player);
                     copy.setBuilds(List.of(new BuildDto(BuildType.BLUE_RED)));
-                    String errorMessage = cardValidationService.validateCard(
-                            copy, game, card.getId(),
-                            aiPaymentHelper.getCardPayments(game, copy, card),
-                            aiCardParamsHelper.getInputParamsForValidation(copy, card)
-                    );
-                    return errorMessage == null;
+                    return aiCardValidationService.isValid(game, copy, card);
                 })
                 .collect(Collectors.toList());
 
+        if (player.getDifficulty().PICK_PHASE == AiTurnChoice.RANDOM) {
+            return !playableCards.isEmpty();
+        }
+
         return cardValueService.getBestCardToBuild(game, player, playableCards, game.getTurns(), true) != null;
+    }
+
+    private PhaseChoiceProjection mayPlayPhaseFourAi(MarsGame game, Player player) {
+        if (player.getPreviousChosenPhase() != null && player.getPreviousChosenPhase() == 4) {
+            return PhaseChoiceProjection.SKIP_PHASE;
+        }
+
+        float stateBeforeIncome = deepNetwork.testState(game, player);
+        float stateAfterIncome = testAiService.projectPlayPhase4(game, player);
+
+        if (Constants.LOG_NET_COMPARISON) {
+            System.out.println("Deep network state income before " + stateBeforeIncome + ". After " + stateAfterIncome);
+        }
+
+        //*1 Ratio: 0.4560819462227913
+        //*1.05 Ratio: 0.4270063694267516
+        //TODO remove 1.05 when phase 5 is picked smart
+        if (stateAfterIncome > stateBeforeIncome * 1.05) {
+            return PhaseChoiceProjection.builder().pickPhase(true).phase(4).chance(stateAfterIncome).build();
+        } else {
+            return PhaseChoiceProjection.SKIP_PHASE;
+        }
+    }
+
+    private PhaseChoiceProjection mayPlayPhaseFiveAi(MarsGame game, Player player) {
+        if (player.getPreviousChosenPhase() != null && player.getPreviousChosenPhase() == 5) {
+            return PhaseChoiceProjection.SKIP_PHASE;
+        }
+
+        float stateBeforePhase = deepNetwork.testState(game, player);
+        float stateAfterPhase = testAiService.projectPlayPhase5(game, player);
+
+        if (Constants.LOG_NET_COMPARISON) {
+            System.out.println("Deep network state phase 5 before " + stateBeforePhase + ". After " + stateAfterPhase);
+        }
+
+        if (stateAfterPhase > stateBeforePhase) {
+            return PhaseChoiceProjection.builder().pickPhase(true).phase(5).chance(stateAfterPhase).build();
+        } else {
+            return PhaseChoiceProjection.SKIP_PHASE;
+        }
     }
 
     private boolean mayPlayPhaseFour(MarsGame game, Player player) {
@@ -338,7 +446,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
 
         return activeCards
                 .stream()
-                .filter(card -> aiCardActionHelper.isSmartPlayAction(game, player, card))
+                .filter(card -> aiCardActionHelper.isUsablePlayAction(game, player, card))
                 .limit(requiredActiveCardsCount)
                 .count() == requiredActiveCardsCount;
     }
@@ -347,20 +455,29 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
         return player.getPlayed().getCards().stream()
                 .map(cardService::getCard)
                 .filter(Card::isActiveCard)
-                .filter(card -> aiCardActionHelper.isSmartPlayAction(game, player, card))
+                .filter(card -> aiCardActionHelper.isUsablePlayAction(game, player, card))
                 .limit(3)
                 .count() == 3;
     }
 
-    private boolean mayPlayPhaseThree(MarsGame game, Player player) {
+    private PhaseChoiceProjection mayPlayPhaseThreeAi(MarsGame game, Player player) {
+        return aiThirdPhaseProjectionService.projectThirdPhase(game, player);
+    }
+
+    private PhaseChoiceProjection mayPlayPhaseThree(MarsGame game, Player player) {
         if (player.getPreviousChosenPhase() != null && player.getPreviousChosenPhase() == 3) {
-            return false;
+            return PhaseChoiceProjection.SKIP_PHASE;
         }
 
-        if (RandomBotHelper.isRandomBot(player)) {
-            return mayPlayPhaseThreeRandom(game, player);
-        } else {
-            return mayPlayPhaseThreeSmart(game, player);
+        switch (player.getDifficulty().THIRD_PHASE_ACTION) {
+            case RANDOM:
+                return PhaseChoiceProjection.builder().pickPhase(mayPlayPhaseThreeRandom(game, player)).phase(3).build();
+            case SMART:
+                return PhaseChoiceProjection.builder().pickPhase(mayPlayPhaseThreeSmart(game, player)).phase(3).build();
+            case NETWORK:
+                return mayPlayPhaseThreeAi(game, player);
+            default:
+                throw new IllegalStateException("AI can't do third phase");
         }
     }
 
@@ -373,8 +490,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             return random.nextInt(5) == 0;
         }
 
-        if (draftCardsService.countExtraCardsToTake(player) >= 2
-                || draftCardsService.countExtraCardsToDraft(player) >= 2) {
+        if (draftCardsService.countExtraCardsToTake(player) >= 2 || draftCardsService.countExtraCardsToDraft(player) >= 2) {
             return true;
         }
 
@@ -387,12 +503,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                 {
                     Player copy = new Player(player);
                     copy.setBuilds(List.of(new BuildDto(BuildType.GREEN, 3)));
-                    String errorMessage = cardValidationService.validateCard(
-                            copy, game, card.getId(),
-                            aiPaymentHelper.getCardPayments(game, copy, card),
-                            aiCardParamsHelper.getInputParamsForValidation(copy, card)
-                    );
-                    return errorMessage == null;
+                    return aiCardValidationService.isValid(game, copy, card);
                 })
                 .limit(2)
                 .count() == 2;
@@ -407,12 +518,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                     {
                         Player copy = new Player(player);
                         copy.setBuilds(List.of(new BuildDto(BuildType.BLUE_RED, 0)));
-                        String errorMessage = cardValidationService.validateCard(
-                                copy, game, card.getId(),
-                                aiPaymentHelper.getCardPayments(game, copy, card),
-                                aiCardParamsHelper.getInputParamsForValidation(copy, card)
-                        );
-                        return errorMessage == null;
+                        return aiCardValidationService.isValid(game, copy, card);
                     })
                     .limit(2)
                     .count() == 2;

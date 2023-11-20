@@ -10,10 +10,12 @@ import java.util.function.ToIntFunction;
  * Creation date 13.06.2022
  */
 public class GeneratorAward extends AbstractAward {
+    public static final ToIntFunction<Player> valueExtractor = Player::getHeatIncome;
+
 
     @Override
-    protected ToIntFunction<Player> comparableParamExtractor(CardService cardService) {
-        return Player::getHeatIncome;
+    public ToIntFunction<Player> comparableParamExtractor(CardService cardService) {
+        return valueExtractor;
     }
 
     @Override
@@ -21,4 +23,8 @@ public class GeneratorAward extends AbstractAward {
         return AwardType.GENERATOR;
     }
 
+    @Override
+    public int getMaxValue() {
+        return 56;//50
+    }
 }

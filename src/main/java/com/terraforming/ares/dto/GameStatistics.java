@@ -14,20 +14,18 @@ import java.util.Map;
 @Getter
 public class GameStatistics {
     public static final int MAX_TURNS_TO_CONSIDER = 50;
-    public static final int CARDS_TOTAL = 219;
 
-    private Map<Integer, List<Integer>> turnToWinCardsOccurence;
-    private Map<Integer, List<Integer>> turnToCardsOccurence;
-    private Map<Integer, Integer> corporationToWin = new HashMap<>();
-    private Map<Integer, Integer> corporationToOccurence = new HashMap<>();
+    private final Map<Integer, Map<Integer, Integer>> turnToWinCardsOccurence;
+    private final Map<Integer, Map<Integer, Integer>> turnToCardsOccurence;
+    private final Map<Integer, Integer> corporationToWin = new HashMap<>();
+    private final Map<Integer, Integer> corporationToOccurence = new HashMap<>();
 
 
     private long totalGames = 0;
     private long totalTurnsCount = 0;
     private long totalPointsCount = 0;
 
-    private long firstWins = 0;
-    private long secondWins = 0;
+    private final List<Long> winners;
 
 
     public GameStatistics() {
@@ -35,19 +33,40 @@ public class GameStatistics {
         turnToCardsOccurence = new HashMap<>();
 
         for (int turn = 1; turn <= MAX_TURNS_TO_CONSIDER; turn++) {
-            turnToWinCardsOccurence.put(turn, initCardsList());
-            turnToCardsOccurence.put(turn, initCardsList());
+            turnToWinCardsOccurence.put(turn, new HashMap<>());
+            turnToCardsOccurence.put(turn, new HashMap<>());
         }
+
+        winners = new ArrayList<>(List.of(0L, 0L, 0L, 0L));
     }
 
     public synchronized void cardOccured(int turn, int card) {
         if (turn == 0) {
             turn++;
         }
-        final List<Integer> turnCards = turnToCardsOccurence.get(turn);
+        Map<Integer, Integer> cardIdToOccurence = turnToCardsOccurence.get(turn);
 
-        turnCards.set(card, turnCards.get(card) + 1);
+        cardIdToOccurence.compute(card, (cardId, occurence) -> {
+            if (occurence == null) {
+                occurence = 0;
+            }
+            return occurence + 1;
+        });
 
+    }
+
+    public synchronized void winCardOccured(int turn, int card) {
+        if (turn == 0) {
+            turn++;
+        }
+        Map<Integer, Integer> cardIdToOccurence = turnToWinCardsOccurence.get(turn);
+
+        cardIdToOccurence.compute(card, (cardId, occurence) -> {
+            if (occurence == null) {
+                occurence = 0;
+            }
+            return occurence + 1;
+        });
     }
 
     public synchronized void corporationWon(int corporation) {
@@ -72,15 +91,6 @@ public class GameStatistics {
         });
     }
 
-    public synchronized void winCardOccured(int turn, int card) {
-        if (turn == 0) {
-            turn++;
-        }
-        final List<Integer> turnCards = turnToWinCardsOccurence.get(turn);
-
-        turnCards.set(card, turnCards.get(card) + 1);
-    }
-
     public synchronized void addTotalGames(int games) {
         totalGames += games;
     }
@@ -93,19 +103,9 @@ public class GameStatistics {
         totalPointsCount += points;
     }
 
-    public synchronized void addFirstWins() {
-        firstWins++;
+    public synchronized void addPlayerWins(int index) {
+        winners.set(index, winners.get(index) + 1);
     }
 
-    public synchronized void addSecondWins() {
-        secondWins++;
-    }
 
-    private List<Integer> initCardsList() {
-        List<Integer> cards = new ArrayList<>();
-        for (int i = 0; i <= CARDS_TOTAL; i++) {
-            cards.add(0);
-        }
-        return cards;
-    }
 }

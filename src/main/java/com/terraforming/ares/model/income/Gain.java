@@ -8,6 +8,7 @@ import lombok.Value;
  */
 @Value
 public class Gain {
+    public static final Gain NONE = Gain.of(null, 0);
     GainType type;
     int value;
 

@@ -7,6 +7,7 @@ import com.terraforming.ares.model.request.ChooseCorporationRequest;
 import com.terraforming.ares.model.turn.*;
 import com.terraforming.ares.processors.turn.TurnProcessor;
 import com.terraforming.ares.services.*;
+import com.terraforming.ares.services.ai.AiCardValidationService;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -27,10 +28,16 @@ public class AiTurnService {
     private final TurnTypeService turnTypeService;
     private final StandardProjectService standardProjectService;
     private final CardService cardService;
+    private final AiCardValidationService aiCardValidationService;
 
     public AiTurnService(List<TurnProcessor<?>> turnProcessor,
                          CardValidationService cardValidationService,
-                         PaymentValidationService paymentValidationService, TerraformingService terraformingService, TurnTypeService turnTypeService, StandardProjectService standardProjectService, CardService cardService) {
+                         PaymentValidationService paymentValidationService,
+                         TerraformingService terraformingService,
+                         TurnTypeService turnTypeService,
+                         StandardProjectService standardProjectService,
+                         CardService cardService,
+                         AiCardValidationService aiCardValidationService) {
         this.cardValidationService = cardValidationService;
         this.paymentValidationService = paymentValidationService;
 
@@ -41,6 +48,7 @@ public class AiTurnService {
         this.turnTypeService = turnTypeService;
         this.standardProjectService = standardProjectService;
         this.cardService = cardService;
+        this.aiCardValidationService = aiCardValidationService;
     }
 
     public void chooseCorporationTurn(MarsGame game, ChooseCorporationRequest chooseCorporationRequest) {
@@ -52,7 +60,7 @@ public class AiTurnService {
             throw new IllegalStateException("Can't pick corporation that is not in your choice deck");
         }
 
-        makeAsyncTurn(player, new CorporationChoiceTurn(playerUuid, corporationCardId, Map.of()));
+        makeAsyncTurn(player, new CorporationChoiceTurn(playerUuid, corporationCardId, chooseCorporationRequest.getInputParams()));
     }
 
     public void choosePhaseTurn(Player player, int phaseId) {
@@ -71,8 +79,8 @@ public class AiTurnService {
         buildProject(
                 game, player, projectId, payments, inputParams,
                 cardService.getCard(projectId).getColor() == CardColor.GREEN
-                        ? new BuildGreenProjectTurn(player.getUuid(), projectId, payments, inputParams)
-                        : new BuildBlueRedProjectTurn(player.getUuid(), projectId, payments, inputParams),
+                        ? new BuildGreenProjectTurn(player.getUuid(), projectId, payments, inputParams, false)
+                        : new BuildBlueRedProjectTurn(player.getUuid(), projectId, payments, inputParams, false),
                 game.getCurrentPhase() == 3
         );
     }
@@ -80,7 +88,16 @@ public class AiTurnService {
     public void buildGreenProjectSync(MarsGame game, Player player, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
         buildProject(
                 game, player, projectId, payments, inputParams,
-                new BuildGreenProjectTurn(player.getUuid(), projectId, payments, inputParams),
+                new BuildGreenProjectTurn(player.getUuid(), projectId, payments, inputParams, true),
+                true
+        );
+    }
+
+    public void buildGreenProjectSyncNoRequirements(MarsGame game, Player player, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
+        buildProjectWithoutRequirements(
+                game,
+                player,
+                new BuildGreenProjectTurn(player.getUuid(), projectId, payments, inputParams, true),
                 true
         );
     }
@@ -88,7 +105,7 @@ public class AiTurnService {
     public void buildGreenProject(MarsGame game, Player player, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
         buildProject(
                 game, player, projectId, payments, inputParams,
-                new BuildGreenProjectTurn(player.getUuid(), projectId, payments, inputParams),
+                new BuildGreenProjectTurn(player.getUuid(), projectId, payments, inputParams, false),
                 game.getCurrentPhase() == 3
         );
     }
@@ -96,16 +113,17 @@ public class AiTurnService {
     public void buildBlueRedProjectSync(MarsGame game, Player player, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
         buildProject(
                 game, player, projectId, payments, inputParams,
-                new BuildBlueRedProjectTurn(player.getUuid(), projectId, payments, inputParams),
+                new BuildBlueRedProjectTurn(player.getUuid(), projectId, payments, inputParams, true),
                 true
         );
     }
 
-    public void buildBlueRedProject(MarsGame game, Player player, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
-        buildProject(
-                game, player, projectId, payments, inputParams,
-                new BuildBlueRedProjectTurn(player.getUuid(), projectId, payments, inputParams),
-                game.getCurrentPhase() == 3
+    public void buildBlueRedProjectSyncNoRequirements(MarsGame game, Player player, int projectId, List<Payment> payments, Map<Integer, List<Integer>> inputParams) {
+        buildProjectWithoutRequirements(
+                game,
+                player,
+                new BuildBlueRedProjectTurn(player.getUuid(), projectId, payments, inputParams, true),
+                true
         );
     }
 
@@ -122,20 +140,24 @@ public class AiTurnService {
         }
     }
 
+    private void buildProjectWithoutRequirements(MarsGame game, Player player, Turn turn, boolean syncTurn) {
+        if (syncTurn) {
+            makeSyncTurn(player, game, turn);
+        } else {
+            makeAsyncTurn(player, turn);
+        }
+    }
+
     public void pickExtraCardTurnAsync(Player player) {
         makeAsyncTurn(player, new PickExtraBonusSecondPhase(player.getUuid()));
     }
 
-    public void pickExtraCardTurnSync(MarsGame game, Player player) {
-        makeSyncTurn(player, game, new PickExtraBonusSecondPhase(player.getUuid()));
-    }
+    public void collectIncomeTurn(Player player, Integer doubleCollectCardId) {
+        if (doubleCollectCardId != null && (player.getChosenPhase() != 4 || !player.hasPhaseUpgrade(Constants.PHASE_4_UPGRADE_DOUBLE_PRODUCE))) {
+            throw new IllegalStateException("Not allowed to collect income twice");
+        }
 
-    public void collectIncomeTurn(Player player) {
         makeAsyncTurn(player, new CollectIncomeTurn(player.getUuid(), null));
-    }
-
-    public void collectIncomeTurnSync(MarsGame game, Player player) {
-        makeSyncTurn(player, game, new CollectIncomeTurn(player.getUuid(), null));
     }
 
     public void skipTurn(Player player) {

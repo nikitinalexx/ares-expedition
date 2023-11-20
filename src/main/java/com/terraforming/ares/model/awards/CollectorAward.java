@@ -10,6 +10,8 @@ import java.util.function.ToIntFunction;
  * Creation date 13.06.2022
  */
 public class CollectorAward extends AbstractAward {
+    public static final ToIntFunction<Player> valueExtractor = (player -> player.getCardResourcesCount().values().stream().reduce(0, Integer::sum));
+
 
     @Override
     public AwardType getType() {
@@ -17,7 +19,13 @@ public class CollectorAward extends AbstractAward {
     }
 
     @Override
-    protected ToIntFunction<Player> comparableParamExtractor(CardService cardService) {
-        return player -> player.getCardResourcesCount().values().stream().reduce(0, Integer::sum);
+    public ToIntFunction<Player> comparableParamExtractor(CardService cardService) {
+        return valueExtractor;
     }
+
+    @Override
+    public int getMaxValue() {
+        return 50;//84
+    }
+
 }

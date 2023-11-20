@@ -23,4 +23,9 @@ public class EnergizerMilestone extends Milestone {
     public MilestoneType getType() {
         return MilestoneType.ENERGIZER;
     }
+
+    @Override
+    public int getMaxValue() {
+        return 10;
+    }
 }

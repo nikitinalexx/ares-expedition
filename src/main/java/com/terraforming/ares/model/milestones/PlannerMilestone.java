@@ -26,4 +26,9 @@ public class PlannerMilestone extends Milestone {
     public MilestoneType getType() {
         return MilestoneType.PLANNER;
     }
+
+    @Override
+    public int getMaxValue() {
+        return 12;
+    }
 }

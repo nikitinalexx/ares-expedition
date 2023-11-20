@@ -1,16 +1,15 @@
 package com.terraforming.ares.services.ai.turnProcessors;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.request.ChooseCorporationRequest;
 import com.terraforming.ares.model.turn.TurnType;
+import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.ai.AiDiscoveryDecisionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * Created by oleksii.nikitin
@@ -21,27 +20,9 @@ import java.util.Random;
 public class AiPickCorporationTurn implements AiTurnProcessor {
     private final Random random = new Random();
     private final AiTurnService aiTurnService;
+    private final CardService cardService;
+    private final AiDiscoveryDecisionService aiDiscoveryDecisionService;
 
-    private static final List<Integer> CORPORATION_PRIORITY = List.of(
-            10006, /* Tharsis */
-            10015, /* MayNi */
-            10104, 10011, /* Saturn */
-            10105, 10012, /* Zetacell */
-            10102, 10009, /* Phobolog */
-            10017, /* Interplanetary */
-            10003, /* LaunchStar */
-            10002, /* DevTechs */
-            10007, /* Credicor */
-            10005, /* Teractor */
-            10107, 10014, /* Inventrix */
-            10004, /* Thorgate */
-            10103, 10010, /* Mining */
-            10106, 10013, /* Ecoline */
-            10001, /* Celestior */
-            10101, 10008, /* Arclight */
-            10108, 10016, /* UNMI */
-            10100, 10000 /* Helion */
-    );
 
     @Override
     public TurnType getType() {
@@ -50,11 +31,34 @@ public class AiPickCorporationTurn implements AiTurnProcessor {
 
     @Override
     public boolean processTurn(MarsGame game, Player player) {
-        int selectedCorporationId = player.getCorporations().getCards().stream().min(Comparator.comparingInt(corporation -> CORPORATION_PRIORITY.indexOf(corporation))).orElseThrow();
+        LinkedList<Integer> corporations = player.getCorporations().getCards();
+        int selectedCorporationId = corporations.stream().min(Comparator.comparingInt(Constants.CORPORATION_PRIORITY::indexOf)).orElseThrow();
+        Card corporationCard = cardService.getCard(selectedCorporationId);
+        CardAction corporationCardAction = corporationCard.getCardMetadata().getCardAction();
+
+        Map<Integer, List<Integer>> inputParams = new HashMap<>();
+
+        if (corporationCardAction == CardAction.HYPERION_SYSTEMS_CORPORATION) {
+            inputParams.put(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(aiDiscoveryDecisionService.choosePhaseUpgrade(game, player, Constants.PERFORM_BLUE_ACTION_PHASE)));
+        } else if (corporationCardAction == CardAction.APOLLO_CORPORATION) {
+            inputParams.put(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(aiDiscoveryDecisionService.choosePhaseUpgrade(game, player, Constants.BUILD_BLUE_RED_PROJECTS_PHASE)));
+        } else if (corporationCardAction == CardAction.EXOCORP_CORPORATION) {
+            inputParams.put(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(aiDiscoveryDecisionService.choosePhaseUpgrade(game, player, Constants.DRAFT_CARDS_PHASE)));
+        } else if (corporationCardAction == CardAction.AUSTELLAR_CORPORATION) {
+            inputParams.put(InputFlag.AUSTELLAR_CORPORATION_MILESTONE.getId(), List.of(aiDiscoveryDecisionService.chooseAustellarCorporationMilestone(game)));
+            inputParams.put(InputFlag.TAG_INPUT.getId(), List.of(aiDiscoveryDecisionService.chooseDynamicTagValue(player, List.of())));
+        } else if (corporationCardAction == CardAction.MODPRO_CORPORATION) {
+            inputParams.put(InputFlag.TAG_INPUT.getId(), List.of(aiDiscoveryDecisionService.chooseModProTagValue()));
+        } else if (corporationCardAction == CardAction.NEBU_LABS_CORPORATION) {
+            inputParams.put(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(aiDiscoveryDecisionService.choosePhaseUpgrade(game, player)));
+        } else if (corporationCardAction == CardAction.SULTIRA_CORPORATION) {
+            inputParams.put(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(aiDiscoveryDecisionService.choosePhaseUpgrade(game, player, Constants.BUILD_GREEN_PROJECTS_PHASE)));
+        }
 
         aiTurnService.chooseCorporationTurn(game, ChooseCorporationRequest.builder()
                 .playerUuid(player.getUuid())
                 .corporationId(selectedCorporationId)
+                .inputParams(inputParams)
                 .build());
 
         return true;

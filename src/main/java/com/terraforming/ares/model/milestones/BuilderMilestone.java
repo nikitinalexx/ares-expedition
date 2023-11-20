@@ -26,4 +26,9 @@ public class BuilderMilestone extends Milestone {
     public MilestoneType getType() {
         return MilestoneType.BUILDER;
     }
+
+    @Override
+    public int getMaxValue() {
+        return 8;
+    }
 }

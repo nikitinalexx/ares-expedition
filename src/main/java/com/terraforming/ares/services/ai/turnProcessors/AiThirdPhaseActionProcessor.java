@@ -7,17 +7,15 @@ import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.CardValidationService;
 import com.terraforming.ares.services.StandardProjectService;
-import com.terraforming.ares.services.ai.RandomBotHelper;
+import com.terraforming.ares.services.ai.AiCardValidationService;
+import com.terraforming.ares.services.ai.TestAiService;
 import com.terraforming.ares.services.ai.dto.ActionInputParamsResponse;
 import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
-import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
+import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsService;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -33,12 +31,19 @@ public class AiThirdPhaseActionProcessor {
     private final AiPaymentService aiPaymentHelper;
     private final AiCardActionHelper aiCardActionHelper;
     private final StandardProjectService standardProjectService;
-    private final AiCardBuildParamsHelper aiCardBuildParamsHelper;
+    private final AiCardBuildParamsService aiCardBuildParamsService;
+    private final TestAiService testAiService;
+    private final AiCardValidationService aiCardValidationService;
 
     public AiThirdPhaseActionProcessor(AiTurnService aiTurnService,
                                        CardService cardService,
                                        CardValidationService cardValidationService,
-                                       AiPaymentService aiPaymentHelper, AiCardActionHelper aiCardActionHelper, StandardProjectService standardProjectService, AiCardBuildParamsHelper aiCardBuildParamsHelper) {
+                                       AiPaymentService aiPaymentHelper,
+                                       AiCardActionHelper aiCardActionHelper,
+                                       StandardProjectService standardProjectService,
+                                       AiCardBuildParamsService aiCardBuildParamsService,
+                                       TestAiService testAiService,
+                                       AiCardValidationService aiCardValidationService) {
 
         this.aiTurnService = aiTurnService;
         this.cardService = cardService;
@@ -46,7 +51,9 @@ public class AiThirdPhaseActionProcessor {
         this.aiPaymentHelper = aiPaymentHelper;
         this.aiCardActionHelper = aiCardActionHelper;
         this.standardProjectService = standardProjectService;
-        this.aiCardBuildParamsHelper = aiCardBuildParamsHelper;
+        this.aiCardBuildParamsService = aiCardBuildParamsService;
+        this.testAiService = testAiService;
+        this.aiCardValidationService = aiCardValidationService;
     }
 
     public boolean processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
@@ -62,26 +69,22 @@ public class AiThirdPhaseActionProcessor {
                 aiTurnService.sellAllCards(player, game, player.getHand().getCards());
                 return true;
             } else {
-                if (!game.getPlanetAtTheStartOfThePhase().isOxygenMax()) {
-                    String validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.FOREST);
+                StandardProjectType type = null;
+                float bestState = -1;
+
+                for (StandardProjectType standardProjectType : List.of(StandardProjectType.FOREST, StandardProjectType.OCEAN, StandardProjectType.TEMPERATURE)) {
+                    String validationResult = standardProjectService.validateStandardProject(game, player, standardProjectType);
                     if (validationResult == null) {
-                        aiTurnService.standardProjectTurn(game, player, StandardProjectType.FOREST);
-                        return true;
+                        float projectedChance = testAiService.projectPlayStandardAction(game, player.getUuid(), standardProjectType);
+                        if (projectedChance > bestState) {
+                            type = standardProjectType;
+                            bestState = projectedChance;
+                        }
                     }
                 }
-                String validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.OCEAN);
-                if (validationResult == null) {
-                    aiTurnService.standardProjectTurn(game, player, StandardProjectType.OCEAN);
-                    return true;
-                }
-                validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.TEMPERATURE);
-                if (validationResult == null) {
-                    aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
-                    return true;
-                }
-                validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.FOREST);
-                if (validationResult == null) {
-                    aiTurnService.standardProjectTurn(game, player, StandardProjectType.FOREST);
+
+                if (type != null) {
+                    aiTurnService.standardProjectTurn(game, player, type);
                     return true;
                 }
             }
@@ -96,6 +99,12 @@ public class AiThirdPhaseActionProcessor {
 
 
     private boolean makeATurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
+        if (player.getSelectedCorporationCard() == 10000 || player.getSelectedCorporationCard() == 10100) {
+            if (game.getPlanetAtTheStartOfThePhase().isTemperatureMax() && player.getHeat() > 0) {
+                player.setMc(player.getMc() + player.getHeat());
+                player.setHeat(0);
+            }
+        }
         Deck activatedBlueCards = player.getActivatedBlueCards();
 
         List<Card> notUsedBlueCards = player.getPlayed().getCards().stream()
@@ -176,22 +185,15 @@ public class AiThirdPhaseActionProcessor {
                     .map(cardService::getCard)
                     .filter(card -> (possibleTurns.contains(TurnType.BUILD_BLUE_RED_PROJECT) && card.getColor() != CardColor.GREEN)
                             || (possibleTurns.contains(TurnType.BUILD_GREEN_PROJECT) && card.getColor() == CardColor.GREEN))
-                    .filter(card ->
-                    {
-                        String errorMessage = cardValidationService.validateCard(
-                                player, game, card.getId(),
-                                aiPaymentHelper.getCardPayments(game, player, card),
-                                aiCardBuildParamsHelper.getInputParamsForValidation(player, card)
-                        );
-                        return errorMessage == null;
-                    })
+                    .filter(card -> aiCardValidationService.isValid(game, player, card))
                     .collect(Collectors.toList());
 
             if (!availableCards.isEmpty()) {
                 final Card cardToBuild = availableCards.get(random.nextInt(availableCards.size()));
+                Map<Integer, List<Integer>> inputParams = aiCardBuildParamsService.getInputParamsForBuild(game, player, cardToBuild);
                 aiTurnService.buildProject(
-                        game, player, cardToBuild.getId(), aiPaymentHelper.getCardPayments(game, player, cardToBuild),
-                        aiCardBuildParamsHelper.getInputParamsForBuild(player, cardToBuild)
+                        game, player, cardToBuild.getId(), aiPaymentHelper.getCardPayments(game, player, cardToBuild, inputParams),
+                        inputParams
                 );
                 return true;
             }
@@ -238,10 +240,11 @@ public class AiThirdPhaseActionProcessor {
             int selectedIndex = random.nextInt(cards.size());
             Card selectedCard = cards.get(selectedIndex);
 
-            if (aiCardActionHelper.isSmartPlayAction(game, player, selectedCard)) {
-                ActionInputParamsResponse inputParams = RandomBotHelper.isRandomBot(player)
-                        ? aiCardActionHelper.getActionInputParamsForRandom(game, player, selectedCard)
-                        : aiCardActionHelper.getActionInputParamsForSmart(game, player, selectedCard);
+            if (aiCardActionHelper.isUsablePlayAction(game, player, selectedCard)) {
+//                ActionInputParamsResponse inputParams = Constants.THIRD_PHASE_BOTH_PLAYERS_SMART
+//                        ? aiCardActionHelper.getActionInputParamsForSmart(game, player, selectedCard)
+//                        : aiCardActionHelper.getActionInputParamsForRandom(game, player, selectedCard);
+                ActionInputParamsResponse inputParams = aiCardActionHelper.getActionInputParamsForSmart(game, player, selectedCard);
 
                 if (inputParams.isMakeAction()) {
                     aiTurnService.performBlueAction(
