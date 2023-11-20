@@ -2,6 +2,7 @@ package com.terraforming.ares.dataset;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.cards.blue.*;
+import com.terraforming.ares.cards.corporations.*;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.awards.AbstractAward;
@@ -16,29 +17,37 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class DatasetCollectionService {
     private final CardService cardService;
     private final WinPointsService winPointsService;
     private final DraftCardsService draftCardsService;
+    private final DynamicCardEffectService dynamicCardEffectService;
 
     private final Map<Integer, Integer> corporationIdToIndex = new HashMap<>();
     private final Map<Integer, Integer> blueCardIdToIndex = new HashMap<>();
 
-    public DatasetCollectionService(CardService cardService, WinPointsService winPointsService, CardFactory cardFactory, DraftCardsService draftCardsService) {
+    //TODO consider Austellar CORP
+    private final List<Class<?>> CORPORATIONS_WITH_REPEATED_EFFECT = List.of(TharsisCorporation.class, Inventrix.class, ExocorpCorporation.class, ApolloIndustriesCorporation.class, AustellarCorporation.class, NebuLabsCorporation.class, InterplanetaryCinematics.class);
+
+    public DatasetCollectionService(CardService cardService, WinPointsService winPointsService, CardFactory cardFactory, DraftCardsService draftCardsService, DynamicCardEffectService dynamicCardEffectService) {
         this.cardService = cardService;
         this.winPointsService = winPointsService;
         this.draftCardsService = draftCardsService;
+        this.dynamicCardEffectService = dynamicCardEffectService;
 
-        List<Card> sortedBaseCorporations = cardFactory.getSortedBaseCorporations()
-                .stream()
-                .filter(card -> card.getSpecialEffects() == null || !card.getSpecialEffects().contains(SpecialEffect.THARSIS_REPUBLIC))
+        List<Card> sortedCorporations = Stream
+                .concat(cardFactory.getSortedBaseCorporations().stream(), cardFactory.getSortedDiscoveryCorporations().stream())
+                .filter(card -> !CORPORATIONS_WITH_REPEATED_EFFECT.contains(card.getClass()))
+                .sorted(Comparator.comparing(Card::getId))
                 .collect(Collectors.toList());
+
         Map<Integer, Card> buffedCorporationsMapping = cardFactory.getBuffedCorporationsMapping();
 
-        for (int i = 0; i < sortedBaseCorporations.size(); i++) {
-            corporationIdToIndex.put(sortedBaseCorporations.get(i).getId(), i);
+        for (int i = 0; i < sortedCorporations.size(); i++) {
+            corporationIdToIndex.put(sortedCorporations.get(i).getId(), i);
         }
 
         for (Map.Entry<Integer, Card> entry : buffedCorporationsMapping.entrySet()) {
@@ -138,6 +147,7 @@ public class DatasetCollectionService {
         result[counter++] = player.plantMicrobeIncome;
         result[counter++] = player.mcForestIncome;
 
+
         for (Integer blueCard : player.getBlueCardsList()) {
             if (!blueCardIdToIndex.containsKey(blueCard)) {
                 continue;
@@ -198,7 +208,7 @@ public class DatasetCollectionService {
                 return;
             }
             MarsGameRow playerData = putPlayerRowIntoArray(marsGame, currentPlayer, anotherPlayer);
-            if (playerData != null ) {
+            if (playerData != null) {
                 marsGameDataset.getPlayerToRows().get(currentPlayer.getUuid()).add(playerData);
             }
         }
@@ -225,7 +235,6 @@ public class DatasetCollectionService {
             awardsResult[i] = ((float) award.comparableParamExtractor(cardService).applyAsInt(currentPlayer) / award.getMaxValue()) - ((float) award.comparableParamExtractor(cardService).applyAsInt(anotherPlayer) / award.getMaxValue());
         }
 
-
         return MarsGameRow.builder()
                 .resources(currentPlayer.getCardResourcesCount().values().stream().mapToInt(i -> i).sum())
                 .turn(game.getTurns())
@@ -241,8 +250,9 @@ public class DatasetCollectionService {
     }
 
     private MarsPlayerRow collectPlayerData(MarsGame game, Player currentPlayer) {
-        Map<CardAction, Integer> cardActionToCount = currentPlayer.getPlayed().getCards().stream()
-                .map(cardService::getCard)
+        Stream<Card> cardStream = currentPlayer.getPlayed().getCards().stream().map(cardService::getCard);
+
+        Map<CardAction, Integer> cardActionToCount = cardStream
                 .map(Card::getCardMetadata)
                 .filter(Objects::nonNull)
                 .map(CardMetadata::getCardAction)
@@ -253,11 +263,12 @@ public class DatasetCollectionService {
                 .map(Card::getColor)
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.summingInt(e -> 1)));
 
-        List<Integer> blueCardsList = currentPlayer.getPlayed().getCards().stream()
-                .map(cardService::getCard)
+        List<Integer> blueCardsList = cardStream
                 .filter(card -> card.getColor() == CardColor.BLUE)
                 .map(Card::getId)
                 .collect(Collectors.toList());
+
+        Set<Class<?>> cardTypes = cardStream.map(Card::getClass).collect(Collectors.toSet());
 
         return MarsPlayerRow.builder()
                 .winPoints(winPointsService.countWinPointsWithFloats(currentPlayer, game))
@@ -284,6 +295,22 @@ public class DatasetCollectionService {
                 .regolithEaters(currentPlayer.getCardResourcesCount().getOrDefault(RegolithEaters.class, 0))
                 .selfReplicatingBacteria(currentPlayer.getCardResourcesCount().getOrDefault(SelfReplicatingBacteria.class, 0))
                 .scienceTagsCount(cardService.countPlayedTags(currentPlayer, Set.of(Tag.SCIENCE)))
+                .jupiterTagsCount(cardService.countPlayedTags(currentPlayer, Set.of(Tag.JUPITER)))
+
+                .amplifyEffect(CardEffect.AMPLIFY.getEffectSize(cardTypes))
+                .cardsPriceEffect(CardEffect.CARDS_PRICE.getEffectSize(cardTypes))
+                .cardForScienceEffect(CardEffect.CARD_FOR_SCIENCE.getEffectSize(cardTypes))
+                .phaseRevealBonus(CardEffect.PHASE_REVEAL_BONUS.getEffectSize(cardTypes))
+                .eventDiscount(CardEffect.EVENT_DISCOUNT.getEffectSize(cardTypes))
+                .cardDiscount(CardEffect.CARD_DISCOUNT.getEffectSize(cardTypes))
+                .cardPerEvent(CardEffect.CARD_PER_EVENT.getEffectSize(cardTypes))
+
+                .dynamicEffects(
+                        dynamicCardEffectService.getAllDynamicEffects(game, currentPlayer).stream()
+                                .mapToInt(Integer::intValue)
+                                .toArray()
+                )
+
                 .blueCardsList(blueCardsList)
                 .heatEarthIncome(cardActionToCount.getOrDefault(CardAction.HEAT_EARTH_INCOME, 0))
                 .mcAnimalPlantIncome(cardActionToCount.getOrDefault(CardAction.MC_ANIMAL_PLANT_INCOME, 0))

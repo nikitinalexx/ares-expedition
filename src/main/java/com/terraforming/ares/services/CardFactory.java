@@ -30,6 +30,7 @@ public class CardFactory {
     private final Map<Integer, Card> buffedCorporationsMapping;
     @Getter
     private final List<Card> sortedBaseCorporations;
+    @Getter
     private final List<Card> sortedDiscoveryCorporations;
     private final List<Card> buffedCorporations;
     private final List<CrysisCard> crysisCards;
@@ -272,7 +273,6 @@ public class CardFactory {
         );
 
         blueCardsForAi = List.of(
-                1,//adaptation technology, effect similar to inventrix
                 2,
                 3,
                 4,
@@ -288,13 +288,11 @@ public class CardFactory {
                 14,
                 15,
                 16,
-                17,
                 18,
                 19,
                 20,
                 21,
                 22,
-                23,
                 24,
                 25,
                 27,
@@ -311,16 +309,12 @@ public class CardFactory {
                 39,
                 40,
                 41,
-                42,//combine with corporation
                 43,
-                44,
                 45,
                 46,
                 47,
-                48,
                 49,
                 50,
-                51,
                 52,
                 53,
                 54,
@@ -336,7 +330,20 @@ public class CardFactory {
                 213,
                 216,
                 217,
-                219//add ai
+                219,//add ai
+
+
+                //discovery
+                306,
+                307,
+                310,
+                311,
+                312,
+                313,
+                369,
+                372,
+                374,
+                375
         );
 
         allCardsToIndex = new HashMap<>();
