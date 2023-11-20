@@ -356,12 +356,11 @@ public class CardFactory {
                 new SoftwareStreamlining(311),
                 new VirtualEmployeeDevelopment(312),
                 new VolcanicSoil(313),
-                new OreLeaching(318),
-
                 new BiomedicalImports(314),
                 new CryogenicShipment(315),
                 new Exosuits(316),
                 new ImportedConstructionCrews(317),
+                new OreLeaching(318),
                 new PrivateInvestorBeach(319),
                 new TopographicMapping(320),
                 new ThreeDPrinting(321),

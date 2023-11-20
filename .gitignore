@@ -37,3 +37,12 @@ build/
 /.mvn/wrapper/maven-wrapper.properties
 
 *.dnet
+/lib/bcpg-jdk15on-1.64.jar
+/lib/bcprov-jdk15on-1.64.jar
+/cardStats.txt
+/lib/commons-lang3-3.3.2.jar
+*.csv
+/lib/json-20170516.jar
+/lib/license3j-2.0.0-JVM8.jar
+/lib/visrec-api-1.0.5.jar
+/lib/visrec-ri-1.0.3.jar

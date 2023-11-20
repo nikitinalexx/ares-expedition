@@ -7,18 +7,15 @@ import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.CardValidationService;
 import com.terraforming.ares.services.StandardProjectService;
-import com.terraforming.ares.services.ai.DeepNetwork;
+import com.terraforming.ares.services.ai.AiCardValidationService;
 import com.terraforming.ares.services.ai.TestAiService;
 import com.terraforming.ares.services.ai.dto.ActionInputParamsResponse;
 import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
-import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
+import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsService;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -34,16 +31,19 @@ public class AiThirdPhaseActionProcessor {
     private final AiPaymentService aiPaymentHelper;
     private final AiCardActionHelper aiCardActionHelper;
     private final StandardProjectService standardProjectService;
-    private final AiCardBuildParamsHelper aiCardBuildParamsHelper;
+    private final AiCardBuildParamsService aiCardBuildParamsService;
     private final TestAiService testAiService;
-    private final DeepNetwork deepNetwork;
+    private final AiCardValidationService aiCardValidationService;
 
     public AiThirdPhaseActionProcessor(AiTurnService aiTurnService,
                                        CardService cardService,
                                        CardValidationService cardValidationService,
-                                       AiPaymentService aiPaymentHelper, AiCardActionHelper aiCardActionHelper, StandardProjectService standardProjectService, AiCardBuildParamsHelper aiCardBuildParamsHelper,
+                                       AiPaymentService aiPaymentHelper,
+                                       AiCardActionHelper aiCardActionHelper,
+                                       StandardProjectService standardProjectService,
+                                       AiCardBuildParamsService aiCardBuildParamsService,
                                        TestAiService testAiService,
-                                       DeepNetwork deepNetwork) {
+                                       AiCardValidationService aiCardValidationService) {
 
         this.aiTurnService = aiTurnService;
         this.cardService = cardService;
@@ -51,9 +51,9 @@ public class AiThirdPhaseActionProcessor {
         this.aiPaymentHelper = aiPaymentHelper;
         this.aiCardActionHelper = aiCardActionHelper;
         this.standardProjectService = standardProjectService;
-        this.aiCardBuildParamsHelper = aiCardBuildParamsHelper;
+        this.aiCardBuildParamsService = aiCardBuildParamsService;
         this.testAiService = testAiService;
-        this.deepNetwork = deepNetwork;
+        this.aiCardValidationService = aiCardValidationService;
     }
 
     public boolean processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
@@ -185,22 +185,15 @@ public class AiThirdPhaseActionProcessor {
                     .map(cardService::getCard)
                     .filter(card -> (possibleTurns.contains(TurnType.BUILD_BLUE_RED_PROJECT) && card.getColor() != CardColor.GREEN)
                             || (possibleTurns.contains(TurnType.BUILD_GREEN_PROJECT) && card.getColor() == CardColor.GREEN))
-                    .filter(card ->
-                    {
-                        String errorMessage = cardValidationService.validateCard(
-                                player, game, card.getId(),
-                                aiPaymentHelper.getCardPayments(game, player, card),
-                                aiCardBuildParamsHelper.getInputParamsForValidation(game, player, card)
-                        );
-                        return errorMessage == null;
-                    })
+                    .filter(card -> aiCardValidationService.isValid(game, player, card))
                     .collect(Collectors.toList());
 
             if (!availableCards.isEmpty()) {
                 final Card cardToBuild = availableCards.get(random.nextInt(availableCards.size()));
+                Map<Integer, List<Integer>> inputParams = aiCardBuildParamsService.getInputParamsForBuild(game, player, cardToBuild);
                 aiTurnService.buildProject(
-                        game, player, cardToBuild.getId(), aiPaymentHelper.getCardPayments(game, player, cardToBuild),
-                        aiCardBuildParamsHelper.getInputParamsForBuild(game, player, cardToBuild)
+                        game, player, cardToBuild.getId(), aiPaymentHelper.getCardPayments(game, player, cardToBuild, inputParams),
+                        inputParams
                 );
                 return true;
             }

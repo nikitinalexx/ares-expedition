@@ -60,6 +60,7 @@ public class AiPickCardProjectionService {
 
 
     public float cardExtraChanceIfBuilt(MarsGame game, Player player, Integer cardId) {
+        //TODO optimize, because it is used on every method call
         float initialChance = deepNetwork.testState(game, player);
 
         Card card = cardService.getCard(cardId);
@@ -83,10 +84,7 @@ public class AiPickCardProjectionService {
             return -1;
         }
 
-        //farming  card
-        //mangrove
-        //ice cap melting
-
+        //TODO should not be here
         if (card.getColor() == CardColor.GREEN) {
             player.setBuilds(List.of(new BuildDto(BuildType.GREEN)));
         } else {

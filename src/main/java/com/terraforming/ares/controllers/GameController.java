@@ -1,6 +1,8 @@
 package com.terraforming.ares.controllers;
 
-import com.terraforming.ares.dataset.*;
+import com.terraforming.ares.dataset.DatasetCollectionService;
+import com.terraforming.ares.dataset.MarsGameDataset;
+import com.terraforming.ares.dataset.MarsGameRow;
 import com.terraforming.ares.dto.*;
 import com.terraforming.ares.entity.CrisisRecordEntity;
 import com.terraforming.ares.mars.CrysisData;
@@ -16,6 +18,7 @@ import com.terraforming.ares.services.ai.AiBalanceService;
 import com.terraforming.ares.services.ai.DeepNetwork;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -52,7 +55,6 @@ public class GameController {
     private final AiBalanceService aiBalanceService;
     private final CrisisRecordEntityRepository crisisRecordEntityRepository;
     private final DeepNetwork deepNetwork;
-    private final CardsAiService cardsAiService;
     private final DatasetCollectionService datasetCollectionService;
 
     @PostMapping("/state/test/{networkNumber}")
@@ -60,22 +62,32 @@ public class GameController {
         return deepNetwork.testState(row, networkNumber);
     }
 
-    @PostMapping("/card-state/test/{networkNumber}")
-    public float testCard(@RequestBody MarsCardRow row, @PathVariable int networkNumber, @RequestParam int card, @RequestParam int discount) {
-        return cardsAiService.testState(row, card, networkNumber, discount);
-    }
-
     @PostMapping("/game/new")
     public PlayerUuidsDto startNewGame(@RequestBody GameParameters gameParameters) {
         try {
-            int aiPlayerCount = (int) gameParameters.getComputers().stream().filter(item -> item).count();
+            if (CollectionUtils.isEmpty(gameParameters.getComputers()) || CollectionUtils.isEmpty(gameParameters.getPlayerNames())
+                    || gameParameters.getComputers().size() != gameParameters.getPlayerNames().size()
+                    || gameParameters.getComputers().stream().anyMatch(Objects::isNull)
+                    || gameParameters.getPlayerNames().stream().anyMatch(Objects::isNull)) {
+                throw new IllegalArgumentException("Invalid number of computers and players, please reload the game");
+            }
+
+            if (gameParameters.getComputers().stream().anyMatch(computer -> computer != PlayerDifficulty.RANDOM && computer != PlayerDifficulty.SMART && computer != PlayerDifficulty.NONE)) {
+                throw new IllegalArgumentException("Only Random and Smart computers are supported");
+            }
+
+            if (!gameParameters.getExpansions().contains(Expansion.DISCOVERY)) {
+                throw new IllegalArgumentException("Discovery expansion is a default mode for this game");
+            }
+
+            int aiPlayerCount = (int) gameParameters.getComputers().stream().filter(item -> item != PlayerDifficulty.NONE).count();
             int playersCount = gameParameters.getPlayerNames().size();
 
             if (gameParameters.getPlayerNames().stream().anyMatch(name -> name.length() > 10)) {
                 throw new IllegalArgumentException("Only names of length 10 or below are supported");
             }
 
-            if (playersCount == 0 || playersCount > Constants.MAX_PLAYERS) {
+            if (playersCount > Constants.MAX_PLAYERS) {
                 throw new IllegalArgumentException("Only 1 to 4 players are supported so far");
             }
 
@@ -83,14 +95,11 @@ public class GameController {
                 if (playersCount != 1) {
                     throw new IllegalArgumentException("Only 1 player supported so far. Come back in a week!");
                 }
-                if (gameParameters.getComputers().stream().anyMatch(Boolean.TRUE::equals)) {
+                if (gameParameters.getComputers().stream().anyMatch(computer -> computer != PlayerDifficulty.NONE)) {
                     throw new IllegalArgumentException("Crysis is a cooperative mode, no computers supported");
                 }
                 if (!gameParameters.isMulligan()) {
                     throw new IllegalArgumentException("Crysis mode can be only played with mulligan option");
-                }
-                if (!gameParameters.getExpansions().contains(Expansion.DISCOVERY)) {
-                    throw new IllegalArgumentException("Crysis mode can be only played with Discovery expansion");
                 }
                 if (gameParameters.isDummyHand()) {
                     throw new IllegalArgumentException("Crysis mode has a dummy hand option by default");
@@ -202,10 +211,6 @@ public class GameController {
             printStatistics(gameStatistics);
         }
 
-        if (Constants.COLLECT_CARDS_DATASET) {
-            saveCardsDatasets(request.getFileIndex());
-        }
-
         if (Constants.COLLECT_DATASET) {
             List<String> fileNames = new ArrayList<>();
 
@@ -226,7 +231,7 @@ public class GameController {
         System.out.println(maxScience);
         System.out.println(maxCardsPlayed);
         System.out.println(maxSteelTitanium);
-        System.out.println(maxResources );
+        System.out.println(maxResources);
     }
 
     public static void combineAndDelete(List<String> filePaths, String combinedFilePath) throws IOException {
@@ -268,11 +273,22 @@ public class GameController {
 
         @Override
         public void run() {
-            GameParameters gameParameters = GameParameters.builder()
-                    .playerNames(List.of("ai1", "ai2"))
-                    .computers(List.of(true, true))
+            GameParameters.GameParametersBuilder builder = GameParameters.builder();
+            if (Constants.DISCOVERY_SIMULATIONS) {
+                builder.expansion(Expansion.DISCOVERY);
+            }
+
+            List<String> playerNames = new ArrayList<>();
+            for (PlayerDifficulty simulationPlayer : Constants.SIMULATION_PLAYERS) {
+                playerNames.add(simulationPlayer.name());
+            }
+
+            GameParameters gameParameters = builder
+                    .playerNames(playerNames)
+                    .computers(Constants.SIMULATION_PLAYERS)
                     .mulligan(true)
-                    .expansions(List.of(Expansion.BASE, Expansion.BUFFED_CORPORATION))
+                    .expansion(Expansion.BASE)
+                    .expansion(Expansion.BUFFED_CORPORATION)
                     .dummyHand(true)
                     .build();
 
@@ -357,7 +373,6 @@ public class GameController {
 
         List<MarsGame> finishedGames = games.stream()
                 .filter(MarsGame::gameEndCondition)
-                .filter(game -> game.getPlayerUuidToPlayer().size() == 2)
                 .filter(game -> game.getTurns() <= GameStatistics.MAX_TURNS_TO_CONSIDER)
                 .collect(Collectors.toList());
 
@@ -372,7 +387,7 @@ public class GameController {
             game.getPlayerUuidToPlayer().values().forEach(
                     player -> {
                         for (Integer playedCard : player.getPlayed().getCards()) {
-                            if (playedCard < 250) {
+                            if (playedCard < Constants.CORPORATION_ID_OFFSET) {
                                 gameStatistics.cardOccured(
                                         player.getPlayed().getCardToTurn().get(playedCard),
                                         playedCard
@@ -384,44 +399,43 @@ public class GameController {
 
 
             List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
-            Player firstPlayer = players.get(0);
-            Player secondPlayer = players.get(1);
+            List<Integer> winPoints = players.stream().map(player -> winPointsService.countWinPoints(player, game)).collect(Collectors.toList());
 
-            int firstPlayerPoints = winPointsService.countWinPoints(firstPlayer, game);
-            int secondPlayerPoints = winPointsService.countWinPoints(secondPlayer, game);
+            int maxWinPoints = Collections.max(winPoints);
+            int winnerIndex = 0;
 
-            if (firstPlayerPoints != secondPlayerPoints) {
+            int winners = 0;
+            for (int j = 0; j < winPoints.size(); j++) {
+                if (maxWinPoints == winPoints.get(j)) {
+                    winners++;
+                    winnerIndex = j;
+                }
+            }
+
+            if (winners == 1) {
                 gameStatistics.addTotalGames(1);
                 gameStatistics.addTotalTurnsCount(game.getTurns());
-                gameStatistics.addTotalPointsCount(game.getPlayerUuidToPlayer().values().stream().mapToInt(player -> winPointsService.countWinPoints(player, game)).sum());
+                gameStatistics.addTotalPointsCount(winPoints.stream().mapToInt(Integer::intValue).sum());
 
-                Player winCardsPlayer = (firstPlayerPoints > secondPlayerPoints ? firstPlayer : secondPlayer);
-                Player anotherPlayer = (secondPlayerPoints > firstPlayerPoints ? firstPlayer : secondPlayer);
+                gameStatistics.addPlayerWins(winnerIndex);
 
-                if (Constants.COLLECT_CARDS_DATASET) {
-                    cardsAiService.markWinner(winCardsPlayer.getUuid());
-                }
 
-                if (winCardsPlayer.getUuid().endsWith("0")) {
-                    gameStatistics.addFirstWins();
-                } else {
-                    gameStatistics.addSecondWins();
-                }
+                Player winner = players.get(winnerIndex);
 
-                for (Integer playedCard : winCardsPlayer.getPlayed().getCards()) {
-                    if (playedCard < 250) {
+                for (Integer playedCard : winner.getPlayed().getCards()) {
+                    if (playedCard < Constants.CORPORATION_ID_OFFSET) {
                         gameStatistics.winCardOccured(
-                                winCardsPlayer.getPlayed().getCardToTurn().get(playedCard),
+                                winner.getPlayed().getCardToTurn().get(playedCard),
                                 playedCard
                         );
                     }
                 }
 
 
-                gameStatistics.corporationWon(winCardsPlayer.getSelectedCorporationCard());
-                gameStatistics.corporationOccured(winCardsPlayer.getSelectedCorporationCard());
-                gameStatistics.corporationOccured(anotherPlayer.getSelectedCorporationCard());
-
+                gameStatistics.corporationWon(winner.getSelectedCorporationCard());
+                players.forEach(player -> {
+                    gameStatistics.corporationOccured(player.getSelectedCorporationCard());
+                });
             }
         }
     }
@@ -432,26 +446,6 @@ public class GameController {
             for (MarsGameDataset dataset : marsGameDatasets) {
                 writeMarsGameRows(dataset.getFirstPlayerRows(), pw);
                 writeMarsGameRows(dataset.getSecondPlayerRows(), pw);
-            }
-        }
-    }
-
-    private void saveCardsDatasets(int index) throws FileNotFoundException {
-        File csvOutputFile = new File("cardsDataset_" + index + ".csv");
-        Map<String, List<MarsCardRow>> data = cardsAiService.getData();
-        try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
-            for (List<MarsCardRow> values : data.values()) {
-                for (MarsCardRow value : values) {
-                    float[] output = cardsAiService.getForStudy(value);
-
-                    for (int i = 0; i < output.length; i++) {
-                        pw.write(getFloatForWrite(output[i]));
-                        if (i != output.length - 1) {
-                            pw.write(",");
-                        }
-                    }
-                    pw.println();
-                }
             }
         }
     }
@@ -532,68 +526,33 @@ public class GameController {
 
 
     private void printStatistics(GameStatistics gameStatistics) {
-        /*
-        if (Constants.STATISTICS_BY_TURN) {
-            for (int i = 1; i <= winCardOccurenceByTurn.size(); i++) {
-                System.out.println("Turn " + i);
-
-                final List<Integer> winCardOccurence = winCardOccurenceByTurn.getOrDefault(i, new ArrayList<>());
-                final List<Integer> cardOccurence = occurenceByTurn.getOrDefault(i, new ArrayList<>());
-
-                if (winCardOccurence.isEmpty()) {
-                    for (int j = 0; j < 220; j++) {
-                        winCardOccurence.add(0);
-                    }
-                }
-
-                if (cardOccurence.isEmpty()) {
-                    for (int j = 0; j < 220; j++) {
-                        cardOccurence.add(0);
-                    }
-                }
-
-                for (int j = 1; j < cardOccurence.size(); j++) {
-                    System.out.println("j: " + j + " " + " % " + (double) winCardOccurence.get(j) * 100 / cardOccurence.get(j) + " " + cardService.getCard(j).getClass().getSimpleName());
-                }
-
-                System.out.println();
-            }
-        }*/
-
         if (WRITE_STATISTICS_TO_FILE) {
             try (FileWriter fw = new FileWriter("cardStats.txt");
                  BufferedWriter writer = new BufferedWriter(fw)) {
 
-                final Map<Integer, List<Integer>> winCardOccurenceByTurn = gameStatistics.getTurnToWinCardsOccurence();
-                final Map<Integer, List<Integer>> occurenceByTurn = gameStatistics.getTurnToCardsOccurence();
+                final Map<Integer, Map<Integer, Integer>> winCardOccurenceByTurn = gameStatistics.getTurnToWinCardsOccurence();
+                final Map<Integer, Map<Integer, Integer>> occurenceByTurn = gameStatistics.getTurnToCardsOccurence();
 
-                for (int cardId = 1; cardId <= 219; cardId++) {
+                List<Integer> allCards = occurenceByTurn.values().stream()
+                        .flatMap(cards -> cards.keySet().stream())
+                        .distinct()
+                        .sorted()
+                        .collect(Collectors.toList());
+
+                for (Integer cardId : allCards) {
                     if (Constants.WRITE_STATISTICS_TO_CONSOLE) {
                         System.out.println("Id: " + cardId + ". " + cardService.getCard(cardId).getClass().getSimpleName());
                     }
                     writer.write("#" + cardId + " " + cardService.getCard(cardId).getClass().getSimpleName() + "\n");
 
                     for (int turn = 1; turn <= winCardOccurenceByTurn.size() && turn <= 50; turn++) {
-
-                        final List<Integer> winCardOccurence = winCardOccurenceByTurn.getOrDefault(turn, new ArrayList<>());
-                        final List<Integer> cardOccurence = occurenceByTurn.getOrDefault(turn, new ArrayList<>());
-
-                        if (winCardOccurence.isEmpty()) {
-                            for (int k = 0; k < 220; k++) {
-                                winCardOccurence.add(0);
-                            }
-                        }
-
-                        if (cardOccurence.isEmpty()) {
-                            for (int k = 0; k < 220; k++) {
-                                cardOccurence.add(0);
-                            }
-                        }
+                        Map<Integer, Integer> winCardOccurence = winCardOccurenceByTurn.get(turn);
+                        Map<Integer, Integer> cardOccurence = occurenceByTurn.get(turn);
 
                         if (Constants.WRITE_STATISTICS_TO_CONSOLE) {
-                            System.out.println("Turn " + turn + ". " + (double) winCardOccurence.get(cardId) * 100 / cardOccurence.get(cardId));
+                            System.out.println("Turn " + turn + ". " + (double) winCardOccurence.getOrDefault(cardId, 0) * 100 / cardOccurence.get(cardId));
                         }
-                        writer.write("." + turn + " " + (double) winCardOccurence.get(cardId) * 100 / cardOccurence.get(cardId) + "\n");
+                        writer.write("." + turn + " " + (double) winCardOccurence.getOrDefault(cardId, 0) * 100 / cardOccurence.getOrDefault(cardId, 1) + "\n");
                     }
                     writer.write("\n");
                 }
@@ -615,8 +574,11 @@ public class GameController {
 
         System.out.println((double) gameStatistics.getTotalPointsCount() / (2 * gameStatistics.getTotalGames()));
 
-        System.out.println("Old: " + gameStatistics.getFirstWins() + "; New: " + gameStatistics.getSecondWins() +
-                "; Ratio: " + ((double) gameStatistics.getFirstWins() / (gameStatistics.getFirstWins() + gameStatistics.getSecondWins())));
+        long totalWins = gameStatistics.getWinners().stream().mapToLong(Long::longValue).sum();
+
+        for (int i = 0; i < gameStatistics.getWinners().size(); i++) {
+            System.out.println("Player victories: " + gameStatistics.getWinners().get(i) + ". Ratio: " + ((double) gameStatistics.getWinners().get(i) / totalWins));
+        }
     }
 
     @GetMapping("/simulations/stop")

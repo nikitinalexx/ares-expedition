@@ -1,9 +1,10 @@
 package com.terraforming.ares.services.ai.turnProcessors;
 
-import com.terraforming.ares.dataset.CardsAiService;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.*;
-import com.terraforming.ares.model.ai.AiCardsChoice;
+import com.terraforming.ares.model.Card;
+import com.terraforming.ares.model.Constants;
+import com.terraforming.ares.model.MarsContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.processors.turn.PickCorporationProcessor;
 import com.terraforming.ares.services.CardService;
@@ -27,7 +28,6 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
     private final AiTurnService aiTurnService;
     private final ICardValueService cardValueService;
     private final AiBalanceService aiBalanceService;
-    private final CardsAiService cardsAiService;
     private final PickCorporationProcessor pickCorporationProcessor;
     private final AiPickCardProjectionService aiPickCardProjectionService;
     private final CardService cardService;
@@ -53,74 +53,50 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
 
         List<Integer> cardsToDiscard = new ArrayList<>();
 
-        if (player.isFirstBot() && Constants.CARDS_PICK_PLAYER_1 == AiCardsChoice.RANDOM || player.isSecondBot() && Constants.CARDS_PICK_PLAYER_2 == AiCardsChoice.RANDOM) {
-            int toDiscard = random.nextInt(cards.size());
-            cardsToDiscard.addAll(cards.subList(0, toDiscard));
-        } else {
-            switch (player.isFirstBot() ? Constants.CARDS_PICK_PLAYER_1 : Constants.CARDS_PICK_PLAYER_2) {
-                case NETWORK:
-                    float average = 0;
-                    for (Integer card : cards) {
-                        average += cardsAiService.getCardChance(game, player.getUuid(), card);
+        switch (player.getDifficulty().CARDS_PICK) {
+            case RANDOM:
+                int toDiscard = random.nextInt(cards.size());
+                cardsToDiscard.addAll(cards.subList(0, toDiscard));
+                break;
+            case FILE_VALUE:
+                while (cardsToDiscard.size() != max) {
+                    if (cards.isEmpty()) {
+                        break;
                     }
-                    average /= 8;
-                    average *= 1.04f;
+                    CardValueResponse cardValueResponse = cardValueService.getWorstCard(game, player, cards, game.getTurns());
 
-                    while (cardsToDiscard.size() != max) {
-                        if (cards.isEmpty()) {
-                            break;
-                        }
-
-                        Integer cardToRemove = cardsAiService.getWorstCard(game, player.getUuid(), cards, average);//TODO if the worst card is still good, maybe don't discard it?
-                        if (cardToRemove != null) {
-                            cardsToDiscard.add(cardToRemove);
-                            cards.remove(cardToRemove);
-                        } else {
-                            break;
-                        }
-                    }
-                    break;
-                case FILE_VALUE:
-                    while (cardsToDiscard.size() != max) {
-                        if (cards.isEmpty()) {
-                            break;
-                        }
-                        CardValueResponse cardValueResponse = cardValueService.getWorstCard(game, player, cards, game.getTurns());
-
-                        if (aiBalanceService.isCardWorthToDiscard(player, cardValueResponse.getWorth())) {
-                            cardsToDiscard.add(cardValueResponse.getCardId());
-                            cards.remove(cardValueResponse.getCardId());
-                        } else {
-                            break;
-                        }
-
-
-                    }
-                    break;
-                case NETWORK_PROJECTION:
-                    MarsGame projectCorporationBuild = projectCorporationBuild(game);
-
-                    Map<Integer, Float> cardToChance = new HashMap<>();
-
-                    for (int i = 0; i < cards.size(); i++) {
-                        MarsGame gameCopy = new MarsGame(projectCorporationBuild);
-                        cardToChance.put(cards.get(i), aiPickCardProjectionService.cardExtraChanceIfBuilt(gameCopy, gameCopy.getPlayerByUuid(player.getUuid()), cards.get(i)));
+                    if (aiBalanceService.isCardWorthToDiscard(player, cardValueResponse.getWorth())) {
+                        cardsToDiscard.add(cardValueResponse.getCardId());
+                        cards.remove(cardValueResponse.getCardId());
+                    } else {
+                        break;
                     }
 
-                    List<Integer> cardsByChance = new ArrayList<>(cards);
-                    cardsByChance.sort(Comparator.comparingDouble(cardToChance::get));
+                }
+                break;
+            case NETWORK_PROJECTION:
+                MarsGame projectCorporationBuild = projectCorporationBuild(game);
 
-                    for (int i = 0; i < cardsByChance.size(); i++) {
-                        float chance = cardToChance.get(cardsByChance.get(i));
+                Map<Integer, Float> cardToChance = new HashMap<>();
 
-                        if (chance < 0.01f) {
-                            cardsToDiscard.add(cardsByChance.get(i));
-                        } else {
-                            break;
-                        }
+                for (int i = 0; i < cards.size(); i++) {
+                    MarsGame gameCopy = new MarsGame(projectCorporationBuild);
+                    cardToChance.put(cards.get(i), aiPickCardProjectionService.cardExtraChanceIfBuilt(gameCopy, gameCopy.getPlayerByUuid(player.getUuid()), cards.get(i)));
+                }
+
+                List<Integer> cardsByChance = new ArrayList<>(cards);
+                cardsByChance.sort(Comparator.comparingDouble(cardToChance::get));
+
+                for (int i = 0; i < cardsByChance.size(); i++) {
+                    float chance = cardToChance.get(cardsByChance.get(i));
+
+                    if (chance < 0.01f) {
+                        cardsToDiscard.add(cardsByChance.get(i));
+                    } else {
+                        break;
                     }
-                    break;
-            }
+                }
+                break;
         }
 
         return cardsToDiscard;

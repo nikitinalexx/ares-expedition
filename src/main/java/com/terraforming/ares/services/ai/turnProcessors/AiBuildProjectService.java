@@ -7,20 +7,19 @@ import com.terraforming.ares.dto.GameWithState;
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.processors.turn.TurnProcessor;
 import com.terraforming.ares.services.*;
+import com.terraforming.ares.services.ai.AiCardValidationService;
 import com.terraforming.ares.services.ai.DeepNetwork;
 import com.terraforming.ares.services.ai.ProjectionStrategy;
 import com.terraforming.ares.services.ai.RandomBotHelper;
 import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
-import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsHelper;
+import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsService;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.terraforming.ares.model.Constants.*;
@@ -34,13 +33,13 @@ public class AiBuildProjectService extends BaseProcessorService {
     private final CardService cardService;
     private final CardValidationService cardValidationService;
     private final AiPaymentService aiPaymentService;
-    private final AiCardBuildParamsHelper aiCardBuildParamsHelper;
+    private final AiCardBuildParamsService aiCardBuildParamsService;
     private final Random random = new Random();
     private final DeepNetwork deepNetwork;
     private final AiTurnService aiTurnService;
     private final StateFactory stateFactory;
     private final MarsContextProvider contextProvider;
-    private final WinPointsService winPointsService;
+    private final AiCardValidationService aiCardValidationService;
     private final DatasetCollectionService datasetCollectionService;
 
     protected AiBuildProjectService(TurnTypeService turnTypeService,
@@ -49,23 +48,22 @@ public class AiBuildProjectService extends BaseProcessorService {
                                     List<TurnProcessor<?>> turnProcessor,
                                     AiTurnService aiTurnService,
                                     AiPaymentService aiPaymentService,
-                                    AiCardBuildParamsHelper aiCardBuildParamsHelper,
+                                    AiCardBuildParamsService aiCardBuildParamsService,
                                     CardValidationService cardValidationService,
                                     DeepNetwork deepNetwork,
                                     CardService cardService,
                                     MarsContextProvider contextProvider,
-                                    WinPointsService winPointsService,
-                                    DatasetCollectionService datasetCollectionService) {
+                                    AiCardValidationService aiCardValidationService, DatasetCollectionService datasetCollectionService) {
         super(turnTypeService, stateFactory, stateContextProvider, turnProcessor);
         this.aiTurnService = aiTurnService;
         this.aiPaymentService = aiPaymentService;
-        this.aiCardBuildParamsHelper = aiCardBuildParamsHelper;
+        this.aiCardBuildParamsService = aiCardBuildParamsService;
         this.cardValidationService = cardValidationService;
         this.deepNetwork = deepNetwork;
         this.cardService = cardService;
         this.stateFactory = stateFactory;
         this.contextProvider = contextProvider;
-        this.winPointsService = winPointsService;
+        this.aiCardValidationService = aiCardValidationService;
         this.datasetCollectionService = datasetCollectionService;
     }
 
@@ -219,15 +217,7 @@ public class AiBuildProjectService extends BaseProcessorService {
                 .stream()
                 .map(cardService::getCard)
                 .filter(card -> cardColors.contains(card.getColor()))
-                .filter(card ->
-                {
-                    String errorMessage = cardValidationService.validateCard(
-                            player, game, card.getId(),
-                            aiPaymentService.getCardPayments(game, player, card),
-                            aiCardBuildParamsHelper.getInputParamsForValidation(game, player, card)
-                    );
-                    return errorMessage == null;
-                })
+                .filter(card -> aiCardValidationService.isValid(game, player, card))
                 .collect(Collectors.toList());
     }
 
@@ -262,22 +252,12 @@ public class AiBuildProjectService extends BaseProcessorService {
         game = new MarsGame(game);
         player = game.getPlayerByUuid(player.getUuid());
 
+        Map<Integer, List<Integer>> inputParameters = aiCardBuildParamsService.getInputParamsForBuild(game, player, card);
+        List<Payment> payments = aiPaymentService.getCardPayments(game, player, card, inputParameters);
         if (card.getColor() == CardColor.GREEN) {
-            aiTurnService.buildGreenProjectSyncNoRequirements(
-                    game,
-                    player,
-                    card.getId(),
-                    aiPaymentService.getCardPayments(game, player, card),
-                    aiCardBuildParamsHelper.getInputParamsForBuild(game, player, card)
-            );
+            aiTurnService.buildGreenProjectSyncNoRequirements(game, player, card.getId(), payments, inputParameters);
         } else {
-            aiTurnService.buildBlueRedProjectSyncNoRequirements(
-                    game,
-                    player,
-                    card.getId(),
-                    aiPaymentService.getCardPayments(game, player, card),
-                    aiCardBuildParamsHelper.getInputParamsForBuild(game, player, card)
-            );
+            aiTurnService.buildBlueRedProjectSyncNoRequirements(game, player, card.getId(), payments, inputParameters);
         }
 
         return game;
@@ -298,32 +278,18 @@ public class AiBuildProjectService extends BaseProcessorService {
             while (processFinalTurns(game)) {
                 stateFactory.getCurrentState(game).updateState();
             }
-            String errorMessage = cardValidationService.validateCard(
-                    player, game, card.getId(),
-                    aiPaymentService.getCardPayments(game, player, card),
-                    aiCardBuildParamsHelper.getInputParamsForValidation(game, player, card)
-            );
-            if (errorMessage != null) {
+
+            if (!aiCardValidationService.isValid(game, player, card)) {
                 return null;
             }
         }
 
+        Map<Integer, List<Integer>> inputParams = aiCardBuildParamsService.getInputParamsForBuild(game, player, card);
+        List<Payment> payments = aiPaymentService.getCardPayments(game, player, card, inputParams);
         if (card.getColor() == CardColor.GREEN) {
-            aiTurnService.buildGreenProjectSync(
-                    game,
-                    player,
-                    card.getId(),
-                    aiPaymentService.getCardPayments(game, player, card),
-                    aiCardBuildParamsHelper.getInputParamsForBuild(game, player, card)
-            );
+            aiTurnService.buildGreenProjectSync(game, player, card.getId(), payments, inputParams);
         } else {
-            aiTurnService.buildBlueRedProjectSync(
-                    game,
-                    player,
-                    card.getId(),
-                    aiPaymentService.getCardPayments(game, player, card),
-                    aiCardBuildParamsHelper.getInputParamsForBuild(game, player, card)
-            );
+            aiTurnService.buildBlueRedProjectSync(game, player, card.getId(), payments, inputParams);
         }
 
 

@@ -4,7 +4,6 @@ import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.cards.blue.*;
 import com.terraforming.ares.cards.buffedCorporations.BuffedArclightCorporation;
 import com.terraforming.ares.cards.corporations.ArclightCorporation;
-import com.terraforming.ares.dataset.CardsAiService;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.action.ActionInputData;
@@ -38,11 +37,11 @@ public class AiCardActionHelper {
     private final Random random = new Random();
     private final ICardValueService cardValueService;
     private final AiBalanceService aiBalanceService;
-    private final CardsAiService cardsAiService;
     private final AiPickCardProjectionService aiPickCardProjectionService;
     private final AiDiscoveryDecisionService aiDiscoveryDecisionService;
+    private final AiCardBuildParamsService aiCardBuildParamsService;
 
-    public AiCardActionHelper(List<ActionValidator<?>> validators, CardService cardService, TerraformingService terraformingService, ICardValueService cardValueService, AiBalanceService aiBalanceService, CardsAiService cardsAiService, AiPickCardProjectionService aiPickCardProjectionService, AiDiscoveryDecisionService aiDiscoveryDecisionService) {
+    public AiCardActionHelper(List<ActionValidator<?>> validators, CardService cardService, TerraformingService terraformingService, ICardValueService cardValueService, AiBalanceService aiBalanceService, AiPickCardProjectionService aiPickCardProjectionService, AiDiscoveryDecisionService aiDiscoveryDecisionService, AiCardBuildParamsService aiCardBuildParamsService) {
         blueActionValidators = validators.stream().collect(
                 Collectors.toMap(
                         ActionValidator::getType,
@@ -53,9 +52,9 @@ public class AiCardActionHelper {
         this.terraformingService = terraformingService;
         this.cardValueService = cardValueService;
         this.aiBalanceService = aiBalanceService;
-        this.cardsAiService = cardsAiService;
         this.aiPickCardProjectionService = aiPickCardProjectionService;
         this.aiDiscoveryDecisionService = aiDiscoveryDecisionService;
+        this.aiCardBuildParamsService = aiCardBuildParamsService;
     }
 
     private Set<Class<?>> ACTIONS_WITHOUT_INPUT_PARAMS = Set.of(
@@ -117,8 +116,6 @@ public class AiCardActionHelper {
                                             .count() == 5;
                                 } else if (cardAction == CardAction.PROGRESSIVE_POLICIES) {
                                     return cardService.countPlayedTags(player, Set.of(Tag.EVENT)) >= 4;
-                                } else if (cardAction == CardAction.EXPERIMENTAL_TECHNOLOGY) {
-                                    return player.getPhaseCards().stream().anyMatch(phase -> phase == 0);//there is at least one not upgraded phase card
                                 }
                                 return true;
                             }
@@ -150,6 +147,13 @@ public class AiCardActionHelper {
 
             if (cardMetadata.getCardAction() == CardAction.EXTREME_COLD_FUNGUS) {
                 return true;//always can take a plant
+            } else if (cardMetadata.getCardAction() == CardAction.RESEARCH_GRANT) {
+                final List<Tag> cardTags = player.getCardToTag().get(ResearchGrant.class);
+                return cardTags.stream().anyMatch(tag -> tag == Tag.DYNAMIC);
+            } else if (cardMetadata.getCardAction() == CardAction.VIRTUAL_EMPLOYEE_DEVELOPMENT) {
+                return true;
+            } else if (cardMetadata.getCardAction() == CardAction.EXPERIMENTAL_TECHNOLOGY) {
+                return player.getTerraformingRating() > 0 && player.getPhaseCards().stream().anyMatch(phase -> phase == 0);//there is at least one not upgraded phase card
             }
         }
         throw new IllegalStateException("NOT REACHABLE");
@@ -226,7 +230,19 @@ public class AiCardActionHelper {
 
         if (!actionsInputData.isEmpty()) {
             ActionInputData actionInputData = actionsInputData.get(0);
-            if (cardAction == CardAction.DECOMPOSING_FUNGUS) {
+            if (cardAction == CardAction.FIBROUS_COMPOSITE_MATERIAL) {
+                Map<Integer, List<Integer>> result = new HashMap<>();
+
+                List<Integer> microbeInput = (player.getCardResourcesCount().get(card.getClass()) >= actionInputData.getMax()) ? List.of(actionInputData.getMax()) : List.of(1);
+
+                if (microbeInput.get(0) == actionInputData.getMax()) {
+                    result.put(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(aiDiscoveryDecisionService.choosePhaseUpgrade(game, player)));
+                }
+
+                result.put(InputFlag.ADD_DISCARD_MICROBE.getId(), microbeInput);
+
+                return ActionInputParamsResponse.makeActionWithParams(result);
+            } else if (cardAction == CardAction.DECOMPOSING_FUNGUS) {
                 return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.CARD_CHOICE.getId(), List.of(getLeastValuableCardWithAnimalOrMicrobePresent(game, player))));
             } else if (cardAction == CardAction.CONSERVED_BIOME) {
                 return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.CARD_CHOICE.getId(), List.of(getMostValuableAnimalOrMicrobeCard(game, player, Set.of(CardCollectableResource.ANIMAL, CardCollectableResource.MICROBE)).get())));
@@ -255,18 +271,6 @@ public class AiCardActionHelper {
                 }
             } else if (cardAction == CardAction.SYMBIOTIC_FUNGUD) {
                 return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.CARD_CHOICE.getId(), List.of(getMostValuableAnimalOrMicrobeCard(game, player, Set.of(CardCollectableResource.MICROBE)).get())));
-            }  else if (cardAction == CardAction.FIBROUS_COMPOSITE_MATERIAL) {
-                Map<Integer, List<Integer>> result = new HashMap<>();
-
-                List<Integer> microbeInput = (player.getCardResourcesCount().get(card.getClass()) >= actionInputData.getMax()) ? List.of(actionInputData.getMax()) : List.of(1);
-
-                if (microbeInput.get(0) == actionInputData.getMax()) {
-                    result.put(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(aiDiscoveryDecisionService.choosePhaseUpgrade(game, player)));
-                }
-
-                result.put(InputFlag.ADD_DISCARD_MICROBE.getId(), microbeInput);
-
-                return ActionInputParamsResponse.makeActionWithParams(result);
             }
         }
 
@@ -282,11 +286,18 @@ public class AiCardActionHelper {
         } else if (cardAction == CardAction.RESEARCH_GRANT) {
             final List<Tag> cardTags = player.getCardToTag().get(ResearchGrant.class);
 
-            int tagToPut = aiDiscoveryDecisionService.chooseDynamicTagValue(cardTags);
+            int tagToPut = aiDiscoveryDecisionService.chooseDynamicTagValue(player, cardTags);
 
+            List<Card> playedCards = player.getPlayed().getCards().stream().map(cardService::getCard).collect(Collectors.toList());
 
+            Map<Integer, List<Integer>> activeInputFromCards = aiCardBuildParamsService.getActiveInputFromCards(game, player, playedCards, card, Map.of(InputFlag.TAG_INPUT.getId(), List.of(tagToPut)));
+
+            Map<Integer, List<Integer>> result = new HashMap<>();
+            result.put(InputFlag.TAG_INPUT.getId(), List.of(tagToPut));
+            result.putAll(activeInputFromCards);
+
+            return ActionInputParamsResponse.makeActionWithParams(result);
         }
-
 
 
         throw new IllegalStateException("Invalid blue action");
@@ -337,7 +348,7 @@ public class AiCardActionHelper {
                 break;
             }
 
-            switch (player.isFirstBot() ? Constants.CARDS_PICK_PLAYER_1 : Constants.CARDS_PICK_PLAYER_2) {
+            switch (player.getDifficulty().CARDS_PICK) {
                 case FILE_VALUE: {
                     CardValueResponse cardValueResponse = cardValueService.getWorstCard(game, player, cards, game.getTurns());
 
@@ -354,15 +365,6 @@ public class AiCardActionHelper {
 
                     cardsToDiscard.add(card);
                     cards.remove(card);
-                    break;
-                case NETWORK:
-                    Integer cardToRemove = cardsAiService.getWorstCard(game, player.getUuid(), cards, true);//TODO if the worst card is still good, maybe don't discard it?
-                    if (cardToRemove != null) {
-                        cardsToDiscard.add(cardToRemove);
-                        cards.remove(cardToRemove);
-                    } else {
-                        break outer;
-                    }
                     break;
                 case NETWORK_PROJECTION: {
                     CardValueResponse cardValueResponse = aiPickCardProjectionService.getWorstCard(game, player, cards);
@@ -410,7 +412,7 @@ public class AiCardActionHelper {
     private static Map<Class<?>, Integer> MICROBE_ANIMAL_DISCARD_PRIORITIES;
     private static Map<Class<?>, Integer> CRITICAL_RESOURCE_VALUES_ON_CARDS;
     private static Set<Class<?>> VALUABLE_ANIMAL_CARDS = Set.of(
-            Birds.class, Fish.class, Livestock.class
+            Birds.class, Fish.class, Livestock.class, Zoos.class
     );
 
     static {
@@ -424,6 +426,7 @@ public class AiCardActionHelper {
         MICROBE_ANIMAL_DISCARD_PRIORITIES.put(AnaerobicMicroorganisms.class, 2);// 1/2 vp
         MICROBE_ANIMAL_DISCARD_PRIORITIES.put(DecomposingFungus.class, 2); // 1/2 vp
         MICROBE_ANIMAL_DISCARD_PRIORITIES.put(SelfReplicatingBacteria.class, 2);// 1/2 vp
+        MICROBE_ANIMAL_DISCARD_PRIORITIES.put(BacterialAggregates.class, 2);// 1/2 vp
 
         //animals
         MICROBE_ANIMAL_DISCARD_PRIORITIES.put(FilterFeeders.class, 1);// 1/3vp
@@ -435,6 +438,7 @@ public class AiCardActionHelper {
         MICROBE_ANIMAL_DISCARD_PRIORITIES.put(Birds.class, 3);// 1vp
         MICROBE_ANIMAL_DISCARD_PRIORITIES.put(Fish.class, 3);// 1vp
         MICROBE_ANIMAL_DISCARD_PRIORITIES.put(Livestock.class, 3);// 1vp
+        MICROBE_ANIMAL_DISCARD_PRIORITIES.put(Zoos.class, 3);// 1vp
 
         CRITICAL_RESOURCE_VALUES_ON_CARDS = new HashMap<>();
         //microbes
@@ -446,6 +450,7 @@ public class AiCardActionHelper {
         CRITICAL_RESOURCE_VALUES_ON_CARDS.put(AnaerobicMicroorganisms.class, 2);// 1/2 vp
         CRITICAL_RESOURCE_VALUES_ON_CARDS.put(DecomposingFungus.class, Integer.MAX_VALUE); // 1/2 vp
         CRITICAL_RESOURCE_VALUES_ON_CARDS.put(SelfReplicatingBacteria.class, 5);// 1/2 vp
+        CRITICAL_RESOURCE_VALUES_ON_CARDS.put(BacterialAggregates.class, Integer.MAX_VALUE);// 1/2 vp
 
         //animals
         CRITICAL_RESOURCE_VALUES_ON_CARDS.put(FilterFeeders.class, 3);// 1/3vp
@@ -474,7 +479,7 @@ public class AiCardActionHelper {
         }
 
         Map<Integer, List<Card>> cardsByPriorities = animalMicrobeCardsStream
-                .collect(Collectors.groupingBy(card -> MICROBE_ANIMAL_DISCARD_PRIORITIES.get(card.getClass())));
+                    .collect(Collectors.groupingBy(card -> MICROBE_ANIMAL_DISCARD_PRIORITIES.get(card.getClass())));
 
         if (cardsByPriorities.get(3) != null && !cardsByPriorities.get(3).isEmpty()) {
             return Optional.of(cardsByPriorities.get(3).get(0).getId());

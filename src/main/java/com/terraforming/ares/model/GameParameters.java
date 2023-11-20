@@ -15,8 +15,9 @@ import java.util.List;
 @Setter
 public class GameParameters {
     private List<String> playerNames;
-    private List<Boolean> computers;
+    private List<PlayerDifficulty> computers;
     private boolean mulligan;
+    @Singular
     private List<Expansion> expansions;
     private boolean dummyHand;
     private boolean beginner;

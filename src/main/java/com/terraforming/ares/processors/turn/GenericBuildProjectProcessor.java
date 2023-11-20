@@ -1,11 +1,13 @@
 package com.terraforming.ares.processors.turn;
 
-import com.terraforming.ares.dataset.CardsAiService;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.turn.GenericBuildProjectTurn;
-import com.terraforming.ares.services.*;
+import com.terraforming.ares.services.BuildService;
+import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.DiscountService;
+import com.terraforming.ares.services.MarsContextProvider;
 import lombok.RequiredArgsConstructor;
 
 import java.util.ArrayList;
@@ -21,16 +23,11 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
     private final BuildService buildService;
     private final DiscountService discountService;
     private final MarsContextProvider marsContextProvider;
-    private final CardsAiService cardsAiService;
 
     @Override
     public TurnResponse processTurn(T turn, MarsGame game) {
         Player player = game.getPlayerUuidToPlayer().get(turn.getPlayerUuid());
         Card card = cardService.getCard(turn.getProjectId());
-
-        if (Constants.COLLECT_CARDS_DATASET && !turn.isProjection()) {
-            cardsAiService.collectData(game, player, card.getId());
-        }
 
         for (Payment payment : turn.getPayments()) {
             payment.pay(cardService, player);

@@ -1,8 +1,5 @@
 package com.terraforming.ares.model;
 
-import com.terraforming.ares.model.ai.AiCardsChoice;
-import com.terraforming.ares.model.ai.AiTurnChoice;
-
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,6 +34,8 @@ public class Constants {
             10100, 10000 /* Helion */
     );
 
+    public static final int CORPORATION_ID_OFFSET = 10000;
+
 
     public static final int MAX_OCEANS = 9;
     public static final int STARTING_RT = 5;
@@ -56,18 +55,6 @@ public class Constants {
     public static final int DEFAULT_START_HAND_SIZE = 8;
     public static final int MAX_HAND_SIZE_LAST_ROUND = 10;
 
-
-    public static final int ADAPTATION_TECHNOLOGY_CARD_ID = 1;
-    public static final int ADVANCED_ALLOYS_CARD_ID = 2;
-    public static final int ADVANCED_SCREENING_TECHNOLOGY_CARD_ID = 3;
-    public static final int AI_CENTRAL_CARD_ID = 4;
-    public static final int ANAEROBIC_MICROORGANISMS_CARD_ID = 5;
-
-    public static final int ARTIFICIAL_JUNGLE_CARD_ID = 9;
-    public static final int ASSEMBLY_LINES_CARD_ID = 10;
-    public static final int ASSET_LIQUIDATION_CARD_ID = 11;
-
-
     public static final int BUILD_GREEN_PROJECTS_PHASE = 1;
     public static final int BUILD_BLUE_RED_PROJECTS_PHASE = 2;
     public static final int PERFORM_BLUE_ACTION_PHASE = 3;
@@ -75,6 +62,8 @@ public class Constants {
     public static final int DRAFT_CARDS_PHASE = 5;
     public static final int SELL_EXTRA_CARDS_PHASE = 6;
     public static final int PICK_CORPORATIONS_PHASE = 7;
+
+    public static final int UPGRADEABLE_PHASES_COUNT = 5;
 
     public static final int MAX_PLAYERS = 4;
 
@@ -105,36 +94,20 @@ public class Constants {
 
     public static final float RED_CARDS_RATIO = 40f / 217;
     public static final float GREEN_CARDS_RATIO = 111f / 217;
-    public static final float BLUE_CARDS_RATIO = 66f/ 217;
+    public static final float BLUE_CARDS_RATIO = 66f / 217;
+
+    public static final boolean DISCOVERY_SIMULATIONS = true;
+
 
     public static final boolean PLAYER_CHOOSES_CARDS_FOR_FIRST_PLAYER = false;
 
-
-    public static final boolean WRITE_STATISTICS_TO_FILE = false;
+    public static final List<PlayerDifficulty> SIMULATION_PLAYERS = List.of(PlayerDifficulty.RANDOM, PlayerDifficulty.RANDOM, PlayerDifficulty.RANDOM, PlayerDifficulty.RANDOM);
+    public static final boolean WRITE_STATISTICS_TO_FILE = true;
     public static final boolean WRITE_STATISTICS_TO_CONSOLE = false;
     public static final boolean SAVE_SIMULATION_GAMES_TO_DB = false;
 
-    public static final boolean COLLECT_FIFTH_PHASE_STATISTICS = false;//makes sense only in debug mode!!!
-    public static final boolean COLLECT_CARDS_DATASET = false;
     public static final boolean COLLECT_DATASET = false;
-    public static final boolean LOG_NET_COMPARISON = true;
-
-    /** AI TURNS **/
-    public static final AiCardsChoice CARDS_PICK_PLAYER_1 = AiCardsChoice.RANDOM;
-    public static final AiCardsChoice CARDS_PICK_PLAYER_2 = AiCardsChoice.RANDOM;
-
-    public static final AiTurnChoice PICK_PHASE_PLAYER_1 = AiTurnChoice.RANDOM;
-    public static final AiTurnChoice PICK_PHASE_PLAYER_2 = AiTurnChoice.RANDOM;
-
-    public static final AiTurnChoice BUILD_PLAYER_1 = AiTurnChoice.RANDOM;
-    public static final AiTurnChoice BUILD_PLAYER_2 = AiTurnChoice.RANDOM;
-
-    public static final AiTurnChoice THIRD_PHASE_ACTIONS_PLAYER_1 = AiTurnChoice.RANDOM;
-    public static final AiTurnChoice THIRD_PHASE_ACTIONS_PLAYER_2 = AiTurnChoice.RANDOM;
-
-    public static final AiTurnChoice PHASE_UPGRADE_PLAYER_1 = AiTurnChoice.RANDOM;
-    public static final AiTurnChoice PHASE_UPGRADE_PLAYER_2 = AiTurnChoice.RANDOM;
-
+    public static final boolean LOG_NET_COMPARISON = false;
 
     private Constants() {
     }

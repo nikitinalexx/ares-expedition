@@ -57,7 +57,7 @@ public class AiService {
     public void makeAiTurns(MarsGame game) {
         game.getPlayerUuidToPlayer().values()
                 .stream()
-                .filter(Player::isAi)
+                .filter(Player::isComputer)
                 .filter(player -> !passTurnToRealPlayer(player, game))
                 .forEach(player -> processAiTurn(game, player));
     }
@@ -69,7 +69,7 @@ public class AiService {
 
         return !game.getPlayerUuidToPlayer().values()
                 .stream()
-                .filter(Player::isAi)
+                .filter(Player::isComputer)
                 .allMatch(player -> {
                             State currentState = stateFactory.getCurrentState(game);
                             boolean alreadyMadeATurn = player.getNextTurn() != null && turnTypeService.isTerminal(player.getNextTurn().getType(), game) && !player.getNextTurn().expectedAsNextTurn();

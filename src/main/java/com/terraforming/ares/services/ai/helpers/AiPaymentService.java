@@ -2,10 +2,7 @@ package com.terraforming.ares.services.ai.helpers;
 
 import com.terraforming.ares.cards.blue.AnaerobicMicroorganisms;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.BuildDto;
-import com.terraforming.ares.model.Card;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.SpecialEffect;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.payments.AnaerobicMicroorganismsPayment;
 import com.terraforming.ares.model.payments.MegacreditsPayment;
 import com.terraforming.ares.model.payments.Payment;
@@ -31,33 +28,35 @@ public class AiPaymentService {
     private final DiscountService discountService;
     private final BuildService buildService;
 
-    public List<Payment> getCardPayments(MarsGame game, Player player, Card card) {
-        int discount = discountService.getDiscount(game, card, player, Map.of());
+    public List<Payment> getCardPayments(MarsGame game, Player player, Card card, Map<Integer, List<Integer>> inputParameters) {
+        int discount = discountService.getDiscount(game, card, player, inputParameters);
 
         int price = Math.max(0, card.getPrice() - discount);
 
         boolean applyRestructuredResources = false;
-
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.RESTRUCTURED_RESOURCES)) {
-            if (price >= 5 && player.getPlants() > 0 || price >= 3 && player.getPlants() >= 3) {
-                applyRestructuredResources = true;
-            }
-        }
-
-        if (applyRestructuredResources) {
-            price -= 5;
-        }
-
         boolean applyAnaerobicMicroorganisms = false;
 
-        if (player.getCardResourcesCount().getOrDefault(AnaerobicMicroorganisms.class, 0) >= 2) {
-            if (price >= 9) {
-                applyAnaerobicMicroorganisms = true;
-            }
-        }
+        if (!card.getTags().contains(Tag.DYNAMIC)) {//TODO consider dynamic with discount
 
-        if (applyAnaerobicMicroorganisms) {
-            price -= 10;
+            if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.RESTRUCTURED_RESOURCES)) {
+                if (price >= 3 && player.getPlants() > 0) {
+                    applyRestructuredResources = true;
+                }
+            }
+
+            if (applyRestructuredResources) {
+                price -= 5;
+            }
+
+            if (player.getCardResourcesCount().getOrDefault(AnaerobicMicroorganisms.class, 0) >= 2) {
+                if (price >= 9) {
+                    applyAnaerobicMicroorganisms = true;
+                }
+            }
+
+            if (applyAnaerobicMicroorganisms) {
+                price -= 10;
+            }
         }
 
         price = Math.max(0, price);

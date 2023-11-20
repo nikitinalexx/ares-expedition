@@ -38,9 +38,12 @@ export class NewGameComponent implements OnInit {
       computer3: false,
       computer4: false,
       mulligan: false,
-      discovery: false,
       improveWeakCorp: false,
-      dummyHand: false
+      dummyHand: false,
+      difficulty1: '',
+      difficulty2: '',
+      difficulty3: '',
+      difficulty4: ''
     });
   }
 
@@ -54,16 +57,22 @@ export class NewGameComponent implements OnInit {
           this.errorMessage = 'Invalid names';
           return;
         }
-        computers.push(this.parentForm.get('computer' + i)?.value);
-
         names.push(name);
+
+        if (this.parentForm.get('computer' + i)?.value && !this.parentForm.get('difficulty' + i)?.value) {
+          this.errorMessage = 'Choose computer difficulty or disable computer option';
+          return;
+        }
+
+        if (this.parentForm.get('computer' + i)?.value) {
+          computers.push(this.parentForm.get('difficulty' + i)?.value === 'random' ? 'RANDOM' : 'SMART');
+        } else {
+          computers.push('NONE');
+        }
       }
-      const expansions = [Expansion.BASE];
+      const expansions = [Expansion.BASE, Expansion.DISCOVERY];
       if (this.parentForm.value.improveWeakCorp) {
         expansions.push(Expansion.BUFFED_CORPORATION);
-      }
-      if (this.parentForm.value.discovery) {
-        expansions.push(Expansion.DISCOVERY);
       }
       this.loading = true;
       this.players = null;

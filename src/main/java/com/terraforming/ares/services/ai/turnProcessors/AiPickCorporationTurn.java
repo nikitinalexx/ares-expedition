@@ -46,7 +46,7 @@ public class AiPickCorporationTurn implements AiTurnProcessor {
             inputParams.put(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(aiDiscoveryDecisionService.choosePhaseUpgrade(game, player, Constants.DRAFT_CARDS_PHASE)));
         } else if (corporationCardAction == CardAction.AUSTELLAR_CORPORATION) {
             inputParams.put(InputFlag.AUSTELLAR_CORPORATION_MILESTONE.getId(), List.of(aiDiscoveryDecisionService.chooseAustellarCorporationMilestone(game)));
-            inputParams.put(InputFlag.TAG_INPUT.getId(), List.of(aiDiscoveryDecisionService.chooseDynamicTagValue(List.of())));
+            inputParams.put(InputFlag.TAG_INPUT.getId(), List.of(aiDiscoveryDecisionService.chooseDynamicTagValue(player, List.of())));
         } else if (corporationCardAction == CardAction.MODPRO_CORPORATION) {
             inputParams.put(InputFlag.TAG_INPUT.getId(), List.of(aiDiscoveryDecisionService.chooseModProTagValue()));
         } else if (corporationCardAction == CardAction.NEBU_LABS_CORPORATION) {

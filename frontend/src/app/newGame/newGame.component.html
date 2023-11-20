@@ -19,13 +19,6 @@
     </div>
 
     <div class="bg-warning text-dark new-game-label" style="width: 260px; border-radius: 5px; margin-top: 10px;">
-      <label for="discoveryChoice"
-             class="form-label">Discovery <span class="bg-danger text-white">(new expansion!)</span></label>
-      <input type="checkbox" class="form-check-input" id="discoveryChoice" style="margin-left: 10px; float: right"
-             formControlName="discovery">
-    </div>
-
-    <div class="bg-warning text-dark new-game-label" style="width: 260px; border-radius: 5px; margin-top: 10px;">
       <label for="dummyHand"
              class="form-label">Dummy hand <span class="bg-danger text-white">(plays 5 phases)</span></label>
       <input type="checkbox" class="form-check-input" id="dummyHand" style="margin-left: 10px; float: right"
@@ -59,10 +52,21 @@
 
 
     <div *ngFor="let item of getPlayerCountArray(); let i = index" style="margin-top: 15px;">
+
       <label for="playerName" class="form-label p-1 mb-2 bg-warning text-dark"
              style="border-radius: 5px;">Player {{item}} name</label>
-        <label class="form-label p-1 mb-2 bg-warning text-dark"
-               style="margin-left: 5px; border-radius: 5px;">Computer <input type="checkbox" [formControlName]="'computer' + item"/></label>
+
+      <label class="form-label p-1 mb-2 bg-warning text-dark"
+             style="margin-left: 5px; border-radius: 5px;">Computer <input type="checkbox"
+                                                                           [formControlName]="'computer' + item"/>
+      </label>
+
+      <label *ngIf="parentForm.get('computer' + item)?.value && this.parentForm.value.playerCount !== '1'" class="form-label p-1 mb-2 bg-warning text-dark"
+             style="margin-left: 5px; border-radius: 5px;">Easy <input type="radio" value="random" style="width: 30px" [formControlName]="'difficulty' + item"/></label>
+
+      <label *ngIf="parentForm.get('computer' + item)?.value && this.parentForm.value.playerCount !== '1'" class="form-label p-1 mb-2 bg-warning text-dark"
+             style="margin-left: 5px; border-radius: 5px;">Normal <input type="radio" value="smart" style=" width: 30px" [formControlName]="'difficulty' + item"/></label>
+
 
       <input type="text" class="form-control" id="playerName" [formControlName]="'playerName' + item">
 
@@ -70,7 +74,7 @@
 
     <div style="display: flex; margin-top: 10px">
       <button type="submit" class="btn btn-warning btn-lg">Create</button>
-      <button type="button" class="btn btn-warning btn-lg" style="margin-left: 10px"  routerLink="/">Back</button>
+      <button type="button" class="btn btn-warning btn-lg" style="margin-left: 10px" routerLink="/">Back</button>
 
 
       <div *ngIf="loading" style="margin-left: 20px; margin-top: 23px">

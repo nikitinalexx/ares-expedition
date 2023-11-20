@@ -1,6 +1,7 @@
 package com.terraforming.ares.validation.action;
 
 import com.terraforming.ares.cards.blue.AssetLiquidation;
+import com.terraforming.ares.cards.blue.ExperimentalTechnology;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
@@ -18,12 +19,12 @@ import java.util.Map;
  */
 @Component
 @RequiredArgsConstructor
-public class ExperimentalTechnologyActionValidator implements ActionValidator<AssetLiquidation> {
+public class ExperimentalTechnologyActionValidator implements ActionValidator<ExperimentalTechnology> {
     private final OnBuiltEffectValidationService onBuiltEffectValidationService;
 
     @Override
-    public Class<AssetLiquidation> getType() {
-        return AssetLiquidation.class;
+    public Class<ExperimentalTechnology> getType() {
+        return ExperimentalTechnology.class;
     }
 
     @Override

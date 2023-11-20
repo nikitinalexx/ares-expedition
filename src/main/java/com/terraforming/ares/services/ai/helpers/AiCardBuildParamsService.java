@@ -1,14 +1,16 @@
 package com.terraforming.ares.services.ai.helpers;
 
 import com.terraforming.ares.cards.blue.Decomposers;
-import com.terraforming.ares.dataset.CardsAiService;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
-import com.terraforming.ares.model.ai.AiCardsChoice;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.ai.AiDiscoveryDecisionService;
+import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.ICardValueService;
+import com.terraforming.ares.services.ai.dto.CardValueResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -24,18 +26,23 @@ import static com.terraforming.ares.model.InputFlag.DECOMPOSERS_TAKE_MICROBE;
  */
 @Service
 @RequiredArgsConstructor
-public class AiCardBuildParamsHelper {
+public class AiCardBuildParamsService {
+    private final Random random = new Random();
     private final CardService cardService;
-    private final CardsAiService cardsAiService;
     private final ICardValueService cardValueService;
     private final AiDiscoveryDecisionService aiDiscoveryDecisionService;
-    private final Random random = new Random();
+
+    private AiPickCardProjectionService aiPickCardProjectionService;
+
+    @Lazy
+    @Autowired
+    public void setAiPickCardProjectionService(AiPickCardProjectionService aiPickCardProjectionService) {
+        this.aiPickCardProjectionService = aiPickCardProjectionService;
+    }
 
     private final Set<CardAction> CARDS_WITH_PHASE_UPGRADE_EFFECT = Set.of(
-            CardAction.COMMUNICATIONS_STREAMLINING,
             CardAction.UPDATE_PHASE_CARD,
-            CardAction.SOFTWARE_STREAMLINING,
-            CardAction.BIOMEDICAL_IMPORTS
+            CardAction.SOFTWARE_STREAMLINING
     );
 
     public Map<Integer, List<Integer>> getInputParamsForValidation(MarsGame game, Player player, Card card) {
@@ -91,7 +98,7 @@ public class AiCardBuildParamsHelper {
         if (cardAction == CardAction.TOPOGRAPHIC_MAPPING) {
             result = Map.of(
                     InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(0),
-                    InputFlag.TAG_INPUT.getId(), List.of(Tag.BUILDING.ordinal())
+                    InputFlag.TAG_INPUT.getId(), List.of(Tag.ANIMAL.ordinal())
             );
         }
 
@@ -100,7 +107,7 @@ public class AiCardBuildParamsHelper {
         }
 
         if (cardAction == CardAction.CHOOSE_TAG) {
-            result = Map.of(InputFlag.TAG_INPUT.getId(), List.of(Tag.BUILDING.ordinal()));
+            result = Map.of(InputFlag.TAG_INPUT.getId(), List.of(Tag.ANIMAL.ordinal()));
         }
 
         if (cardAction == CardAction.UPDATE_PHASE_1_CARD) {
@@ -109,6 +116,17 @@ public class AiCardBuildParamsHelper {
 
         if (cardAction == CardAction.UPDATE_PHASE_4_CARD) {
             result = Map.of(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(6));
+        }
+
+        if (cardAction == CardAction.COMMUNICATIONS_STREAMLINING) {
+            result = Map.of(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(4));
+        }
+
+        if (cardAction == CardAction.BIOMEDICAL_IMPORTS) {
+            result = Map.of(
+                    InputFlag.BIOMEDICAL_IMPORTS_UPGRADE_PHASE.getId(), List.of(-1),
+                    InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(0)
+            );
         }
 
         if (cardAction != null && CARDS_WITH_PHASE_UPGRADE_EFFECT.contains(cardAction)) {
@@ -129,10 +147,7 @@ public class AiCardBuildParamsHelper {
         }
 
         if (cardActionTriggered(playedCards, card, CardAction.DECOMPOSERS)) {
-            int tagsCount = (int) card.getTags()
-                    .stream()
-                    .filter(tag -> tag == Tag.ANIMAL || tag == Tag.MICROBE || tag == Tag.PLANT)
-                    .count();
+            int tagsCount = cardService.countCardTags(card, Set.of(Tag.ANIMAL, Tag.MICROBE, Tag.PLANT), result);
 
             if (tagsCount != 0) {
                 if (result == null) {
@@ -145,30 +160,20 @@ public class AiCardBuildParamsHelper {
         }
 
         if (cardActionTriggered(playedCards, card, CardAction.MARS_UNIVERSITY)) {
-            int scienceTagsCount = (int) card.getTags()
-                    .stream()
-                    .filter(Tag.SCIENCE::equals)
-                    .count();
+            int scienceTagsCount = cardService.countCardTags(card, Set.of(Tag.SCIENCE), result);
 
             if (scienceTagsCount != 0) {
-                List<Integer> input = getMarsUniversityInput(game, player.getUuid(), card, player.getHand().getCards()
-                        .stream().map(cardService::getCard).collect(Collectors.toList()), scienceTagsCount);
-                if (!input.isEmpty()) {
-                    if (result == null) {
-                        result = new HashMap<>();
-                    } else {
-                        result = new HashMap<>(result);
-                    }
-                    result.put(InputFlag.MARS_UNIVERSITY_CARD.getId(), List.of(InputFlag.SKIP_ACTION.getId()));
+                if (result == null) {
+                    result = new HashMap<>();
+                } else {
+                    result = new HashMap<>(result);
                 }
+                result.put(InputFlag.MARS_UNIVERSITY_CARD.getId(), List.of(InputFlag.SKIP_ACTION.getId()));
             }
         }
 
         if (cardActionTriggered(playedCards, card, CardAction.VIRAL_ENHANCERS)) {
-            int tagsCount = (int) card.getTags()
-                    .stream()
-                    .filter(tag -> tag == Tag.ANIMAL || tag == Tag.MICROBE || tag == Tag.PLANT)
-                    .count();
+            int tagsCount = cardService.countCardTags(card, Set.of(Tag.ANIMAL, Tag.MICROBE, Tag.PLANT), result);
 
             if (tagsCount != 0) {
                 if (result == null) {
@@ -205,7 +210,7 @@ public class AiCardBuildParamsHelper {
 
         if (cardAction == CardAction.TOPOGRAPHIC_MAPPING) {
             result.put(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(aiDiscoveryDecisionService.choosePhaseUpgrade(game, player)));
-            result.put(InputFlag.TAG_INPUT.getId(), List.of(aiDiscoveryDecisionService.chooseDynamicTagValue(List.of())));
+            result.put(InputFlag.TAG_INPUT.getId(), List.of(aiDiscoveryDecisionService.chooseDynamicTagValue(player, List.of())));
         }
 
         if (cardAction == CardAction.UPDATE_PHASE_2_CARD) {
@@ -213,11 +218,15 @@ public class AiCardBuildParamsHelper {
         }
 
         if (cardAction == CardAction.CHOOSE_TAG) {
-            result.put(InputFlag.TAG_INPUT.getId(), List.of(aiDiscoveryDecisionService.chooseDynamicTagValue(List.of())));
+            result.put(InputFlag.TAG_INPUT.getId(), List.of(aiDiscoveryDecisionService.chooseDynamicTagValue(player, List.of())));
         }
 
         if (cardAction == CardAction.UPDATE_PHASE_1_CARD) {
             result.put(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(aiDiscoveryDecisionService.choosePhaseUpgrade(game, player, Constants.BUILD_GREEN_PROJECTS_PHASE)));
+        }
+
+        if (cardAction == CardAction.COMMUNICATIONS_STREAMLINING) {
+            result.put(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(aiDiscoveryDecisionService.choosePhaseUpgrade(game, player, Constants.PERFORM_BLUE_ACTION_PHASE)));
         }
 
         if (cardAction == CardAction.UPDATE_PHASE_4_CARD) {
@@ -225,6 +234,12 @@ public class AiCardBuildParamsHelper {
         }
 
         if (cardAction != null && CARDS_WITH_PHASE_UPGRADE_EFFECT.contains(cardAction)) {
+            result.put(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(aiDiscoveryDecisionService.choosePhaseUpgrade(game, player)));
+        }
+
+        if (cardAction == CardAction.BIOMEDICAL_IMPORTS) {
+            //TODO expansion project double action
+            result.put(InputFlag.BIOMEDICAL_IMPORTS_UPGRADE_PHASE.getId(), List.of(-1));
             result.put(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(aiDiscoveryDecisionService.choosePhaseUpgrade(game, player)));
         }
 
@@ -291,8 +306,27 @@ public class AiCardBuildParamsHelper {
             result.put(InputFlag.SYNTHETIC_CATASTROPHE_CARD.getId(), getRandomCardInput(playedRedCards));
         }
 
+        result.putAll(getActiveInputFromCards(game, player, playedCards, card, result));
+
+        return result;
+    }
+
+    public Map<Integer, List<Integer>> getActiveInputFromCards(MarsGame game, Player player, List<Card> playedCards, Card card, Map<Integer, List<Integer>> input) {
+        Map<Integer, List<Integer>> decomposersInputIfApplicable = getDecomposersInputIfApplicable(player, playedCards, card, input);
+        Map<Integer, List<Integer>> viralEnhancersInputIfApplicable = getViralEnhancersInputIfApplicable(playedCards, card, input);
+        Map<Integer, List<Integer>> marsUniversityInputIfApplicable = getMarsUniversityInputIfApplicable(game, player, playedCards, card, input);
+
+        Map<Integer, List<Integer>> result = new HashMap<>();
+        result.putAll(decomposersInputIfApplicable);
+        result.putAll(viralEnhancersInputIfApplicable);
+        result.putAll(marsUniversityInputIfApplicable);
+
+        return result;
+    }
+
+    private Map<Integer, List<Integer>> getDecomposersInputIfApplicable(Player player, List<Card> playedCards, Card card, Map<Integer, List<Integer>> input) {
         if (cardActionTriggered(playedCards, card, CardAction.DECOMPOSERS)) {
-            int tagsCount = cardService.countCardTags(card, Set.of(Tag.ANIMAL, Tag.MICROBE, Tag.PLANT), result);
+            int tagsCount = cardService.countCardTags(card, Set.of(Tag.ANIMAL, Tag.MICROBE, Tag.PLANT), input);
 
             if (tagsCount != 0) {
                 int takeMicrobes = 0;
@@ -307,13 +341,18 @@ public class AiCardBuildParamsHelper {
                         microbesLeftOnCard++;
                     }
                 }
-                result.put(DECOMPOSERS_TAKE_MICROBE.getId(), List.of(takeMicrobes));
-                result.put(DECOMPOSERS_TAKE_CARD.getId(), List.of(takeCards));
+                return Map.of(
+                        DECOMPOSERS_TAKE_MICROBE.getId(), List.of(takeMicrobes),
+                        DECOMPOSERS_TAKE_CARD.getId(), List.of(takeCards)
+                );
             }
         }
+        return Map.of();
+    }
 
+    private Map<Integer, List<Integer>> getViralEnhancersInputIfApplicable(List<Card> playedCards, Card card, Map<Integer, List<Integer>> input) {
         if (cardActionTriggered(playedCards, card, CardAction.VIRAL_ENHANCERS)) {
-            int tagsCount = cardService.countCardTags(card, Set.of(Tag.ANIMAL, Tag.MICROBE, Tag.PLANT), result);
+            int tagsCount = cardService.countCardTags(card, Set.of(Tag.ANIMAL, Tag.MICROBE, Tag.PLANT), input);
 
             if (tagsCount != 0) {
                 List<Card> playerCardsWithPlayed = new ArrayList<>(playedCards);
@@ -322,33 +361,36 @@ public class AiCardBuildParamsHelper {
                 List<Card> playerCardsWithAnimals = getCardsWithCollectable(playerCardsWithPlayed, CardCollectableResource.ANIMAL);
                 if (!playerCardsWithAnimals.isEmpty()) {
                     Integer chosenCard = getRandomCards(playerCardsWithAnimals, 1).get(0);
-                    result.put(InputFlag.VIRAL_ENHANCERS_PUT_RESOURCE.getId(), tagsCount == 1 ? List.of(chosenCard) : List.of(chosenCard, chosenCard));
+                    return Map.of(InputFlag.VIRAL_ENHANCERS_PUT_RESOURCE.getId(), tagsCount == 1 ? List.of(chosenCard) : List.of(chosenCard, chosenCard));
                 } else {
                     List<Card> playerCardsWithMicrobes = getCardsWithCollectable(playerCardsWithPlayed, CardCollectableResource.MICROBE);
                     if (!playerCardsWithMicrobes.isEmpty()) {
                         Integer chosenCard = getRandomCards(playerCardsWithMicrobes, 1).get(0);
-                        result.put(InputFlag.VIRAL_ENHANCERS_PUT_RESOURCE.getId(), tagsCount == 1 ? List.of(chosenCard) : List.of(chosenCard, chosenCard));
+                        return Map.of(InputFlag.VIRAL_ENHANCERS_PUT_RESOURCE.getId(), tagsCount == 1 ? List.of(chosenCard) : List.of(chosenCard, chosenCard));
                     } else {
-                        result.put(InputFlag.VIRAL_ENHANCERS_TAKE_PLANT.getId(), List.of(tagsCount));
+                        return Map.of(InputFlag.VIRAL_ENHANCERS_TAKE_PLANT.getId(), List.of(tagsCount));
                     }
                 }
             }
         }
+        return Map.of();
+    }
 
+    private Map<Integer, List<Integer>> getMarsUniversityInputIfApplicable(MarsGame game, Player player, List<Card> playedCards, Card card, Map<Integer, List<Integer>> input) {
         if (cardActionTriggered(playedCards, card, CardAction.MARS_UNIVERSITY)) {
-            int scienceTagsCount = cardService.countCardTags(card, Set.of(Tag.SCIENCE), result);
+            int scienceTagsCount = cardService.countCardTags(card, Set.of(Tag.SCIENCE), input);
 
 
             if (scienceTagsCount != 0) {
                 List<Card> handCards = player.getHand().getCards().stream().map(cardService::getCard).collect(Collectors.toList());
 
 
-                result.put(InputFlag.MARS_UNIVERSITY_CARD.getId(), getMarsUniversityInput(game, player.getUuid(), card, handCards, scienceTagsCount));
+                return Map.of(InputFlag.MARS_UNIVERSITY_CARD.getId(), getMarsUniversityInput(game, player.getUuid(), card, handCards, scienceTagsCount));
             }
         }
-
-        return result;
+        return Map.of();
     }
+
 
     private List<Integer> getRandomCardInput(List<Card> cards) {
         if (cards.isEmpty()) {
@@ -430,31 +472,50 @@ public class AiCardBuildParamsHelper {
                 .collect(Collectors.toList());
 
         //TODO what if card with plant is good?
-        cardsToDiscard.addAll(getWorstCards(game, playerUuid, plantCards, scienceTagsCount));
+        cardsToDiscard.addAll(getWorstCardsForMarsUniversity(game, playerUuid, plantCards, scienceTagsCount));
 
         if (cardsToDiscard.size() == scienceTagsCount) {
             return cardsToDiscard;
         }
 
+        //TODO not checking science card because it will create a loop, maybe find a solution?
         List<Integer> nonPlantCards = copy.stream()
-                .filter(c -> !c.getTags().contains(Tag.PLANT) && !c.getTags().contains(Tag.DYNAMIC))
+                .filter(c -> !c.getTags().contains(Tag.PLANT) && !c.getTags().contains(Tag.DYNAMIC) && !c.getTags().contains(Tag.SCIENCE))
                 .map(Card::getId)
                 .collect(Collectors.toList());
-        cardsToDiscard.addAll(getWorstCards(game, playerUuid, nonPlantCards, scienceTagsCount - cardsToDiscard.size()));
+        cardsToDiscard.addAll(getWorstCardsForMarsUniversity(game, playerUuid, nonPlantCards, scienceTagsCount - cardsToDiscard.size()));
+
+        if (CollectionUtils.isEmpty(cardsToDiscard)) {
+            return List.of(InputFlag.SKIP_ACTION.getId());
+        }
 
         return cardsToDiscard;
     }
 
-    private List<Integer> getWorstCards(MarsGame game, String playerUuid, List<Integer> cards, int count) {
+    private List<Integer> getWorstCardsForMarsUniversity(MarsGame game, String playerUuid, List<Integer> cards, int count) {
         Player player = game.getPlayerByUuid(playerUuid);
         List<Integer> result = new ArrayList<>();
+
         for (int i = 0; i < count; i++) {
             if (cards.isEmpty()) {
                 break;
             }
-            Integer card = player.isFirstBot() && Constants.CARDS_PICK_PLAYER_1 == AiCardsChoice.NETWORK || player.isSecondBot() && Constants.CARDS_PICK_PLAYER_2 == AiCardsChoice.NETWORK
-                    ? cardsAiService.getWorstCard(game, playerUuid, cards, true)
-                    : cardValueService.getWorstCard(game, player, cards, game.getTurns()).getCardId();
+
+            Integer card = null;
+            switch (player.getDifficulty().CARDS_PICK) {
+                case NETWORK_PROJECTION:
+                    CardValueResponse worstCard = aiPickCardProjectionService.getWorstCard(game, player, cards);
+                    if (worstCard.getWorth() < 0) {
+                        card = worstCard.getCardId();
+                    }
+                    break;
+                case FILE_VALUE:
+                    card = cardValueService.getWorstCard(game, player, cards, game.getTurns()).getCardId();
+                    break;
+                case RANDOM:
+                    card = cards.get(random.nextInt(cards.size()));
+                    break;
+            }
             if (card != null) {
                 result.add(card);
                 cards.remove(card);

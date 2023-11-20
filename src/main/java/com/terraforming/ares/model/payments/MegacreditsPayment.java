@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardService;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 /**
  * Created by oleksii.nikitin
@@ -28,4 +29,8 @@ public class MegacreditsPayment extends GenericPayment {
         player.setMc(player.getMc() - getValue());
     }
 
+    @Override
+    public String toString() {
+        return "Value " + getValue();
+    }
 }

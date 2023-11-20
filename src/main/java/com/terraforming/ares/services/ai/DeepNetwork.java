@@ -26,8 +26,6 @@ import java.util.List;
 public class DeepNetwork {
     private final ThreadLocal<FeedForwardNetwork> firstNetwork;
     private final ThreadLocal<FeedForwardNetwork>  secondNetwork;
-    private final WinPointsService winPointsService;
-    private final CardService cardService;
     private final DatasetCollectionService datasetCollectionService;
 
     private static final float[] MAX_INPUTS_FIRST = new float[]{48.0f, 14.0f, 30.0f, 9.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 187.98f, 127.0f, 501.0f, 12.0f, 10.0f, 24.0f, 159.0f, 49.0f, 205.0f, 9.0f, 56.0f, 22.0f, 12.0f, 14.0f, 23.0f, 34.0f, 31.0f, 11.0f, 31.0f, 13.0f, 11.0f, 19.0f, 5.0f, 4.0f, 1.0f, 1.0f, 1.0f, 2.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 187.98f, 127.0f, 501.0f, 12.0f, 10.0f, 24.0f, 159.0f, 49.0f, 205.0f, 9.0f, 56.0f, 22.0f, 12.0f, 14.0f, 23.0f, 34.0f, 31.0f, 11.0f, 31.0f, 13.0f, 11.0f, 19.0f, 5.0f, 4.0f, 1.0f, 1.0f, 1.0f, 2.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 2.7f, 1.66f, 1.42f, 1.0f, 1.0f, 1.0f};
@@ -40,9 +38,7 @@ public class DeepNetwork {
 
 
     //the same, both very good
-    public DeepNetwork(WinPointsService winPointsService, CardService cardService, DatasetCollectionService datasetCollectionService) throws IOException, ClassNotFoundException {
-        this.winPointsService = winPointsService;
-        this.cardService = cardService;
+    public DeepNetwork(DatasetCollectionService datasetCollectionService) throws IOException, ClassNotFoundException {
         this.datasetCollectionService = datasetCollectionService;
         firstNetwork = ThreadLocal.withInitial(() -> {
             try {
@@ -51,14 +47,14 @@ public class DeepNetwork {
                 //result2 0.5909090909090909
                 //result3 0.5950704225352113
 
-                return FileIO.createFromFile("result_N^2_reg_5.dnet", FeedForwardNetwork.class);
+                return FileIO.createFromFile("result_N_reg_5_iter_0_batch_6.dnet", FeedForwardNetwork.class);
             } catch (IOException | ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
         });
         secondNetwork = ThreadLocal.withInitial(() -> {
             try {
-                return FileIO.createFromFile("result_N^2_reg_5.dnet", FeedForwardNetwork.class);
+                return FileIO.createFromFile("result_N_reg_5_iter_0_batch_6.dnet", FeedForwardNetwork.class);
             } catch (IOException | ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }

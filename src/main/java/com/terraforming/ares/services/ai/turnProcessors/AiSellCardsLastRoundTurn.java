@@ -5,7 +5,6 @@ import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
-import com.terraforming.ares.dataset.CardsAiService;
 import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.ICardValueService;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +24,6 @@ public class AiSellCardsLastRoundTurn implements AiTurnProcessor {
     private final Random random = new Random();
     private final AiTurnService aiTurnService;
     private final ICardValueService cardValueService;
-    private final CardsAiService cardsAiService;
     private final CardService cardService;
     private final AiPickCardProjectionService aiPickCardProjectionService;
 
@@ -44,18 +42,12 @@ public class AiSellCardsLastRoundTurn implements AiTurnProcessor {
 
         for (int i = 0; i < cardsToSellCount; i++) {
             Integer cardToSell;
-            switch (player.isFirstBot() ? Constants.CARDS_PICK_PLAYER_1 : Constants.CARDS_PICK_PLAYER_2) {
+            switch (player.getDifficulty().CARDS_PICK) {
                 case RANDOM:
                     cardToSell = allCards.get(random.nextInt(allCards.size()));
                     break;
                 case FILE_VALUE:
                     cardToSell = cardValueService.getWorstCard(game, player, allCards, game.getTurns()).getCardId();
-                    break;
-                case NETWORK:
-                    cardToSell = cardsAiService.getWorstCard(game, player.getUuid(), allCards, false);
-                    if (Constants.LOG_NET_COMPARISON) {
-                        System.out.println("Selling ai " + cardService.getCard(cardToSell).getClass().getSimpleName());
-                    }
                     break;
                 case NETWORK_PROJECTION:
                     cardToSell = aiPickCardProjectionService.getWorstCard(game, player, allCards).getCardId();

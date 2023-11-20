@@ -7,6 +7,7 @@ import com.terraforming.ares.model.request.ChooseCorporationRequest;
 import com.terraforming.ares.model.turn.*;
 import com.terraforming.ares.processors.turn.TurnProcessor;
 import com.terraforming.ares.services.*;
+import com.terraforming.ares.services.ai.AiCardValidationService;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -27,10 +28,16 @@ public class AiTurnService {
     private final TurnTypeService turnTypeService;
     private final StandardProjectService standardProjectService;
     private final CardService cardService;
+    private final AiCardValidationService aiCardValidationService;
 
     public AiTurnService(List<TurnProcessor<?>> turnProcessor,
                          CardValidationService cardValidationService,
-                         PaymentValidationService paymentValidationService, TerraformingService terraformingService, TurnTypeService turnTypeService, StandardProjectService standardProjectService, CardService cardService) {
+                         PaymentValidationService paymentValidationService,
+                         TerraformingService terraformingService,
+                         TurnTypeService turnTypeService,
+                         StandardProjectService standardProjectService,
+                         CardService cardService,
+                         AiCardValidationService aiCardValidationService) {
         this.cardValidationService = cardValidationService;
         this.paymentValidationService = paymentValidationService;
 
@@ -41,6 +48,7 @@ public class AiTurnService {
         this.turnTypeService = turnTypeService;
         this.standardProjectService = standardProjectService;
         this.cardService = cardService;
+        this.aiCardValidationService = aiCardValidationService;
     }
 
     public void chooseCorporationTurn(MarsGame game, ChooseCorporationRequest chooseCorporationRequest) {
@@ -144,16 +152,12 @@ public class AiTurnService {
         makeAsyncTurn(player, new PickExtraBonusSecondPhase(player.getUuid()));
     }
 
-    public void pickExtraCardTurnSync(MarsGame game, Player player) {
-        makeSyncTurn(player, game, new PickExtraBonusSecondPhase(player.getUuid()));
-    }
+    public void collectIncomeTurn(Player player, Integer doubleCollectCardId) {
+        if (doubleCollectCardId != null && (player.getChosenPhase() != 4 || !player.hasPhaseUpgrade(Constants.PHASE_4_UPGRADE_DOUBLE_PRODUCE))) {
+            throw new IllegalStateException("Not allowed to collect income twice");
+        }
 
-    public void collectIncomeTurn(Player player) {
         makeAsyncTurn(player, new CollectIncomeTurn(player.getUuid(), null));
-    }
-
-    public void collectIncomeTurnSync(MarsGame game, Player player) {
-        makeSyncTurn(player, game, new CollectIncomeTurn(player.getUuid(), null));
     }
 
     public void skipTurn(Player player) {

@@ -2,17 +2,16 @@ package com.terraforming.ares.services.ai;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.cards.blue.ArcticAlgae;
-import com.terraforming.ares.cards.green.AirborneRadiation;
-import com.terraforming.ares.cards.green.BiothermalPower;
-import com.terraforming.ares.cards.green.DeepWellHeating;
-import com.terraforming.ares.cards.green.TrappedHeat;
+import com.terraforming.ares.cards.blue.GasCooledReactors;
+import com.terraforming.ares.cards.blue.HohmannTransferShipping;
+import com.terraforming.ares.cards.blue.VolcanicSoil;
+import com.terraforming.ares.cards.green.*;
 import com.terraforming.ares.cards.red.*;
 import com.terraforming.ares.dto.GameStatistics;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.DiscountService;
-import com.terraforming.ares.services.PaymentValidationService;
 import com.terraforming.ares.services.SpecialEffectsService;
 import com.terraforming.ares.services.ai.dto.CardValue;
 import com.terraforming.ares.services.ai.dto.CardValueResponse;
@@ -32,7 +31,6 @@ import java.util.*;
 public class FileCardValueService implements ICardValueService {
     private static final double MAX_PRIORITY = 10.0;
     private final CardService cardService;
-    private final PaymentValidationService paymentValidationService;
     private final DiscountService discountService;
     private final SpecialEffectsService specialEffectsService;
     private final AiBalanceService aiBalanceService;
@@ -42,21 +40,19 @@ public class FileCardValueService implements ICardValueService {
 
 
     public FileCardValueService(CardService cardService,
-                                PaymentValidationService paymentValidationService,
                                 SpecialEffectsService specialEffectsService,
                                 AiBalanceService aiBalanceService,
                                 DiscountService discountService) throws IOException {
         this.cardService = cardService;
-        this.paymentValidationService = paymentValidationService;
         this.specialEffectsService = specialEffectsService;
         this.aiBalanceService = aiBalanceService;
         this.discountService = discountService;
 
-        this.cardIdToTurnToValueTwoPlayer = initCardStatsFromFile("cardStatsSmartVsSmart.txt");
-        this.cardIdToTurnToValueFourPlayer = initCardStatsFromFile("cardStatsRandom.txt");
+        this.cardIdToTurnToValueTwoPlayer = initCardStatsFromFile("cardStatsExpansionRandom.txt", 1);
+        this.cardIdToTurnToValueFourPlayer = initCardStatsFromFile("cardStatsRandom.txt", 2);
     }
 
-    private Map<Integer, Map<Integer, CardValue>> initCardStatsFromFile(String fileName) throws IOException {
+    private Map<Integer, Map<Integer, CardValue>> initCardStatsFromFile(String fileName, int multiplier) throws IOException {
         Map<Integer, Map<Integer, CardValue>> result = new HashMap<>();
         try (FileReader fr = new FileReader(fileName);
              BufferedReader reader = new BufferedReader(fr)) {
@@ -72,10 +68,10 @@ public class FileCardValueService implements ICardValueService {
                     String[] turnWithOccurence = line.split(" ");
                     final int turnId = Integer.parseInt(turnWithOccurence[0]);
                     CardValue cardValue;
-                    if (turnWithOccurence[1].equals("NaN")) {
+                    if (turnWithOccurence[1].equals("NaN") || turnWithOccurence[1].equals("0.0")) {
                         cardValue = CardValue.builder().isNan(true).build();
                     } else {
-                        cardValue = CardValue.builder().value(Double.parseDouble(turnWithOccurence[1])).build();
+                        cardValue = CardValue.builder().value(Double.parseDouble(turnWithOccurence[1]) * multiplier).build();
                     }
                     result.get(cardId).put(turnId, cardValue);
 
@@ -324,6 +320,33 @@ public class FileCardValueService implements ICardValueService {
                             return MAX_PRIORITY;
                         }
 
+                        if (cardAction == CardAction.INNOVATIVE_TECHNOLOGIES || cardAction == CardAction.GAS_COOLED_REACTORS) {
+                            return 1 + (0.1 * player.countPhaseUpgrades());
+                        }
+
+                        if (cardAction == CardAction.TOURISM || cardAction == CardAction.CITY_COUNCIL || cardAction == CardAction.COMMUNITY_AFFORESTATION) {
+                            int milestonesAchieved = (int) game
+                                    .getMilestones()
+                                    .stream()
+                                    .filter(milestone -> milestone.isAchieved(player)).count();
+
+                            return 1 + (0.5 * milestonesAchieved);
+                        }
+
+                        int phaseUpgrades = player.countPhaseUpgrades();
+                        boolean allPhasesUpgraded = (phaseUpgrades == Constants.UPGRADEABLE_PHASES_COUNT);
+
+
+                        if (cardAction == CardAction.EXPERIMENTAL_TECHNOLOGY && allPhasesUpgraded) {
+                            return 0.5;
+                        }
+
+                        if ((cardAction == CardAction.FIBROUS_COMPOSITE_MATERIAL ||
+                                cardAction == CardAction.SOFTWARE_STREAMLINING) && allPhasesUpgraded) {
+                            return 0.8;
+                        }
+
+
                         return null;
                     }
             ).orElse(1.0);
@@ -365,8 +388,16 @@ public class FileCardValueService implements ICardValueService {
             cardDiscount += countCardTags(card, Tag.JUPITER) * 4;
         }
 
+        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ORBITAL_OUTPOST_DISCOUNT) && card.getTags().size() <= 1) {
+            cardDiscount += 3;
+        }
+
         if (card.getTags().contains(Tag.EVENT) && hasCardAction(player, CardAction.OPTIMAL_AEROBRAKING)) {
             cardDiscount += 8;
+        }
+
+        if (card.getTags().contains(Tag.EVENT) && hasCardAction(player, CardAction.IMPACT_ANALYSIS)) {
+            cardDiscount += 3;
         }
 
         if (card.getTags().contains(Tag.EVENT) && hasCardAction(player, CardAction.RECYCLED_DETRITUS)) {
@@ -413,7 +444,6 @@ public class FileCardValueService implements ICardValueService {
             return reducedEventValue.getValue();
         }
 
-
         Map<Integer, CardValue> turnToCardValue = game.getPlayerUuidToPlayer().size() == 2 ? cardIdToTurnToValueTwoPlayer.get(card) : cardIdToTurnToValueFourPlayer.get(card);
 
         int totalStatsCount = 0;
@@ -437,71 +467,122 @@ public class FileCardValueService implements ICardValueService {
 
         final int totalCardDiscount = getTotalCardDiscount(card, game, player);
 
+        Class<? extends Card> cardType = card.getClass();
         if (game.getPlanetAtTheStartOfThePhase().isOceansMax()) {
-            if (card.getClass() == ArtificialLake.class
-                    || card.getClass() == Comet.class
-                    || card.getClass() == GiantIceAsteroid.class
-                    || card.getClass() == ImportedHydrogen.class
-                    || card.getClass() == LargeConvoy.class
-                    || card.getClass() == PhobosFalls.class
-                    || card.getClass() == TechnologyDemonstration.class
-                    || card.getClass() == TowingAComet.class
-                    || card.getClass() == ArcticAlgae.class) {
-                defaultSenseInCard -= 2;
+            if (cardType == ArtificialLake.class
+                    || cardType == Comet.class
+                    || cardType == GiantIceAsteroid.class
+                    || cardType == ImportedHydrogen.class
+                    || cardType == LargeConvoy.class
+                    || cardType == PhobosFalls.class
+                    || cardType == TechnologyDemonstration.class
+                    || cardType == TowingAComet.class
+                    || cardType == ArcticAlgae.class) {
+                defaultSenseInCard -= 2;//makes some sense
             }
-            if (card.getClass() == ConvoyFromEuropa.class) {
-                defaultSenseInCard -= 3;
+            if (cardType == ConvoyFromEuropa.class) {
+                defaultSenseInCard -= 3;//makes small sense
             }
-            if (card.getClass() == Crater.class
-                    || card.getClass() == IceAsteroid.class
-                    || card.getClass() == IceCapMelting.class
-                    || card.getClass() == LakeMariners.class
-                    || card.getClass() == PermafrostExtraction.class
-                    || card.getClass() == SubterraneanReservoir.class
-                    || card.getClass() == TrappedHeat.class) {
-                defaultSenseInCard -= 4;
+            if (cardType == Crater.class
+                    || cardType == IceAsteroid.class
+                    || cardType == IceCapMelting.class
+                    || cardType == LakeMariners.class
+                    || cardType == PermafrostExtraction.class
+                    || cardType == SubterraneanReservoir.class
+                    || cardType == TrappedHeat.class
+                    || cardType == PrivateInvestorBeach.class) {
+                defaultSenseInCard -= 4;//makes no sense
             }
         }
 
         if (game.getPlanetAtTheStartOfThePhase().isOxygenMax()) {
-            if (card.getClass() == AtmosphereFiltering.class) {
+            if (cardType == AtmosphereFiltering.class) {
                 defaultSenseInCard -= 4;
             }
-            if (card.getClass() == AirborneRadiation.class) {
+            if (cardType == AirborneRadiation.class) {
                 defaultSenseInCard -= 3;
             }
-            if (card.getClass() == Mangrove.class
-                    || card.getClass() == Plantation.class
-                    || card.getClass() == BiothermalPower.class) {
+            if (cardType == Mangrove.class
+                    || cardType == Plantation.class
+                    || cardType == BiothermalPower.class) {
                 defaultSenseInCard -= 2;
             }
         }
 
         if (game.getPlanetAtTheStartOfThePhase().isTemperatureMax()) {
-            if (card.getClass() == Comet.class
-                    || card.getClass() == DeimosDown.class
-                    || card.getClass() == GiantIceAsteroid.class
-                    || card.getClass() == NitrogenRichAsteroid.class
-                    || card.getClass() == PhobosFalls.class) {
+            if (cardType == Comet.class
+                    || cardType == DeimosDown.class
+                    || cardType == GiantIceAsteroid.class
+                    || cardType == NitrogenRichAsteroid.class
+                    || cardType == PhobosFalls.class
+                    || cardType == OreLeaching.class
+                    || cardType == VolcanicSoil.class) {
                 defaultSenseInCard -= 2;
             }
-            if (card.getClass() == LavaFlows.class
-                    || card.getClass() == DeepWellHeating.class) {
+            if (cardType == LavaFlows.class
+                    || cardType == DeepWellHeating.class
+                    || cardType == GasCooledReactors.class) {
                 defaultSenseInCard -= 4;
             }
+        }
+
+        int phaseUpgrades = player.countPhaseUpgrades();
+        boolean allPhasesUpgraded = (phaseUpgrades == Constants.UPGRADEABLE_PHASES_COUNT);
+
+        if (cardType == BiomedicalImports.class && game.getPlanetAtTheStartOfThePhase().isOxygenMax() && allPhasesUpgraded) {
+            defaultSenseInCard -= 4;
+        }
+
+        if ((cardType == CryogenicShipment.class ||
+                cardType == Exosuits.class ||
+                cardType == TopographicMapping.class ||
+                cardType == Biofoundries.class ||
+                cardType == BlastFurnaces.class ||
+                cardType == ManufacturingHub.class ||
+                cardType == HeatReflectiveGlass.class ||
+                cardType == HydroponicGardens.class ||
+                cardType == IndustrialComplex.class ||
+                cardType == MartianMuseum.class ||
+                cardType == Metallurgy.class ||
+                cardType == PerfluorocarbonProduction.class ||
+                cardType == MagneticFieldGenerator.class ||
+                cardType == Warehouses.class ||
+                cardType == HohmannTransferShipping.class)
+                && allPhasesUpgraded) {
+            defaultSenseInCard -= 3;
+        }
+
+        if (cardType == ImportedConstructionCrews.class) {
+            if (phaseUpgrades == Constants.UPGRADEABLE_PHASES_COUNT) {
+                defaultSenseInCard -= 4;
+            } else if (phaseUpgrades == Constants.UPGRADEABLE_PHASES_COUNT - 1) {
+                defaultSenseInCard -= 3;
+            }
+        }
+
+        if (cardType == OreLeaching.class && allPhasesUpgraded) {
+            defaultSenseInCard -= 1;
+        }
+
+        if (cardType == MartianStudiesScholarship.class && player.isPhaseUpgraded(Constants.BUILD_BLUE_RED_PROJECTS_PHASE)) {
+            defaultSenseInCard -= 3;
+        }
+
+        if (cardType == BiologicalFactories.class && player.isPhaseUpgraded(Constants.COLLECT_INCOME_PHASE)) {
+            defaultSenseInCard -= 3;
         }
 
         if (defaultSenseInCard == 4) {
             return ReducedCardValue.noReduce();
         } else if (defaultSenseInCard == 1) {
             if (card.getPrice() - totalCardDiscount < 5) {
-                return ReducedCardValue.useReducedValue(45);
+                return ReducedCardValue.useReducedValue(45);//we can build it because card is cheap
             } else {
                 return ReducedCardValue.useReducedValue(0);
             }
-        } else if (defaultSenseInCard == 0) {
+        } else if (defaultSenseInCard <= 0) {
             if (card.getPrice() - totalCardDiscount < 0) {
-                return ReducedCardValue.useReducedValue(40);
+                return ReducedCardValue.useReducedValue(40);//we can build it because card costs nothing
             } else {
                 return ReducedCardValue.useReducedValue(0);
             }
