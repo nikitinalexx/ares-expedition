@@ -112,7 +112,7 @@ public class TestAiService {
 
         player.setMc(player.getMc() + 4);
 
-        final MarsGameRow marsGameRow = datasetCollectionService.collectGameData(
+        final MarsGameRow marsGameRow = datasetCollectionService.putPlayerRowIntoArray(
                 game,
                 player,
                 players.get(0) == player
@@ -141,7 +141,7 @@ public class TestAiService {
                 ? players.get(1)
                 : players.get(0);
 
-        final MarsGameRow marsGameRow = datasetCollectionService.collectGameData(
+        final MarsGameRow marsGameRow = datasetCollectionService.putPlayerRowIntoArray(
                 game,
                 player,
                 players.get(0) == player

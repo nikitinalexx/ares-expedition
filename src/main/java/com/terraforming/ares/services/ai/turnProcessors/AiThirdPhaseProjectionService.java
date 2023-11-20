@@ -109,7 +109,7 @@ public class AiThirdPhaseProjectionService {
 
 
             float futureState = deepNetwork.testState(
-                    datasetCollectionService.collectGameData(
+                    datasetCollectionService.putPlayerRowIntoArray(
                             projectionWithGame.getGame(),
                             projectionWithGame.getGame().getPlayerByUuid(player.getUuid()),
                             projectionWithGame.getGame().getPlayerByUuid(anotherPlayer.getUuid())
@@ -131,7 +131,7 @@ public class AiThirdPhaseProjectionService {
                 spendPlantsAndHeat(projectionWithGame.getGame(), projectionWithGame.getGame().getPlayerByUuid(anotherPlayer.getUuid()));
 
                 futureState = deepNetwork.testState(
-                        datasetCollectionService.collectGameData(
+                        datasetCollectionService.putPlayerRowIntoArray(
                                 projectionWithGame.getGame(),
                                 projectionWithGame.getGame().getPlayerByUuid(player.getUuid()),
                                 projectionWithGame.getGame().getPlayerByUuid(anotherPlayer.getUuid())
@@ -154,7 +154,7 @@ public class AiThirdPhaseProjectionService {
                 spendPlantsAndHeat(opponentProjection.getGame(), opponentProjection.getGame().getPlayerByUuid(anotherPlayer.getUuid()));
 
                 futureState = deepNetwork.testState(
-                        datasetCollectionService.collectGameData(
+                        datasetCollectionService.putPlayerRowIntoArray(
                                 opponentProjection.getGame(),
                                 opponentProjection.getGame().getPlayerByUuid(player.getUuid()),
                                         opponentProjection.getGame().getPlayerByUuid(anotherPlayer.getUuid())
@@ -190,7 +190,7 @@ public class AiThirdPhaseProjectionService {
         List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
         Player anotherPlayer = players.get(0) == player ? players.get(1) : players.get(0);
 
-        MarsGameRow playerData = datasetCollectionService.collectGameData(game, player, anotherPlayer);
+        MarsGameRow playerData = datasetCollectionService.putPlayerRowIntoArray(game, player, anotherPlayer);
         if (playerData == null) {
             return ProjectionWithGame.SKIP_PHASE;
         }
@@ -219,7 +219,7 @@ public class AiThirdPhaseProjectionService {
 
                 //TODO is it better to project 2 steps ahead? implement and compare 2 computers
                 //TODO reuse anotherPlayer
-                float futureState = deepNetwork.testState(datasetCollectionService.collectGameData(gameCopy, playerCopy, anotherPlayer).applyDifference(difference).applyOpponentDifference(opponentDifference), player.isFirstBot() ? 1 : 2);
+                float futureState = deepNetwork.testState(datasetCollectionService.putPlayerRowIntoArray(gameCopy, playerCopy, anotherPlayer).applyDifference(difference).applyOpponentDifference(opponentDifference), player.isFirstBot() ? 1 : 2);
 
                 if (futureState > bestState) {
                     bestState = futureState;
@@ -254,7 +254,7 @@ public class AiThirdPhaseProjectionService {
 
         spendPlantsAndHeat(gameCopy, playerCopy);
 
-        float futureState = deepNetwork.testState(datasetCollectionService.collectGameData(gameCopy, playerCopy, anotherPlayer).applyDifference(initialDifference).applyOpponentDifference(opponentDifference), player.isFirstBot() ? 1 : 2);
+        float futureState = deepNetwork.testState(datasetCollectionService.putPlayerRowIntoArray(gameCopy, playerCopy, anotherPlayer).applyDifference(initialDifference).applyOpponentDifference(opponentDifference), player.isFirstBot() ? 1 : 2);
 
         if (futureState > bestState) {
             return ProjectionWithGame.builder()

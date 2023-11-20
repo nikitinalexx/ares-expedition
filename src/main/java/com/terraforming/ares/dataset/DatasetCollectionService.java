@@ -76,10 +76,10 @@ public class DatasetCollectionService {
         }
         counter += corporationsSize;
 
-        collectGameData(result, counter, marsGameRow.getPlayer());
+        putPlayerRowIntoArray(result, counter, marsGameRow.getPlayer());
         counter += MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize;
 
-        collectGameData(result, counter, marsGameRow.getOpponent());
+        putPlayerRowIntoArray(result, counter, marsGameRow.getOpponent());
         counter += MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize;
 
         for (int i = 0; i < marsGameRow.awards.length; i++) {
@@ -93,7 +93,7 @@ public class DatasetCollectionService {
         return result;
     }
 
-    private void collectGameData(float[] result, int counter, MarsPlayerRow player) {
+    private void putPlayerRowIntoArray(float[] result, int counter, MarsPlayerRow player) {
         result[counter++] = player.winPoints;
         result[counter++] = player.mcIncome;
         result[counter++] = player.mc;
@@ -167,10 +167,10 @@ public class DatasetCollectionService {
         }
         counter += corporationsSize;
 
-        collectGameData(result, counter, marsGameRow.getPlayer());
+        putPlayerRowIntoArray(result, counter, marsGameRow.getPlayer());
         counter += MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize;
 
-        collectGameData(result, counter, marsGameRow.getOpponent());
+        putPlayerRowIntoArray(result, counter, marsGameRow.getOpponent());
         counter += MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize;
 
         for (int i = 0; i < marsGameRow.awards.length; i++) {
@@ -197,14 +197,14 @@ public class DatasetCollectionService {
             if (marsGame.getTurns() == 1 && currentPlayer.getSelectedCorporationCard() != null && currentPlayer.getMc() == winPointsService.cardService.getCard(currentPlayer.getSelectedCorporationCard()).getPrice()) {
                 return;
             }
-            MarsGameRow playerData = collectGameData(marsGame, currentPlayer, anotherPlayer);
+            MarsGameRow playerData = putPlayerRowIntoArray(marsGame, currentPlayer, anotherPlayer);
             if (playerData != null ) {
                 marsGameDataset.getPlayerToRows().get(currentPlayer.getUuid()).add(playerData);
             }
         }
     }
 
-    public MarsGameRow collectGameData(MarsGame game, Player currentPlayer, Player anotherPlayer) {
+    public MarsGameRow putPlayerRowIntoArray(MarsGame game, Player currentPlayer, Player anotherPlayer) {
         if (currentPlayer.getSelectedCorporationCard() == null || anotherPlayer.getSelectedCorporationCard() == null) {
             return null;
         }
