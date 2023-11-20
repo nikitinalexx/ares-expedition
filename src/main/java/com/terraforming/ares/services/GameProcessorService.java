@@ -48,8 +48,7 @@ public class GameProcessorService extends BaseProcessorService {
                                 SoloRecordEntityRepository soloRecordEntityRepository,
                                 CrisisRecordEntityRepository crisisRecordEntityRepository,
                                 GameEntityRepository gameEntityRepository,
-                                PlayerEntityRepository playerEntityRepository) {
-                                AiService aiService,
+                                PlayerEntityRepository playerEntityRepository,
                                 DeepNetwork deepNetwork) {
         super(
                 turnTypeService,
