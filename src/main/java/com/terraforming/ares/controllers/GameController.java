@@ -112,23 +112,6 @@ public class GameController {
                 turnService.pushGame(marsGame.getId());
 
                 Thread.sleep(500);
-
-                Player p0 = null;
-                Player p1 = null;
-                for (Player value : marsGame.getPlayerUuidToPlayer().values()) {
-                    if (value.getUuid().endsWith("0")) {
-                        p0 = value;
-                    } else {
-                        p1 = value;
-                    }
-                }
-                int p0Points = winPointsService.countWinPoints(p0, marsGame);
-                System.out.println(p0Points);
-                int p1Points = winPointsService.countWinPoints(p1, marsGame);
-                System.out.println(p1Points);
-                if (p0Points >= p1Points) {
-                    System.out.println("Yes");
-                }
             }
 
             Map<String, Player> playerNameToPlayer = marsGame.getPlayerUuidToPlayer().values().stream()
