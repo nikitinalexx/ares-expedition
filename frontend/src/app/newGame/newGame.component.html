@@ -67,6 +67,10 @@
       <label *ngIf="parentForm.get('computer' + item)?.value && this.parentForm.value.playerCount !== '1'" class="form-label p-1 mb-2 bg-warning text-dark"
              style="margin-left: 5px; border-radius: 5px;">Normal <input type="radio" value="smart" style=" width: 30px" [formControlName]="'difficulty' + item"/></label>
 
+      <label *ngIf="parentForm.get('computer' + item)?.value && this.parentForm.value.playerCount !== '1'" class="form-label p-1 mb-2 bg-warning text-dark "
+             style="margin-left: 5px; border-radius: 5px;">Hard <span class="bg-danger text-white">(soon)</span>
+        <input type="radio" style=" width: 30px" disabled class="ng-untouched" [formControlName]="'difficulty' + item"></label>
+
       <label *ngIf="this.parentForm.value.playerCount !== '1'" class="form-label p-1 mb-2 bg-warning text-dark"
              style="margin-left: 5px; border-radius: 5px;">Advantage <input type="checkbox"
                                                                             [formControlName]="'advantageFlag' + item"/></label>
