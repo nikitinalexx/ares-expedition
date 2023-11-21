@@ -92,9 +92,26 @@ public class Constants {
     public static final int PHASE_5_UPGRADE_KEEP_EXTRA = 13;
     public static final int PHASE_5_UPGRADE_SEE_EXTRA = 14;
 
-    public static final float RED_CARDS_RATIO = 40f / 217;
-    public static final float GREEN_CARDS_RATIO = 111f / 217;
-    public static final float BLUE_CARDS_RATIO = 66f / 217;
+    public static final int TOTAL_CARDS_COUNT = 268;
+
+    public static final float RED_CARDS_RATIO = 49f / TOTAL_CARDS_COUNT;
+    public static final float GREEN_CARDS_RATIO = 135f / TOTAL_CARDS_COUNT;
+    public static final float BLUE_CARDS_RATIO = 84f / TOTAL_CARDS_COUNT;
+
+    public static final Map<Tag, Integer> TAG_TO_CARDS_COUNT = Map.of(
+            Tag.PLANT, 35,
+            Tag.SCIENCE, 41,
+            Tag.ENERGY, 33,
+            Tag.SPACE, 51,
+            Tag.EVENT, 49,
+            Tag.BUILDING, 85,
+            Tag.ANIMAL, 10,
+            Tag.MICROBE, 23,
+            Tag.EARTH, 28,
+            Tag.JUPITER, 14
+    );
+
+    public static final int CARDS_WITH_DYNAMIC_TAG = 4;
 
     public static final boolean DISCOVERY_SIMULATIONS = true;
 
@@ -105,10 +122,10 @@ public class Constants {
     public static final boolean SAVE_SIMULATION_GAMES_TO_DB = false;
 
 
-    public static final List<PlayerDifficulty> SIMULATION_PLAYERS = List.of(PlayerDifficulty.SMART, PlayerDifficulty.SMART);
+    public static final List<PlayerDifficulty> SIMULATION_PLAYERS = List.of(PlayerDifficulty.SMART, PlayerDifficulty.NETWORK);
 
     public static final boolean AI_CORP_RANDOM = true;
-    public static final boolean COLLECT_DATASET = true;
+    public static final boolean COLLECT_DATASET = false;
     public static final boolean LOG_NET_COMPARISON = false;
 
     private Constants() {

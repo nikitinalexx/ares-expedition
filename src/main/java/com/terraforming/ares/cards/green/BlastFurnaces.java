@@ -35,7 +35,7 @@ public class BlastFurnaces implements DiscoveryExpansionGreenCard {
     public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> input) {
         List<Integer> cardInput = input.get(InputFlag.PHASE_UPGRADE_CARD.getId());
 
-        UpgradePhaseHelper.upgradePhase(marsContext.getCardService(), marsContext.getGame(), marsContext.getPlayer(), cardInput.get(0));
+        UpgradePhaseHelper.upgradePhase(marsContext.getPlayer(), cardInput.get(0));
     }
 
     @Override

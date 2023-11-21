@@ -6,10 +6,7 @@ import com.terraforming.ares.cards.corporations.*;
 import com.terraforming.ares.cards.crysis.*;
 import com.terraforming.ares.cards.green.*;
 import com.terraforming.ares.cards.red.*;
-import com.terraforming.ares.model.Card;
-import com.terraforming.ares.model.CardColor;
-import com.terraforming.ares.model.CrysisCard;
-import com.terraforming.ares.model.Expansion;
+import com.terraforming.ares.model.*;
 import lombok.Getter;
 import org.springframework.stereotype.Service;
 
@@ -343,7 +340,7 @@ public class CardFactory {
                 369,
                 371,
                 372,
-                373,
+                373,//can exclude
                 374,
                 375
         );

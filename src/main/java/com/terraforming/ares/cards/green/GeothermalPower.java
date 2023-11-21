@@ -40,6 +40,11 @@ public class GeothermalPower implements BaseExpansionGreenCard {
     }
 
     @Override
+    public boolean canPayAgain() {
+        return true;
+    }
+
+    @Override
     public CardMetadata getCardMetadata() {
         return cardMetadata;
     }

@@ -25,7 +25,6 @@ public class Interns implements BlueCard {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
                 .name("Interns")
-                //TODO phase 5 effect
                 .description("When you draw cards during the research phase, draw two additional cards.")
                 .cardAction(CardAction.INTERNS)
                 .build();

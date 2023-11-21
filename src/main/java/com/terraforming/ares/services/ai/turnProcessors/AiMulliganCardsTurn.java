@@ -10,6 +10,7 @@ import com.terraforming.ares.processors.turn.PickCorporationProcessor;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.MarsContextProvider;
 import com.terraforming.ares.services.ai.AiBalanceService;
+import com.terraforming.ares.services.ai.AiDiscoveryDecisionService;
 import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.ICardValueService;
 import com.terraforming.ares.services.ai.dto.CardValueResponse;
@@ -31,6 +32,7 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
     private final PickCorporationProcessor pickCorporationProcessor;
     private final AiPickCardProjectionService aiPickCardProjectionService;
     private final CardService cardService;
+    private final AiDiscoveryDecisionService aiDiscoveryDecisionService;
     private final MarsContextProvider marsContextProvider;
 
     private final Random random = new Random();
@@ -124,7 +126,7 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
         final MarsContext marsContext = marsContextProvider.provide(game, player);
         card.buildProject(marsContext);
         if (card.onBuiltEffectApplicableToItself()) {
-            card.postProjectBuiltEffect(marsContext, card, Map.of());
+            card.postProjectBuiltEffect(marsContext, card, aiDiscoveryDecisionService.getCorporationInput(game, player, card.getCardMetadata().getCardAction()));
         }
     }
 

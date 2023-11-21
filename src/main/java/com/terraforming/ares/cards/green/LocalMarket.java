@@ -38,6 +38,11 @@ public class LocalMarket implements DiscoveryExpansionGreenCard {
     }
 
     @Override
+    public boolean canPayAgain() {
+        return true;
+    }
+
+    @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         final Player player = marsContext.getPlayer();
 

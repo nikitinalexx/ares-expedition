@@ -467,7 +467,7 @@ public class AiCardBuildParamsService {
         List<Integer> cardsToDiscard = new ArrayList<>(scienceTagsCount);
 
         List<Integer> plantCards = copy.stream()
-                .filter(c -> c.getTags().contains(Tag.PLANT) || c.getTags().contains(Tag.DYNAMIC))
+                .filter(c -> c.getTags().contains(Tag.PLANT) && !c.getTags().contains(Tag.DYNAMIC) && !c.getTags().contains(Tag.SCIENCE))
                 .map(Card::getId)
                 .collect(Collectors.toList());
 

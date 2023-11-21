@@ -39,7 +39,7 @@ public class Exosuits implements DiscoveryExpansionRedCard {
         final MarsGame game = marsContext.getGame();
         final Player player = marsContext.getPlayer();
 
-        UpgradePhaseHelper.upgradePhase(marsContext.getCardService(), game, player, cardInput.get(0));
+        UpgradePhaseHelper.upgradePhase(player, cardInput.get(0));
 
         player.getHand().addCards(marsContext.getCardService().dealCards(marsContext.getGame(), 1));
     }

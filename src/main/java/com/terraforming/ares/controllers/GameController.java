@@ -528,7 +528,7 @@ public class GameController {
         }
         StringBuilder sb = new StringBuilder();
 
-        float[] output = datasetCollectionService.getMarsGameRowForStudy(row);
+        float[] output = datasetCollectionService.mapMarsGameToArrayForStudy(row);
 
         for (int i = 0; i < output.length; i++) {
             sb.append(getFloatForWrite(output[i]));

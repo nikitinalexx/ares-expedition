@@ -40,13 +40,18 @@ public class HydroponicGardens implements DiscoveryExpansionGreenCard {
     }
 
     @Override
+    public boolean canPayAgain() {
+        return true;
+    }
+
+    @Override
     public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> input) {
         List<Integer> cardInput = input.get(InputFlag.PHASE_UPGRADE_CARD.getId());
 
         final MarsGame game = marsContext.getGame();
         final Player player = marsContext.getPlayer();
 
-        UpgradePhaseHelper.upgradePhase(marsContext.getCardService(), game, player, cardInput.get(0));
+        UpgradePhaseHelper.upgradePhase(player, cardInput.get(0));
     }
 
     @Override

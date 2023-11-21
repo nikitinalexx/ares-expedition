@@ -276,10 +276,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             System.out.println("Deep network state income before " + stateBeforeIncome + ". After " + stateAfterIncome);
         }
 
-        //*1 Ratio: 0.4560819462227913
-        //*1.05 Ratio: 0.4270063694267516
-        //TODO remove 1.05 when phase 5 is picked smart
-        if (stateAfterIncome > stateBeforeIncome * 1.05) {
+        if (stateAfterIncome > stateBeforeIncome) {
             return PhaseChoiceProjection.builder().pickPhase(true).phase(4).chance(stateAfterIncome).build();
         } else {
             return PhaseChoiceProjection.SKIP_PHASE;

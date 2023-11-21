@@ -39,6 +39,11 @@ public class BiologicalFactories implements DiscoveryExpansionGreenCard {
     }
 
     @Override
+    public boolean canPayAgain() {
+        return true;
+    }
+
+    @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         final Player player = marsContext.getPlayer();
 
@@ -51,7 +56,7 @@ public class BiologicalFactories implements DiscoveryExpansionGreenCard {
     public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> input) {
         List<Integer> cardInput = input.get(InputFlag.PHASE_UPGRADE_CARD.getId());
 
-        UpgradePhaseHelper.upgradePhase(marsContext.getCardService(), marsContext.getGame(), marsContext.getPlayer(), cardInput.get(0));
+        UpgradePhaseHelper.upgradePhase(marsContext.getPlayer(), cardInput.get(0));
     }
 
     @Override

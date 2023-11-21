@@ -8,7 +8,7 @@ import com.terraforming.ares.model.Expansion;
  * Created by oleksii.nikitin
  * Creation date 17.02.2023
  */
-public interface DiscoveryExpansionGreenCard extends RedCard {
+public interface DiscoveryExpansionGreenCard extends GreenCard {
 
     @Override
     default CardColor getColor() {

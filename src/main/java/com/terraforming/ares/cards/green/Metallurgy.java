@@ -36,8 +36,7 @@ public class Metallurgy implements DiscoveryExpansionGreenCard {
         List<Integer> cardInput = input.get(InputFlag.PHASE_UPGRADE_CARD.getId());
 
         UpgradePhaseHelper.upgradePhase(
-                marsContext.getCardService(),
-                marsContext.getGame(), marsContext.getPlayer(), cardInput.get(0));
+                marsContext.getPlayer(), cardInput.get(0));
     }
 
     @Override

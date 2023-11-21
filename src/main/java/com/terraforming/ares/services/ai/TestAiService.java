@@ -23,18 +23,17 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class TestAiService {
     private final AiBuildProjectService aiBuildProjectService;
-    private final CardService cardService;
-    private final WinPointsService winPointsService;
     private final DeepNetwork deepNetwork;
     private final StandardProjectService standardProjectService;
     private final AiTurnService aiTurnService;
     private final DatasetCollectionService datasetCollectionService;
     private final DraftCardsService draftCardsService;
+    private final AiCollectIncomePhaseService  aiCollectIncomePhaseService;
+    private final CardService cardService;
 
 
     public BuildProjectPrediction getBestCardToBuild(MarsGame game, Player player, Set<CardColor> colors) {
         game = new MarsGame(game);
-
         player = game.getPlayerByUuid(player.getUuid());
 
         BuildProjectPrediction bestProject = BuildProjectPrediction.builder().build();
@@ -107,10 +106,22 @@ public class TestAiService {
                 ? players.get(1)
                 : players.get(0);
 
+        if (player.hasPhaseUpgrade(Constants.PHASE_4_UPGRADE_DOUBLE_PRODUCE)) {
+            Integer doubleIncomeCardId = aiCollectIncomePhaseService.getDoubleIncomeCard(game, player);
+            if (doubleIncomeCardId != null) {
+                Card doubleIncomeCard = cardService.getCard(doubleIncomeCardId);
+                doubleIncomeCard.payAgain(game, cardService, player);
+            }
+        }
+
         addMainIncome(player);
         addMainIncome(anotherPlayer);
 
-        player.setMc(player.getMc() + 4);
+        if (player.hasPhaseUpgrade(Constants.PHASE_4_UPGRADE_EXTRA_MC)) {
+            player.setMc(player.getMc() +  7);
+        } else if (player.hasPhaseUpgrade(Constants.PHASE_4_UPGRADE_DOUBLE_PRODUCE)) {
+            player.setMc(player.getMc() + 1);
+        }
 
         final MarsGameRow marsGameRow = datasetCollectionService.collectGameAndPlayers(
                 game,
@@ -169,8 +180,17 @@ public class TestAiService {
     }
 
     private float countTotalCardsToTake(Player player, boolean chooseFifthPhase) {
-        int initialCardsToTake = (chooseFifthPhase ? 2 : 1);
         int initialCardsToDraft = (chooseFifthPhase ? 5 : 2);
+        int initialCardsToTake = (chooseFifthPhase ? 2 : 1);
+
+        if (chooseFifthPhase && player.hasPhaseUpgrade(Constants.PHASE_5_UPGRADE_KEEP_EXTRA)) {
+            initialCardsToDraft = 4;
+            initialCardsToTake = 3;
+        }
+
+        if (chooseFifthPhase && player.hasPhaseUpgrade(Constants.PHASE_5_UPGRADE_SEE_EXTRA)) {
+            initialCardsToDraft = 8;
+        }
 
         int cardsToTake = draftCardsService.countExtraCardsToTake(player);
         int cardsToDraft = draftCardsService.countExtraCardsToDraft(player);

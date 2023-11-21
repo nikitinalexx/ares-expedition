@@ -1,16 +1,19 @@
 package com.terraforming.ares.services.ai;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Constants;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.Tag;
+import com.terraforming.ares.model.*;
+import com.terraforming.ares.services.ai.dto.PhaseUpgradeWithChance;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class AiDiscoveryDecisionService {
     private final Random random = new Random();
+    private final DeepNetwork deepNetwork;
 
     public int choosePhaseUpgrade(MarsGame game, Player player, int phase) {
         int phaseOffset = (phase - 1) * 2;
@@ -21,7 +24,36 @@ public class AiDiscoveryDecisionService {
                 chooseSecondUpgrade = random.nextBoolean();
                 break;
             case NETWORK:
-                //TODO expansion
+                List<Integer> phaseUpgrades = player.getPhaseCards();
+
+                int phaseUpgrade = phaseUpgrades.get(phase - 1);
+
+                if (phaseUpgrade == 0) {
+                    phaseUpgrades.set(phase - 1, 1);
+                    float firstUpgradeState = deepNetwork.testState(game, player);
+
+                    phaseUpgrades.set(phase - 1, 2);
+                    float secondUpgradeState = deepNetwork.testState(game, player);
+
+                    phaseUpgrades.set(phase - 1, 0);
+
+                    if (secondUpgradeState > firstUpgradeState) {
+                        chooseSecondUpgrade = true;
+                    }
+                } else {
+                    float initialState = deepNetwork.testState(game, player);
+
+                    int anotherUpdate = phaseUpgrade == 1 ? 2 : 1;
+
+                    phaseUpgrades.set(phase - 1, anotherUpdate);
+                    float anotherUpgradeState = deepNetwork.testState(game, player);
+
+                    if (anotherUpgradeState > initialState) {
+                        chooseSecondUpgrade = (anotherUpdate == 2);
+                    }
+                }
+                phaseUpgrades.set(phase - 1, phaseUpgrade);
+                //TODO run in debug to test at least once
                 break;
             default:
                 throw new IllegalStateException("Unable to choose phase upgrade for AI");
@@ -65,9 +97,64 @@ public class AiDiscoveryDecisionService {
                 return List.of(choosePhaseUpgrade(game, player, firstUpdate), choosePhaseUpgrade(game, player, secondUpdate));
 
             case NETWORK:
+                List<PhaseUpgradeWithChance> bestUpgrades = findBestUpgrades(chooseBestUpdateForEachPhase(game, player), 2);
+
+                return List.of(bestUpgrades.get(0).getUpgradeAsNumber(), bestUpgrades.get(1).getUpgradeAsNumber());
             default:
                 throw new IllegalStateException("Unable to choose phase upgrade for AI");
         }
+    }
+
+
+    private List<PhaseUpgradeWithChance> findBestUpgrades(List<PhaseUpgradeWithChance> upgrades, int count) {
+        List<PhaseUpgradeWithChance> sortedList = upgrades.stream()
+                .sorted(Comparator.comparing(PhaseUpgradeWithChance::getChance).reversed())
+                .collect(Collectors.toList());
+
+        List<PhaseUpgradeWithChance> result = new ArrayList<>();
+        for (PhaseUpgradeWithChance item : sortedList) {
+            if (result.stream().noneMatch(p -> p.getPhase() == item.getPhase())) {
+                result.add(item);
+            }
+
+            if (result.size() == count) {
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    public List<PhaseUpgradeWithChance> chooseBestUpdateForEachPhase(MarsGame game, Player player) {
+        List<Integer> initialUpgrades = new ArrayList<>(player.getPhaseCards());
+
+        List<PhaseUpgradeWithChance> result = new ArrayList<>();
+
+        float initialState = deepNetwork.testState(game, player);
+        for (int i = 0; i < Constants.UPGRADEABLE_PHASES_COUNT; i++) {
+            int currentUpgrade = initialUpgrades.get(i);
+
+            float firstUpdateChance = initialState;
+            if (currentUpgrade != 1) {
+                player.getPhaseCards().set(i, 1);
+                firstUpdateChance = deepNetwork.testState(game, player);
+                player.getPhaseCards().set(i, initialUpgrades.get(i));
+            }
+
+            result.add(PhaseUpgradeWithChance.of(firstUpdateChance, i, 1));
+
+            float secondUpdateChance = initialState;
+            if (currentUpgrade != 2) {
+                player.getPhaseCards().set(i, 2);
+                secondUpdateChance = deepNetwork.testState(game, player);
+                player.getPhaseCards().set(i, initialUpgrades.get(i));
+            }
+
+            result.add(PhaseUpgradeWithChance.of(secondUpdateChance, i, 2));
+
+        }
+
+        return result;
     }
 
     public int choosePhaseUpgrade(MarsGame game, Player player) {
@@ -85,7 +172,10 @@ public class AiDiscoveryDecisionService {
                     phases = List.of(1, 2, 3, 4, 5);
                 }
                 return choosePhaseUpgrade(game, player, phases.get(random.nextInt(phases.size())));
-            case NETWORK://TODO expansion
+            case NETWORK:
+                List<PhaseUpgradeWithChance> bestUpgrades = findBestUpgrades(chooseBestUpdateForEachPhase(game, player), 1);
+
+                return bestUpgrades.get(0).getUpgradeAsNumber();
             default:
                 throw new IllegalStateException("Unable to choose phase upgrade for AI");
         }
@@ -98,6 +188,7 @@ public class AiDiscoveryDecisionService {
     public int chooseDynamicTagValue(Player player, List<Tag> excludedTags) {
         switch (player.getDifficulty().PHASE_TAG_UPGRADE) {
             case SMART:
+            case NETWORK://TODO when finish AI third phase
                 if (!excludedTags.contains(Tag.SCIENCE)) {
                     return Tag.SCIENCE.ordinal();
                 } else if (!excludedTags.contains(Tag.JUPITER)) {
@@ -127,6 +218,25 @@ public class AiDiscoveryDecisionService {
         } else {
             return Tag.JUPITER.ordinal();
         }
+    }
+    
+    public Map<Integer, List<Integer>> getCorporationInput(MarsGame game, Player player, CardAction corporationCardAction) {
+        if (corporationCardAction == CardAction.HYPERION_SYSTEMS_CORPORATION) {
+            return Map.of(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(choosePhaseUpgrade(game, player, Constants.PERFORM_BLUE_ACTION_PHASE)));
+        } else if (corporationCardAction == CardAction.APOLLO_CORPORATION) {
+            return Map.of(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(choosePhaseUpgrade(game, player, Constants.BUILD_BLUE_RED_PROJECTS_PHASE)));
+        } else if (corporationCardAction == CardAction.EXOCORP_CORPORATION) {
+            return Map.of(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(choosePhaseUpgrade(game, player, Constants.DRAFT_CARDS_PHASE)));
+        } else if (corporationCardAction == CardAction.AUSTELLAR_CORPORATION) {
+            return Map.of(InputFlag.AUSTELLAR_CORPORATION_MILESTONE.getId(), List.of(chooseAustellarCorporationMilestone(game)), InputFlag.TAG_INPUT.getId(), List.of(chooseDynamicTagValue(player, List.of())));
+        } else if (corporationCardAction == CardAction.MODPRO_CORPORATION) {
+            return Map.of(InputFlag.TAG_INPUT.getId(), List.of(chooseModProTagValue()));
+        } else if (corporationCardAction == CardAction.NEBU_LABS_CORPORATION) {
+            return Map.of(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(choosePhaseUpgrade(game, player)));
+        } else if (corporationCardAction == CardAction.SULTIRA_CORPORATION) {
+            return Map.of(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(choosePhaseUpgrade(game, player, Constants.BUILD_GREEN_PROJECTS_PHASE)));
+        }
+        return Map.of();
     }
 
 }

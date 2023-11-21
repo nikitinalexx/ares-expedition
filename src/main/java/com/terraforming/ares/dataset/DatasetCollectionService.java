@@ -67,44 +67,6 @@ public class DatasetCollectionService {
         }
     }
 
-    public float[] getMarsGameRowForUse(MarsGameRow marsGameRow) {
-        int corporationsSize = corporationIdToIndex.size();
-        int blueCardsSize = blueCardIdToIndex.size();
-        float[] result = new float[4 + corporationsSize + 2 * (MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize) + marsGameRow.awards.length + marsGameRow.milestones.length];
-        int counter = 0;
-
-        //input
-        result[counter++] = marsGameRow.turn;
-        result[counter++] = marsGameRow.oxygenLevel;
-        result[counter++] = marsGameRow.temperatureLevel;
-        result[counter++] = marsGameRow.oceansLevel;
-
-        if (corporationIdToIndex.containsKey(marsGameRow.getCorporationId())) {
-            int corporationIndex = corporationIdToIndex.get(marsGameRow.getCorporationId());
-            if (corporationIndex < 0 || corporationIndex >= corporationsSize) {
-                throw new IllegalStateException("Invalid corporation index " + corporationIndex);
-            }
-            result[counter + corporationIndex] = 1;
-        }
-        counter += corporationsSize;
-
-        collectGameAndPlayers(result, counter, marsGameRow.getPlayer());
-        counter += MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize;
-
-        collectGameAndPlayers(result, counter, marsGameRow.getOpponent());
-        counter += MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize;
-
-        for (int i = 0; i < marsGameRow.awards.length; i++) {
-            result[counter++] = marsGameRow.awards[i];
-        }
-
-        for (int i = 0; i < marsGameRow.milestones.length; i++) {
-            result[counter++] = marsGameRow.milestones[i];
-        }
-
-        return result;
-    }
-
     private void collectGameAndPlayers(float[] result, int counter, MarsPlayerRow player) {
         result[counter++] = player.winPoints;
         result[counter++] = player.mcIncome;
@@ -180,13 +142,21 @@ public class DatasetCollectionService {
         }
     }
 
-    public float[] getMarsGameRowForStudy(MarsGameRow marsGameRow) {
+    public float[] mapMarsGameToArrayForUse(MarsGameRow marsGameRow) {
+        return mapMarsGameToArray(marsGameRow, true);
+    }
+
+    public float[] mapMarsGameToArrayForStudy(MarsGameRow marsGameRow) {
+        return mapMarsGameToArray(marsGameRow, false);
+    }
+
+    private float[] mapMarsGameToArray(MarsGameRow marsGameRow, boolean forUse) {
         int corporationsSize = corporationIdToIndex.size();
         int blueCardsSize = blueCardIdToIndex.size();
         float[] result = new float[4 + //turn and global parameters
                 corporationsSize +
                 2 * (MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize) +
-                1 + //won or lose
+                (forUse ? 0 : 1) + //won or lose
                 marsGameRow.awards.length + marsGameRow.milestones.length
                 ];
         int counter = 0;
@@ -220,8 +190,10 @@ public class DatasetCollectionService {
             result[counter++] = marsGameRow.milestones[i];
         }
 
-        //output
-        result[counter++] = marsGameRow.winner;
+        if (!forUse) {
+            //output
+            result[counter++] = marsGameRow.winner;
+        }
 
         if (counter != result.length) {
             throw new IllegalStateException("Not all parameters were saved");

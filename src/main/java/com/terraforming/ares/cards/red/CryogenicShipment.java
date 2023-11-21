@@ -55,7 +55,7 @@ public class CryogenicShipment implements DiscoveryExpansionRedCard {
 
         final MarsGame game = marsContext.getGame();
 
-        UpgradePhaseHelper.upgradePhase(marsContext.getCardService(), game, player, cardInput.get(0));
+        UpgradePhaseHelper.upgradePhase(player, cardInput.get(0));
     }
 
     @Override

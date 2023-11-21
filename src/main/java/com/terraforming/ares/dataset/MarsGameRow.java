@@ -36,28 +36,27 @@ public class MarsGameRow {
 
     int winner;
 
-    public MarsGameRow applyDifference(MarsGameRowDifference another) {
-        this.player.greenCards += another.greenCards;
-        this.player.redCards += another.redCards;
-        this.player.blueCards += another.blueCards;
-        this.player.winPoints += another.winPoints;
-        this.player.mc += another.mc;
-        this.player.mcIncome += another.mcIncome;
+    public MarsGameRow applyDifference(MarsGameRowDifference difference) {
+        applyDifference(this.player, difference);
 
         return this;
     }
 
-    public MarsGameRow applyOpponentDifference(MarsGameRowDifference another) {
-        if (another != null) {
-            this.opponent.greenCards += another.greenCards;
-            this.opponent.redCards += another.redCards;
-            this.opponent.blueCards += another.blueCards;
-            this.opponent.winPoints += another.winPoints;
-            this.opponent.mc += another.mc;
-            this.opponent.mcIncome += another.mcIncome;
+    public MarsGameRow applyOpponentDifference(MarsGameRowDifference difference) {
+        if (difference != null) {
+            applyDifference(this.opponent, difference);
         }
 
         return this;
+    }
+
+    private void applyDifference(MarsPlayerRow row, MarsGameRowDifference difference) {
+        row.greenCards += difference.greenCards;
+        row.redCards += difference.redCards;
+        row.blueCards += difference.blueCards;
+        row.winPoints += difference.winPoints;
+        row.mc += difference.mc;
+        row.mcIncome += difference.mcIncome;
     }
 
 

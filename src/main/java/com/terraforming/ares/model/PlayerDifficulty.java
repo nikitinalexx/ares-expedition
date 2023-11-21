@@ -18,6 +18,13 @@ public enum PlayerDifficulty {
             AiTurnChoice.SMART,
             AiTurnChoice.SMART,
             AiTurnChoice.SMART
+    ),
+    NETWORK(
+            AiCardsChoice.NETWORK_PROJECTION,
+            AiTurnChoice.NETWORK,
+            AiTurnChoice.NETWORK,
+            AiTurnChoice.NETWORK,
+            AiTurnChoice.NETWORK
     );
     public final AiCardsChoice CARDS_PICK;
     public final AiTurnChoice PICK_PHASE;

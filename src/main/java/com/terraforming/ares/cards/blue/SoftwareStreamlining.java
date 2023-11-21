@@ -38,7 +38,7 @@ import java.util.Map;
         final MarsGame game = marsContext.getGame();
         final Player player = marsContext.getPlayer();
 
-        UpgradePhaseHelper.upgradePhase(marsContext.getCardService(), game, player, cardInput.get(0));
+        UpgradePhaseHelper.upgradePhase(player, cardInput.get(0));
     }
 
     @Override

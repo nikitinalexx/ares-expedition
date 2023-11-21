@@ -36,6 +36,7 @@ public class Planet {
         this.lastOpenedOceanIndex = copy.lastOpenedOceanIndex;
     }
 
+    @JsonIgnore
     public int getMinimumTemperature() {
         return measurableGlobalParameters.get(GlobalParameter.TEMPERATURE).getMin();
     }

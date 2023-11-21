@@ -38,7 +38,7 @@ public class HyperionSystemsCorporation implements CorporationCard {
 
         final MarsGame game = marsContext.getGame();
 
-        UpgradePhaseHelper.upgradePhase(marsContext.getCardService(), game, marsContext.getPlayer(), cardInput.get(0));
+        UpgradePhaseHelper.upgradePhase(marsContext.getPlayer(), cardInput.get(0));
     }
 
     @Override

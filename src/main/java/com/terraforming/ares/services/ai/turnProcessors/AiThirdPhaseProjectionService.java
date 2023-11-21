@@ -97,7 +97,9 @@ public class AiThirdPhaseProjectionService {
 
         game = new MarsGame(game);
         player = game.getPlayerByUuid(player.getUuid());
-        player.setBlueActionExtraActivationsLeft(1);
+
+        player.setChosenPhase(Constants.PERFORM_BLUE_ACTION_PHASE);
+        player.setBlueActionExtraActivationsLeft(player.hasPhaseUpgrade(Constants.PHASE_3_UPGRADE_DOUBLE_REPEAT) ? 2 : 1);
         //project plants/heat  exchange
         //project opponent
         ProjectionWithGame projectionWithGame = projectThirdPhase(game, player, new MarsGameRowDifference(), null);
@@ -125,6 +127,7 @@ public class AiThirdPhaseProjectionService {
             Player opponent = game.getPlayerByUuid(anotherPlayer.getUuid());
             opponent.setBlueActionExtraActivationsLeft(0);
             opponent.setActivatedBlueCards(Deck.builder().build());
+            opponent.setChosenPhase(Constants.COLLECT_INCOME_PHASE);//set to anything but third phase
 
             ProjectionWithGame opponentProjection = projectThirdPhase(game, opponent, new MarsGameRowDifference(), projectionWithGame.getDifference());
             if (!opponentProjection.isPickPhase()) {
