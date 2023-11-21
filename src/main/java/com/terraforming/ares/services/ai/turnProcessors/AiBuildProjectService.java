@@ -224,7 +224,7 @@ public class AiBuildProjectService extends BaseProcessorService {
     private BuildProjectPrediction projectTakeCardSecondPhase(MarsGame game, Player player) {
         final List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
 
-        final MarsGameRow marsGameRow = datasetCollectionService.putPlayerRowIntoArray(
+        final MarsGameRow marsGameRow = datasetCollectionService.collectGameAndPlayers(
                 game,
                 player,
                 players.get(0) == player

@@ -36,6 +36,10 @@ public class Planet {
         this.lastOpenedOceanIndex = copy.lastOpenedOceanIndex;
     }
 
+    public int getMinimumTemperature() {
+        return measurableGlobalParameters.get(GlobalParameter.TEMPERATURE).getMin();
+    }
+
     public boolean allOceansRevealed() {
         return oceans.stream().allMatch(Ocean::isRevealed);
     }
