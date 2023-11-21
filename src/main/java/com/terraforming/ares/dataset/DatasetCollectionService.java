@@ -51,6 +51,9 @@ public class DatasetCollectionService {
         }
 
         for (Map.Entry<Integer, Card> entry : buffedCorporationsMapping.entrySet()) {
+            if (!corporationIdToIndex.containsKey(entry.getKey())) {
+                continue;
+            }
             int index = corporationIdToIndex.get(entry.getKey());
             corporationIdToIndex.remove(entry.getKey());
 
@@ -114,6 +117,8 @@ public class DatasetCollectionService {
         result[counter++] = player.heat;
         result[counter++] = player.cardsIncome;
         result[counter++] = player.cardsBuilt;
+        result[counter++] = player.extraSeeCards;
+        result[counter++] = player.extraTakeCards;
 
         result[counter++] = player.greenCards;
         result[counter++] = player.redCards;
@@ -126,11 +131,19 @@ public class DatasetCollectionService {
         result[counter++] = player.nitriteReducting;
         result[counter++] = player.regolithEaters;
         result[counter++] = player.selfReplicatingBacteria;
+        result[counter++] = player.fibrousCompositeScience;
 
         result[counter++] = player.scienceTagsCount;
+        result[counter++] = player.jupiterTagsCount;
 
-        result[counter++] = player.extraSeeCards;
-        result[counter++] = player.extraTakeCards;
+        result[counter++] = player.amplifyEffect;
+        result[counter++] = player.cardsPriceEffect;
+        result[counter++] = player.cardForScienceEffect;
+        result[counter++] = player.phaseRevealBonus;
+        result[counter++] = player.eventDiscount;
+        result[counter++] = player.cardDiscount;
+        result[counter++] = player.cardPerEvent;
+        result[counter++] = player.wpPerJupiter;
 
         result[counter++] = player.heatEarthIncome;
         result[counter++] = player.mcAnimalPlantIncome;
@@ -147,6 +160,17 @@ public class DatasetCollectionService {
         result[counter++] = player.plantMicrobeIncome;
         result[counter++] = player.mcForestIncome;
 
+        for (int dynamicEffect : player.dynamicEffects) {
+            result[counter++] = dynamicEffect;
+        }
+
+        for (int type1Upgrade: player.type1Upgrades) {
+            result[counter++] = type1Upgrade;
+        }
+
+        for (int type2Upgrade: player.type2Upgrades) {
+            result[counter++] = type2Upgrade;
+        }
 
         for (Integer blueCard : player.getBlueCardsList()) {
             if (!blueCardIdToIndex.containsKey(blueCard)) {
@@ -159,7 +183,12 @@ public class DatasetCollectionService {
     public float[] getMarsGameRowForStudy(MarsGameRow marsGameRow) {
         int corporationsSize = corporationIdToIndex.size();
         int blueCardsSize = blueCardIdToIndex.size();
-        float[] result = new float[4 + corporationsSize + 2 * (MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize) + 1 + marsGameRow.awards.length + marsGameRow.milestones.length];
+        float[] result = new float[4 + //turn and global parameters
+                corporationsSize +
+                2 * (MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize) +
+                1 + //won or lose
+                marsGameRow.awards.length + marsGameRow.milestones.length
+                ];
         int counter = 0;
 
         //input
@@ -192,7 +221,11 @@ public class DatasetCollectionService {
         }
 
         //output
-        result[counter] = marsGameRow.winner;
+        result[counter++] = marsGameRow.winner;
+
+        if (counter != result.length) {
+            throw new IllegalStateException("Not all parameters were saved");
+        }
 
         return result;
     }
@@ -219,6 +252,7 @@ public class DatasetCollectionService {
             return null;
         }
 
+        //TODO check if it actually works
         List<Milestone> milestones = game.getMilestones();
         float[] milestonesResult = new float[milestones.size()];
         for (int i = 0; i < milestones.size(); i++) {
@@ -228,6 +262,7 @@ public class DatasetCollectionService {
             }
         }
 
+        //TODO check if it works, because the parameter has no cap
         List<BaseAward> awards = game.getAwards();
         float[] awardsResult = new float[awards.size()];
         for (int i = 0; i < awards.size(); i++) {
@@ -250,25 +285,39 @@ public class DatasetCollectionService {
     }
 
     private MarsPlayerRow collectPlayerData(MarsGame game, Player currentPlayer) {
-        Stream<Card> cardStream = currentPlayer.getPlayed().getCards().stream().map(cardService::getCard);
+        List<Card> playedCards = currentPlayer.getPlayed().getCards().stream()
+                .map(cardService::getCard)
+                .collect(Collectors.toList());
 
-        Map<CardAction, Integer> cardActionToCount = cardStream
+        Map<CardAction, Integer> cardActionToCount = playedCards.stream()
                 .map(Card::getCardMetadata)
                 .filter(Objects::nonNull)
                 .map(CardMetadata::getCardAction)
                 .filter(Objects::nonNull)
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.summingInt(e -> 1)));
 
-        Map<CardColor, Integer> colorToCount = currentPlayer.getHand().getCards().stream().map(cardService::getCard)
+        Map<CardColor, Integer> colorToCount = playedCards.stream()
                 .map(Card::getColor)
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.summingInt(e -> 1)));
 
-        List<Integer> blueCardsList = cardStream
+        List<Integer> blueCardsList = playedCards.stream()
                 .filter(card -> card.getColor() == CardColor.BLUE)
                 .map(Card::getId)
                 .collect(Collectors.toList());
 
-        Set<Class<?>> cardTypes = cardStream.map(Card::getClass).collect(Collectors.toSet());
+        Set<Class<?>> cardTypes = currentPlayer.getPlayed().getCards().stream().map(cardService::getCard).map(Card::getClass).collect(Collectors.toSet());
+
+        int[] type1Upgrades = new int[5];
+        int[] type2Upgrades = new int[5];
+
+        for (int i = 0; i < 5; i++) {
+            Integer upgrade = currentPlayer.getPhaseCards().get(i);
+            if (upgrade == 1) {
+                type1Upgrades[i] = 1;
+            } else if (upgrade == 2) {
+                type2Upgrades[i] = 1;
+            }
+        }
 
         return MarsPlayerRow.builder()
                 .winPoints(winPointsService.countWinPointsWithFloats(currentPlayer, game))
@@ -294,6 +343,8 @@ public class DatasetCollectionService {
                 .nitriteReducting(currentPlayer.getCardResourcesCount().getOrDefault(NitriteReductingBacteria.class, 0))
                 .regolithEaters(currentPlayer.getCardResourcesCount().getOrDefault(RegolithEaters.class, 0))
                 .selfReplicatingBacteria(currentPlayer.getCardResourcesCount().getOrDefault(SelfReplicatingBacteria.class, 0))
+                .fibrousCompositeScience(currentPlayer.getCardResourcesCount().getOrDefault(FibrousCompositeMaterial.class, 0))
+
                 .scienceTagsCount(cardService.countPlayedTags(currentPlayer, Set.of(Tag.SCIENCE)))
                 .jupiterTagsCount(cardService.countPlayedTags(currentPlayer, Set.of(Tag.JUPITER)))
 
@@ -304,6 +355,7 @@ public class DatasetCollectionService {
                 .eventDiscount(CardEffect.EVENT_DISCOUNT.getEffectSize(cardTypes))
                 .cardDiscount(CardEffect.CARD_DISCOUNT.getEffectSize(cardTypes))
                 .cardPerEvent(CardEffect.CARD_PER_EVENT.getEffectSize(cardTypes))
+                .wpPerJupiter(CardEffect.WP_PER_JUPITER.getEffectSize(cardTypes))
 
                 .dynamicEffects(
                         dynamicCardEffectService.getAllDynamicEffects(game, currentPlayer).stream()
@@ -326,6 +378,8 @@ public class DatasetCollectionService {
                 .heatEnergyIncome(cardActionToCount.getOrDefault(CardAction.HEAT_ENERGY_INCOME, 0))
                 .plantMicrobeIncome(cardActionToCount.getOrDefault(CardAction.PLANT_MICROBE_INCOME, 0))
                 .mcForestIncome(cardActionToCount.getOrDefault(CardAction.MC_FOREST_INCOME, 0))
+                .type1Upgrades(type1Upgrades)
+                .type2Upgrades(type2Upgrades)
                 .build();
     }
 

@@ -38,6 +38,7 @@ public class DynamicCardEffectService {
                 .map(Card::getCardMetadata)
                 .filter(Objects::nonNull)
                 .map(CardMetadata::getCardAction)
+                .filter(Objects::nonNull)
                 .filter(sortedCards::contains)
                 .map(cardAction -> CARD_TO_EFFECT_FUNCTION.get(cardAction).apply(game, player))
                 .collect(Collectors.toList());
