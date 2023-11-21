@@ -51,15 +51,11 @@ public class DynamicCardEffectService {
     }
 
     private Integer getCommunityAfforestationEffect(MarsGame game, Player player) {
-        int milestonesAchieved = (int) game.getMilestones().stream().filter(milestone -> milestone.isAchieved(player)).count();
-
-        return 14 - milestonesAchieved * 4;
+        return (int) game.getMilestones().stream().filter(milestone -> milestone.isAchieved(player)).count();
     }
 
     private Integer getGasCooledReactorsEffect(MarsGame game, Player player) {
-        int phaseUpgrades = player.countPhaseUpgrades();
-
-        return 12 - phaseUpgrades * 5;
+        return player.countPhaseUpgrades();
     }
 
 
