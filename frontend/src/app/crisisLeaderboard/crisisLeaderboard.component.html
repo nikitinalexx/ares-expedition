@@ -40,7 +40,7 @@
     <h1>Solo Leaderboard (with dummy hand)</h1>
   </div>
 </form>
-<div class="tables-container">
+<div class="tables-container" *ngIf="parentForm.value.recordType === 'crisis'">
   <table class="table table-dark right-table" *ngIf="parentForm.value.difficultyLevel ==='0'">
     <thead>
     <tr>
@@ -102,7 +102,7 @@
     </tbody>
   </table>
 </div>
-<div class="tables-container">
+<div class="tables-container" *ngIf="parentForm.value.recordType === 'crisis'">
   <table class="table table-dark right-table" *ngIf="parentForm.value.difficultyLevel ==='-1'">
     <thead>
     <tr>
