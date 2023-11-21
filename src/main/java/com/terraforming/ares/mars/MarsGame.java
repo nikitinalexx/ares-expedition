@@ -169,7 +169,7 @@ public class MarsGame {
                             .played(Deck.builder().build())
                             //.heat(100)
                             .mulligan(mulligan)
-                            .difficulty(computers.get(i))
+                            .difficulty(computers.get(i) == PlayerDifficulty.SMART ? PlayerDifficulty.NETWORK : PlayerDifficulty.NONE)//TODO change
                             .build()
             );
 

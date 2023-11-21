@@ -33,14 +33,10 @@ public class TestAiService {
 
 
     public BuildProjectPrediction getBestCardToBuild(MarsGame game, Player player, Set<CardColor> colors) {
-        game = new MarsGame(game);
-        player = game.getPlayerByUuid(player.getUuid());
-
         BuildProjectPrediction bestProject = BuildProjectPrediction.builder().build();
 
         if (colors.contains(CardColor.GREEN)) {
-            player.setBuilds(List.of(new BuildDto(BuildType.GREEN, 3)));
-            BuildProjectPrediction greenProject = aiBuildProjectService.getBestProjectToBuild(game, player, Set.of(CardColor.GREEN), ProjectionStrategy.FROM_PHASE);
+            BuildProjectPrediction greenProject = aiBuildProjectService.getBestProjectToBuild(game, player, Phase.FIRST, ProjectionStrategy.FROM_PICK_PHASE);
             if (Constants.LOG_NET_COMPARISON && greenProject.isCanBuild()) {
                 System.out.println("Best GREEN " + (greenProject.getCard().getClass().getSimpleName()) + " " + greenProject.getExpectedValue());
             }
@@ -48,8 +44,7 @@ public class TestAiService {
         }
 
         if (colors.contains(CardColor.RED) || colors.contains(CardColor.BLUE)) {
-            player.setBuilds(List.of(new BuildDto(BuildType.BLUE_RED), new BuildDto(BuildType.BLUE_RED)));
-            BuildProjectPrediction redProject = aiBuildProjectService.getBestProjectToBuildSecondPhase(game, player, Set.of(CardColor.RED, CardColor.BLUE), ProjectionStrategy.FROM_PHASE);
+            BuildProjectPrediction redProject = aiBuildProjectService.getBestProjectToBuild(game, player, Phase.SECOND, ProjectionStrategy.FROM_PICK_PHASE);
             if (Constants.LOG_NET_COMPARISON && redProject.isCanBuild()) {
                 if (redProject.getCard() != null) {
                     System.out.println("Best RED " + (redProject.getCard().getClass().getSimpleName()) + " " + redProject.getExpectedValue());

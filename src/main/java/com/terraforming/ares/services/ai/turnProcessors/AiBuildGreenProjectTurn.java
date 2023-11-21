@@ -78,7 +78,7 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
 
 
             if (player.getDifficulty().BUILD == AiTurnChoice.NETWORK) {
-                final BuildProjectPrediction bestProjectToBuild = aiBuildProjectService.getBestProjectToBuild(game, player, Set.of(CardColor.GREEN), ProjectionStrategy.FROM_PHASE);
+                final BuildProjectPrediction bestProjectToBuild = aiBuildProjectService.getBestProjectToBuild(game, player, Phase.FIRST, ProjectionStrategy.FROM_PHASE);
 
                 if (bestProjectToBuild.isCanBuild()) {
                     selectedCard = bestProjectToBuild.getCard();

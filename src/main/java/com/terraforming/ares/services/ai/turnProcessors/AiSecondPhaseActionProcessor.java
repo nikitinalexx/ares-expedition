@@ -10,10 +10,7 @@ import com.terraforming.ares.model.ai.AiTurnChoice;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.CardValidationService;
-import com.terraforming.ares.services.ai.AiCardValidationService;
-import com.terraforming.ares.services.ai.DeepNetwork;
-import com.terraforming.ares.services.ai.ICardValueService;
-import com.terraforming.ares.services.ai.ProjectionStrategy;
+import com.terraforming.ares.services.ai.*;
 import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsService;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
@@ -41,7 +38,6 @@ public class AiSecondPhaseActionProcessor {
     private final DeepNetwork deepNetwork;
     private final AiBuildProjectService aiBuildProjectService;
     private final CardService cardService;
-    private final CardValidationService cardValidationService;
     private final ICardValueService cardValueService;
     private final AiCardValidationService aiCardValidationService;
 
@@ -79,10 +75,7 @@ public class AiSecondPhaseActionProcessor {
                 }
 
                 if (player.getDifficulty().BUILD == AiTurnChoice.NETWORK) {
-                    final BuildProjectPrediction bestProjectToBuild =
-                            player.getBuilds().stream().filter(build -> build.getType().isBlueRed()).count() >= 2
-                                    ? aiBuildProjectService.getBestProjectToBuildSecondPhase(game, player, Set.of(CardColor.RED,  CardColor.BLUE), ProjectionStrategy.FROM_PHASE)
-                                    : aiBuildProjectService.getBestProjectToBuild(game, player, Set.of(CardColor.RED, CardColor.BLUE), ProjectionStrategy.FROM_PHASE);
+                    final BuildProjectPrediction bestProjectToBuild = aiBuildProjectService.getBestProjectToBuild(game, player, Phase.SECOND, ProjectionStrategy.FROM_PHASE);
 
                     logComputerCardSelection(bestProjectToBuild, game, player);
 
