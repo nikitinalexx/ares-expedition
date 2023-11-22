@@ -275,7 +275,9 @@ public class MarsGame {
                                 playerUuidToPlayer.values()
                                         .forEach(player -> {
                                             milestone.setValue(player, milestone.getValue(player, cardService));
-                                            player.getPlayed().getCards().stream().map(cardService::getCard).forEach(card -> card.onMilestoneGained(context, player, milestone));
+                                            if (milestone.isAchieved(player)) {
+                                                player.getPlayed().getCards().stream().map(cardService::getCard).forEach(card -> card.onMilestoneGained(context, player, milestone));
+                                            }
                                         });
                             }
                         }

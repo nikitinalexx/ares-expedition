@@ -5,6 +5,7 @@ import lombok.Data;
 @Data
 public class SimulationsRequest {
     int simulationsCount;
-    boolean withParamCalibration;
+    boolean withBatches;
+    int batches;
     int fileIndex;
 }

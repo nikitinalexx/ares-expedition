@@ -38,7 +38,7 @@ public class DeepNetwork {
 
         firstNetwork = ThreadLocal.withInitial(() -> {
             try {
-                return initNetworkFromFile("result_N_reg_5_smart_net.txt");
+                return initNetworkFromFile("second/result_N_reg_5_smart_net.txt");
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -46,7 +46,7 @@ public class DeepNetwork {
 
         secondNetwork = ThreadLocal.withInitial(() -> {
             try {
-                return initNetworkFromFile("result_N_reg_5_smart_net.txt");
+                return initNetworkFromFile("second/result_N_reg_5_smart_net.txt");
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

@@ -170,49 +170,32 @@ public class GameController {
 
     @GetMapping("/simulations")
     public void runSimulations(@RequestBody SimulationsRequest request) throws IOException {
-        Constants.FIRST_PLAYER_PHASES = new ConcurrentHashMap<>();
-        Constants.SECOND_PLAYER_PHASES = new ConcurrentHashMap<>();
-
-        int availableProcessors = Runtime.getRuntime().availableProcessors();
-
-        if (request.getSimulationsCount() < availableProcessors) {
-            return;
+        if (request.isWithBatches() && request.getBatches() == 0) {
+            throw new IllegalArgumentException("Batches can't be 0");
+        }
+        if (!request.isWithBatches()) {
+            request.setBatches(1);
         }
 
+        for (int batch = 0; batch < request.getBatches(); batch++) {
+            request.setFileIndex(batch);
 
-        int threads = availableProcessors;
+            Constants.FIRST_PLAYER_PHASES = new ConcurrentHashMap<>();
+            Constants.SECOND_PLAYER_PHASES = new ConcurrentHashMap<>();
 
-        List<Double> calibrationValues = aiBalanceService.calibrationValues();
+            int threads = Runtime.getRuntime().availableProcessors();
 
-        if (request.isWithParamCalibration()) {
-            for (Double calibrationValue : calibrationValues) {
-                System.out.println();
-                System.out.println("Calibration value " + calibrationValue);
-                aiBalanceService.setCalibrationValue(calibrationValue);
-
-                GameStatistics gameStatistics = new GameStatistics();
-
-                ExecutorService executor = Executors.newFixedThreadPool(threads);
-                for (int i = 0; i < threads; i++) {
-                    Runnable worker = new WorkerThread(request.getSimulationsCount() / threads, gameStatistics, request.isWithParamCalibration(), request.getFileIndex(), i);
-                    executor.execute(worker);
-                }
-                executor.shutdown();
-                while (!executor.isTerminated()) {
-                }
-                System.out.println("Finished all threads");
-
-
-                printStatistics(gameStatistics);
+            if (request.getSimulationsCount() < threads) {
+                return;
             }
-        } else {
+
             System.out.println("Starting simulations");
 
             GameStatistics gameStatistics = new GameStatistics();
 
             ExecutorService executor = Executors.newFixedThreadPool(threads);
             for (int i = 0; i < threads; i++) {
-                Runnable worker = new WorkerThread(request.getSimulationsCount() / threads, gameStatistics, request.isWithParamCalibration(), request.getFileIndex(), i);
+                Runnable worker = new WorkerThread(request.getSimulationsCount() / threads, gameStatistics, request.getFileIndex(), i);
                 executor.execute(worker);
             }
             executor.shutdown();
@@ -222,29 +205,29 @@ public class GameController {
 
 
             printStatistics(gameStatistics);
-        }
 
-        if (Constants.COLLECT_DATASET) {
-            List<String> fileNames = new ArrayList<>();
+            if (Constants.COLLECT_DATASET) {
+                List<String> fileNames = new ArrayList<>();
 
-            for (int threadIndex = 0; threadIndex < availableProcessors; threadIndex++) {
-                fileNames.add("dataset_" + request.getFileIndex() + "_" + threadIndex + ".csv");
+                for (int threadIndex = 0; threadIndex < threads; threadIndex++) {
+                    fileNames.add("dataset_" + request.getFileIndex() + "_" + threadIndex + ".csv");
+                }
+
+                combineAndDelete(fileNames, "dataset_" + request.getFileIndex() + ".csv");
             }
 
-            combineAndDelete(fileNames, "dataset_" + request.getFileIndex() + ".csv");
+
+            System.out.println(Constants.FIRST_PLAYER_PHASES);
+            System.out.println(Constants.SECOND_PLAYER_PHASES);
+            System.out.println("Finished");
+
+            System.out.println(maxMcIncome);
+            System.out.println(maxHeatIncome);
+            System.out.println(maxScience);
+            System.out.println(maxCardsPlayed);
+            System.out.println(maxSteelTitanium);
+            System.out.println(maxResources);
         }
-
-
-        System.out.println(Constants.FIRST_PLAYER_PHASES);
-        System.out.println(Constants.SECOND_PLAYER_PHASES);
-        System.out.println("Finished");
-
-        System.out.println(maxMcIncome);
-        System.out.println(maxHeatIncome);
-        System.out.println(maxScience);
-        System.out.println(maxCardsPlayed);
-        System.out.println(maxSteelTitanium);
-        System.out.println(maxResources);
     }
 
     public static void combineAndDelete(List<String> filePaths, String combinedFilePath) throws IOException {
@@ -272,14 +255,12 @@ public class GameController {
     class WorkerThread implements Runnable {
         int simulationCount;
         GameStatistics gameStatistics;
-        boolean withCalibration;
         int fileIndex;
         int threadIndex;
 
-        WorkerThread(int simulationCount, GameStatistics gameStatistics, boolean withCalibration, int fileIndex, int threadIndex) {
+        WorkerThread(int simulationCount, GameStatistics gameStatistics, int fileIndex, int threadIndex) {
             this.simulationCount = simulationCount;
             this.gameStatistics = gameStatistics;
-            this.withCalibration = withCalibration;
             this.fileIndex = fileIndex;
             this.threadIndex = threadIndex;
         }
@@ -331,9 +312,7 @@ public class GameController {
                     long spentTime = System.currentTimeMillis() - startTime;
 
                     long timePerGame = (spentTime / i);
-                    if (!withCalibration) {
-                        System.out.println("Time left: " + (simulationCount - i) * timePerGame / 1000);
-                    }
+                    System.out.println("Time left: " + (simulationCount - i) * timePerGame / 1000);
                 }
 
                 if (i % 100 == 0) {
