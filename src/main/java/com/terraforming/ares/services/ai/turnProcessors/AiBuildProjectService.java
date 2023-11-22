@@ -17,11 +17,9 @@ import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsService;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.terraforming.ares.model.Constants.*;
@@ -81,9 +79,20 @@ public class AiBuildProjectService extends BaseProcessorService {
             return BuildProjectPrediction.builder().canBuild(false).build();
         }
 
+        Set<Integer> pickedPhases = game.getPlayerUuidToPlayer()
+                .values()
+                .stream()
+                .map(Player::getChosenPhase)
+                .collect(Collectors.toSet());
+
+        //TODO return?
+//        if (game.isDummyHandMode() && !CollectionUtils.isEmpty(game.getUsedDummyHand())) {
+//            pickedPhases.add(game.getCurrentDummyHand());
+//        }
+
         BuildProjectPrediction bestFutureProjectInSecondPhase =
-                (player.getChosenPhase() == 2 && game.getCurrentPhase() == 1)
-                        ? getBestProjectToBuild(game, player, Phase.SECOND, ProjectionStrategy.FROM_PICK_PHASE)
+                (pickedPhases.contains(2) && game.getCurrentPhase() == 1)
+                        ? getBestProjectToBuild(game, player, player.getChosenPhase() == 2 ? Phase.SECOND : Phase.SECOND_BY_ANOTHER, ProjectionStrategy.FROM_PICK_PHASE)
                         : BuildProjectPrediction.builder().build();
 
         Card bestCard = null;
@@ -105,7 +114,7 @@ public class AiBuildProjectService extends BaseProcessorService {
         if (bestCard != null && bestFutureProjectInSecondPhase.isCanBuild()) {
             MarsGame stateAfterPlayingBestCard = assumeProjectIsBuilt(game, player, bestCard);
 
-            BuildProjectPrediction bestBuildFirstPlusSecondPhase = getBestProjectToBuild(stateAfterPlayingBestCard, stateAfterPlayingBestCard.getPlayerByUuid(player.getUuid()), Phase.SECOND, ProjectionStrategy.FROM_PICK_PHASE);
+            BuildProjectPrediction bestBuildFirstPlusSecondPhase = getBestProjectToBuild(stateAfterPlayingBestCard, stateAfterPlayingBestCard.getPlayerByUuid(player.getUuid()), (player.getChosenPhase() == 2 ? Phase.SECOND : Phase.SECOND_BY_ANOTHER), ProjectionStrategy.FROM_PICK_PHASE);
 
             if (!bestBuildFirstPlusSecondPhase.isCanBuild() && bestFutureProjectInSecondPhase.getExpectedValue() > bestChance) {
                 if (LOG_NET_COMPARISON) {
@@ -243,9 +252,9 @@ public class AiBuildProjectService extends BaseProcessorService {
             getAnotherPlayer(game, player).setPreviousChosenPhase(null);
             game.setStateType(StateType.PICK_PHASE, context);
             game.getPlayerUuidToPlayer().values().stream().filter(p -> !p.getUuid().equals(player.getUuid())).forEach(
-                    anotherPlayer -> aiTurnService.choosePhaseTurn(anotherPlayer, COLLECT_INCOME_PHASE)
+                    anotherPlayer -> aiTurnService.choosePhaseTurn(anotherPlayer, phase == Phase.SECOND_BY_ANOTHER ? 2 : COLLECT_INCOME_PHASE)
             );
-            aiTurnService.choosePhaseTurn(player, phase == Phase.FIRST ? 1 : 2);
+            aiTurnService.choosePhaseTurn(player, phase == Phase.SECOND_BY_ANOTHER ? COLLECT_INCOME_PHASE: (phase == Phase.FIRST ? 1 : 2));
             while (processFinalTurns(game)) {
                 stateFactory.getCurrentState(game).updateState();
             }

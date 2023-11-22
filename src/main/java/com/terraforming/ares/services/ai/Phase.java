@@ -6,5 +6,6 @@ package com.terraforming.ares.services.ai;
  */
 public enum Phase {
     FIRST,
-    SECOND
+    SECOND,
+    SECOND_BY_ANOTHER
 }

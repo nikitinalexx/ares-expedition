@@ -3,10 +3,12 @@ package com.terraforming.ares.services.ai.turnProcessors;
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.ai.AiTurnChoice;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.StandardProjectService;
 import com.terraforming.ares.services.ai.AiCardValidationService;
+import com.terraforming.ares.services.ai.DeepNetwork;
 import com.terraforming.ares.services.ai.ProjectionStrategy;
 import com.terraforming.ares.services.ai.TestAiService;
 import com.terraforming.ares.services.ai.dto.ActionInputParamsResponse;
@@ -35,6 +37,7 @@ public class AiThirdPhaseActionProcessor {
     private final TestAiService testAiService;
     private final AiCardValidationService aiCardValidationService;
     private final AiBuildProjectService aiBuildProjectService;
+    private final DeepNetwork deepNetwork;
 
     public AiThirdPhaseActionProcessor(AiTurnService aiTurnService,
                                        CardService cardService,
@@ -43,7 +46,7 @@ public class AiThirdPhaseActionProcessor {
                                        StandardProjectService standardProjectService,
                                        AiCardBuildParamsService aiCardBuildParamsService,
                                        TestAiService testAiService,
-                                       AiCardValidationService aiCardValidationService, AiBuildProjectService aiBuildProjectService) {
+                                       AiCardValidationService aiCardValidationService, AiBuildProjectService aiBuildProjectService, DeepNetwork deepNetwork) {
         this.aiTurnService = aiTurnService;
         this.cardService = cardService;
         this.aiPaymentHelper = aiPaymentHelper;
@@ -53,6 +56,7 @@ public class AiThirdPhaseActionProcessor {
         this.testAiService = testAiService;
         this.aiCardValidationService = aiCardValidationService;
         this.aiBuildProjectService = aiBuildProjectService;
+        this.deepNetwork = deepNetwork;
     }
 
     public boolean processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
@@ -129,6 +133,7 @@ public class AiThirdPhaseActionProcessor {
 
 
     private boolean makeATurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
+        //TODO what if you have blue cards that spend heat
         if (player.getSelectedCorporationCard() == 10000 || player.getSelectedCorporationCard() == 10100) {
             if (game.getPlanetAtTheStartOfThePhase().isTemperatureMax() && player.getHeat() > 0) {
                 player.setMc(player.getMc() + player.getHeat());
@@ -190,8 +195,7 @@ public class AiThirdPhaseActionProcessor {
             }
         }
 
-        //TODO don't finish if your win chance is bad?
-        if (!game.gameEndCondition() && canFinishGame(game, player)) {
+        if (!game.gameEndCondition() && canFinishGame(game, player) && (player.getDifficulty().THIRD_PHASE_ACTION != AiTurnChoice.NETWORK || deepNetwork.testState(game, player) >= 0.6)) {
             if (player.getHand().size() != 0) {
                 aiTurnService.sellAllCards(player, game, player.getHand().getCards());
                 return true;
@@ -210,6 +214,17 @@ public class AiThirdPhaseActionProcessor {
             }
         }
 
+        boolean buildProjects = buildProjectsIfPossible(game, player, possibleTurns);
+
+        if (buildProjects) {
+            return true;
+        }
+
+
+        return false;
+    }
+
+    private boolean buildProjectsIfPossible(MarsGame game, Player player, List<TurnType> possibleTurns) {
         if (!player.getBuilds().isEmpty()) {
 
             Card cardToBuild = null;

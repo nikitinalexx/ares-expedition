@@ -143,7 +143,7 @@ public class AiThirdPhaseProjectionService {
                     if (Constants.LOG_NET_COMPARISON) {
                         System.out.println("3 phase skip because bad chance " + futureState);
                     }
-                    return PhaseChoiceProjection.SKIP_PHASE;
+                    return PhaseChoiceProjection.builder().pickPhase(false).phase(3).chance(futureState).build();
                 }
 
                 if (Constants.LOG_NET_COMPARISON) {
@@ -168,7 +168,7 @@ public class AiThirdPhaseProjectionService {
                     if (Constants.LOG_NET_COMPARISON) {
                         System.out.println("3 phase skip because bad chance " + futureState);
                     }
-                    return PhaseChoiceProjection.SKIP_PHASE;
+                    return PhaseChoiceProjection.builder().pickPhase(false).phase(3).chance(futureState).build();
                 }
 
                 if (Constants.LOG_NET_COMPARISON) {

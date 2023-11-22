@@ -64,14 +64,22 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                 projection = projection.applyIfBetter(mayPlayPhaseTwoAi(game, player));
             }
 
-            projection = projection.applyIfBetter(mayPlayPhaseThree(game, player));
+            PhaseChoiceProjection phase3Projection = mayPlayPhaseThree(game, player);
+            projection = projection.applyIfBetter(phase3Projection);
 
-            projection = projection.applyIfBetter(mayPlayPhaseFourAi(game, player));
+            PhaseChoiceProjection phase4Projection = mayPlayPhaseFourAi(game, player);
+            projection = projection.applyIfBetter(phase4Projection);
 
-            projection = projection.applyIfBetter(mayPlayPhaseFiveAi(game, player));
+            PhaseChoiceProjection phase5Projection = mayPlayPhaseFiveAi(game, player);
+            projection = projection.applyIfBetter(phase5Projection);
 
             if (projection.isPickPhase()) {
                 possiblePhases.add(projection.getPhase());
+            } else {
+                PhaseChoiceProjection theBestOfTheWorst = phase3Projection.bestOfTheWorst(phase4Projection).bestOfTheWorst(phase5Projection);
+                if (theBestOfTheWorst.getPhase() != 0) {
+                    possiblePhases.add(theBestOfTheWorst.getPhase());
+                }
             }
         } else {
             if (!(player.getDifficulty().PICK_PHASE == AiTurnChoice.RANDOM)
@@ -273,11 +281,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             System.out.println("Deep network state income before " + stateBeforeIncome + ". After " + stateAfterIncome);
         }
 
-        if (stateAfterIncome > stateBeforeIncome) {
-            return PhaseChoiceProjection.builder().pickPhase(true).phase(4).chance(stateAfterIncome).build();
-        } else {
-            return PhaseChoiceProjection.SKIP_PHASE;
-        }
+        return PhaseChoiceProjection.builder().pickPhase(stateAfterIncome > stateBeforeIncome).phase(4).chance(stateAfterIncome).build();
     }
 
     private PhaseChoiceProjection mayPlayPhaseFiveAi(MarsGame game, Player player) {
@@ -292,11 +296,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             System.out.println("Deep network state phase 5 before " + stateBeforePhase + ". After " + stateAfterPhase);
         }
 
-        if (stateAfterPhase > stateBeforePhase) {
-            return PhaseChoiceProjection.builder().pickPhase(true).phase(5).chance(stateAfterPhase).build();
-        } else {
-            return PhaseChoiceProjection.SKIP_PHASE;
-        }
+        return PhaseChoiceProjection.builder().pickPhase(stateAfterPhase > stateBeforePhase).phase(5).chance(stateAfterPhase).build();
     }
 
     private boolean mayPlayPhaseFour(MarsGame game, Player player) {

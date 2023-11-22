@@ -125,8 +125,8 @@ public class Constants {
     public static final List<PlayerDifficulty> SIMULATION_PLAYERS = List.of(PlayerDifficulty.SMART, PlayerDifficulty.NETWORK);
 
     public static final boolean AI_CORP_RANDOM = true;
-    public static final boolean COLLECT_DATASET = true;
-    public static final boolean LOG_NET_COMPARISON = false;
+    public static final boolean COLLECT_DATASET = false;
+    public static final boolean LOG_NET_COMPARISON = true;
 
     private Constants() {
     }

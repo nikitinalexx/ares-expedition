@@ -111,8 +111,12 @@ public class AiSecondPhaseActionProcessor {
     private void logComputerCardSelection(BuildProjectPrediction bestProjectToBuild, MarsGame game, Player player) {
         if (Constants.LOG_NET_COMPARISON) {
             if (bestProjectToBuild.isCanBuild()) {
-                System.out.println("Deep network state " + deepNetwork.testState(game, player));
-                System.out.println("Deep network card " + bestProjectToBuild.getCard().getClass().getSimpleName() + " with projected chance " + bestProjectToBuild.getExpectedValue());
+                try {
+                    System.out.println("Deep network state " + deepNetwork.testState(game, player));
+                    System.out.println("Deep network card " + bestProjectToBuild.getCard().getClass().getSimpleName() + " with projected chance " + bestProjectToBuild.getExpectedValue());
+                } catch (NullPointerException e) {
+                    System.out.println("NPE " + bestProjectToBuild);
+                }
             } else {
                 System.out.println("Deep network : do not build");
             }

@@ -21,4 +21,14 @@ public class PhaseChoiceProjection {
         }
         return this;
     }
+
+    public PhaseChoiceProjection bestOfTheWorst(PhaseChoiceProjection projection) {
+        if (pickPhase || projection.pickPhase) {
+            throw new IllegalStateException("Can't choose worst of good phase projections");
+        }
+        if (projection.chance > this.chance) {
+            return projection;
+        }
+        return this;
+    }
 }
