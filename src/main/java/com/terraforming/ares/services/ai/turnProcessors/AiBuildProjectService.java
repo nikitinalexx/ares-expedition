@@ -120,8 +120,8 @@ public class AiBuildProjectService extends BaseProcessorService {
 
 
     private List<Card> getAvailableCardsToBuild(MarsGame game, Player player) {
-        boolean canBuildGreen = player.getBuilds().stream().anyMatch(build -> build.getType().isGreen());
-        boolean canBuildBlueRed = player.getBuilds().stream().anyMatch(build -> build.getType().isBlueRed());
+        boolean canBuildGreen = player.canBuildGreen();
+        boolean canBuildBlueRed = player.canBuildBlueRed();
 
         return player.getHand()
                 .getCards()

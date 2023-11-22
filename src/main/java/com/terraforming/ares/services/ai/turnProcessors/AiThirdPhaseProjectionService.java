@@ -194,9 +194,9 @@ public class AiThirdPhaseProjectionService {
         Player anotherPlayer = players.get(0) == player ? players.get(1) : players.get(0);
 
         MarsGameRow playerData = datasetCollectionService.collectGameAndPlayers(game, player, anotherPlayer);
-        if (playerData == null) {
-            return ProjectionWithGame.SKIP_PHASE;
-        }
+//        if (playerData == null) {
+//            return ProjectionWithGame.SKIP_PHASE;
+//        }
         float bestState = deepNetwork.testState(playerData.applyDifference(initialDifference).applyOpponentDifference(opponentDifference), player.isFirstBot() ? 1 : 2);
 
         //project cards
@@ -216,7 +216,7 @@ public class AiThirdPhaseProjectionService {
                 MarsGameRowDifference difference = actionProjections.get(activeCard.getClass()).project(initialDifference, gameCopy, playerCopy, activeCard);
                 difference.add(initialDifference);
 
-                if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ASSEMBLY_LINES)) {
+                if (specialEffectsService.ownsSpecialEffect(playerCopy, SpecialEffect.ASSEMBLY_LINES)) {
                     playerCopy.setMc(playerCopy.getMc() + 1);
                 }
 

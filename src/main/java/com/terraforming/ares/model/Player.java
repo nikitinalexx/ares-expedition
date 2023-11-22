@@ -6,6 +6,7 @@ import lombok.*;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 /**
@@ -91,7 +92,11 @@ public class Player {
         this.corporations = copy.corporations;
 
         this.cardResourcesCount = new HashMap<>(copy.getCardResourcesCount());
-        this.cardToTag = new HashMap<>(copy.getCardToTag());
+        this.cardToTag = copy.getCardToTag().entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> new ArrayList<>(entry.getValue())
+                ));
 
         this.terraformingRating = copy.terraformingRating;
         this.forests = copy.forests;

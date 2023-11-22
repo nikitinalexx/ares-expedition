@@ -62,7 +62,6 @@ public class ResearchGrantAiCardProjection<T extends Card> implements AiCardProj
     }
 
     private float projectPuttingTag(MarsGame game, Player player, Card card, Tag tag) {
-        //TODO check this sh
         List<Tag> cardTags = player.getCardToTag().get(ResearchGrant.class);
 
         //put tag

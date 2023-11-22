@@ -157,21 +157,20 @@ public class MarsGame {
         List<Player> players = new ArrayList<>();
 
         for (int i = 0; i < playerNames.size(); i++) {
-            players.add(
-                    Player.builder()
-                            .uuid(UUID.randomUUID().toString() + i)
-                            .name(playerNames.get(i))
+            Player player = Player.builder()
+                    .uuid(UUID.randomUUID().toString() + i)
+                    .name(playerNames.get(i))
 //                            .hand(Deck.builder().cards(new LinkedList<>(List.of(19, 24, 339))).build())
-                            .hand(projectsDeck.dealCardsDeck(playerHandSize))
-                            .extraPoints(extraPoints != null && extraPoints.length > i ? extraPoints[i] : 0)
-                            .corporations(corporationsDeck.dealCardsDeck(INITIAL_CORPORATIONS_SIZE))
-                            //.corporations(Deck.builder().cards(new LinkedList<>(List.of(10206, 10005))).build())
-                            .played(Deck.builder().build())
-                            //.heat(100)
-                            .mulligan(mulligan)
-                            .difficulty(computers.get(i) == PlayerDifficulty.SMART ? PlayerDifficulty.NETWORK : PlayerDifficulty.NONE)//TODO change
-                            .build()
-            );
+                    .hand(projectsDeck.dealCardsDeck(playerHandSize))
+                    .extraPoints(extraPoints != null && extraPoints.length > i ? extraPoints[i] : 0)
+                    .corporations(corporationsDeck.dealCardsDeck(INITIAL_CORPORATIONS_SIZE))
+                    //.corporations(Deck.builder().cards(new LinkedList<>(List.of(10206, 10005))).build())
+                    .played(Deck.builder().build())
+                    //.heat(100)
+                    .mulligan(mulligan)
+                    .difficulty(computers.get(i))
+                    .build();
+            players.add(player);
 
         }
 

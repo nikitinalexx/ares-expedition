@@ -5,11 +5,12 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
-import com.terraforming.ares.services.CardValidationService;
 import com.terraforming.ares.services.StandardProjectService;
 import com.terraforming.ares.services.ai.AiCardValidationService;
+import com.terraforming.ares.services.ai.ProjectionStrategy;
 import com.terraforming.ares.services.ai.TestAiService;
 import com.terraforming.ares.services.ai.dto.ActionInputParamsResponse;
+import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsService;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
@@ -27,33 +28,31 @@ public class AiThirdPhaseActionProcessor {
     private final Random random = new Random();
     private final AiTurnService aiTurnService;
     private final CardService cardService;
-    private final CardValidationService cardValidationService;
     private final AiPaymentService aiPaymentHelper;
     private final AiCardActionHelper aiCardActionHelper;
     private final StandardProjectService standardProjectService;
     private final AiCardBuildParamsService aiCardBuildParamsService;
     private final TestAiService testAiService;
     private final AiCardValidationService aiCardValidationService;
+    private final AiBuildProjectService aiBuildProjectService;
 
     public AiThirdPhaseActionProcessor(AiTurnService aiTurnService,
                                        CardService cardService,
-                                       CardValidationService cardValidationService,
                                        AiPaymentService aiPaymentHelper,
                                        AiCardActionHelper aiCardActionHelper,
                                        StandardProjectService standardProjectService,
                                        AiCardBuildParamsService aiCardBuildParamsService,
                                        TestAiService testAiService,
-                                       AiCardValidationService aiCardValidationService) {
-
+                                       AiCardValidationService aiCardValidationService, AiBuildProjectService aiBuildProjectService) {
         this.aiTurnService = aiTurnService;
         this.cardService = cardService;
-        this.cardValidationService = cardValidationService;
         this.aiPaymentHelper = aiPaymentHelper;
         this.aiCardActionHelper = aiCardActionHelper;
         this.standardProjectService = standardProjectService;
         this.aiCardBuildParamsService = aiCardBuildParamsService;
         this.testAiService = testAiService;
         this.aiCardValidationService = aiCardValidationService;
+        this.aiBuildProjectService = aiBuildProjectService;
     }
 
     public boolean processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
@@ -144,7 +143,7 @@ public class AiThirdPhaseActionProcessor {
                 .filter(c -> !activatedBlueCards.containsCard(c.getId()))
                 .collect(Collectors.toList());
 
-        boolean actionPerformed = performAction(game, player, notUsedBlueCards);
+        boolean actionPerformed = performCardAction(game, player, notUsedBlueCards);
 
         if (actionPerformed) {
             return true;
@@ -156,7 +155,7 @@ public class AiThirdPhaseActionProcessor {
                     .filter(Card::isActiveCard)
                     .collect(Collectors.toList());
 
-            actionPerformed = performAction(game, player, actionBlueCards);
+            actionPerformed = performCardAction(game, player, actionBlueCards);
         }
 
         if (actionPerformed) {
@@ -209,18 +208,38 @@ public class AiThirdPhaseActionProcessor {
             }
         }
 
-        if (possibleTurns.contains(TurnType.BUILD_BLUE_RED_PROJECT) || possibleTurns.contains(TurnType.BUILD_GREEN_PROJECT)) {
-            List<Card> availableCards = player.getHand()
-                    .getCards()
-                    .stream()
-                    .map(cardService::getCard)
-                    .filter(card -> (possibleTurns.contains(TurnType.BUILD_BLUE_RED_PROJECT) && card.getColor() != CardColor.GREEN)
-                            || (possibleTurns.contains(TurnType.BUILD_GREEN_PROJECT) && card.getColor() == CardColor.GREEN))
-                    .filter(card -> aiCardValidationService.isValid(game, player, card))
-                    .collect(Collectors.toList());
+        if (!player.getBuilds().isEmpty()) {
 
-            if (!availableCards.isEmpty()) {
-                final Card cardToBuild = availableCards.get(random.nextInt(availableCards.size()));
+            Card cardToBuild = null;
+
+            switch (player.getDifficulty().THIRD_PHASE_ACTION) {
+                case NETWORK:
+                    BuildProjectPrediction bestProjectToBuild = aiBuildProjectService.getBestProjectToBuild(
+                            game, player, null, ProjectionStrategy.FROM_PHASE
+                    );
+                    if (bestProjectToBuild.isCanBuild()) {
+                        cardToBuild = bestProjectToBuild.getCard();
+                        break;
+                    } else {
+                        //go to RANDOM switch case
+                    }
+                case RANDOM:
+                case SMART:
+                    List<Card> availableCards = player.getHand()
+                            .getCards()
+                            .stream()
+                            .map(cardService::getCard)
+                            .filter(card -> (possibleTurns.contains(TurnType.BUILD_BLUE_RED_PROJECT) && card.getColor() != CardColor.GREEN)
+                                    || (possibleTurns.contains(TurnType.BUILD_GREEN_PROJECT) && card.getColor() == CardColor.GREEN))
+                            .filter(card -> aiCardValidationService.isValid(game, player, card))
+                            .collect(Collectors.toList());
+
+                    if (!availableCards.isEmpty()) {
+                        cardToBuild = availableCards.stream().max(Comparator.comparingInt(Card::getPrice)).orElseThrow();
+                    }
+            }
+
+            if (cardToBuild != null) {
                 Map<Integer, List<Integer>> inputParams = aiCardBuildParamsService.getInputParamsForBuild(game, player, cardToBuild);
                 aiTurnService.buildProject(
                         game, player, cardToBuild.getId(), aiPaymentHelper.getCardPayments(game, player, cardToBuild, inputParams),
@@ -266,7 +285,7 @@ public class AiThirdPhaseActionProcessor {
         return mc >= 0;
     }
 
-    private boolean performAction(MarsGame game, Player player, List<Card> cards) {
+    private boolean performCardAction(MarsGame game, Player player, List<Card> cards) {
         while (!cards.isEmpty()) {
             int selectedIndex = random.nextInt(cards.size());
             Card selectedCard = cards.get(selectedIndex);

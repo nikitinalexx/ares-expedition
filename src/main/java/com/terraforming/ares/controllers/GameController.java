@@ -75,8 +75,8 @@ public class GameController {
                 throw new IllegalArgumentException("Invalid number of computers and players, please reload the game");
             }
 
-            if (gameParameters.getComputers().stream().anyMatch(computer -> computer != PlayerDifficulty.RANDOM && computer != PlayerDifficulty.SMART && computer != PlayerDifficulty.NONE)) {
-                throw new IllegalArgumentException("Only Random and Smart computers are supported");
+            if (gameParameters.getComputers().stream().anyMatch(computer -> computer != PlayerDifficulty.RANDOM && computer != PlayerDifficulty.SMART && computer != PlayerDifficulty.NONE && computer != PlayerDifficulty.NETWORK)) {
+                throw new IllegalArgumentException("Only Random/Smart/Network computers are supported");
             }
 
             if (!gameParameters.getExpansions().contains(Expansion.DISCOVERY)) {

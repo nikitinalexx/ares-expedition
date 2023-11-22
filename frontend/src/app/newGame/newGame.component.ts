@@ -74,7 +74,17 @@ export class NewGameComponent implements OnInit {
         }
 
         if (this.parentForm.get('computer' + i)?.value) {
-          computers.push(this.parentForm.get('difficulty' + i)?.value === 'random' ? 'RANDOM' : 'SMART');
+          switch (this.parentForm.get('difficulty' + i)?.value) {
+            case 'random':
+              computers.push('RANDOM');
+              break;
+            case 'smart':
+              computers.push('SMART');
+              break;
+            case 'deep':
+              computers.push('NETWORK');
+              break;
+          }
         } else {
           computers.push('NONE');
         }
