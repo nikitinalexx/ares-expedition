@@ -168,6 +168,7 @@ public class AiThirdPhaseActionProcessor {
                 .map(CardMetadata::getCardAction)
                 .filter(Objects::nonNull).collect(Collectors.toSet());
 
+        //TODO looks very artificial
         if (!game.getPlanetAtTheStartOfThePhase().isOceansMax()) {
             if ((playedActions.contains(CardAction.ARCTIC_ALGAE)
                     || playedActions.contains(CardAction.FISH))
@@ -189,6 +190,7 @@ public class AiThirdPhaseActionProcessor {
             }
         }
 
+        //TODO don't finish if your win chance is bad?
         if (!game.gameEndCondition() && canFinishGame(game, player)) {
             if (player.getHand().size() != 0) {
                 aiTurnService.sellAllCards(player, game, player.getHand().getCards());

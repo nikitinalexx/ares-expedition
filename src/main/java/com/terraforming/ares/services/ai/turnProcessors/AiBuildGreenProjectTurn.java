@@ -1,16 +1,14 @@
 package com.terraforming.ares.services.ai.turnProcessors;
 
-import com.terraforming.ares.cards.green.TopographicMapping;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
-import com.terraforming.ares.model.CardColor;
 import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ai.AiTurnChoice;
 import com.terraforming.ares.model.turn.TurnType;
-import com.terraforming.ares.services.CardService;
-import com.terraforming.ares.services.CardValidationService;
-import com.terraforming.ares.services.ai.*;
+import com.terraforming.ares.services.ai.DeepNetwork;
+import com.terraforming.ares.services.ai.ICardValueService;
+import com.terraforming.ares.services.ai.ProjectionStrategy;
 import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsService;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
@@ -20,7 +18,6 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -31,16 +28,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AiBuildGreenProjectTurn implements AiTurnProcessor {
     private final AiTurnService aiTurnService;
-    private final CardService cardService;
-    private final CardValidationService cardValidationService;
     private final AiPaymentService aiPaymentHelper;
     private final AiCardBuildParamsService aiCardParamsHelper;
     private final ICardValueService cardValueService;
     private final AiBuildProjectService aiBuildProjectService;
-    private final AiCardValidationService aiCardValidationService;
     private final DeepNetwork deepNetwork;
     private final Random random = new Random();
-    private final AiBalanceService aiBalanceService;
 
     @Override
     public TurnType getType() {
@@ -49,13 +42,7 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
 
     @Override
     public boolean processTurn(MarsGame game, Player player) {
-        List<Card> availableCards = player.getHand()
-                .getCards()
-                .stream()
-                .map(cardService::getCard)
-                .filter(card -> card.getColor() == CardColor.GREEN)
-                .filter(card -> aiCardValidationService.isValid(game, player, card))
-                .collect(Collectors.toList());
+        List<Card> availableCards = aiBuildProjectService.getAvailableCardsToBuild(game, player);
 
         if (availableCards.isEmpty()) {
             aiTurnService.skipTurn(player);
@@ -78,7 +65,7 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
 
 
             if (player.getDifficulty().BUILD == AiTurnChoice.NETWORK) {
-                final BuildProjectPrediction bestProjectToBuild = aiBuildProjectService.getBestProjectToBuild(game, player, Phase.FIRST, ProjectionStrategy.FROM_PHASE);
+                final BuildProjectPrediction bestProjectToBuild = aiBuildProjectService.getBestProjectToBuild(game, player, null, ProjectionStrategy.FROM_PHASE);
 
                 if (bestProjectToBuild.isCanBuild()) {
                     selectedCard = bestProjectToBuild.getCard();

@@ -43,6 +43,7 @@ public class MarsGame {
     private List<Milestone> milestones;
     private boolean hasAi;
     private List<Expansion> expansions;
+    @Setter
     private boolean dummyHandMode;
     private List<Integer> dummyHand;
     private List<Integer> usedDummyHand = new ArrayList<>();

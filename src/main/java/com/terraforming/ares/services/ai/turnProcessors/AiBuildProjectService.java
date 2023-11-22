@@ -81,6 +81,11 @@ public class AiBuildProjectService extends BaseProcessorService {
             return BuildProjectPrediction.builder().canBuild(false).build();
         }
 
+        BuildProjectPrediction bestFutureProjectInSecondPhase =
+                (player.getChosenPhase() == 2 && game.getCurrentPhase() == 1)
+                        ? getBestProjectToBuild(game, player, Phase.SECOND, ProjectionStrategy.FROM_PICK_PHASE)
+                        : BuildProjectPrediction.builder().build();
+
         Card bestCard = null;
         float bestChance = deepNetwork.testState(game, player);
 
@@ -94,6 +99,19 @@ public class AiBuildProjectService extends BaseProcessorService {
             if (projectedChance > bestChance) {
                 bestChance = projectedChance;
                 bestCard = playableCard;
+            }
+        }
+
+        if (bestCard != null && bestFutureProjectInSecondPhase.isCanBuild()) {
+            MarsGame stateAfterPlayingBestCard = assumeProjectIsBuilt(game, player, bestCard);
+
+            BuildProjectPrediction bestBuildFirstPlusSecondPhase = getBestProjectToBuild(stateAfterPlayingBestCard, stateAfterPlayingBestCard.getPlayerByUuid(player.getUuid()), Phase.SECOND, ProjectionStrategy.FROM_PICK_PHASE);
+
+            if (!bestBuildFirstPlusSecondPhase.isCanBuild() && bestFutureProjectInSecondPhase.getExpectedValue() > bestChance) {
+                if (LOG_NET_COMPARISON) {
+                    System.out.println("Skipping " + bestCard + " to be able to build " + bestFutureProjectInSecondPhase.getCard());
+                }
+                bestCard = null;
             }
         }
 
@@ -111,6 +129,7 @@ public class AiBuildProjectService extends BaseProcessorService {
             }
         }
 
+
         if (bestCard == null) {
             return BuildProjectPrediction.builder().canBuild(false).build();
         } else {
@@ -119,7 +138,7 @@ public class AiBuildProjectService extends BaseProcessorService {
     }
 
 
-    private List<Card> getAvailableCardsToBuild(MarsGame game, Player player) {
+    public List<Card> getAvailableCardsToBuild(MarsGame game, Player player) {
         boolean canBuildGreen = player.canBuildGreen();
         boolean canBuildBlueRed = player.canBuildBlueRed();
 
@@ -216,13 +235,15 @@ public class AiBuildProjectService extends BaseProcessorService {
     //new method
     private void projectPhasePick(MarsGame game, Player player, Phase phase, ProjectionStrategy projectionStrategy) {
         if (projectionStrategy == ProjectionStrategy.FROM_PICK_PHASE) {
+            game.setDummyHandMode(false);
+
             final MarsContext context = contextProvider.provide(game, player);
 
             player.setPreviousChosenPhase(null);
             getAnotherPlayer(game, player).setPreviousChosenPhase(null);
             game.setStateType(StateType.PICK_PHASE, context);
             game.getPlayerUuidToPlayer().values().stream().filter(p -> !p.getUuid().equals(player.getUuid())).forEach(
-                    anotherPlayer -> aiTurnService.choosePhaseTurn(anotherPlayer, phase == Phase.FIRST ? 2 : 1)
+                    anotherPlayer -> aiTurnService.choosePhaseTurn(anotherPlayer, COLLECT_INCOME_PHASE)
             );
             aiTurnService.choosePhaseTurn(player, phase == Phase.FIRST ? 1 : 2);
             while (processFinalTurns(game)) {

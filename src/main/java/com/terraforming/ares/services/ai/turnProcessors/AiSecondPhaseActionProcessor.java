@@ -54,18 +54,13 @@ public class AiSecondPhaseActionProcessor {
             availableTurnFlow.addScenarioToFlow(BestTurnType.EXTRA_CARD);
         }
 
-        if (possibleTurns.contains(TurnType.BUILD_BLUE_RED_PROJECT)) {
-            List<Card> availableCards = player.getHand()
-                    .getCards()
-                    .stream()
-                    .map(cardService::getCard)
-                    .filter(card -> card.getColor() == CardColor.BLUE || card.getColor() == CardColor.RED || possibleTurns.contains(TurnType.BUILD_GREEN_PROJECT) && card.getColor() == CardColor.GREEN)
-                    .filter(card -> aiCardValidationService.isValid(game, player, card))
-                    .collect(Collectors.toList());
+        if (!player.cantBuildAnything()) {
+            Card selectedCard = null;
 
-            if (!availableCards.isEmpty()) {
+            {//log random or smart
+                List<Card> availableCards = aiBuildProjectService.getAvailableCardsToBuild(game, player);
 
-                Card selectedCard = (player.getDifficulty().BUILD == AiTurnChoice.RANDOM)
+                selectedCard = (player.getDifficulty().BUILD == AiTurnChoice.RANDOM)
                         ? availableCards.get(random.nextInt(availableCards.size()))
                         : cardValueService.getBestCardToBuild(game, player, availableCards, game.getTurns(), true);
 
@@ -73,24 +68,25 @@ public class AiSecondPhaseActionProcessor {
                     System.out.println("Available cards: " + availableCards.stream().map(Card::getClass).map(Class::getSimpleName).collect(Collectors.joining(",")));
                     System.out.println("Chosen card with % " + (selectedCard != null ? selectedCard.getClass().getSimpleName() : null));
                 }
+            }
 
-                if (player.getDifficulty().BUILD == AiTurnChoice.NETWORK) {
-                    final BuildProjectPrediction bestProjectToBuild = aiBuildProjectService.getBestProjectToBuild(game, player, Phase.SECOND, ProjectionStrategy.FROM_PHASE);
+            if (player.getDifficulty().BUILD == AiTurnChoice.NETWORK) {
+                final BuildProjectPrediction bestProjectToBuild = aiBuildProjectService.getBestProjectToBuild(game, player, null, ProjectionStrategy.FROM_PHASE);
 
-                    logComputerCardSelection(bestProjectToBuild, game, player);
+                logComputerCardSelection(bestProjectToBuild, game, player);
 
-                    if (bestProjectToBuild.isCanBuild()) {
-                        selectedCard = bestProjectToBuild.getCard();
-                    } else {
-                        selectedCard = null;
-                    }
-                }
-
-                if (selectedCard != null) {
-                    availableTurnFlow.addScenarioToFlow(BestTurnType.PROJECT, selectedCard);
+                if (bestProjectToBuild.isCanBuild()) {
+                    selectedCard = bestProjectToBuild.getCard();
+                } else {
+                    selectedCard = null;
                 }
             }
+
+            if (selectedCard != null) {
+                availableTurnFlow.addScenarioToFlow(BestTurnType.PROJECT, selectedCard);
+            }
         }
+
 
         if (availableTurnFlow.getBestTurnType() == BestTurnType.SKIP) {
             aiTurnService.skipTurn(player);
