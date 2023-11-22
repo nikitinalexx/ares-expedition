@@ -3,7 +3,6 @@ package com.terraforming.ares.services.ai.turnProcessors;
 import com.terraforming.ares.dataset.DatasetCollectionService;
 import com.terraforming.ares.dataset.MarsGameRow;
 import com.terraforming.ares.dataset.MarsPlayerRow;
-import com.terraforming.ares.dto.GameWithState;
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
@@ -121,10 +120,16 @@ public class AiBuildProjectService extends BaseProcessorService {
 
 
     private List<Card> getAvailableCardsToBuild(MarsGame game, Player player) {
+        boolean canBuildGreen = player.getBuilds().stream().anyMatch(build -> build.getType().isGreen());
+        boolean canBuildBlueRed = player.getBuilds().stream().anyMatch(build -> build.getType().isBlueRed());
+
         return player.getHand()
                 .getCards()
                 .stream()
                 .map(cardService::getCard)
+                .filter(card -> canBuildGreen && card.getColor() == CardColor.GREEN ||
+                        canBuildBlueRed && (card.getColor() == CardColor.BLUE || card.getColor() == CardColor.RED)
+                )
                 .filter(card -> aiCardValidationService.isValid(game, player, card))
                 .collect(Collectors.toList());
     }

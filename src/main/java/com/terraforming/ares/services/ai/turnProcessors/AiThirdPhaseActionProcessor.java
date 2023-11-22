@@ -69,23 +69,54 @@ public class AiThirdPhaseActionProcessor {
                 aiTurnService.sellAllCards(player, game, player.getHand().getCards());
                 return true;
             } else {
-                StandardProjectType type = null;
-                float bestState = -1;
-
-                for (StandardProjectType standardProjectType : List.of(StandardProjectType.FOREST, StandardProjectType.OCEAN, StandardProjectType.TEMPERATURE)) {
-                    String validationResult = standardProjectService.validateStandardProject(game, player, standardProjectType);
-                    if (validationResult == null) {
-                        float projectedChance = testAiService.projectPlayStandardAction(game, player.getUuid(), standardProjectType);
-                        if (projectedChance > bestState) {
-                            type = standardProjectType;
-                            bestState = projectedChance;
+                switch (player.getDifficulty().THIRD_PHASE_ACTION) {
+                    case RANDOM:
+                    case SMART: {
+                        if (!game.getPlanetAtTheStartOfThePhase().isOxygenMax()) {
+                            String validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.FOREST);
+                            if (validationResult == null) {
+                                aiTurnService.standardProjectTurn(game, player, StandardProjectType.FOREST);
+                                return true;
+                            }
+                        }
+                        String validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.OCEAN);
+                        if (validationResult == null) {
+                            aiTurnService.standardProjectTurn(game, player, StandardProjectType.OCEAN);
+                            return true;
+                        }
+                        validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.TEMPERATURE);
+                        if (validationResult == null) {
+                            aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
+                            return true;
+                        }
+                        validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.FOREST);
+                        if (validationResult == null) {
+                            aiTurnService.standardProjectTurn(game, player, StandardProjectType.FOREST);
+                            return true;
                         }
                     }
-                }
+                    break;
+                    case NETWORK: {
+                        StandardProjectType type = null;
+                        float bestState = -1;
 
-                if (type != null) {
-                    aiTurnService.standardProjectTurn(game, player, type);
-                    return true;
+                        for (StandardProjectType standardProjectType : List.of(StandardProjectType.FOREST, StandardProjectType.OCEAN, StandardProjectType.TEMPERATURE)) {
+                            String validationResult = standardProjectService.validateStandardProject(game, player, standardProjectType);
+                            if (validationResult == null) {
+                                float projectedChance = testAiService.projectPlayStandardAction(game, player.getUuid(), standardProjectType);
+                                if (projectedChance > bestState) {
+                                    type = standardProjectType;
+                                    bestState = projectedChance;
+                                }
+                            }
+                        }
+
+                        if (type != null) {
+                            aiTurnService.standardProjectTurn(game, player, type);
+                            return true;
+                        }
+                    }
+                    break;
                 }
             }
 

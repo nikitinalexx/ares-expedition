@@ -222,14 +222,14 @@ public class CardService {
     }
 
     public List<Tag> getCardTags(Card card, Map<Integer, List<Integer>> input) {
-        List<Tag> result = new ArrayList<>();
+        List<Tag> result = new ArrayList<>(card.getTags());
 
         if (input != null && input.containsKey(InputFlag.TAG_INPUT.getId())) {
             List<Integer> tagInput = input.get(InputFlag.TAG_INPUT.getId());
+            result.remove(Tag.DYNAMIC);
             result.add(Tag.byIndex(tagInput.get(0)));
         }
 
-        result.addAll(card.getTags());
         return result;
     }
 

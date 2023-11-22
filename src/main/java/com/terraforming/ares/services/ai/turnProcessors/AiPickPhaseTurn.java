@@ -32,9 +32,6 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
     private final AiTurnService aiTurnService;
     private final CardService cardService;
     private final AiCardActionHelper aiCardActionHelper;
-    private final CardValidationService cardValidationService;
-    private final AiPaymentService aiPaymentHelper;
-    private final AiCardBuildParamsService aiCardParamsHelper;
     private final SpecialEffectsService specialEffectsService;
     private final DraftCardsService draftCardsService;
     private final ICardValueService cardValueService;
