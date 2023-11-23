@@ -210,10 +210,10 @@ public class GameController {
                 List<String> fileNames = new ArrayList<>();
 
                 for (int threadIndex = 0; threadIndex < threads; threadIndex++) {
-                    fileNames.add("dataset_" + Constants.SIMULATION_PLAYERS.stream().map(PlayerDifficulty::toString).collect(Collectors.joining()) + "_" + request.getFileIndex() + "_" + threadIndex + ".csv");
+                    fileNames.add("dataset_" + Constants.SIMULATION_PLAYERS.stream().map(PlayerDifficulty::toString).collect(Collectors.joining("_")) + "_" + request.getFileIndex() + "_" + threadIndex + ".csv");
                 }
 
-                combineAndDelete(fileNames, "dataset_" + Constants.SIMULATION_PLAYERS.stream().map(PlayerDifficulty::toString).collect(Collectors.joining()) + "_" + request.getFileIndex() + ".csv");
+                combineAndDelete(fileNames, "dataset_" + Constants.SIMULATION_PLAYERS.stream().map(PlayerDifficulty::toString).collect(Collectors.joining("_")) + "_" + request.getFileIndex() + ".csv");
             }
 
 
@@ -436,7 +436,7 @@ public class GameController {
     }
 
     private synchronized void saveDatasets(List<MarsGameDataset> marsGameDatasets, int index, int threadIndex) throws FileNotFoundException {
-        File csvOutputFile = new File("dataset_" + Constants.SIMULATION_PLAYERS.stream().map(PlayerDifficulty::toString).collect(Collectors.joining()) + "_" + index + "_" + threadIndex + ".csv");
+        File csvOutputFile = new File("dataset_" + Constants.SIMULATION_PLAYERS.stream().map(PlayerDifficulty::toString).collect(Collectors.joining("_")) + "_" + index + "_" + threadIndex + ".csv");
         try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
             for (MarsGameDataset dataset : marsGameDatasets) {
                 writeMarsGameRows(dataset.getFirstPlayerRows(), pw);
