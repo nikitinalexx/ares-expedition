@@ -25,6 +25,13 @@ public enum PlayerDifficulty {
             AiTurnChoice.NETWORK,
             AiTurnChoice.NETWORK,
             AiTurnChoice.NETWORK
+    ),
+    NETWORK_2(
+            AiCardsChoice.FILE_VALUE,
+            AiTurnChoice.NETWORK,
+            AiTurnChoice.NETWORK,
+            AiTurnChoice.NETWORK,
+            AiTurnChoice.NETWORK
     );
     public final AiCardsChoice CARDS_PICK;
     public final AiTurnChoice PICK_PHASE;
