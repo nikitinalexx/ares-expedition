@@ -190,7 +190,7 @@ public class TestAiService {
         int cardsToTake = draftCardsService.countExtraCardsToTake(player);
         int cardsToDraft = draftCardsService.countExtraCardsToDraft(player);
 
-        return (initialCardsToTake + cardsToTake) + (initialCardsToDraft + cardsToDraft) * 0.33f;
+        return (initialCardsToTake + cardsToTake) + (initialCardsToDraft + cardsToDraft) * 0.45f;
     }
 
     private void addCardIncome(Player player, MarsPlayerRow marsPlayerRow) {

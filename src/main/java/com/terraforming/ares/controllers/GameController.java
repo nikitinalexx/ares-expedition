@@ -91,7 +91,7 @@ public class GameController {
                 throw new IllegalArgumentException("Only names of length 10 or below are supported");
             }
 
-            if(gameParameters.getPlayerNames().stream().distinct().count() != gameParameters.getPlayerNames().size()){
+            if (gameParameters.getPlayerNames().stream().distinct().count() != gameParameters.getPlayerNames().size()) {
                 throw new IllegalArgumentException("Nicknames must be unique");
             }
 
@@ -210,10 +210,10 @@ public class GameController {
                 List<String> fileNames = new ArrayList<>();
 
                 for (int threadIndex = 0; threadIndex < threads; threadIndex++) {
-                    fileNames.add("dataset_" + request.getFileIndex() + "_" + threadIndex + ".csv");
+                    fileNames.add("dataset_" + Constants.SIMULATION_PLAYERS.stream().map(PlayerDifficulty::toString).collect(Collectors.joining()) + "_" + request.getFileIndex() + "_" + threadIndex + ".csv");
                 }
 
-                combineAndDelete(fileNames, "dataset_" + request.getFileIndex() + ".csv");
+                combineAndDelete(fileNames, "dataset_" + Constants.SIMULATION_PLAYERS.stream().map(PlayerDifficulty::toString).collect(Collectors.joining()) + "_" + request.getFileIndex() + ".csv");
             }
 
 
@@ -436,7 +436,7 @@ public class GameController {
     }
 
     private synchronized void saveDatasets(List<MarsGameDataset> marsGameDatasets, int index, int threadIndex) throws FileNotFoundException {
-        File csvOutputFile = new File("dataset_" + index + "_" + threadIndex + ".csv");
+        File csvOutputFile = new File("dataset_" + Constants.SIMULATION_PLAYERS.stream().map(PlayerDifficulty::toString).collect(Collectors.joining()) + "_" + index + "_" + threadIndex + ".csv");
         try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
             for (MarsGameDataset dataset : marsGameDatasets) {
                 writeMarsGameRows(dataset.getFirstPlayerRows(), pw);
@@ -636,8 +636,8 @@ public class GameController {
 
     @GetMapping("/crisis/records")
     public CrisisRecordsDto findTopTwentyRecords(@RequestParam int playerCount, @RequestParam int difficultyLevel) {
-        List<CrisisRecordEntity> crisisRecordEntityByTurns = crisisRecordEntityRepository.findTopTwentyRecordsByTurns(playerCount,difficultyLevel);
-        List<CrisisRecordEntity> crisisRecordEntityByPoints = crisisRecordEntityRepository.findTopTwentyRecordsByPoints(playerCount,difficultyLevel);
+        List<CrisisRecordEntity> crisisRecordEntityByTurns = crisisRecordEntityRepository.findTopTwentyRecordsByTurns(playerCount, difficultyLevel);
+        List<CrisisRecordEntity> crisisRecordEntityByPoints = crisisRecordEntityRepository.findTopTwentyRecordsByPoints(playerCount, difficultyLevel);
 
         return new CrisisRecordsDto(crisisRecordEntityByPoints, crisisRecordEntityByTurns);
     }
