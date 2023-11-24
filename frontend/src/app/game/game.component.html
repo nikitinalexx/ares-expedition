@@ -304,8 +304,10 @@
 
     <div class="player-info another-player-info" [ngClass]="otherPlayerBackgroundClass(i)"
          style="height: 80px; --bs-bg-opacity: .7;">
-      <div class="text-white"
-           style="width: 22px; height: 50px; word-wrap: break-word; font-size: 12px;">{{player.name}}</div>
+
+      <div *ngIf="!game.aiComputer" class="text-white" style="width: 22px; height: 50px; word-wrap: break-word; font-size: 12px;">{{player.name}}</div>
+      <div *ngIf="game.aiComputer" class="text-white" style="width: 50px; margin-left: 2px; text-align: center; font-size: 18px;">Win {{game.winProbability}} <br/>%</div>
+
       <div class="resource_item">
         <div class="resource_item_stock"><em class="resource_icon resource_icon--megacredits"></em>
           <div class="resource_item_stock_count">{{player?.mc}}</div>

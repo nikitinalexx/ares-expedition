@@ -30,7 +30,7 @@ public class AiPickCardProjectionService {
     private final SpecialEffectsService specialEffectsService;
 
     public CardValueResponse getWorstCard(MarsGame game, Player player, List<Integer> cards) {
-        double worstCardValue = Float.MAX_VALUE;
+        double worstAdditionalValue = Float.MAX_VALUE;
         int worstCardIndex = 0;
 
         float initialChance = deepNetwork.testState(game, player);
@@ -40,14 +40,14 @@ public class AiPickCardProjectionService {
             Player tempPlayer = tempGame.getPlayerByUuid(player.getUuid());
 
             float additionalCardValue = cardExtraChanceIfBuilt(tempGame, tempPlayer, cards.get(i), initialChance);
-            if (additionalCardValue < worstCardValue) {
-                worstCardValue = additionalCardValue;
+            if (additionalCardValue < worstAdditionalValue) {
+                worstAdditionalValue = additionalCardValue;
                 worstCardIndex = i;
             }
         }
 
 
-        return CardValueResponse.of(cards.get(worstCardIndex), worstCardValue);
+        return CardValueResponse.of(cards.get(worstCardIndex), worstAdditionalValue);
     }
 
     public CardValueResponse getBestCard(MarsGame game, Player player, List<Integer> cardsToDiscard) {
@@ -91,34 +91,26 @@ public class AiPickCardProjectionService {
 
         float extraChanceModifier = 1;
 
-        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
+        if (!CollectionUtils.isEmpty(card.getTemperatureRequirement())) {
+            extraChanceModifier = getChanceReductionBasedOnRequirement(game.getPlanet(), player, GlobalParameter.TEMPERATURE, card.getTemperatureRequirement());
+        } else if (!CollectionUtils.isEmpty(card.getOxygenRequirement())) {
+            extraChanceModifier = getChanceReductionBasedOnRequirement(game.getPlanet(), player, GlobalParameter.OXYGEN, card.getOxygenRequirement());
+        } else if (card.getOceanRequirement() != null) {
+            OceanRequirement oceanRequirement = card.getOceanRequirement();
 
-            if (!CollectionUtils.isEmpty(card.getTemperatureRequirement())) {
-                extraChanceModifier = getChanceReductionBasedOnRequirement(game.getPlanet(), player, GlobalParameter.TEMPERATURE, card.getTemperatureRequirement());
-            } else if (!CollectionUtils.isEmpty(card.getOxygenRequirement())) {
-                extraChanceModifier = getChanceReductionBasedOnRequirement(game.getPlanet(), player, GlobalParameter.OXYGEN, card.getOxygenRequirement());
-            } else if (card.getOceanRequirement() != null) {
-                OceanRequirement oceanRequirement = card.getOceanRequirement();
+            int revealedOceansCount = game.getPlanet().getRevealedOceans().size();
 
-                int revealedOceansCount = game.getPlanet().getRevealedOceans().size();
-
-                if (revealedOceansCount < oceanRequirement.getMinValue()) {
-                    extraChanceModifier = (float) revealedOceansCount / game.getPlanet().getOceans().size();
-                } else if (revealedOceansCount > oceanRequirement.getMaxValue()){
-                    extraChanceModifier = 0;
-                }
+            if (revealedOceansCount < oceanRequirement.getMinValue()) {
+                extraChanceModifier = (float) revealedOceansCount / game.getPlanet().getOceans().size();
+            } else if (revealedOceansCount > oceanRequirement.getMaxValue()){
+                extraChanceModifier = 0;
             }
+        }
 
-            if (card.getClass() == AdvancedEcosystems.class) {
-                int uniqueTagsPlayed = cardService.countUniquePlayedTags(player, Set.of(Tag.PLANT, Tag.MICROBE, Tag.ANIMAL));
+        if (card.getClass() == AdvancedEcosystems.class) {
+            int uniqueTagsPlayed = cardService.countUniquePlayedTags(player, Set.of(Tag.PLANT, Tag.MICROBE, Tag.ANIMAL));
 
-                extraChanceModifier = (float) uniqueTagsPlayed / 3;
-            }
-
-        } else {
-            if (!CollectionUtils.isEmpty(card.getTemperatureRequirement()) && card.getTemperatureRequirement().get(0) == ParameterColor.W && !game.getPlanetAtTheStartOfThePhase().isValidTemperatute(List.of(ParameterColor.Y, ParameterColor.W))) {
-                return -1;
-            }
+            extraChanceModifier = (float) uniqueTagsPlayed / 3;
         }
 
         //TODO projection is only checking a single build. what if checking this + one more card from hand will give better results?

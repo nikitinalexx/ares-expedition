@@ -584,6 +584,17 @@ public class GameController {
     public GameDto getGameByPlayerUuid(@PathVariable String playerUuid) {
         MarsGame game = gameService.getGame(playerUuid);
 
+        long aiComputerCount = game.getPlayerUuidToPlayer().values().stream().filter(player -> player.getDifficulty() != PlayerDifficulty.NONE && player.getDifficulty() != PlayerDifficulty.RANDOM && player.getDifficulty() != PlayerDifficulty.SMART).count();
+        Player aiComputer;
+
+        if (aiComputerCount == game.getPlayerUuidToPlayer().size()) {
+            aiComputer = game.getPlayerByUuid(playerUuid);
+        } else {
+            aiComputer =  game.getPlayerUuidToPlayer().values().stream().filter(player -> player.getDifficulty() != PlayerDifficulty.NONE && player.getDifficulty() != PlayerDifficulty.RANDOM && player.getDifficulty() != PlayerDifficulty.SMART).findFirst().orElseThrow();
+        }
+
+        float winProbability = deepNetwork.testState(game, aiComputer);
+
         Planet phasePlanet = game.getPlanetAtTheStartOfThePhase();
 
         final CrysisData crysisData = game.getCrysisData();
@@ -606,6 +617,8 @@ public class GameController {
                 .milestones(game.getMilestones().stream().map(MilestoneDto::from).collect(Collectors.toList()))
                 .crysisDto(buildCrysisDto(crysisData))
                 .stateReason(game.getStateReason())
+                .aiComputer(aiComputerCount > 0)
+                .winProbability(aiComputerCount > 0 ? (int) (winProbability * 100) : 0)
                 .build();
     }
 

@@ -20,6 +20,8 @@ export class Game {
               dummyHandMode: boolean,
               usedDummyHand: number[],
               stateReason: string,
+              aiComputer: boolean,
+              winProbability: number,
               phaseTemperature?: number,
               phaseOxygen?: number,
               phaseOceans?: number,
@@ -45,4 +47,6 @@ export class Game {
   phaseOxygen?: number;
   phaseOceans?: number;
   crysisDto?: CrysisDto;
+  aiComputer: boolean;
+  winProbability: number;
 }
