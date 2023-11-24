@@ -124,7 +124,7 @@ public class AiPickCardProjectionService {
 
         float projectedChance = deepNetwork.testState(stateAfterPlayingTheCard, stateAfterPlayingTheCard.getPlayerByUuid(player.getUuid()));
 
-        return extraChanceModifier * (projectedChance - initialChance);
+        return (projectedChance - initialChance) < 0 ? (projectedChance - initialChance) : extraChanceModifier * (projectedChance - initialChance);
     }
 
     private float getChanceReductionBasedOnRequirement(Planet planet, Player player, GlobalParameter parameter, List<ParameterColor> requirement) {
