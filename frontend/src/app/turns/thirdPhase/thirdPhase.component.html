@@ -308,8 +308,9 @@
   </div>
 
   <div *ngIf="sellCardsTurn()" class="form-check">
-    <app-sell-cards [game]="game" [parentForm]="parentForm"></app-sell-cards>
+    <app-sell-cards [game]="game" [parentForm]="parentForm" [lastTurn] = "confirmGameEndTurn()"></app-sell-cards>
   </div>
+
 
   <div *ngIf="unmiRtTurn()" class="form-check">
     <input id="unmiRtTurn" (click)="resetAllInputs()" type="radio" class="form-check-input" value="unmiRaiseRt"
