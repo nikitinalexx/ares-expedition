@@ -1,13 +1,10 @@
 package com.terraforming.ares.services.ai.turnProcessors;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Card;
-import com.terraforming.ares.model.Constants;
-import com.terraforming.ares.model.MarsContext;
-import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.ai.AiExperimentalTurn;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.processors.turn.PickCorporationProcessor;
+import com.terraforming.ares.services.CardFactory;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.MarsContextProvider;
 import com.terraforming.ares.services.ai.*;
@@ -99,7 +96,7 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
                     for (int i = 0; i < cardsByChance.size(); i++) {
                         float chance = cardToChance.get(cardsByChance.get(i));
 
-                        if (chance < 0.05f) {
+                        if (chance < 0.03f) {
                             badCards.add(cardsByChance.get(i));
                         } else {
                             break;

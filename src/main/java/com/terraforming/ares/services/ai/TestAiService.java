@@ -5,10 +5,7 @@ import com.terraforming.ares.dataset.MarsPlayerRow;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.dataset.MarsGameRow;
 import com.terraforming.ares.model.*;
-import com.terraforming.ares.services.CardService;
-import com.terraforming.ares.services.DraftCardsService;
-import com.terraforming.ares.services.StandardProjectService;
-import com.terraforming.ares.services.WinPointsService;
+import com.terraforming.ares.services.*;
 import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.turnProcessors.AiBuildProjectService;
 import com.terraforming.ares.services.ai.turnProcessors.AiTurnService;
@@ -30,6 +27,8 @@ public class TestAiService {
     private final DraftCardsService draftCardsService;
     private final AiCollectIncomePhaseService  aiCollectIncomePhaseService;
     private final CardService cardService;
+    private final MarsContextProvider marsContextProvider;
+    private final AiDiscoveryDecisionService aiDiscoveryDecisionService;
 
 
     public BuildProjectPrediction getBestCardToBuild(MarsGame game, Player player, Set<CardColor> colors) {
@@ -203,6 +202,36 @@ public class TestAiService {
         player.setMc(player.getMc() + player.getMcIncome() + player.getTerraformingRating());
         player.setHeat(player.getHeat() + player.getHeatIncome());
         player.setPlants(player.getPlants() + player.getPlantsIncome());
+    }
+
+    public MarsGame projectPlayerBuildCorporationExperiment(MarsGame game, Player player, int selectedCorporationId) {
+        game = new MarsGame(game);
+        player = game.getPlayerByUuid(player.getUuid());
+
+        player.setSelectedCorporationCard(selectedCorporationId);
+        player.setMulligan(false);
+        player.getPlayed().addCard(selectedCorporationId);
+
+        Card card = cardService.getCard(selectedCorporationId);
+        final MarsContext marsContext = marsContextProvider.provide(game, player);
+        card.buildProject(marsContext);
+        if (card.onBuiltEffectApplicableToItself()) {
+            card.postProjectBuiltEffect(marsContext, card, aiDiscoveryDecisionService.getCorporationInput(game, player, card.getCardMetadata().getCardAction()));
+        }
+
+        return game;
+    }
+
+    public MarsGame projectOpponentCorporationBuildExperiment(MarsGame game, Player currentPlayer) {
+        game = new MarsGame(game);
+        game.getPlayerUuidToPlayer().values().stream().filter(player -> !player.getUuid().equals(currentPlayer.getUuid())).forEach(
+                opponent -> {
+                    opponent.setMulligan(false);
+                    opponent.setSelectedCorporationCard(opponent.getCorporations().size());
+                    opponent.setMc(50);
+                }
+        );
+        return game;
     }
 
 

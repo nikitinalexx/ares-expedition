@@ -6,6 +6,7 @@ import com.terraforming.ares.dataset.MarsGameRow;
 import com.terraforming.ares.dto.*;
 import com.terraforming.ares.entity.CrisisRecordEntity;
 import com.terraforming.ares.entity.SoloRecordEntity;
+import com.terraforming.ares.factories.GameFactory;
 import com.terraforming.ares.mars.CrysisData;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
@@ -16,8 +17,8 @@ import com.terraforming.ares.repositories.caching.CachingGameRepository;
 import com.terraforming.ares.repositories.crudRepositories.CrisisRecordEntityRepository;
 import com.terraforming.ares.repositories.crudRepositories.SoloRecordEntityRepository;
 import com.terraforming.ares.services.*;
-import com.terraforming.ares.services.ai.AiBalanceService;
-import com.terraforming.ares.services.ai.DeepNetwork;
+import com.terraforming.ares.services.ai.*;
+import com.terraforming.ares.services.ai.turnProcessors.AiMulliganCardsTurn;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.CollectionUtils;
@@ -59,6 +60,12 @@ public class GameController {
     private final SoloRecordEntityRepository soloRecordEntityRepository;
     private final DeepNetwork deepNetwork;
     private final DatasetCollectionService datasetCollectionService;
+    private final GameFactory gameFactory;
+    private final AiMulliganCardsTurn aiMulliganCardsTurn;
+    private final MarsContextProvider marsContextProvider;
+    private final AiDiscoveryDecisionService aiDiscoveryDecisionService;
+    private final AiPickCardProjectionService aiPickCardProjectionService;
+    private final TestAiService testAiService;
 
     @PostMapping("/state/test/{networkNumber}")
     public float testGameState(@RequestBody MarsGameRow row, @PathVariable int networkNumber) {
@@ -251,6 +258,71 @@ public class GameController {
         writer.close();
     }
 
+    @GetMapping("/mulligan/calibrate")
+    public void calibrateMulligan() {
+        Random random = new Random();
+        GameParameters.GameParametersBuilder builder = GameParameters.builder();
+        if (Constants.DISCOVERY_SIMULATIONS) {
+            builder.expansion(Expansion.DISCOVERY);
+        }
+
+        List<String> playerNames = new ArrayList<>();
+        for (PlayerDifficulty simulationPlayer : Constants.SIMULATION_PLAYERS) {
+            playerNames.add(simulationPlayer.name());
+        }
+
+        GameParameters gameParameters = builder
+                .playerNames(playerNames)
+                .computers(Constants.SIMULATION_PLAYERS)
+                .mulligan(true)
+                .expansion(Expansion.BASE)
+                .expansion(Expansion.BUFFED_CORPORATION)
+                .dummyHand(true)
+                .build();
+
+        double total = 0;
+
+        for (int j = 0; j < 10000; j++) {
+            MarsGame marsGame = gameFactory.createMarsGame(gameParameters);
+
+            List<Player> players = new ArrayList<>(marsGame.getPlayerUuidToPlayer().values());
+
+            Player player = players.get(random.nextInt(players.size()));
+            aiMulliganCardsTurn.processTurn(marsGame, player);
+
+
+            MarsGame gameAfterOpponentPlay = testAiService.projectOpponentCorporationBuildExperiment(marsGame, player);
+
+            LinkedList<Integer> cards = player.getHand().getCards();
+
+            float bestTotalExtra = 0;
+
+            for (Integer corporation : player.getCorporations().getCards()) {
+                MarsGame projectionAfterCorporation = testAiService.projectPlayerBuildCorporationExperiment(gameAfterOpponentPlay, player, corporation);
+
+                float initialChance = deepNetwork.testState(projectionAfterCorporation, projectionAfterCorporation.getPlayerByUuid(player.getUuid()));
+
+                float totalExtra = 0;
+
+                for (int i = 0; i < cards.size(); i++) {
+                    MarsGame gameCopy = new MarsGame(projectionAfterCorporation);
+                    totalExtra += aiPickCardProjectionService.cardExtraChanceIfBuilt(gameCopy, gameCopy.getPlayerByUuid(player.getUuid()), cards.get(i), initialChance);
+                }
+
+                if (totalExtra > bestTotalExtra) {
+                    bestTotalExtra = totalExtra;
+                }
+
+//                System.out.println(cardService.getCard(corporation).getClass().getSimpleName() + " " + (initialChance + totalExtra / cards.size()));
+
+            }
+
+            total += bestTotalExtra;
+//            System.out.println();
+        }
+
+        System.out.println(total);
+    }
 
     class WorkerThread implements Runnable {
         int simulationCount;
