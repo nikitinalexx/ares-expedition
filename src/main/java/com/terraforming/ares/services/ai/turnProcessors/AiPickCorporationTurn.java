@@ -36,7 +36,7 @@ public class AiPickCorporationTurn implements AiTurnProcessor {
         if (Constants.AI_CORP_RANDOM) {
             selectedCorporationId = corporations.get(random.nextInt(corporations.size()));
         } else {
-            selectedCorporationId = corporations.stream().min(Comparator.comparingInt(Constants.CORPORATION_PRIORITY::indexOf)).orElseThrow();
+//            selectedCorporationId = corporations.stream().min(Comparator.comparingInt(Constants.CORPORATION_PRIORITY::indexOf)).orElseThrow();
         }
         Card corporationCard = cardService.getCard(selectedCorporationId);
         CardAction corporationCardAction = corporationCard.getCardMetadata().getCardAction();

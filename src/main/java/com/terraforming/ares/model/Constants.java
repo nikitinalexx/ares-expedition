@@ -12,28 +12,6 @@ public class Constants {
     public static Map<Integer, Integer> FIRST_PLAYER_PHASES = new ConcurrentHashMap<>();
     public static Map<Integer, Integer> SECOND_PLAYER_PHASES = new ConcurrentHashMap<>();
 
-    //TODO update
-    public static final List<Integer> CORPORATION_PRIORITY = List.of(
-            10006, /* Tharsis */
-            10015, /* MayNi */
-            10104, 10011, /* Saturn */
-            10105, 10012, /* Zetacell */
-            10102, 10009, /* Phobolog */
-            10017, /* Interplanetary */
-            10003, /* LaunchStar */
-            10002, /* DevTechs */
-            10007, /* Credicor */
-            10005, /* Teractor */
-            10107, 10014, /* Inventrix */
-            10004, /* Thorgate */
-            10103, 10010, /* Mining */
-            10106, 10013, /* Ecoline */
-            10001, /* Celestior */
-            10101, 10008, /* Arclight */
-            10108, 10016, /* UNMI */
-            10100, 10000 /* Helion */
-    );
-
     public static final int CORPORATION_ID_OFFSET = 10000;
 
 
@@ -125,7 +103,7 @@ public class Constants {
     public static final List<PlayerDifficulty> SIMULATION_PLAYERS = List.of(PlayerDifficulty.NETWORK, PlayerDifficulty.NETWORK);
 
     public static final boolean AI_CORP_RANDOM = true;
-    public static final boolean COLLECT_DATASET = false;
+    public static final boolean COLLECT_DATASET = true;
     public static final boolean LOG_NET_COMPARISON = false;
 
     private Constants() {

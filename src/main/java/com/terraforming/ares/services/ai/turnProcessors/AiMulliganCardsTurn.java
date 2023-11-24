@@ -5,6 +5,7 @@ import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.ai.AiExperimentalTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.processors.turn.PickCorporationProcessor;
 import com.terraforming.ares.services.CardService;
@@ -75,49 +76,60 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
                 }
                 break;
             case NETWORK_PROJECTION:
-                MarsGame projectCorporationBuild = projectCorporationBuild(game);
+                MarsGame gameAfterOpponentPlay = projectOpponentCorporationBuildExperiment(game, player);
 
-                float initialChance = deepNetwork.testState(projectCorporationBuild, projectCorporationBuild.getPlayerByUuid(player.getUuid()));
+                Set<Integer> badCards = new HashSet<>();
 
-                Map<Integer, Float> cardToChance = new HashMap<>();
 
-                for (int i = 0; i < cards.size(); i++) {
-                    MarsGame gameCopy = new MarsGame(projectCorporationBuild);
-                    cardToChance.put(cards.get(i), aiPickCardProjectionService.cardExtraChanceIfBuilt(gameCopy, gameCopy.getPlayerByUuid(player.getUuid()), cards.get(i), initialChance));
-                }
+                for (Integer corporationId : player.getCorporations().getCards()) {
+                    MarsGame projectCorporationBuild = projectPlayerBuildCorporationExperiment(gameAfterOpponentPlay, player, corporationId);
 
-                List<Integer> cardsByChance = new ArrayList<>(cards);
-                cardsByChance.sort(Comparator.comparingDouble(cardToChance::get));
+                    float initialChance = deepNetwork.testState(projectCorporationBuild, projectCorporationBuild.getPlayerByUuid(player.getUuid()));
 
-                for (int i = 0; i < cardsByChance.size(); i++) {
-                    float chance = cardToChance.get(cardsByChance.get(i));
+                    Map<Integer, Float> cardToChance = new HashMap<>();
 
-                    if (chance < 0.01f) {
-                        cardsToDiscard.add(cardsByChance.get(i));
-                    } else {
-                        break;
+                    for (int i = 0; i < cards.size(); i++) {
+                        MarsGame gameCopy = new MarsGame(projectCorporationBuild);
+                        cardToChance.put(cards.get(i), aiPickCardProjectionService.cardExtraChanceIfBuilt(gameCopy, gameCopy.getPlayerByUuid(player.getUuid()), cards.get(i), initialChance));
+                    }
+
+                    List<Integer> cardsByChance = new ArrayList<>(cards);
+                    cardsByChance.sort(Comparator.comparingDouble(cardToChance::get));
+
+                    for (int i = 0; i < cardsByChance.size(); i++) {
+                        float chance = cardToChance.get(cardsByChance.get(i));
+
+                        if (chance < 0.05f) {
+                            badCards.add(cardsByChance.get(i));
+                        } else {
+                            break;
+                        }
                     }
                 }
+
+                cardsToDiscard.addAll(badCards);
                 break;
+
         }
 
         return cardsToDiscard;
     }
 
-    private MarsGame projectCorporationBuild(MarsGame game) {
+    public MarsGame projectOpponentCorporationBuildExperiment(MarsGame game, Player currentPlayer) {
         game = new MarsGame(game);
-
-        for (Player player : game.getPlayerUuidToPlayer().values()) {
-            projectPlayerBuildCorporation(game, player);
-        }
-
+        game.getPlayerUuidToPlayer().values().stream().filter(player -> !player.getUuid().equals(currentPlayer.getUuid())).forEach(
+                opponent -> {
+                    opponent.setMulligan(false);
+                    opponent.setSelectedCorporationCard(opponent.getCorporations().size());
+                    opponent.setMc(50);
+                }
+        );
         return game;
     }
 
-    private void projectPlayerBuildCorporation(MarsGame game, Player player) {
-        LinkedList<Integer> corporations = player.getCorporations().getCards();
-//        int selectedCorporationId = corporations.stream().min(Comparator.comparingInt(Constants.CORPORATION_PRIORITY::indexOf)).orElseThrow();
-        int selectedCorporationId = corporations.get(random.nextInt(corporations.size()));
+    private MarsGame projectPlayerBuildCorporationExperiment(MarsGame game, Player player, int selectedCorporationId) {
+        game = new MarsGame(game);
+        player = game.getPlayerByUuid(player.getUuid());
 
         player.setSelectedCorporationCard(selectedCorporationId);
         player.setMulligan(false);
@@ -129,6 +141,8 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
         if (card.onBuiltEffectApplicableToItself()) {
             card.postProjectBuiltEffect(marsContext, card, aiDiscoveryDecisionService.getCorporationInput(game, player, card.getCardMetadata().getCardAction()));
         }
+
+        return game;
     }
 
 }
