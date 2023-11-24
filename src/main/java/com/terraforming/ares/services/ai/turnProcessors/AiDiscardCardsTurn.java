@@ -60,7 +60,7 @@ public class AiDiscardCardsTurn implements AiTurnProcessor {
                     }
                     break;
                 case NETWORK_PROJECTION:
-                    bestCard = aiPickCardProjectionService.getBestCard(game, player, cardsToDiscard);
+                    bestCard = aiPickCardProjectionService.getBestCard(game, player, cardsToDiscard).getCardId();
                     break;
 
                 case RANDOM:

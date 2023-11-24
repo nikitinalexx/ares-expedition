@@ -122,7 +122,7 @@ public class Constants {
     public static final boolean SAVE_SIMULATION_GAMES_TO_DB = false;
 
 
-    public static final List<PlayerDifficulty> SIMULATION_PLAYERS = List.of(PlayerDifficulty.SMART, PlayerDifficulty.NETWORK_2);
+    public static final List<PlayerDifficulty> SIMULATION_PLAYERS = List.of(PlayerDifficulty.NETWORK, PlayerDifficulty.NETWORK);
 
     public static final boolean AI_CORP_RANDOM = true;
     public static final boolean COLLECT_DATASET = true;

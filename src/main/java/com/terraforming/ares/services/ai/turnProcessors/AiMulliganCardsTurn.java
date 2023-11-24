@@ -9,10 +9,7 @@ import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.processors.turn.PickCorporationProcessor;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.MarsContextProvider;
-import com.terraforming.ares.services.ai.AiBalanceService;
-import com.terraforming.ares.services.ai.AiDiscoveryDecisionService;
-import com.terraforming.ares.services.ai.AiPickCardProjectionService;
-import com.terraforming.ares.services.ai.ICardValueService;
+import com.terraforming.ares.services.ai.*;
 import com.terraforming.ares.services.ai.dto.CardValueResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -34,6 +31,7 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
     private final CardService cardService;
     private final AiDiscoveryDecisionService aiDiscoveryDecisionService;
     private final MarsContextProvider marsContextProvider;
+    private final DeepNetwork deepNetwork;
 
     private final Random random = new Random();
 
@@ -79,11 +77,13 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
             case NETWORK_PROJECTION:
                 MarsGame projectCorporationBuild = projectCorporationBuild(game);
 
+                float initialChance = deepNetwork.testState(projectCorporationBuild, projectCorporationBuild.getPlayerByUuid(player.getUuid()));
+
                 Map<Integer, Float> cardToChance = new HashMap<>();
 
                 for (int i = 0; i < cards.size(); i++) {
                     MarsGame gameCopy = new MarsGame(projectCorporationBuild);
-                    cardToChance.put(cards.get(i), aiPickCardProjectionService.cardExtraChanceIfBuilt(gameCopy, gameCopy.getPlayerByUuid(player.getUuid()), cards.get(i)));
+                    cardToChance.put(cards.get(i), aiPickCardProjectionService.cardExtraChanceIfBuilt(gameCopy, gameCopy.getPlayerByUuid(player.getUuid()), cards.get(i), initialChance));
                 }
 
                 List<Integer> cardsByChance = new ArrayList<>(cards);
@@ -116,7 +116,8 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
 
     private void projectPlayerBuildCorporation(MarsGame game, Player player) {
         LinkedList<Integer> corporations = player.getCorporations().getCards();
-        int selectedCorporationId = corporations.stream().min(Comparator.comparingInt(Constants.CORPORATION_PRIORITY::indexOf)).orElseThrow();
+//        int selectedCorporationId = corporations.stream().min(Comparator.comparingInt(Constants.CORPORATION_PRIORITY::indexOf)).orElseThrow();
+        int selectedCorporationId = corporations.get(random.nextInt(corporations.size()));
 
         player.setSelectedCorporationCard(selectedCorporationId);
         player.setMulligan(false);

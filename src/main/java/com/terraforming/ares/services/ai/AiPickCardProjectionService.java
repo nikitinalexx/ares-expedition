@@ -1,18 +1,24 @@
 package com.terraforming.ares.services.ai;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.cards.red.AdvancedEcosystems;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.ai.AiExperimentalTurn;
 import com.terraforming.ares.model.build.PutResourceOnBuild;
+import com.terraforming.ares.model.parameters.OceanRequirement;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.SpecialEffectsService;
 import com.terraforming.ares.services.ai.dto.CardValueResponse;
 import com.terraforming.ares.services.ai.turnProcessors.AiBuildProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -21,16 +27,19 @@ public class AiPickCardProjectionService {
     private final DeepNetwork deepNetwork;
     private final CardService cardService;
     private final AiBuildProjectService aiBuildProjectService;
+    private final SpecialEffectsService specialEffectsService;
 
     public CardValueResponse getWorstCard(MarsGame game, Player player, List<Integer> cards) {
         double worstCardValue = Float.MAX_VALUE;
         int worstCardIndex = 0;
 
+        float initialChance = deepNetwork.testState(game, player);
+
         for (int i = 0; i < cards.size(); i++) {
             MarsGame tempGame = new MarsGame(game);
             Player tempPlayer = tempGame.getPlayerByUuid(player.getUuid());
 
-            float additionalCardValue = cardExtraChanceIfBuilt(tempGame, tempPlayer, cards.get(i));
+            float additionalCardValue = cardExtraChanceIfBuilt(tempGame, tempPlayer, cards.get(i), initialChance);
             if (additionalCardValue < worstCardValue) {
                 worstCardValue = additionalCardValue;
                 worstCardIndex = i;
@@ -41,28 +50,28 @@ public class AiPickCardProjectionService {
         return CardValueResponse.of(cards.get(worstCardIndex), worstCardValue);
     }
 
-    public Integer getBestCard(MarsGame game, Player player, List<Integer> cardsToDiscard) {
+    public CardValueResponse getBestCard(MarsGame game, Player player, List<Integer> cardsToDiscard) {
         double bestCardValue = Float.MIN_VALUE;
         int bestCardIndex = 0;
+
+        float initialChance = deepNetwork.testState(game, player);
 
         for (int i = 0; i < cardsToDiscard.size(); i++) {
             MarsGame tempGame = new MarsGame(game);
             Player tempPlayer = tempGame.getPlayerByUuid(player.getUuid());
 
-            float additionalCardValue = cardExtraChanceIfBuilt(tempGame, tempPlayer, cardsToDiscard.get(i));
+            float additionalCardValue = cardExtraChanceIfBuilt(tempGame, tempPlayer, cardsToDiscard.get(i), initialChance);
             if (additionalCardValue > bestCardValue) {
                 bestCardValue = additionalCardValue;
                 bestCardIndex = i;
             }
         }
-        return cardsToDiscard.get(bestCardIndex);
+
+        return CardValueResponse.of(cardsToDiscard.get(bestCardIndex), bestCardValue);
     }
 
 
-    public float cardExtraChanceIfBuilt(MarsGame game, Player player, Integer cardId) {
-        //TODO optimize, because it is used on every method call
-        float initialChance = deepNetwork.testState(game, player);
-
+    public float cardExtraChanceIfBuilt(MarsGame game, Player player, Integer cardId, float initialChance) {
         Card card = cardService.getCard(cardId);
 
         CardMetadata cardMetadata = card.getCardMetadata();
@@ -80,11 +89,39 @@ public class AiPickCardProjectionService {
             }
         }
 
-        if (!CollectionUtils.isEmpty(card.getTemperatureRequirement()) && card.getTemperatureRequirement().get(0) == ParameterColor.W && !game.getPlanetAtTheStartOfThePhase().isValidTemperatute(List.of(ParameterColor.Y, ParameterColor.W))) {
-            return -1;
+        float extraChanceModifier = 1;
+
+        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
+
+            if (!CollectionUtils.isEmpty(card.getTemperatureRequirement())) {
+                extraChanceModifier = getChanceReductionBasedOnRequirement(game.getPlanet(), player, GlobalParameter.TEMPERATURE, card.getTemperatureRequirement());
+            } else if (!CollectionUtils.isEmpty(card.getOxygenRequirement())) {
+                extraChanceModifier = getChanceReductionBasedOnRequirement(game.getPlanet(), player, GlobalParameter.OXYGEN, card.getOxygenRequirement());
+            } else if (card.getOceanRequirement() != null) {
+                OceanRequirement oceanRequirement = card.getOceanRequirement();
+
+                int revealedOceansCount = game.getPlanet().getRevealedOceans().size();
+
+                if (revealedOceansCount < oceanRequirement.getMinValue()) {
+                    extraChanceModifier = (float) revealedOceansCount / game.getPlanet().getOceans().size();
+                } else if (revealedOceansCount > oceanRequirement.getMaxValue()){
+                    extraChanceModifier = 0;
+                }
+            }
+
+            if (card.getClass() == AdvancedEcosystems.class) {
+                int uniqueTagsPlayed = cardService.countUniquePlayedTags(player, Set.of(Tag.PLANT, Tag.MICROBE, Tag.ANIMAL));
+
+                extraChanceModifier = (float) uniqueTagsPlayed / 3;
+            }
+
+        } else {
+            if (!CollectionUtils.isEmpty(card.getTemperatureRequirement()) && card.getTemperatureRequirement().get(0) == ParameterColor.W && !game.getPlanetAtTheStartOfThePhase().isValidTemperatute(List.of(ParameterColor.Y, ParameterColor.W))) {
+                return -1;
+            }
         }
 
-        //TODO should not be here
+        //TODO projection is only checking a single build. what if checking this + one more card from hand will give better results?
         if (card.getColor() == CardColor.GREEN) {
             player.setBuilds(List.of(new BuildDto(BuildType.GREEN)));
         } else {
@@ -95,7 +132,39 @@ public class AiPickCardProjectionService {
 
         float projectedChance = deepNetwork.testState(stateAfterPlayingTheCard, stateAfterPlayingTheCard.getPlayerByUuid(player.getUuid()));
 
-        return projectedChance - initialChance;
+        return extraChanceModifier * (projectedChance - initialChance);
+    }
+
+    private float getChanceReductionBasedOnRequirement(Planet planet, Player player, GlobalParameter parameter, List<ParameterColor> requirement) {
+        boolean canAmplifyRequirement = specialEffectsService.ownsSpecialEffect(player, SpecialEffect.AMPLIFY_GLOBAL_REQUIREMENT);
+        if (canAmplifyRequirement) {
+            requirement = amplifyRequirement(requirement);
+        }
+        if (parameter == GlobalParameter.OXYGEN && planet.isValidOxygen(requirement) || parameter == GlobalParameter.TEMPERATURE && planet.isValidTemperatute(requirement)) {
+            return 1;
+        }
+
+        if (requirement.contains(ParameterColor.P) &&
+                (canAmplifyRequirement || player.getHand().getCards().stream().map(cardService::getCard).noneMatch(card -> card.getSpecialEffects().contains(SpecialEffect.AMPLIFY_GLOBAL_REQUIREMENT)))) {
+            return 0;
+        } else {
+            return planet.getParameterProportionTillMinColor(parameter, ParameterColor.values()[requirement.stream().mapToInt(Enum::ordinal).min().orElse(0)]);
+        }
+    }
+
+    private List<ParameterColor> amplifyRequirement(List<ParameterColor> initialRequirement) {
+        List<ParameterColor> resultRequirement = new ArrayList<>(initialRequirement);
+        int minRequirement = initialRequirement.stream().mapToInt(Enum::ordinal).min().orElse(0);
+        int maxRequirement = initialRequirement.stream().mapToInt(Enum::ordinal).max().orElse(ParameterColor.W.ordinal());
+
+        if (minRequirement > 0) {
+            resultRequirement.add(ParameterColor.values()[minRequirement - 1]);
+        }
+        if (maxRequirement < ParameterColor.W.ordinal()) {
+            resultRequirement.add(ParameterColor.values()[maxRequirement + 1]);
+        }
+
+        return resultRequirement;
     }
 
 

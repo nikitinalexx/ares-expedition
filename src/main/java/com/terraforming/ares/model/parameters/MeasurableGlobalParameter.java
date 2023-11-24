@@ -1,10 +1,7 @@
 package com.terraforming.ares.model.parameters;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
-import lombok.Singular;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +15,7 @@ import java.util.List;
 @NoArgsConstructor
 public class MeasurableGlobalParameter {
     @Singular
+    @Getter
     private List<ParameterGradation> levels;
     private int currentLevel;
 
