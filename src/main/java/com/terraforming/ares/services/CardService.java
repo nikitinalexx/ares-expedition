@@ -255,6 +255,27 @@ public class CardService {
         );
     }
 
+    public int countUniquePlayedTags(Player player, Set<Tag> tagsToCheck) {
+        if (player == null || player.getPlayed() == null || CollectionUtils.isEmpty(player.getPlayed().getCards())) {
+            return 0;
+        }
+
+        return (int)
+                Stream.concat(
+                        player.getPlayed().getCards().stream().map(this::getCard)
+                                .filter(card -> player.getCardToTag().containsKey(card.getClass()))
+                                .flatMap(card -> player.getCardToTag().get(card.getClass()).stream())
+                                .filter(tagsToCheck::contains),
+                        player.getPlayed()
+                                .getCards()
+                                .stream()
+                                .map(this::getCard)
+                                .flatMap(card -> card.getTags().stream())
+                                .filter(tagsToCheck::contains)
+                ).distinct().count();
+
+    }
+
     public int countPlayedCards(Player player, Set<CardColor> colors) {
         if (player == null || player.getPlayed() == null || CollectionUtils.isEmpty(player.getPlayed().getCards())) {
             return 0;

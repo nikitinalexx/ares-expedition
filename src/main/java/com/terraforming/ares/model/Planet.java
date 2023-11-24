@@ -1,10 +1,7 @@
 package com.terraforming.ares.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.terraforming.ares.model.parameters.MeasurableGlobalParameter;
-import com.terraforming.ares.model.parameters.Ocean;
-import com.terraforming.ares.model.parameters.OceanRequirement;
-import com.terraforming.ares.model.parameters.ParameterColor;
+import com.terraforming.ares.model.parameters.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -197,6 +194,25 @@ public class Planet {
         }
 
         return validColors.contains(measurableGlobalParameters.get(globalParameter).getCurrentColor());
+    }
+
+    @JsonIgnore
+    public float getParameterProportionTillMinColor(GlobalParameter globalParameter, ParameterColor color) {
+        MeasurableGlobalParameter parameter = measurableGlobalParameters.get(globalParameter);
+
+        int targetLevel = 0;
+
+        List<ParameterGradation> levels = parameter.getLevels();
+        for (int i = 0; i < levels.size(); i++) {
+            if (levels.get(i).getColor() == color) {
+                targetLevel = i;
+                break;
+            }
+        }
+
+        int currentValue = parameter.getCurrentValue();
+
+        return (float) currentValue / targetLevel;
     }
 
 }
