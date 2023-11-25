@@ -18,7 +18,7 @@ public class DroneAssistedConstructionAiCardProjection<T extends Card> implement
 
     @Override
     public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
-        player.setMc(player.getMc() + (player.getChosenPhase() == Constants.PERFORM_BLUE_ACTION_PHASE ? 4 : 2));
+        player.setMc(player.getMc() + (player.getChosenPhase() == Constants.PERFORM_BLUE_ACTION_PHASE && player.isPhaseUpgraded(Constants.PERFORM_BLUE_ACTION_PHASE) ? 4 : 2));
 
         return new MarsGameRowDifference();
     }
