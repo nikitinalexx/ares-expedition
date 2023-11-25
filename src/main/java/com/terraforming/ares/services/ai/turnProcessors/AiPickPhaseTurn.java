@@ -3,18 +3,17 @@ package com.terraforming.ares.services.ai.turnProcessors;
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.ai.AiExperimentalTurn;
 import com.terraforming.ares.model.ai.AiTurnChoice;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
-import com.terraforming.ares.services.CardValidationService;
 import com.terraforming.ares.services.DraftCardsService;
 import com.terraforming.ares.services.SpecialEffectsService;
 import com.terraforming.ares.services.ai.*;
 import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
+import com.terraforming.ares.services.ai.dto.CardValueResponse;
 import com.terraforming.ares.services.ai.dto.PhaseChoiceProjection;
 import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
-import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsService;
-import com.terraforming.ares.services.ai.helpers.AiPaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -39,6 +38,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
     private final DeepNetwork deepNetwork;
     private final AiThirdPhaseProjectionService aiThirdPhaseProjectionService;
     private final AiCardValidationService aiCardValidationService;
+    private final AiPickCardProjectionService aiPickCardProjectionService;
 
 
     @Override
@@ -48,6 +48,8 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
 
     @Override
     public boolean processTurn(MarsGame game, Player player) {
+        sellBadCardsBeforeTheTurnStart(game, player);
+
         if (Constants.LOG_NET_COMPARISON) {
             System.out.println("======================New Round========================");
         }
@@ -160,6 +162,25 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
         aiTurnService.choosePhaseTurn(player, chosenPhase);
 
         return true;
+    }
+
+    private void sellBadCardsBeforeTheTurnStart(MarsGame game, Player player) {
+        List<Integer> allCards = new ArrayList<>(player.getHand().getCards());
+        List<Integer> cardsToSell = new ArrayList<>();
+        for (int i = 0; i < player.getHand(). size(); i++) {
+            CardValueResponse worstCard = aiPickCardProjectionService.getWorstCard(game, player, allCards);
+            if (worstCard.getWorth() < 0) {
+                Integer cardToSell = worstCard.getCardId();
+                cardsToSell.add(cardToSell);
+                allCards.remove(cardToSell);
+            }
+        }
+        if (!cardsToSell.isEmpty()) {
+            aiTurnService.sellCards(player, game, cardsToSell);
+            if (Constants.LOG_NET_COMPARISON) {
+                System.out.println("Selling " + cardsToSell.size());
+            }
+        }
     }
 
     private PhaseChoiceProjection chooseBetweenFirstAndSecondPhaseAi(MarsGame game, Player player) {

@@ -197,32 +197,28 @@ public class AiBuildProjectService extends BaseProcessorService {
         return game;
     }
 
-//    public GameWithState assumeProjectIsBuilt(MarsGame game, Player player, Card card, ProjectionStrategy projectionStrategy) {
-//        projectPhasePick(game, player, card, projectionStrategy);
-//
-//        if (!aiCardValidationService.isValid(game, player, card)) {
-//            throw new IllegalStateException("Card is not valid");
-//        }
-//
-//        game = new MarsGame(game);
-//        player = game.getPlayerByUuid(player.getUuid());
-//
-//        Map<Integer, List<Integer>> inputParams = aiCardBuildParamsService.getInputParamsForBuild(game, player, card);
-//        List<Payment> payments = aiPaymentService.getCardPayments(game, player, card, inputParams);
-//        if (card.getColor() == CardColor.GREEN) {
-//            aiTurnService.buildGreenProjectSync(game, player, card.getId(), payments, inputParams);
-//        } else {
-//            aiTurnService.buildBlueRedProjectSync(game, player, card.getId(), payments, inputParams);
-//        }
-//
-//        GameWithState gameWithState = new GameWithState();
-//        gameWithState.setGame(game);
-//
-//        return gameWithState;
-//    }
-
-    //new method
     public MarsGame assumeProjectIsBuilt(MarsGame game, Player player, Card card) {
+        if (!aiCardValidationService.isValid(game, player, card)) {
+            throw new IllegalStateException("Card is not valid");
+        }
+
+        game = new MarsGame(game);
+        player = game.getPlayerByUuid(player.getUuid());
+
+        Map<Integer, List<Integer>> inputParams = aiCardBuildParamsService.getInputParamsForBuild(game, player, card);
+        List<Payment> payments = aiPaymentService.getCardPayments(game, player, card, inputParams);
+        if (card.getColor() == CardColor.GREEN) {
+            aiTurnService.buildGreenProjectSync(game, player, card.getId(), payments, inputParams);
+        } else {
+            aiTurnService.buildBlueRedProjectSync(game, player, card.getId(), payments, inputParams);
+        }
+
+        return game;
+    }
+
+    public MarsGame assumeProjectIsBuiltFromPickPhase(MarsGame game, Player player, Card card) {
+        projectPhasePick(game, player, card.getColor() == CardColor.GREEN ? Phase.FIRST : Phase.SECOND, ProjectionStrategy.FROM_PICK_PHASE);
+
         if (!aiCardValidationService.isValid(game, player, card)) {
             throw new IllegalStateException("Card is not valid");
         }

@@ -19,6 +19,7 @@ import com.terraforming.ares.services.ai.dto.CardValueResponse;
 import com.terraforming.ares.validation.action.ActionValidator;
 import com.terraforming.ares.validation.action.FibrousCompositeActionValidator;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 import java.util.function.Function;
@@ -190,9 +191,18 @@ public class AiCardActionHelper {
 
                 return ActionInputParamsResponse.makeActionWithParams(result);
             } else if (cardAction == CardAction.DECOMPOSING_FUNGUS) {
-                return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.CARD_CHOICE.getId(), List.of(getLeastValuableCardWithAnimalOrMicrobePresent(game, player))));
+                Integer leastValuableCardWithAnimalOrMicrobePresent = getLeastValuableCardWithAnimalOrMicrobePresent(game, player);
+                if (leastValuableCardWithAnimalOrMicrobePresent != null) {
+                    return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.CARD_CHOICE.getId(), List.of(leastValuableCardWithAnimalOrMicrobePresent)));
+                } else {
+                    return ActionInputParamsResponse.noAction();
+                }
             } else if (cardAction == CardAction.CONSERVED_BIOME) {
-                return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.CARD_CHOICE.getId(), List.of(getMostValuableAnimalOrMicrobeCard(game, player, Set.of(CardCollectableResource.ANIMAL, CardCollectableResource.MICROBE)).get())));
+                Integer animalCard = getMostValuableAnimalOrMicrobeCard(game, player, Set.of(CardCollectableResource.ANIMAL, CardCollectableResource.MICROBE)).orElse(null);
+                if (animalCard == null) {
+                    return ActionInputParamsResponse.noAction();
+                }
+                return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.CARD_CHOICE.getId(), List.of(animalCard)));
             } else if (actionInputData.getType() == ActionInputDataType.DISCARD_CARD) {
                 List<Integer> cardsToDiscard = getCardsToDiscardSmart(game, player, actionInputData.getMax());
                 return ActionInputParamsResponse.builder().makeAction(!cardsToDiscard.isEmpty()).inputParams(Map.of(InputFlag.CARD_CHOICE.getId(), cardsToDiscard)).build();
@@ -217,7 +227,10 @@ public class AiCardActionHelper {
                     return ActionInputParamsResponse.noAction();
                 }
             } else if (cardAction == CardAction.SYMBIOTIC_FUNGUD) {
-                return ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.CARD_CHOICE.getId(), List.of(getMostValuableAnimalOrMicrobeCard(game, player, Set.of(CardCollectableResource.MICROBE)).get())));
+                return getMostValuableAnimalOrMicrobeCard(game, player, Set.of(CardCollectableResource.MICROBE))
+                        .map(
+                                valuableCard -> ActionInputParamsResponse.makeActionWithParams(Map.of(InputFlag.CARD_CHOICE.getId(), List.of(valuableCard)))
+                        ).orElse(ActionInputParamsResponse.noAction());
             }
         }
 
@@ -426,7 +439,7 @@ public class AiCardActionHelper {
         }
 
         Map<Integer, List<Card>> cardsByPriorities = animalMicrobeCardsStream
-                    .collect(Collectors.groupingBy(card -> MICROBE_ANIMAL_DISCARD_PRIORITIES.get(card.getClass())));
+                .collect(Collectors.groupingBy(card -> MICROBE_ANIMAL_DISCARD_PRIORITIES.get(card.getClass())));
 
         if (cardsByPriorities.get(3) != null && !cardsByPriorities.get(3).isEmpty()) {
             return Optional.of(cardsByPriorities.get(3).get(0).getId());
@@ -449,7 +462,7 @@ public class AiCardActionHelper {
         return Optional.empty();
     }
 
-    private int getLeastValuableCardWithAnimalOrMicrobePresent(MarsGame game, Player player) {
+    private Integer getLeastValuableCardWithAnimalOrMicrobePresent(MarsGame game, Player player) {
         List<Card> animalMicrobeCards = player.getPlayed().getCards().stream()
                 .map(cardService::getCard)
                 .filter(card -> card.getCollectableResource() == CardCollectableResource.ANIMAL || card.getCollectableResource() == CardCollectableResource.MICROBE)
@@ -495,8 +508,8 @@ public class AiCardActionHelper {
                         break;
                     }
                 }
-                if (animalMicrobeCards.isEmpty()) {
-                    throw new IllegalStateException("Not reachable");
+                if (CollectionUtils.isEmpty(animalMicrobeCards)) {
+                    return null;
                 }
             }
         }

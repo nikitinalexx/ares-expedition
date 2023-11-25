@@ -1,11 +1,15 @@
 package com.terraforming.ares.services.ai;
 
 import com.terraforming.ares.dataset.DatasetCollectionService;
+import com.terraforming.ares.dataset.MarsGameRow;
 import com.terraforming.ares.dataset.MarsPlayerRow;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.dataset.MarsGameRow;
 import com.terraforming.ares.model.*;
-import com.terraforming.ares.services.*;
+import com.terraforming.ares.model.ai.AiExperimentalTurn;
+import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.DraftCardsService;
+import com.terraforming.ares.services.MarsContextProvider;
+import com.terraforming.ares.services.StandardProjectService;
 import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.turnProcessors.AiBuildProjectService;
 import com.terraforming.ares.services.ai.turnProcessors.AiTurnService;
@@ -25,7 +29,7 @@ public class TestAiService {
     private final AiTurnService aiTurnService;
     private final DatasetCollectionService datasetCollectionService;
     private final DraftCardsService draftCardsService;
-    private final AiCollectIncomePhaseService  aiCollectIncomePhaseService;
+    private final AiCollectIncomePhaseService aiCollectIncomePhaseService;
     private final CardService cardService;
     private final MarsContextProvider marsContextProvider;
     private final AiDiscoveryDecisionService aiDiscoveryDecisionService;
@@ -100,6 +104,17 @@ public class TestAiService {
                 ? players.get(1)
                 : players.get(0);
 
+        BuildProjectPrediction bestPredictionBeforeIncome = getBestCardToBuild(game, player, Set.of(CardColor.GREEN, CardColor.RED, CardColor.BLUE));
+
+        addMainIncome(player);
+        addMainIncome(anotherPlayer);
+
+        if (player.hasPhaseUpgrade(Constants.PHASE_4_UPGRADE_EXTRA_MC)) {
+            player.setMc(player.getMc() + 7);
+        } else if (player.hasPhaseUpgrade(Constants.PHASE_4_UPGRADE_DOUBLE_PRODUCE)) {
+            player.setMc(player.getMc() + 1);
+        }
+
         if (player.hasPhaseUpgrade(Constants.PHASE_4_UPGRADE_DOUBLE_PRODUCE)) {
             Integer doubleIncomeCardId = aiCollectIncomePhaseService.getDoubleIncomeCard(game, player);
             if (doubleIncomeCardId != null) {
@@ -108,21 +123,37 @@ public class TestAiService {
             }
         }
 
-        addMainIncome(player);
-        addMainIncome(anotherPlayer);
+        if (false) {
+            float bestStateBeforeBuild = deepNetwork.testState(game, player);
 
-        if (player.hasPhaseUpgrade(Constants.PHASE_4_UPGRADE_EXTRA_MC)) {
-            player.setMc(player.getMc() +  7);
-        } else if (player.hasPhaseUpgrade(Constants.PHASE_4_UPGRADE_DOUBLE_PRODUCE)) {
-            player.setMc(player.getMc() + 1);
+            BuildProjectPrediction prediction = getBestCardToBuild(game, player, Set.of(CardColor.GREEN, CardColor.RED, CardColor.BLUE));
+
+
+            if (prediction.isCanBuild() && prediction.getCard() != null) {
+                float relativeRatio = (prediction.getExpectedValue() - bestStateBeforeBuild) / (1 - bestStateBeforeBuild);
+                if (relativeRatio >= 0.7f) {
+                    game = aiBuildProjectService.assumeProjectIsBuiltFromPickPhase(game, player, prediction.getCard());
+                    player = game.getPlayerByUuid(player.getUuid());
+                    anotherPlayer = game.getPlayerByUuid(anotherPlayer.getUuid());
+                }
+            }
+            if (Constants.LOG_NET_COMPARISON) {
+                Card bestCardBeforeIncome = bestPredictionBeforeIncome.isCanBuild() ? bestPredictionBeforeIncome.getCard() : null;
+                Card bestCardAfterIncome = prediction.isCanBuild() ? prediction.getCard() : null;
+                if (bestCardAfterIncome != bestCardBeforeIncome) {
+                    System.out.println(
+                            "CardBeforeIncome " + (bestCardBeforeIncome != null ? bestCardBeforeIncome.getClass().getSimpleName() : null)
+                                    + " " +
+                                    "CardAfterIncome " + (bestCardAfterIncome != null ? bestCardAfterIncome.getClass().getSimpleName() : null)
+                    );
+                }
+            }
         }
 
         final MarsGameRow marsGameRow = datasetCollectionService.collectGameAndPlayers(
                 game,
                 player,
-                players.get(0) == player
-                        ? players.get(1)
-                        : players.get(0)
+                anotherPlayer
         );
 
         if (marsGameRow == null) {

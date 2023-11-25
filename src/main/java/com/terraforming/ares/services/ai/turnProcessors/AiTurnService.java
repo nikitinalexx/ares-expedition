@@ -265,7 +265,7 @@ public class AiTurnService {
         makeSyncTurn(player, game, new PerformBlueActionTurn(player.getUuid(), projectId, inputParams));
     }
 
-    public void sellAllCards(Player player, MarsGame game, List<Integer> cards) {
+    public void sellCards(Player player, MarsGame game, List<Integer> cards) {
         if (!player.getHand().getCards().containsAll(cards)) {
             throw new IllegalStateException("Can't sell cards that you don't have");
         }

@@ -39,7 +39,7 @@ public class AiSkipTurn implements AiTurnProcessor {
     public boolean processTurn(MarsGame game, Player player) {
         if (game.gameEndCondition() && game.getStateType() == StateType.PERFORM_BLUE_ACTION) {
             if (player.getHand().size() != 0) {
-                aiTurnService.sellAllCards(player, game, player.getHand().getCards());
+                aiTurnService.sellCards(player, game, player.getHand().getCards());
                 return true;
             } else {
                 if (!game.getPlanetAtTheStartOfThePhase().isOxygenMax()) {

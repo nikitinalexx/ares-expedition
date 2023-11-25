@@ -6,6 +6,7 @@ import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.ai.AiTurnChoice;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.CardValidationService;
 import com.terraforming.ares.services.StandardProjectService;
 import com.terraforming.ares.services.ai.AiCardValidationService;
 import com.terraforming.ares.services.ai.DeepNetwork;
@@ -38,6 +39,7 @@ public class AiThirdPhaseActionProcessor {
     private final AiCardValidationService aiCardValidationService;
     private final AiBuildProjectService aiBuildProjectService;
     private final DeepNetwork deepNetwork;
+    private final CardValidationService cardValidationService;
 
     public AiThirdPhaseActionProcessor(AiTurnService aiTurnService,
                                        CardService cardService,
@@ -46,7 +48,7 @@ public class AiThirdPhaseActionProcessor {
                                        StandardProjectService standardProjectService,
                                        AiCardBuildParamsService aiCardBuildParamsService,
                                        TestAiService testAiService,
-                                       AiCardValidationService aiCardValidationService, AiBuildProjectService aiBuildProjectService, DeepNetwork deepNetwork) {
+                                       AiCardValidationService aiCardValidationService, AiBuildProjectService aiBuildProjectService, DeepNetwork deepNetwork, CardValidationService cardValidationService) {
         this.aiTurnService = aiTurnService;
         this.cardService = cardService;
         this.aiPaymentHelper = aiPaymentHelper;
@@ -57,6 +59,7 @@ public class AiThirdPhaseActionProcessor {
         this.aiCardValidationService = aiCardValidationService;
         this.aiBuildProjectService = aiBuildProjectService;
         this.deepNetwork = deepNetwork;
+        this.cardValidationService = cardValidationService;
     }
 
     public boolean processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
@@ -69,7 +72,7 @@ public class AiThirdPhaseActionProcessor {
 
         if (game.gameEndCondition()) {
             if (player.getHand().size() != 0) {
-                aiTurnService.sellAllCards(player, game, player.getHand().getCards());
+                aiTurnService.sellCards(player, game, player.getHand().getCards());
                 return true;
             } else {
                 switch (player.getDifficulty().THIRD_PHASE_ACTION) {
@@ -197,7 +200,7 @@ public class AiThirdPhaseActionProcessor {
 
         if (!game.gameEndCondition() && canFinishGame(game, player) && (player.getDifficulty().THIRD_PHASE_ACTION != AiTurnChoice.NETWORK || deepNetwork.testState(game, player) >= 0.6)) {
             if (player.getHand().size() != 0) {
-                aiTurnService.sellAllCards(player, game, player.getHand().getCards());
+                aiTurnService.sellCards(player, game, player.getHand().getCards());
                 return true;
             }
             if (game.getPlanet().temperatureLeft() > 0) {
@@ -303,28 +306,72 @@ public class AiThirdPhaseActionProcessor {
     }
 
     private boolean performCardAction(MarsGame game, Player player, List<Card> cards) {
-        while (!cards.isEmpty()) {
-            int selectedIndex = random.nextInt(cards.size());
-            Card selectedCard = cards.get(selectedIndex);
+        if (cards.isEmpty()) {
+            return false;
+        }
+        switch (player.getDifficulty().THIRD_PHASE_ACTION) {
+            case RANDOM:
+            case SMART:
+                while (!cards.isEmpty()) {
+                    int selectedIndex = random.nextInt(cards.size());
+                    Card selectedCard = cards.get(selectedIndex);
 
-            if (aiCardActionHelper.isUsablePlayAction(game, player, selectedCard)) {
-//                ActionInputParamsResponse inputParams = Constants.THIRD_PHASE_BOTH_PLAYERS_SMART
-//                        ? aiCardActionHelper.getActionInputParamsForSmart(game, player, selectedCard)
-//                        : aiCardActionHelper.getActionInputParamsForRandom(game, player, selectedCard);
-                ActionInputParamsResponse inputParams = aiCardActionHelper.getActionInputParamsForSmart(game, player, selectedCard);
+                    if (aiCardActionHelper.isUsablePlayAction(game, player, selectedCard)) {
+                        ActionInputParamsResponse inputParams = aiCardActionHelper.getActionInputParamsForSmart(game, player, selectedCard);
 
-                if (inputParams.isMakeAction()) {
+
+                        if (inputParams.isMakeAction()) {
+                            aiTurnService.performBlueAction(
+                                    game,
+                                    player,
+                                    selectedCard.getId(),
+                                    inputParams.getInputParams()
+                            );
+                            return true;
+                        }
+                    }
+
+                    cards.remove(selectedIndex);
+                }
+                return false;
+            case NETWORK:
+                Integer bestCard = null;
+                float bestChance = deepNetwork.testState(game, player);
+
+                for (Card card : cards) {
+                    ActionInputParamsResponse paramsResponse = aiCardActionHelper.getActionInputParamsForSmart(game, player, card);
+
+                    if (!paramsResponse.isMakeAction()) {
+                        continue;
+                    }
+                    String validationResult = cardValidationService.validateBlueAction(player, game, card.getId(), paramsResponse.getInputParams());
+
+                    if (validationResult == null) {
+                        MarsGame gameCopy = new MarsGame(game);
+                        Player playerCopy = gameCopy.getPlayerByUuid(player.getUuid());
+                        aiTurnService.performBlueAction(
+                                gameCopy,
+                                playerCopy,
+                                card.getId(),
+                                paramsResponse.getInputParams()
+                        );
+                        float newChance = deepNetwork.testState(gameCopy, playerCopy);
+                        if (newChance > bestChance) {
+                            bestChance = newChance;
+                            bestCard = card.getId();
+                        }
+                    }
+                }
+                if (bestCard != null) {
+                    ActionInputParamsResponse paramsResponse = aiCardActionHelper.getActionInputParamsForSmart(game, player, cardService.getCard(bestCard));
                     aiTurnService.performBlueAction(
                             game,
                             player,
-                            selectedCard.getId(),
-                            inputParams.getInputParams()
+                            bestCard,
+                            paramsResponse.getInputParams()
                     );
                     return true;
                 }
-            }
-
-            cards.remove(selectedIndex);
         }
         return false;
     }

@@ -14,6 +14,34 @@ public class Constants {
 
     public static final int CORPORATION_ID_OFFSET = 10000;
 
+    public static final List<Integer> CORPORATION_PRIORITY = List.of(
+            10006, /* Tharsis */
+            10015, /* MayNi */
+            10104, 10011, /* Saturn */
+            10105, 10012, /* Zetacell */
+            10102, 10009, /* Phobolog */
+            10203, /*Apollo*/
+            10200, /*Sultira*/
+            10017, /* Interplanetary */
+            10003, /* LaunchStar */
+            10002, /* DevTechs */
+            10007, /* Credicor */
+            10005, /* Teractor */
+            10202,/*Exocorp*/
+            10107, 10014, /* Inventrix */
+            10004, /* Thorgate */
+            10103, 10010, /* Mining */
+            10106, 10013, /* Ecoline */
+            10001, /* Celestior */
+            10101, 10008, /* Arclight */
+            10206,/*Nebulabs*/
+            10201,/*Hyperion*/
+            10205,/*Modpro*/
+            10108, 10016, /* UNMI */
+            10100, 10000,/* Helion */
+            10204 /*Austellar*/
+    );
+
 
     public static final int MAX_OCEANS = 9;
     public static final int STARTING_RT = 5;
@@ -100,9 +128,9 @@ public class Constants {
     public static final boolean SAVE_SIMULATION_GAMES_TO_DB = false;
 
 
-    public static final List<PlayerDifficulty> SIMULATION_PLAYERS = List.of(PlayerDifficulty.NETWORK, PlayerDifficulty.NETWORK);
+    public static final List<PlayerDifficulty> SIMULATION_PLAYERS = List.of(PlayerDifficulty.NETWORK, PlayerDifficulty.NETWORK_EXPERIMENT);
 
-    public static final boolean COLLECT_DATASET = true;
+    public static final boolean COLLECT_DATASET = false;
     public static final boolean LOG_NET_COMPARISON = false;
 
     private Constants() {
