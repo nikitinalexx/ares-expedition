@@ -175,8 +175,13 @@ public class GameController {
         }
     }
 
+    private static Map<Integer, Integer> TURNS_TO_GAMES_COUNT = new ConcurrentHashMap<>();
+    private static Map<Integer, Long> TURNS_TO_POINTS_COUNT = new ConcurrentHashMap<>();
+
     @GetMapping("/simulations")
     public void runSimulations(@RequestBody SimulationsRequest request) throws IOException {
+        TURNS_TO_GAMES_COUNT.clear();
+        TURNS_TO_POINTS_COUNT.clear();
         if (request.isWithBatches() && request.getBatches() == 0) {
             throw new IllegalArgumentException("Batches can't be 0");
         }
@@ -414,22 +419,42 @@ public class GameController {
     }
 
     private void saveExceptionalGames(List<MarsGame> games) {
-        games.stream().filter(game -> game.getTurns() < 34 && game.getPlayerUuidToPlayer().values().stream().anyMatch(
-                player -> {
+//        games.stream().filter(game -> game.getTurns() < 34 && game.getPlayerUuidToPlayer().values().stream().anyMatch(
+//                player -> {
+//
+//                    int winPoints = winPointsService.countWinPoints(player, game);
+//
+//                    long activeCardsCount = player.getPlayed().getCards().stream().map(cardService::getCard).filter(Card::isActiveCard).count();
+//                    long greenCardsCount = player.getPlayed().getCards().stream().map(cardService::getCard).filter(card -> card.getColor() == CardColor.GREEN).count();
+//
+//                    if (activeCardsCount > 5 && winPoints > 80 && greenCardsCount < 13) {
+//                        System.out.println("Active cards " + player.getUuid());
+//                    }
+//
+//
+//                    return (activeCardsCount > 5 && winPoints > 80 && greenCardsCount < 13);
+//                }
+//        )).forEach(gameRepository::save);
 
-                    int winPoints = winPointsService.countWinPoints(player, game);
-
-                    long activeCardsCount = player.getPlayed().getCards().stream().map(cardService::getCard).filter(Card::isActiveCard).count();
-                    long greenCardsCount = player.getPlayed().getCards().stream().map(cardService::getCard).filter(card -> card.getColor() == CardColor.GREEN).count();
-
-                    if (activeCardsCount > 5 && winPoints > 80 && greenCardsCount < 13) {
-                        System.out.println("Active cards " + player.getUuid());
-                    }
-
-
-                    return (activeCardsCount > 5 && winPoints > 80 && greenCardsCount < 13);
+        games.forEach(game -> {
+            TURNS_TO_GAMES_COUNT.compute(game.getTurns(), (turns, count) -> {
+                if (count == null) {
+                    count = 0;
                 }
-        )).forEach(gameRepository::save);
+                count++;
+                return count;
+            });
+            TURNS_TO_POINTS_COUNT.compute(game.getTurns(), (turns, pointsCount) -> {
+                if (pointsCount == null) {
+                    pointsCount = 0L;
+                }
+                pointsCount += game.getPlayerUuidToPlayer().values().stream().map(
+                        p -> winPointsService.countWinPoints(p, game)
+                ).max(Comparator.naturalOrder()).orElseThrow();
+
+                return pointsCount;
+            });
+        });
     }
 
     private void gatherStatistics(List<MarsGame> games, GameStatistics gameStatistics) {
@@ -644,6 +669,13 @@ public class GameController {
 
         for (int i = 0; i < gameStatistics.getWinners().size(); i++) {
             System.out.println("Player victories: " + gameStatistics.getWinners().get(i) + ". Ratio: " + ((double) gameStatistics.getWinners().get(i) / totalWins));
+        }
+
+        System.out.println(TURNS_TO_GAMES_COUNT);
+        System.out.println(TURNS_TO_POINTS_COUNT);
+
+        for (Map.Entry<Integer, Integer> entry : TURNS_TO_GAMES_COUNT.entrySet()) {
+            System.out.println("Turns " + entry.getKey() + " average points: " + ((float) TURNS_TO_POINTS_COUNT.get(entry.getKey()) / entry.getValue()));
         }
     }
 

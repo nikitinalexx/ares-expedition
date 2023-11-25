@@ -172,34 +172,34 @@ public class AiThirdPhaseActionProcessor {
             return true;
         }
 
-        Set<CardAction> playedActions = player.getPlayed().getCards().stream().map(cardService::getCard)
-                .map(Card::getCardMetadata)
-                .filter(Objects::nonNull)
-                .map(CardMetadata::getCardAction)
-                .filter(Objects::nonNull).collect(Collectors.toSet());
-
-        //TODO looks very artificial
-        if (!game.getPlanetAtTheStartOfThePhase().isOceansMax()) {
-            if ((playedActions.contains(CardAction.ARCTIC_ALGAE)
-                    || playedActions.contains(CardAction.FISH))
-                    && player.getMc() > 30) {
-                aiTurnService.standardProjectTurn(game, player, StandardProjectType.OCEAN);
-                return true;
-            }
-        }
-        if (!game.getPlanetAtTheStartOfThePhase().isTemperatureMax()) {
-            if ((playedActions.contains(CardAction.LIVESTOCK))
-                    && player.getMc() > 30) {
-                aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
-                return true;
-            }
-            if ((playedActions.contains(CardAction.PHYSICS_COMPLEX))
-                    && player.getMc() > 70) {
-                aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
-                return true;
-            }
-        }
-
+//        Set<CardAction> playedActions = player.getPlayed().getCards().stream().map(cardService::getCard)
+//                .map(Card::getCardMetadata)
+//                .filter(Objects::nonNull)
+//                .map(CardMetadata::getCardAction)
+//                .filter(Objects::nonNull).collect(Collectors.toSet());
+//
+//        //TODO looks very artificial
+//        if (!game.getPlanetAtTheStartOfThePhase().isOceansMax()) {
+//            if ((playedActions.contains(CardAction.ARCTIC_ALGAE)
+//                    || playedActions.contains(CardAction.FISH))
+//                    && player.getMc() > 30) {
+//                aiTurnService.standardProjectTurn(game, player, StandardProjectType.OCEAN);
+//                return true;
+//            }
+//        }
+//        if (!game.getPlanetAtTheStartOfThePhase().isTemperatureMax()) {
+//            if ((playedActions.contains(CardAction.LIVESTOCK))
+//                    && player.getMc() > 30) {
+//                aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
+//                return true;
+//            }
+//            if ((playedActions.contains(CardAction.PHYSICS_COMPLEX))
+//                    && player.getMc() > 70) {
+//                aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
+//                return true;
+//            }
+//        }
+//
         if (!game.gameEndCondition() && canFinishGame(game, player) && (player.getDifficulty().THIRD_PHASE_ACTION != AiTurnChoice.NETWORK || deepNetwork.testState(game, player) >= 0.6)) {
             if (player.getHand().size() != 0) {
                 aiTurnService.sellCards(player, game, player.getHand().getCards());
@@ -225,6 +225,21 @@ public class AiThirdPhaseActionProcessor {
             return true;
         }
 
+        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
+            float stateBeforeStandardProject = deepNetwork.testState(game, player);
+            StandardProjectType bestStandardProject = null;
+
+            for (StandardProjectType standardProjectType : List.of(StandardProjectType.FOREST, StandardProjectType.OCEAN, StandardProjectType.TEMPERATURE)) {
+                float nextState = testAiService.projectPlayStandardAction(game, player.getUuid(), StandardProjectType.FOREST);
+                if (nextState > stateBeforeStandardProject) {
+                    stateBeforeStandardProject = nextState;
+                    bestStandardProject = standardProjectType;
+                }
+            }
+            if (bestStandardProject != null) {
+                aiTurnService.standardProjectTurn(game, player, bestStandardProject);
+            }
+        }
 
         return false;
     }
@@ -307,7 +322,7 @@ public class AiThirdPhaseActionProcessor {
         return mc >= 0;
     }
 
-    private Set<Class<?>> ACTIONS_THAT_REQUIRE_NETWORK_VALIDATION = Set.of(
+    private final Set<Class<?>> ACTIONS_THAT_REQUIRE_NETWORK_VALIDATION = Set.of(
             AquiferPumping.class,
             DevelopedInfrastructure.class,
             SolarPunk.class,

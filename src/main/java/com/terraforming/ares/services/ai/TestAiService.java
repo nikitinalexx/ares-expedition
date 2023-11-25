@@ -123,7 +123,7 @@ public class TestAiService {
             }
         }
 
-        if (false) {
+        if (false) {//TODO test??
             float bestStateBeforeBuild = deepNetwork.testState(game, player);
 
             BuildProjectPrediction prediction = getBestCardToBuild(game, player, Set.of(CardColor.GREEN, CardColor.RED, CardColor.BLUE));
