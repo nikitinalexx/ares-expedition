@@ -1,6 +1,7 @@
 package com.terraforming.ares.services.ai.turnProcessors;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.cards.blue.*;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.ai.AiExperimentalTurn;
@@ -306,38 +307,66 @@ public class AiThirdPhaseActionProcessor {
         return mc >= 0;
     }
 
+    private Set<Class<?>> ACTIONS_THAT_REQUIRE_NETWORK_VALIDATION = Set.of(
+            AquiferPumping.class,
+            DevelopedInfrastructure.class,
+            SolarPunk.class,
+            VolcanicPools.class,
+            WaterImportFromEuropa.class,
+            ProgressivePolicies.class,
+            ExperimentalTechnology.class,
+            CommunityAfforestation.class,
+            GasCooledReactors.class
+    );
+
     private boolean performCardAction(MarsGame game, Player player, List<Card> cards) {
         if (cards.isEmpty()) {
             return false;
         }
-        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.REGULAR) {
-            while (!cards.isEmpty()) {
-                int selectedIndex = random.nextInt(cards.size());
-                Card selectedCard = cards.get(selectedIndex);
+        cards = new ArrayList<>(cards);
 
-                if (aiCardActionHelper.isUsablePlayAction(game, player, selectedCard)) {
-                    ActionInputParamsResponse inputParams = aiCardActionHelper.getActionInputParamsForSmart(game, player, selectedCard);
+        List<Card> cardsThatDontRequireNetworkValidation;
+        List<Card> cardsThatRequireNetworkValidation;
 
-
-                    if (inputParams.isMakeAction()) {
-                        aiTurnService.performBlueAction(
-                                game,
-                                player,
-                                selectedCard.getId(),
-                                inputParams.getInputParams()
-                        );
-                        return true;
-                    }
-                }
-
-                cards.remove(selectedIndex);
-            }
-            return false;
+        if (player.getDifficulty().EXPERIMENTAL_TURN != AiExperimentalTurn.EXPERIMENT) {
+            cardsThatDontRequireNetworkValidation = cards;
+            cardsThatRequireNetworkValidation = List.of();
         } else {
+            cardsThatDontRequireNetworkValidation = cards.stream()
+                    .filter(card -> !ACTIONS_THAT_REQUIRE_NETWORK_VALIDATION.contains(card.getClass()))
+                    .collect(Collectors.toList());
+            cardsThatRequireNetworkValidation = cards.stream()
+                    .filter(card -> ACTIONS_THAT_REQUIRE_NETWORK_VALIDATION.contains(card.getClass()))
+                    .collect(Collectors.toList());
+        }
+
+        while (!cardsThatDontRequireNetworkValidation.isEmpty()) {
+            int selectedIndex = random.nextInt(cardsThatDontRequireNetworkValidation.size());
+            Card selectedCard = cardsThatDontRequireNetworkValidation.get(selectedIndex);
+
+            if (aiCardActionHelper.isUsablePlayAction(game, player, selectedCard)) {
+                ActionInputParamsResponse inputParams = aiCardActionHelper.getActionInputParamsForSmart(game, player, selectedCard);
+
+
+                if (inputParams.isMakeAction()) {
+                    aiTurnService.performBlueAction(
+                            game,
+                            player,
+                            selectedCard.getId(),
+                            inputParams.getInputParams()
+                    );
+                    return true;
+                }
+            }
+
+            cardsThatDontRequireNetworkValidation.remove(selectedIndex);
+        }
+
+        if (!cardsThatRequireNetworkValidation.isEmpty()) {
             Integer bestCard = null;
             float bestChance = deepNetwork.testState(game, player);
 
-            for (Card card : cards) {
+            for (Card card : cardsThatRequireNetworkValidation) {
                 ActionInputParamsResponse paramsResponse = aiCardActionHelper.getActionInputParamsForSmart(game, player, card);
 
                 if (!paramsResponse.isMakeAction()) {
@@ -372,6 +401,9 @@ public class AiThirdPhaseActionProcessor {
                 return true;
             }
         }
+
+        return false;
+
 //        switch (player.getDifficulty().THIRD_PHASE_ACTION) {
 //            case RANDOM:
 //            case SMART:
@@ -436,7 +468,6 @@ public class AiThirdPhaseActionProcessor {
 //                    return true;
 //                }
 //        }
-        return false;
     }
 
 }
