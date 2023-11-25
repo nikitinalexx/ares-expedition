@@ -383,6 +383,11 @@ public class AiThirdPhaseActionProcessor {
                             card.getId(),
                             paramsResponse.getInputParams()
                     );
+                    int handDifference = playerCopy.getHand().size() - player.getHand().size();
+                    if (handDifference > 0) {
+                        playerCopy.setHand(player.getHand());
+                        playerCopy.setMc(playerCopy.getMc() + 3 * handDifference);
+                    }
                     float newChance = deepNetwork.testState(gameCopy, playerCopy);
                     if (newChance > bestChance) {
                         bestChance = newChance;
