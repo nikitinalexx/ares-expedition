@@ -178,6 +178,38 @@ public class GameController {
     private static Map<Integer, Integer> TURNS_TO_GAMES_COUNT = new ConcurrentHashMap<>();
     private static Map<Integer, Long> TURNS_TO_POINTS_COUNT = new ConcurrentHashMap<>();
 
+    static Map<Integer, Double> TURN_TO_AVERAGE_WINNER = new HashMap<>();
+
+    static {
+        TURN_TO_AVERAGE_WINNER.put(18, 98.0);
+        TURN_TO_AVERAGE_WINNER.put(19, 84.55076951246996);
+        TURN_TO_AVERAGE_WINNER.put(20, 88.85);
+        TURN_TO_AVERAGE_WINNER.put(21, 90.58851502673461);
+        TURN_TO_AVERAGE_WINNER.put(22, 89.7348072719857);
+        TURN_TO_AVERAGE_WINNER.put(23, 91.56718321249518);
+        TURN_TO_AVERAGE_WINNER.put(24, 93.70033667433975);
+        TURN_TO_AVERAGE_WINNER.put(25, 94.93040094901617);
+        TURN_TO_AVERAGE_WINNER.put(26, 96.85448928244499);
+        TURN_TO_AVERAGE_WINNER.put(27, 99.11833576002077);
+        TURN_TO_AVERAGE_WINNER.put(28, 101.44698210512115);
+        TURN_TO_AVERAGE_WINNER.put(29, 104.1952261755979);
+        TURN_TO_AVERAGE_WINNER.put(30, 106.48138525460016);
+        TURN_TO_AVERAGE_WINNER.put(31, 107.68035410278775);
+        TURN_TO_AVERAGE_WINNER.put(32, 112.43282733797317);
+        TURN_TO_AVERAGE_WINNER.put(33, 116.53141963823941);
+        TURN_TO_AVERAGE_WINNER.put(34, 121.18224693045502);
+        TURN_TO_AVERAGE_WINNER.put(35, 125.9541191788592);
+        TURN_TO_AVERAGE_WINNER.put(36, 123.07959197335057);
+        TURN_TO_AVERAGE_WINNER.put(37, 130.26306841789037);
+        TURN_TO_AVERAGE_WINNER.put(38, 136.79619494606467);
+        TURN_TO_AVERAGE_WINNER.put(39, 144.4201232910156);
+        TURN_TO_AVERAGE_WINNER.put(40, 152.2880622804627);
+        TURN_TO_AVERAGE_WINNER.put(41, 146.00947329872534);
+        TURN_TO_AVERAGE_WINNER.put(42, 144.11857169015067);
+        TURN_TO_AVERAGE_WINNER.put(43, 177.08999938964843);
+        TURN_TO_AVERAGE_WINNER.put(44, 133.16600036621094);
+    }
+
     @GetMapping("/simulations")
     public void runSimulations(@RequestBody SimulationsRequest request) throws IOException {
         TURNS_TO_GAMES_COUNT.clear();
@@ -448,9 +480,14 @@ public class GameController {
                 if (pointsCount == null) {
                     pointsCount = 0L;
                 }
-                pointsCount += game.getPlayerUuidToPlayer().values().stream().map(
+                Integer bestScore = game.getPlayerUuidToPlayer().values().stream().map(
                         p -> winPointsService.countWinPoints(p, game)
                 ).max(Comparator.naturalOrder()).orElseThrow();
+                pointsCount += bestScore;
+
+                if (TURN_TO_AVERAGE_WINNER.containsKey(game.getTurns()) && bestScore > TURN_TO_AVERAGE_WINNER.get(game.getTurns()) * 1.1) {
+                    gameRepository.save(game);
+                }
 
                 return pointsCount;
             });
