@@ -189,22 +189,22 @@ public class TestAiService {
             return 0;
         }
 
-        addDraftedCards(player, marsGameRow.getPlayer(), true);
-        addDraftedCards(anotherPlayer, marsGameRow.getOpponent(), false);
+        addDraftedCards(player, marsGameRow.getPlayer(), true, player.isFirstBot() ? 1 : 2);
+        addDraftedCards(anotherPlayer, marsGameRow.getOpponent(), false, player.isFirstBot() ? 1 : 2);
 
 
         return deepNetwork.testState(marsGameRow, player.isFirstBot() ? 1 : 2);
     }
 
-    private void addDraftedCards(Player player, MarsPlayerRow marsPlayerRow, boolean chooseFifthPhase) {
-        float total = countTotalCardsToTake(player, chooseFifthPhase);
+    private void addDraftedCards(Player player, MarsPlayerRow marsPlayerRow, boolean chooseFifthPhase, int network) {
+        float total = countTotalCardsToTake(player, chooseFifthPhase, network);
 
         marsPlayerRow.setGreenCards(Math.max(0, marsPlayerRow.getGreenCards() + total * Constants.GREEN_CARDS_RATIO));
         marsPlayerRow.setRedCards(Math.max(0, marsPlayerRow.getRedCards() + total * Constants.RED_CARDS_RATIO));
         marsPlayerRow.setBlueCards(Math.max(0, marsPlayerRow.getBlueCards() + total * Constants.BLUE_CARDS_RATIO));
     }
 
-    private float countTotalCardsToTake(Player player, boolean chooseFifthPhase) {
+    private float countTotalCardsToTake(Player player, boolean chooseFifthPhase, int network) {
         int initialCardsToDraft = (chooseFifthPhase ? 5 : 2);
         int initialCardsToTake = (chooseFifthPhase ? 2 : 1);
 
@@ -220,7 +220,9 @@ public class TestAiService {
         int cardsToTake = draftCardsService.countExtraCardsToTake(player);
         int cardsToDraft = draftCardsService.countExtraCardsToDraft(player);
 
-        return (initialCardsToTake + cardsToTake) + (initialCardsToDraft + cardsToDraft) * 0.45f;
+        float coeff = network == 1 ? 0.45f : 0.30f;
+
+        return (initialCardsToTake + cardsToTake) + (initialCardsToDraft + cardsToDraft) * coeff;
     }
 
     private void addCardIncome(Player player, MarsPlayerRow marsPlayerRow) {

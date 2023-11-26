@@ -55,7 +55,7 @@ public class DeepNetwork {
 
         secondNetwork = ThreadLocal.withInitial(() -> {
             try {
-                return initNetworkFromFile("second/26.11.2023_filtered__epoch_9.txt");
+                return initNetworkFromFile("second/26.11.2023_filtered__epoch_8.txt");
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
