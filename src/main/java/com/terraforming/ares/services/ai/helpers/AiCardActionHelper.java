@@ -117,6 +117,20 @@ public class AiCardActionHelper {
                                             .count() == 5;
                                 } else if (cardAction == CardAction.PROGRESSIVE_POLICIES) {
                                     return cardService.countPlayedTags(player, Set.of(Tag.EVENT)) >= 4;
+                                } else if (cardAction == CardAction.AQUIFER_PUMPING) {
+                                    return player.getSteelIncome() >= 2;
+                                } else if (cardAction == CardAction.SOLAR_PUNK) {
+                                    return player.getTitaniumIncome() >= 3;
+                                } else if (cardAction == CardAction.VOLCANIC_POOLS) {
+                                    return cardService.countPlayedTags(player, Set.of(Tag.ENERGY)) >= 4;
+                                } else if (cardAction == CardAction.WATER_IMPORT) {
+                                    return player.getTitaniumIncome() >= 4;
+                                } else if (cardAction == CardAction.EXPERIMENTAL_TECHNOLOGY) {
+                                    return player.countPhaseUpgrades() == 0;
+                                } else if (cardAction == CardAction.COMMUNITY_AFFORESTATION) {
+                                    return game.getMilestones().stream().anyMatch(milestone -> milestone.isAchieved(player));
+                                } else if (cardAction == CardAction.GAS_COOLED_REACTORS) {
+                                    return player.countPhaseUpgrades() >= 2;
                                 }
                                 return true;
                             }

@@ -33,6 +33,7 @@ public class TestAiService {
     private final CardService cardService;
     private final MarsContextProvider marsContextProvider;
     private final AiDiscoveryDecisionService aiDiscoveryDecisionService;
+    private final AiPickCardProjectionService aiPickCardProjectionService;
 
 
     public BuildProjectPrediction getBestCardToBuild(MarsGame game, Player player, Set<CardColor> colors) {
@@ -123,18 +124,19 @@ public class TestAiService {
             }
         }
 
-        if (false) {//TODO test??
+        {
             float bestStateBeforeBuild = deepNetwork.testState(game, player);
 
             BuildProjectPrediction prediction = getBestCardToBuild(game, player, Set.of(CardColor.GREEN, CardColor.RED, CardColor.BLUE));
 
 
-            if (prediction.isCanBuild() && prediction.getCard() != null) {
+            if (prediction.isCanBuild() && prediction.getCard() != null && (!bestPredictionBeforeIncome.isCanBuild() || bestPredictionBeforeIncome.getCard() != prediction.getCard())) {
                 float relativeRatio = (prediction.getExpectedValue() - bestStateBeforeBuild) / (1 - bestStateBeforeBuild);
-                if (relativeRatio >= 0.7f) {
+                if (relativeRatio >= 0.5f && prediction.getExpectedValue() != 1.0 && (!bestPredictionBeforeIncome.isCanBuild() || prediction.getExpectedValue() - bestPredictionBeforeIncome.getExpectedValue() >= 0.1f)) {
                     game = aiBuildProjectService.assumeProjectIsBuiltFromPickPhase(game, player, prediction.getCard());
                     player = game.getPlayerByUuid(player.getUuid());
                     anotherPlayer = game.getPlayerByUuid(anotherPlayer.getUuid());
+                    System.out.println("Forced income");
                 }
             }
             if (Constants.LOG_NET_COMPARISON) {
@@ -192,19 +194,40 @@ public class TestAiService {
         addDraftedCards(player, marsGameRow.getPlayer(), true, player.isFirstBot() ? 1 : 2);
         addDraftedCards(anotherPlayer, marsGameRow.getOpponent(), false, player.isFirstBot() ? 1 : 2);
 
+        if (player.isSecondBot()) {
+            long badCards = aiPickCardProjectionService.countCardsWithNegativeChance(game, player);
+            long goodCards = player.getHand().size() - badCards;
+
+            if (badCards > goodCards && goodCards < 4) {
+                System.out.println("Bad cards");
+                return 1;
+            }
+//
+//            float ratio = badCards;
+//            if (goodCards != 0) {
+//                ratio = ratio * badCards / goodCards;
+//            }
+//
+//            MarsPlayerRow marsPlayerRow = marsGameRow.getPlayer();
+//
+//            marsPlayerRow.setGreenCards(marsPlayerRow.getGreenCards() - ratio * Constants.GREEN_CARDS_RATIO);
+//            marsPlayerRow.setRedCards(marsPlayerRow.getGreenCards() - ratio * Constants.RED_CARDS_RATIO);
+//            marsPlayerRow.setBlueCards(marsPlayerRow.getGreenCards() - ratio * Constants.BLUE_CARDS_RATIO);
+        }
+
 
         return deepNetwork.testState(marsGameRow, player.isFirstBot() ? 1 : 2);
     }
 
     private void addDraftedCards(Player player, MarsPlayerRow marsPlayerRow, boolean chooseFifthPhase, int network) {
-        float total = countTotalCardsToTake(player, chooseFifthPhase, network);
+        float total = countTotalCardsToTake(player, chooseFifthPhase);
 
         marsPlayerRow.setGreenCards(Math.max(0, marsPlayerRow.getGreenCards() + total * Constants.GREEN_CARDS_RATIO));
         marsPlayerRow.setRedCards(Math.max(0, marsPlayerRow.getRedCards() + total * Constants.RED_CARDS_RATIO));
         marsPlayerRow.setBlueCards(Math.max(0, marsPlayerRow.getBlueCards() + total * Constants.BLUE_CARDS_RATIO));
     }
 
-    private float countTotalCardsToTake(Player player, boolean chooseFifthPhase, int network) {
+    private float countTotalCardsToTake(Player player, boolean chooseFifthPhase) {
         int initialCardsToDraft = (chooseFifthPhase ? 5 : 2);
         int initialCardsToTake = (chooseFifthPhase ? 2 : 1);
 
@@ -220,9 +243,7 @@ public class TestAiService {
         int cardsToTake = draftCardsService.countExtraCardsToTake(player);
         int cardsToDraft = draftCardsService.countExtraCardsToDraft(player);
 
-        float coeff = network == 1 ? 0.45f : 0.30f;//TODO check
-
-        return (initialCardsToTake + cardsToTake) + (initialCardsToDraft + cardsToDraft) * coeff;
+        return (initialCardsToTake + cardsToTake) + (initialCardsToDraft + cardsToDraft) * 0.45f;
     }
 
     private void addCardIncome(Player player, MarsPlayerRow marsPlayerRow) {

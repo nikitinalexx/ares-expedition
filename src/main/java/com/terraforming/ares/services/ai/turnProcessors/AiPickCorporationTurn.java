@@ -28,9 +28,6 @@ public class AiPickCorporationTurn implements AiTurnProcessor {
     private final AiTurnService aiTurnService;
     private final CardService cardService;
     private final AiDiscoveryDecisionService aiDiscoveryDecisionService;
-    private final TestAiService testAiService;
-    private final DeepNetwork deepNetwork;
-    private final AiPickCardProjectionService aiPickCardProjectionService;
 
 
     @Override

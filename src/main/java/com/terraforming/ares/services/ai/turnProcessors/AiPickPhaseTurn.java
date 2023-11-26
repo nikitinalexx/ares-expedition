@@ -48,7 +48,8 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
 
     @Override
     public boolean processTurn(MarsGame game, Player player) {
-        sellBadCardsBeforeTheTurnStart(game, player);
+        //TODO maybe add back?
+        //sellBadCardsBeforeTheTurnStart(game, player);
 
         if (Constants.LOG_NET_COMPARISON) {
             System.out.println("======================New Round========================");
@@ -77,6 +78,9 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
 
             if (projection.isPickPhase()) {
                 possiblePhases.add(projection.getPhase());
+                if (Constants.LOG_NET_COMPARISON) {
+                    System.out.println("Playing " + projection.getPhase());
+                }
             } else {
                 PhaseChoiceProjection theBestOfTheWorst = phase3Projection.bestOfTheWorst(phase4Projection).bestOfTheWorst(phase5Projection);
                 if (theBestOfTheWorst.getPhase() != 0) {

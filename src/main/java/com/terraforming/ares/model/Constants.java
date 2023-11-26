@@ -119,7 +119,7 @@ public class Constants {
 
     public static final int CARDS_WITH_DYNAMIC_TAG = 4;
 
-    public static final boolean DISCOVERY_SIMULATIONS = true;
+    public static final boolean DISCOVERY_SIMULATIONS = false;
 
     public static final boolean PLAYER_CHOOSES_CARDS_FOR_FIRST_PLAYER = false;
 
@@ -130,7 +130,7 @@ public class Constants {
 
     public static final List<PlayerDifficulty> SIMULATION_PLAYERS = List.of(PlayerDifficulty.NETWORK, PlayerDifficulty.NETWORK);
 
-    public static final boolean COLLECT_DATASET = false;
+    public static final boolean COLLECT_DATASET = true;
     public static final boolean LOG_NET_COMPARISON = false;
 
     private Constants() {

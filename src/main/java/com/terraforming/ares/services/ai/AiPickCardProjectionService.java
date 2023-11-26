@@ -2,6 +2,7 @@ package com.terraforming.ares.services.ai;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.cards.red.AdvancedEcosystems;
+import com.terraforming.ares.cards.red.Crater;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.build.PutResourceOnBuild;
@@ -15,10 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,6 +33,8 @@ public class AiPickCardProjectionService {
 
         float initialChance = deepNetwork.testState(game, player);
 
+        Map<Integer, Float> cardToChance = new HashMap<>();
+
         for (int i = 0; i < cards.size(); i++) {
             MarsGame tempGame = new MarsGame(game);
             Player tempPlayer = tempGame.getPlayerByUuid(player.getUuid());
@@ -44,30 +44,89 @@ public class AiPickCardProjectionService {
                 worstAdditionalValue = additionalCardValue;
                 worstCardIndex = i;
             }
+            cardToChance.put(cards.get(i), additionalCardValue);
         }
 
+        if (Constants.LOG_NET_COMPARISON) {
+            System.out.println("Get worst card: ");
+            cardToChance.entrySet().stream()
+                    .sorted(Map.Entry.comparingByValue())
+                    .forEach(entry -> System.out.println("Card " + cardService.getCard(entry.getKey()).getClass().getSimpleName() + ": " + entry.getValue()));
+        }
 
         return CardValueResponse.of(cards.get(worstCardIndex), worstAdditionalValue);
     }
 
-    public CardValueResponse getBestCard(MarsGame game, Player player, List<Integer> cardsToDiscard) {
-        double bestCardValue = Float.MIN_VALUE;
-        int bestCardIndex = 0;
+    public long countCardsWithNegativeChance(MarsGame game, Player player) {
+        float initialChance = deepNetwork.testState(game, player);
+
+        List<Integer> cards = player.getHand().getCards();
+
+        int countWithNegative = 0;
+
+        for (int i = 0; i < cards.size(); i++) {
+            MarsGame tempGame = new MarsGame(game);
+            Player tempPlayer = tempGame.getPlayerByUuid(player.getUuid());
+
+            float additionalCardValue = cardExtraChanceIfBuilt(tempGame, tempPlayer, cards.get(i), initialChance, 0);
+
+            if (additionalCardValue < 0) {
+                countWithNegative++;
+            }
+        }
+
+        return countWithNegative;
+    }
+
+
+    public List<Integer> getWorstCards(MarsGame game, Player player, List<Integer> cards, int count) {
+        float initialChance = deepNetwork.testState(game, player);
+
+        Map<Integer, Float> cardToChance = new HashMap<>();
+
+        for (int i = 0; i < cards.size(); i++) {
+            MarsGame tempGame = new MarsGame(game);
+            Player tempPlayer = tempGame.getPlayerByUuid(player.getUuid());
+
+            float additionalCardValue = cardExtraChanceIfBuilt(tempGame, tempPlayer, cards.get(i), initialChance, 0);
+            cardToChance.put(cards.get(i), additionalCardValue);
+        }
+
+        if (Constants.LOG_NET_COMPARISON) {
+            System.out.println("Get worst card: ");
+            cardToChance.entrySet().stream()
+                    .sorted(Map.Entry.comparingByValue())
+                    .forEach(entry -> System.out.println("Card " + cardService.getCard(entry.getKey()).getClass().getSimpleName() + ": " + entry.getValue()));
+        }
+
+        return cardToChance.entrySet().stream()
+                .sorted(Map.Entry.comparingByValue()).map(Map.Entry::getKey).limit(count).collect(Collectors.toList());
+    }
+
+    public List<Integer> getBestCards(MarsGame game, Player player, List<Integer> cardsToDiscard, int count) {
+        if (count == 1 && cardsToDiscard.size() == 1) {
+            return List.of(cardsToDiscard.get(0));
+        }
 
         float initialChance = deepNetwork.testState(game, player);
+
+        Map<Integer, Float> cardToChance = new HashMap<>();
 
         for (int i = 0; i < cardsToDiscard.size(); i++) {
             MarsGame tempGame = new MarsGame(game);
             Player tempPlayer = tempGame.getPlayerByUuid(player.getUuid());
 
-            float additionalCardValue = cardExtraChanceIfBuilt(tempGame, tempPlayer, cardsToDiscard.get(i), initialChance, 0);
-            if (additionalCardValue > bestCardValue) {
-                bestCardValue = additionalCardValue;
-                bestCardIndex = i;
-            }
+            cardToChance.put(cardsToDiscard.get(i), cardExtraChanceIfBuilt(tempGame, tempPlayer, cardsToDiscard.get(i), initialChance, 0));
+        }
+        if (Constants.LOG_NET_COMPARISON) {
+            System.out.println("Get best card: ");
+            cardToChance.entrySet().stream()
+                    .sorted(Map.Entry.comparingByValue())
+                    .forEach(entry -> System.out.println("Card " + cardService.getCard(entry.getKey()).getClass().getSimpleName() + ": " + entry.getValue()));
         }
 
-        return CardValueResponse.of(cardsToDiscard.get(bestCardIndex), bestCardValue);
+        return cardToChance.entrySet().stream()
+                .sorted(Map.Entry.<Integer, Float>comparingByValue().reversed()).map(Map.Entry::getKey).limit(count).collect(Collectors.toList());
     }
 
 
@@ -113,6 +172,12 @@ public class AiPickCardProjectionService {
             extraChanceModifier = (float) uniqueTagsPlayed / 3;
         }
 
+        if (card.getClass() == Crater.class) {
+            int eventsPlayed = cardService.countPlayedTags(player, Set.of(Tag.EVENT));
+
+            extraChanceModifier = (float) eventsPlayed / 3;
+        }
+
         //TODO projection is only checking a single build. what if checking this + one more card from hand will give better results?
         if (card.getColor() == CardColor.GREEN) {
             player.setBuilds(List.of(new BuildDto(BuildType.GREEN)));
@@ -120,27 +185,10 @@ public class AiPickCardProjectionService {
             player.setBuilds(List.of(new BuildDto(BuildType.BLUE_RED)));
         }
 
-        List<Integer> handCards = new ArrayList<>(player.getHand().getCards());
-
         MarsGame stateAfterPlayingTheCard = aiBuildProjectService.projectBuildCardNoRequirements(game, player, card);
 
         float projectedChance = deepNetwork.testState(stateAfterPlayingTheCard, stateAfterPlayingTheCard.getPlayerByUuid(player.getUuid()));
 
-        if (!player.isFirstBot() && depth == 0) {
-            handCards.remove(cardId);
-
-            float extraChance = 0;
-
-            for (Integer handCard : handCards) {
-                float nextBestCard = cardExtraChanceIfBuilt(stateAfterPlayingTheCard, stateAfterPlayingTheCard.getPlayerByUuid(player.getUuid()), handCard, projectedChance, 1);
-                if (nextBestCard > extraChance) {
-                    extraChance = nextBestCard;
-                }
-            }
-            if (extraChance > 0) {
-                projectedChance += extraChance;
-            }
-        }
         return (projectedChance - initialChance) < 0 ? (projectedChance - initialChance) : extraChanceModifier * (projectedChance - initialChance);
 
     }

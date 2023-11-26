@@ -706,12 +706,12 @@ public class GameController {
             System.out.println("Player victories: " + gameStatistics.getWinners().get(i) + ". Ratio: " + ((double) gameStatistics.getWinners().get(i) / totalWins));
         }
 
-        System.out.println(TURNS_TO_GAMES_COUNT);
-        System.out.println(TURNS_TO_POINTS_COUNT);
-
-        for (Map.Entry<Integer, Integer> entry : TURNS_TO_GAMES_COUNT.entrySet()) {
-            System.out.println("Turns " + entry.getKey() + " average points: " + ((float) TURNS_TO_POINTS_COUNT.get(entry.getKey()) / entry.getValue()));
-        }
+//        System.out.println(TURNS_TO_GAMES_COUNT);
+//        System.out.println(TURNS_TO_POINTS_COUNT);
+//
+//        for (Map.Entry<Integer, Integer> entry : TURNS_TO_GAMES_COUNT.entrySet()) {
+//            System.out.println("Turns " + entry.getKey() + " average points: " + ((float) TURNS_TO_POINTS_COUNT.get(entry.getKey()) / entry.getValue()));
+//        }
     }
 
     @GetMapping("/simulations/stop")
