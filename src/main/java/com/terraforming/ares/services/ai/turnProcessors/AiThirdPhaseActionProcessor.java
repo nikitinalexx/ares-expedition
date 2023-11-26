@@ -340,19 +340,22 @@ public class AiThirdPhaseActionProcessor {
         }
         cards = new ArrayList<>(cards);
 
-        List<Card> cardsThatDontRequireNetworkValidation;
-        List<Card> cardsThatRequireNetworkValidation;
+        List<Card> cardsThatDontRequireNetworkValidation = List.of();
+        List<Card> cardsThatRequireNetworkValidation = List.of();
 
-        if (player.getDifficulty().EXPERIMENTAL_TURN != AiExperimentalTurn.EXPERIMENT) {
-            cardsThatDontRequireNetworkValidation = cards;
-            cardsThatRequireNetworkValidation = List.of();
-        } else {
-            cardsThatDontRequireNetworkValidation = cards.stream()
-                    .filter(card -> !ACTIONS_THAT_REQUIRE_NETWORK_VALIDATION.contains(card.getClass()))
-                    .collect(Collectors.toList());
-            cardsThatRequireNetworkValidation = cards.stream()
-                    .filter(card -> ACTIONS_THAT_REQUIRE_NETWORK_VALIDATION.contains(card.getClass()))
-                    .collect(Collectors.toList());
+        switch (player.getDifficulty().THIRD_PHASE_ACTION) {
+            case RANDOM:
+            case SMART:
+                cardsThatDontRequireNetworkValidation = cards;
+                break;
+            case NETWORK:
+                cardsThatDontRequireNetworkValidation = cards.stream()
+                        .filter(card -> !ACTIONS_THAT_REQUIRE_NETWORK_VALIDATION.contains(card.getClass()))
+                        .collect(Collectors.toList());
+                cardsThatRequireNetworkValidation = cards.stream()
+                        .filter(card -> ACTIONS_THAT_REQUIRE_NETWORK_VALIDATION.contains(card.getClass()))
+                        .collect(Collectors.toList());
+                break;
         }
 
         while (!cardsThatDontRequireNetworkValidation.isEmpty()) {

@@ -17,7 +17,7 @@ public class SoftwareStreamliningAiCardProjection<T extends Card> implements AiC
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         return MarsGameRowDifference.builder()
                 .mc(-6)//let's assume that 2 cards it discards are bad, their only value is the money behind them
                 .greenCards(2f * Constants.GREEN_CARDS_RATIO)

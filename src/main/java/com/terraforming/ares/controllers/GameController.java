@@ -382,8 +382,9 @@ public class GameController {
             }
 
             List<String> playerNames = new ArrayList<>();
+            int counter = 1;
             for (PlayerDifficulty simulationPlayer : Constants.SIMULATION_PLAYERS) {
-                playerNames.add(simulationPlayer.name());
+                playerNames.add(simulationPlayer.name() + (counter++));
             }
 
             GameParameters gameParameters = builder

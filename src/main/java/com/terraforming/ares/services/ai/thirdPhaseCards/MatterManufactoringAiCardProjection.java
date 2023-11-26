@@ -16,7 +16,7 @@ public class MatterManufactoringAiCardProjection<T extends Card> implements AiCa
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         if (player.getMc() < 1) {
             return new MarsGameRowDifference();
         }

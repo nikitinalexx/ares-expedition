@@ -7,14 +7,12 @@ import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.MarsContextProvider;
 import com.terraforming.ares.services.TerraformingService;
-import com.terraforming.ares.services.ai.DeepNetwork;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
 public class WoodBurningStovesAiCardProjection<T extends Card> implements AiCardProjection<WoodBurningStoves> {
-    private final DeepNetwork deepNetwork;
     private final TerraformingService terraformingService;
     private final MarsContextProvider marsContextProvider;
 
@@ -24,7 +22,7 @@ public class WoodBurningStovesAiCardProjection<T extends Card> implements AiCard
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         if (player.getPlants() < 3 || !terraformingService.canIncreaseTemperature(game)) {
             return new MarsGameRowDifference();
         }

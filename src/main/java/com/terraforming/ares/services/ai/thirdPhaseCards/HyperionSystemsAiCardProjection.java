@@ -16,7 +16,7 @@ public class HyperionSystemsAiCardProjection<T extends Card> implements AiCardPr
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         player.setMc(player.getMc() + (player.getChosenPhase() == Constants.PERFORM_BLUE_ACTION_PHASE ? 2 : 1));
 
         return new MarsGameRowDifference();

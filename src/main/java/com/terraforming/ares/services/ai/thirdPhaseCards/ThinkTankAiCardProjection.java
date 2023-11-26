@@ -16,7 +16,7 @@ public class ThinkTankAiCardProjection<T extends Card> implements AiCardProjecti
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         if (player.getMc() < 2) {
             return new MarsGameRowDifference();
         }

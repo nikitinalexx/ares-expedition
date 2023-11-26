@@ -23,7 +23,7 @@ public class CommunityAfforestationAiCardProjection<T extends Card> implements A
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         int milestonesAchieved = (int) game.getMilestones().stream().filter(milestone -> milestone.isAchieved(player)).count();
 
         int forestPrice = Math.max(0, 14 - milestonesAchieved * 4);

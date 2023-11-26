@@ -9,7 +9,6 @@ import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.MarsContextProvider;
 import com.terraforming.ares.services.TerraformingService;
-import com.terraforming.ares.services.ai.DeepNetwork;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -28,7 +27,7 @@ public class ProgressivePoliciesAiCardProjection<T extends Card> implements AiCa
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         if (!terraformingService.canIncreaseOxygen(game)) {
             return new MarsGameRowDifference();
         }

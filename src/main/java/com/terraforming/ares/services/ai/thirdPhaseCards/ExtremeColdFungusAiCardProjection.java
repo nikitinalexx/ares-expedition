@@ -34,17 +34,17 @@ public class ExtremeColdFungusAiCardProjection<T extends Card> implements AiCard
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         Map<Class<?>, Integer> playerResources = player.getCardResourcesCount();
 
-        float bestState = deepNetwork.testState(game, player);
+        float bestState = deepNetwork.testState(game, player, network);
         Class<?> bestCard = null;
 
         for (Class<?> c : cardsByPriorities) {
             boolean result = putResourceIfPossible(playerResources, c);
 
             if (result) {
-                float newState = deepNetwork.testState(game, player);
+                float newState = deepNetwork.testState(game, player, network);
                 if (newState > bestState) {
                     bestState = newState;
                     bestCard = c;
@@ -54,7 +54,7 @@ public class ExtremeColdFungusAiCardProjection<T extends Card> implements AiCard
         }
 
         player.setPlants(player.getPlants() + 1);
-        float plantState = deepNetwork.testState(game, player);
+        float plantState = deepNetwork.testState(game, player, network);
         if (plantState > bestState) {
             bestCard = null;
         }

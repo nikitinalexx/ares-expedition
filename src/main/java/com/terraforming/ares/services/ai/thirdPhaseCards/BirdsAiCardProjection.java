@@ -18,7 +18,7 @@ public class BirdsAiCardProjection<T extends Card> implements AiCardProjection<B
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference diff, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference diff, MarsGame game, Player player, Card card, int network) {
         player.getCardResourcesCount().put(Birds.class, player.getCardResourcesCount().get(Birds.class) + 1);
         return new MarsGameRowDifference();
     }

@@ -1,6 +1,5 @@
 package com.terraforming.ares.services.ai.thirdPhaseCards;
 
-import com.terraforming.ares.cards.blue.HydroElectricEnergy;
 import com.terraforming.ares.cards.blue.IronWorks;
 import com.terraforming.ares.dataset.MarsGameRowDifference;
 import com.terraforming.ares.mars.MarsGame;
@@ -25,7 +24,7 @@ public class IronworksAiCardProjection<T extends Card> implements AiCardProjecti
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         if (player.getHeat() < 4 || !terraformingService.canIncreaseOxygen(game)) {
             return new MarsGameRowDifference();
         }

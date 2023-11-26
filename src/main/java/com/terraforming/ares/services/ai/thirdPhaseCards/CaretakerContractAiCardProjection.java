@@ -18,7 +18,7 @@ public class CaretakerContractAiCardProjection<T extends Card> implements AiCard
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         if (player.getHeat() >= 8) {
             player.setTerraformingRating(player.getTerraformingRating() + 1);
             player.setHeat(player.getHeat() - 8);

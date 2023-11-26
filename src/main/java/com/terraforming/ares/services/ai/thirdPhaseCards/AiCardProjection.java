@@ -1,14 +1,9 @@
 package com.terraforming.ares.services.ai.thirdPhaseCards;
 
-import com.terraforming.ares.dataset.MarsGameRow;
 import com.terraforming.ares.dataset.MarsGameRowDifference;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
-import com.terraforming.ares.services.ai.dto.PhaseChoiceProjection;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * Created by oleksii.nikitin
@@ -18,7 +13,7 @@ public interface AiCardProjection<T extends Card> {
 
     Class<T> getType();
 
-    MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card);
+    MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network);
 
 
 }

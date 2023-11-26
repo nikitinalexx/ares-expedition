@@ -16,7 +16,7 @@ public class CircuitBoardFactoryAiCardProjection<T extends Card> implements AiCa
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         return MarsGameRowDifference.builder()
                 .greenCards(Constants.GREEN_CARDS_RATIO)
                 .redCards(Constants.RED_CARDS_RATIO)

@@ -27,7 +27,7 @@ public class WaterImportFromEuropaAiCardProjection<T extends Card> implements Ai
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         if (terraformingService.canRevealOcean(game)) {
             int oceanPrice = Math.max(0, 12 - player.getTitaniumIncome());
             if (player.getMc() >= oceanPrice) {

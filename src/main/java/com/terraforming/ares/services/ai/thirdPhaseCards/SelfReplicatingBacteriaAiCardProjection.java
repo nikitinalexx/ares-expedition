@@ -35,14 +35,14 @@ public class SelfReplicatingBacteriaAiCardProjection<T extends Card> implements 
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference diff, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference diff, MarsGame game, Player player, Card card, int network) {
         if (player.getCardResourcesCount().get(SelfReplicatingBacteria.class) < 5) {
             player.getCardResourcesCount().put(SelfReplicatingBacteria.class, player.getCardResourcesCount().get(SelfReplicatingBacteria.class) + 1);
             return new MarsGameRowDifference();
         }
 
         player.getCardResourcesCount().put(SelfReplicatingBacteria.class, player.getCardResourcesCount().get(SelfReplicatingBacteria.class) + 1);
-        float stateIfPutResource = deepNetwork.testState(game, player);
+        float stateIfPutResource = deepNetwork.testState(game, player, network);
         player.getCardResourcesCount().put(SelfReplicatingBacteria.class, player.getCardResourcesCount().get(SelfReplicatingBacteria.class) - 1);
 
         MarsGame gameCopy = new MarsGame(game);

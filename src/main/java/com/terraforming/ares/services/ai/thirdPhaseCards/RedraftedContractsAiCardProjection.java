@@ -20,7 +20,7 @@ public class RedraftedContractsAiCardProjection<T extends Card> implements AiCar
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         //TODO how to project the action???
         return new MarsGameRowDifference();
     }

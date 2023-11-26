@@ -21,8 +21,8 @@ public class VirtualEmployeeAiCardProjection<T extends Card> extends PhaseUpgrad
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
-        return produceDifferenceForPhaseUpgrade(game, player);
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
+        return produceDifferenceForPhaseUpgrade(game, player, network);
     }
 
 }
