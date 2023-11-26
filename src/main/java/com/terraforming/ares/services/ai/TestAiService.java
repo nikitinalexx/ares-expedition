@@ -220,7 +220,7 @@ public class TestAiService {
         int cardsToTake = draftCardsService.countExtraCardsToTake(player);
         int cardsToDraft = draftCardsService.countExtraCardsToDraft(player);
 
-        float coeff = network == 1 ? 0.45f : 0.30f;
+        float coeff = network == 1 ? 0.45f : 0.30f;//TODO check
 
         return (initialCardsToTake + cardsToTake) + (initialCardsToDraft + cardsToDraft) * coeff;
     }

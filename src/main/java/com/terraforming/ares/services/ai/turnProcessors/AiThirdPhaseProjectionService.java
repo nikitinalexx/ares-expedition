@@ -54,46 +54,8 @@ public class AiThirdPhaseProjectionService {
     }
 
     public PhaseChoiceProjection projectThirdPhase(MarsGame game, Player player) {
-//        if (player.isSecondBot() && player.getMc() > 50) {
-//
-//            float bestState = deepNetwork.testState(game, player);
-//            int actionType = -1;
-//
-//
-//            if (game.getPlanet().oceansLeft() > 0) {
-//                float state = testAiService.projectPlayStandardAction(game, player.getUuid(), 1);
-//                if (state > bestState) {
-//                    bestState = state;
-//                    actionType = 1;
-//                }
-//            }
-//            if (game.getPlanet().oxygenLeft() > 0) {
-//                float state = testAiService.projectPlayStandardAction(game, player.getUuid(), 2);
-//                if (state > bestState) {
-//                    bestState = state;
-//                    actionType = 2;
-//                }
-//            }
-//            if (game.getPlanet().temperatureLeft() > 0) {
-//                float state = testAiService.projectPlayStandardAction(game, player.getUuid(), 3);
-//                if (state > bestState) {
-//                    bestState = state;
-//                    actionType = 3;
-//                }
-//            }
-//
-//            if (actionType == 1) {
-//                aiTurnService.standardProjectTurn(game, player, StandardProjectType.OCEAN);
-//                return true;
-//            } else if (actionType == 2) {
-//                aiTurnService.standardProjectTurn(game, player, StandardProjectType.FOREST);
-//                return true;
-//            } else if (actionType == 3) {
-//                aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
-//                return true;
-//            }
-//        }
-        float stateBeforePhase = deepNetwork.testState(game, player);
+        int network = player.isFirstBot() ? 1 : 2;
+        float stateBeforePhase = deepNetwork.testState(game, player, network);
 
         game = new MarsGame(game);
         player = game.getPlayerByUuid(player.getUuid());
@@ -102,7 +64,7 @@ public class AiThirdPhaseProjectionService {
         player.setBlueActionExtraActivationsLeft(player.hasPhaseUpgrade(Constants.PHASE_3_UPGRADE_DOUBLE_REPEAT) ? 2 : 1);
         //project plants/heat  exchange
         //project opponent
-        ProjectionWithGame projectionWithGame = projectThirdPhase(game, player, new MarsGameRowDifference(), null);
+        ProjectionWithGame projectionWithGame = projectThirdPhase(game, player, new MarsGameRowDifference(), null, network);
         if (projectionWithGame.isPickPhase()) {
             spendPlantsAndHeat(projectionWithGame.getGame(), projectionWithGame.getGame().getPlayerByUuid(player.getUuid()));
 
@@ -115,7 +77,8 @@ public class AiThirdPhaseProjectionService {
                             projectionWithGame.getGame(),
                             projectionWithGame.getGame().getPlayerByUuid(player.getUuid()),
                             projectionWithGame.getGame().getPlayerByUuid(anotherPlayer.getUuid())
-                    ).applyDifference(projectionWithGame.getDifference()), player.isFirstBot() ? 1 : 2);
+                    ).applyDifference(projectionWithGame.getDifference()),
+                    network);
 
             if (Constants.LOG_NET_COMPARISON) {
                 System.out.println("3 phase before  " + stateBeforePhase + "; after  " + futureState);
@@ -129,7 +92,7 @@ public class AiThirdPhaseProjectionService {
             opponent.setActivatedBlueCards(Deck.builder().build());
             opponent.setChosenPhase(Constants.COLLECT_INCOME_PHASE);//set to anything but third phase
 
-            ProjectionWithGame opponentProjection = projectThirdPhase(game, opponent, new MarsGameRowDifference(), projectionWithGame.getDifference());
+            ProjectionWithGame opponentProjection = projectThirdPhase(game, opponent, new MarsGameRowDifference(), projectionWithGame.getDifference(), network);
             if (!opponentProjection.isPickPhase()) {
                 spendPlantsAndHeat(projectionWithGame.getGame(), projectionWithGame.getGame().getPlayerByUuid(anotherPlayer.getUuid()));
 
@@ -138,7 +101,7 @@ public class AiThirdPhaseProjectionService {
                                 projectionWithGame.getGame(),
                                 projectionWithGame.getGame().getPlayerByUuid(player.getUuid()),
                                 projectionWithGame.getGame().getPlayerByUuid(anotherPlayer.getUuid())
-                        ).applyDifference(projectionWithGame.getDifference()), player.isFirstBot() ? 1 : 2);
+                        ).applyDifference(projectionWithGame.getDifference()), network);
                 if (stateBeforePhase > futureState) {
                     if (Constants.LOG_NET_COMPARISON) {
                         System.out.println("3 phase skip because bad chance " + futureState);
@@ -163,7 +126,7 @@ public class AiThirdPhaseProjectionService {
                                         opponentProjection.getGame().getPlayerByUuid(anotherPlayer.getUuid())
                         )
                                 .applyDifference(projectionWithGame.getDifference())
-                                .applyOpponentDifference(opponentProjection.getDifference()), player.isFirstBot() ? 1 : 2);
+                                .applyOpponentDifference(opponentProjection.getDifference()), network);
                 if (stateBeforePhase > futureState) {
                     if (Constants.LOG_NET_COMPARISON) {
                         System.out.println("3 phase skip because bad chance " + futureState);
@@ -185,7 +148,7 @@ public class AiThirdPhaseProjectionService {
         return PhaseChoiceProjection.SKIP_PHASE;
     }
 
-    public ProjectionWithGame projectThirdPhase(MarsGame game, Player player, MarsGameRowDifference initialDifference, MarsGameRowDifference opponentDifference) {
+    public ProjectionWithGame projectThirdPhase(MarsGame game, Player player, MarsGameRowDifference initialDifference, MarsGameRowDifference opponentDifference, int network) {
         //TODO where to put Heat Exchange?
         //TODO project UNMI action
         //TODO project standard action
@@ -197,7 +160,7 @@ public class AiThirdPhaseProjectionService {
 //        if (playerData == null) {
 //            return ProjectionWithGame.SKIP_PHASE;
 //        }
-        float bestState = deepNetwork.testState(playerData.applyDifference(initialDifference).applyOpponentDifference(opponentDifference), player.isFirstBot() ? 1 : 2);
+        float bestState = deepNetwork.testState(playerData.applyDifference(initialDifference).applyOpponentDifference(opponentDifference), network);
 
         //project cards
         List<Card> activeCards = player.getPlayed().getCards().stream().map(cardService::getCard).filter(Card::isActiveCard).filter(card -> !player.getActivatedBlueCards().containsCard(card.getId()) || player.getBlueActionExtraActivationsLeft() != 0).collect(Collectors.toList());
@@ -213,16 +176,17 @@ public class AiThirdPhaseProjectionService {
                 MarsGame gameCopy = new MarsGame(game);
                 Player playerCopy = gameCopy.getPlayerByUuid(player.getUuid());
 
-                MarsGameRowDifference difference = actionProjections.get(activeCard.getClass()).project(initialDifference, gameCopy, playerCopy, activeCard);
+                MarsGameRowDifference difference = actionProjections.get(activeCard.getClass()).project(initialDifference, gameCopy, playerCopy, activeCard, network);
                 difference.add(initialDifference);
 
+                //TODO it still gives money even if the action was not played
                 if (specialEffectsService.ownsSpecialEffect(playerCopy, SpecialEffect.ASSEMBLY_LINES)) {
                     playerCopy.setMc(playerCopy.getMc() + 1);
                 }
 
                 //TODO is it better to project 2 steps ahead? implement and compare 2 computers
                 //TODO reuse anotherPlayer
-                float futureState = deepNetwork.testState(datasetCollectionService.collectGameAndPlayers(gameCopy, playerCopy, anotherPlayer).applyDifference(difference).applyOpponentDifference(opponentDifference), player.isFirstBot() ? 1 : 2);
+                float futureState = deepNetwork.testState(datasetCollectionService.collectGameAndPlayers(gameCopy, playerCopy, anotherPlayer).applyDifference(difference).applyOpponentDifference(opponentDifference), network);
 
                 if (futureState > bestState) {
                     bestState = futureState;
@@ -240,7 +204,7 @@ public class AiThirdPhaseProjectionService {
                 } else {
                     activatedBlueCards.addCard(bestCard.getId());
                 }
-                ProjectionWithGame anotherProjection = projectThirdPhase(bestGameProjection, bestProjectionPlayer, bestProjectionRow, opponentDifference);
+                ProjectionWithGame anotherProjection = projectThirdPhase(bestGameProjection, bestProjectionPlayer, bestProjectionRow, opponentDifference, network);
                 if (anotherProjection.isPickPhase()) {
                     return anotherProjection;
                 }
@@ -257,7 +221,7 @@ public class AiThirdPhaseProjectionService {
 
         spendPlantsAndHeat(gameCopy, playerCopy);
 
-        float futureState = deepNetwork.testState(datasetCollectionService.collectGameAndPlayers(gameCopy, playerCopy, anotherPlayer).applyDifference(initialDifference).applyOpponentDifference(opponentDifference), player.isFirstBot() ? 1 : 2);
+        float futureState = deepNetwork.testState(datasetCollectionService.collectGameAndPlayers(gameCopy, playerCopy, anotherPlayer).applyDifference(initialDifference).applyOpponentDifference(opponentDifference), network);
 
         if (futureState > bestState) {
             return ProjectionWithGame.builder()

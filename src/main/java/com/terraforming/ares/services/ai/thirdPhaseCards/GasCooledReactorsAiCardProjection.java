@@ -22,7 +22,7 @@ public class GasCooledReactorsAiCardProjection<T extends Card> implements AiCard
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         if (!terraformingService.canIncreaseTemperature(game)) {
             return new MarsGameRowDifference();
         }

@@ -19,7 +19,7 @@ public class DevelopmentCenterAiCardProjection<T extends Card> implements AiCard
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         if (player.getHeat() >= 2) {
             player.setHeat(player.getHeat() - 2);
             return MarsGameRowDifference.builder()

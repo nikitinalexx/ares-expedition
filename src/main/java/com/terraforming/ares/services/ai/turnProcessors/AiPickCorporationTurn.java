@@ -46,9 +46,9 @@ public class AiPickCorporationTurn implements AiTurnProcessor {
         switch (player.getDifficulty().EXPERIMENTAL_TURN) {
             case EXPERIMENT://todo USE IT
             case REGULAR:
-            selectedCorporationId = corporations.stream().min(Comparator.comparingInt(Constants.CORPORATION_PRIORITY::indexOf)).orElseThrow();
+//            selectedCorporationId = corporations.stream().min(Comparator.comparingInt(Constants.CORPORATION_PRIORITY::indexOf)).orElseThrow();
 
-//                selectedCorporationId = corporations.get(random.nextInt(corporations.size()));
+                selectedCorporationId = corporations.get(random.nextInt(corporations.size()));
                 break;
 //                MarsGame gameAfterOpponentPlay = testAiService.projectOpponentCorporationBuildExperiment(game, player);
 //

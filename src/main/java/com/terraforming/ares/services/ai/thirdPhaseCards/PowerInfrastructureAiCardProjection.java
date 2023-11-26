@@ -20,7 +20,7 @@ public class PowerInfrastructureAiCardProjection<T extends Card> implements AiCa
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         if (!terraformingService.canIncreaseTemperature(game)) {
             player.setMc(player.getMc() + player.getHeat());
             player.setHeat(0);

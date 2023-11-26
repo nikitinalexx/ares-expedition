@@ -1,6 +1,5 @@
 package com.terraforming.ares.services.ai.thirdPhaseCards;
 
-import com.terraforming.ares.cards.blue.AiCentral;
 import com.terraforming.ares.cards.blue.AssetLiquidation;
 import com.terraforming.ares.dataset.MarsGameRowDifference;
 import com.terraforming.ares.mars.MarsGame;
@@ -20,7 +19,7 @@ public class AssetLiquidationAiCardProjection<T extends Card> implements AiCardP
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         if (player.getTerraformingRating() <= 0) {
             return new MarsGameRowDifference();
         }

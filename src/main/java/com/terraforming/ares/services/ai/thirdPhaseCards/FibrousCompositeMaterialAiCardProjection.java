@@ -27,21 +27,21 @@ public class FibrousCompositeMaterialAiCardProjection<T extends Card> extends Ph
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         if (player.getCardResourcesCount().get(FibrousCompositeMaterial.class) < 3) {
             player.getCardResourcesCount().put(FibrousCompositeMaterial.class, player.getCardResourcesCount().get(FibrousCompositeMaterial.class) + 1);
             return new MarsGameRowDifference();
         }
 
         player.getCardResourcesCount().put(FibrousCompositeMaterial.class, player.getCardResourcesCount().get(FibrousCompositeMaterial.class) + 1);
-        float stateIfPutResource = deepNetwork.testState(game, player);
+        float stateIfPutResource = deepNetwork.testState(game, player, network);
         player.getCardResourcesCount().put(FibrousCompositeMaterial.class, player.getCardResourcesCount().get(FibrousCompositeMaterial.class) - 4);
 
         List<Integer> originalPhaseCards = new ArrayList<>(player.getPhaseCards());
 
-        produceDifferenceForPhaseUpgrade(game, player);
+        produceDifferenceForPhaseUpgrade(game, player, network);
 
-        float stateIfUseResource = deepNetwork.testState(game, player);
+        float stateIfUseResource = deepNetwork.testState(game, player, network);
 
         if (stateIfPutResource > stateIfUseResource) {
             player.setPhaseCards(originalPhaseCards);

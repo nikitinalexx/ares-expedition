@@ -45,10 +45,10 @@ public class DecomposingFungusAiCardProjection<T extends Card> implements AiCard
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         Map<Class<?>, Integer> playerResources = player.getCardResourcesCount();
 
-        float bestState = deepNetwork.testState(game, player);
+        float bestState = deepNetwork.testState(game, player, network);
         Class<?> bestCard = null;
 
         for (Class<?> c : cardsByPriorities) {
@@ -56,7 +56,7 @@ public class DecomposingFungusAiCardProjection<T extends Card> implements AiCard
 
             if (result) {
                 player.setPlants(player.getPlants() + 3);
-                float newState = deepNetwork.testState(game, player);
+                float newState = deepNetwork.testState(game, player, network);
                 if (newState > bestState) {
                     bestState = newState;
                     bestCard = c;

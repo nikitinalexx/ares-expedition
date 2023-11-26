@@ -24,14 +24,14 @@ public class GhgProductionBacteriaAiCardProjection<T extends Card> implements Ai
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         if (player.getCardResourcesCount().get(GhgProductionBacteria.class) < 2 || !terraformingService.canIncreaseTemperature(game)) {
             player.getCardResourcesCount().put(GhgProductionBacteria.class, player.getCardResourcesCount().get(GhgProductionBacteria.class) + 1);
             return new MarsGameRowDifference();
         }
 
         player.getCardResourcesCount().put(GhgProductionBacteria.class, player.getCardResourcesCount().get(GhgProductionBacteria.class) + 1);
-        float stateIfPutResource = deepNetwork.testState(game, player);
+        float stateIfPutResource = deepNetwork.testState(game, player, network);
         player.getCardResourcesCount().put(GhgProductionBacteria.class, player.getCardResourcesCount().get(GhgProductionBacteria.class) - 1);
 
 
@@ -41,7 +41,7 @@ public class GhgProductionBacteriaAiCardProjection<T extends Card> implements Ai
         playerCopy.getCardResourcesCount().put(GhgProductionBacteria.class, player.getCardResourcesCount().get(GhgProductionBacteria.class) - 2);
         terraformingService.increaseTemperature(marsContextProvider.provide(gameCopy, playerCopy));
 
-        float stateIfUseResource = deepNetwork.testState(gameCopy, playerCopy);
+        float stateIfUseResource = deepNetwork.testState(gameCopy, playerCopy, network);
 
         if (stateIfPutResource > stateIfUseResource) {
             player.getCardResourcesCount().put(GhgProductionBacteria.class, player.getCardResourcesCount().get(GhgProductionBacteria.class) + 1);

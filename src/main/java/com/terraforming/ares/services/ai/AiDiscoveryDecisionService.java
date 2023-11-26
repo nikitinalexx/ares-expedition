@@ -97,7 +97,7 @@ public class AiDiscoveryDecisionService {
                 return List.of(choosePhaseUpgrade(game, player, firstUpdate), choosePhaseUpgrade(game, player, secondUpdate));
 
             case NETWORK:
-                List<PhaseUpgradeWithChance> bestUpgrades = findBestUpgrades(chooseBestUpdateForEachPhase(game, player), 2);
+                List<PhaseUpgradeWithChance> bestUpgrades = findBestUpgrades(chooseBestUpdateForEachPhase(game, player, player.isFirstBot() ? 1 : 2), 2);
 
                 return List.of(bestUpgrades.get(0).getUpgradeAsNumber(), bestUpgrades.get(1).getUpgradeAsNumber());
             default:
@@ -125,19 +125,19 @@ public class AiDiscoveryDecisionService {
         return result;
     }
 
-    public List<PhaseUpgradeWithChance> chooseBestUpdateForEachPhase(MarsGame game, Player player) {
+    public List<PhaseUpgradeWithChance> chooseBestUpdateForEachPhase(MarsGame game, Player player, int network) {
         List<Integer> initialUpgrades = new ArrayList<>(player.getPhaseCards());
 
         List<PhaseUpgradeWithChance> result = new ArrayList<>();
 
-        float initialState = deepNetwork.testState(game, player);
+        float initialState = deepNetwork.testState(game, player, network);
         for (int i = 0; i < Constants.UPGRADEABLE_PHASES_COUNT; i++) {
             int currentUpgrade = initialUpgrades.get(i);
 
             float firstUpdateChance = initialState;
             if (currentUpgrade != 1) {
                 player.getPhaseCards().set(i, 1);
-                firstUpdateChance = deepNetwork.testState(game, player);
+                firstUpdateChance = deepNetwork.testState(game, player, network);
                 player.getPhaseCards().set(i, initialUpgrades.get(i));
             }
 
@@ -146,7 +146,7 @@ public class AiDiscoveryDecisionService {
             float secondUpdateChance = initialState;
             if (currentUpgrade != 2) {
                 player.getPhaseCards().set(i, 2);
-                secondUpdateChance = deepNetwork.testState(game, player);
+                secondUpdateChance = deepNetwork.testState(game, player, network);
                 player.getPhaseCards().set(i, initialUpgrades.get(i));
             }
 
@@ -173,7 +173,7 @@ public class AiDiscoveryDecisionService {
                 }
                 return choosePhaseUpgrade(game, player, phases.get(random.nextInt(phases.size())));
             case NETWORK:
-                List<PhaseUpgradeWithChance> bestUpgrades = findBestUpgrades(chooseBestUpdateForEachPhase(game, player), 1);
+                List<PhaseUpgradeWithChance> bestUpgrades = findBestUpgrades(chooseBestUpdateForEachPhase(game, player, player.isFirstBot() ? 1 : 2), 1);
 
                 return bestUpgrades.get(0).getUpgradeAsNumber();
             default:

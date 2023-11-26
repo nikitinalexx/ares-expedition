@@ -30,7 +30,7 @@ public class ResearchGrantAiCardProjection<T extends Card> implements AiCardProj
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         List<Tag> originalTags = player.getCardToTag().get(ResearchGrant.class);
 
         if (originalTags.stream().noneMatch(tag -> tag == Tag.DYNAMIC)) {
@@ -48,7 +48,7 @@ public class ResearchGrantAiCardProjection<T extends Card> implements AiCardProj
             MarsGame gameCopy = new MarsGame(game);
             Player playerCopy = gameCopy.getPlayerByUuid(player.getUuid());
 
-            float projectedChance = projectPuttingTag(gameCopy, playerCopy, card, tag);
+            float projectedChance = projectPuttingTag(gameCopy, playerCopy, card, tag, network);
 
             if (projectedChance > bestChance) {
                 bestChance = projectedChance;
@@ -56,12 +56,12 @@ public class ResearchGrantAiCardProjection<T extends Card> implements AiCardProj
             }
         }
 
-        projectPuttingTag(game, player, card, targetTag);
+        projectPuttingTag(game, player, card, targetTag, network);
 
         return new MarsGameRowDifference();
     }
 
-    private float projectPuttingTag(MarsGame game, Player player, Card card, Tag tag) {
+    private float projectPuttingTag(MarsGame game, Player player, Card card, Tag tag, int network) {
         List<Tag> cardTags = player.getCardToTag().get(ResearchGrant.class);
 
         //put tag
@@ -88,7 +88,7 @@ public class ResearchGrantAiCardProjection<T extends Card> implements AiCardProj
                 .filter(Card::onBuiltEffectApplicableToOther)
                 .forEach(c -> c.postProjectBuiltEffect(marsContext, new DummyCard(), inputParameters));
 
-        return deepNetwork.testState(game, player);
+        return deepNetwork.testState(game, player, network);
     }
 
 

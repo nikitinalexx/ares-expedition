@@ -27,7 +27,7 @@ public class AquiferPumpingAiCardProjection<T extends Card> implements AiCardPro
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         if (terraformingService.canRevealOcean(game)) {
             int oceanPrice = Math.max(0, 10 - player.getSteelIncome() * 2);
             if (player.getMc() >= oceanPrice) {

@@ -4,7 +4,6 @@ import com.terraforming.ares.cards.blue.CommunityGardens;
 import com.terraforming.ares.dataset.MarsGameRowDifference;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
-import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import org.springframework.stereotype.Component;
 
@@ -16,7 +15,7 @@ public class CommunityGardenAiCardProjection<T extends Card> implements AiCardPr
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         player.setMc(player.getMc() + 2);
         player.setPlants(player.getPlants() + 1);
 

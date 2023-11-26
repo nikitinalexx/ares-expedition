@@ -16,7 +16,7 @@ public class MatterGeneratorAiCardProjection<T extends Card> implements AiCardPr
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         //todo it might value an average card too good to discard for 6 MC but a bad card may be worth 6 MC
         int cardsAvailable = player.getHand().size() + (int) (initialDifference.getBlueCards() + initialDifference.getRedCards() + initialDifference.getGreenCards());
 

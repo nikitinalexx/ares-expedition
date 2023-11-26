@@ -25,7 +25,7 @@ public class AdvancedScreeningTechAiCardProjection<T extends Card> implements Ai
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
 
         LinkedList<Integer> hand = player.getHand().getCards();
         LinkedList<Integer> played = player.getPlayed().getCards();

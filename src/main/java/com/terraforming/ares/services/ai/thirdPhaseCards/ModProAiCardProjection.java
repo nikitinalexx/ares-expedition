@@ -25,7 +25,7 @@ public class ModProAiCardProjection<T extends Card> implements AiCardProjection<
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         Tag selectedTag = player.getCardToTag().get(ModproCorporation.class).get(0);
 
         LinkedList<Integer> hand = player.getHand().getCards();

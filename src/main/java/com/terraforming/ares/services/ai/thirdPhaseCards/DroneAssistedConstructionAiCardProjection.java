@@ -1,7 +1,6 @@
 package com.terraforming.ares.services.ai.thirdPhaseCards;
 
 import com.terraforming.ares.cards.blue.DroneAssistedConstruction;
-import com.terraforming.ares.cards.corporations.HyperionSystemsCorporation;
 import com.terraforming.ares.dataset.MarsGameRowDifference;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
@@ -17,7 +16,7 @@ public class DroneAssistedConstructionAiCardProjection<T extends Card> implement
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         player.setMc(player.getMc() + (player.getChosenPhase() == Constants.PERFORM_BLUE_ACTION_PHASE && player.isPhaseUpgraded(Constants.PERFORM_BLUE_ACTION_PHASE) ? 4 : 2));
 
         return new MarsGameRowDifference();

@@ -1,6 +1,5 @@
 package com.terraforming.ares.services.ai.thirdPhaseCards;
 
-import com.terraforming.ares.cards.blue.FarmersMarket;
 import com.terraforming.ares.cards.blue.FarmingCoops;
 import com.terraforming.ares.dataset.MarsGameRowDifference;
 import com.terraforming.ares.mars.MarsGame;
@@ -17,7 +16,7 @@ public class FarmingCoopsAiCardProjection<T extends Card> implements AiCardProje
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         //todo TEST rounding
         int cardsAvailable = player.getHand().size() + (int) (initialDifference.getBlueCards() + initialDifference.getRedCards() + initialDifference.getGreenCards());
 

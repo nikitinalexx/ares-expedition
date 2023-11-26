@@ -24,14 +24,14 @@ public class NitriteReductingBacteriaAiCardProjection<T extends Card> implements
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         if (player.getCardResourcesCount().get(NitriteReductingBacteria.class) < 3 || !terraformingService.canRevealOcean(game)) {
             player.getCardResourcesCount().put(NitriteReductingBacteria.class, player.getCardResourcesCount().get(NitriteReductingBacteria.class) + 1);
             return new MarsGameRowDifference();
         }
 
         player.getCardResourcesCount().put(NitriteReductingBacteria.class, player.getCardResourcesCount().get(NitriteReductingBacteria.class) + 1);
-        float stateIfPutResource = deepNetwork.testState(game, player);
+        float stateIfPutResource = deepNetwork.testState(game, player, network);
         player.getCardResourcesCount().put(NitriteReductingBacteria.class, player.getCardResourcesCount().get(NitriteReductingBacteria.class) - 1);
 
 
@@ -42,7 +42,7 @@ public class NitriteReductingBacteriaAiCardProjection<T extends Card> implements
         //TODO count cards before revealOcean
         terraformingService.revealOcean(marsContextProvider.provide(gameCopy, playerCopy));
 
-        float stateIfUseResource = deepNetwork.testState(gameCopy, playerCopy);
+        float stateIfUseResource = deepNetwork.testState(gameCopy, playerCopy, network);
 
         if (stateIfPutResource > stateIfUseResource) {
             player.getCardResourcesCount().put(NitriteReductingBacteria.class, player.getCardResourcesCount().get(NitriteReductingBacteria.class) + 1);

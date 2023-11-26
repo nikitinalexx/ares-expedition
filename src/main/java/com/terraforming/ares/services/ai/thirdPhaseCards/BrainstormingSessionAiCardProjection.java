@@ -19,7 +19,7 @@ public class BrainstormingSessionAiCardProjection<T extends Card> implements AiC
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         return MarsGameRowDifference.builder()
                 .mc(Constants.GREEN_CARDS_RATIO)
                 .redCards(Constants.RED_CARDS_RATIO)

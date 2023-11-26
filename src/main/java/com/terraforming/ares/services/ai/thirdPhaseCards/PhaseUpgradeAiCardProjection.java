@@ -19,9 +19,9 @@ public abstract class PhaseUpgradeAiCardProjection<T extends Card> implements Ai
     }
 
 
-    public MarsGameRowDifference produceDifferenceForPhaseUpgrade(MarsGame game, Player player) {
+    public MarsGameRowDifference produceDifferenceForPhaseUpgrade(MarsGame game, Player player, int network) {
         List<PhaseUpgradeWithChance> sortedUpgrades = aiDiscoveryDecisionService
-                .chooseBestUpdateForEachPhase(game, player).stream()
+                .chooseBestUpdateForEachPhase(game, player, network).stream()
                 .sorted(Comparator.comparing(PhaseUpgradeWithChance::getChance).reversed())
                 .collect(Collectors.toList());
 
