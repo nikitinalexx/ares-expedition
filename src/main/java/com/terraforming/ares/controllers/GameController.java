@@ -343,7 +343,7 @@ public class GameController {
 
                 for (int i = 0; i < cards.size(); i++) {
                     MarsGame gameCopy = new MarsGame(projectionAfterCorporation);
-                    totalExtra += aiPickCardProjectionService.cardExtraChanceIfBuilt(gameCopy, gameCopy.getPlayerByUuid(player.getUuid()), cards.get(i), initialChance);
+                    totalExtra += aiPickCardProjectionService.cardExtraChanceIfBuilt(gameCopy, gameCopy.getPlayerByUuid(player.getUuid()), cards.get(i), initialChance, 0);
                 }
 
                 if (totalExtra > bestTotalExtra) {
@@ -624,9 +624,6 @@ public class GameController {
             }
             if (row.getPlayer().getSteelIncome() + row.getPlayer().getTitaniumIncome() > maxSteelTitanium) {
                 maxSteelTitanium = row.getPlayer().getSteelIncome() + row.getPlayer().getTitaniumIncome();
-            }
-            if (row.getResources() > maxResources) {
-                maxResources = row.getResources();
             }
             String newString = getMarsGameRowString(row);
             if (newString != null && (!newString.equals(previousString))) {

@@ -243,7 +243,6 @@ public class DatasetCollectionService {
         }
 
         return MarsGameRow.builder()
-                .resources(currentPlayer.getCardResourcesCount().values().stream().mapToInt(i -> i).sum())
                 .turn(game.getTurns())
                 .milestones(milestonesResult)
                 .awards(awardsResult)

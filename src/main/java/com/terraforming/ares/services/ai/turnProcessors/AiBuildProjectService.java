@@ -186,7 +186,7 @@ public class AiBuildProjectService extends BaseProcessorService {
         game = new MarsGame(game);
         player = game.getPlayerByUuid(player.getUuid());
 
-        Map<Integer, List<Integer>> inputParameters = aiCardBuildParamsService.getInputParamsForBuild(game, player, card);
+        Map<Integer, List<Integer>> inputParameters = aiCardBuildParamsService.getInputParamsForBuild(game, player, card, true);
         List<Payment> payments = aiPaymentService.getCardPayments(game, player, card, inputParameters);
         if (card.getColor() == CardColor.GREEN) {
             aiTurnService.buildGreenProjectSyncNoRequirements(game, player, card.getId(), payments, inputParameters);

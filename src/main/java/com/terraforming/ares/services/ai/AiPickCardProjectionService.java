@@ -4,7 +4,6 @@ import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.cards.red.AdvancedEcosystems;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
-import com.terraforming.ares.model.ai.AiExperimentalTurn;
 import com.terraforming.ares.model.build.PutResourceOnBuild;
 import com.terraforming.ares.model.parameters.OceanRequirement;
 import com.terraforming.ares.model.parameters.ParameterColor;
@@ -17,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -39,7 +39,7 @@ public class AiPickCardProjectionService {
             MarsGame tempGame = new MarsGame(game);
             Player tempPlayer = tempGame.getPlayerByUuid(player.getUuid());
 
-            float additionalCardValue = cardExtraChanceIfBuilt(tempGame, tempPlayer, cards.get(i), initialChance);
+            float additionalCardValue = cardExtraChanceIfBuilt(tempGame, tempPlayer, cards.get(i), initialChance, 0);
             if (additionalCardValue < worstAdditionalValue) {
                 worstAdditionalValue = additionalCardValue;
                 worstCardIndex = i;
@@ -60,7 +60,7 @@ public class AiPickCardProjectionService {
             MarsGame tempGame = new MarsGame(game);
             Player tempPlayer = tempGame.getPlayerByUuid(player.getUuid());
 
-            float additionalCardValue = cardExtraChanceIfBuilt(tempGame, tempPlayer, cardsToDiscard.get(i), initialChance);
+            float additionalCardValue = cardExtraChanceIfBuilt(tempGame, tempPlayer, cardsToDiscard.get(i), initialChance, 0);
             if (additionalCardValue > bestCardValue) {
                 bestCardValue = additionalCardValue;
                 bestCardIndex = i;
@@ -71,7 +71,7 @@ public class AiPickCardProjectionService {
     }
 
 
-    public float cardExtraChanceIfBuilt(MarsGame game, Player player, Integer cardId, float initialChance) {
+    public float cardExtraChanceIfBuilt(MarsGame game, Player player, Integer cardId, float initialChance, int depth) {
         Card card = cardService.getCard(cardId);
 
         CardMetadata cardMetadata = card.getCardMetadata();
@@ -102,7 +102,7 @@ public class AiPickCardProjectionService {
 
             if (revealedOceansCount < oceanRequirement.getMinValue()) {
                 extraChanceModifier = (float) revealedOceansCount / game.getPlanet().getOceans().size();
-            } else if (revealedOceansCount > oceanRequirement.getMaxValue()){
+            } else if (revealedOceansCount > oceanRequirement.getMaxValue()) {
                 extraChanceModifier = 0;
             }
         }
@@ -120,11 +120,29 @@ public class AiPickCardProjectionService {
             player.setBuilds(List.of(new BuildDto(BuildType.BLUE_RED)));
         }
 
+        List<Integer> handCards = new ArrayList<>(player.getHand().getCards());
+
         MarsGame stateAfterPlayingTheCard = aiBuildProjectService.projectBuildCardNoRequirements(game, player, card);
 
         float projectedChance = deepNetwork.testState(stateAfterPlayingTheCard, stateAfterPlayingTheCard.getPlayerByUuid(player.getUuid()));
 
+        if (!player.isFirstBot() && depth == 0) {
+            handCards.remove(cardId);
+
+            float extraChance = 0;
+
+            for (Integer handCard : handCards) {
+                float nextBestCard = cardExtraChanceIfBuilt(stateAfterPlayingTheCard, stateAfterPlayingTheCard.getPlayerByUuid(player.getUuid()), handCard, projectedChance, 1);
+                if (nextBestCard > extraChance) {
+                    extraChance = nextBestCard;
+                }
+            }
+            if (extraChance > 0) {
+                projectedChance += extraChance;
+            }
+        }
         return (projectedChance - initialChance) < 0 ? (projectedChance - initialChance) : extraChanceModifier * (projectedChance - initialChance);
+
     }
 
     private float getChanceReductionBasedOnRequirement(Planet planet, Player player, GlobalParameter parameter, List<ParameterColor> requirement) {

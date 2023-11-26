@@ -81,7 +81,7 @@ public class ResearchGrantAiCardProjection<T extends Card> implements AiCardProj
 
         Map<Integer, List<Integer>> inputParameters = new HashMap<>();
         inputParameters.put(InputFlag.TAG_INPUT.getId(), List.of(tag.ordinal()));
-        inputParameters.putAll(aiCardBuildParamsService.getActiveInputFromCards(game, player, playedCards, card, Map.of(InputFlag.TAG_INPUT.getId(), List.of(tag.ordinal()))));
+        inputParameters.putAll(aiCardBuildParamsService.getActiveInputFromCards(game, player, playedCards, card, Map.of(InputFlag.TAG_INPUT.getId(), List.of(tag.ordinal())), false));
 
         playedCards
                 .stream()

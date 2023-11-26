@@ -30,8 +30,6 @@ public class MarsGameRow {
     float[] milestones;
     float[] awards;
 
-    int resources;
-
     //todo how to depict the current hand?
 
     int winner;

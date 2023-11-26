@@ -250,7 +250,7 @@ public class AiCardActionHelper {
 
             List<Card> playedCards = player.getPlayed().getCards().stream().map(cardService::getCard).collect(Collectors.toList());
 
-            Map<Integer, List<Integer>> activeInputFromCards = aiCardBuildParamsService.getActiveInputFromCards(game, player, playedCards, card, Map.of(InputFlag.TAG_INPUT.getId(), List.of(tagToPut)));
+            Map<Integer, List<Integer>> activeInputFromCards = aiCardBuildParamsService.getActiveInputFromCards(game, player, playedCards, card, Map.of(InputFlag.TAG_INPUT.getId(), List.of(tagToPut)), false);
 
             Map<Integer, List<Integer>> result = new HashMap<>();
             result.put(InputFlag.TAG_INPUT.getId(), List.of(tagToPut));

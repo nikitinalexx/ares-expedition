@@ -189,6 +189,10 @@ public class AiCardBuildParamsService {
     }
 
     public Map<Integer, List<Integer>> getInputParamsForBuild(MarsGame game, Player player, Card card) {
+        return getInputParamsForBuild(game, player, card, false);
+    }
+
+    public Map<Integer, List<Integer>> getInputParamsForBuild(MarsGame game, Player player, Card card, boolean ignoreMarsUniversity) {
         Map<Integer, List<Integer>> result = new HashMap<>();
         CardAction cardAction = card.getCardMetadata().getCardAction();
 
@@ -306,20 +310,25 @@ public class AiCardBuildParamsService {
             result.put(InputFlag.SYNTHETIC_CATASTROPHE_CARD.getId(), getRandomCardInput(playedRedCards));
         }
 
-        result.putAll(getActiveInputFromCards(game, player, playedCards, card, result));
+        result.putAll(getActiveInputFromCards(game, player, playedCards, card, result, ignoreMarsUniversity));
 
         return result;
     }
 
-    public Map<Integer, List<Integer>> getActiveInputFromCards(MarsGame game, Player player, List<Card> playedCards, Card card, Map<Integer, List<Integer>> input) {
+    public Map<Integer, List<Integer>> getActiveInputFromCards(MarsGame game, Player player, List<Card> playedCards, Card card, Map<Integer, List<Integer>> input, boolean ignoreMarsUniversity) {
         Map<Integer, List<Integer>> decomposersInputIfApplicable = getDecomposersInputIfApplicable(player, playedCards, card, input);
         Map<Integer, List<Integer>> viralEnhancersInputIfApplicable = getViralEnhancersInputIfApplicable(playedCards, card, input);
-        Map<Integer, List<Integer>> marsUniversityInputIfApplicable = getMarsUniversityInputIfApplicable(game, player, playedCards, card, input);
 
         Map<Integer, List<Integer>> result = new HashMap<>();
         result.putAll(decomposersInputIfApplicable);
         result.putAll(viralEnhancersInputIfApplicable);
-        result.putAll(marsUniversityInputIfApplicable);
+
+        if (!ignoreMarsUniversity) {
+            Map<Integer, List<Integer>> marsUniversityInputIfApplicable = getMarsUniversityInputIfApplicable(game, player, playedCards, card, input);
+            result.putAll(marsUniversityInputIfApplicable);
+        } else {
+            result.put(InputFlag.MARS_UNIVERSITY_CARD.getId(), List.of(InputFlag.SKIP_ACTION.getId()));
+        }
 
         return result;
     }
