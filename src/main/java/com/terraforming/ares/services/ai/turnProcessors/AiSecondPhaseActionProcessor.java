@@ -61,7 +61,7 @@ public class AiSecondPhaseActionProcessor {
                 List<Card> availableCards = aiBuildProjectService.getAvailableCardsToBuild(game, player);
 
                 selectedCard = (player.getDifficulty().BUILD == AiTurnChoice.RANDOM)
-                        ? availableCards.get(random.nextInt(availableCards.size()))
+                        ? (availableCards.isEmpty() ? null : availableCards.get(random.nextInt(availableCards.size())))
                         : cardValueService.getBestCardToBuild(game, player, availableCards, game.getTurns(), true);
 
                 if (Constants.LOG_NET_COMPARISON) {

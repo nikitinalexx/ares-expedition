@@ -729,10 +729,17 @@ public class GameController {
         if (aiComputerCount == game.getPlayerUuidToPlayer().size()) {
             aiComputer = game.getPlayerByUuid(playerUuid);
         } else {
-            aiComputer =  game.getPlayerUuidToPlayer().values().stream().filter(player -> player.getDifficulty() != PlayerDifficulty.NONE && player.getDifficulty() != PlayerDifficulty.RANDOM && player.getDifficulty() != PlayerDifficulty.SMART).findFirst().orElseThrow();
+            aiComputer =  game.getPlayerUuidToPlayer().values().stream().filter(player -> player.getDifficulty() != PlayerDifficulty.NONE && player.getDifficulty() != PlayerDifficulty.RANDOM && player.getDifficulty() != PlayerDifficulty.SMART).findFirst().orElse(null);
         }
 
-        float winProbability = deepNetwork.testState(game, aiComputer);
+        float winProbability;
+
+        if (aiComputer == null) {
+            aiComputerCount = 0;
+            winProbability = 0;
+        } else {
+            winProbability = deepNetwork.testState(game, aiComputer);
+        }
 
         Planet phasePlanet = game.getPlanetAtTheStartOfThePhase();
 

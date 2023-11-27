@@ -136,7 +136,6 @@ public class TestAiService {
                     game = aiBuildProjectService.assumeProjectIsBuiltFromPickPhase(game, player, prediction.getCard());
                     player = game.getPlayerByUuid(player.getUuid());
                     anotherPlayer = game.getPlayerByUuid(anotherPlayer.getUuid());
-                    System.out.println("Forced income");
                 }
             }
             if (Constants.LOG_NET_COMPARISON) {
@@ -199,20 +198,8 @@ public class TestAiService {
             long goodCards = player.getHand().size() - badCards;
 
             if (badCards > goodCards && goodCards < 4) {
-                System.out.println("Bad cards");
                 return 1;
             }
-//
-//            float ratio = badCards;
-//            if (goodCards != 0) {
-//                ratio = ratio * badCards / goodCards;
-//            }
-//
-//            MarsPlayerRow marsPlayerRow = marsGameRow.getPlayer();
-//
-//            marsPlayerRow.setGreenCards(marsPlayerRow.getGreenCards() - ratio * Constants.GREEN_CARDS_RATIO);
-//            marsPlayerRow.setRedCards(marsPlayerRow.getGreenCards() - ratio * Constants.RED_CARDS_RATIO);
-//            marsPlayerRow.setBlueCards(marsPlayerRow.getGreenCards() - ratio * Constants.BLUE_CARDS_RATIO);
         }
 
 
