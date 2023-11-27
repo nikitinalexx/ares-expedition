@@ -21,7 +21,6 @@ import java.util.List;
 public class FibrousCompositeMaterial implements DiscoveryExpansionBlueCard {
     private final int id;
     private final CardMetadata cardMetadata;
-    private final CardResourceService cardResourceService = new CardResourceService();
 
     public FibrousCompositeMaterial(int id) {
         this.id = id;
@@ -49,7 +48,7 @@ public class FibrousCompositeMaterial implements DiscoveryExpansionBlueCard {
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
         player.initResources(this);
-        cardResourceService.addResources(player, new FibrousCompositeMaterial(310), 3);
+        marsContext.getCardResourceService().addResources(player, this, 3);
 //        marsContext.getPlayer().getCardResourcesCount().put(this.getClass(), 3);
         return null;
     }

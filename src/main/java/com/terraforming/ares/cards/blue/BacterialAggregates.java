@@ -20,7 +20,6 @@ import java.util.Set;
 public class BacterialAggregates implements DiscoveryExpansionBlueCard {
     private final int id;
     private final CardMetadata cardMetadata;
-    private final CardResourceService cardResourceService = new CardResourceService();
 
     public BacterialAggregates(int id) {
         this.id = id;
@@ -54,8 +53,7 @@ public class BacterialAggregates implements DiscoveryExpansionBlueCard {
         final Player player = marsContext.getPlayer();
 
 //        player.getCardResourcesCount().put(this.getClass(), Math.min(player.getCardResourcesCount().get(this.getClass()) + tagsCount, 5));
-
-        cardResourceService.addResources(player, this.getClass(), Math.min(player.getCardResourcesCount().get(this.getClass()) + tagsCount, 5));
+        marsContext.getCardResourceService().addResources(player, this, Math.min(player.getCardResourcesCount().get(this.getClass()) + tagsCount, 5));
     }
 
     @Override
@@ -92,4 +90,6 @@ public class BacterialAggregates implements DiscoveryExpansionBlueCard {
     public int getPrice() {
         return 7;
     }
+
+
 }
