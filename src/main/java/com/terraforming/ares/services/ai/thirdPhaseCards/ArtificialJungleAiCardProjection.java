@@ -27,9 +27,7 @@ public class ArtificialJungleAiCardProjection<T extends Card> implements AiCardP
         player.setPlants(player.getPlants() - 1);
 
         return MarsGameRowDifference.builder()
-                .greenCards(Constants.GREEN_CARDS_RATIO)
-                .redCards(Constants.RED_CARDS_RATIO)
-                .blueCards(Constants.BLUE_CARDS_RATIO)
+                .cards(1)
                 .build();
     }
 }

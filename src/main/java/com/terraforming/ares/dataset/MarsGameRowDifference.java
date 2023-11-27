@@ -8,18 +8,14 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class MarsGameRowDifference {
-    float greenCards;
-    float redCards;
-    float blueCards;
+    float cards;
     float winPoints;
     float mc;
     float mcIncome;
 
     //mutable
     public void add(MarsGameRowDifference another) {
-        this.greenCards += another.greenCards;
-        this.redCards += another.redCards;
-        this.blueCards += another.blueCards;
+        this.cards += another.cards;
         this.winPoints += another.winPoints;
         this.mc += another.mc;
         this.mcIncome += another.mcIncome;

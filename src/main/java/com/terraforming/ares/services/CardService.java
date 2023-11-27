@@ -255,6 +255,26 @@ public class CardService {
         );
     }
 
+    public Map<Tag, Long> countPlayedTagsAsMap(Player player) {
+        if (player == null || player.getPlayed() == null || CollectionUtils.isEmpty(player.getPlayed().getCards())) {
+            return Map.of();
+        }
+
+        return Stream.concat(player.getCardToTag().values().stream().flatMap(
+                        List::stream
+                ),
+                player.getPlayed()
+                        .getCards()
+                        .stream()
+                        .map(this::getCard)
+                        .flatMap(card -> card.getTags().stream())
+        ).collect(Collectors.groupingBy(tag -> tag, Collectors.counting()));
+    }
+
+    public Map<Tag, Long> countTagsOnCards(List<Integer> cards) {
+        return cards.stream().map(this::getCard).flatMap(card -> card.getTags().stream()).collect(Collectors.groupingBy(tag -> tag, Collectors.counting()));
+    }
+
     public int countUniquePlayedTags(Player player, Set<Tag> tagsToCheck) {
         if (player == null || player.getPlayed() == null || CollectionUtils.isEmpty(player.getPlayed().getCards())) {
             return 0;

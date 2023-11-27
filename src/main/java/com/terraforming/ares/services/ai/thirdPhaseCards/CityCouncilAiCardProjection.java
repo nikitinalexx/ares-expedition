@@ -22,9 +22,7 @@ public class CityCouncilAiCardProjection<T extends Card> implements AiCardProjec
         float totalCardsTaken = 1 + milestonesAchieved;
 
         return MarsGameRowDifference.builder()
-                .greenCards(totalCardsTaken * Constants.GREEN_CARDS_RATIO)
-                .redCards(totalCardsTaken * Constants.RED_CARDS_RATIO)
-                .blueCards(totalCardsTaken * Constants.BLUE_CARDS_RATIO)
+                .cards(totalCardsTaken)
                 .build();
     }
 }

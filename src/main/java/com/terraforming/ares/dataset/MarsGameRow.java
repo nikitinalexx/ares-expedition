@@ -21,7 +21,6 @@ public class MarsGameRow {
     MarsPlayerRow player;
     MarsPlayerRow opponent;
 
-    int corporationId;
 
     int oxygenLevel;
     int temperatureLevel;
@@ -29,6 +28,8 @@ public class MarsGameRow {
 
     float[] milestones;
     float[] awards;
+
+    float austellarMilestone;
 
     //todo how to depict the current hand?
 
@@ -49,9 +50,7 @@ public class MarsGameRow {
     }
 
     private void applyDifference(MarsPlayerRow row, MarsGameRowDifference difference) {
-        row.greenCards += difference.greenCards;
-        row.redCards += difference.redCards;
-        row.blueCards += difference.blueCards;
+        row.cards += difference.cards;
         row.winPoints += difference.winPoints;
         row.mc += difference.mc;
         row.mcIncome += difference.mcIncome;

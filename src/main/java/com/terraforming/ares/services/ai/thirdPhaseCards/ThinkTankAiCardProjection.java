@@ -4,7 +4,6 @@ import com.terraforming.ares.cards.blue.ThinkTank;
 import com.terraforming.ares.dataset.MarsGameRowDifference;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
-import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import org.springframework.stereotype.Component;
 
@@ -24,9 +23,7 @@ public class ThinkTankAiCardProjection<T extends Card> implements AiCardProjecti
         player.setMc(player.getMc() - 2);
 
         return MarsGameRowDifference.builder()
-                .greenCards(Constants.GREEN_CARDS_RATIO)
-                .redCards(Constants.RED_CARDS_RATIO)
-                .blueCards(Constants.BLUE_CARDS_RATIO)
+                .cards(1)
                 .build();
     }
 }

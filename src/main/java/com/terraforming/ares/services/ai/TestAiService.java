@@ -5,7 +5,6 @@ import com.terraforming.ares.dataset.MarsGameRow;
 import com.terraforming.ares.dataset.MarsPlayerRow;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
-import com.terraforming.ares.model.ai.AiExperimentalTurn;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.DraftCardsService;
 import com.terraforming.ares.services.MarsContextProvider;
@@ -209,9 +208,7 @@ public class TestAiService {
     private void addDraftedCards(Player player, MarsPlayerRow marsPlayerRow, boolean chooseFifthPhase, int network) {
         float total = countTotalCardsToTake(player, chooseFifthPhase);
 
-        marsPlayerRow.setGreenCards(Math.max(0, marsPlayerRow.getGreenCards() + total * Constants.GREEN_CARDS_RATIO));
-        marsPlayerRow.setRedCards(Math.max(0, marsPlayerRow.getRedCards() + total * Constants.RED_CARDS_RATIO));
-        marsPlayerRow.setBlueCards(Math.max(0, marsPlayerRow.getBlueCards() + total * Constants.BLUE_CARDS_RATIO));
+        marsPlayerRow.setCards(Math.max(0, marsPlayerRow.getCards() + total));
     }
 
     private float countTotalCardsToTake(Player player, boolean chooseFifthPhase) {
@@ -234,9 +231,7 @@ public class TestAiService {
     }
 
     private void addCardIncome(Player player, MarsPlayerRow marsPlayerRow) {
-        marsPlayerRow.setGreenCards(Math.max(0, marsPlayerRow.getGreenCards() + player.getCardIncome() * Constants.GREEN_CARDS_RATIO));
-        marsPlayerRow.setRedCards(Math.max(0, marsPlayerRow.getRedCards() + player.getCardIncome() * Constants.RED_CARDS_RATIO));
-        marsPlayerRow.setBlueCards(Math.max(0, marsPlayerRow.getBlueCards() + player.getCardIncome() * Constants.BLUE_CARDS_RATIO));
+        marsPlayerRow.setCards(Math.max(0, marsPlayerRow.getCards() + player.getCardIncome()));
     }
 
     private void addMainIncome(Player player) {

@@ -43,9 +43,7 @@ public class AdvancedScreeningTechAiCardProjection<T extends Card> implements Ai
 
         //TODO take into account that tags are not equally distributed
         return MarsGameRowDifference.builder()
-                .greenCards(cardsIncome * Constants.GREEN_CARDS_RATIO)
-                .redCards(cardsIncome * Constants.RED_CARDS_RATIO)
-                .blueCards(cardsIncome * Constants.BLUE_CARDS_RATIO)
+                .cards(cardsIncome)
                 .build();
     }
 }

@@ -44,9 +44,7 @@ public class ModProAiCardProjection<T extends Card> implements AiCardProjection<
 
         //TODO take into account that tags are not equally distributed
         return MarsGameRowDifference.builder()
-                .greenCards(cardsIncome * Constants.GREEN_CARDS_RATIO)
-                .redCards(cardsIncome * Constants.RED_CARDS_RATIO)
-                .blueCards(cardsIncome * Constants.BLUE_CARDS_RATIO)
+                .cards(cardsIncome)
                 .build();
     }
 

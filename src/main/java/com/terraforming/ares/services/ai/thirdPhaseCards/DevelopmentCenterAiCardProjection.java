@@ -23,9 +23,7 @@ public class DevelopmentCenterAiCardProjection<T extends Card> implements AiCard
         if (player.getHeat() >= 2) {
             player.setHeat(player.getHeat() - 2);
             return MarsGameRowDifference.builder()
-                    .greenCards(Constants.GREEN_CARDS_RATIO)
-                    .redCards(Constants.RED_CARDS_RATIO)
-                    .blueCards(Constants.BLUE_CARDS_RATIO)
+                    .cards(1)
                     .build();
         }
 

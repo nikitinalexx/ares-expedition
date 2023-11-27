@@ -225,18 +225,20 @@ public class AiThirdPhaseActionProcessor {
             return true;
         }
 
-        float stateBeforeStandardProject = deepNetwork.testState(game, player);
-        StandardProjectType bestStandardProject = null;
+        if (player.getDifficulty().THIRD_PHASE_ACTION == AiTurnChoice.NETWORK) {
+            float stateBeforeStandardProject = deepNetwork.testState(game, player);
+            StandardProjectType bestStandardProject = null;
 
-        for (StandardProjectType standardProjectType : List.of(StandardProjectType.FOREST, StandardProjectType.OCEAN, StandardProjectType.TEMPERATURE)) {
-            float nextState = testAiService.projectPlayStandardAction(game, player.getUuid(), StandardProjectType.FOREST);
-            if (nextState > stateBeforeStandardProject) {
-                stateBeforeStandardProject = nextState;
-                bestStandardProject = standardProjectType;
+            for (StandardProjectType standardProjectType : List.of(StandardProjectType.FOREST, StandardProjectType.OCEAN, StandardProjectType.TEMPERATURE)) {
+                float nextState = testAiService.projectPlayStandardAction(game, player.getUuid(), StandardProjectType.FOREST);
+                if (nextState > stateBeforeStandardProject) {
+                    stateBeforeStandardProject = nextState;
+                    bestStandardProject = standardProjectType;
+                }
             }
-        }
-        if (bestStandardProject != null) {
-            aiTurnService.standardProjectTurn(game, player, bestStandardProject);
+            if (bestStandardProject != null) {
+                aiTurnService.standardProjectTurn(game, player, bestStandardProject);
+            }
         }
 
         return false;

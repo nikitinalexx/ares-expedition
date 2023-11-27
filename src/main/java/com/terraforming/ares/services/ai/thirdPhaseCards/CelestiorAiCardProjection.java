@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class CelestiorAiCardProjection<T extends Card> implements AiCardProjection<CelestiorCorporation> {
+
     @Override
     public Class<CelestiorCorporation> getType() {
         return CelestiorCorporation.class;
@@ -18,7 +19,8 @@ public class CelestiorAiCardProjection<T extends Card> implements AiCardProjecti
     @Override
     public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         return MarsGameRowDifference.builder()
-                .redCards(3f * Constants.RED_CARDS_RATIO)
+                .cards(3f * Constants.RED_CARDS_RATIOO)
                 .build();
     }
+
 }

@@ -31,18 +31,9 @@ public class VolcanicPoolsAiCardProjection<T extends Card> implements AiCardProj
             int oceanPrice = Math.max(0, 12 - cardService.countPlayedTags(player, Set.of(Tag.ENERGY)));
             if (player.getMc() >= oceanPrice) {
                 player.setMc(player.getMc() - oceanPrice);
-                LinkedList<Integer> handBeforeOceans = new LinkedList<>(player.getHand().getCards());
                 terraformingService.revealOcean(
                         marsContextProvider.provide(game, player)
                 );
-                if (player.getHand().getCards().size() > handBeforeOceans.size()) {
-                    player.setHand(Deck.builder().cards(handBeforeOceans).build());
-                    return MarsGameRowDifference.builder()
-                            .greenCards(Constants.GREEN_CARDS_RATIO)
-                            .redCards(Constants.RED_CARDS_RATIO)
-                            .blueCards(Constants.BLUE_CARDS_RATIO)
-                            .build();
-                }
             }
         }
 

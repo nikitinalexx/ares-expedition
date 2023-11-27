@@ -17,12 +17,12 @@ import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsService;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.terraforming.ares.model.Constants.*;
+import static com.terraforming.ares.model.Constants.COLLECT_INCOME_PHASE;
+import static com.terraforming.ares.model.Constants.LOG_NET_COMPARISON;
 
 /**
  * Created by oleksii.nikitin
@@ -175,9 +175,7 @@ public class AiBuildProjectService extends BaseProcessorService {
 
         MarsPlayerRow marsPlayerRow = marsGameRow.getPlayer();
 
-        marsPlayerRow.setGreenCards(marsPlayerRow.getGreenCards() + GREEN_CARDS_RATIO);
-        marsPlayerRow.setRedCards(marsPlayerRow.getRedCards() + RED_CARDS_RATIO);
-        marsPlayerRow.setBlueCards(marsPlayerRow.getBlueCards() + BLUE_CARDS_RATIO);
+        marsPlayerRow.setCards(marsPlayerRow.getCards() + 1);
 
         return BuildProjectPrediction.builder().canBuild(true).card(null).expectedValue(deepNetwork.testState(marsGameRow, player.isFirstBot() ? 1 : 2)).build();
     }
@@ -250,7 +248,7 @@ public class AiBuildProjectService extends BaseProcessorService {
             game.getPlayerUuidToPlayer().values().stream().filter(p -> !p.getUuid().equals(player.getUuid())).forEach(
                     anotherPlayer -> aiTurnService.choosePhaseTurn(anotherPlayer, phase == Phase.SECOND_BY_ANOTHER ? 2 : COLLECT_INCOME_PHASE)
             );
-            aiTurnService.choosePhaseTurn(player, phase == Phase.SECOND_BY_ANOTHER ? COLLECT_INCOME_PHASE: (phase == Phase.FIRST ? 1 : 2));
+            aiTurnService.choosePhaseTurn(player, phase == Phase.SECOND_BY_ANOTHER ? COLLECT_INCOME_PHASE : (phase == Phase.FIRST ? 1 : 2));
             while (processFinalTurns(game)) {
                 stateFactory.getCurrentState(game).updateState();
             }

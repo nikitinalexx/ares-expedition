@@ -82,9 +82,7 @@ public class DatasetCollectionService {
         result[counter++] = player.extraSeeCards;
         result[counter++] = player.extraTakeCards;
 
-        result[counter++] = player.greenCards;
-        result[counter++] = player.redCards;
-        result[counter++] = player.blueCards;
+        result[counter++] = player.cards;
 
         result[counter++] = player.anaerobicMicroorganisms;
         result[counter++] = player.decomposers;
@@ -95,8 +93,16 @@ public class DatasetCollectionService {
         result[counter++] = player.selfReplicatingBacteria;
         result[counter++] = player.fibrousCompositeScience;
 
+        result[counter++] = player.spaceTagsCount;
+        result[counter++] = player.earthTagsCount;
+        result[counter++] = player.eventTagsCount;
         result[counter++] = player.scienceTagsCount;
+        result[counter++] = player.plantTagsCount;
+        result[counter++] = player.energyTagsCount;
+        result[counter++] = player.buildingTagsCount;
+        result[counter++] = player.animalTagsCount;
         result[counter++] = player.jupiterTagsCount;
+        result[counter++] = player.microbeTagsCount;
 
         result[counter++] = player.amplifyEffect;
         result[counter++] = player.cardsPriceEffect;
@@ -126,13 +132,22 @@ public class DatasetCollectionService {
             result[counter++] = dynamicEffect;
         }
 
-        for (int type1Upgrade: player.type1Upgrades) {
+        for (int type1Upgrade : player.type1Upgrades) {
             result[counter++] = type1Upgrade;
         }
 
-        for (int type2Upgrade: player.type2Upgrades) {
+        for (int type2Upgrade : player.type2Upgrades) {
             result[counter++] = type2Upgrade;
         }
+
+        if (corporationIdToIndex.containsKey(player.corporationId)) {
+            int corporationIndex = corporationIdToIndex.get(player.corporationId);
+            if (corporationIndex < 0 || corporationIndex >= corporationIdToIndex.size()) {
+                throw new IllegalStateException("Invalid corporation index " + corporationIndex);
+            }
+            result[counter + corporationIndex] = 1;
+        }
+        counter += corporationIdToIndex.size();
 
         for (Integer blueCard : player.getBlueCardsList()) {
             if (!blueCardIdToIndex.containsKey(blueCard)) {
@@ -154,10 +169,10 @@ public class DatasetCollectionService {
         int corporationsSize = corporationIdToIndex.size();
         int blueCardsSize = blueCardIdToIndex.size();
         float[] result = new float[4 + //turn and global parameters
-                corporationsSize +
+                corporationsSize * 2 +
                 2 * (MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize) +
                 (forUse ? 0 : 1) + //won or lose
-                marsGameRow.awards.length + marsGameRow.milestones.length
+                marsGameRow.awards.length + marsGameRow.milestones.length + 1//for austellar
                 ];
         int counter = 0;
 
@@ -167,20 +182,11 @@ public class DatasetCollectionService {
         result[counter++] = marsGameRow.temperatureLevel;
         result[counter++] = marsGameRow.oceansLevel;
 
-        if (corporationIdToIndex.containsKey(marsGameRow.getCorporationId())) {
-            int corporationIndex = corporationIdToIndex.get(marsGameRow.getCorporationId());
-            if (corporationIndex < 0 || corporationIndex >= corporationsSize) {
-                throw new IllegalStateException("Invalid corporation index " + corporationIndex);
-            }
-            result[counter + corporationIndex] = 1;
-        }
-        counter += corporationsSize;
-
         collectGameAndPlayers(result, counter, marsGameRow.getPlayer());
-        counter += MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize;
+        counter += MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize + corporationsSize;
 
         collectGameAndPlayers(result, counter, marsGameRow.getOpponent());
-        counter += MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize;
+        counter += MarsPlayerRow.DATA_SIZE_NO_BLUE_CARDS + blueCardsSize + corporationsSize;
 
         for (int i = 0; i < marsGameRow.awards.length; i++) {
             result[counter++] = marsGameRow.awards[i];
@@ -189,6 +195,8 @@ public class DatasetCollectionService {
         for (int i = 0; i < marsGameRow.milestones.length; i++) {
             result[counter++] = marsGameRow.milestones[i];
         }
+
+        result[counter++] = marsGameRow.austellarMilestone;
 
         if (!forUse) {
             //output
@@ -224,7 +232,6 @@ public class DatasetCollectionService {
             return null;
         }
 
-        //TODO check if it actually works
         List<Milestone> milestones = game.getMilestones();
         float[] milestonesResult = new float[milestones.size()];
         for (int i = 0; i < milestones.size(); i++) {
@@ -234,7 +241,18 @@ public class DatasetCollectionService {
             }
         }
 
-        //TODO check if it works, because the parameter has no cap
+        float austellarResult = 0;
+        if (currentPlayer.getAustellarMilestone() >= 0 || anotherPlayer.getAustellarMilestone() >= 0) {
+            int austellarIndex = (currentPlayer.getAustellarMilestone() >= 0 ? currentPlayer.getAustellarMilestone() : anotherPlayer.getAustellarMilestone());
+            Milestone milestone = milestones.get(austellarIndex);
+            if (!milestone.isAchieved()) {
+                austellarResult = ((float) milestone.getValue(currentPlayer, cardService) / milestone.getMaxValue()) - ((float) milestone.getValue(anotherPlayer, cardService) / milestone.getMaxValue());
+                if (anotherPlayer.getAustellarMilestone() >= 0) {
+                    austellarResult = -austellarResult;
+                }
+            }
+        }
+
         List<BaseAward> awards = game.getAwards();
         float[] awardsResult = new float[awards.size()];
         for (int i = 0; i < awards.size(); i++) {
@@ -245,13 +263,13 @@ public class DatasetCollectionService {
         return MarsGameRow.builder()
                 .turn(game.getTurns())
                 .milestones(milestonesResult)
+                .austellarMilestone(austellarResult)
                 .awards(awardsResult)
                 .oxygenLevel(game.getPlanet().getOxygenValue())
                 .temperatureLevel(game.getPlanet().getTemperatureValue() - game.getPlanet().getMinimumTemperature())
                 .oceansLevel(Constants.MAX_OCEANS - game.getPlanet().oceansLeft())
                 .player(collectPlayerData(game, currentPlayer))
                 .opponent(collectPlayerData(game, anotherPlayer))
-                .corporationId(currentPlayer.getSelectedCorporationCard())
                 .build();
     }
 
@@ -265,10 +283,6 @@ public class DatasetCollectionService {
                 .filter(Objects::nonNull)
                 .map(CardMetadata::getCardAction)
                 .filter(Objects::nonNull)
-                .collect(Collectors.groupingBy(Function.identity(), Collectors.summingInt(e -> 1)));
-
-        Map<CardColor, Integer> colorToCount = playedCards.stream()
-                .map(Card::getColor)
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.summingInt(e -> 1)));
 
         List<Integer> blueCardsList = playedCards.stream()
@@ -290,6 +304,8 @@ public class DatasetCollectionService {
             }
         }
 
+        Map<Tag, Long> tagToCount = cardService.countPlayedTagsAsMap(currentPlayer);
+
         return MarsPlayerRow.builder()
                 .winPoints(winPointsService.countWinPointsWithFloats(currentPlayer, game))
                 .mcIncome(currentPlayer.getMcIncome() + currentPlayer.getTerraformingRating())
@@ -304,9 +320,7 @@ public class DatasetCollectionService {
                 .cardsBuilt(currentPlayer.getPlayed().size() - 1)
                 .extraSeeCards(draftCardsService.countExtraCardsToDraft(currentPlayer))
                 .extraTakeCards(draftCardsService.countExtraCardsToTake(currentPlayer))
-                .greenCards(colorToCount.getOrDefault(CardColor.GREEN, 0))
-                .redCards(colorToCount.getOrDefault(CardColor.RED, 0))
-                .blueCards(colorToCount.getOrDefault(CardColor.BLUE, 0))
+                .cards(currentPlayer.getHand().size())
                 .anaerobicMicroorganisms(currentPlayer.getCardResourcesCount().getOrDefault(AnaerobicMicroorganisms.class, 0))
                 .decomposers(currentPlayer.getCardResourcesCount().getOrDefault(Decomposers.class, 0))
                 .decomposingFungus(currentPlayer.getCardResourcesCount().getOrDefault(DecomposingFungus.class, 0))
@@ -316,8 +330,17 @@ public class DatasetCollectionService {
                 .selfReplicatingBacteria(currentPlayer.getCardResourcesCount().getOrDefault(SelfReplicatingBacteria.class, 0))
                 .fibrousCompositeScience(currentPlayer.getCardResourcesCount().getOrDefault(FibrousCompositeMaterial.class, 0))
 
-                .scienceTagsCount(cardService.countPlayedTags(currentPlayer, Set.of(Tag.SCIENCE)))
-                .jupiterTagsCount(cardService.countPlayedTags(currentPlayer, Set.of(Tag.JUPITER)))
+                .spaceTagsCount(tagToCount.getOrDefault(Tag.SPACE, 0L).intValue())
+                .earthTagsCount(tagToCount.getOrDefault(Tag.EARTH, 0L).intValue())
+                .eventTagsCount(tagToCount.getOrDefault(Tag.EVENT, 0L).intValue())
+                .scienceTagsCount(tagToCount.getOrDefault(Tag.SCIENCE, 0L).intValue())
+                .plantTagsCount(tagToCount.getOrDefault(Tag.PLANT, 0L).intValue())
+                .energyTagsCount(tagToCount.getOrDefault(Tag.ENERGY, 0L).intValue())
+                .buildingTagsCount(tagToCount.getOrDefault(Tag.BUILDING, 0L).intValue())
+                .animalTagsCount(tagToCount.getOrDefault(Tag.ANIMAL, 0L).intValue())
+                .jupiterTagsCount(tagToCount.getOrDefault(Tag.JUPITER, 0L).intValue())
+                .microbeTagsCount(tagToCount.getOrDefault(Tag.MICROBE, 0L).intValue())
+
 
                 .amplifyEffect(CardEffect.AMPLIFY.getEffectSize(cardTypes))
                 .cardsPriceEffect(CardEffect.CARDS_PRICE.getEffectSize(cardTypes))
@@ -327,6 +350,8 @@ public class DatasetCollectionService {
                 .cardDiscount(CardEffect.CARD_DISCOUNT.getEffectSize(cardTypes))
                 .cardPerEvent(CardEffect.CARD_PER_EVENT.getEffectSize(cardTypes))
                 .wpPerJupiter(CardEffect.WP_PER_JUPITER.getEffectSize(cardTypes))
+
+                .corporationId(currentPlayer.getSelectedCorporationCard())
 
                 .dynamicEffects(
                         dynamicCardEffectService.getAllDynamicEffects(game, currentPlayer).stream()

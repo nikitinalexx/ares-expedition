@@ -2,9 +2,16 @@ package com.terraforming.ares.services.ai;
 
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
+import com.terraforming.ares.model.milestones.BuilderMilestone;
+import com.terraforming.ares.model.milestones.DiversifierMilestone;
+import com.terraforming.ares.model.milestones.Milestone;
+import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.ai.dto.PhaseUpgradeWithChance;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -14,6 +21,7 @@ import java.util.stream.Collectors;
 public class AiDiscoveryDecisionService {
     private final Random random = new Random();
     private final DeepNetwork deepNetwork;
+    private final CardService cardService;
 
     public int choosePhaseUpgrade(MarsGame game, Player player, int phase) {
         int phaseOffset = (phase - 1) * 2;
@@ -181,8 +189,70 @@ public class AiDiscoveryDecisionService {
         }
     }
 
-    public int chooseAustellarCorporationMilestone(MarsGame game) {
-        return random.nextInt(game.getMilestones().size());
+    public int chooseAustellarCorporationMilestone(MarsGame game, Player player) {
+        List<Milestone> milestones = game.getMilestones();
+
+        Map<Tag, Long> tagToCount = cardService.countTagsOnCards(player.getHand().getCards());
+
+        double milestoneRating = 0;
+        int bestMilestoneIndex = 0;
+
+        for (int i = 0; i < milestones.size(); i++) {
+            Milestone milestone = milestones.get(i);
+
+            double currentRating = 0;
+            switch (milestone.getType()) {
+                case BUILDER:
+                    currentRating = (double) tagToCount.getOrDefault(Tag.BUILDING, 0L) / 8;
+                    break;
+                case SPACE_BARON:
+                    currentRating = (double) tagToCount.getOrDefault(Tag.SPACE, 0L) / 7;
+                    break;
+                case DIVERSIFIER:
+                    currentRating = (double) tagToCount.keySet().size() / 9;
+                    break;
+                case ENERGIZER:
+                    int heatIncomeSum = player.getHand().getCards().stream().map(cardService::getCard).map(Card::getCardMetadata).filter(Objects::nonNull)
+                            .filter(cardMetadata -> !CollectionUtils.isEmpty(cardMetadata.getIncomes()))
+                            .flatMap(cardMetadata -> cardMetadata.getIncomes().stream())
+                            .filter(income -> income.getType() == GainType.HEAT)
+                            .map(Gain::getValue)
+                            .mapToInt(num -> num).sum();
+                    currentRating = (double) heatIncomeSum / 15;
+                    break;
+                case FARMER:
+                    int plantsIncomeSum = player.getHand().getCards().stream().map(cardService::getCard).map(Card::getCardMetadata).filter(Objects::nonNull)
+                            .filter(cardMetadata -> !CollectionUtils.isEmpty(cardMetadata.getIncomes()))
+                            .flatMap(cardMetadata -> cardMetadata.getIncomes().stream())
+                            .filter(income -> income.getType() == GainType.PLANT)
+                            .map(Gain::getValue)
+                            .mapToInt(num -> num).sum();
+                    currentRating = (double) plantsIncomeSum / 5;
+                    break;
+                case LEGEND:
+                    long redCardsCount = player.getHand().getCards().stream().map(cardService::getCard).filter(card -> card.getColor() == CardColor.RED).count();
+                    currentRating = (double) redCardsCount / 6;
+                    break;
+                case MAGNATE:
+                    long greenCardsCount = player.getHand().getCards().stream().map(cardService::getCard).filter(card -> card.getColor() == CardColor.GREEN).count();
+                    currentRating = (double) greenCardsCount / 8;
+                    break;
+                case TYCOON:
+                    long blueCardsCount = player.getHand().getCards().stream().map(cardService::getCard).filter(card -> card.getColor() == CardColor.BLUE).count();
+                    currentRating = (double) blueCardsCount /6;
+                    break;
+                case PLANNER:
+                    long cheapCardsCount = player.getHand().getCards().stream().map(cardService::getCard).filter(card -> card.getPrice() < 10).count();
+                    currentRating = (double) cheapCardsCount / 12;
+                    break;
+            }
+            if (currentRating > milestoneRating) {
+                milestoneRating = currentRating;
+                bestMilestoneIndex = i;
+            }
+        }
+
+        return bestMilestoneIndex;
     }
 
     public int chooseDynamicTagValue(Player player, List<Tag> excludedTags) {
@@ -212,14 +282,6 @@ public class AiDiscoveryDecisionService {
         throw new IllegalStateException("AI was not able to choose dynamic tag");
     }
 
-    public int chooseModProTagValue() {
-        if (random.nextBoolean()) {
-            return Tag.SCIENCE.ordinal();
-        } else {
-            return Tag.JUPITER.ordinal();
-        }
-    }
-    
     public Map<Integer, List<Integer>> getCorporationInput(MarsGame game, Player player, CardAction corporationCardAction) {
         if (corporationCardAction == CardAction.HYPERION_SYSTEMS_CORPORATION) {
             return Map.of(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(choosePhaseUpgrade(game, player, Constants.PERFORM_BLUE_ACTION_PHASE)));
@@ -228,9 +290,9 @@ public class AiDiscoveryDecisionService {
         } else if (corporationCardAction == CardAction.EXOCORP_CORPORATION) {
             return Map.of(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(choosePhaseUpgrade(game, player, Constants.DRAFT_CARDS_PHASE)));
         } else if (corporationCardAction == CardAction.AUSTELLAR_CORPORATION) {
-            return Map.of(InputFlag.AUSTELLAR_CORPORATION_MILESTONE.getId(), List.of(chooseAustellarCorporationMilestone(game)), InputFlag.TAG_INPUT.getId(), List.of(chooseDynamicTagValue(player, List.of())));
+            return Map.of(InputFlag.AUSTELLAR_CORPORATION_MILESTONE.getId(), List.of(chooseAustellarCorporationMilestone(game, player)), InputFlag.TAG_INPUT.getId(), List.of(Tag.SCIENCE.ordinal()));
         } else if (corporationCardAction == CardAction.MODPRO_CORPORATION) {
-            return Map.of(InputFlag.TAG_INPUT.getId(), List.of(chooseModProTagValue()));
+            return Map.of(InputFlag.TAG_INPUT.getId(), List.of(Tag.SCIENCE.ordinal()));
         } else if (corporationCardAction == CardAction.NEBU_LABS_CORPORATION) {
             return Map.of(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(choosePhaseUpgrade(game, player)));
         } else if (corporationCardAction == CardAction.SULTIRA_CORPORATION) {
