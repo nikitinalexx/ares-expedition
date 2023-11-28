@@ -240,6 +240,7 @@ public class AiBuildProjectService extends BaseProcessorService {
         projectPhasePick(game, player, card.getColor() == CardColor.GREEN ? Phase.FIRST : Phase.SECOND, ProjectionStrategy.FROM_PICK_PHASE);
 
         if (!aiCardValidationService.isValid(game, player, card)) {
+            System.out.println(card);
             throw new IllegalStateException("Card is not valid");
         }
 
