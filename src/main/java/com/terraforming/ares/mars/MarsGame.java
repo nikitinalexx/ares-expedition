@@ -50,6 +50,58 @@ public class MarsGame {
     private CrysisData crysisData;
     private String stateReason;
 
+    public MarsGame(List<String> playerNames,
+                    int[] extraPoints,
+                    int playerHandSize,
+                    Deck projectsDeck,
+                    Deck corporationsDeck,
+                    Planet planet,
+                    boolean mulligan,
+                    List<BaseAward> awards,
+                    List<Milestone> milestones,
+                    List<PlayerDifficulty> computers,
+                    List<Expansion> expansions,
+                    boolean dummyHandMode,
+                    List<Integer> dummyHand,
+                    CrysisData crysisData) {
+        this.projectsDeck = projectsDeck;
+        this.corporationsDeck = corporationsDeck;
+        this.planet = planet;
+        this.awards = awards;
+        this.milestones = milestones;
+        this.expansions = expansions;
+        this.hasAi = (computers.stream().anyMatch(item -> item != null && item != PlayerDifficulty.NONE));
+        this.dummyHandMode = dummyHandMode;
+        this.dummyHand = new ArrayList<>(dummyHand);
+        this.crysisData = crysisData;
+
+        List<Player> players = new ArrayList<>();
+
+        for (int i = 0; i < playerNames.size(); i++) {
+            Player player = Player.builder()
+                    .uuid(UUID.randomUUID().toString() + i)
+                    .name(playerNames.get(i))
+//                            .hand(Deck.builder().cards(new LinkedList<>(List.of(19, 24, 339))).build())
+                    .hand(projectsDeck.dealCardsDeck(playerHandSize))
+                    .extraPoints(extraPoints != null && extraPoints.length > i ? extraPoints[i] : 0)
+                    .corporations(corporationsDeck.dealCardsDeck(INITIAL_CORPORATIONS_SIZE))
+                    //.corporations(Deck.builder().cards(new LinkedList<>(List.of(10206, 10005))).build())
+                    .played(Deck.builder().build())
+                    //.heat(100)
+                    .mulligan(mulligan)
+                    .difficulty(computers.get(i))
+                    .build();
+            players.add(player);
+
+        }
+
+        playerUuidToPlayer = players.stream().collect(Collectors.toMap(Player::getUuid, Function.identity()));
+
+        this.stateType = StateType.PICK_CORPORATIONS;
+        this.currentPhase = Constants.PICK_CORPORATIONS_PHASE;
+        this.planetAtTheStartOfThePhase = new Planet(planet);
+    }
+
 
     public MarsGame(MarsGame copy) {
         this.id = copy.id;
@@ -128,58 +180,6 @@ public class MarsGame {
             otherMilestones.add(anotherMilestone);
         }
         return otherMilestones;
-    }
-
-    public MarsGame(List<String> playerNames,
-                    int[] extraPoints,
-                    int playerHandSize,
-                    Deck projectsDeck,
-                    Deck corporationsDeck,
-                    Planet planet,
-                    boolean mulligan,
-                    List<BaseAward> awards,
-                    List<Milestone> milestones,
-                    List<PlayerDifficulty> computers,
-                    List<Expansion> expansions,
-                    boolean dummyHandMode,
-                    List<Integer> dummyHand,
-                    CrysisData crysisData) {
-        this.projectsDeck = projectsDeck;
-        this.corporationsDeck = corporationsDeck;
-        this.planet = planet;
-        this.awards = awards;
-        this.milestones = milestones;
-        this.expansions = expansions;
-        this.hasAi = (computers.stream().anyMatch(item -> item != null && item != PlayerDifficulty.NONE));
-        this.dummyHandMode = dummyHandMode;
-        this.dummyHand = new ArrayList<>(dummyHand);
-        this.crysisData = crysisData;
-
-        List<Player> players = new ArrayList<>();
-
-        for (int i = 0; i < playerNames.size(); i++) {
-            Player player = Player.builder()
-                    .uuid(UUID.randomUUID().toString() + i)
-                    .name(playerNames.get(i))
-//                            .hand(Deck.builder().cards(new LinkedList<>(List.of(19, 24, 339))).build())
-                    .hand(projectsDeck.dealCardsDeck(playerHandSize))
-                    .extraPoints(extraPoints != null && extraPoints.length > i ? extraPoints[i] : 0)
-                    .corporations(corporationsDeck.dealCardsDeck(INITIAL_CORPORATIONS_SIZE))
-                    //.corporations(Deck.builder().cards(new LinkedList<>(List.of(10206, 10005))).build())
-                    .played(Deck.builder().build())
-                    //.heat(100)
-                    .mulligan(mulligan)
-                    .difficulty(computers.get(i))
-                    .build();
-            players.add(player);
-
-        }
-
-        playerUuidToPlayer = players.stream().collect(Collectors.toMap(Player::getUuid, Function.identity()));
-
-        this.stateType = StateType.PICK_CORPORATIONS;
-        this.currentPhase = Constants.PICK_CORPORATIONS_PHASE;
-        this.planetAtTheStartOfThePhase = new Planet(planet);
     }
 
     public Player getPlayerByUuid(String playerUuid) {

@@ -17,6 +17,7 @@ import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsService;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -85,15 +86,23 @@ public class AiBuildProjectService extends BaseProcessorService {
                 .map(Player::getChosenPhase)
                 .collect(Collectors.toSet());
 
-        //TODO return?
-//        if (game.isDummyHandMode() && !CollectionUtils.isEmpty(game.getUsedDummyHand())) {
-//            pickedPhases.add(game.getCurrentDummyHand());
-//        }
+        if (game.isDummyHandMode() && !CollectionUtils.isEmpty(game.getUsedDummyHand())) {
+            pickedPhases.add(game.getCurrentDummyHand());
+        }
 
-        BuildProjectPrediction bestFutureProjectInSecondPhase =
+        //if both 1 and 2 phase are picked and now is 1, we check if something better can be build in phase 2
+        BuildProjectPrediction bestFutureProject =
                 (pickedPhases.contains(2) && game.getCurrentPhase() == 1)
                         ? getBestProjectToBuild(game, player, player.getChosenPhase() == 2 ? Phase.SECOND : Phase.SECOND_BY_ANOTHER, ProjectionStrategy.FROM_PICK_PHASE)
                         : BuildProjectPrediction.builder().build();
+
+        //if 1 is picked, 2 is not picked and something good is in phase 2
+        //if 2 is picked, 1 is not picked and something good is in phase 1
+        BuildProjectPrediction anotherBestProject = BuildProjectPrediction.builder().build();
+        if ((game.getCurrentPhase() == 1 || game.getCurrentPhase() == 2) && (!pickedPhases.contains(1) || !pickedPhases.contains(2)) && player.getChosenPhase() != game.getCurrentPhase()) {
+            anotherBestProject = getBestProjectToBuild(game, player, game.getCurrentPhase() == 2 ? Phase.FIRST : Phase.SECOND, ProjectionStrategy.FROM_PICK_PHASE);
+        }
+
 
         Card bestCard = null;
         float bestChance = deepNetwork.testState(game, player);
@@ -111,14 +120,27 @@ public class AiBuildProjectService extends BaseProcessorService {
             }
         }
 
-        if (bestCard != null && bestFutureProjectInSecondPhase.isCanBuild()) {
+        if (bestCard != null && bestFutureProject.isCanBuild()) {
             MarsGame stateAfterPlayingBestCard = assumeProjectIsBuilt(game, player, bestCard);
 
             BuildProjectPrediction bestBuildFirstPlusSecondPhase = getBestProjectToBuild(stateAfterPlayingBestCard, stateAfterPlayingBestCard.getPlayerByUuid(player.getUuid()), (player.getChosenPhase() == 2 ? Phase.SECOND : Phase.SECOND_BY_ANOTHER), ProjectionStrategy.FROM_PICK_PHASE);
 
-            if (!bestBuildFirstPlusSecondPhase.isCanBuild() && bestFutureProjectInSecondPhase.getExpectedValue() > bestChance) {
+            if (!bestBuildFirstPlusSecondPhase.isCanBuild() && bestFutureProject.getExpectedValue() > bestChance) {
                 if (LOG_NET_COMPARISON) {
-                    System.out.println("Skipping " + bestCard + " to be able to build " + bestFutureProjectInSecondPhase.getCard());
+                    System.out.println("Skipping " + bestCard + " to be able to build " + bestFutureProject.getCard());
+                }
+                bestCard = null;
+            }
+        }
+
+        if (bestCard != null && anotherBestProject.isCanBuild()) {
+            MarsGame stateAfterPlayingBestCardThisPhase = assumeProjectIsBuilt(game, player, bestCard);
+
+            BuildProjectPrediction stateAfterPlayingBothPhases = getBestProjectToBuild(stateAfterPlayingBestCardThisPhase, stateAfterPlayingBestCardThisPhase.getPlayerByUuid(player.getUuid()), (game.getCurrentPhase() == 2 ? Phase.FIRST : Phase.SECOND), ProjectionStrategy.FROM_PICK_PHASE);
+
+            if (!stateAfterPlayingBothPhases.isCanBuild() && anotherBestProject.getExpectedValue() > bestChance) {
+                if (LOG_NET_COMPARISON) {
+                    System.out.println("Didn't choose " + game.getCurrentPhase() + ". Skipping " + bestCard.getClass().getSimpleName() + " to be able to build " + anotherBestProject.getCard());
                 }
                 bestCard = null;
             }

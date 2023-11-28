@@ -274,10 +274,65 @@ public class GameController {
         }
     }
 
+    @GetMapping("/simulations/networks")
+    public void runSimulations(@RequestBody NetworksSimulationsRequest request) throws IOException {
+        Constants.FIRST_PLAYER_PHASES = new ConcurrentHashMap<>();
+        Constants.SECOND_PLAYER_PHASES = new ConcurrentHashMap<>();
+
+        int threads = Runtime.getRuntime().availableProcessors();
+
+        if (request.getSimulationsCount() < threads) {
+            return;
+        }
+
+
+        for (String firstNetwork : request.getNetworks()) {
+            for (String secondNetwork : request.getNetworks()) {
+                System.out.println("Starting simulations " + firstNetwork + " " + secondNetwork);
+
+                deepNetwork.updateNetwork(firstNetwork, 1);
+                deepNetwork.updateNetwork(secondNetwork, 2);
+                GameStatistics gameStatistics = new GameStatistics();
+
+                ExecutorService executor = Executors.newFixedThreadPool(threads);
+                for (int i = 0; i < threads; i++) {
+                    Runnable worker = new WorkerThread(request.getSimulationsCount() / threads, gameStatistics, 0, i);
+                    executor.execute(worker);
+                }
+                executor.shutdown();
+                while (!executor.isTerminated()) {
+                }
+                System.out.println("Finished all threads");
+
+
+                printStatistics(gameStatistics);
+
+                if (Constants.COLLECT_DATASET) {
+                    List<String> fileNames = new ArrayList<>();
+
+                    for (int threadIndex = 0; threadIndex < threads; threadIndex++) {
+                        fileNames.add("dataset_" + Constants.SIMULATION_PLAYERS.stream().map(PlayerDifficulty::toString).collect(Collectors.joining("_")) + "_" + 0 + "_" + threadIndex + ".csv");
+                    }
+
+                    combineAndDelete(fileNames, "dataset_" + firstNetwork + "_" + secondNetwork + "_" + System.currentTimeMillis() + ".csv");
+                }
+
+
+                System.out.println(Constants.FIRST_PLAYER_PHASES);
+                System.out.println(Constants.SECOND_PLAYER_PHASES);
+                System.out.println("Finished");
+            }
+        }
+    }
+
     public static void combineAndDelete(List<String> filePaths, String combinedFilePath) throws IOException {
         // Create the combined CSV file
         FileWriter writer = new FileWriter(combinedFilePath);
         for (String filePath : filePaths) {
+            File f = new File(filePath);
+            if (!f.exists()) {
+                continue;
+            }
             BufferedReader reader = new BufferedReader(new FileReader(filePath));
             String line = reader.readLine();
             while (line != null) {
@@ -729,7 +784,7 @@ public class GameController {
         if (aiComputerCount == game.getPlayerUuidToPlayer().size()) {
             aiComputer = game.getPlayerByUuid(playerUuid);
         } else {
-            aiComputer =  game.getPlayerUuidToPlayer().values().stream().filter(player -> player.getDifficulty() != PlayerDifficulty.NONE && player.getDifficulty() != PlayerDifficulty.RANDOM && player.getDifficulty() != PlayerDifficulty.SMART).findFirst().orElse(null);
+            aiComputer = game.getPlayerUuidToPlayer().values().stream().filter(player -> player.getDifficulty() != PlayerDifficulty.NONE && player.getDifficulty() != PlayerDifficulty.RANDOM && player.getDifficulty() != PlayerDifficulty.SMART).findFirst().orElse(null);
         }
 
         float winProbability;

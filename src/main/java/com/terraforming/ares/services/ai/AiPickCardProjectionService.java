@@ -137,6 +137,7 @@ public class AiPickCardProjectionService {
         if (player.getCardResourcesCount().isEmpty() && cardMetadata != null && !CollectionUtils.isEmpty(cardMetadata.getResourcesOnBuild())) {
             PutResourceOnBuild putResourceOnBuild = cardMetadata.getResourcesOnBuild().get(0);
             if (putResourceOnBuild.getParamId() == InputFlag.CEOS_FAVORITE_PUT_RESOURCES.getId()) {
+                //TODO should return  more if there is usable good card
                 return 0;
             }
         }
@@ -144,6 +145,7 @@ public class AiPickCardProjectionService {
             List<Card> playedRedCards = player.getPlayed().getCards().stream().map(cardService::getCard).filter(c -> c.getColor() == CardColor.RED)
                     .collect(Collectors.toList());
             if (playedRedCards.isEmpty()) {
+                //TODO should return  more if there is usable good card
                 return 0;
             }
         }
@@ -178,7 +180,6 @@ public class AiPickCardProjectionService {
             extraChanceModifier = (float) eventsPlayed / 3;
         }
 
-        //TODO projection is only checking a single build. what if checking this + one more card from hand will give better results?
         if (card.getColor() == CardColor.GREEN) {
             player.setBuilds(List.of(new BuildDto(BuildType.GREEN)));
         } else {
@@ -190,7 +191,6 @@ public class AiPickCardProjectionService {
         float projectedChance = deepNetwork.testState(stateAfterPlayingTheCard, stateAfterPlayingTheCard.getPlayerByUuid(player.getUuid()));
 
         return (projectedChance - initialChance) < 0 ? (projectedChance - initialChance) : extraChanceModifier * (projectedChance - initialChance);
-
     }
 
     private float getChanceReductionBasedOnRequirement(Planet planet, Player player, GlobalParameter parameter, List<ParameterColor> requirement) {
@@ -204,7 +204,7 @@ public class AiPickCardProjectionService {
 
         if (requirement.contains(ParameterColor.P) &&
                 (canAmplifyRequirement || player.getHand().getCards().stream().map(cardService::getCard).noneMatch(card -> card.getSpecialEffects().contains(SpecialEffect.AMPLIFY_GLOBAL_REQUIREMENT)))) {
-            return 0;
+            return -100;
         } else {
             return planet.getParameterProportionTillMinColor(parameter, ParameterColor.values()[requirement.stream().mapToInt(Enum::ordinal).min().orElse(0)]);
         }
