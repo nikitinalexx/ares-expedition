@@ -5,6 +5,8 @@ import com.terraforming.ares.cards.green.DiscoveryExpansionBlueCard;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.action.ActionInputData;
 import com.terraforming.ares.model.action.ActionInputDataType;
+import com.terraforming.ares.services.CardResourceService;
+import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -44,8 +46,10 @@ public class FibrousCompositeMaterial implements DiscoveryExpansionBlueCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        marsContext.getPlayer().initResources(this);
-        marsContext.getPlayer().getCardResourcesCount().put(this.getClass(), 3);
+        Player player = marsContext.getPlayer();
+        player.initResources(this);
+        marsContext.getCardResourceService().addResources(player, this, 3);
+//        marsContext.getPlayer().getCardResourcesCount().put(this.getClass(), 3);
         return null;
     }
 

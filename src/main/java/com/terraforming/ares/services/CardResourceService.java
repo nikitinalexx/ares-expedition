@@ -1,5 +1,6 @@
 package com.terraforming.ares.services;
 
+import com.terraforming.ares.cards.blue.BacterialAggregates;
 import com.terraforming.ares.cards.blue.FilterFeeders;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardCollectableResource;
@@ -17,6 +18,11 @@ public class CardResourceService {
 
     public void addResources(Player player, Card toCard, int count) {
         final Map<Class<?>, Integer> cardResourcesCount = player.getCardResourcesCount();
+
+        if (toCard.getClass() == BacterialAggregates.class && cardResourcesCount.get(BacterialAggregates.class) + count > 5) {
+            count = 5 - cardResourcesCount.get(BacterialAggregates.class);
+        }
+
         cardResourcesCount.put(
                 toCard.getClass(),
                 cardResourcesCount.get(toCard.getClass()) + count
