@@ -53,7 +53,7 @@ public class BacterialAggregates implements DiscoveryExpansionBlueCard {
         final Player player = marsContext.getPlayer();
 
 //        player.getCardResourcesCount().put(this.getClass(), Math.min(player.getCardResourcesCount().get(this.getClass()) + tagsCount, 5));
-        marsContext.getCardResourceService().addResources(player, this, Math.min(player.getCardResourcesCount().get(this.getClass()) + tagsCount, 5));
+        marsContext.getCardResourceService().addResources(player, this, 1);
     }
 
     @Override

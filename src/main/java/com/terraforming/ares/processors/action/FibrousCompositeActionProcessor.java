@@ -41,13 +41,14 @@ public class FibrousCompositeActionProcessor implements BlueActionCardProcessor<
 //                    FibrousCompositeMaterial.class,
 //                    player.getCardResourcesCount().get(FibrousCompositeMaterial.class) + 1
 //            );
-            cardResourceService.addResources(player,actionCard,player.getCardResourcesCount().get(FibrousCompositeMaterial.class) + 1);
+            cardResourceService.addResources(player,actionCard,1);
         } else if (input == 3) {
             UpgradePhaseHelper.upgradePhase(cardService, game, player, inputParameters.get(InputFlag.PHASE_UPGRADE_CARD.getId()).get(0));
-            player.getCardResourcesCount().put(
-                    FibrousCompositeMaterial.class,
-                    player.getCardResourcesCount().get(FibrousCompositeMaterial.class) - 3
-            );
+//            player.getCardResourcesCount().put(
+//                    FibrousCompositeMaterial.class,
+//                    player.getCardResourcesCount().get(FibrousCompositeMaterial.class) - 3
+//            );
+            cardResourceService.addResources(player,actionCard,-3);
         } else {
             throw new IllegalArgumentException("Unexpected error");
         }
