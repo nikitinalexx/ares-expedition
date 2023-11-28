@@ -32,4 +32,11 @@ public class CardResourceService {
         }
     }
 
+    public String resourceSubmissionMessage(Card inputCard, Class<?> cardClass, int resourceOnCard, int maxResourceOnCard ){
+        if (inputCard.getClass().equals(cardClass) && resourceOnCard == maxResourceOnCard) {
+            return "The maximum number of microbes has already been reached on the selected card";
+        }
+        return null;
+    }
+
 }

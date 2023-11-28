@@ -1,10 +1,12 @@
 package com.terraforming.ares.validation.input;
 
+import com.terraforming.ares.cards.blue.BacterialAggregates;
 import com.terraforming.ares.cards.red.ImportedNitrogen;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardCollectableResource;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.services.CardResourceService;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -23,6 +25,7 @@ public class ImportedNitrogenOnBuiltEffectValidator implements OnBuiltEffectVali
     private static final String INCORRECT_INPUT_ERROR_MESSAGE =
             "ImportedNitrogen requires input both for Animals and Microbes action";
     private final CardService cardService;
+    private final CardResourceService cardResourceService;
 
     @Override
     public Class<ImportedNitrogen> getType() {
@@ -63,6 +66,14 @@ public class ImportedNitrogenOnBuiltEffectValidator implements OnBuiltEffectVali
             Card microbeCard = cardService.getCard(microbesCardId);
             if (microbeCard.getCollectableResource() != CardCollectableResource.MICROBE) {
                 return "Selected card doesn't collect microbes";
+            }
+            String resourceSubmissionMessage = cardResourceService.resourceSubmissionMessage(microbeCard,
+                    BacterialAggregates.class,
+                    player.getCardResourcesCount().get(BacterialAggregates.class),
+                    5);
+
+            if (resourceSubmissionMessage != null) {
+                return resourceSubmissionMessage;
             }
         }
 

@@ -1,7 +1,9 @@
 package com.terraforming.ares.validation.input;
 
+import com.terraforming.ares.cards.blue.BacterialAggregates;
 import com.terraforming.ares.cards.blue.ViralEnhancers;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.services.CardResourceService;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -21,6 +23,7 @@ import static com.terraforming.ares.model.InputFlag.VIRAL_ENHANCERS_TAKE_PLANT;
 @RequiredArgsConstructor
 public class ViralEnhancersOnBuiltEffectValidator implements OnBuiltEffectValidator<ViralEnhancers> {
     private final CardService cardService;
+    private final CardResourceService cardResourceService;
 
     @Override
     public Class<ViralEnhancers> getType() {
@@ -61,6 +64,15 @@ public class ViralEnhancersOnBuiltEffectValidator implements OnBuiltEffectValida
                 if (projectCard.getCollectableResource() != CardCollectableResource.ANIMAL
                         && projectCard.getCollectableResource() != CardCollectableResource.MICROBE) {
                     return "Selected card can not collect any animals or resources";
+                }
+
+                String resourceSubmissionMessage = cardResourceService.resourceSubmissionMessage(projectCard,
+                        BacterialAggregates.class,
+                        player.getCardResourcesCount().get(BacterialAggregates.class),
+                        5);
+
+                if (resourceSubmissionMessage != null) {
+                    return resourceSubmissionMessage;
                 }
             }
         }

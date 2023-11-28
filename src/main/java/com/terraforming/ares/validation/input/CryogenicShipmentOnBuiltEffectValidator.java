@@ -1,10 +1,12 @@
 package com.terraforming.ares.validation.input;
 
+import com.terraforming.ares.cards.blue.BacterialAggregates;
 import com.terraforming.ares.cards.red.CryogenicShipment;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardCollectableResource;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.services.CardResourceService;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -22,6 +24,7 @@ import java.util.Map;
 public class CryogenicShipmentOnBuiltEffectValidator implements OnBuiltEffectValidator<CryogenicShipment> {
     private final OnBuiltEffectValidationService onBuiltEffectValidationService;
     private final CardService cardService;
+    private final CardResourceService cardResourceService;
     private static final String INCORRECT_INPUT_ERROR_MESSAGE =
             "Cryogenic Shipment: requires an input with choice to put resources on";
 
@@ -52,6 +55,19 @@ public class CryogenicShipmentOnBuiltEffectValidator implements OnBuiltEffectVal
             if (inputCard.getCollectableResource() != CardCollectableResource.MICROBE
                     && inputCard.getCollectableResource() != CardCollectableResource.ANIMAL) {
                 return "Selected card does not collect Animals or Microbes";
+            }
+
+            if (inputCard.getClass().equals(BacterialAggregates.class) && player.getCardResourcesCount().get(BacterialAggregates.class) == 5) {
+                return "The maximum number of microbes has already been reached on the selected card";
+            }
+
+            String resourceSubmissionMessage = cardResourceService.resourceSubmissionMessage(inputCard,
+                    BacterialAggregates.class,
+                    player.getCardResourcesCount().get(BacterialAggregates.class),
+                    5);
+
+            if (resourceSubmissionMessage != null) {
+                return resourceSubmissionMessage;
             }
 
             return null;
