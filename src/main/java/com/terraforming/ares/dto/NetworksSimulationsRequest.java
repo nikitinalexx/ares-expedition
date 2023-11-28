@@ -8,4 +8,5 @@ import java.util.List;
 public class NetworksSimulationsRequest {
     int simulationsCount;
     List<String> networks;
+    boolean withSmart;
 }

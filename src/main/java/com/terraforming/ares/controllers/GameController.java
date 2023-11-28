@@ -221,6 +221,8 @@ public class GameController {
             request.setBatches(1);
         }
 
+        List<PlayerDifficulty> playerDifficulties = Constants.SIMULATION_PLAYERS;
+
         for (int batch = 0; batch < request.getBatches(); batch++) {
             request.setFileIndex(batch);
 
@@ -239,7 +241,7 @@ public class GameController {
 
             ExecutorService executor = Executors.newFixedThreadPool(threads);
             for (int i = 0; i < threads; i++) {
-                Runnable worker = new WorkerThread(request.getSimulationsCount() / threads, gameStatistics, request.getFileIndex(), i);
+                Runnable worker = new WorkerThread(playerDifficulties, request.getSimulationsCount() / threads, gameStatistics, request.getFileIndex(), i);
                 executor.execute(worker);
             }
             executor.shutdown();
@@ -254,10 +256,10 @@ public class GameController {
                 List<String> fileNames = new ArrayList<>();
 
                 for (int threadIndex = 0; threadIndex < threads; threadIndex++) {
-                    fileNames.add("dataset_" + Constants.SIMULATION_PLAYERS.stream().map(PlayerDifficulty::toString).collect(Collectors.joining("_")) + "_" + request.getFileIndex() + "_" + threadIndex + ".csv");
+                    fileNames.add("dataset_" + playerDifficulties.stream().map(PlayerDifficulty::toString).collect(Collectors.joining("_")) + "_" + request.getFileIndex() + "_" + threadIndex + ".csv");
                 }
 
-                combineAndDelete(fileNames, "dataset_" + Constants.SIMULATION_PLAYERS.stream().map(PlayerDifficulty::toString).collect(Collectors.joining("_")) + "_" + request.getFileIndex() + ".csv");
+                combineAndDelete(fileNames, "dataset_" + playerDifficulties.stream().map(PlayerDifficulty::toString).collect(Collectors.joining("_")) + "_" + request.getFileIndex() + ".csv");
             }
 
 
@@ -276,15 +278,21 @@ public class GameController {
 
     @GetMapping("/simulations/networks")
     public void runSimulations(@RequestBody NetworksSimulationsRequest request) throws IOException {
-        Constants.FIRST_PLAYER_PHASES = new ConcurrentHashMap<>();
-        Constants.SECOND_PLAYER_PHASES = new ConcurrentHashMap<>();
-
-        int threads = Runtime.getRuntime().availableProcessors();
-
-        if (request.getSimulationsCount() < threads) {
+        if (request.getSimulationsCount() < Runtime.getRuntime().availableProcessors()) {
             return;
         }
 
+        Constants.FIRST_PLAYER_PHASES = new ConcurrentHashMap<>();
+        Constants.SECOND_PLAYER_PHASES = new ConcurrentHashMap<>();
+
+        if (request.isWithSmart()) {
+            for (String network : request.getNetworks()) {
+                System.out.println("Starting simulations smart " + network);
+                deepNetwork.updateNetwork(network, 2);
+
+                executeSimulations(List.of(PlayerDifficulty.SMART, PlayerDifficulty.NETWORK), request, "Smart", network);
+            }
+        }
 
         for (String firstNetwork : request.getNetworks()) {
             for (String secondNetwork : request.getNetworks()) {
@@ -292,37 +300,44 @@ public class GameController {
 
                 deepNetwork.updateNetwork(firstNetwork, 1);
                 deepNetwork.updateNetwork(secondNetwork, 2);
-                GameStatistics gameStatistics = new GameStatistics();
 
-                ExecutorService executor = Executors.newFixedThreadPool(threads);
-                for (int i = 0; i < threads; i++) {
-                    Runnable worker = new WorkerThread(request.getSimulationsCount() / threads, gameStatistics, 0, i);
-                    executor.execute(worker);
-                }
-                executor.shutdown();
-                while (!executor.isTerminated()) {
-                }
-                System.out.println("Finished all threads");
-
-
-                printStatistics(gameStatistics);
-
-                if (Constants.COLLECT_DATASET) {
-                    List<String> fileNames = new ArrayList<>();
-
-                    for (int threadIndex = 0; threadIndex < threads; threadIndex++) {
-                        fileNames.add("dataset_" + Constants.SIMULATION_PLAYERS.stream().map(PlayerDifficulty::toString).collect(Collectors.joining("_")) + "_" + 0 + "_" + threadIndex + ".csv");
-                    }
-
-                    combineAndDelete(fileNames, "dataset_" + firstNetwork + "_" + secondNetwork + "_" + System.currentTimeMillis() + ".csv");
-                }
-
-
-                System.out.println(Constants.FIRST_PLAYER_PHASES);
-                System.out.println(Constants.SECOND_PLAYER_PHASES);
-                System.out.println("Finished");
+                executeSimulations(List.of(PlayerDifficulty.NETWORK, PlayerDifficulty.NETWORK), request, firstNetwork, secondNetwork);
             }
         }
+    }
+
+    private void executeSimulations(List<PlayerDifficulty> playerDifficulty, NetworksSimulationsRequest request, String firstName, String secondName) throws IOException {
+        int threads = Runtime.getRuntime().availableProcessors();
+
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+
+        GameStatistics gameStatistics = new GameStatistics();
+
+        for (int i = 0; i < threads; i++) {
+            Runnable worker = new WorkerThread(playerDifficulty, request.getSimulationsCount() / threads, gameStatistics, 0, i);
+            executor.execute(worker);
+        }
+        executor.shutdown();
+        while (!executor.isTerminated()) {
+        }
+        System.out.println("Finished all threads");
+
+
+        printStatistics(gameStatistics);
+
+        if (Constants.COLLECT_DATASET) {
+            List<String> fileNames = new ArrayList<>();
+
+            for (int threadIndex = 0; threadIndex < threads; threadIndex++) {
+                fileNames.add("dataset_" + Constants.SIMULATION_PLAYERS.stream().map(PlayerDifficulty::toString).collect(Collectors.joining("_")) + "_" + 0 + "_" + threadIndex + ".csv");
+            }
+
+            combineAndDelete(fileNames, "dataset_" + firstName + "_" + secondName + "_" + System.currentTimeMillis() + ".csv");
+        }
+
+        System.out.println(Constants.FIRST_PLAYER_PHASES);
+        System.out.println(Constants.SECOND_PLAYER_PHASES);
+        System.out.println("Finished");
     }
 
     public static void combineAndDelete(List<String> filePaths, String combinedFilePath) throws IOException {
@@ -354,9 +369,6 @@ public class GameController {
     public void calibrateMulligan() {
         Random random = new Random();
         GameParameters.GameParametersBuilder builder = GameParameters.builder();
-        if (Constants.DISCOVERY_SIMULATIONS) {
-            builder.expansion(Expansion.DISCOVERY);
-        }
 
         List<String> playerNames = new ArrayList<>();
         for (PlayerDifficulty simulationPlayer : Constants.SIMULATION_PLAYERS) {
@@ -369,6 +381,7 @@ public class GameController {
                 .mulligan(true)
                 .expansion(Expansion.BASE)
                 .expansion(Expansion.BUFFED_CORPORATION)
+                .expansion(Expansion.DISCOVERY)
                 .dummyHand(true)
                 .build();
 
@@ -421,33 +434,33 @@ public class GameController {
         GameStatistics gameStatistics;
         int fileIndex;
         int threadIndex;
+        List<PlayerDifficulty> playerDifficulty;
 
-        WorkerThread(int simulationCount, GameStatistics gameStatistics, int fileIndex, int threadIndex) {
+        WorkerThread(List<PlayerDifficulty> playerDifficulty, int simulationCount, GameStatistics gameStatistics, int fileIndex, int threadIndex) {
             this.simulationCount = simulationCount;
             this.gameStatistics = gameStatistics;
             this.fileIndex = fileIndex;
             this.threadIndex = threadIndex;
+            this.playerDifficulty = playerDifficulty;
         }
 
         @Override
         public void run() {
             GameParameters.GameParametersBuilder builder = GameParameters.builder();
-            if (Constants.DISCOVERY_SIMULATIONS) {
-                builder.expansion(Expansion.DISCOVERY);
-            }
 
             List<String> playerNames = new ArrayList<>();
             int counter = 1;
-            for (PlayerDifficulty simulationPlayer : Constants.SIMULATION_PLAYERS) {
+            for (PlayerDifficulty simulationPlayer : playerDifficulty) {
                 playerNames.add(simulationPlayer.name() + (counter++));
             }
 
             GameParameters gameParameters = builder
                     .playerNames(playerNames)
-                    .computers(Constants.SIMULATION_PLAYERS)
+                    .computers(playerDifficulty)
                     .mulligan(true)
                     .expansion(Expansion.BASE)
                     .expansion(Expansion.BUFFED_CORPORATION)
+                    .expansion(Expansion.DISCOVERY)
                     .dummyHand(true)
                     .build();
 
