@@ -119,7 +119,6 @@ public class Constants {
 
     public static final int CARDS_WITH_DYNAMIC_TAG = 4;
 
-    public static final boolean DISCOVERY_SIMULATIONS = true;
 
     public static final boolean PLAYER_CHOOSES_CARDS_FOR_FIRST_PLAYER = false;
 
