@@ -56,11 +56,7 @@ public class ConservedBiomeActionValidator implements ActionValidator<ConservedB
             return "You may only add resource to an Animal/Microbe card";
         }
 
-        String resourceSubmissionMessage = cardResourceService.resourceSubmissionMessage(project,
-                BacterialAggregates.class,
-                player.getCardResourcesCount().get(BacterialAggregates.class),
-                5);
-
+        String resourceSubmissionMessage = cardResourceService.resourceSubmissionMessage(project,player);
         if (resourceSubmissionMessage != null) {
             return resourceSubmissionMessage;
         }

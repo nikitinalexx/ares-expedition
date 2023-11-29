@@ -54,11 +54,7 @@ public class SymbioticFungudActionValidator implements ActionValidator<Symbiotic
             return "SymbioticFungud may only place a microbe on a microbe collecting card";
         }
 
-        String resourceSubmissionMessage = cardResourceService.resourceSubmissionMessage(card,
-                BacterialAggregates.class,
-                player.getCardResourcesCount().get(BacterialAggregates.class),
-                5);
-
+        String resourceSubmissionMessage = cardResourceService.resourceSubmissionMessage(card,player);
         if (resourceSubmissionMessage != null) {
             return resourceSubmissionMessage;
         }

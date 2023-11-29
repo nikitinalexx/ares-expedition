@@ -32,10 +32,23 @@ public class CardResourceService {
         }
     }
 
-    public String resourceSubmissionMessage(Card inputCard, Class<?> cardClass, int resourceOnCard, int maxResourceOnCard ){
-        if (inputCard.getClass().equals(cardClass) && resourceOnCard == maxResourceOnCard) {
+//    public String resourceSubmissionMessage(Card inputCard, Class<?> cardClass, int resourceOnCard, int maxResourceOnCard) {
+//        if (inputCard.getClass().equals(cardClass) && resourceOnCard == maxResourceOnCard) {
+//            return "The maximum number of microbes has already been reached on the selected card";
+//        }
+//        return null;
+//    }
+
+    public String resourceSubmissionMessage(Card inputCard, Player player) {
+
+        int resourcesBeforeAdded = player.getCardResourcesCount().get(inputCard.getClass());
+        addResources(player, inputCard, 1);
+        int resourcesAfterPlayed = player.getCardResourcesCount().get(inputCard.getClass());
+
+        if (resourcesAfterPlayed == resourcesBeforeAdded) {
             return "The maximum number of microbes has already been reached on the selected card";
         }
+        addResources(player, inputCard, -1);
         return null;
     }
 

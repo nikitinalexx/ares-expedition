@@ -67,11 +67,8 @@ public class ImportedNitrogenOnBuiltEffectValidator implements OnBuiltEffectVali
             if (microbeCard.getCollectableResource() != CardCollectableResource.MICROBE) {
                 return "Selected card doesn't collect microbes";
             }
-            String resourceSubmissionMessage = cardResourceService.resourceSubmissionMessage(microbeCard,
-                    BacterialAggregates.class,
-                    player.getCardResourcesCount().get(BacterialAggregates.class),
-                    5);
 
+            String resourceSubmissionMessage = cardResourceService.resourceSubmissionMessage(microbeCard,player);
             if (resourceSubmissionMessage != null) {
                 return resourceSubmissionMessage;
             }

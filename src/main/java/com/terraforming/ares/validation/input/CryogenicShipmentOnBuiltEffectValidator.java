@@ -61,11 +61,7 @@ public class CryogenicShipmentOnBuiltEffectValidator implements OnBuiltEffectVal
                 return "The maximum number of microbes has already been reached on the selected card";
             }
 
-            String resourceSubmissionMessage = cardResourceService.resourceSubmissionMessage(inputCard,
-                    BacterialAggregates.class,
-                    player.getCardResourcesCount().get(BacterialAggregates.class),
-                    5);
-
+            String resourceSubmissionMessage = cardResourceService.resourceSubmissionMessage(inputCard,player);
             if (resourceSubmissionMessage != null) {
                 return resourceSubmissionMessage;
             }

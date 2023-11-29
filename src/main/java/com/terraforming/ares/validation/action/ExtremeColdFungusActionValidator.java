@@ -59,11 +59,7 @@ public class ExtremeColdFungusActionValidator implements ActionValidator<Extreme
             if (project.getCollectableResource() != CardCollectableResource.MICROBE) {
                 return "You may only add resource to a Microbe card";
             }
-            String resourceSubmissionMessage = cardResourceService.resourceSubmissionMessage(project,
-                    BacterialAggregates.class,
-                    player.getCardResourcesCount().get(BacterialAggregates.class),
-                    5);
-
+            String resourceSubmissionMessage = cardResourceService.resourceSubmissionMessage(project,player);
             if (resourceSubmissionMessage != null) {
                 return resourceSubmissionMessage;
             }

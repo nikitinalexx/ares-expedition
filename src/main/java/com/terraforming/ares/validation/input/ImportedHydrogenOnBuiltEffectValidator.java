@@ -57,11 +57,7 @@ public class ImportedHydrogenOnBuiltEffectValidator implements OnBuiltEffectVali
             return "Selected card does not collect Animals or Microbes";
         }
 
-        String resourceSubmissionMessage = cardResourceService.resourceSubmissionMessage(inputCard,
-                BacterialAggregates.class,
-                player.getCardResourcesCount().get(BacterialAggregates.class),
-                5);
-
+        String resourceSubmissionMessage = cardResourceService.resourceSubmissionMessage(inputCard,player);
         if (resourceSubmissionMessage != null) {
             return resourceSubmissionMessage;
         }

@@ -55,11 +55,7 @@ public class AstrofarmOnBuiltEffectValidator implements OnBuiltEffectValidator<A
             return "Selected card does not collect Microbes";
         }
 
-        String resourceSubmissionMessage = cardResourceService.resourceSubmissionMessage(inputCard,
-                BacterialAggregates.class,
-                player.getCardResourcesCount().get(BacterialAggregates.class),
-                5);
-
+        String resourceSubmissionMessage = cardResourceService.resourceSubmissionMessage(inputCard,player);
         if (resourceSubmissionMessage != null) {
             return resourceSubmissionMessage;
         }

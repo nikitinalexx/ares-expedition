@@ -66,11 +66,7 @@ public class ViralEnhancersOnBuiltEffectValidator implements OnBuiltEffectValida
                     return "Selected card can not collect any animals or resources";
                 }
 
-                String resourceSubmissionMessage = cardResourceService.resourceSubmissionMessage(projectCard,
-                        BacterialAggregates.class,
-                        player.getCardResourcesCount().get(BacterialAggregates.class),
-                        5);
-
+                String resourceSubmissionMessage = cardResourceService.resourceSubmissionMessage(projectCard,player);
                 if (resourceSubmissionMessage != null) {
                     return resourceSubmissionMessage;
                 }
