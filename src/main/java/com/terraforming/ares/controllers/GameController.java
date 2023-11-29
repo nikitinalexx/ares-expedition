@@ -795,7 +795,7 @@ public class GameController {
     public GameDto getGameByPlayerUuid(@PathVariable String playerUuid) {
         MarsGame game = gameService.getGame(playerUuid);
 
-        long aiComputerCount = game.getPlayerUuidToPlayer().values().stream().filter(player -> player.getDifficulty() != PlayerDifficulty.NONE && player.getDifficulty() != PlayerDifficulty.RANDOM && player.getDifficulty() != PlayerDifficulty.SMART).count();
+        long aiComputerCount = game.getPlayerUuidToPlayer().values().stream().filter(player -> player.getDifficulty() != null && player.getDifficulty() != PlayerDifficulty.NONE && player.getDifficulty() != PlayerDifficulty.RANDOM && player.getDifficulty() != PlayerDifficulty.SMART).count();
         Player aiComputer = null;
 
         if (aiComputerCount == 2) {
