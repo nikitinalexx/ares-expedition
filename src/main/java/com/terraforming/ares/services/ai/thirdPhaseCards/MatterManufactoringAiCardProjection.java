@@ -16,7 +16,7 @@ public class MatterManufactoringAiCardProjection<T extends Card> implements AiCa
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         if (player.getMc() < 1) {
             return new MarsGameRowDifference();
         }
@@ -24,9 +24,7 @@ public class MatterManufactoringAiCardProjection<T extends Card> implements AiCa
         player.setMc(player.getMc() - 1);
 
         return MarsGameRowDifference.builder()
-                .greenCards(Constants.GREEN_CARDS_RATIO)
-                .redCards(Constants.RED_CARDS_RATIO)
-                .blueCards(Constants.BLUE_CARDS_RATIO)
+                .cards(1)
                 .build();
     }
 }

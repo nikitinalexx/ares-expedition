@@ -135,6 +135,12 @@ export class BuildGreenComponent implements OnInit {
       if (this.upgradePhaseCardEffect()) {
         this.phaseInput = this.getUpgradePhasesArray()[0] - 1;
       }
+      if (this.parentForm.value.anaerobicMicroorganisms && !this.anaerobicMicroorganismsCardAction()) {
+        this.parentForm?.patchValue({anaerobicMicroorganisms: false}, {onlySelf: true, emitEvent: false});
+      }
+      if (this.parentForm.value.restructuredResources && !this.restructuredResourcesCardAction()) {
+        this.parentForm?.patchValue({restructuredResources: false}, {onlySelf: true, emitEvent: false});
+      }
       this.parentForm.controls.mcPrice.setValue(
         this.getDiscountedMcPriceWithEffectsApplied(
           this.parentForm.value.anaerobicMicroorganisms,

@@ -3,10 +3,14 @@ package com.terraforming.ares.services.ai.turnProcessors;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.ai.AiCardsChoice;
+import com.terraforming.ares.model.ai.AiExperimentalTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.ai.AiPickCardProjectionService;
+import com.terraforming.ares.services.ai.DeepNetwork;
 import com.terraforming.ares.services.ai.ICardValueService;
+import com.terraforming.ares.services.ai.dto.CardValueResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +30,7 @@ public class AiSellCardsLastRoundTurn implements AiTurnProcessor {
     private final ICardValueService cardValueService;
     private final CardService cardService;
     private final AiPickCardProjectionService aiPickCardProjectionService;
+    private final DeepNetwork deepNetwork;
 
     @Override
     public TurnType getType() {
@@ -40,23 +45,24 @@ public class AiSellCardsLastRoundTurn implements AiTurnProcessor {
 
         List<Integer> cardsToSell = new ArrayList<>();
 
-        for (int i = 0; i < cardsToSellCount; i++) {
-            Integer cardToSell;
-            switch (player.getDifficulty().CARDS_PICK) {
-                case RANDOM:
-                    cardToSell = allCards.get(random.nextInt(allCards.size()));
-                    break;
-                case FILE_VALUE:
-                    cardToSell = cardValueService.getWorstCard(game, player, allCards, game.getTurns()).getCardId();
-                    break;
-                case NETWORK_PROJECTION:
-                    cardToSell = aiPickCardProjectionService.getWorstCard(game, player, allCards).getCardId();
-                    break;
-                default:
-                    throw new IllegalStateException("Computer unable to sell a Card");
+        if (player.getDifficulty().CARDS_PICK == AiCardsChoice.NETWORK_PROJECTION) {
+            cardsToSell = aiPickCardProjectionService.getWorstCards(game, player, allCards, cardsToSellCount);
+        } else {
+            for (int i = 0; i < cardsToSellCount; i++) {
+                Integer cardToSell;
+                switch (player.getDifficulty().CARDS_PICK) {
+                    case RANDOM:
+                        cardToSell = allCards.get(random.nextInt(allCards.size()));
+                        break;
+                    case FILE_VALUE:
+                        cardToSell = cardValueService.getWorstCard(game, player, allCards, game.getTurns()).getCardId();
+                        break;
+                    default:
+                        throw new IllegalStateException("Computer unable to sell a Card");
+                }
+                allCards.remove(cardToSell);
+                cardsToSell.add(cardToSell);
             }
-            allCards.remove(cardToSell);
-            cardsToSell.add(cardToSell);
         }
 
         aiTurnService.sellCardsLastRoundTurn(player, cardsToSell);

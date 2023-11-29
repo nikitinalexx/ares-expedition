@@ -1,9 +1,18 @@
 package com.terraforming.ares.services.ai;
 
+import com.terraforming.ares.dataset.DatasetCollectionService;
 import com.terraforming.ares.dataset.MarsGameRow;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.services.ai.network.DataColumn;
+import com.terraforming.ares.services.ai.network.Network;
 import org.springframework.stereotype.Service;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by oleksii.nikitin
@@ -11,115 +20,165 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class DeepNetwork {
+    private final DatasetCollectionService datasetCollectionService;
+
+    private static final float[] MAX_INPUTS_FIRST = new float[]{45.0f, 14.0f, 38.0f, 9.0f, 223.0f, 171.0f, 659.0f, 13.0f, 14.0f, 21.0f, 101.0f, 64.0f, 360.0f, 10.0f, 56.0f, 10.0f, 4.0f, 36.0f, 21.0f, 18.0f, 16.0f, 6.0f, 26.0f, 5.0f, 11.0f, 5.0f, 28.0f, 17.0f, 22.0f, 20.0f, 11.0f, 17.0f, 34.0f, 5.0f, 11.0f, 9.0f, 1.0f, 2.0f, 2.0f, 3.0f, 7.0f, 4.0f, 3.0f, 2.0f, 1.0f, 1.0f, 1.0f, 2.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 5.0f, 5.0f, 5.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 223.0f, 171.0f, 659.0f, 13.0f, 14.0f, 21.0f, 101.0f, 64.0f, 360.0f, 10.0f, 56.0f, 10.0f, 4.0f, 36.0f, 21.0f, 18.0f, 16.0f, 6.0f, 26.0f, 5.0f, 11.0f, 5.0f, 28.0f, 17.0f, 22.0f, 20.0f, 11.0f, 17.0f, 34.0f, 5.0f, 11.0f, 9.0f, 1.0f, 2.0f, 2.0f, 3.0f, 7.0f, 4.0f, 3.0f, 2.0f, 1.0f, 1.0f, 1.0f, 2.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 5.0f, 5.0f, 5.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.78f, 1.38f, 1.74f, 1.0f, 1.0f, 1.0f, 1.0f};
+    private static final float[] MAX_INPUTS_SECOND = new float[]{45.0f, 14.0f, 38.0f, 9.0f, 223.0f, 171.0f, 659.0f, 13.0f, 14.0f, 21.0f, 101.0f, 64.0f, 360.0f, 10.0f, 56.0f, 10.0f, 4.0f, 36.0f, 21.0f, 18.0f, 16.0f, 6.0f, 26.0f, 5.0f, 11.0f, 5.0f, 28.0f, 17.0f, 22.0f, 20.0f, 11.0f, 17.0f, 34.0f, 5.0f, 11.0f, 9.0f, 1.0f, 2.0f, 2.0f, 3.0f, 7.0f, 4.0f, 3.0f, 2.0f, 1.0f, 1.0f, 1.0f, 2.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 5.0f, 5.0f, 5.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 223.0f, 171.0f, 659.0f, 13.0f, 14.0f, 21.0f, 101.0f, 64.0f, 360.0f, 10.0f, 56.0f, 10.0f, 4.0f, 36.0f, 21.0f, 18.0f, 16.0f, 6.0f, 26.0f, 5.0f, 11.0f, 5.0f, 28.0f, 17.0f, 22.0f, 20.0f, 11.0f, 17.0f, 34.0f, 5.0f, 11.0f, 9.0f, 1.0f, 2.0f, 2.0f, 3.0f, 7.0f, 4.0f, 3.0f, 2.0f, 1.0f, 1.0f, 1.0f, 2.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 5.0f, 5.0f, 5.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.78f, 1.38f, 1.74f, 1.0f, 1.0f, 1.0f, 1.0f};
+
+    private static final DataColumn MAX_INPUTS_DATA_FIRST = new DataColumn(MAX_INPUTS_FIRST);
+    private static final DataColumn MAX_INPUTS_DATA_SECOND = new DataColumn(MAX_INPUTS_SECOND);
+
+
+    private final ThreadLocal<Network> firstNetwork;
+    private final ThreadLocal<Network> secondNetwork;
+
+    //the same, both very good
+    public DeepNetwork(DatasetCollectionService datasetCollectionService) throws IOException, ClassNotFoundException {
+        this.datasetCollectionService = datasetCollectionService;
+
+        firstNetwork = ThreadLocal.withInitial(() -> {
+            try {
+                return initNetworkFromFile("networks/result_N_reg4_smart_1.txt");
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        secondNetwork = ThreadLocal.withInitial(() -> {
+            try {
+//                return initNetworkFromFile("second/26.11.2023_filtered__epoch_8.txt");
+                return initNetworkFromFile("networks/result_N_reg4_smart_1.txt");
+
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public void updateNetwork(String file, int network) throws IOException {
+        if (network == 1) {
+            firstNetwork.set(initNetworkFromFile(file));
+        } else {
+            secondNetwork.set(initNetworkFromFile(file));
+        }
+    }
+
+    private Network initNetworkFromFile(String fileName) throws IOException {
+        int networkSize;
+
+        int firstLayerCols;
+        int firstLayerRows;
+        float[] firstValues;
+        float[] firstBiases;
+
+        int secondLayerCols;
+        int secondLayerRows;
+        float[] secondValues;
+        float[] secondBiases;
+
+        try (FileReader fr = new FileReader(fileName);
+             BufferedReader reader = new BufferedReader(fr)) {
+            networkSize = Integer.parseInt(reader.readLine());
+            int totalLayers = Integer.parseInt(reader.readLine());
+
+            if (totalLayers != 3) {
+                throw new IllegalArgumentException("Unable to create network of size 3 from file");
+            }
+
+            firstLayerCols = Integer.parseInt(reader.readLine());
+            firstLayerRows = Integer.parseInt(reader.readLine());
+            firstValues = readFloatArrayFromLine(reader.readLine());
+            firstBiases = readFloatArrayFromLine(reader.readLine());
+
+            secondLayerCols = Integer.parseInt(reader.readLine());
+            secondLayerRows = Integer.parseInt(reader.readLine());
+            secondValues = readFloatArrayFromLine(reader.readLine());
+            secondBiases = readFloatArrayFromLine(reader.readLine());
+
+            return new Network(
+                    networkSize,
+                    new DataColumn(
+                            firstLayerCols,
+                            firstLayerRows,
+                            firstValues
+                    ), firstBiases,
+                    new DataColumn(
+                            secondLayerCols,
+                            secondLayerRows,
+                            secondValues
+                    ),
+                    secondBiases
+            );
+        }
+    }
+
+    private float[] readFloatArrayFromLine(String line) {
+        line = line.replaceAll("\\[", "").replaceAll("\\]", "");
+
+        String[] floatStrings = line.split(",");
+        float[] result = new float[floatStrings.length];
+
+        for (int i = 0; i < floatStrings.length; i++) {
+            result[i] = Float.parseFloat(floatStrings[i]);
+        }
+        return result;
+
+    }
 
     public float testState(MarsGame game, Player player) {
-        return 0;
+        return testState(game, player, player.isFirstBot() ? 1 : 2);
+    }
+
+    public float testState(MarsGame game, Player player, int networkId) {
+        final List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
+        final MarsGameRow marsGameRow = datasetCollectionService.collectGameAndPlayers(
+                game,
+                player,
+                players.get(0) == player
+                        ? players.get(1)
+                        : players.get(0)
+        );
+
+        if (marsGameRow == null) {
+            return 0.5f;
+        }
+
+
+        DataColumn someInput = new DataColumn(datasetCollectionService.mapMarsGameToArrayForUse(marsGameRow));
+
+        if (networkId == 1) {
+            someInput.div(MAX_INPUTS_DATA_FIRST);
+        } else {
+            someInput.div(MAX_INPUTS_DATA_SECOND);
+        }
+
+        Network network = (networkId == 1)
+                ? firstNetwork.get()
+                : secondNetwork.get();
+
+
+        network.setInput(someInput);
+
+
+        return network.getOutput()[0];
     }
 
     public float testState(MarsGameRow row, int networknumber) {
-        return 0;
-    }
+        DataColumn someInput = new DataColumn(datasetCollectionService.mapMarsGameToArrayForUse(row));
 
-//    private final ThreadLocal<FeedForwardNetwork> firstNetwork;
-//    private final ThreadLocal<FeedForwardNetwork> secondNetwork;
-//    private final DatasetCollectionService datasetCollectionService;
-//
-//    private static final float[] MAX_INPUTS_FIRST = new float[]{48.0f, 14.0f, 30.0f, 9.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 187.98f, 127.0f, 501.0f, 12.0f, 10.0f, 24.0f, 159.0f, 49.0f, 205.0f, 9.0f, 56.0f, 22.0f, 12.0f, 14.0f, 23.0f, 34.0f, 31.0f, 11.0f, 31.0f, 13.0f, 11.0f, 19.0f, 5.0f, 4.0f, 1.0f, 1.0f, 1.0f, 2.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 187.98f, 127.0f, 501.0f, 12.0f, 10.0f, 24.0f, 159.0f, 49.0f, 205.0f, 9.0f, 56.0f, 22.0f, 12.0f, 14.0f, 23.0f, 34.0f, 31.0f, 11.0f, 31.0f, 13.0f, 11.0f, 19.0f, 5.0f, 4.0f, 1.0f, 1.0f, 1.0f, 2.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 2.7f, 1.66f, 1.42f, 1.0f, 1.0f, 1.0f};
-//    private static final float[] MAX_INPUTS_SECOND = new float[]{48.0f, 14.0f, 30.0f, 9.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 187.98f, 127.0f, 501.0f, 12.0f, 10.0f, 24.0f, 159.0f, 49.0f, 205.0f, 9.0f, 56.0f, 22.0f, 12.0f, 14.0f, 23.0f, 34.0f, 31.0f, 11.0f, 31.0f, 13.0f, 11.0f, 19.0f, 5.0f, 4.0f, 1.0f, 1.0f, 1.0f, 2.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 187.98f, 127.0f, 501.0f, 12.0f, 10.0f, 24.0f, 159.0f, 49.0f, 205.0f, 9.0f, 56.0f, 22.0f, 12.0f, 14.0f, 23.0f, 34.0f, 31.0f, 11.0f, 31.0f, 13.0f, 11.0f, 19.0f, 5.0f, 4.0f, 1.0f, 1.0f, 1.0f, 2.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 2.7f, 1.66f, 1.42f, 1.0f, 1.0f, 1.0f};
-//
-//
-//    private static final Tensor MAX_INPUTS_TENSOR_FIRST = new Tensor(MAX_INPUTS_FIRST);
-//    private static final Tensor MAX_INPUTS_TENSOR_SECOND = new Tensor(MAX_INPUTS_SECOND);
-//
-//
-//    //the same, both very good
-//    public DeepNetwork(DatasetCollectionService datasetCollectionService) throws IOException, ClassNotFoundException {
-//        this.datasetCollectionService = datasetCollectionService;
-//        firstNetwork = ThreadLocal.withInitial(() -> {
-//            try {
-//                //result0 0.6099290780141844
-//                //result1 0.5524475524475524
-//                //result2 0.5909090909090909
-//                //result3 0.5950704225352113
-//
-//                return FileIO.createFromFile("result_N_reg_5_iter_0_batch_6.dnet", FeedForwardNetwork.class);
-//            } catch (IOException | ClassNotFoundException e) {
-//                throw new RuntimeException(e);
-//            }
-//        });
-//        secondNetwork = ThreadLocal.withInitial(() -> {
-//            try {
-//                return FileIO.createFromFile("result_N_reg_5_iter_0_batch_6.dnet", FeedForwardNetwork.class);
-//            } catch (IOException | ClassNotFoundException e) {
-//                throw new RuntimeException(e);
-//            }
-//        });
-//    }
-//
-//    public float testState(MarsGame game, Player player) {
-//        final List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
-//        final MarsGameRow marsGameRow = datasetCollectionService.collectGameData(
-//                game,
-//                player,
-//                players.get(0) == player
-//                        ? players.get(1)
-//                        : players.get(0)
-//        );
-//
-//        if (marsGameRow == null) {
-//            return 0.5f;
-//        }
-//
-//
-//        Tensor someInput = new Tensor(datasetCollectionService.getMarsGameRowForUse(marsGameRow));
-//
-//        if (player.isFirstBot()) {
-//            someInput.div(MAX_INPUTS_TENSOR_FIRST);
-//        } else {
-//            someInput.div(MAX_INPUTS_TENSOR_SECOND);
-//        }
-//
-//
-//        FeedForwardNetwork network = player.isFirstBot()
-//                ? firstNetwork.get()
-//                : secondNetwork.get();
-//
-//        network.setInput(someInput);
-//
-//        return network.getOutput()[0];
-//    }
-//
-//    public float testState(MarsGameRow row, int networknumber) {
-//        Tensor someInput = new Tensor(datasetCollectionService.getMarsGameRowForUse(row));
-//
-//        if (networknumber == 1) {
-//            someInput.div(MAX_INPUTS_TENSOR_FIRST);
-//        } else {
-//            someInput.div(MAX_INPUTS_TENSOR_SECOND);
-//        }
-//
-//        FeedForwardNetwork network = (networknumber == 1) ? firstNetwork.get() : secondNetwork.get();
-//
-//        network.setInput(someInput);
-//
-//        float[] output = network.getOutput();
-//
-//        return output[0];
-//    }
-//
-//    public static MinMaxScaler readObjectFromFile(String fileName) {
-//        MinMaxScaler obj = null;
-//        try {
-//            FileInputStream fileIn = new FileInputStream(fileName);
-//            ObjectInputStream objectIn = new ObjectInputStream(fileIn);
-//            obj = (MinMaxScaler) objectIn.readObject();
-//            objectIn.close();
-//            fileIn.close();
-//            System.out.println("Object deserialized from file.");
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//        return obj;
-//    }
+        if (networknumber == 1) {
+            someInput.div(MAX_INPUTS_DATA_FIRST);
+        } else {
+            someInput.div(MAX_INPUTS_DATA_SECOND);
+        }
+
+        Network network = (networknumber == 1) ? firstNetwork.get() : secondNetwork.get();
+
+        network.setInput(someInput);
+
+        float[] output = network.getOutput();
+
+        return output[0];
+    }
 
 }

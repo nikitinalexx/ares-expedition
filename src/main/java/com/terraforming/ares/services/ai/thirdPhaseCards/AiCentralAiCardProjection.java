@@ -16,11 +16,9 @@ public class AiCentralAiCardProjection<T extends Card> implements AiCardProjecti
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         return MarsGameRowDifference.builder()
-                .greenCards(2f * Constants.GREEN_CARDS_RATIO)
-                .redCards(2f * Constants.RED_CARDS_RATIO)
-                .blueCards(2f * Constants.BLUE_CARDS_RATIO)
+                .cards(2)
                 .build();
     }
 }

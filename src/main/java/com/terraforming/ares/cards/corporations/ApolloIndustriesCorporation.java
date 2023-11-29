@@ -42,7 +42,7 @@ public class ApolloIndustriesCorporation implements CorporationCard {
 
             final MarsGame game = marsContext.getGame();
 
-            UpgradePhaseHelper.upgradePhase(cardService, game, marsContext.getPlayer(), cardInput.get(0));
+            UpgradePhaseHelper.upgradePhase(marsContext.getPlayer(), cardInput.get(0));
         }
     }
 

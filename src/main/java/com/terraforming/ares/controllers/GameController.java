@@ -6,6 +6,7 @@ import com.terraforming.ares.dataset.MarsGameRow;
 import com.terraforming.ares.dto.*;
 import com.terraforming.ares.entity.CrisisRecordEntity;
 import com.terraforming.ares.entity.SoloRecordEntity;
+import com.terraforming.ares.factories.GameFactory;
 import com.terraforming.ares.mars.CrysisData;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
@@ -16,8 +17,10 @@ import com.terraforming.ares.repositories.caching.CachingGameRepository;
 import com.terraforming.ares.repositories.crudRepositories.CrisisRecordEntityRepository;
 import com.terraforming.ares.repositories.crudRepositories.SoloRecordEntityRepository;
 import com.terraforming.ares.services.*;
-import com.terraforming.ares.services.ai.AiBalanceService;
+import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.DeepNetwork;
+import com.terraforming.ares.services.ai.TestAiService;
+import com.terraforming.ares.services.ai.turnProcessors.AiMulliganCardsTurn;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.CollectionUtils;
@@ -54,11 +57,14 @@ public class GameController {
     private final TurnService turnService;
     private final GameRepositoryImpl gameRepository;
     private final SimulationProcessorService simulationProcessorService;
-    private final AiBalanceService aiBalanceService;
     private final CrisisRecordEntityRepository crisisRecordEntityRepository;
     private final SoloRecordEntityRepository soloRecordEntityRepository;
     private final DeepNetwork deepNetwork;
     private final DatasetCollectionService datasetCollectionService;
+    private final GameFactory gameFactory;
+    private final AiMulliganCardsTurn aiMulliganCardsTurn;
+    private final AiPickCardProjectionService aiPickCardProjectionService;
+    private final TestAiService testAiService;
 
     @PostMapping("/state/test/{networkNumber}")
     public float testGameState(@RequestBody MarsGameRow row, @PathVariable int networkNumber) {
@@ -75,23 +81,28 @@ public class GameController {
                 throw new IllegalArgumentException("Invalid number of computers and players, please reload the game");
             }
 
-            if (gameParameters.getComputers().stream().anyMatch(computer -> computer != PlayerDifficulty.RANDOM && computer != PlayerDifficulty.SMART && computer != PlayerDifficulty.NONE)) {
-                throw new IllegalArgumentException("Only Random and Smart computers are supported");
+            if (gameParameters.getComputers().stream().anyMatch(computer -> !Constants.AVAILABLE_DIFFICULTIES.contains(computer))) {
+                throw new IllegalArgumentException("Only Random/Smart/Network computers are supported");
             }
 
             if (!gameParameters.getExpansions().contains(Expansion.DISCOVERY)) {
                 throw new IllegalArgumentException("Discovery expansion is a default mode for this game");
             }
 
+
             int aiPlayerCount = (int) gameParameters.getComputers().stream().filter(item -> item != PlayerDifficulty.NONE).count();
             int playersCount = gameParameters.getPlayerNames().size();
             int[] extraPoints = gameParameters.getExtraPoints();
+
+            if (gameParameters.getComputers().contains(PlayerDifficulty.NETWORK) && playersCount != 2) {
+                throw new IllegalArgumentException("AI computer available only for 2 player game");
+            }
 
             if (gameParameters.getPlayerNames().stream().anyMatch(name -> name.length() > 10)) {
                 throw new IllegalArgumentException("Only names of length 10 or below are supported");
             }
 
-            if(gameParameters.getPlayerNames().stream().distinct().count() != gameParameters.getPlayerNames().size()){
+            if (gameParameters.getPlayerNames().stream().distinct().count() != gameParameters.getPlayerNames().size()) {
                 throw new IllegalArgumentException("Nicknames must be unique");
             }
 
@@ -168,51 +179,73 @@ public class GameController {
         }
     }
 
+    private static Map<Integer, Integer> TURNS_TO_GAMES_COUNT = new ConcurrentHashMap<>();
+    private static Map<Integer, Long> TURNS_TO_POINTS_COUNT = new ConcurrentHashMap<>();
+
+    static Map<Integer, Double> TURN_TO_AVERAGE_WINNER = new HashMap<>();
+
+    static {
+        TURN_TO_AVERAGE_WINNER.put(18, 98.0);
+        TURN_TO_AVERAGE_WINNER.put(19, 84.55076951246996);
+        TURN_TO_AVERAGE_WINNER.put(20, 88.85);
+        TURN_TO_AVERAGE_WINNER.put(21, 90.58851502673461);
+        TURN_TO_AVERAGE_WINNER.put(22, 89.7348072719857);
+        TURN_TO_AVERAGE_WINNER.put(23, 91.56718321249518);
+        TURN_TO_AVERAGE_WINNER.put(24, 93.70033667433975);
+        TURN_TO_AVERAGE_WINNER.put(25, 94.93040094901617);
+        TURN_TO_AVERAGE_WINNER.put(26, 96.85448928244499);
+        TURN_TO_AVERAGE_WINNER.put(27, 99.11833576002077);
+        TURN_TO_AVERAGE_WINNER.put(28, 101.44698210512115);
+        TURN_TO_AVERAGE_WINNER.put(29, 104.1952261755979);
+        TURN_TO_AVERAGE_WINNER.put(30, 106.48138525460016);
+        TURN_TO_AVERAGE_WINNER.put(31, 107.68035410278775);
+        TURN_TO_AVERAGE_WINNER.put(32, 112.43282733797317);
+        TURN_TO_AVERAGE_WINNER.put(33, 116.53141963823941);
+        TURN_TO_AVERAGE_WINNER.put(34, 121.18224693045502);
+        TURN_TO_AVERAGE_WINNER.put(35, 125.9541191788592);
+        TURN_TO_AVERAGE_WINNER.put(36, 123.07959197335057);
+        TURN_TO_AVERAGE_WINNER.put(37, 130.26306841789037);
+        TURN_TO_AVERAGE_WINNER.put(38, 136.79619494606467);
+        TURN_TO_AVERAGE_WINNER.put(39, 144.4201232910156);
+        TURN_TO_AVERAGE_WINNER.put(40, 152.2880622804627);
+        TURN_TO_AVERAGE_WINNER.put(41, 146.00947329872534);
+        TURN_TO_AVERAGE_WINNER.put(42, 144.11857169015067);
+        TURN_TO_AVERAGE_WINNER.put(43, 177.08999938964843);
+        TURN_TO_AVERAGE_WINNER.put(44, 133.16600036621094);
+    }
+
     @GetMapping("/simulations")
     public void runSimulations(@RequestBody SimulationsRequest request) throws IOException {
-        Constants.FIRST_PLAYER_PHASES = new ConcurrentHashMap<>();
-        Constants.SECOND_PLAYER_PHASES = new ConcurrentHashMap<>();
-
-        int availableProcessors = Runtime.getRuntime().availableProcessors();
-
-        if (request.getSimulationsCount() < availableProcessors) {
-            return;
+        TURNS_TO_GAMES_COUNT.clear();
+        TURNS_TO_POINTS_COUNT.clear();
+        if (request.isWithBatches() && request.getBatches() == 0) {
+            throw new IllegalArgumentException("Batches can't be 0");
+        }
+        if (!request.isWithBatches()) {
+            request.setBatches(1);
         }
 
+        List<PlayerDifficulty> playerDifficulties = Constants.SIMULATION_PLAYERS;
 
-        int threads = availableProcessors;
+        for (int batch = 0; batch < request.getBatches(); batch++) {
+            request.setFileIndex(batch);
 
-        List<Double> calibrationValues = aiBalanceService.calibrationValues();
+            Constants.FIRST_PLAYER_PHASES = new ConcurrentHashMap<>();
+            Constants.SECOND_PLAYER_PHASES = new ConcurrentHashMap<>();
 
-        if (request.isWithParamCalibration()) {
-            for (Double calibrationValue : calibrationValues) {
-                System.out.println();
-                System.out.println("Calibration value " + calibrationValue);
-                aiBalanceService.setCalibrationValue(calibrationValue);
+            int threads = Runtime.getRuntime().availableProcessors();
 
-                GameStatistics gameStatistics = new GameStatistics();
-
-                ExecutorService executor = Executors.newFixedThreadPool(threads);
-                for (int i = 0; i < threads; i++) {
-                    Runnable worker = new WorkerThread(request.getSimulationsCount() / threads, gameStatistics, request.isWithParamCalibration(), request.getFileIndex(), i);
-                    executor.execute(worker);
-                }
-                executor.shutdown();
-                while (!executor.isTerminated()) {
-                }
-                System.out.println("Finished all threads");
-
-
-                printStatistics(gameStatistics);
+            if (request.getSimulationsCount() < threads) {
+                return;
             }
-        } else {
+
             System.out.println("Starting simulations");
 
             GameStatistics gameStatistics = new GameStatistics();
 
             ExecutorService executor = Executors.newFixedThreadPool(threads);
             for (int i = 0; i < threads; i++) {
-                Runnable worker = new WorkerThread(request.getSimulationsCount() / threads, gameStatistics, request.isWithParamCalibration(), request.getFileIndex(), i);
+                Runnable worker = new WorkerThread(playerDifficulties, request.getSimulationsCount() / threads, gameStatistics, request.getFileIndex(), i);
                 executor.execute(worker);
             }
             executor.shutdown();
@@ -222,35 +255,103 @@ public class GameController {
 
 
             printStatistics(gameStatistics);
+
+            if (Constants.COLLECT_DATASET) {
+                List<String> fileNames = new ArrayList<>();
+
+                for (int threadIndex = 0; threadIndex < threads; threadIndex++) {
+                    fileNames.add("dataset_" + playerDifficulties.stream().map(PlayerDifficulty::toString).collect(Collectors.joining("_")) + "_" + request.getFileIndex() + "_" + threadIndex + ".csv");
+                }
+
+                combineAndDelete(fileNames, "dataset_" + playerDifficulties.stream().map(PlayerDifficulty::toString).collect(Collectors.joining("_")) + "_" + request.getFileIndex() + ".csv");
+            }
+
+
+            System.out.println(Constants.FIRST_PLAYER_PHASES);
+            System.out.println(Constants.SECOND_PLAYER_PHASES);
+            System.out.println("Finished");
+
+            System.out.println(maxMcIncome);
+            System.out.println(maxHeatIncome);
+            System.out.println(maxScience);
+            System.out.println(maxCardsPlayed);
+            System.out.println(maxSteelTitanium);
+            System.out.println(maxResources);
         }
+    }
+
+    @GetMapping("/simulations/networks")
+    public void runSimulations(@RequestBody NetworksSimulationsRequest request) throws IOException {
+        if (request.getSimulationsCount() < Runtime.getRuntime().availableProcessors()) {
+            return;
+        }
+
+        Constants.FIRST_PLAYER_PHASES = new ConcurrentHashMap<>();
+        Constants.SECOND_PLAYER_PHASES = new ConcurrentHashMap<>();
+
+        if (request.isWithSmart()) {
+            for (String network : request.getNetworks()) {
+                System.out.println("Starting simulations smart " + network);
+                deepNetwork.updateNetwork(network, 2);
+
+                executeSimulations(List.of(PlayerDifficulty.SMART, PlayerDifficulty.NETWORK), request, "Smart", network);
+            }
+        }
+
+        for (String firstNetwork : request.getNetworks()) {
+            for (String secondNetwork : request.getNetworks()) {
+                System.out.println("Starting simulations " + firstNetwork + " " + secondNetwork);
+
+                deepNetwork.updateNetwork(firstNetwork, 1);
+                deepNetwork.updateNetwork(secondNetwork, 2);
+
+                executeSimulations(List.of(PlayerDifficulty.NETWORK, PlayerDifficulty.NETWORK), request, firstNetwork, secondNetwork);
+            }
+        }
+    }
+
+    private void executeSimulations(List<PlayerDifficulty> playerDifficulty, NetworksSimulationsRequest request, String firstName, String secondName) throws IOException {
+        int threads = Runtime.getRuntime().availableProcessors();
+
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+
+        GameStatistics gameStatistics = new GameStatistics();
+
+        for (int i = 0; i < threads; i++) {
+            Runnable worker = new WorkerThread(playerDifficulty, request.getSimulationsCount() / threads, gameStatistics, 0, i);
+            executor.execute(worker);
+        }
+        executor.shutdown();
+        while (!executor.isTerminated()) {
+        }
+        System.out.println("Finished all threads");
+
+
+        printStatistics(gameStatistics);
 
         if (Constants.COLLECT_DATASET) {
             List<String> fileNames = new ArrayList<>();
 
-            for (int threadIndex = 0; threadIndex < availableProcessors; threadIndex++) {
-                fileNames.add("dataset_" + request.getFileIndex() + "_" + threadIndex + ".csv");
+            for (int threadIndex = 0; threadIndex < threads; threadIndex++) {
+                fileNames.add("dataset_" + Constants.SIMULATION_PLAYERS.stream().map(PlayerDifficulty::toString).collect(Collectors.joining("_")) + "_" + 0 + "_" + threadIndex + ".csv");
             }
 
-            combineAndDelete(fileNames, "dataset_" + request.getFileIndex() + ".csv");
+            combineAndDelete(fileNames, "dataset_" + firstName + "_" + secondName + "_" + System.currentTimeMillis() + ".csv");
         }
-
 
         System.out.println(Constants.FIRST_PLAYER_PHASES);
         System.out.println(Constants.SECOND_PLAYER_PHASES);
         System.out.println("Finished");
-
-        System.out.println(maxMcIncome);
-        System.out.println(maxHeatIncome);
-        System.out.println(maxScience);
-        System.out.println(maxCardsPlayed);
-        System.out.println(maxSteelTitanium);
-        System.out.println(maxResources);
     }
 
     public static void combineAndDelete(List<String> filePaths, String combinedFilePath) throws IOException {
         // Create the combined CSV file
         FileWriter writer = new FileWriter(combinedFilePath);
         for (String filePath : filePaths) {
+            File f = new File(filePath);
+            if (!f.exists()) {
+                continue;
+            }
             BufferedReader reader = new BufferedReader(new FileReader(filePath));
             String line = reader.readLine();
             while (line != null) {
@@ -268,40 +369,102 @@ public class GameController {
         writer.close();
     }
 
+    @GetMapping("/mulligan/calibrate")
+    public void calibrateMulligan() {
+        Random random = new Random();
+        GameParameters.GameParametersBuilder builder = GameParameters.builder();
+
+        List<String> playerNames = new ArrayList<>();
+        for (PlayerDifficulty simulationPlayer : Constants.SIMULATION_PLAYERS) {
+            playerNames.add(simulationPlayer.name());
+        }
+
+        GameParameters gameParameters = builder
+                .playerNames(playerNames)
+                .computers(Constants.SIMULATION_PLAYERS)
+                .mulligan(true)
+                .expansion(Expansion.BASE)
+                .expansion(Expansion.BUFFED_CORPORATION)
+                .expansion(Expansion.DISCOVERY)
+                .dummyHand(true)
+                .build();
+
+        double total = 0;
+
+        for (int j = 0; j < 10000; j++) {
+            MarsGame marsGame = gameFactory.createMarsGame(gameParameters);
+
+            List<Player> players = new ArrayList<>(marsGame.getPlayerUuidToPlayer().values());
+
+            Player player = players.get(random.nextInt(players.size()));
+            aiMulliganCardsTurn.processTurn(marsGame, player);
+
+
+            MarsGame gameAfterOpponentPlay = testAiService.projectOpponentCorporationBuildExperiment(marsGame, player);
+
+            LinkedList<Integer> cards = player.getHand().getCards();
+
+            float bestTotalExtra = 0;
+
+            for (Integer corporation : player.getCorporations().getCards()) {
+                MarsGame projectionAfterCorporation = testAiService.projectPlayerBuildCorporationExperiment(gameAfterOpponentPlay, player, corporation);
+
+                float initialChance = deepNetwork.testState(projectionAfterCorporation, projectionAfterCorporation.getPlayerByUuid(player.getUuid()));
+
+                float totalExtra = 0;
+
+                for (int i = 0; i < cards.size(); i++) {
+                    MarsGame gameCopy = new MarsGame(projectionAfterCorporation);
+                    totalExtra += aiPickCardProjectionService.cardExtraChanceIfBuilt(gameCopy, gameCopy.getPlayerByUuid(player.getUuid()), cards.get(i), initialChance, 0);
+                }
+
+                if (totalExtra > bestTotalExtra) {
+                    bestTotalExtra = totalExtra;
+                }
+
+//                System.out.println(cardService.getCard(corporation).getClass().getSimpleName() + " " + (initialChance + totalExtra / cards.size()));
+
+            }
+
+            total += bestTotalExtra;
+//            System.out.println();
+        }
+
+        System.out.println(total);
+    }
 
     class WorkerThread implements Runnable {
         int simulationCount;
         GameStatistics gameStatistics;
-        boolean withCalibration;
         int fileIndex;
         int threadIndex;
+        List<PlayerDifficulty> playerDifficulty;
 
-        WorkerThread(int simulationCount, GameStatistics gameStatistics, boolean withCalibration, int fileIndex, int threadIndex) {
+        WorkerThread(List<PlayerDifficulty> playerDifficulty, int simulationCount, GameStatistics gameStatistics, int fileIndex, int threadIndex) {
             this.simulationCount = simulationCount;
             this.gameStatistics = gameStatistics;
-            this.withCalibration = withCalibration;
             this.fileIndex = fileIndex;
             this.threadIndex = threadIndex;
+            this.playerDifficulty = playerDifficulty;
         }
 
         @Override
         public void run() {
             GameParameters.GameParametersBuilder builder = GameParameters.builder();
-            if (Constants.DISCOVERY_SIMULATIONS) {
-                builder.expansion(Expansion.DISCOVERY);
-            }
 
             List<String> playerNames = new ArrayList<>();
-            for (PlayerDifficulty simulationPlayer : Constants.SIMULATION_PLAYERS) {
-                playerNames.add(simulationPlayer.name());
+            int counter = 1;
+            for (PlayerDifficulty simulationPlayer : playerDifficulty) {
+                playerNames.add(simulationPlayer.name() + (counter++));
             }
 
             GameParameters gameParameters = builder
                     .playerNames(playerNames)
-                    .computers(Constants.SIMULATION_PLAYERS)
+                    .computers(playerDifficulty)
                     .mulligan(true)
                     .expansion(Expansion.BASE)
                     .expansion(Expansion.BUFFED_CORPORATION)
+                    .expansion(Expansion.DISCOVERY)
                     .dummyHand(true)
                     .build();
 
@@ -331,9 +494,7 @@ public class GameController {
                     long spentTime = System.currentTimeMillis() - startTime;
 
                     long timePerGame = (spentTime / i);
-                    if (!withCalibration) {
-                        System.out.println("Time left: " + (simulationCount - i) * timePerGame / 1000);
-                    }
+                    System.out.println("Time left: " + (simulationCount - i) * timePerGame / 1000);
                 }
 
                 if (i % 100 == 0) {
@@ -363,22 +524,47 @@ public class GameController {
     }
 
     private void saveExceptionalGames(List<MarsGame> games) {
-        games.stream().filter(game -> game.getTurns() < 34 && game.getPlayerUuidToPlayer().values().stream().anyMatch(
-                player -> {
+//        games.stream().filter(game -> game.getTurns() < 34 && game.getPlayerUuidToPlayer().values().stream().anyMatch(
+//                player -> {
+//
+//                    int winPoints = winPointsService.countWinPoints(player, game);
+//
+//                    long activeCardsCount = player.getPlayed().getCards().stream().map(cardService::getCard).filter(Card::isActiveCard).count();
+//                    long greenCardsCount = player.getPlayed().getCards().stream().map(cardService::getCard).filter(card -> card.getColor() == CardColor.GREEN).count();
+//
+//                    if (activeCardsCount > 5 && winPoints > 80 && greenCardsCount < 13) {
+//                        System.out.println("Active cards " + player.getUuid());
+//                    }
+//
+//
+//                    return (activeCardsCount > 5 && winPoints > 80 && greenCardsCount < 13);
+//                }
+//        )).forEach(gameRepository::save);
 
-                    int winPoints = winPointsService.countWinPoints(player, game);
-
-                    long activeCardsCount = player.getPlayed().getCards().stream().map(cardService::getCard).filter(Card::isActiveCard).count();
-                    long greenCardsCount = player.getPlayed().getCards().stream().map(cardService::getCard).filter(card -> card.getColor() == CardColor.GREEN).count();
-
-                    if (activeCardsCount > 5 && winPoints > 80 && greenCardsCount < 13) {
-                        System.out.println("Active cards " + player.getUuid());
-                    }
-
-
-                    return (activeCardsCount > 5 && winPoints > 80 && greenCardsCount < 13);
+        games.forEach(game -> {
+            TURNS_TO_GAMES_COUNT.compute(game.getTurns(), (turns, count) -> {
+                if (count == null) {
+                    count = 0;
                 }
-        )).forEach(gameRepository::save);
+                count++;
+                return count;
+            });
+            TURNS_TO_POINTS_COUNT.compute(game.getTurns(), (turns, pointsCount) -> {
+                if (pointsCount == null) {
+                    pointsCount = 0L;
+                }
+                Integer bestScore = game.getPlayerUuidToPlayer().values().stream().map(
+                        p -> winPointsService.countWinPoints(p, game)
+                ).max(Comparator.naturalOrder()).orElseThrow();
+                pointsCount += bestScore;
+
+                if (TURN_TO_AVERAGE_WINNER.containsKey(game.getTurns()) && bestScore > TURN_TO_AVERAGE_WINNER.get(game.getTurns()) * 1.1) {
+                    gameRepository.save(game);
+                }
+
+                return pointsCount;
+            });
+        });
     }
 
     private void gatherStatistics(List<MarsGame> games, GameStatistics gameStatistics) {
@@ -457,7 +643,7 @@ public class GameController {
     }
 
     private synchronized void saveDatasets(List<MarsGameDataset> marsGameDatasets, int index, int threadIndex) throws FileNotFoundException {
-        File csvOutputFile = new File("dataset_" + index + "_" + threadIndex + ".csv");
+        File csvOutputFile = new File("dataset_" + Constants.SIMULATION_PLAYERS.stream().map(PlayerDifficulty::toString).collect(Collectors.joining("_")) + "_" + index + "_" + threadIndex + ".csv");
         try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
             for (MarsGameDataset dataset : marsGameDatasets) {
                 writeMarsGameRows(dataset.getFirstPlayerRows(), pw);
@@ -511,9 +697,6 @@ public class GameController {
             if (row.getPlayer().getSteelIncome() + row.getPlayer().getTitaniumIncome() > maxSteelTitanium) {
                 maxSteelTitanium = row.getPlayer().getSteelIncome() + row.getPlayer().getTitaniumIncome();
             }
-            if (row.getResources() > maxResources) {
-                maxResources = row.getResources();
-            }
             String newString = getMarsGameRowString(row);
             if (newString != null && (!newString.equals(previousString))) {
                 pw.println(newString);
@@ -528,7 +711,7 @@ public class GameController {
         }
         StringBuilder sb = new StringBuilder();
 
-        float[] output = datasetCollectionService.getMarsGameRowForStudy(row);
+        float[] output = datasetCollectionService.mapMarsGameToArrayForStudy(row);
 
         for (int i = 0; i < output.length; i++) {
             sb.append(getFloatForWrite(output[i]));
@@ -594,6 +777,13 @@ public class GameController {
         for (int i = 0; i < gameStatistics.getWinners().size(); i++) {
             System.out.println("Player victories: " + gameStatistics.getWinners().get(i) + ". Ratio: " + ((double) gameStatistics.getWinners().get(i) / totalWins));
         }
+
+//        System.out.println(TURNS_TO_GAMES_COUNT);
+//        System.out.println(TURNS_TO_POINTS_COUNT);
+//
+//        for (Map.Entry<Integer, Integer> entry : TURNS_TO_GAMES_COUNT.entrySet()) {
+//            System.out.println("Turns " + entry.getKey() + " average points: " + ((float) TURNS_TO_POINTS_COUNT.get(entry.getKey()) / entry.getValue()));
+//        }
     }
 
     @GetMapping("/simulations/stop")
@@ -604,6 +794,24 @@ public class GameController {
     @GetMapping("/game/player/{playerUuid}")
     public GameDto getGameByPlayerUuid(@PathVariable String playerUuid) {
         MarsGame game = gameService.getGame(playerUuid);
+
+        long aiComputerCount = game.getPlayerUuidToPlayer().values().stream().filter(player -> player.getDifficulty() != null && player.getDifficulty() != PlayerDifficulty.NONE && player.getDifficulty() != PlayerDifficulty.RANDOM && player.getDifficulty() != PlayerDifficulty.SMART).count();
+        Player aiComputer = null;
+
+        if (aiComputerCount == 2) {
+            aiComputer = game.getPlayerUuidToPlayer().values().stream().filter(p -> !p.getUuid().equals(playerUuid)).findFirst().orElse(null);
+        } else if (aiComputerCount == 1) {
+            aiComputer = game.getPlayerUuidToPlayer().values().stream().filter(player -> player.getDifficulty() != PlayerDifficulty.NONE && player.getDifficulty() != PlayerDifficulty.RANDOM && player.getDifficulty() != PlayerDifficulty.SMART).findFirst().orElse(null);
+        }
+
+        float winProbability;
+
+        if (aiComputer == null) {
+            aiComputerCount = 0;
+            winProbability = 0;
+        } else {
+            winProbability = deepNetwork.testState(game, aiComputer);
+        }
 
         Planet phasePlanet = game.getPlanetAtTheStartOfThePhase();
 
@@ -627,6 +835,8 @@ public class GameController {
                 .milestones(game.getMilestones().stream().map(MilestoneDto::from).collect(Collectors.toList()))
                 .crysisDto(buildCrysisDto(crysisData))
                 .stateReason(game.getStateReason())
+                .aiComputer(aiComputerCount > 0)
+                .winProbability(aiComputerCount > 0 ? (int) (winProbability * 100) : 0)
                 .build();
     }
 
@@ -657,8 +867,8 @@ public class GameController {
 
     @GetMapping("/crisis/records")
     public CrisisRecordsDto findTopTwentyRecords(@RequestParam int playerCount, @RequestParam int difficultyLevel) {
-        List<CrisisRecordEntity> crisisRecordEntityByTurns = crisisRecordEntityRepository.findTopTwentyRecordsByTurns(playerCount,difficultyLevel);
-        List<CrisisRecordEntity> crisisRecordEntityByPoints = crisisRecordEntityRepository.findTopTwentyRecordsByPoints(playerCount,difficultyLevel);
+        List<CrisisRecordEntity> crisisRecordEntityByTurns = crisisRecordEntityRepository.findTopTwentyRecordsByTurns(playerCount, difficultyLevel);
+        List<CrisisRecordEntity> crisisRecordEntityByPoints = crisisRecordEntityRepository.findTopTwentyRecordsByPoints(playerCount, difficultyLevel);
 
         return new CrisisRecordsDto(crisisRecordEntityByPoints, crisisRecordEntityByTurns);
     }

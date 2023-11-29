@@ -24,14 +24,14 @@ public class RegolithEatersAiCardProjection<T extends Card> implements AiCardPro
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         if (player.getCardResourcesCount().get(RegolithEaters.class) < 2 || !terraformingService.canIncreaseOxygen(game)) {
             player.getCardResourcesCount().put(RegolithEaters.class, player.getCardResourcesCount().get(RegolithEaters.class) + 1);
             return new MarsGameRowDifference();
         }
 
         player.getCardResourcesCount().put(RegolithEaters.class, player.getCardResourcesCount().get(RegolithEaters.class) + 1);
-        float stateIfPutResource = deepNetwork.testState(game, player);
+        float stateIfPutResource = deepNetwork.testState(game, player, network);
         player.getCardResourcesCount().put(RegolithEaters.class, player.getCardResourcesCount().get(RegolithEaters.class) - 1);
 
 
@@ -41,7 +41,7 @@ public class RegolithEatersAiCardProjection<T extends Card> implements AiCardPro
         playerCopy.getCardResourcesCount().put(RegolithEaters.class, player.getCardResourcesCount().get(RegolithEaters.class) - 2);
         terraformingService.raiseOxygen(marsContextProvider.provide(gameCopy, playerCopy));
 
-        float stateIfUseResource = deepNetwork.testState(gameCopy, playerCopy);
+        float stateIfUseResource = deepNetwork.testState(gameCopy, playerCopy, network);
 
         if (stateIfPutResource > stateIfUseResource) {
             player.getCardResourcesCount().put(RegolithEaters.class, player.getCardResourcesCount().get(RegolithEaters.class) + 1);

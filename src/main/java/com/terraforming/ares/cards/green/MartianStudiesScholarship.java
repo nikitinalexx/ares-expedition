@@ -36,7 +36,7 @@ public class MartianStudiesScholarship implements DiscoveryExpansionRedCard {
         final MarsGame game = marsContext.getGame();
         final Player player = marsContext.getPlayer();
 
-        UpgradePhaseHelper.upgradePhase(marsContext.getCardService(), game, player, cardInput.get(0));
+        UpgradePhaseHelper.upgradePhase(player, cardInput.get(0));
 
         if (player.hasPhaseUpgrade(Constants.PHASE_2_UPGRADE_PROJECT_AND_CARD)) {
             player.getBuilds().add(new BuildDto(BuildType.BLUE_RED_OR_CARD));

@@ -42,6 +42,10 @@ public interface Card {
     default void payAgain(MarsGame game, CardService cardService, Player player) {
     }
 
+    default boolean canPayAgain() {
+        return false;
+    }
+
     default int getWinningPoints() {
         return 0;
     }

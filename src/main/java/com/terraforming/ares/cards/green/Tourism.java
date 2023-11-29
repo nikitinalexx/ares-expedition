@@ -37,6 +37,11 @@ public class Tourism implements DiscoveryExpansionGreenCard {
     }
 
     @Override
+    public boolean canPayAgain() {
+        return true;
+    }
+
+    @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
 

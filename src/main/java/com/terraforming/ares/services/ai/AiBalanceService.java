@@ -25,31 +25,4 @@ public class AiBalanceService {
         return MINIMUM_BUILD_CARD_WORTH;
     }
 
-
-
-
-
-    public static final double DEFAULT_CALIBRATION_VALUE = 1.20;
-    public static double CHANGABLE_CALIBRATION_VALUE = DEFAULT_CALIBRATION_VALUE;
-
-    public double getExtraRatio(Player player) {
-        if (player.getUuid().endsWith("0")) {
-            return CHANGABLE_CALIBRATION_VALUE;
-        } else {
-            return DEFAULT_CALIBRATION_VALUE;
-        }
-    }
-
-
-    public List<Double> calibrationValues() {
-        List<Double> calibrationParams = new ArrayList<>();
-        for (double i = 1.99; i < 3.00; i += 0.01) {
-            calibrationParams.add(i);
-        }
-        return calibrationParams;
-    }
-
-    public void setCalibrationValue(double calibrationValue) {
-        CHANGABLE_CALIBRATION_VALUE = calibrationValue;
-    }
 }

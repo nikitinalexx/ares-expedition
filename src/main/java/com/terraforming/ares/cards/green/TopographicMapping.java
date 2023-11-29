@@ -35,7 +35,7 @@ public class TopographicMapping implements DiscoveryExpansionRedCard {
         marsContext.getPlayer().getCardToTag().put(TopographicMapping.class, List.of(tag));
 
         List<Integer> cardInput = input.get(InputFlag.PHASE_UPGRADE_CARD.getId());
-        UpgradePhaseHelper.upgradePhase(marsContext.getCardService(), marsContext.getGame(), marsContext.getPlayer(), cardInput.get(0));
+        UpgradePhaseHelper.upgradePhase(marsContext.getPlayer(), cardInput.get(0));
     }
 
     @Override

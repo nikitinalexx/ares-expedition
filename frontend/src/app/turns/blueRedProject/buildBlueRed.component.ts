@@ -127,6 +127,12 @@ export class BuildBlueRedComponent implements OnInit {
       if (this.upgradeExtraPhaseCardEffect()) {
         this.extraPhaseInput = this.getUpgradePhasesArray()[1] - 1;
       }
+      if (this.parentForm.value.anaerobicMicroorganisms && !this.anaerobicMicroorganismsCardAction()) {
+        this.parentForm?.patchValue({anaerobicMicroorganisms: false}, {onlySelf: true, emitEvent: false});
+      }
+      if (this.parentForm.value.restructuredResources && !this.restructuredResourcesCardAction()) {
+        this.parentForm?.patchValue({restructuredResources: false}, {onlySelf: true, emitEvent: false});
+      }
       this.parentForm.controls.mcPrice.setValue(
         this.getDiscountedMcPriceWithEffectsApplied(
           this.parentForm.value.anaerobicMicroorganisms,
@@ -660,6 +666,7 @@ export class BuildBlueRedComponent implements OnInit {
         payments.push(new Payment(2, PaymentType.ANAEROBIC_MICROORGANISMS));
       }
 
+      console.log(this.parentForm.value.restructuredResources)
       if (this.parentForm.value.restructuredResources) {
         payments.push(new Payment(1, PaymentType.RESTRUCTURED_RESOURCES));
       }

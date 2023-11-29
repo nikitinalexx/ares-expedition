@@ -39,6 +39,11 @@ public class TropicalResort implements BaseExpansionGreenCard {
     }
 
     @Override
+    public boolean canPayAgain() {
+        return true;
+    }
+
+    @Override
     public boolean onBuiltEffectApplicableToItself() {
         return true;
     }

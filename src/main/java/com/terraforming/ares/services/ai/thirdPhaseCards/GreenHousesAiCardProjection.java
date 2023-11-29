@@ -20,18 +20,18 @@ public class GreenHousesAiCardProjection<T extends Card> implements AiCardProjec
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         if (player.getHeat() <= 0) {
             return new MarsGameRowDifference();
         }
 
-        float bestState = deepNetwork.testState(game, player);
+        float bestState = deepNetwork.testState(game, player, network);
         int count = 0;
         for (int i = 1; i <= 4 && i <= player.getHeat(); i++) {
             player.setHeat(player.getHeat() - i);
             player.setPlants(player.getPlants() + i);
 
-            float currentState = deepNetwork.testState(game, player);
+            float currentState = deepNetwork.testState(game, player, network);
             if (currentState > bestState) {
                 bestState = currentState;
                 count = i;

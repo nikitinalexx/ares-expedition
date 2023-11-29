@@ -38,7 +38,7 @@ public class BiomedicalImports implements DiscoveryExpansionRedCard {
 
         List<Integer> upgradePhaseInput = input.get(InputFlag.PHASE_UPGRADE_CARD.getId());
 
-        UpgradePhaseHelper.upgradePhase(marsContext.getCardService(), marsContext.getGame(), marsContext.getPlayer(), upgradePhaseInput.get(0));
+        UpgradePhaseHelper.upgradePhase(marsContext.getPlayer(), upgradePhaseInput.get(0));
     }
 
     @Override

@@ -14,7 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class MarsPlayerRow {
-    public static final int DATA_SIZE_NO_BLUE_CARDS = 38;
+    public static final int DATA_SIZE_NO_BLUE_CARDS = 67;
 
     float winPoints;
     float mcIncome;
@@ -30,9 +30,7 @@ public class MarsPlayerRow {
     int extraSeeCards;
     int extraTakeCards;
 
-    float greenCards;
-    float redCards;
-    float blueCards;
+    float cards;
 
     int anaerobicMicroorganisms;
     int decomposers;
@@ -41,9 +39,27 @@ public class MarsPlayerRow {
     int nitriteReducting;
     int regolithEaters;
     int selfReplicatingBacteria;
+    int fibrousCompositeScience;
 
-    //todo add tags?
+    int spaceTagsCount;
+    int earthTagsCount;
+    int eventTagsCount;
     int scienceTagsCount;
+    int plantTagsCount;
+    int energyTagsCount;
+    int buildingTagsCount;
+    int animalTagsCount;
+    int jupiterTagsCount;
+    int microbeTagsCount;
+
+    int amplifyEffect;
+    int cardsPriceEffect;
+    int cardForScienceEffect;
+    int phaseRevealBonus;
+    int eventDiscount;
+    int cardDiscount;
+    int cardPerEvent;
+    int wpPerJupiter;
 
     int heatEarthIncome;
     int mcAnimalPlantIncome;
@@ -59,6 +75,13 @@ public class MarsPlayerRow {
     int heatEnergyIncome;
     int plantMicrobeIncome;
     int mcForestIncome;
+
+    int[] dynamicEffects = new int[3];
+
+    int[] type1Upgrades;
+    int[] type2Upgrades;
+
+    int corporationId;
 
     List<Integer> blueCardsList;
 }

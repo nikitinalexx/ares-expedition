@@ -39,6 +39,11 @@ public class GlacialEvaporation implements DiscoveryExpansionGreenCard {
     }
 
     @Override
+    public boolean canPayAgain() {
+        return true;
+    }
+
+    @Override
     public CardMetadata getCardMetadata() {
         return cardMetadata;
     }

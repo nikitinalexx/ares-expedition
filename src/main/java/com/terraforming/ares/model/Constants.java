@@ -12,29 +12,37 @@ public class Constants {
     public static Map<Integer, Integer> FIRST_PLAYER_PHASES = new ConcurrentHashMap<>();
     public static Map<Integer, Integer> SECOND_PLAYER_PHASES = new ConcurrentHashMap<>();
 
-    //TODO update
+    public static final List<PlayerDifficulty> AVAILABLE_DIFFICULTIES = List.of(PlayerDifficulty.NONE, PlayerDifficulty.RANDOM, PlayerDifficulty.SMART, PlayerDifficulty.NETWORK);
+
+    public static final int CORPORATION_ID_OFFSET = 10000;
+
     public static final List<Integer> CORPORATION_PRIORITY = List.of(
             10006, /* Tharsis */
             10015, /* MayNi */
             10104, 10011, /* Saturn */
             10105, 10012, /* Zetacell */
             10102, 10009, /* Phobolog */
+            10203, /*Apollo*/
+            10200, /*Sultira*/
             10017, /* Interplanetary */
             10003, /* LaunchStar */
             10002, /* DevTechs */
             10007, /* Credicor */
             10005, /* Teractor */
+            10202,/*Exocorp*/
             10107, 10014, /* Inventrix */
             10004, /* Thorgate */
             10103, 10010, /* Mining */
             10106, 10013, /* Ecoline */
             10001, /* Celestior */
             10101, 10008, /* Arclight */
+            10206,/*Nebulabs*/
+            10201,/*Hyperion*/
+            10205,/*Modpro*/
             10108, 10016, /* UNMI */
-            10100, 10000 /* Helion */
+            10100, 10000,/* Helion */
+            10204 /*Austellar*/
     );
-
-    public static final int CORPORATION_ID_OFFSET = 10000;
 
 
     public static final int MAX_OCEANS = 9;
@@ -92,19 +100,36 @@ public class Constants {
     public static final int PHASE_5_UPGRADE_KEEP_EXTRA = 13;
     public static final int PHASE_5_UPGRADE_SEE_EXTRA = 14;
 
-    public static final float RED_CARDS_RATIO = 40f / 217;
-    public static final float GREEN_CARDS_RATIO = 111f / 217;
-    public static final float BLUE_CARDS_RATIO = 66f / 217;
+    public static final int TOTAL_CARDS_COUNT = 268;
 
-    public static final boolean DISCOVERY_SIMULATIONS = true;
+    public static final float RED_CARDS_RATIOO = 49f / TOTAL_CARDS_COUNT;
+    public static final float GREEN_CARDS_RATIOO = 135f / TOTAL_CARDS_COUNT;
+    public static final float BLUE_CARDS_RATIOO = 84f / TOTAL_CARDS_COUNT;
+
+    public static final Map<Tag, Integer> TAG_TO_CARDS_COUNT = Map.of(
+            Tag.PLANT, 35,
+            Tag.SCIENCE, 41,
+            Tag.ENERGY, 33,
+            Tag.SPACE, 51,
+            Tag.EVENT, 49,
+            Tag.BUILDING, 85,
+            Tag.ANIMAL, 10,
+            Tag.MICROBE, 23,
+            Tag.EARTH, 28,
+            Tag.JUPITER, 14
+    );
+
+    public static final int CARDS_WITH_DYNAMIC_TAG = 4;
 
 
     public static final boolean PLAYER_CHOOSES_CARDS_FOR_FIRST_PLAYER = false;
 
-    public static final List<PlayerDifficulty> SIMULATION_PLAYERS = List.of(PlayerDifficulty.SMART, PlayerDifficulty.SMART, PlayerDifficulty.SMART, PlayerDifficulty.SMART);
     public static final boolean WRITE_STATISTICS_TO_FILE = false;
     public static final boolean WRITE_STATISTICS_TO_CONSOLE = false;
     public static final boolean SAVE_SIMULATION_GAMES_TO_DB = false;
+
+
+    public static final List<PlayerDifficulty> SIMULATION_PLAYERS = List.of(PlayerDifficulty.NETWORK, PlayerDifficulty.NETWORK);
 
     public static final boolean COLLECT_DATASET = false;
     public static final boolean LOG_NET_COMPARISON = false;

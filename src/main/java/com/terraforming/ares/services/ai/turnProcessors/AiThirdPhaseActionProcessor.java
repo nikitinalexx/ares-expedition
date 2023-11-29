@@ -1,15 +1,21 @@
 package com.terraforming.ares.services.ai.turnProcessors;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.cards.blue.*;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.ai.AiExperimentalTurn;
+import com.terraforming.ares.model.ai.AiTurnChoice;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.CardValidationService;
 import com.terraforming.ares.services.StandardProjectService;
 import com.terraforming.ares.services.ai.AiCardValidationService;
+import com.terraforming.ares.services.ai.DeepNetwork;
+import com.terraforming.ares.services.ai.ProjectionStrategy;
 import com.terraforming.ares.services.ai.TestAiService;
 import com.terraforming.ares.services.ai.dto.ActionInputParamsResponse;
+import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsService;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
@@ -27,33 +33,35 @@ public class AiThirdPhaseActionProcessor {
     private final Random random = new Random();
     private final AiTurnService aiTurnService;
     private final CardService cardService;
-    private final CardValidationService cardValidationService;
     private final AiPaymentService aiPaymentHelper;
     private final AiCardActionHelper aiCardActionHelper;
     private final StandardProjectService standardProjectService;
     private final AiCardBuildParamsService aiCardBuildParamsService;
     private final TestAiService testAiService;
     private final AiCardValidationService aiCardValidationService;
+    private final AiBuildProjectService aiBuildProjectService;
+    private final DeepNetwork deepNetwork;
+    private final CardValidationService cardValidationService;
 
     public AiThirdPhaseActionProcessor(AiTurnService aiTurnService,
                                        CardService cardService,
-                                       CardValidationService cardValidationService,
                                        AiPaymentService aiPaymentHelper,
                                        AiCardActionHelper aiCardActionHelper,
                                        StandardProjectService standardProjectService,
                                        AiCardBuildParamsService aiCardBuildParamsService,
                                        TestAiService testAiService,
-                                       AiCardValidationService aiCardValidationService) {
-
+                                       AiCardValidationService aiCardValidationService, AiBuildProjectService aiBuildProjectService, DeepNetwork deepNetwork, CardValidationService cardValidationService) {
         this.aiTurnService = aiTurnService;
         this.cardService = cardService;
-        this.cardValidationService = cardValidationService;
         this.aiPaymentHelper = aiPaymentHelper;
         this.aiCardActionHelper = aiCardActionHelper;
         this.standardProjectService = standardProjectService;
         this.aiCardBuildParamsService = aiCardBuildParamsService;
         this.testAiService = testAiService;
         this.aiCardValidationService = aiCardValidationService;
+        this.aiBuildProjectService = aiBuildProjectService;
+        this.deepNetwork = deepNetwork;
+        this.cardValidationService = cardValidationService;
     }
 
     public boolean processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
@@ -66,26 +74,57 @@ public class AiThirdPhaseActionProcessor {
 
         if (game.gameEndCondition()) {
             if (player.getHand().size() != 0) {
-                aiTurnService.sellAllCards(player, game, player.getHand().getCards());
+                aiTurnService.sellCards(player, game, player.getHand().getCards());
                 return true;
             } else {
-                StandardProjectType type = null;
-                float bestState = -1;
-
-                for (StandardProjectType standardProjectType : List.of(StandardProjectType.FOREST, StandardProjectType.OCEAN, StandardProjectType.TEMPERATURE)) {
-                    String validationResult = standardProjectService.validateStandardProject(game, player, standardProjectType);
-                    if (validationResult == null) {
-                        float projectedChance = testAiService.projectPlayStandardAction(game, player.getUuid(), standardProjectType);
-                        if (projectedChance > bestState) {
-                            type = standardProjectType;
-                            bestState = projectedChance;
+                switch (player.getDifficulty().THIRD_PHASE_ACTION) {
+                    case RANDOM:
+                    case SMART: {
+                        if (!game.getPlanetAtTheStartOfThePhase().isOxygenMax()) {
+                            String validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.FOREST);
+                            if (validationResult == null) {
+                                aiTurnService.standardProjectTurn(game, player, StandardProjectType.FOREST);
+                                return true;
+                            }
+                        }
+                        String validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.OCEAN);
+                        if (validationResult == null) {
+                            aiTurnService.standardProjectTurn(game, player, StandardProjectType.OCEAN);
+                            return true;
+                        }
+                        validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.TEMPERATURE);
+                        if (validationResult == null) {
+                            aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
+                            return true;
+                        }
+                        validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.FOREST);
+                        if (validationResult == null) {
+                            aiTurnService.standardProjectTurn(game, player, StandardProjectType.FOREST);
+                            return true;
                         }
                     }
-                }
+                    break;
+                    case NETWORK: {
+                        StandardProjectType type = null;
+                        float bestState = -1;
 
-                if (type != null) {
-                    aiTurnService.standardProjectTurn(game, player, type);
-                    return true;
+                        for (StandardProjectType standardProjectType : List.of(StandardProjectType.FOREST, StandardProjectType.OCEAN, StandardProjectType.TEMPERATURE)) {
+                            String validationResult = standardProjectService.validateStandardProject(game, player, standardProjectType);
+                            if (validationResult == null) {
+                                float projectedChance = testAiService.projectPlayStandardAction(game, player.getUuid(), standardProjectType);
+                                if (projectedChance > bestState) {
+                                    type = standardProjectType;
+                                    bestState = projectedChance;
+                                }
+                            }
+                        }
+
+                        if (type != null) {
+                            aiTurnService.standardProjectTurn(game, player, type);
+                            return true;
+                        }
+                    }
+                    break;
                 }
             }
 
@@ -99,6 +138,7 @@ public class AiThirdPhaseActionProcessor {
 
 
     private boolean makeATurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
+        //TODO what if you have blue cards that spend heat
         if (player.getSelectedCorporationCard() == 10000 || player.getSelectedCorporationCard() == 10100) {
             if (game.getPlanetAtTheStartOfThePhase().isTemperatureMax() && player.getHeat() > 0) {
                 player.setMc(player.getMc() + player.getHeat());
@@ -113,7 +153,7 @@ public class AiThirdPhaseActionProcessor {
                 .filter(c -> !activatedBlueCards.containsCard(c.getId()))
                 .collect(Collectors.toList());
 
-        boolean actionPerformed = performAction(game, player, notUsedBlueCards);
+        boolean actionPerformed = performCardAction(game, player, notUsedBlueCards);
 
         if (actionPerformed) {
             return true;
@@ -125,43 +165,44 @@ public class AiThirdPhaseActionProcessor {
                     .filter(Card::isActiveCard)
                     .collect(Collectors.toList());
 
-            actionPerformed = performAction(game, player, actionBlueCards);
+            actionPerformed = performCardAction(game, player, actionBlueCards);
         }
 
         if (actionPerformed) {
             return true;
         }
 
-        Set<CardAction> playedActions = player.getPlayed().getCards().stream().map(cardService::getCard)
-                .map(Card::getCardMetadata)
-                .filter(Objects::nonNull)
-                .map(CardMetadata::getCardAction)
-                .filter(Objects::nonNull).collect(Collectors.toSet());
-
-        if (!game.getPlanetAtTheStartOfThePhase().isOceansMax()) {
-            if ((playedActions.contains(CardAction.ARCTIC_ALGAE)
-                    || playedActions.contains(CardAction.FISH))
-                    && player.getMc() > 30) {
-                aiTurnService.standardProjectTurn(game, player, StandardProjectType.OCEAN);
-                return true;
-            }
-        }
-        if (!game.getPlanetAtTheStartOfThePhase().isTemperatureMax()) {
-            if ((playedActions.contains(CardAction.LIVESTOCK))
-                    && player.getMc() > 30) {
-                aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
-                return true;
-            }
-            if ((playedActions.contains(CardAction.PHYSICS_COMPLEX))
-                    && player.getMc() > 70) {
-                aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
-                return true;
-            }
-        }
-
-        if (!game.gameEndCondition() && canFinishGame(game, player)) {
+//        Set<CardAction> playedActions = player.getPlayed().getCards().stream().map(cardService::getCard)
+//                .map(Card::getCardMetadata)
+//                .filter(Objects::nonNull)
+//                .map(CardMetadata::getCardAction)
+//                .filter(Objects::nonNull).collect(Collectors.toSet());
+//
+//        //TODO looks very artificial
+//        if (!game.getPlanetAtTheStartOfThePhase().isOceansMax()) {
+//            if ((playedActions.contains(CardAction.ARCTIC_ALGAE)
+//                    || playedActions.contains(CardAction.FISH))
+//                    && player.getMc() > 30) {
+//                aiTurnService.standardProjectTurn(game, player, StandardProjectType.OCEAN);
+//                return true;
+//            }
+//        }
+//        if (!game.getPlanetAtTheStartOfThePhase().isTemperatureMax()) {
+//            if ((playedActions.contains(CardAction.LIVESTOCK))
+//                    && player.getMc() > 30) {
+//                aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
+//                return true;
+//            }
+//            if ((playedActions.contains(CardAction.PHYSICS_COMPLEX))
+//                    && player.getMc() > 70) {
+//                aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
+//                return true;
+//            }
+//        }
+//
+        if (!game.gameEndCondition() && canFinishGame(game, player) && (player.getDifficulty().THIRD_PHASE_ACTION != AiTurnChoice.NETWORK || deepNetwork.testState(game, player) >= 0.6)) {
             if (player.getHand().size() != 0) {
-                aiTurnService.sellAllCards(player, game, player.getHand().getCards());
+                aiTurnService.sellCards(player, game, player.getHand().getCards());
                 return true;
             }
             if (game.getPlanet().temperatureLeft() > 0) {
@@ -178,18 +219,64 @@ public class AiThirdPhaseActionProcessor {
             }
         }
 
-        if (possibleTurns.contains(TurnType.BUILD_BLUE_RED_PROJECT) || possibleTurns.contains(TurnType.BUILD_GREEN_PROJECT)) {
-            List<Card> availableCards = player.getHand()
-                    .getCards()
-                    .stream()
-                    .map(cardService::getCard)
-                    .filter(card -> (possibleTurns.contains(TurnType.BUILD_BLUE_RED_PROJECT) && card.getColor() != CardColor.GREEN)
-                            || (possibleTurns.contains(TurnType.BUILD_GREEN_PROJECT) && card.getColor() == CardColor.GREEN))
-                    .filter(card -> aiCardValidationService.isValid(game, player, card))
-                    .collect(Collectors.toList());
+        boolean buildProjects = buildProjectsIfPossible(game, player, possibleTurns);
 
-            if (!availableCards.isEmpty()) {
-                final Card cardToBuild = availableCards.get(random.nextInt(availableCards.size()));
+        if (buildProjects) {
+            return true;
+        }
+
+        if (player.getDifficulty().THIRD_PHASE_ACTION == AiTurnChoice.NETWORK) {
+            float stateBeforeStandardProject = deepNetwork.testState(game, player);
+            StandardProjectType bestStandardProject = null;
+
+            for (StandardProjectType standardProjectType : List.of(StandardProjectType.FOREST, StandardProjectType.OCEAN, StandardProjectType.TEMPERATURE)) {
+                float nextState = testAiService.projectPlayStandardAction(game, player.getUuid(), StandardProjectType.FOREST);
+                if (nextState > stateBeforeStandardProject) {
+                    stateBeforeStandardProject = nextState;
+                    bestStandardProject = standardProjectType;
+                }
+            }
+            if (bestStandardProject != null) {
+                aiTurnService.standardProjectTurn(game, player, bestStandardProject);
+            }
+        }
+
+        return false;
+    }
+
+    private boolean buildProjectsIfPossible(MarsGame game, Player player, List<TurnType> possibleTurns) {
+        if (!player.getBuilds().isEmpty()) {
+
+            Card cardToBuild = null;
+
+            switch (player.getDifficulty().THIRD_PHASE_ACTION) {
+                case NETWORK:
+                    BuildProjectPrediction bestProjectToBuild = aiBuildProjectService.getBestProjectToBuild(
+                            game, player, null, ProjectionStrategy.FROM_PHASE
+                    );
+                    if (bestProjectToBuild.isCanBuild()) {
+                        cardToBuild = bestProjectToBuild.getCard();
+                        break;
+                    } else {
+                        //go to RANDOM switch case
+                    }
+                case RANDOM:
+                case SMART:
+                    List<Card> availableCards = player.getHand()
+                            .getCards()
+                            .stream()
+                            .map(cardService::getCard)
+                            .filter(card -> (possibleTurns.contains(TurnType.BUILD_BLUE_RED_PROJECT) && card.getColor() != CardColor.GREEN)
+                                    || (possibleTurns.contains(TurnType.BUILD_GREEN_PROJECT) && card.getColor() == CardColor.GREEN))
+                            .filter(card -> aiCardValidationService.isValid(game, player, card))
+                            .collect(Collectors.toList());
+
+                    if (!availableCards.isEmpty()) {
+                        cardToBuild = availableCards.stream().max(Comparator.comparingInt(Card::getPrice)).orElseThrow();
+                    }
+            }
+
+            if (cardToBuild != null) {
                 Map<Integer, List<Integer>> inputParams = aiCardBuildParamsService.getInputParamsForBuild(game, player, cardToBuild);
                 aiTurnService.buildProject(
                         game, player, cardToBuild.getId(), aiPaymentHelper.getCardPayments(game, player, cardToBuild, inputParams),
@@ -235,16 +322,49 @@ public class AiThirdPhaseActionProcessor {
         return mc >= 0;
     }
 
-    private boolean performAction(MarsGame game, Player player, List<Card> cards) {
-        while (!cards.isEmpty()) {
-            int selectedIndex = random.nextInt(cards.size());
-            Card selectedCard = cards.get(selectedIndex);
+    private final Set<Class<?>> ACTIONS_THAT_REQUIRE_NETWORK_VALIDATION = Set.of(
+            AquiferPumping.class,
+            DevelopedInfrastructure.class,
+            SolarPunk.class,
+            VolcanicPools.class,
+            WaterImportFromEuropa.class,
+            ProgressivePolicies.class,
+            ExperimentalTechnology.class,
+            CommunityAfforestation.class,
+            GasCooledReactors.class
+    );
+
+    private boolean performCardAction(MarsGame game, Player player, List<Card> cards) {
+        if (cards.isEmpty()) {
+            return false;
+        }
+        cards = new ArrayList<>(cards);
+
+        List<Card> cardsThatDontRequireNetworkValidation = List.of();
+        List<Card> cardsThatRequireNetworkValidation = List.of();
+
+        switch (player.getDifficulty().THIRD_PHASE_ACTION) {
+            case RANDOM:
+            case SMART:
+                cardsThatDontRequireNetworkValidation = cards;
+                break;
+            case NETWORK:
+                cardsThatDontRequireNetworkValidation = cards.stream()
+                        .filter(card -> !ACTIONS_THAT_REQUIRE_NETWORK_VALIDATION.contains(card.getClass()))
+                        .collect(Collectors.toList());
+                cardsThatRequireNetworkValidation = cards.stream()
+                        .filter(card -> ACTIONS_THAT_REQUIRE_NETWORK_VALIDATION.contains(card.getClass()))
+                        .collect(Collectors.toList());
+                break;
+        }
+
+        while (!cardsThatDontRequireNetworkValidation.isEmpty()) {
+            int selectedIndex = random.nextInt(cardsThatDontRequireNetworkValidation.size());
+            Card selectedCard = cardsThatDontRequireNetworkValidation.get(selectedIndex);
 
             if (aiCardActionHelper.isUsablePlayAction(game, player, selectedCard)) {
-//                ActionInputParamsResponse inputParams = Constants.THIRD_PHASE_BOTH_PLAYERS_SMART
-//                        ? aiCardActionHelper.getActionInputParamsForSmart(game, player, selectedCard)
-//                        : aiCardActionHelper.getActionInputParamsForRandom(game, player, selectedCard);
                 ActionInputParamsResponse inputParams = aiCardActionHelper.getActionInputParamsForSmart(game, player, selectedCard);
+
 
                 if (inputParams.isMakeAction()) {
                     aiTurnService.performBlueAction(
@@ -257,9 +377,120 @@ public class AiThirdPhaseActionProcessor {
                 }
             }
 
-            cards.remove(selectedIndex);
+            cardsThatDontRequireNetworkValidation.remove(selectedIndex);
         }
+
+        if (!cardsThatRequireNetworkValidation.isEmpty()) {
+            Integer bestCard = null;
+            float bestChance = deepNetwork.testState(game, player);
+
+            for (Card card : cardsThatRequireNetworkValidation) {
+                ActionInputParamsResponse paramsResponse = aiCardActionHelper.getActionInputParamsForSmart(game, player, card);
+
+                if (!paramsResponse.isMakeAction()) {
+                    continue;
+                }
+                String validationResult = cardValidationService.validateBlueAction(player, game, card.getId(), paramsResponse.getInputParams());
+
+                if (validationResult == null) {
+                    MarsGame gameCopy = new MarsGame(game);
+                    Player playerCopy = gameCopy.getPlayerByUuid(player.getUuid());
+                    aiTurnService.performBlueAction(
+                            gameCopy,
+                            playerCopy,
+                            card.getId(),
+                            paramsResponse.getInputParams()
+                    );
+                    int handDifference = playerCopy.getHand().size() - player.getHand().size();
+                    if (handDifference > 0) {
+                        playerCopy.setHand(player.getHand());
+                        playerCopy.setMc(playerCopy.getMc() + 3 * handDifference);
+                    }
+                    float newChance = deepNetwork.testState(gameCopy, playerCopy);
+                    if (newChance > bestChance) {
+                        bestChance = newChance;
+                        bestCard = card.getId();
+                    }
+                }
+            }
+            if (bestCard != null) {
+                ActionInputParamsResponse paramsResponse = aiCardActionHelper.getActionInputParamsForSmart(game, player, cardService.getCard(bestCard));
+                aiTurnService.performBlueAction(
+                        game,
+                        player,
+                        bestCard,
+                        paramsResponse.getInputParams()
+                );
+                return true;
+            }
+        }
+
         return false;
+
+//        switch (player.getDifficulty().THIRD_PHASE_ACTION) {
+//            case RANDOM:
+//            case SMART:
+//                while (!cards.isEmpty()) {
+//                    int selectedIndex = random.nextInt(cards.size());
+//                    Card selectedCard = cards.get(selectedIndex);
+//
+//                    if (aiCardActionHelper.isUsablePlayAction(game, player, selectedCard)) {
+//                        ActionInputParamsResponse inputParams = aiCardActionHelper.getActionInputParamsForSmart(game, player, selectedCard);
+//
+//
+//                        if (inputParams.isMakeAction()) {
+//                            aiTurnService.performBlueAction(
+//                                    game,
+//                                    player,
+//                                    selectedCard.getId(),
+//                                    inputParams.getInputParams()
+//                            );
+//                            return true;
+//                        }
+//                    }
+//
+//                    cards.remove(selectedIndex);
+//                }
+//                return false;
+//            case NETWORK:
+//                Integer bestCard = null;
+//                float bestChance = deepNetwork.testState(game, player);
+//
+//                for (Card card : cards) {
+//                    ActionInputParamsResponse paramsResponse = aiCardActionHelper.getActionInputParamsForSmart(game, player, card);
+//
+//                    if (!paramsResponse.isMakeAction()) {
+//                        continue;
+//                    }
+//                    String validationResult = cardValidationService.validateBlueAction(player, game, card.getId(), paramsResponse.getInputParams());
+//
+//                    if (validationResult == null) {
+//                        MarsGame gameCopy = new MarsGame(game);
+//                        Player playerCopy = gameCopy.getPlayerByUuid(player.getUuid());
+//                        aiTurnService.performBlueAction(
+//                                gameCopy,
+//                                playerCopy,
+//                                card.getId(),
+//                                paramsResponse.getInputParams()
+//                        );
+//                        float newChance = deepNetwork.testState(gameCopy, playerCopy);
+//                        if (newChance > bestChance) {
+//                            bestChance = newChance;
+//                            bestCard = card.getId();
+//                        }
+//                    }
+//                }
+//                if (bestCard != null) {
+//                    ActionInputParamsResponse paramsResponse = aiCardActionHelper.getActionInputParamsForSmart(game, player, cardService.getCard(bestCard));
+//                    aiTurnService.performBlueAction(
+//                            game,
+//                            player,
+//                            bestCard,
+//                            paramsResponse.getInputParams()
+//                    );
+//                    return true;
+//                }
+//        }
     }
 
 }

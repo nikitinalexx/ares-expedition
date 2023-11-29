@@ -21,7 +21,6 @@ public class MarsGameRow {
     MarsPlayerRow player;
     MarsPlayerRow opponent;
 
-    int corporationId;
 
     int oxygenLevel;
     int temperatureLevel;
@@ -30,34 +29,31 @@ public class MarsGameRow {
     float[] milestones;
     float[] awards;
 
-    int resources;
+    float austellarMilestone;
 
     //todo how to depict the current hand?
 
     int winner;
 
-    public MarsGameRow applyDifference(MarsGameRowDifference another) {
-        this.player.greenCards += another.greenCards;
-        this.player.redCards += another.redCards;
-        this.player.blueCards += another.blueCards;
-        this.player.winPoints += another.winPoints;
-        this.player.mc += another.mc;
-        this.player.mcIncome += another.mcIncome;
+    public MarsGameRow applyDifference(MarsGameRowDifference difference) {
+        applyDifference(this.player, difference);
 
         return this;
     }
 
-    public MarsGameRow applyOpponentDifference(MarsGameRowDifference another) {
-        if (another != null) {
-            this.opponent.greenCards += another.greenCards;
-            this.opponent.redCards += another.redCards;
-            this.opponent.blueCards += another.blueCards;
-            this.opponent.winPoints += another.winPoints;
-            this.opponent.mc += another.mc;
-            this.opponent.mcIncome += another.mcIncome;
+    public MarsGameRow applyOpponentDifference(MarsGameRowDifference difference) {
+        if (difference != null) {
+            applyDifference(this.opponent, difference);
         }
 
         return this;
+    }
+
+    private void applyDifference(MarsPlayerRow row, MarsGameRowDifference difference) {
+        row.cards += difference.cards;
+        row.winPoints += difference.winPoints;
+        row.mc += difference.mc;
+        row.mcIncome += difference.mcIncome;
     }
 
 

@@ -18,7 +18,7 @@ public class TardigradesAiCardProjection<T extends Card> implements AiCardProjec
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference diff, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference diff, MarsGame game, Player player, Card card, int network) {
         player.getCardResourcesCount().put(Tardigrades.class, player.getCardResourcesCount().get(Tardigrades.class) + 1);
         return new MarsGameRowDifference();
     }

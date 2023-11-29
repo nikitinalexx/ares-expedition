@@ -116,13 +116,14 @@ public class AiService {
             return;
         }
 
+        //TODO mixing stateType and possibleTurns could be made better?
         List<TurnType> possibleTurns = gameService.getPossibleTurns(game, player.getUuid());
 
         if (possibleTurns.size() == 1 && possibleTurns.get(0) == TurnType.DISCARD_CARDS) {
             turnProcessors.get(possibleTurns.get(0)).processTurn(game, player);
         } else if (game.getStateType() == StateType.PERFORM_BLUE_ACTION) {
             aiThirdPhaseActionProcessor.processTurn(possibleTurns, game, player);
-        } else if (game.getStateType() == StateType.BUILD_BLUE_RED_PROJECTS) {
+        } else if (game.getStateType() == StateType.BUILD_BLUE_RED_PROJECTS || possibleTurns.contains(TurnType.BUILD_BLUE_RED_PROJECT)) {
             aiSecondPhaseActionProcessor.processTurn(possibleTurns, game, player);
         } else {
             TurnType turnToProcess = getTurnToProcess(possibleTurns, player);
@@ -148,13 +149,13 @@ public class AiService {
             return TurnType.BUILD_GREEN_PROJECT;
         }
 
-        if (possibleTurns.contains(TurnType.BUILD_BLUE_RED_PROJECT)) {
-            return TurnType.BUILD_BLUE_RED_PROJECT;
-        }
+//        if (possibleTurns.contains(TurnType.BUILD_BLUE_RED_PROJECT)) {
+//            return TurnType.BUILD_BLUE_RED_PROJECT;
+//        }
 
-        if (possibleTurns.contains(TurnType.PERFORM_BLUE_ACTION)) {
-            return TurnType.PERFORM_BLUE_ACTION;
-        }
+//        if (possibleTurns.contains(TurnType.PERFORM_BLUE_ACTION)) {
+//            return TurnType.PERFORM_BLUE_ACTION;
+//        }
 
         for (int i = 0; i < possibleTurns.size(); i++) {
             if (possibleTurns.get(i) != TurnType.UNMI_RT && possibleTurns.get(i) != TurnType.SELL_CARDS) {

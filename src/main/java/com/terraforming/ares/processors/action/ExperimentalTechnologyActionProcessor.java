@@ -32,7 +32,7 @@ public class ExperimentalTechnologyActionProcessor implements BlueActionCardProc
     public TurnResponse process(MarsGame game, Player player, Card actionCard, Map<Integer, List<Integer>> inputParameters) {
         player.setTerraformingRating(player.getTerraformingRating() - 1);
 
-        UpgradePhaseHelper.upgradePhase(cardService, game, player, inputParameters.get(InputFlag.PHASE_UPGRADE_CARD.getId()).get(0));
+        UpgradePhaseHelper.upgradePhase(player, inputParameters.get(InputFlag.PHASE_UPGRADE_CARD.getId()).get(0));
 
         return null;
     }

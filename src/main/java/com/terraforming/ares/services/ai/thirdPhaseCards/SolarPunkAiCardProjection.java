@@ -24,7 +24,7 @@ public class SolarPunkAiCardProjection<T extends Card> implements AiCardProjecti
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         int forestPrice = Math.max(0, 15 - 2 * player.getTitaniumIncome());
 
         if (player.getMc() >= forestPrice) {

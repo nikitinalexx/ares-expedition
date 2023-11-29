@@ -43,6 +43,11 @@ public class NuclearPlants implements BaseExpansionGreenCard {
     }
 
     @Override
+    public boolean canPayAgain() {
+        return true;
+    }
+
+    @Override
     public CardMetadata getCardMetadata() {
         return cardMetadata;
     }

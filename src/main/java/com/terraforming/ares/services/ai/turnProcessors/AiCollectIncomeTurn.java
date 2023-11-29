@@ -8,6 +8,7 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.TerraformingService;
+import com.terraforming.ares.services.ai.AiCollectIncomePhaseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -23,8 +24,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AiCollectIncomeTurn implements AiTurnProcessor {
     private final AiTurnService aiTurnService;
-    private final CardService cardService;
-    private final TerraformingService terraformingService;
+    private final AiCollectIncomePhaseService  aiCollectIncomePhaseService;
 
     @Override
     public TurnType getType() {
@@ -33,33 +33,13 @@ public class AiCollectIncomeTurn implements AiTurnProcessor {
 
     @Override
     public boolean processTurn(MarsGame game, Player player) {
+
         Integer doubleIncomeCard = null;
+
         if (player.getChosenPhase() == 4 && player.hasPhaseUpgrade(Constants.PHASE_4_UPGRADE_DOUBLE_PRODUCE)) {
-            List<Card> greenCards = player.getPlayed().getCards().stream().map(cardService::getCard).filter(card -> card.getColor() == CardColor.GREEN).collect(Collectors.toList());
-
-            if (!greenCards.isEmpty()) {
-                int bestIncome = 0;
-
-                boolean canIncreaseOxygen = terraformingService.canIncreaseOxygen(game);
-
-                for (Card greenCard : greenCards) {
-                    MarsGame gameCopy = new MarsGame(game);
-                    Player playerCopy = gameCopy.getPlayerByUuid(player.getUuid());
-
-                    greenCard.payAgain(gameCopy, cardService, playerCopy);
-
-                    int income = (playerCopy.getMc() - player.getMc()) +
-                            (playerCopy.getHeat() - player.getHeat()) +
-                            (playerCopy.getPlants() - player.getPlants()) * (canIncreaseOxygen ? 2 : 1) +
-                            (playerCopy.getHand().size() - player.getHand().size()) * 4;
-
-                    if (income > bestIncome) {
-                        bestIncome = income;
-                        doubleIncomeCard = greenCard.getId();
-                    }
-                }
-            }
+            doubleIncomeCard = aiCollectIncomePhaseService.getDoubleIncomeCard(game, player);
         }
+
         aiTurnService.collectIncomeTurn(player, doubleIncomeCard);
 
         return true;

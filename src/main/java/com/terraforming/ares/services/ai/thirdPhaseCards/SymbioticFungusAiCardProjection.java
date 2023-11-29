@@ -34,17 +34,17 @@ public class SymbioticFungusAiCardProjection<T extends Card> implements AiCardPr
     }
 
     @Override
-    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card) {
+    public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         Map<Class<?>, Integer> playerResources = player.getCardResourcesCount();
 
-        float bestState = deepNetwork.testState(game, player);
+        float bestState = deepNetwork.testState(game, player, network);
         Class<?> bestCard = null;
 
         for (Class<?> c : cardsByPriorities) {
             boolean result = putResourceIfPossible(playerResources, c);
 
             if (result) {
-                float newState = deepNetwork.testState(game, player);
+                float newState = deepNetwork.testState(game, player, network);
                 if (newState > bestState) {
                     bestState = newState;
                     bestCard = c;
