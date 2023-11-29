@@ -3,6 +3,7 @@ package com.terraforming.ares.cards.blue;
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.cards.green.DiscoveryExpansionBlueCard;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.services.CardResourceService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -51,7 +52,8 @@ public class BacterialAggregates implements DiscoveryExpansionBlueCard {
 
         final Player player = marsContext.getPlayer();
 
-        player.getCardResourcesCount().put(this.getClass(), Math.min(player.getCardResourcesCount().get(this.getClass()) + tagsCount, 5));
+//        player.getCardResourcesCount().put(this.getClass(), Math.min(player.getCardResourcesCount().get(this.getClass()) + tagsCount, 5));
+        marsContext.getCardResourceService().addResources(player, this, 1);
     }
 
     @Override
@@ -88,4 +90,6 @@ public class BacterialAggregates implements DiscoveryExpansionBlueCard {
     public int getPrice() {
         return 7;
     }
+
+
 }

@@ -21,10 +21,15 @@ export class SellCardsComponent implements OnInit {
   finalTurn: boolean;
   @Input()
   mulliganTurn: boolean;
+  @Input()
+  lastTurn: boolean;
 
   constructor(private gameRepository: GameRepository,
               private scrollService: ScrollComponent) {
 
+  }
+  confirmGameEndTurn(): boolean {
+    return this.lastTurn;
   }
 
   ngOnInit(): void {
@@ -35,6 +40,18 @@ export class SellCardsComponent implements OnInit {
 
   getPlayerHand(): Card[] {
     return this.game?.player.hand;
+  }
+
+  selectAllCards(event: Event) {
+    const checked = event.target as HTMLInputElement;
+    const playerHand = this.getPlayerHand();
+
+    if (playerHand && checked) {
+      playerHand.forEach(card => this.clickSellCard(card)); // Выбрать все карты, если флажок установлен
+    } else {
+      this.resetAllInputs();
+      this.cardsToCell = []; // Сбросить выбор, если флажок снят
+    }
   }
 
   clickSellCard(card: Card) {

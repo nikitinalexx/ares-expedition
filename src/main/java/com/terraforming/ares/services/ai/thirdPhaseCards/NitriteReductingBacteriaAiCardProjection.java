@@ -5,6 +5,7 @@ import com.terraforming.ares.dataset.MarsGameRowDifference;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.services.CardResourceService;
 import com.terraforming.ares.services.MarsContextProvider;
 import com.terraforming.ares.services.TerraformingService;
 import com.terraforming.ares.services.ai.DeepNetwork;
@@ -17,6 +18,7 @@ public class NitriteReductingBacteriaAiCardProjection<T extends Card> implements
     private final DeepNetwork deepNetwork;
     private final TerraformingService terraformingService;
     private final MarsContextProvider marsContextProvider;
+    private final CardResourceService cardResourceService;
 
     @Override
     public Class<NitriteReductingBacteria> getType() {
