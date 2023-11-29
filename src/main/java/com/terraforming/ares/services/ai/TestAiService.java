@@ -194,7 +194,7 @@ public class TestAiService {
         addDraftedCards(player, marsGameRow.getPlayer(), true, player.isFirstBot() ? 1 : 2);
         addDraftedCards(anotherPlayer, marsGameRow.getOpponent(), false, player.isFirstBot() ? 1 : 2);
 
-        if (player.isSecondBot()) {
+        if (false) {//TODO switch back
             long badCards = aiPickCardProjectionService.countCardsWithNegativeChance(game, player);
             long goodCards = player.getHand().size() - badCards;
 
