@@ -34,6 +34,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -215,7 +216,7 @@ public class GameController {
     }
 
     @GetMapping("/simulations")
-    public void runSimulations(@RequestBody SimulationsRequest request) throws IOException {
+    public void runSimulations(@RequestBody SimulationsRequest request) throws IOException, InterruptedException {
         TURNS_TO_GAMES_COUNT.clear();
         TURNS_TO_POINTS_COUNT.clear();
         if (request.isWithBatches() && request.getBatches() == 0) {
@@ -249,8 +250,8 @@ public class GameController {
                 executor.execute(worker);
             }
             executor.shutdown();
-            while (!executor.isTerminated()) {
-            }
+            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+
             System.out.println("Finished all threads");
 
 
@@ -281,7 +282,7 @@ public class GameController {
     }
 
     @GetMapping("/simulations/networks")
-    public void runSimulations(@RequestBody NetworksSimulationsRequest request) throws IOException {
+    public void runSimulations(@RequestBody NetworksSimulationsRequest request) throws IOException, InterruptedException {
         if (request.getSimulationsCount() < Runtime.getRuntime().availableProcessors()) {
             return;
         }
@@ -298,8 +299,10 @@ public class GameController {
             }
         }
 
-        for (String firstNetwork : request.getNetworks()) {
-            for (String secondNetwork : request.getNetworks()) {
+        for (int i = 0; i < request.getNetworks().size() - 1; i++) {
+            for (int j = i + 1; j < request.getNetworks().size(); j++) {
+                String firstNetwork = request.getNetworks().get(i);
+                String secondNetwork = request.getNetworks().get(j);
                 System.out.println("Starting simulations " + firstNetwork + " " + secondNetwork);
 
                 deepNetwork.updateNetwork(firstNetwork, 1);
@@ -310,7 +313,7 @@ public class GameController {
         }
     }
 
-    private void executeSimulations(List<PlayerDifficulty> playerDifficulty, NetworksSimulationsRequest request, String firstName, String secondName) throws IOException {
+    private void executeSimulations(List<PlayerDifficulty> playerDifficulty, NetworksSimulationsRequest request, String firstName, String secondName) throws IOException, InterruptedException {
         int threads = Runtime.getRuntime().availableProcessors();
 
         ExecutorService executor = Executors.newFixedThreadPool(threads);
@@ -322,8 +325,8 @@ public class GameController {
             executor.execute(worker);
         }
         executor.shutdown();
-        while (!executor.isTerminated()) {
-        }
+        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+
         System.out.println("Finished all threads");
 
 
