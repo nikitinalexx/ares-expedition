@@ -1,11 +1,13 @@
 package com.terraforming.ares.validation.action;
 
+import com.terraforming.ares.cards.blue.BacterialAggregates;
 import com.terraforming.ares.cards.blue.SymbioticFungus;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardCollectableResource;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.services.CardResourceService;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -23,6 +25,7 @@ import java.util.Map;
 public class SymbioticFungudActionValidator implements ActionValidator<SymbioticFungus> {
     public static final String ERROR_MESSAGE = "SymbioticFungud requires a card to put a microbe on";
     private final CardService cardService;
+    private final CardResourceService cardResourceService;
 
     @Override
     public Class<SymbioticFungus> getType() {
@@ -49,6 +52,11 @@ public class SymbioticFungudActionValidator implements ActionValidator<Symbiotic
         Card card = cardService.getCard(selectedCardId);
         if (card.getCollectableResource() != CardCollectableResource.MICROBE) {
             return "SymbioticFungud may only place a microbe on a microbe collecting card";
+        }
+
+        String resourceSubmissionMessage = cardResourceService.resourceSubmissionMessage(card,player);
+        if (resourceSubmissionMessage != null) {
+            return resourceSubmissionMessage;
         }
 
         return null;

@@ -1,10 +1,12 @@
 package com.terraforming.ares.validation.input;
 
+import com.terraforming.ares.cards.blue.BacterialAggregates;
 import com.terraforming.ares.cards.red.LocalHeatTrapping;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardCollectableResource;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.services.CardResourceService;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -23,6 +25,7 @@ public class LocalHeatTrappingOnBuiltEffectValidator implements OnBuiltEffectVal
     private static final String INCORRECT_INPUT_ERROR_MESSAGE =
             "LocalHeatTrapping: requires an input with the card to put resources on";
     private final CardService cardService;
+    private final CardResourceService cardResourceService;
 
     @Override
     public Class<LocalHeatTrapping> getType() {
@@ -57,6 +60,10 @@ public class LocalHeatTrappingOnBuiltEffectValidator implements OnBuiltEffectVal
             return "Selected card does not collect Animals or Microbes";
         }
 
+        String resourceSubmissionMessage = cardResourceService.resourceSubmissionMessage(inputCard,player);
+        if (resourceSubmissionMessage != null) {
+            return resourceSubmissionMessage;
+        }
         return null;
     }
 }

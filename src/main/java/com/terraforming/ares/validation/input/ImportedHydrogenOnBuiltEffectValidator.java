@@ -1,7 +1,9 @@
 package com.terraforming.ares.validation.input;
 
+import com.terraforming.ares.cards.blue.BacterialAggregates;
 import com.terraforming.ares.cards.red.ImportedHydrogen;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.services.CardResourceService;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -20,6 +22,7 @@ public class ImportedHydrogenOnBuiltEffectValidator implements OnBuiltEffectVali
     private static final String INCORRECT_INPUT_ERROR_MESSAGE =
             "ImportedHydrogen: requires an input with choise for either 3 plants or a card to put resources on";
     private final CardService cardService;
+    private final CardResourceService cardResourceService;
 
     @Override
     public Class<ImportedHydrogen> getType() {
@@ -54,6 +57,10 @@ public class ImportedHydrogenOnBuiltEffectValidator implements OnBuiltEffectVali
             return "Selected card does not collect Animals or Microbes";
         }
 
+        String resourceSubmissionMessage = cardResourceService.resourceSubmissionMessage(inputCard,player);
+        if (resourceSubmissionMessage != null) {
+            return resourceSubmissionMessage;
+        }
         return null;
     }
 }

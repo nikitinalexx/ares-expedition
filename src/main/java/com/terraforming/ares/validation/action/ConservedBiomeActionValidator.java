@@ -1,11 +1,13 @@
 package com.terraforming.ares.validation.action;
 
+import com.terraforming.ares.cards.blue.BacterialAggregates;
 import com.terraforming.ares.cards.blue.ConservedBiome;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardCollectableResource;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.services.CardResourceService;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -23,6 +25,7 @@ import java.util.Map;
 public class ConservedBiomeActionValidator implements ActionValidator<ConservedBiome> {
     public static final String ERROR_MESSAGE = "Conserved biome expects a card to add an Animal/Microbe to";
     private final CardService cardService;
+    private final CardResourceService cardResourceService;
 
     @Override
     public Class<ConservedBiome> getType() {
@@ -51,6 +54,11 @@ public class ConservedBiomeActionValidator implements ActionValidator<ConservedB
 
         if (collectableResourceType != CardCollectableResource.MICROBE && collectableResourceType != CardCollectableResource.ANIMAL) {
             return "You may only add resource to an Animal/Microbe card";
+        }
+
+        String resourceSubmissionMessage = cardResourceService.resourceSubmissionMessage(project,player);
+        if (resourceSubmissionMessage != null) {
+            return resourceSubmissionMessage;
         }
 
         return null;

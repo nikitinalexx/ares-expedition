@@ -1,11 +1,13 @@
 package com.terraforming.ares.validation.action;
 
+import com.terraforming.ares.cards.blue.BacterialAggregates;
 import com.terraforming.ares.cards.blue.ExtremeColdFungus;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardCollectableResource;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.services.CardResourceService;
 import com.terraforming.ares.services.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -22,6 +24,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ExtremeColdFungusActionValidator implements ActionValidator<ExtremeColdFungus> {
     private final CardService cardService;
+    private final CardResourceService cardResourceService;
 
     @Override
     public Class<ExtremeColdFungus> getType() {
@@ -55,6 +58,10 @@ public class ExtremeColdFungusActionValidator implements ActionValidator<Extreme
 
             if (project.getCollectableResource() != CardCollectableResource.MICROBE) {
                 return "You may only add resource to a Microbe card";
+            }
+            String resourceSubmissionMessage = cardResourceService.resourceSubmissionMessage(project,player);
+            if (resourceSubmissionMessage != null) {
+                return resourceSubmissionMessage;
             }
         }
 

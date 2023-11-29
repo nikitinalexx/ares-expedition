@@ -15,6 +15,7 @@ import java.util.Map;
  */
 @Service
 public class CardResourceService {
+    private final int MAXIMUM_MICROBES_ON_THE_BACTERIAL_AGGREGATES = 5;
 
     public void addResources(Player player, Card toCard, int count) {
         final Map<Class<?>, Integer> cardResourcesCount = player.getCardResourcesCount();
@@ -30,6 +31,17 @@ public class CardResourceService {
         if (count > 0 && toCard.getCollectableResource() == CardCollectableResource.MICROBE && cardResourcesCount.containsKey(FilterFeeders.class)) {
             cardResourcesCount.put(FilterFeeders.class, cardResourcesCount.get(FilterFeeders.class) + 1);
         }
+    }
+
+    public String resourceSubmissionMessage(Card inputCard, Player player) {
+
+        if (inputCard.getClass() == BacterialAggregates.class) {
+            if (player.getCardResourcesCount().get(BacterialAggregates.class) == MAXIMUM_MICROBES_ON_THE_BACTERIAL_AGGREGATES) {
+                return "The maximum number of microbes has already been reached on the selected card";
+            }
+        }
+
+        return null;
     }
 
 }
