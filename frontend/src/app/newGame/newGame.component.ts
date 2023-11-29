@@ -68,9 +68,15 @@ export class NewGameComponent implements OnInit {
         }
         names.push(name);
 
+
+
         if (this.parentForm.get('computer' + i)?.value && !this.parentForm.get('difficulty' + i)?.value) {
           this.errorMessage = 'Choose computer difficulty or disable computer option';
           return;
+        }
+
+        if (this.parentForm.value.playerCount !== '2' && this.parentForm.get('computer' + i)?.value && this.parentForm.get('difficulty' + i)?.value == 'ai') {
+          this.parentForm?.patchValue({[`difficulty${i}`]: null}, {onlySelf: true, emitEvent: false});
         }
 
         if (this.parentForm.get('computer' + i)?.value) {
@@ -81,7 +87,7 @@ export class NewGameComponent implements OnInit {
             case 'smart':
               computers.push('SMART');
               break;
-            case 'deep':
+            case 'ai':
               computers.push('NETWORK');
               break;
           }

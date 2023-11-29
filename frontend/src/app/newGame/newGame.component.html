@@ -1,3 +1,6 @@
+<div class="bg-success mt-2 p-2 text-center text-white">
+  AI Computer available in a 2 player game. Best played with all 3 options(improved corporations, mulligan, dummy hand). Doesn't play ideally. Still a lot of work to do.
+</div>
 <div class="bg-danger mt-2 p-2 text-center text-white"
      *ngIf="errorMessage != null">
   {{errorMessage}}
@@ -67,9 +70,9 @@
       <label *ngIf="parentForm.get('computer' + item)?.value && this.parentForm.value.playerCount !== '1'" class="form-label p-1 mb-2 bg-warning text-dark"
              style="margin-left: 5px; border-radius: 5px;">Normal <input type="radio" value="smart" style=" width: 30px" [formControlName]="'difficulty' + item"/></label>
 
-      <label *ngIf="parentForm.get('computer' + item)?.value && this.parentForm.value.playerCount !== '1'" class="form-label p-1 mb-2 bg-warning text-dark "
-             style="margin-left: 5px; border-radius: 5px;">Hard <span class="bg-success text-white">(DeepAI)</span>
-        <input type="radio" value="deep" style=" width: 30px" [formControlName]="'difficulty' + item"></label>
+      <label *ngIf="parentForm.get('computer' + item)?.value && this.parentForm.value.playerCount === '2'" class="form-label p-1 mb-2 bg-warning text-dark "
+             style="margin-left: 5px; border-radius: 5px;">Hard <span class="bg-success text-white">(AI)</span>
+        <input type="radio" value="ai" style=" width: 30px" [formControlName]="'difficulty' + item"></label>
 
       <label *ngIf="this.parentForm.value.playerCount !== '1'" class="form-label p-1 mb-2 bg-warning text-dark"
              style="margin-left: 5px; border-radius: 5px;">Advantage <input type="checkbox"

@@ -12,6 +12,8 @@ public class Constants {
     public static Map<Integer, Integer> FIRST_PLAYER_PHASES = new ConcurrentHashMap<>();
     public static Map<Integer, Integer> SECOND_PLAYER_PHASES = new ConcurrentHashMap<>();
 
+    public static final List<PlayerDifficulty> AVAILABLE_DIFFICULTIES = List.of(PlayerDifficulty.NONE, PlayerDifficulty.RANDOM, PlayerDifficulty.SMART, PlayerDifficulty.NETWORK);
+
     public static final int CORPORATION_ID_OFFSET = 10000;
 
     public static final List<Integer> CORPORATION_PRIORITY = List.of(

@@ -17,7 +17,9 @@ import com.terraforming.ares.repositories.caching.CachingGameRepository;
 import com.terraforming.ares.repositories.crudRepositories.CrisisRecordEntityRepository;
 import com.terraforming.ares.repositories.crudRepositories.SoloRecordEntityRepository;
 import com.terraforming.ares.services.*;
-import com.terraforming.ares.services.ai.*;
+import com.terraforming.ares.services.ai.AiPickCardProjectionService;
+import com.terraforming.ares.services.ai.DeepNetwork;
+import com.terraforming.ares.services.ai.TestAiService;
 import com.terraforming.ares.services.ai.turnProcessors.AiMulliganCardsTurn;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -55,15 +57,12 @@ public class GameController {
     private final TurnService turnService;
     private final GameRepositoryImpl gameRepository;
     private final SimulationProcessorService simulationProcessorService;
-    private final AiBalanceService aiBalanceService;
     private final CrisisRecordEntityRepository crisisRecordEntityRepository;
     private final SoloRecordEntityRepository soloRecordEntityRepository;
     private final DeepNetwork deepNetwork;
     private final DatasetCollectionService datasetCollectionService;
     private final GameFactory gameFactory;
     private final AiMulliganCardsTurn aiMulliganCardsTurn;
-    private final MarsContextProvider marsContextProvider;
-    private final AiDiscoveryDecisionService aiDiscoveryDecisionService;
     private final AiPickCardProjectionService aiPickCardProjectionService;
     private final TestAiService testAiService;
 
@@ -82,7 +81,7 @@ public class GameController {
                 throw new IllegalArgumentException("Invalid number of computers and players, please reload the game");
             }
 
-            if (gameParameters.getComputers().stream().anyMatch(computer -> computer != PlayerDifficulty.RANDOM && computer != PlayerDifficulty.SMART && computer != PlayerDifficulty.NONE && computer != PlayerDifficulty.NETWORK)) {
+            if (gameParameters.getComputers().stream().anyMatch(computer -> !Constants.AVAILABLE_DIFFICULTIES.contains(computer))) {
                 throw new IllegalArgumentException("Only Random/Smart/Network computers are supported");
             }
 
@@ -90,9 +89,14 @@ public class GameController {
                 throw new IllegalArgumentException("Discovery expansion is a default mode for this game");
             }
 
+
             int aiPlayerCount = (int) gameParameters.getComputers().stream().filter(item -> item != PlayerDifficulty.NONE).count();
             int playersCount = gameParameters.getPlayerNames().size();
             int[] extraPoints = gameParameters.getExtraPoints();
+
+            if (gameParameters.getComputers().contains(PlayerDifficulty.NETWORK) && playersCount != 2) {
+                throw new IllegalArgumentException("AI computer available only for 2 player game");
+            }
 
             if (gameParameters.getPlayerNames().stream().anyMatch(name -> name.length() > 10)) {
                 throw new IllegalArgumentException("Only names of length 10 or below are supported");
@@ -792,11 +796,11 @@ public class GameController {
         MarsGame game = gameService.getGame(playerUuid);
 
         long aiComputerCount = game.getPlayerUuidToPlayer().values().stream().filter(player -> player.getDifficulty() != PlayerDifficulty.NONE && player.getDifficulty() != PlayerDifficulty.RANDOM && player.getDifficulty() != PlayerDifficulty.SMART).count();
-        Player aiComputer;
+        Player aiComputer = null;
 
-        if (aiComputerCount == game.getPlayerUuidToPlayer().size()) {
-            aiComputer = game.getPlayerByUuid(playerUuid);
-        } else {
+        if (aiComputerCount == 2) {
+            aiComputer = game.getPlayerUuidToPlayer().values().stream().filter(p -> !p.getUuid().equals(playerUuid)).findFirst().orElse(null);
+        } else if (aiComputerCount == 1) {
             aiComputer = game.getPlayerUuidToPlayer().values().stream().filter(player -> player.getDifficulty() != PlayerDifficulty.NONE && player.getDifficulty() != PlayerDifficulty.RANDOM && player.getDifficulty() != PlayerDifficulty.SMART).findFirst().orElse(null);
         }
 
