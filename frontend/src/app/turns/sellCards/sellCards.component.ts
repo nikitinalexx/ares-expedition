@@ -13,6 +13,7 @@ export class SellCardsComponent implements OnInit {
   public errorMessage: string;
   cardsToCell: number[];
 
+
   @Input()
   game: Game;
   @Input()
@@ -42,15 +43,25 @@ export class SellCardsComponent implements OnInit {
     return this.game?.player.hand;
   }
 
+
+
   selectAllCards(event: Event) {
-    const checked = event.target as HTMLInputElement;
+    const click = event.target as HTMLInputElement;
+
+    const checked = click.checked;
+
     const playerHand = this.getPlayerHand();
 
     if (playerHand && checked) {
-      playerHand.forEach(card => this.clickSellCard(card)); // Выбрать все карты, если флажок установлен
-    } else {
-      this.resetAllInputs();
-      this.cardsToCell = []; // Сбросить выбор, если флажок снят
+      playerHand.forEach(card => this.cardsToCell.push(card.id)); // Выбрать все карты, если флажок установлен
+    }else {
+      playerHand.forEach(card => {
+        const index = this.cardsToCell.indexOf(card.id, 0);
+        if (index > -1) {
+          this.cardsToCell.splice(index, 1);
+        }
+      });
+
     }
   }
 
