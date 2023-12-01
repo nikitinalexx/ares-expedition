@@ -128,28 +128,23 @@ public class TestAiService {
 
             BuildProjectPrediction prediction = getBestCardToBuild(game, player, Set.of(CardColor.GREEN, CardColor.RED, CardColor.BLUE));
 
-
             if (prediction.isCanBuild() && prediction.getCard() != null && (!bestPredictionBeforeIncome.isCanBuild() || bestPredictionBeforeIncome.getCard() != prediction.getCard())) {
                 float relativeRatio = (prediction.getExpectedValue() - (bestPredictionBeforeIncome.isCanBuild() ? bestPredictionBeforeIncome.getExpectedValue() : bestStateBeforeBuild)) / (1 - bestStateBeforeBuild);
-                if (relativeRatio >= 0.25f && prediction.getExpectedValue() != 1.0 && (!bestPredictionBeforeIncome.isCanBuild() || prediction.getExpectedValue() - bestPredictionBeforeIncome.getExpectedValue() >= 0.1f)) {
+                if (relativeRatio >= 0.25f && prediction.getExpectedValue() != 1.0) {
                     game = aiBuildProjectService.assumeProjectIsBuiltFromPickPhase(game, player, prediction.getCard());
                     player = game.getPlayerByUuid(player.getUuid());
                     anotherPlayer = game.getPlayerByUuid(anotherPlayer.getUuid());
 
                     if (Constants.LOG_NET_COMPARISON) {
-                        Card bestCardBeforeIncome = bestPredictionBeforeIncome.isCanBuild() ? bestPredictionBeforeIncome.getCard() : null;
-                        Card bestCardAfterIncome = prediction.isCanBuild() ? prediction.getCard() : null;
-                        if (bestCardAfterIncome != bestCardBeforeIncome) {
-                            System.out.println(
-                                    "CardBeforeIncome " + (bestCardBeforeIncome != null ? bestCardBeforeIncome.getClass().getSimpleName() : null)
-                                            + " " +
-                                            "CardAfterIncome " + (bestCardAfterIncome != null ? bestCardAfterIncome.getClass().getSimpleName() : null)
-                            );
-                        }
+                        Card bestCardAfterIncome = prediction.getCard();
+                        System.out.println(
+                                "CardBeforeIncome " + (bestPredictionBeforeIncome.isCanBuild() ? bestPredictionBeforeIncome.getCard() : " null ")
+                                        + " " +
+                                        "CardAfterIncome " + bestCardAfterIncome.getClass().getSimpleName()
+                        );
                     }
                 }
             }
-
         }
 
         final MarsGameRow marsGameRow = datasetCollectionService.collectGameAndPlayers(
