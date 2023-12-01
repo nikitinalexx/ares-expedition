@@ -95,7 +95,7 @@ public class FileCardValueService implements ICardValueService {
         }
 
 
-        return CardValueResponse.of(cards.get(worstCardIndex), worstCardValue);
+        return CardValueResponse.of(cards.get(worstCardIndex), (float) worstCardValue);
     }
 
     public Card getBestCardToBuild(MarsGame game, Player player, List<Card> cards, int turn, boolean ignoreCardIfBad) {

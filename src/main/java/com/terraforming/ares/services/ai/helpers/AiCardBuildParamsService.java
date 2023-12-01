@@ -253,23 +253,16 @@ public class AiCardBuildParamsService {
             Optional<Integer> bestMicrobeCard = resourcePriorityService.getMostValuableResourceCard(game, player, Set.of(CardCollectableResource.MICROBE));
             result.put(
                     InputFlag.ASTROFARM_PUT_RESOURCE.getId(),
-                    List.of(bestMicrobeCard.orElseGet(
-                            () -> {
-                                List<Card> playerCardsWithMicrobes = getPlayerCardsWithMicrobe(player);
-                                return playerCardsWithMicrobes.get(random.nextInt(playerCardsWithMicrobes.size())).getId();
-                            }))
+                    List.of(bestMicrobeCard.orElse(InputFlag.SKIP_ACTION.getId()))
             );
         }
 
         if (cardAction == CardAction.EOS_CHASMA) {
             Optional<Integer> bestAnimalCard = resourcePriorityService.getMostValuableResourceCard(game, player, Set.of(CardCollectableResource.ANIMAL));
+
             result.put(
                     InputFlag.EOS_CHASMA_PUT_RESOURCE.getId(),
-                    List.of(bestAnimalCard.orElseGet(
-                            () -> {
-                                List<Card> playerCardsWithAnimals = getPlayerCardsWithAnimals(player);
-                                return playerCardsWithAnimals.get(random.nextInt(playerCardsWithAnimals.size())).getId();
-                            }))
+                    List.of(bestAnimalCard.orElse(InputFlag.SKIP_ACTION.getId()))
             );
         }
 
@@ -298,14 +291,11 @@ public class AiCardBuildParamsService {
                     })
             ).or(() -> mostValuableMicrobe);
 
-            result.put(InputFlag.IMPORTED_HYDROGEN_PUT_RESOURCE.getId(),
-                    mostValuableResource.map(List::of).orElseGet(() -> {
-                        List<Card> playerCardsWithAnimalsAndMicrobes = getPlayerCardsWithAnimalsAndMicrobes(player);
-                        int chosenOption = random.nextInt(playerCardsWithAnimalsAndMicrobes.size() + 1);
-                        return chosenOption == 0 ?
-                                List.of() :
-                                List.of(playerCardsWithAnimalsAndMicrobes.get(chosenOption - 1).getId());
-                    }));
+            if (mostValuableResource.isPresent()) {
+                result.put(InputFlag.IMPORTED_HYDROGEN_PUT_RESOURCE.getId(), List.of(mostValuableResource.get()));
+            } else {
+                result.put(InputFlag.IMPORTED_HYDROGEN_PICK_PLANT.getId(), List.of());
+            }
         }
 
         if (cardAction == CardAction.IMPORTED_NITROGEN) {

@@ -20,6 +20,7 @@ import com.terraforming.ares.services.*;
 import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.DeepNetwork;
 import com.terraforming.ares.services.ai.TestAiService;
+import com.terraforming.ares.services.ai.dto.CardProjection;
 import com.terraforming.ares.services.ai.turnProcessors.AiMulliganCardsTurn;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -418,7 +419,10 @@ public class GameController {
 
                 for (int i = 0; i < cards.size(); i++) {
                     MarsGame gameCopy = new MarsGame(projectionAfterCorporation);
-                    totalExtra += aiPickCardProjectionService.cardExtraChanceIfBuilt(gameCopy, gameCopy.getPlayerByUuid(player.getUuid()), cards.get(i), initialChance, 0);
+                    CardProjection cardProjection = aiPickCardProjectionService.cardExtraChanceIfBuilt(gameCopy, gameCopy.getPlayerByUuid(player.getUuid()), cards.get(i), initialChance, 0);
+                    if (cardProjection.isUsable()) {
+                        totalExtra += cardProjection.getChance();
+                    }
                 }
 
                 if (totalExtra > bestTotalExtra) {

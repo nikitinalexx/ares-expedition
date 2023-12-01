@@ -23,7 +23,7 @@ public class ResourcePriorityService {
     private final CardService cardService;
     private final Random random = new Random();
 
-    private final Map<Class<?>, ResourceValue> MICROBE_ANIMAL_VALUE;
+    private final Map<Class<?>, ResourceValue> RESOURCE_VALUES;
     private final Map<Class<?>, Integer> CRITICAL_RESOURCE_VALUES_ON_CARDS;
     private final Set<Class<?>> VALUABLE_RESOURCE_CARDS = Set.of(
             Birds.class, Fish.class, Livestock.class, Zoos.class, BacterialAggregates.class
@@ -32,29 +32,32 @@ public class ResourcePriorityService {
     public ResourcePriorityService(CardService cardService) {
         this.cardService = cardService;
 
-        MICROBE_ANIMAL_VALUE = new HashMap<>();
+        RESOURCE_VALUES = new HashMap<>();
         //microbes
-        MICROBE_ANIMAL_VALUE.put(Tardigrades.class, MIN);             // 1/3 vp
-        MICROBE_ANIMAL_VALUE.put(Decomposers.class, MIN);              // 1/3 vp
-        MICROBE_ANIMAL_VALUE.put(GhgProductionBacteria.class, MIN);// 1/3 vp
-        MICROBE_ANIMAL_VALUE.put(NitriteReductingBacteria.class, MIN);// 1/3 vp
-        MICROBE_ANIMAL_VALUE.put(RegolithEaters.class, MIN);// 1/3 vp
-        MICROBE_ANIMAL_VALUE.put(AnaerobicMicroorganisms.class, MEDIUM);// 1/2 vp
-        MICROBE_ANIMAL_VALUE.put(DecomposingFungus.class, MEDIUM); // 1/2 vp
-        MICROBE_ANIMAL_VALUE.put(SelfReplicatingBacteria.class, MEDIUM);// 1/2 vp
-        MICROBE_ANIMAL_VALUE.put(BacterialAggregates.class, MAX);// affects 5th phase
+        RESOURCE_VALUES.put(Tardigrades.class, MIN);             // 1/3 vp
+        RESOURCE_VALUES.put(Decomposers.class, MIN);              // 1/3 vp
+        RESOURCE_VALUES.put(GhgProductionBacteria.class, MIN);// 1/3 vp
+        RESOURCE_VALUES.put(NitriteReductingBacteria.class, MIN);// 1/3 vp
+        RESOURCE_VALUES.put(RegolithEaters.class, MIN);// 1/3 vp
+        RESOURCE_VALUES.put(FibrousCompositeMaterial.class, MIN); // 1/3 vp
+        RESOURCE_VALUES.put(AnaerobicMicroorganisms.class, MEDIUM);// 1/2 vp
+        RESOURCE_VALUES.put(DecomposingFungus.class, MEDIUM); // 1/2 vp
+        RESOURCE_VALUES.put(SelfReplicatingBacteria.class, MEDIUM);// 1/2 vp
+        RESOURCE_VALUES.put(BacterialAggregates.class, MAX);// affects 5th phase
 
         //animals
-        MICROBE_ANIMAL_VALUE.put(FilterFeeders.class, MIN);// 1/3vp
-        MICROBE_ANIMAL_VALUE.put(ArclightCorporation.class, MEDIUM);// 1/2vp
-        MICROBE_ANIMAL_VALUE.put(BuffedArclightCorporation.class, MEDIUM);// 1/2vp
-        MICROBE_ANIMAL_VALUE.put(EcologicalZone.class, MEDIUM);// 1/2vp
-        MICROBE_ANIMAL_VALUE.put(SmallAnimals.class, MEDIUM);// 1/2vp
-        MICROBE_ANIMAL_VALUE.put(Herbivores.class, MEDIUM);// 1/2vp
-        MICROBE_ANIMAL_VALUE.put(Birds.class, MAX);// 1vp
-        MICROBE_ANIMAL_VALUE.put(Fish.class, MAX);// 1vp
-        MICROBE_ANIMAL_VALUE.put(Livestock.class, MAX);// 1vp
-        MICROBE_ANIMAL_VALUE.put(Zoos.class, MAX);// 1vp
+        RESOURCE_VALUES.put(FilterFeeders.class, MIN);// 1/3vp
+        RESOURCE_VALUES.put(ArclightCorporation.class, MEDIUM);// 1/2vp
+        RESOURCE_VALUES.put(BuffedArclightCorporation.class, MEDIUM);// 1/2vp
+        RESOURCE_VALUES.put(EcologicalZone.class, MEDIUM);// 1/2vp
+        RESOURCE_VALUES.put(SmallAnimals.class, MEDIUM);// 1/2vp
+        RESOURCE_VALUES.put(Herbivores.class, MEDIUM);// 1/2vp
+        RESOURCE_VALUES.put(Birds.class, MAX);// 1vp
+        RESOURCE_VALUES.put(Fish.class, MAX);// 1vp
+        RESOURCE_VALUES.put(Livestock.class, MAX);// 1vp
+        RESOURCE_VALUES.put(Zoos.class, MAX);// 1vp
+
+        RESOURCE_VALUES.put(PhysicsComplex.class, MEDIUM);// 1/2vp
 
         CRITICAL_RESOURCE_VALUES_ON_CARDS = new HashMap<>();
         //microbes
@@ -63,6 +66,7 @@ public class ResourcePriorityService {
         CRITICAL_RESOURCE_VALUES_ON_CARDS.put(GhgProductionBacteria.class, 2);// 1/3 vp
         CRITICAL_RESOURCE_VALUES_ON_CARDS.put(NitriteReductingBacteria.class, 3);// 1/3 vp
         CRITICAL_RESOURCE_VALUES_ON_CARDS.put(RegolithEaters.class, 2);// 1/3 vp
+        CRITICAL_RESOURCE_VALUES_ON_CARDS.put(FibrousCompositeMaterial.class, 3);// 1/3 vp
         CRITICAL_RESOURCE_VALUES_ON_CARDS.put(AnaerobicMicroorganisms.class, 2);// 1/2 vp
         CRITICAL_RESOURCE_VALUES_ON_CARDS.put(DecomposingFungus.class, Integer.MAX_VALUE); // 1/2 vp
         CRITICAL_RESOURCE_VALUES_ON_CARDS.put(SelfReplicatingBacteria.class, 5);// 1/2 vp
@@ -75,6 +79,7 @@ public class ResourcePriorityService {
         CRITICAL_RESOURCE_VALUES_ON_CARDS.put(EcologicalZone.class, 2);// 1/2vp
         CRITICAL_RESOURCE_VALUES_ON_CARDS.put(SmallAnimals.class, 2);// 1/2vp
         CRITICAL_RESOURCE_VALUES_ON_CARDS.put(Herbivores.class, 2);// 1/2vp
+        CRITICAL_RESOURCE_VALUES_ON_CARDS.put(PhysicsComplex.class, 2);// 1/2vp
     }
 
     public boolean isValuableResourceCard(Card card) {
@@ -82,7 +87,7 @@ public class ResourcePriorityService {
     }
 
     public ResourceValue getCardValue(Card card) {
-        return MICROBE_ANIMAL_VALUE.get(card.getClass());
+        return RESOURCE_VALUES.get(card.getClass());
     }
 
     public Optional<Integer> getMostValuableResourceCard(MarsGame game, Player player, Set<CardCollectableResource> resourceTypes) {
@@ -183,7 +188,7 @@ public class ResourcePriorityService {
 
         Map<ResourceValue, List<Card>> cardsByPriorities = animalMicrobeCards
                 .stream()
-                .collect(Collectors.groupingBy(card -> MICROBE_ANIMAL_VALUE.get(card.getClass())));
+                .collect(Collectors.groupingBy(card -> RESOURCE_VALUES.get(card.getClass())));
 
         for (ResourceValue rv: List.of(MIN, MEDIUM)) {
             Card nonCriticalCard = getNonCriticalCardByPriority(cardsByPriorities.get(rv), player);
