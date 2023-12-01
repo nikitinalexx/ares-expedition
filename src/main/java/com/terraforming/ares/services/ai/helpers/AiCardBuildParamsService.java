@@ -1,6 +1,8 @@
 package com.terraforming.ares.services.ai.helpers;
 
 import com.terraforming.ares.cards.blue.Decomposers;
+import com.terraforming.ares.cards.red.AdvancedEcosystems;
+import com.terraforming.ares.cards.red.InterstellarColonyShip;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
@@ -8,6 +10,7 @@ import com.terraforming.ares.services.ai.AiDiscoveryDecisionService;
 import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.ICardValueService;
 import com.terraforming.ares.services.ai.dto.CardValueResponse;
+import com.terraforming.ares.services.ai.dto.ResourceValue;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -31,6 +34,7 @@ public class AiCardBuildParamsService {
     private final CardService cardService;
     private final ICardValueService cardValueService;
     private final AiDiscoveryDecisionService aiDiscoveryDecisionService;
+    private final ResourcePriorityService resourcePriorityService;
 
     private AiPickCardProjectionService aiPickCardProjectionService;
 
@@ -140,6 +144,7 @@ public class AiCardBuildParamsService {
         if (cardAction == CardAction.SYNTHETIC_CATASTROPHE) {
             Optional<Card> redCard = playedCards.stream()
                     .filter(c -> c.getColor() == CardColor.RED)
+                    .filter(c -> !SYNTHETIC_CATASTROPHE_IGNORE_LIST.contains(c.getClass()))
                     .findFirst();
             if (redCard.isPresent()) {
                 result = Map.of(InputFlag.SYNTHETIC_CATASTROPHE_CARD.getId(), List.of(redCard.get().getId()));
@@ -199,13 +204,12 @@ public class AiCardBuildParamsService {
         if (cardAction == CardAction.CRYOGENIC_SHIPMENT) {
             result.put(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(aiDiscoveryDecisionService.choosePhaseUpgrade(game, player)));
 
-            List<Card> playerCardsWithAnimalsAndMicrobes = getPlayerCardsWithAnimalsAndMicrobes(player);
+            Optional<Integer> cardChoice = resourcePriorityService.getMostValuableResourceCard(game, player, Set.of(CardCollectableResource.MICROBE, CardCollectableResource.ANIMAL));
 
-            if (CollectionUtils.isEmpty(playerCardsWithAnimalsAndMicrobes)) {
-                result.put(InputFlag.CRYOGENIC_SHIPMENT_PUT_RESOURCE.getId(), List.of(InputFlag.SKIP_ACTION.getId()));
-            } else {
-                result.put(InputFlag.CRYOGENIC_SHIPMENT_PUT_RESOURCE.getId(), List.of(playerCardsWithAnimalsAndMicrobes.get(random.nextInt(playerCardsWithAnimalsAndMicrobes.size())).getId()));
-            }
+            result.put(
+                    InputFlag.CRYOGENIC_SHIPMENT_PUT_RESOURCE.getId(),
+                    List.of(cardChoice.orElse(InputFlag.SKIP_ACTION.getId()))
+            );
         }
 
         if (cardAction == CardAction.UPDATE_PHASE_CARD_TWICE) {
@@ -242,61 +246,120 @@ public class AiCardBuildParamsService {
         }
 
         if (cardAction == CardAction.BIOMEDICAL_IMPORTS) {
-            //TODO expansion project double action
-            result.put(InputFlag.BIOMEDICAL_IMPORTS_UPGRADE_PHASE.getId(), List.of(-1));
-            result.put(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(aiDiscoveryDecisionService.choosePhaseUpgrade(game, player)));
+            result.putAll(aiDiscoveryDecisionService.getBiomedicalImportsBestInput(game, player));
         }
 
         if (cardAction == CardAction.ASTROFARM) {
-            List<Card> playerCardsWithMicrobes = getPlayerCardsWithMicrobe(player);
-            result.put(InputFlag.ASTROFARM_PUT_RESOURCE.getId(), getRandomCardInput(playerCardsWithMicrobes));
+            Optional<Integer> bestMicrobeCard = resourcePriorityService.getMostValuableResourceCard(game, player, Set.of(CardCollectableResource.MICROBE));
+            result.put(
+                    InputFlag.ASTROFARM_PUT_RESOURCE.getId(),
+                    List.of(bestMicrobeCard.orElseGet(
+                            () -> {
+                                List<Card> playerCardsWithMicrobes = getPlayerCardsWithMicrobe(player);
+                                return playerCardsWithMicrobes.get(random.nextInt(playerCardsWithMicrobes.size())).getId();
+                            }))
+            );
         }
 
         if (cardAction == CardAction.EOS_CHASMA) {
-            List<Card> playerCardsWithAnimal = getPlayerCardsWithAnimals(player);
-            result.put(InputFlag.EOS_CHASMA_PUT_RESOURCE.getId(), getRandomCardInput(playerCardsWithAnimal));
+            Optional<Integer> bestAnimalCard = resourcePriorityService.getMostValuableResourceCard(game, player, Set.of(CardCollectableResource.ANIMAL));
+            result.put(
+                    InputFlag.EOS_CHASMA_PUT_RESOURCE.getId(),
+                    List.of(bestAnimalCard.orElseGet(
+                            () -> {
+                                List<Card> playerCardsWithAnimals = getPlayerCardsWithAnimals(player);
+                                return playerCardsWithAnimals.get(random.nextInt(playerCardsWithAnimals.size())).getId();
+                            }))
+            );
         }
 
-        if (!card.getCardMetadata().getResourcesOnBuild().isEmpty()
-                && card.getCardMetadata().getResourcesOnBuild().get(0).getType() == CardCollectableResource.ANY) {
-            List<Card> playerCardsWithAnyResource = getPlayerCardsWithAnyResource(player);
-            result.put(InputFlag.CEOS_FAVORITE_PUT_RESOURCES.getId(), getRandomCardInput(playerCardsWithAnyResource));
+        if (!card.getCardMetadata().getResourcesOnBuild().isEmpty() && card.getCardMetadata().getResourcesOnBuild().get(0).getType() == CardCollectableResource.ANY) {
+            Optional<Integer> bestResourceCard = resourcePriorityService.getMostValuableResourceCard(game, player, Set.of(CardCollectableResource.ANIMAL, CardCollectableResource.MICROBE, CardCollectableResource.SCIENCE));
+            result.put(
+                    InputFlag.CEOS_FAVORITE_PUT_RESOURCES.getId(),
+                    List.of(bestResourceCard.orElseGet(
+                            () -> {
+                                List<Card> playerCardsWithAnyResource = getPlayerCardsWithAnyResource(player);
+                                return playerCardsWithAnyResource.get(random.nextInt(playerCardsWithAnyResource.size())).getId();
+                            }))
+            );
         }
 
         if (cardAction == CardAction.IMPORTED_HYDROGEN) {
-            List<Card> playerCardsWithAnimalsAndMicrobes = getPlayerCardsWithAnimalsAndMicrobes(player);
+            Optional<Integer> mostValuableAnimal = resourcePriorityService.getMostValuableResourceCard(game, player, Set.of(CardCollectableResource.ANIMAL));
+            Optional<Integer> mostValuableMicrobe = resourcePriorityService.getMostValuableResourceCard(game, player, Set.of(CardCollectableResource.MICROBE));
 
-            int chosenOption = random.nextInt(playerCardsWithAnimalsAndMicrobes.size() + 1);
-            if (chosenOption == 0) {//plants
-                result.put(InputFlag.IMPORTED_HYDROGEN_PICK_PLANT.getId(), List.of());
-            } else {
-                result.put(InputFlag.IMPORTED_HYDROGEN_PUT_RESOURCE.getId(), List.of(playerCardsWithAnimalsAndMicrobes.get(chosenOption - 1).getId()));
-            }
+            Optional<Integer> mostValuableResource = mostValuableAnimal.flatMap(animal ->
+                    mostValuableMicrobe.map(microbe -> {
+                        Card animalCard = cardService.getCard(animal);
+                        Card microbeCard = cardService.getCard(microbe);
+
+                        return resourcePriorityService.getCardValue(animalCard).ordinal() > resourcePriorityService.getCardValue(microbeCard).ordinal() ? animal : microbe;
+                    })
+            ).or(() -> mostValuableMicrobe);
+
+            result.put(InputFlag.IMPORTED_HYDROGEN_PUT_RESOURCE.getId(),
+                    mostValuableResource.map(List::of).orElseGet(() -> {
+                        List<Card> playerCardsWithAnimalsAndMicrobes = getPlayerCardsWithAnimalsAndMicrobes(player);
+                        int chosenOption = random.nextInt(playerCardsWithAnimalsAndMicrobes.size() + 1);
+                        return chosenOption == 0 ?
+                                List.of() :
+                                List.of(playerCardsWithAnimalsAndMicrobes.get(chosenOption - 1).getId());
+                    }));
         }
 
         if (cardAction == CardAction.IMPORTED_NITROGEN) {
-            List<Card> playerCardsWithAnimals = getPlayerCardsWithAnimals(player);
-            List<Card> playerCardsWithMicrobes = getPlayerCardsWithMicrobe(player);
+            Optional<Integer> mostValuableAnimal = resourcePriorityService.getMostValuableResourceCard(game, player, Set.of(CardCollectableResource.ANIMAL));
+            Optional<Integer> mostValuableMicrobe = resourcePriorityService.getMostValuableResourceCard(game, player, Set.of(CardCollectableResource.MICROBE));
 
-            result.put(InputFlag.IMPORTED_NITROGEN_ADD_ANIMALS.getId(), getRandomCardInput(playerCardsWithAnimals));
-            result.put(InputFlag.IMPORTED_NITROGEN_ADD_MICROBES.getId(), getRandomCardInput(playerCardsWithMicrobes));
+            result.put(InputFlag.IMPORTED_NITROGEN_ADD_ANIMALS.getId(),
+                    mostValuableAnimal.map(List::of).orElseGet(
+                            () -> {
+                                List<Card> playerCardsWithAnimals = getPlayerCardsWithAnimals(player);
+                                return getRandomCardInput(playerCardsWithAnimals);
+                            }
+                    )
+            );
+            result.put(InputFlag.IMPORTED_NITROGEN_ADD_MICROBES.getId(),
+                    mostValuableMicrobe.map(List::of).orElseGet(
+                            () -> {
+                                List<Card> playerCardsWithMicrobes = getPlayerCardsWithMicrobe(player);
+                                return getRandomCardInput(playerCardsWithMicrobes);
+                            }
+                    )
+            );
         }
 
         if (cardAction == CardAction.LARGE_CONVOY) {
-            List<Card> playerCardsWithAnimals = getPlayerCardsWithAnimals(player);
+            Optional<Integer> mostValuableAnimal = resourcePriorityService.getMostValuableResourceCard(game, player, Set.of(CardCollectableResource.ANIMAL));
 
-            int chosenOption = random.nextInt(playerCardsWithAnimals.size() + 1);
-            if (chosenOption == 0) {//plants
-                result.put(InputFlag.LARGE_CONVOY_PICK_PLANT.getId(), List.of());
-            } else {
-                result.put(InputFlag.LARGE_CONVOY_ADD_ANIMAL.getId(), List.of(playerCardsWithAnimals.get(chosenOption - 1).getId()));
-            }
+            Optional<Integer> bestAnimal = mostValuableAnimal.filter(animal ->
+                    resourcePriorityService.getCardValue(cardService.getCard(animal)) != ResourceValue.MIN
+            );
+
+            result.put(
+                    bestAnimal.isPresent() ? InputFlag.LARGE_CONVOY_ADD_ANIMAL.getId() : InputFlag.LARGE_CONVOY_PICK_PLANT.getId(),
+                    bestAnimal.map(List::of).orElseGet(Collections::emptyList)
+            );
         }
 
         if (cardAction == CardAction.LOCAL_HEAT_TRAPPING) {
-            List<Card> playerCardsWithAnimalsAndMicrobes = getPlayerCardsWithAnimalsAndMicrobes(player);
+            Optional<Integer> mostValuableAnimal = resourcePriorityService.getMostValuableResourceCard(game, player, Set.of(CardCollectableResource.ANIMAL));
+            Optional<Integer> mostValuableMicrobe = resourcePriorityService.getMostValuableResourceCard(game, player, Set.of(CardCollectableResource.MICROBE));
 
-            result.put(InputFlag.LOCAL_HEAT_TRAPPING_PUT_RESOURCE.getId(), getRandomCardInput(playerCardsWithAnimalsAndMicrobes));
+            Optional<Integer> mostValuableResource = mostValuableAnimal.flatMap(animal ->
+                    mostValuableMicrobe.map(microbe -> {
+                        Card animalCard = cardService.getCard(animal);
+                        Card microbeCard = cardService.getCard(microbe);
+
+                        return resourcePriorityService.getCardValue(animalCard).ordinal() > resourcePriorityService.getCardValue(microbeCard).ordinal() ? animal : microbe;
+                    })
+            ).or(() -> mostValuableMicrobe);
+
+            result.put(
+                    InputFlag.LOCAL_HEAT_TRAPPING_PUT_RESOURCE.getId(),
+                    mostValuableResource.map(List::of).orElseGet(() -> List.of(InputFlag.SKIP_ACTION.getId()))
+            );
         }
 
         List<Card> playedCards = player.getPlayed().getCards()
@@ -304,16 +367,27 @@ public class AiCardBuildParamsService {
                 .map(cardService::getCard).collect(Collectors.toList());
 
         if (cardAction == CardAction.SYNTHETIC_CATASTROPHE) {
-            List<Card> playedRedCards = playedCards.stream().filter(c -> c.getColor() == CardColor.RED)
-                    .collect(Collectors.toList());
-            //TODO take back the best card
-            result.put(InputFlag.SYNTHETIC_CATASTROPHE_CARD.getId(), getRandomCardInput(playedRedCards));
+            //TODO add some logic
+            Optional<Card> cardWithHighestPrice = playedCards.stream()
+                    .filter(c -> c.getColor() == CardColor.RED)
+                    .filter(c -> !SYNTHETIC_CATASTROPHE_IGNORE_LIST.contains(c.getClass()))
+                    .max(Comparator.comparingInt(Card::getPrice));
+
+            result.put(
+                    InputFlag.SYNTHETIC_CATASTROPHE_CARD.getId(),
+                    List.of(cardWithHighestPrice.map(Card::getId).orElse(InputFlag.SKIP_ACTION.getId()))
+            );
         }
 
         result.putAll(getActiveInputFromCards(game, player, playedCards, card, result, ignoreMarsUniversity));
 
         return result;
     }
+
+    private Set<Class<?>> SYNTHETIC_CATASTROPHE_IGNORE_LIST = Set.of(
+            InterstellarColonyShip.class,
+            AdvancedEcosystems.class
+    );
 
     public Map<Integer, List<Integer>> getActiveInputFromCards(MarsGame game, Player player, List<Card> playedCards, Card card, Map<Integer, List<Integer>> input, boolean ignoreMarsUniversity) {
         Map<Integer, List<Integer>> decomposersInputIfApplicable = getDecomposersInputIfApplicable(player, playedCards, card, input);

@@ -1,10 +1,8 @@
 package com.terraforming.ares.services.ai.turnProcessors;
 
-import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.cards.blue.*;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
-import com.terraforming.ares.model.ai.AiExperimentalTurn;
 import com.terraforming.ares.model.ai.AiTurnChoice;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
@@ -65,11 +63,42 @@ public class AiThirdPhaseActionProcessor {
     }
 
     public boolean processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
-        boolean madeATurn = makeATurn(possibleTurns, game, player);
-        if (madeATurn) {
+        boolean played = playBlueCards(possibleTurns, game, player);
+        if (played) {
             return true;
         } else if (doStandardActionsIfAvailable(possibleTurns, game, player)) {
             return true;
+        }
+
+        if (player.getSelectedCorporationCard() == 10000 || player.getSelectedCorporationCard() == 10100) {
+            if (game.getPlanetAtTheStartOfThePhase().isTemperatureMax() && player.getHeat() > 0) {
+                player.setMc(player.getMc() + player.getHeat());
+                player.setHeat(0);
+                return true;
+            }
+        }
+
+        if (game.getPlanetAtTheStartOfThePhase().isTemperatureMax() && player.getHeat() > 0) {
+            Deck activatedBlueCards = player.getActivatedBlueCards();
+
+            Boolean madeTurn = player.getPlayed().getCards().stream()
+                    .map(cardService::getCard)
+                    .filter(card -> card.getCardMetadata() != null && card.getCardMetadata().getCardAction() == CardAction.POWER_INFRASTRUCTURE)
+                    .filter(c -> !activatedBlueCards.containsCard(c.getId()))
+                    .findAny()
+                    .map(powerInfrastructureCard -> {
+                        aiTurnService.performBlueAction(
+                                game,
+                                player,
+                                powerInfrastructureCard.getId(),
+                                Map.of(InputFlag.DISCARD_HEAT.getId(), List.of(player.getHeat()))
+                        );
+                        return true;
+                    }).orElse(false);
+
+            if (madeTurn) {
+                return true;
+            }
         }
 
         if (game.gameEndCondition()) {
@@ -137,14 +166,7 @@ public class AiThirdPhaseActionProcessor {
     }
 
 
-    private boolean makeATurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
-        //TODO what if you have blue cards that spend heat
-        if (player.getSelectedCorporationCard() == 10000 || player.getSelectedCorporationCard() == 10100) {
-            if (game.getPlanetAtTheStartOfThePhase().isTemperatureMax() && player.getHeat() > 0) {
-                player.setMc(player.getMc() + player.getHeat());
-                player.setHeat(0);
-            }
-        }
+    private boolean playBlueCards(List<TurnType> possibleTurns, MarsGame game, Player player) {
         Deck activatedBlueCards = player.getActivatedBlueCards();
 
         List<Card> notUsedBlueCards = player.getPlayed().getCards().stream()
@@ -172,34 +194,6 @@ public class AiThirdPhaseActionProcessor {
             return true;
         }
 
-//        Set<CardAction> playedActions = player.getPlayed().getCards().stream().map(cardService::getCard)
-//                .map(Card::getCardMetadata)
-//                .filter(Objects::nonNull)
-//                .map(CardMetadata::getCardAction)
-//                .filter(Objects::nonNull).collect(Collectors.toSet());
-//
-//        //TODO looks very artificial
-//        if (!game.getPlanetAtTheStartOfThePhase().isOceansMax()) {
-//            if ((playedActions.contains(CardAction.ARCTIC_ALGAE)
-//                    || playedActions.contains(CardAction.FISH))
-//                    && player.getMc() > 30) {
-//                aiTurnService.standardProjectTurn(game, player, StandardProjectType.OCEAN);
-//                return true;
-//            }
-//        }
-//        if (!game.getPlanetAtTheStartOfThePhase().isTemperatureMax()) {
-//            if ((playedActions.contains(CardAction.LIVESTOCK))
-//                    && player.getMc() > 30) {
-//                aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
-//                return true;
-//            }
-//            if ((playedActions.contains(CardAction.PHYSICS_COMPLEX))
-//                    && player.getMc() > 70) {
-//                aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
-//                return true;
-//            }
-//        }
-//
         if (!game.gameEndCondition() && canFinishGame(game, player) && (player.getDifficulty().THIRD_PHASE_ACTION != AiTurnChoice.NETWORK || deepNetwork.testState(game, player) >= 0.6)) {
             if (player.getHand().size() != 0) {
                 aiTurnService.sellCards(player, game, player.getHand().getCards());
@@ -426,71 +420,6 @@ public class AiThirdPhaseActionProcessor {
         }
 
         return false;
-
-//        switch (player.getDifficulty().THIRD_PHASE_ACTION) {
-//            case RANDOM:
-//            case SMART:
-//                while (!cards.isEmpty()) {
-//                    int selectedIndex = random.nextInt(cards.size());
-//                    Card selectedCard = cards.get(selectedIndex);
-//
-//                    if (aiCardActionHelper.isUsablePlayAction(game, player, selectedCard)) {
-//                        ActionInputParamsResponse inputParams = aiCardActionHelper.getActionInputParamsForSmart(game, player, selectedCard);
-//
-//
-//                        if (inputParams.isMakeAction()) {
-//                            aiTurnService.performBlueAction(
-//                                    game,
-//                                    player,
-//                                    selectedCard.getId(),
-//                                    inputParams.getInputParams()
-//                            );
-//                            return true;
-//                        }
-//                    }
-//
-//                    cards.remove(selectedIndex);
-//                }
-//                return false;
-//            case NETWORK:
-//                Integer bestCard = null;
-//                float bestChance = deepNetwork.testState(game, player);
-//
-//                for (Card card : cards) {
-//                    ActionInputParamsResponse paramsResponse = aiCardActionHelper.getActionInputParamsForSmart(game, player, card);
-//
-//                    if (!paramsResponse.isMakeAction()) {
-//                        continue;
-//                    }
-//                    String validationResult = cardValidationService.validateBlueAction(player, game, card.getId(), paramsResponse.getInputParams());
-//
-//                    if (validationResult == null) {
-//                        MarsGame gameCopy = new MarsGame(game);
-//                        Player playerCopy = gameCopy.getPlayerByUuid(player.getUuid());
-//                        aiTurnService.performBlueAction(
-//                                gameCopy,
-//                                playerCopy,
-//                                card.getId(),
-//                                paramsResponse.getInputParams()
-//                        );
-//                        float newChance = deepNetwork.testState(gameCopy, playerCopy);
-//                        if (newChance > bestChance) {
-//                            bestChance = newChance;
-//                            bestCard = card.getId();
-//                        }
-//                    }
-//                }
-//                if (bestCard != null) {
-//                    ActionInputParamsResponse paramsResponse = aiCardActionHelper.getActionInputParamsForSmart(game, player, cardService.getCard(bestCard));
-//                    aiTurnService.performBlueAction(
-//                            game,
-//                            player,
-//                            bestCard,
-//                            paramsResponse.getInputParams()
-//                    );
-//                    return true;
-//                }
-//        }
     }
 
 }

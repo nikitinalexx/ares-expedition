@@ -194,12 +194,18 @@ public class TestAiService {
         addDraftedCards(player, marsGameRow.getPlayer(), true, player.isFirstBot() ? 1 : 2);
         addDraftedCards(anotherPlayer, marsGameRow.getOpponent(), false, player.isFirstBot() ? 1 : 2);
 
-        if (false) {//TODO switch back
-            long badCards = aiPickCardProjectionService.countCardsWithNegativeChance(game, player);
+        {
+            long badCards = aiPickCardProjectionService.countBadCards(game, player);
+
+            float additionalValue = aiPickCardProjectionService.countPositiveAdditionalvalue(game, player);
+
             long goodCards = player.getHand().size() - badCards;
 
-            if (badCards > goodCards && goodCards < 4) {
-                return 1;
+            float sumToCheck = 1.0f;
+
+            if (goodCards < 8 && additionalValue <= sumToCheck) {
+                float cards = marsGameRow.getPlayer().getCards();
+                marsGameRow.getPlayer().setCards(cards + 5);
             }
         }
 
