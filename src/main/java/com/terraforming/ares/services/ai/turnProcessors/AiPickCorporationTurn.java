@@ -12,6 +12,7 @@ import com.terraforming.ares.services.ai.AiDiscoveryDecisionService;
 import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.DeepNetwork;
 import com.terraforming.ares.services.ai.TestAiService;
+import com.terraforming.ares.services.ai.dto.CardProjection;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -27,6 +28,9 @@ public class AiPickCorporationTurn implements AiTurnProcessor {
     private final Random random = new Random();
     private final AiTurnService aiTurnService;
     private final CardService cardService;
+    private final TestAiService testAiService;
+    private final DeepNetwork deepNetwork;
+    private final AiPickCardProjectionService aiPickCardProjectionService;
     private final AiDiscoveryDecisionService aiDiscoveryDecisionService;
 
 
@@ -40,44 +44,28 @@ public class AiPickCorporationTurn implements AiTurnProcessor {
         List<Integer> corporations = player.getCorporations().getCards();
         int selectedCorporationId = corporations.get(0);
 
-        switch (player.getDifficulty().EXPERIMENTAL_TURN) {
-            case EXPERIMENT://todo USE IT
-            case REGULAR:
-//            selectedCorporationId = corporations.stream().min(Comparator.comparingInt(Constants.CORPORATION_PRIORITY::indexOf)).orElseThrow();
-
+        switch (player.getDifficulty().CARDS_PICK) {
+            case RANDOM:
+            case FILE_VALUE:
                 selectedCorporationId = corporations.get(random.nextInt(corporations.size()));
                 break;
-//                MarsGame gameAfterOpponentPlay = testAiService.projectOpponentCorporationBuildExperiment(game, player);
-//
-//                List<Integer> playerCards = player.getHand().getCards();
-//
-//                float bestTotalExtra = 0;
-//
-//                Map<String, Float> corporationToExtraChance = new HashMap<>();
-//
-//                for (Integer corporation : player.getCorporations().getCards()) {
-//                    MarsGame projectionAfterCorporation = testAiService.projectPlayerBuildCorporationExperiment(gameAfterOpponentPlay, player, corporation);
-//
-//                    float initialChance = deepNetwork.testState(projectionAfterCorporation, projectionAfterCorporation.getPlayerByUuid(player.getUuid()));
-//
-//                    float totalExtra = 0;
-//
-//                    for (int i = 0; i < playerCards.size(); i++) {
-//                        MarsGame gameCopy = new MarsGame(projectionAfterCorporation);
-//                        totalExtra += aiPickCardProjectionService.cardExtraChanceIfBuilt(gameCopy, gameCopy.getPlayerByUuid(player.getUuid()), playerCards.get(i), initialChance);
-//                    }
-//
-//                    corporationToExtraChance.put(cardService.getCard(corporation).getClass().getSimpleName(), (totalExtra / playerCards.size()) + initialChance);
-//
-//                    if (totalExtra > bestTotalExtra) {
-//                        bestTotalExtra = totalExtra;
-//                        selectedCorporationId = corporation;
-//                    }
-//
-//
-//                }
-//
-//                break;
+            case NETWORK_PROJECTION:
+                MarsGame gameAfterOpponentPlay = testAiService.projectOpponentCorporationBuildExperiment(game, player);
+
+                float bestCorporationChoice = 0;
+
+                for (Integer corporation : player.getCorporations().getCards()) {
+                    MarsGame projectionAfterCorporation = testAiService.projectPlayerBuildCorporationExperiment(gameAfterOpponentPlay, player, corporation);
+
+                    float afterCorporationChance = deepNetwork.testState(projectionAfterCorporation, projectionAfterCorporation.getPlayerByUuid(player.getUuid()));
+
+                    if (afterCorporationChance > bestCorporationChoice) {
+                        bestCorporationChoice = afterCorporationChance;
+                        selectedCorporationId = corporation;
+                    }
+                }
+
+                break;
         }
 
 
