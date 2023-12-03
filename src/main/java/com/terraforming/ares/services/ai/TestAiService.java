@@ -123,33 +123,29 @@ public class TestAiService {
             }
         }
 
-        {
+        if (false) {
             float bestStateBeforeBuild = deepNetwork.testState(game, player);
 
             BuildProjectPrediction prediction = getBestCardToBuild(game, player, Set.of(CardColor.GREEN, CardColor.RED, CardColor.BLUE));
 
-
             if (prediction.isCanBuild() && prediction.getCard() != null && (!bestPredictionBeforeIncome.isCanBuild() || bestPredictionBeforeIncome.getCard() != prediction.getCard())) {
                 float relativeRatio = (prediction.getExpectedValue() - (bestPredictionBeforeIncome.isCanBuild() ? bestPredictionBeforeIncome.getExpectedValue() : bestStateBeforeBuild)) / (1 - bestStateBeforeBuild);
-                if (relativeRatio >= 0.25f && prediction.getExpectedValue() != 1.0 && (!bestPredictionBeforeIncome.isCanBuild() || prediction.getExpectedValue() - bestPredictionBeforeIncome.getExpectedValue() >= 0.1f)) {
+                if (relativeRatio >= 1f && prediction.getExpectedValue() != 1.0) {
+                    System.out.println("Relative " + relativeRatio + " " + prediction.getCard());
                     game = aiBuildProjectService.assumeProjectIsBuiltFromPickPhase(game, player, prediction.getCard());
                     player = game.getPlayerByUuid(player.getUuid());
                     anotherPlayer = game.getPlayerByUuid(anotherPlayer.getUuid());
 
                     if (Constants.LOG_NET_COMPARISON) {
-                        Card bestCardBeforeIncome = bestPredictionBeforeIncome.isCanBuild() ? bestPredictionBeforeIncome.getCard() : null;
-                        Card bestCardAfterIncome = prediction.isCanBuild() ? prediction.getCard() : null;
-                        if (bestCardAfterIncome != bestCardBeforeIncome) {
-                            System.out.println(
-                                    "CardBeforeIncome " + (bestCardBeforeIncome != null ? bestCardBeforeIncome.getClass().getSimpleName() : null)
-                                            + " " +
-                                            "CardAfterIncome " + (bestCardAfterIncome != null ? bestCardAfterIncome.getClass().getSimpleName() : null)
-                            );
-                        }
+                        Card bestCardAfterIncome = prediction.getCard();
+                        System.out.println(
+                                "CardBeforeIncome " + (bestPredictionBeforeIncome.isCanBuild() ? bestPredictionBeforeIncome.getCard() : " null ")
+                                        + " " +
+                                        "CardAfterIncome " + bestCardAfterIncome.getClass().getSimpleName()
+                        );
                     }
                 }
             }
-
         }
 
         final MarsGameRow marsGameRow = datasetCollectionService.collectGameAndPlayers(
@@ -194,13 +190,17 @@ public class TestAiService {
         addDraftedCards(player, marsGameRow.getPlayer(), true, player.isFirstBot() ? 1 : 2);
         addDraftedCards(anotherPlayer, marsGameRow.getOpponent(), false, player.isFirstBot() ? 1 : 2);
 
-        if (false) {//TODO switch back
-            long badCards = aiPickCardProjectionService.countCardsWithNegativeChance(game, player);
-            long goodCards = player.getHand().size() - badCards;
+        long badCards = aiPickCardProjectionService.countBadCards(game, player);
 
-            if (badCards > goodCards && goodCards < 4) {
-                return 1;
-            }
+        float additionalValue = aiPickCardProjectionService.countPositiveAdditionalvalue(game, player);
+
+        long goodCards = player.getHand().size() - badCards;
+
+        float sumToCheck = 1.0f;
+
+        if (goodCards < 8 && additionalValue <= sumToCheck) {
+            float cards = marsGameRow.getPlayer().getCards();
+            marsGameRow.getPlayer().setCards(cards + 5);
         }
 
 

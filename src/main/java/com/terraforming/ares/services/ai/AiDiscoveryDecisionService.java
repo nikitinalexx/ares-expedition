@@ -4,10 +4,11 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
-import com.terraforming.ares.model.milestones.BuilderMilestone;
-import com.terraforming.ares.model.milestones.DiversifierMilestone;
 import com.terraforming.ares.model.milestones.Milestone;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.MarsContextProvider;
+import com.terraforming.ares.services.TerraformingService;
+import com.terraforming.ares.services.UpgradePhaseHelper;
 import com.terraforming.ares.services.ai.dto.PhaseUpgradeWithChance;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,8 @@ public class AiDiscoveryDecisionService {
     private final Random random = new Random();
     private final DeepNetwork deepNetwork;
     private final CardService cardService;
+    private final TerraformingService terraformingService;
+    private final MarsContextProvider marsContextProvider;
 
     public int choosePhaseUpgrade(MarsGame game, Player player, int phase) {
         int phaseOffset = (phase - 1) * 2;
@@ -189,6 +192,32 @@ public class AiDiscoveryDecisionService {
         }
     }
 
+    public Map<Integer, List<Integer>> getBiomedicalImportsBestInput(MarsGame game, Player player) {
+        float stateAfterOxygenIncrease = 0;
+
+        if (!game.getPlanetAtTheStartOfThePhase().isOxygenMax()) {
+            MarsGame copy = new MarsGame(game);
+            terraformingService.raiseOxygen(
+                    marsContextProvider.provide(copy, copy.getPlayerByUuid(player.getUuid()))
+            );
+            stateAfterOxygenIncrease = deepNetwork.testState(copy, copy.getPlayerByUuid(player.getUuid()));
+        }
+
+        MarsGame copy = new MarsGame(game);
+        int bestPhaseUpgrade = choosePhaseUpgrade(copy, copy.getPlayerByUuid(player.getUuid()));
+        UpgradePhaseHelper.upgradePhase(copy.getPlayerByUuid(player.getUuid()), bestPhaseUpgrade);
+        float stateAfterPhaseUpgrade = deepNetwork.testState(copy, copy.getPlayerByUuid(player.getUuid()));
+
+        if (stateAfterOxygenIncrease > stateAfterPhaseUpgrade) {
+            return Map.of(InputFlag.BIOMEDICAL_IMPORTS_RAISE_OXYGEN.getId(), List.of(0));
+        } else {
+            return Map.of(
+                    InputFlag.BIOMEDICAL_IMPORTS_UPGRADE_PHASE.getId(), List.of(-1),
+                    InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(bestPhaseUpgrade)
+            );
+        }
+    }
+
     public int chooseAustellarCorporationMilestone(MarsGame game, Player player) {
         List<Milestone> milestones = game.getMilestones();
 
@@ -239,7 +268,7 @@ public class AiDiscoveryDecisionService {
                     break;
                 case TYCOON:
                     long blueCardsCount = player.getHand().getCards().stream().map(cardService::getCard).filter(card -> card.getColor() == CardColor.BLUE).count();
-                    currentRating = (double) blueCardsCount /6;
+                    currentRating = (double) blueCardsCount / 6;
                     break;
                 case PLANNER:
                     long cheapCardsCount = player.getHand().getCards().stream().map(cardService::getCard).filter(card -> card.getPrice() < 10).count();

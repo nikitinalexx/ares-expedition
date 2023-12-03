@@ -1,6 +1,7 @@
 package com.terraforming.ares.services.ai;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.cards.green.PrivateInvestorBeach;
 import com.terraforming.ares.cards.red.AdvancedEcosystems;
 import com.terraforming.ares.cards.red.Crater;
 import com.terraforming.ares.mars.MarsGame;
@@ -10,6 +11,7 @@ import com.terraforming.ares.model.parameters.OceanRequirement;
 import com.terraforming.ares.model.parameters.ParameterColor;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.SpecialEffectsService;
+import com.terraforming.ares.services.ai.dto.CardProjection;
 import com.terraforming.ares.services.ai.dto.CardValueResponse;
 import com.terraforming.ares.services.ai.turnProcessors.AiBuildProjectService;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +30,7 @@ public class AiPickCardProjectionService {
     private final SpecialEffectsService specialEffectsService;
 
     public CardValueResponse getWorstCard(MarsGame game, Player player, List<Integer> cards) {
-        double worstAdditionalValue = Float.MAX_VALUE;
+        float worstAdditionalValue = Float.MAX_VALUE;
         int worstCardIndex = 0;
 
         float initialChance = deepNetwork.testState(game, player);
@@ -39,12 +41,17 @@ public class AiPickCardProjectionService {
             MarsGame tempGame = new MarsGame(game);
             Player tempPlayer = tempGame.getPlayerByUuid(player.getUuid());
 
-            float additionalCardValue = cardExtraChanceIfBuilt(tempGame, tempPlayer, cards.get(i), initialChance, 0);
-            if (additionalCardValue < worstAdditionalValue) {
-                worstAdditionalValue = additionalCardValue;
+            CardProjection cardProjection = cardExtraChanceIfBuilt(tempGame, tempPlayer, cards.get(i), initialChance, 0);
+            if (!cardProjection.isUsable()) {
+                return CardValueResponse.notUsableCard(cards.get(i));
+            }
+            float cardChance = cardProjection.getChance();
+
+            if (cardChance < worstAdditionalValue) {
+                worstAdditionalValue = cardChance;
                 worstCardIndex = i;
             }
-            cardToChance.put(cards.get(i), additionalCardValue);
+            cardToChance.put(cards.get(i), cardChance);
         }
 
         if (Constants.LOG_NET_COMPARISON) {
@@ -57,7 +64,7 @@ public class AiPickCardProjectionService {
         return CardValueResponse.of(cards.get(worstCardIndex), worstAdditionalValue);
     }
 
-    public long countCardsWithNegativeChance(MarsGame game, Player player) {
+    public long countBadCards(MarsGame game, Player player) {
         float initialChance = deepNetwork.testState(game, player);
 
         List<Integer> cards = player.getHand().getCards();
@@ -68,9 +75,9 @@ public class AiPickCardProjectionService {
             MarsGame tempGame = new MarsGame(game);
             Player tempPlayer = tempGame.getPlayerByUuid(player.getUuid());
 
-            float additionalCardValue = cardExtraChanceIfBuilt(tempGame, tempPlayer, cards.get(i), initialChance, 0);
+            CardProjection additionalCardValue = cardExtraChanceIfBuilt(tempGame, tempPlayer, cards.get(i), initialChance, 0);
 
-            if (additionalCardValue < 0) {
+            if (!additionalCardValue.isUsable() || additionalCardValue.getChance() < 0) {
                 countWithNegative++;
             }
         }
@@ -78,18 +85,40 @@ public class AiPickCardProjectionService {
         return countWithNegative;
     }
 
+    public float countPositiveAdditionalvalue(MarsGame game, Player player) {
+        float initialChance = deepNetwork.testState(game, player);
 
-    public List<Integer> getWorstCards(MarsGame game, Player player, List<Integer> cards, int count) {
+        List<Integer> cards = player.getHand().getCards();
+
+        float totalExtraValue = 0;
+
+        for (Integer card : cards) {
+            MarsGame tempGame = new MarsGame(game);
+            Player tempPlayer = tempGame.getPlayerByUuid(player.getUuid());
+
+            CardProjection cardProjection = cardExtraChanceIfBuilt(tempGame, tempPlayer, card, initialChance, 0);
+
+            if (cardProjection.isUsable() && cardProjection.getChance() > 0) {
+                totalExtraValue += (cardProjection.getChance() / initialChance);
+            }
+        }
+
+        return totalExtraValue;
+    }
+
+
+    public List<Integer> getCardsToSell(MarsGame game, Player player, List<Integer> cards, int count) {
         float initialChance = deepNetwork.testState(game, player);
 
         Map<Integer, Float> cardToChance = new HashMap<>();
 
-        for (int i = 0; i < cards.size(); i++) {
+        for (Integer card : cards) {
             MarsGame tempGame = new MarsGame(game);
             Player tempPlayer = tempGame.getPlayerByUuid(player.getUuid());
 
-            float additionalCardValue = cardExtraChanceIfBuilt(tempGame, tempPlayer, cards.get(i), initialChance, 0);
-            cardToChance.put(cards.get(i), additionalCardValue);
+            CardProjection additionalCardValue = cardExtraChanceIfBuilt(tempGame, tempPlayer, card, initialChance, 0);
+
+            cardToChance.put(card, additionalCardValue.getChance());
         }
 
         if (Constants.LOG_NET_COMPARISON) {
@@ -112,11 +141,11 @@ public class AiPickCardProjectionService {
 
         Map<Integer, Float> cardToChance = new HashMap<>();
 
-        for (int i = 0; i < cardsToDiscard.size(); i++) {
+        for (Integer integer : cardsToDiscard) {
             MarsGame tempGame = new MarsGame(game);
             Player tempPlayer = tempGame.getPlayerByUuid(player.getUuid());
 
-            cardToChance.put(cardsToDiscard.get(i), cardExtraChanceIfBuilt(tempGame, tempPlayer, cardsToDiscard.get(i), initialChance, 0));
+            cardToChance.put(integer, cardExtraChanceIfBuilt(tempGame, tempPlayer, integer, initialChance, 0).getChance());
         }
         if (Constants.LOG_NET_COMPARISON) {
             System.out.println("Get best card: ");
@@ -130,7 +159,7 @@ public class AiPickCardProjectionService {
     }
 
 
-    public float cardExtraChanceIfBuilt(MarsGame game, Player player, Integer cardId, float initialChance, int depth) {
+    public CardProjection cardExtraChanceIfBuilt(MarsGame game, Player player, Integer cardId, float initialChance, int depth) {
         Card card = cardService.getCard(cardId);
 
         CardMetadata cardMetadata = card.getCardMetadata();
@@ -138,7 +167,7 @@ public class AiPickCardProjectionService {
             PutResourceOnBuild putResourceOnBuild = cardMetadata.getResourcesOnBuild().get(0);
             if (putResourceOnBuild.getParamId() == InputFlag.CEOS_FAVORITE_PUT_RESOURCES.getId()) {
                 //TODO should return  more if there is usable good card
-                return 0;
+                return CardProjection.NOT_USABLE;
             }
         }
         if (card.getCardMetadata().getCardAction() == CardAction.SYNTHETIC_CATASTROPHE) {
@@ -146,11 +175,11 @@ public class AiPickCardProjectionService {
                     .collect(Collectors.toList());
             if (playedRedCards.isEmpty()) {
                 //TODO should return  more if there is usable good card
-                return 0;
+                return CardProjection.NOT_USABLE;
             }
         }
 
-        float extraChanceModifier = 1;
+        CardProjection extraChanceModifier = CardProjection.usable(1);
 
         if (!CollectionUtils.isEmpty(card.getTemperatureRequirement())) {
             extraChanceModifier = getChanceReductionBasedOnRequirement(game.getPlanet(), player, GlobalParameter.TEMPERATURE, card.getTemperatureRequirement());
@@ -162,22 +191,33 @@ public class AiPickCardProjectionService {
             int revealedOceansCount = game.getPlanet().getRevealedOceans().size();
 
             if (revealedOceansCount < oceanRequirement.getMinValue()) {
-                extraChanceModifier = (float) revealedOceansCount / game.getPlanet().getOceans().size();
+                extraChanceModifier = CardProjection.usable((float) revealedOceansCount / game.getPlanet().getOceans().size());
             } else if (revealedOceansCount > oceanRequirement.getMaxValue()) {
-                extraChanceModifier = 0;
+                extraChanceModifier = CardProjection.NOT_USABLE;
             }
         }
 
-        if (card.getClass() == AdvancedEcosystems.class) {
-            int uniqueTagsPlayed = cardService.countUniquePlayedTags(player, Set.of(Tag.PLANT, Tag.MICROBE, Tag.ANIMAL));
-
-            extraChanceModifier = (float) uniqueTagsPlayed / 3;
+        Class<? extends Card> clazz = card.getClass();
+        if (clazz == PrivateInvestorBeach.class) {
+            if (game.getMilestones().stream().allMatch(milestone -> milestone.isAchieved() && !milestone.isAchieved(player))) {
+                extraChanceModifier = CardProjection.NOT_USABLE;
+            }
         }
 
-        if (card.getClass() == Crater.class) {
+        if (clazz == AdvancedEcosystems.class) {
+            int uniqueTagsPlayed = cardService.countUniquePlayedTags(player, Set.of(Tag.PLANT, Tag.MICROBE, Tag.ANIMAL));
+
+            extraChanceModifier = CardProjection.usable((float) uniqueTagsPlayed / 3);
+        }
+
+        if (clazz == Crater.class) {
             int eventsPlayed = cardService.countPlayedTags(player, Set.of(Tag.EVENT));
 
-            extraChanceModifier = (float) eventsPlayed / 3;
+            extraChanceModifier = CardProjection.usable((float) eventsPlayed / 3);
+        }
+
+        if (!extraChanceModifier.isUsable()) {
+            return extraChanceModifier;
         }
 
         if (card.getColor() == CardColor.GREEN) {
@@ -190,23 +230,23 @@ public class AiPickCardProjectionService {
 
         float projectedChance = deepNetwork.testState(stateAfterPlayingTheCard, stateAfterPlayingTheCard.getPlayerByUuid(player.getUuid()));
 
-        return (projectedChance - initialChance) < 0 ? (projectedChance - initialChance) : extraChanceModifier * (projectedChance - initialChance);
+        return CardProjection.usable((projectedChance - initialChance) < 0 ? (projectedChance - initialChance) : extraChanceModifier.getChance() * (projectedChance - initialChance));
     }
 
-    private float getChanceReductionBasedOnRequirement(Planet planet, Player player, GlobalParameter parameter, List<ParameterColor> requirement) {
+    private CardProjection getChanceReductionBasedOnRequirement(Planet planet, Player player, GlobalParameter parameter, List<ParameterColor> requirement) {
         boolean canAmplifyRequirement = specialEffectsService.ownsSpecialEffect(player, SpecialEffect.AMPLIFY_GLOBAL_REQUIREMENT);
         if (canAmplifyRequirement) {
             requirement = amplifyRequirement(requirement);
         }
         if (parameter == GlobalParameter.OXYGEN && planet.isValidOxygen(requirement) || parameter == GlobalParameter.TEMPERATURE && planet.isValidTemperatute(requirement)) {
-            return 1;
+            return CardProjection.usable(1);
         }
 
         if (requirement.contains(ParameterColor.P) &&
                 (canAmplifyRequirement || player.getHand().getCards().stream().map(cardService::getCard).noneMatch(card -> card.getSpecialEffects().contains(SpecialEffect.AMPLIFY_GLOBAL_REQUIREMENT)))) {
-            return -100;
+            return CardProjection.NOT_USABLE;
         } else {
-            return planet.getParameterProportionTillMinColor(parameter, ParameterColor.values()[requirement.stream().mapToInt(Enum::ordinal).min().orElse(0)]);
+            return CardProjection.usable(planet.getParameterProportionTillMinColor(parameter, ParameterColor.values()[requirement.stream().mapToInt(Enum::ordinal).min().orElse(0)]));
         }
     }
 

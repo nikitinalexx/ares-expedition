@@ -30,6 +30,11 @@ public class MeasurableGlobalParameter {
     }
 
     @JsonIgnore
+    public int getCurrentLevel() {
+        return currentLevel;
+    }
+
+    @JsonIgnore
     public int valueLeft() {
         return levels.size() - currentLevel - 1;
     }

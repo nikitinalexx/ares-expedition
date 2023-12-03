@@ -210,9 +210,7 @@ public class Planet {
             }
         }
 
-        int currentValue = parameter.getCurrentValue();
-
-        return (float) currentValue / targetLevel;
+        return ((float) (levels.size() - targetLevel)) / levels.size();
     }
 
 }

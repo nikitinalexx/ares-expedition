@@ -32,6 +32,7 @@ public class ResearchGrantAiCardProjection<T extends Card> implements AiCardProj
     @Override
     public MarsGameRowDifference project(MarsGameRowDifference initialDifference, MarsGame game, Player player, Card card, int network) {
         List<Tag> originalTags = player.getCardToTag().get(ResearchGrant.class);
+        //TODO should project while building
 
         if (originalTags.stream().noneMatch(tag -> tag == Tag.DYNAMIC)) {
             return new MarsGameRowDifference();

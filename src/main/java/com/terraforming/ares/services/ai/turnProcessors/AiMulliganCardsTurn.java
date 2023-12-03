@@ -87,7 +87,7 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
 
                     for (int i = 0; i < cards.size(); i++) {
                         MarsGame gameCopy = new MarsGame(projectCorporationBuild);
-                        cardToChance.put(cards.get(i), aiPickCardProjectionService.cardExtraChanceIfBuilt(gameCopy, gameCopy.getPlayerByUuid(player.getUuid()), cards.get(i), initialChance, 0));
+                        cardToChance.put(cards.get(i), aiPickCardProjectionService.cardExtraChanceIfBuilt(gameCopy, gameCopy.getPlayerByUuid(player.getUuid()), cards.get(i), initialChance, 0).getChance());
                     }
 
                     List<Integer> cardsByChance = new ArrayList<>(cards);

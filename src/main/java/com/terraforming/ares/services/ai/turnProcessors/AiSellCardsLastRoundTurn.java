@@ -1,16 +1,13 @@
 package com.terraforming.ares.services.ai.turnProcessors;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ai.AiCardsChoice;
-import com.terraforming.ares.model.ai.AiExperimentalTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.DeepNetwork;
 import com.terraforming.ares.services.ai.ICardValueService;
-import com.terraforming.ares.services.ai.dto.CardValueResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -46,7 +43,7 @@ public class AiSellCardsLastRoundTurn implements AiTurnProcessor {
         List<Integer> cardsToSell = new ArrayList<>();
 
         if (player.getDifficulty().CARDS_PICK == AiCardsChoice.NETWORK_PROJECTION) {
-            cardsToSell = aiPickCardProjectionService.getWorstCards(game, player, allCards, cardsToSellCount);
+            cardsToSell = aiPickCardProjectionService.getCardsToSell(game, player, allCards, cardsToSellCount);
         } else {
             for (int i = 0; i < cardsToSellCount; i++) {
                 Integer cardToSell;
