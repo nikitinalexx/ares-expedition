@@ -123,14 +123,15 @@ public class TestAiService {
             }
         }
 
-        {
+        if (false) {
             float bestStateBeforeBuild = deepNetwork.testState(game, player);
 
             BuildProjectPrediction prediction = getBestCardToBuild(game, player, Set.of(CardColor.GREEN, CardColor.RED, CardColor.BLUE));
 
             if (prediction.isCanBuild() && prediction.getCard() != null && (!bestPredictionBeforeIncome.isCanBuild() || bestPredictionBeforeIncome.getCard() != prediction.getCard())) {
                 float relativeRatio = (prediction.getExpectedValue() - (bestPredictionBeforeIncome.isCanBuild() ? bestPredictionBeforeIncome.getExpectedValue() : bestStateBeforeBuild)) / (1 - bestStateBeforeBuild);
-                if (relativeRatio >= 0.25f && prediction.getExpectedValue() != 1.0) {
+                if (relativeRatio >= 1f && prediction.getExpectedValue() != 1.0) {
+                    System.out.println("Relative " + relativeRatio + " " + prediction.getCard());
                     game = aiBuildProjectService.assumeProjectIsBuiltFromPickPhase(game, player, prediction.getCard());
                     player = game.getPlayerByUuid(player.getUuid());
                     anotherPlayer = game.getPlayerByUuid(anotherPlayer.getUuid());
