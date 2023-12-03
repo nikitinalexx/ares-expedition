@@ -15,6 +15,7 @@ public class GameDtoShort {
     private int temperature;
     private int oxygen;
     private Integer phaseTemperature;
+    private Integer phaseInfrastructure;
     private Integer phaseOxygen;
     private Integer phaseOceans;
     private List<OceanDto> oceans;

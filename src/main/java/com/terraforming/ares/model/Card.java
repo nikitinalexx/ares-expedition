@@ -79,6 +79,9 @@ public interface Card {
     default void onTemperatureChangedEffect(MarsContext context) {
     }
 
+    default void onInfrastructureChangedEffect(MarsContext context) {
+    }
+
     default void onOxygenChangedEffect(MarsContext context) {
     }
 

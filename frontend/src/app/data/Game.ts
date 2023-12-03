@@ -22,6 +22,8 @@ export class Game {
               stateReason: string,
               aiComputer: boolean,
               winProbability: number,
+              infrastructure?: number,
+              phaseInfrastructure?: number,
               phaseTemperature?: number,
               phaseOxygen?: number,
               phaseOceans?: number,
@@ -37,6 +39,8 @@ export class Game {
   otherPlayers: BasePlayer[];
   temperature: number;
   oxygen: number;
+  infrastructure?: number;
+  phaseInfrastructure?: number;
   oceans: Ocean[];
   phaseTemperatureColor: ParameterColor;
   phaseOxygenColor: ParameterColor;

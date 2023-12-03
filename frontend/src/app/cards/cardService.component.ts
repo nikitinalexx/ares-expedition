@@ -23,4 +23,8 @@ export class CardServiceComponent {
     this.model.discoveryExpansionFlagChanged($event.target.checked);
   }
 
+  infrastructureExpansionClicked($event: any) {
+    this.model.infrastructureExpansionFlagChanged($event.target.checked);
+  }
+
 }

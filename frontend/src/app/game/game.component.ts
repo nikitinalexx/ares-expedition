@@ -406,6 +406,7 @@ export class GameComponent implements OnInit {
     this.model.getShortGame(this.playerUuid).subscribe(shortGame => {
       this.game.temperature = shortGame.temperature;
       this.game.phaseTemperature = shortGame.phaseTemperature;
+      this.game.phaseInfrastructure = shortGame.phaseInfrastructure;
       this.game.phaseOxygen = shortGame.phaseOxygen;
       this.game.oxygen = shortGame.oxygen;
       this.game.oceans = shortGame.oceans;

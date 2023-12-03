@@ -288,6 +288,11 @@
                  formControlName="standardProject">
           <label class="custom-control-label text-white" for="standardTemperature">Temperature ({{hasStandardTechnology() ? 10 : 14}}mc)</label>
         </div>
+        <div *ngIf="standardInfrastructureAvailable()" class = "col-sm-2">
+          <input id="standardInfrastructure" type="radio" class="form-check-input" value="infrastructure"
+                 formControlName="standardProject">
+          <label class="custom-control-label text-white" for="standardInfrastructure">Infrastructure ({{hasStandardTechnology() ? 11 : 15}}mc)</label>
+        </div>
       </div>
     </div>
   </div>

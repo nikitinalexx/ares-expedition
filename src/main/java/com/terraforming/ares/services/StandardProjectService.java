@@ -24,7 +24,8 @@ public class StandardProjectService {
             Map.of(
                     StandardProjectType.FOREST, Constants.FOREST_MC_COST,
                     StandardProjectType.TEMPERATURE, Constants.TEMPERATURE_MC_COST,
-                    StandardProjectType.OCEAN, Constants.OCEAN_MC_COST
+                    StandardProjectType.OCEAN, Constants.OCEAN_MC_COST,
+                    StandardProjectType.INFRASTRUCTURE, Constants.INFRASTRUCTURE_MC_COST
             );
 
     public String validateStandardProject(MarsGame game, Player player, StandardProjectType type) {
@@ -33,6 +34,9 @@ public class StandardProjectService {
         }
         if (type == StandardProjectType.TEMPERATURE && !terraformingService.canIncreaseTemperature(game)) {
             return "Can't increase temperature anymore";
+        }
+        if (type == StandardProjectType.INFRASTRUCTURE && !terraformingService.canIncreaseInfrastructure(game)) {
+            return "Can't increase infrastructure anymore";
         }
 
         int price = getProjectPrice(player, type);
@@ -51,6 +55,10 @@ public class StandardProjectService {
 
         if (terraformingService.canIncreaseTemperature(game) && getProjectPrice(player, StandardProjectType.TEMPERATURE) <= player.getMc()) {
             return "Standard action: Temperature is available";
+        }
+
+        if (terraformingService.canIncreaseInfrastructure(game) && getProjectPrice(player, StandardProjectType.INFRASTRUCTURE) <= player.getMc()) {
+            return "Standard action: Infrastructure is available";
         }
 
         if (getProjectPrice(player, StandardProjectType.FOREST) <= player.getMc()) {

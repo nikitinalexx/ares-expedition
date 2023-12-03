@@ -34,10 +34,12 @@ public class CardFactory {
 
     private final Map<Integer, Card> baseExpansionProjects;
     private final Map<Integer, Card> discoveryExpansionProjects;
+    private final Map<Integer, Card> infrastructureExpansionProjects;
 
     //used for display of all projects cards, needs sorting in advance
     private final List<Card> baseExpansionSortedProjects;
     private final List<Card> discoveryExpansionSortedProjects;
+    private final List<Card> infrastructureExpansionSortedProjects;
 
     private final Set<Integer> crysisExcludedCards;
 
@@ -405,6 +407,13 @@ public class CardFactory {
                 new Tourism(380)
         );
 
+        infrastructureExpansionSortedProjects = List.of(
+                new Pets(400),
+                new Sawmill(401),
+                new InterplanetarySuperhighway(402),
+                new MaglevTrains(403)
+        );
+
         sortedBaseCorporations = List.of(
                 new HelionCorporation(10000),
                 new CelestiorCorporation(10001),
@@ -493,6 +502,7 @@ public class CardFactory {
 
         baseExpansionProjects = baseExpansionSortedProjects.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
         discoveryExpansionProjects = discoveryExpansionSortedProjects.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
+        infrastructureExpansionProjects = infrastructureExpansionSortedProjects.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
         baseExpansionCorporations = sortedBaseCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
         discoveryExpansionCorporations = sortedDiscoveryCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
         buffedCorporationsStorage = buffedCorporations.stream().collect(Collectors.toMap(Card::getId, Function.identity()));
@@ -524,13 +534,14 @@ public class CardFactory {
 
     public Map<Expansion, Map<Integer, Card>> createAllProjects() {
         return Map.of(Expansion.BASE, baseExpansionProjects,
-                Expansion.DISCOVERY, discoveryExpansionProjects
+                Expansion.DISCOVERY, discoveryExpansionProjects,
+                Expansion.INFRASTRUCTURE, infrastructureExpansionProjects
         );
     }
 
     public List<Card> getAllProjects(List<Expansion> expansions) {
         //todo refactor remove if checks, make a map expansion -> cards
-        return Stream.concat(
+        Stream<Card> stream = Stream.concat(
                 expansions.contains(Expansion.BASE) ?
                         baseExpansionSortedProjects.stream().sorted(Comparator.comparingInt(
                                 card -> card.getColor().ordinal()
@@ -539,7 +550,12 @@ public class CardFactory {
                         discoveryExpansionSortedProjects.stream().sorted(Comparator.comparingInt(
                                 card -> card.getColor().ordinal()
                         )) : Stream.empty()
-        ).collect(Collectors.toList());
+        );
+        stream = Stream.concat(stream, expansions.contains(Expansion.INFRASTRUCTURE) ?
+                infrastructureExpansionSortedProjects.stream().sorted(Comparator.comparingInt(
+                        card -> card.getColor().ordinal()
+                )) : Stream.empty());
+        return stream.collect(Collectors.toList());
     }
 
     public Map<Integer, Card> createDiscoveryCorporations() {

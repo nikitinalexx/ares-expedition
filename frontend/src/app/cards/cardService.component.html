@@ -10,9 +10,14 @@
     </div>
 
     <div class="bg-warning text-dark new-game-label form-check-inline" style="width: 250px; border-radius: 5px;">
-      <label title="Some corporations with buffed stats" for="buffed" style="margin-left: 2px"
+      <label for="discovery" style="margin-left: 2px"
              class="form-label"> Discovery expansion cards</label>
       <input type="checkbox" [defaultChecked]="true" (click)="discoveryExpansionClicked($event)" class="form-check-input" id="discovery" style="margin-left: 10px;">
+    </div>
+    <div class="bg-warning text-dark new-game-label form-check-inline" style="width: 250px; border-radius: 5px;">
+      <label for="infrastructure" style="margin-left: 2px"
+             class="form-label"> Infrastructure expansion cards</label>
+      <input type="checkbox" [defaultChecked]="true" (click)="infrastructureExpansionClicked($event)" class="form-check-input" id="infrastructure" style="margin-left: 10px;">
     </div>
   </div>
 

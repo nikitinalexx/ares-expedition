@@ -6,6 +6,7 @@ export class GameShort {
               oxygen: number,
               oceans: Ocean[],
               phaseTemperature?: number,
+              phaseInfrastructure?: number,
               phaseOxygen?: number,
               phaseOceans?: number,
               otherPlayers?: BasePlayer[]) {
@@ -15,6 +16,7 @@ export class GameShort {
   oxygen: number;
   oceans: Ocean[];
   phaseTemperature?: number;
+  phaseInfrastructure?: number;
   phaseOxygen?: number;
   phaseOceans?: number;
   otherPlayers: BasePlayer[];

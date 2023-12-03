@@ -48,6 +48,7 @@ export class NewGameComponent implements OnInit {
       mulligan: false,
       improveWeakCorp: false,
       dummyHand: false,
+      infrastructure: false,
       difficulty1: '',
       difficulty2: '',
       difficulty3: '',
@@ -102,6 +103,9 @@ export class NewGameComponent implements OnInit {
       const expansions = [Expansion.BASE, Expansion.DISCOVERY];
       if (this.parentForm.value.improveWeakCorp) {
         expansions.push(Expansion.BUFFED_CORPORATION);
+      }
+      if (this.parentForm.value.infrastructure) {
+        expansions.push(Expansion.INFRASTRUCTURE);
       }
       this.loading = true;
       this.players = null;

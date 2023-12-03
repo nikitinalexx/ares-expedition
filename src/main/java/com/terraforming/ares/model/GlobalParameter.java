@@ -5,5 +5,5 @@ package com.terraforming.ares.model;
  * Creation date 25.04.2022
  */
 public enum GlobalParameter {
-    TEMPERATURE, OXYGEN
+    TEMPERATURE, OXYGEN, INFRASTRUCTURE
 }

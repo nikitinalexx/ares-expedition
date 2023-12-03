@@ -318,6 +318,18 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.DEVELOPED_INFRASTRUCTURE;
   }
 
+  actionSawmill(card: Card): boolean {
+    return card.cardAction === CardAction.SAWMILL;
+  }
+
+  actionMaglevTrains(card: Card): boolean {
+    return card.cardAction === CardAction.MAGLEV_TRAINS;
+  }
+
+  actionInterplanetarySuperhighway(card: Card): boolean {
+    return card.cardAction === CardAction.INTERPLANETARY_SUPERHIGHWAY;
+  }
+
   actionDevelopmentCenter(card: Card): boolean {
     return card.cardAction === CardAction.DEVELOPMENT_CENTER;
   }
@@ -488,6 +500,10 @@ export class CardTemplateComponent {
 
   actionSmallAnimals(card: Card): boolean {
     return card.cardAction === CardAction.SMALL_ANIMALS;
+  }
+
+  actionPets(card: Card): boolean {
+    return card.cardAction === CardAction.PETS;
   }
 
   actionZoos(card: Card): boolean {

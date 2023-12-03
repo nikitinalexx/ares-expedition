@@ -670,6 +670,12 @@ li.events::before {
   background-size: 46px;
 }
 
+.infrastructure-tile {
+  background-image: url(../images/global-parameters/infrastructure.png);
+  width: 46px;
+  background-size: 46px;
+}
+
 .rating {
   background-image: url(../images/resources/tr.png);
   width: 50px;

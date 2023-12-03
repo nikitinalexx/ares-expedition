@@ -28,6 +28,10 @@ public class TerraformingService {
         return !game.getPlanetAtTheStartOfThePhase().isTemperatureMax() || game.isCrysis();
     }
 
+    public boolean canIncreaseInfrastructure(MarsGame game) {
+        return !game.getPlanetAtTheStartOfThePhase().isInfrastructureMax();
+    }
+
     public boolean canIncreaseOxygen(MarsGame game) {
         return !game.getPlanetAtTheStartOfThePhase().isOxygenMax() || game.isCrysis();
     }
@@ -129,6 +133,26 @@ public class TerraformingService {
                     .map(cardService::getCrysisCard)
                     .forEach(card -> card.onTemperatureChangedEffect(context));
         }
+    }
+
+    public void increaseInfrastructure(MarsContext context) {
+        final MarsGame game = context.getGame();
+        final Player player = context.getPlayer();
+        if (!canIncreaseInfrastructure(game)) {
+            return;
+        }
+
+        game.getPlanet().increaseInfrastructure();
+
+        player.setTerraformingRating(player.getTerraformingRating() + 1);
+
+        player.getPlayed()
+                .getCards()
+                .stream()
+                .map(cardService::getCard)
+                .forEach(project -> project.onInfrastructureChangedEffect(context));
+
+        player.getHand().addCard(cardService.dealCards(game, 1).get(0));
     }
 
     public void reduceTemperature(MarsContext context) {

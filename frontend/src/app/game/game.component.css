@@ -156,6 +156,20 @@
   text-align: center;
 }
 
+.surface_with_infrastructure {
+  position: relative;
+  left: 25%;
+  width: 640px;
+  height: 475px;
+  background-image: url(../../assets/images/surface_with_infrastructure.png);
+  background-size: contain;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
 .view-choice {
   position: absolute;
   left: 1%;
@@ -390,77 +404,152 @@
 
 .oxygen_0 {
   left: 83px;
-  top: 94px;
+  bottom: 246px;
 }
 
 .oxygen_1 {
   left: 112px;
-  top: 78px;
+  bottom: 263px;
 }
 
 .oxygen_2 {
   left: 141px;
-  top: 61px;
+  bottom: 279px;
 }
 
 .oxygen_3 {
   left: 173px;
-  top: 48px;
+  bottom: 292px;
 }
 
 .oxygen_4 {
-  left: 204px;
-  top: 39px;
+  left: 205px;
+  bottom: 302px;
 }
 
 .oxygen_5 {
-  left: 237px;
-  top: 31px;
+  left: 238px;
+  bottom: 310px;
 }
 
 .oxygen_6 {
-  left: 271px;
-  top: 27px;
+  left: 272px;
+  bottom: 313px;
 }
 
 .oxygen_7 {
   left: 305px;
-  top: 26px;
+  bottom: 315px;
 }
 
 .oxygen_8 {
-  left: 338px;
-  top: 26px;
+  left: 339px;
+  bottom: 313px;
 }
 
 .oxygen_9 {
-  left: 372px;
-  top: 30px;
+  left: 373px;
+  bottom: 310px;
 }
 
 .oxygen_10 {
-  left: 405px;
-  top: 38px;
+  left: 406px;
+  bottom: 302px;
 }
 
 .oxygen_11 {
-  left: 437px;
-  top: 48px;
+  left: 438px;
+  bottom: 293px;
 }
 
 .oxygen_12 {
   left: 469px;
-  top: 61px;
+  bottom: 280px;
 }
 
 .oxygen_13 {
   left: 499px;
-  top: 77px;
+  bottom: 263px;
 }
 
 .oxygen_14 {
   left: 527px;
-  top: 95px;
+  bottom: 246px;
+}
+
+.infrastructure_0 {
+  left: 20px;
+  top: 68px;
+}
+
+.infrastructure_7 {
+  left: 60px;
+  top: 68px;
+}
+
+.infrastructure_14 {
+  left: 100px;
+  top: 68px;
+}
+
+.infrastructure_21 {
+  left: 139px;
+  top: 68px;
+}
+
+.infrastructure_28 {
+  left: 179px;
+  top: 68px;
+}
+
+.infrastructure_35 {
+  left: 221px;
+  top: 68px;
+}
+
+.infrastructure_42 {
+  left: 261px;
+  top: 68px;
+}
+
+.infrastructure_49 {
+  left: 302px;
+  top: 68px;
+}
+
+.infrastructure_56 {
+  left: 342px;
+  top: 68px;
+}
+
+.infrastructure_63 {
+  left: 383px;
+  top: 68px;
+}
+
+.infrastructure_70 {
+  left: 424px;
+  top: 68px;
+}
+
+.infrastructure_77 {
+  left: 464px;
+  top: 68px;
+}
+
+.infrastructure_85 {
+  left: 503px;
+  top: 68px;
+}
+
+.infrastructure_92 {
+  left: 543px;
+  top: 68px;
+}
+
+.infrastructure_100 {
+  left: 583px;
+  top: 68px;
 }
 
 .resource_icon--megacredits {

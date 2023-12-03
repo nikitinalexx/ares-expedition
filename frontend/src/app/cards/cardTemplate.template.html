@@ -870,6 +870,14 @@
     <span class="card resource"></span>
   </div>
 
+  <div *ngIf="actionMaglevTrains(card)">
+    <div class="red-arrow"></div>
+    <span class="card resource"></span>
+
+    if <div class="tile infrastructure-tile "></div> YELLOW/WHITE
+    <span class="card resource"></span>
+  </div>
+
   <div *ngIf="actionAnaerobicOrganisms(card)" style="margin-top: -10px">
     <div class="tag-animal resource-tag"></div>
     /
@@ -1088,6 +1096,25 @@
     )
     <div class="red-arrow "></div>
     <div class="tile temperature-tile "></div>
+  </div>
+
+  <div *ngIf="actionSawmill(card)">
+    <div class="money resource ">10</div>
+    <div class="red-arrow "></div>
+    <div class="tile infrastructure-tile "></div>
+    <br/>
+    <span class="money resource ">-2</span>/<div class="resource-tag tag-plant"></div>
+  </div>
+
+  <div *ngIf="actionInterplanetarySuperhighway(card)">
+    <span class="money resource ">10</span>
+    (
+    <div class="money resource ">-5</div>
+    : 4
+    <div class="resource-tag tag-science"></div>
+    )
+    <div class="red-arrow "></div>
+    <div class="tile infrastructure-tile"></div>
   </div>
 
   <div *ngIf="actionDevelopmentCenter(card)" style="margin-top: 50px">
@@ -1419,6 +1446,12 @@
 
   <div *ngIf="actionSmallAnimals(card)">
     <div class="forest-tile tile "></div>
+    :
+    <div class="resource animal "></div>
+  </div>
+
+  <div *ngIf="actionPets(card)">
+    <div class="infrastructure-tile tile "></div>
     :
     <div class="resource animal "></div>
   </div>

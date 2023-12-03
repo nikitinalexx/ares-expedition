@@ -323,6 +323,6 @@ public class MarsGame {
 
     @JsonIgnore
     public boolean gameEndCondition() {
-        return !isCrysis() && planet.isOceansMax() && planet.isTemperatureMax() && planet.isOxygenMax();
+        return !isCrysis() && planet.isOceansMax() && planet.isTemperatureMax() && planet.isOxygenMax() && (!expansions.contains(Expansion.INFRASTRUCTURE) || planet.isInfrastructureMax());
     }
 }

@@ -7,5 +7,6 @@ package com.terraforming.ares.model;
 public enum StandardProjectType {
     OCEAN,
     FOREST,
-    TEMPERATURE
+    TEMPERATURE,
+    INFRASTRUCTURE
 }

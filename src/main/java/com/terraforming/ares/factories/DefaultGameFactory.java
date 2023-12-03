@@ -30,7 +30,7 @@ public class DefaultGameFactory implements GameFactory {
     public MarsGame createMarsGame(GameParameters gameParameters) {
         Deck projectsDeck = cardService.createProjectsDeck(gameParameters.getExpansions());
         Deck corporationsDeck = cardService.createCorporationsDeck(new HashSet<>(gameParameters.getExpansions()));
-        Deck crysisDeck = cardService.createCrysisDeck(gameParameters.getExpansions(), gameParameters.getPlayerNames().size());
+        Deck crisisDeck = cardService.createCrysisDeck(gameParameters.getExpansions(), gameParameters.getPlayerNames().size());
 
         Planet mars = planetFactory.createMars(gameParameters);
 
@@ -44,7 +44,7 @@ public class DefaultGameFactory implements GameFactory {
         final boolean isCrysisExpansion = gameParameters.getExpansions().contains(Expansion.CRYSIS);
         if (isCrysisExpansion) {
             crysisData = new CrysisData();
-            crysisData.setCrysisCards(crysisDeck);
+            crysisData.setCrysisCards(crisisDeck);
             if (gameParameters.isBeginner()) {
                 crysisData.setEasyModeTurnsLeft(Constants.CRISIS_EASY_MODE_TURNS);
                 crysisData.setEasyMode(true);

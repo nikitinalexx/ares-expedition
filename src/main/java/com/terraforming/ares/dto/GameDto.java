@@ -20,11 +20,14 @@ public class GameDto {
     private Integer phase;
     private int temperature;
     private int oxygen;
+    private Integer infrastructure;
     private Integer phaseTemperature;
     private Integer phaseOxygen;
     private Integer phaseOceans;
+    private Integer phaseInfrastructure;
     private ParameterColor phaseTemperatureColor;
     private ParameterColor phaseOxygenColor;
+    private ParameterColor phaseInfrastructureColor;
     private List<OceanDto> oceans;
     private int turns;
     private boolean dummyHandMode;

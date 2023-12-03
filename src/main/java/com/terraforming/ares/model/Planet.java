@@ -5,6 +5,7 @@ import com.terraforming.ares.model.parameters.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
+import lombok.Singular;
 
 import java.util.List;
 import java.util.Map;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Planet {
+    @Singular
     private Map<GlobalParameter, MeasurableGlobalParameter> measurableGlobalParameters;
     private List<Ocean> oceans;
     private int lastOpenedOceanIndex;
@@ -72,6 +74,14 @@ public class Planet {
     }
 
     @JsonIgnore
+    public Integer getInfrastructureValue() {
+        if (measurableGlobalParameters.containsKey(GlobalParameter.INFRASTRUCTURE)) {
+            return measurableGlobalParameters.get(GlobalParameter.INFRASTRUCTURE).getCurrentValue();
+        }
+        return null;
+    }
+
+    @JsonIgnore
     public int getOxygenValue() {
         return measurableGlobalParameters.get(GlobalParameter.OXYGEN).getCurrentValue();
     }
@@ -86,6 +96,14 @@ public class Planet {
         return measurableGlobalParameters.get(GlobalParameter.OXYGEN).getCurrentColor();
     }
 
+    @JsonIgnore
+    public ParameterColor getInfrastructureColor() {
+        if (measurableGlobalParameters.containsKey(GlobalParameter.INFRASTRUCTURE)) {
+            return measurableGlobalParameters.get(GlobalParameter.INFRASTRUCTURE).getCurrentColor();
+        }
+        return null;
+    }
+
     public List<Ocean> getOceans() {
         return oceans;
     }
@@ -93,6 +111,14 @@ public class Planet {
     @JsonIgnore
     public boolean isTemperatureMax() {
         return measurableGlobalParameters.get(GlobalParameter.TEMPERATURE).isMax();
+    }
+
+    @JsonIgnore
+    public boolean isInfrastructureMax() {
+        if (!measurableGlobalParameters.containsKey(GlobalParameter.INFRASTRUCTURE)) {
+            return true;
+        }
+        return measurableGlobalParameters.get(GlobalParameter.INFRASTRUCTURE).isMax();
     }
 
     @JsonIgnore
@@ -174,6 +200,10 @@ public class Planet {
 
     public void increaseTemperature() {
         measurableGlobalParameters.get(GlobalParameter.TEMPERATURE).increase();
+    }
+
+    public void increaseInfrastructure() {
+        measurableGlobalParameters.get(GlobalParameter.INFRASTRUCTURE).increase();
     }
 
     public void increaseOxygen() {

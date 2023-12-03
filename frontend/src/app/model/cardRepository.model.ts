@@ -8,6 +8,7 @@ export class CardRepository {
   private projects: Card[] = new Array<Card>();
   private improvedCorporations = false;
   private discoveryExpansion = true;
+  private infrastructureExpansion = true;
 
   constructor(private dataSource: RestDataSource) {
     this.updateProjects();
@@ -23,6 +24,11 @@ export class CardRepository {
     this.updateProjects();
   }
 
+  infrastructureExpansionFlagChanged(value: boolean) {
+    this.infrastructureExpansion = value;
+    this.updateProjects();
+  }
+
   updateProjects() {
     const expansions = [Expansion.BASE];
     if (this.improvedCorporations) {
@@ -30,6 +36,9 @@ export class CardRepository {
     }
     if (this.discoveryExpansion) {
       expansions.push(Expansion.DISCOVERY);
+    }
+    if (this.infrastructureExpansion) {
+      expansions.push(Expansion.INFRASTRUCTURE);
     }
     this.dataSource.getCards(expansions).subscribe(data => this.projects = data);
   }
