@@ -100,6 +100,10 @@ public class GameController {
                 throw new IllegalArgumentException("AI computer available only for 2 player game");
             }
 
+            if (gameParameters.getComputers().contains(PlayerDifficulty.NETWORK) && gameParameters.getExpansions().contains(Expansion.INFRASTRUCTURE)) {
+                throw new IllegalArgumentException("AI computer doesn't know how to play Infrastructure");
+            }
+
             if (gameParameters.getPlayerNames().stream().anyMatch(name -> name.length() > 10)) {
                 throw new IllegalArgumentException("Only names of length 10 or below are supported");
             }
