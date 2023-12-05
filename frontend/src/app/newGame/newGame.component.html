@@ -1,5 +1,5 @@
 <div class="bg-success mt-2 p-2 text-center text-white">
-  AI Computer available in a 2 player game. Best played with all 3 options(improved corporations, mulligan, dummy hand). Doesn't play ideally. Still a lot of work to do.
+  AI Computer available in a 2 player game. Dummy hand will be enabled by default. For better performance enable Mulligan and Improved Corporations. Doesn't play ideally. Still a lot of work to do.
 </div>
 <div class="bg-danger mt-2 p-2 text-center text-white"
      *ngIf="errorMessage != null">
@@ -21,7 +21,7 @@
              formControlName="mulligan">
     </div>
 
-    <div class="bg-warning text-dark new-game-label" style="width: 260px; border-radius: 5px; margin-top: 10px;">
+    <div class="bg-warning text-dark new-game-label" style="width: 260px; border-radius: 5px; margin-top: 10px;" >
       <label for="dummyHand"
              class="form-label">Dummy hand <span class="bg-danger text-white">(plays 5 phases)</span></label>
       <input type="checkbox" class="form-check-input" id="dummyHand" style="margin-left: 10px; float: right"
@@ -29,7 +29,7 @@
     </div>
     <div class="bg-warning text-dark new-game-label" style="width: 260px; border-radius: 5px; margin-top: 10px;">
       <label for="infrastructure"
-             class="form-label">Infrastructure</label>
+             class="form-label">Infrastructure <span class="bg-danger text-white">(new!)</span></label>
       <input type="checkbox" class="form-check-input" id="infrastructure" style="margin-left: 10px; float: right"
              formControlName="infrastructure">
     </div>
@@ -78,7 +78,7 @@
 
       <label *ngIf="parentForm.get('computer' + item)?.value && this.parentForm.value.playerCount === '2' && !this.parentForm.value.infrastructure" class="form-label p-1 mb-2 bg-warning text-dark "
              style="margin-left: 5px; border-radius: 5px;">Hard <span class="bg-success text-white">(AI)</span>
-        <input type="radio" value="ai" style=" width: 30px" [formControlName]="'difficulty' + item"></label>
+        <input type="radio" value="ai" style=" width: 30px" [formControlName]="'difficulty' + item" (click)="clickAiComputer()"></label>
 
       <label *ngIf="this.parentForm.value.playerCount !== '1'" class="form-label p-1 mb-2 bg-warning text-dark"
              style="margin-left: 5px; border-radius: 5px;">Advantage <input type="checkbox"

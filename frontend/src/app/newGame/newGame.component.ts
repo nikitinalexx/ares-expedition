@@ -56,6 +56,16 @@ export class NewGameComponent implements OnInit {
     });
   }
 
+  anyDifficultyIsAi(): boolean {
+    for (let i = 1; i <= this.parentForm.value.playerCount; i++) {
+      if (this.parentForm.get('difficulty' + i)?.value == 'ai') {
+        console.log(true);
+        return true;
+      }
+    }
+    return false;
+  }
+
   submitForm(formGroup: FormGroup) {
     if (formGroup.valid) {
       const names = [];
@@ -80,6 +90,10 @@ export class NewGameComponent implements OnInit {
 
         if (this.parentForm.value.playerCount !== '2' && this.parentForm.get('computer' + i)?.value && this.parentForm.get('difficulty' + i)?.value == 'ai') {
           this.parentForm?.patchValue({[`difficulty${i}`]: null}, {onlySelf: true, emitEvent: false});
+        }
+
+        if (this.parentForm.value.playerCount === '2' && this.parentForm.get('computer' + i)?.value && this.parentForm.get('difficulty' + i)?.value == 'ai') {
+          this.parentForm?.patchValue({'dummyHand': true}, {onlySelf: true, emitEvent: false});
         }
 
         if (this.parentForm.get('computer' + i)?.value) {
@@ -154,4 +168,7 @@ export class NewGameComponent implements OnInit {
     return arr;
   }
 
+  clickAiComputer() {
+    this.parentForm?.patchValue({'dummyHand': true}, {onlySelf: true, emitEvent: false});
+  }
 }
