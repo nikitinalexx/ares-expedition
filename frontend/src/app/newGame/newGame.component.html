@@ -76,7 +76,7 @@
       <label *ngIf="parentForm.get('computer' + item)?.value && this.parentForm.value.playerCount !== '1'" class="form-label p-1 mb-2 bg-warning text-dark"
              style="margin-left: 5px; border-radius: 5px;">Normal <input type="radio" value="smart" style=" width: 30px" [formControlName]="'difficulty' + item"/></label>
 
-      <label *ngIf="parentForm.get('computer' + item)?.value && this.parentForm.value.playerCount === '2'" class="form-label p-1 mb-2 bg-warning text-dark "
+      <label *ngIf="parentForm.get('computer' + item)?.value && this.parentForm.value.playerCount === '2' && !this.parentForm.value.infrastructure" class="form-label p-1 mb-2 bg-warning text-dark "
              style="margin-left: 5px; border-radius: 5px;">Hard <span class="bg-success text-white">(AI)</span>
         <input type="radio" value="ai" style=" width: 30px" [formControlName]="'difficulty' + item"></label>
 
