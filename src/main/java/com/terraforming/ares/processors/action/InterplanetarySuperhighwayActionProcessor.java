@@ -13,6 +13,8 @@ import com.terraforming.ares.services.TerraformingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -32,7 +34,7 @@ public class InterplanetarySuperhighwayActionProcessor implements BlueActionCard
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player, Card actionCard) {
+    public TurnResponse process(MarsGame game, Player player, Card actionCard, Map<Integer, List<Integer>> inputParameters) {
         int scienceTagsPlayed = cardService.countPlayedTags(player, Set.of(Tag.SCIENCE));
 
         int infrastructurePrice = 10;
@@ -42,7 +44,7 @@ public class InterplanetarySuperhighwayActionProcessor implements BlueActionCard
         }
         player.setMc(player.getMc() - infrastructurePrice);
 
-        terraformingService.increaseInfrastructure(marsContextProvider.provide(game, player));
+        terraformingService.increaseInfrastructure(marsContextProvider.provide(game, player, inputParameters));
 
         return null;
     }

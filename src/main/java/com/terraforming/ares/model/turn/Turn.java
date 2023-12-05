@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
         @JsonSubTypes.Type(value = DraftCardsTurn.class, name = "DRAFT_CARDS"),
         @JsonSubTypes.Type(value = ExchangeHeatTurn.class, name = "EXCHANGE_HEAT"),
         @JsonSubTypes.Type(value = IncreaseTemperatureTurn.class, name = "INCREASE_TEMPERATURE"),
+        @JsonSubTypes.Type(value = IncreaseInfrastructureTurn.class, name = "INCREASE_INFRASTRUCTURE"),
         @JsonSubTypes.Type(value = PerformBlueActionTurn.class, name = "PERFORM_BLUE_ACTION"),
         @JsonSubTypes.Type(value = PhaseChoiceTurn.class, name = "PICK_PHASE"),
         @JsonSubTypes.Type(value = PickExtraBonusSecondPhase.class, name = "PICK_EXTRA_BONUS_SECOND_PHASE"),

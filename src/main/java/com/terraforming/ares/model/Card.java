@@ -62,6 +62,10 @@ public interface Card {
         return Collections.emptyList();
     }
 
+    default List<ParameterColor> getInfrastructureRequirement() {
+        return Collections.emptyList();
+    }
+
     default List<ParameterColor> getOxygenRequirement() {
         return Collections.emptyList();
     }

@@ -74,6 +74,7 @@ export class ThirdPhaseComponent implements OnInit {
       onBuildAnimalEffectChoice: ['chooseAnimal'],
       anaerobicMicroorganisms: [false],
       marsUniversityDiscardLess: [false],
+      cargoShipsHeat: [false],
       takeMicrobes: 0,
       takeCards: 0,
       restructuredResources: [false],
@@ -143,6 +144,10 @@ export class ThirdPhaseComponent implements OnInit {
 
   increaseTemperatureTurn(): boolean {
     return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.INCREASE_TEMPERATURE])?.length > 0;
+  }
+
+  increaseInfrastructureTurn(): boolean {
+    return this.nextTurns && this.nextTurns.find(turn => turn === TurnType[TurnType.INCREASE_INFRASTRUCTURE])?.length > 0;
   }
 
   plantsToCrisisTokenTurn(): boolean {
@@ -224,6 +229,24 @@ export class ThirdPhaseComponent implements OnInit {
 
   expectsTagInput(): boolean {
     return this.selectedProject?.cardAction === CardAction[CardAction.RESEARCH_GRANT];
+  }
+
+  blueActionWithCargoShips(): boolean {
+    return this.game?.player.played.some(card => card.cardAction === CardAction.CARGO_SHIPS)
+    && (
+        this.selectedProject?.cardAction === CardAction[CardAction.SAWMILL] ||
+        this.selectedProject?.cardAction === CardAction[CardAction.INTERPLANETARY_SUPERHIGHWAY]
+      );
+  }
+
+  standardCargoShipsInput(): boolean {
+    return this.game?.player.played.some(card => card.cardAction === CardAction.CARGO_SHIPS)
+      && this.parentForm.value?.turn === 'standardProject' && this.parentForm.value.standardProject.toUpperCase() === 'INFRASTRUCTURE';
+  }
+
+  infrastructureCargoShipsInput(): boolean {
+    return this.game?.player.played.some(card => card.cardAction === CardAction.CARGO_SHIPS)
+      && this.parentForm.value?.turn === 'increaseInfrastructure';
   }
 
   getAllTagsArray(): Tag[] {
@@ -494,9 +517,14 @@ export class ThirdPhaseComponent implements OnInit {
           this.errorMessage = 'Select standard project';
           return;
         }
+        const inputParams = new Map<number, number[]>();
+        if (this.standardCargoShipsInput() && this.parentForm.value.cargoShipsHeat) {
+          inputParams[InputFlag.CARGO_SHIPS.valueOf()] = [InputFlag.CARGO_SHIPS_HEAT.valueOf()];
+        }
         this.gameRepository.standardProject(
           this.game.player.playerUuid,
-          StandardProjectType[this.parentForm.value.standardProject.toUpperCase()]
+          StandardProjectType[this.parentForm.value.standardProject.toUpperCase()],
+          inputParams
         ).subscribe(data => this.sendToParent(data), error => {
           this.errorMessage = error;
         });
@@ -506,6 +534,14 @@ export class ThirdPhaseComponent implements OnInit {
         );
       } else if (formGroup.value.turn === 'increaseTemperature') {
         this.gameRepository.increaseTemperature(this.game.player.playerUuid).subscribe(
+          data => this.sendToParent(data)
+        );
+      } else if (formGroup.value.turn === 'increaseInfrastructure') {
+        const inputParams = new Map<number, number[]>();
+        if (this.infrastructureCargoShipsInput() && this.parentForm.value.cargoShipsHeat) {
+          inputParams[InputFlag.CARGO_SHIPS.valueOf()] = [InputFlag.CARGO_SHIPS_HEAT.valueOf()];
+        }
+        this.gameRepository.increaseInfrastructure(this.game.player.playerUuid, inputParams).subscribe(
           data => this.sendToParent(data)
         );
       } else if (formGroup.value.turn === 'heatToCrisisToken') {
@@ -617,6 +653,10 @@ export class ThirdPhaseComponent implements OnInit {
             inputParams[InputFlag.EXTREME_COLD_FUNGUS_PUT_MICROBE.valueOf()] = [this.actionTargetCards[0]];
 
           }
+        }
+
+        if (this.blueActionWithCargoShips() && this.parentForm.value.cargoShipsHeat) {
+          inputParams[InputFlag.CARGO_SHIPS.valueOf()] = [InputFlag.CARGO_SHIPS_HEAT.valueOf()];
         }
 
         if (this.expectsTagInput()) {

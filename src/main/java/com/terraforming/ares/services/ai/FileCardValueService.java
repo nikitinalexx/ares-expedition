@@ -10,6 +10,7 @@ import com.terraforming.ares.cards.red.*;
 import com.terraforming.ares.dto.GameStatistics;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.parameters.ParameterColor;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.DiscountService;
 import com.terraforming.ares.services.SpecialEffectsService;
@@ -35,9 +36,10 @@ public class FileCardValueService implements ICardValueService {
     private final SpecialEffectsService specialEffectsService;
     private final AiBalanceService aiBalanceService;
 
-    private Map<Integer, Map<Integer, CardValue>> cardIdToTurnToValueTwoPlayer;
-    private Map<Integer, Map<Integer, CardValue>> cardIdToTurnToValueFourPlayer;
+    private final Map<Integer, Map<Integer, CardValue>> cardIdToTurnToValueTwoPlayer;
+    private final Map<Integer, Map<Integer, CardValue>> cardIdToTurnToValueFourPlayer;
 
+    private final Map<Integer, Map<Integer, CardValue>> cardIdToTurnToValueInfrastructureTwoPlayer;
 
     public FileCardValueService(CardService cardService,
                                 SpecialEffectsService specialEffectsService,
@@ -49,7 +51,10 @@ public class FileCardValueService implements ICardValueService {
         this.discountService = discountService;
 
         this.cardIdToTurnToValueTwoPlayer = initCardStatsFromFile("cardStatsExpansionRandom2p.txt", 1);
+        this.cardIdToTurnToValueInfrastructureTwoPlayer = initCardStatsFromFile("cardStatsInfrastructure2p.txt", 1);
+
         this.cardIdToTurnToValueFourPlayer = initCardStatsFromFile("cardStatsExpansionRandom4p.txt", 2);
+
     }
 
     private Map<Integer, Map<Integer, CardValue>> initCardStatsFromFile(String fileName, int multiplier) throws IOException {
@@ -173,6 +178,9 @@ public class FileCardValueService implements ICardValueService {
                                 return 1.5;
                             }
                         }
+                        if (cardAction == CardAction.MAGLEV_TRAINS && Set.of(ParameterColor.Y, ParameterColor.R).contains(game.getPlanet().getInfrastructureColor())) {
+                            return 1.5;
+                        }
                         if (cardAction == CardAction.OLYMPUS_CONFERENCE || cardAction == CardAction.MARS_UNIVERSITY) {
                             return 1.3;
                         }
@@ -205,6 +213,10 @@ public class FileCardValueService implements ICardValueService {
                                 || cardAction == CardAction.REGOLITH_EATERS
                                 || cardAction == CardAction.STEELWORKS
                                 || cardAction == CardAction.PROGRESSIVE_POLICIES) && game.getPlanet().isOxygenMax()) {
+                            return 0.0;
+                        }
+                        if ((cardAction == CardAction.SAWMILL || cardAction == CardAction.INTERPLANETARY_SUPERHIGHWAY || cardAction == CardAction.CARGO_SHIPS)
+                                && game.getPlanet().isInfrastructureMax()) {
                             return 0.0;
                         }
 
@@ -444,7 +456,16 @@ public class FileCardValueService implements ICardValueService {
             return reducedEventValue.getValue();
         }
 
-        Map<Integer, CardValue> turnToCardValue = game.getPlayerUuidToPlayer().size() == 2 ? cardIdToTurnToValueTwoPlayer.get(card) : cardIdToTurnToValueFourPlayer.get(card);
+        Map<Integer, CardValue> turnToCardValue = null;
+
+        if (game.getPlayerUuidToPlayer().size() == 2) {
+            turnToCardValue = cardIdToTurnToValueTwoPlayer.get(card);
+            if (game.getExpansions().contains(Expansion.INFRASTRUCTURE)) {
+                turnToCardValue = cardIdToTurnToValueInfrastructureTwoPlayer.get(card);
+            }
+        } else {
+            turnToCardValue = cardIdToTurnToValueFourPlayer.get(card);
+        }
 
         int totalStatsCount = 0;
         double totalValue = 0;
@@ -477,7 +498,8 @@ public class FileCardValueService implements ICardValueService {
                     || cardType == PhobosFalls.class
                     || cardType == TechnologyDemonstration.class
                     || cardType == TowingAComet.class
-                    || cardType == ArcticAlgae.class) {
+                    || cardType == ArcticAlgae.class
+                    || cardType == BedrockWellbore.class) {
                 defaultSenseInCard -= 2;//makes some sense
             }
             if (cardType == ConvoyFromEuropa.class) {
@@ -504,7 +526,9 @@ public class FileCardValueService implements ICardValueService {
             }
             if (cardType == Mangrove.class
                     || cardType == Plantation.class
-                    || cardType == BiothermalPower.class) {
+                    || cardType == BiothermalPower.class
+                    || cardType == ChpCombustionTurbines.class
+                    || cardType == UrbanForestry.class) {
                 defaultSenseInCard -= 2;
             }
         }
@@ -516,13 +540,32 @@ public class FileCardValueService implements ICardValueService {
                     || cardType == NitrogenRichAsteroid.class
                     || cardType == PhobosFalls.class
                     || cardType == OreLeaching.class
-                    || cardType == VolcanicSoil.class) {
+                    || cardType == VolcanicSoil.class
+                    || cardType == ChpCombustionTurbines.class) {
                 defaultSenseInCard -= 2;
             }
             if (cardType == LavaFlows.class
                     || cardType == DeepWellHeating.class
                     || cardType == GasCooledReactors.class) {
                 defaultSenseInCard -= 4;
+            }
+        }
+
+        if (game.getPlanetAtTheStartOfThePhase().isInfrastructureMax()) {
+            if (cardType == CallistoSkybridge.class
+                    || cardType == Subways.class
+                    || cardType == CityPlanning.class
+                    || cardType == LowAtmospherePlanes.class
+                    || cardType == PowerGridUplink.class
+                    || cardType == GrainSilos.class
+                    || cardType == InvasiveIrrigation.class
+                    || cardType == JezeroCraterHospital.class
+                    || cardType == Microloans.class) {
+                defaultSenseInCard -= 3;
+            }
+
+            if (cardType == BedrockWellbore.class || cardType == ArchitectureBlueprints.class || cardType == ChpCombustionTurbines.class) {
+                defaultSenseInCard -= 2;
             }
         }
 

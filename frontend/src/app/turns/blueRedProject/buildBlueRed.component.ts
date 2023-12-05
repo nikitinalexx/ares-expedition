@@ -14,6 +14,7 @@ import {InputFlag} from '../../data/InputFlag';
 import {CardResource} from '../../data/CardResource';
 import {RequirementsComponent} from '../../requirements/requirements.component';
 import {BuildType} from "../../data/BuildType";
+import {GainType} from "../../data/GainType";
 
 @Component({
   selector: 'app-build-blue-red',
@@ -325,6 +326,11 @@ export class BuildBlueRedComponent implements OnInit {
       && (this.selectedProject.tags.some(tag => tag === Tag[Tag.SCIENCE] || this.countTagsUsedAsInput([Tag.SCIENCE]) > 0));
   }
 
+  infrastructureCargoShipsInput(): boolean {
+    return this.game?.player.played.some(card => card.cardAction === CardAction.CARGO_SHIPS)
+      && this.selectedProject?.bonuses.find(gain => gain.type === GainType[GainType.INFRASTRUCTURE]) !== undefined;
+  }
+
   syntheticCatastropheEffect(): boolean {
     return (this.selectedProject.cardAction === CardAction[CardAction.SYNTHETIC_CATASTROPHE]);
   }
@@ -490,6 +496,10 @@ export class BuildBlueRedComponent implements OnInit {
           return;
         }
         inputParams[InputFlag.SYNTHETIC_CATASTROPHE_CARD.valueOf()] = this.projectsToDiscard;
+      }
+
+      if (this.infrastructureCargoShipsInput() && this.parentForm.value.cargoShipsHeat) {
+        inputParams[InputFlag.CARGO_SHIPS.valueOf()] = [InputFlag.CARGO_SHIPS_HEAT.valueOf()];
       }
 
       if (this.expectsDecomposersInput()) {

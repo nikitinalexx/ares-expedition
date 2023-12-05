@@ -126,6 +126,11 @@ public class AiThirdPhaseActionProcessor {
                             aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
                             return true;
                         }
+                        validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.INFRASTRUCTURE);
+                        if (validationResult == null) {
+                            aiTurnService.standardProjectTurn(game, player, StandardProjectType.INFRASTRUCTURE);
+                            return true;
+                        }
                         validationResult = standardProjectService.validateStandardProject(game, player, StandardProjectType.FOREST);
                         if (validationResult == null) {
                             aiTurnService.standardProjectTurn(game, player, StandardProjectType.FOREST);
@@ -137,7 +142,7 @@ public class AiThirdPhaseActionProcessor {
                         StandardProjectType type = null;
                         float bestState = -1;
 
-                        for (StandardProjectType standardProjectType : List.of(StandardProjectType.FOREST, StandardProjectType.OCEAN, StandardProjectType.TEMPERATURE)) {
+                        for (StandardProjectType standardProjectType : List.of(StandardProjectType.FOREST, StandardProjectType.OCEAN, StandardProjectType.TEMPERATURE, StandardProjectType.INFRASTRUCTURE)) {
                             String validationResult = standardProjectService.validateStandardProject(game, player, standardProjectType);
                             if (validationResult == null) {
                                 float projectedChance = testAiService.projectPlayStandardAction(game, player.getUuid(), standardProjectType);
@@ -209,6 +214,10 @@ public class AiThirdPhaseActionProcessor {
             }
             if (game.getPlanet().oceansLeft() > 0) {
                 aiTurnService.standardProjectTurn(game, player, StandardProjectType.OCEAN);
+                return true;
+            }
+            if (game.getPlanet().infrastructureLeft() > 0) {
+                aiTurnService.standardProjectTurn(game, player, StandardProjectType.INFRASTRUCTURE);
                 return true;
             }
         }
@@ -284,6 +293,10 @@ public class AiThirdPhaseActionProcessor {
     }
 
     private boolean doStandardActionsIfAvailable(List<TurnType> possibleTurns, MarsGame game, Player player) {
+        if (possibleTurns.contains(TurnType.INCREASE_INFRASTRUCTURE)) {
+            aiTurnService.increaseInfrastructure(player, game, Map.of());
+            return true;
+        }
         if (possibleTurns.contains(TurnType.INCREASE_TEMPERATURE)) {
             aiTurnService.increaseTemperature(game, player);
             return true;
@@ -312,6 +325,12 @@ public class AiThirdPhaseActionProcessor {
         }
 
         mc -= game.getPlanet().oxygenLeft() * standardProjectService.getProjectPrice(player, StandardProjectType.FOREST);
+
+        if (mc < 0) {
+            return false;
+        }
+
+        mc -= game.getPlanet().infrastructureLeft() * standardProjectService.getProjectPrice(player, StandardProjectType.INFRASTRUCTURE);
 
         return mc >= 0;
     }

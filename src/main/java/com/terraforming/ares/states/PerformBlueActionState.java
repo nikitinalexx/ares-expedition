@@ -61,6 +61,11 @@ public class PerformBlueActionState extends AbstractState {
             if (player.getHeat() >= Constants.TEMPERATURE_HEAT_COST && terraformingService.canIncreaseTemperature(marsGame)) {
                 turns.add(TurnType.INCREASE_TEMPERATURE);
             }
+            if (marsGame.getExpansions().contains(Expansion.INFRASTRUCTURE) && terraformingService.canIncreaseInfrastructure(marsGame)) {
+                if (player.getHeat() >= Constants.INFRASTRUCTURE_HEAT_COST && player.getPlants() >= Constants.INFRASTRUCTURE_PLANT_COST) {
+                    turns.add(TurnType.INCREASE_INFRASTRUCTURE);
+                }
+            }
 
             if (marsGame.isCrysis() || player.getPlants() < forestPlantCost && (player.getHeat() < Constants.TEMPERATURE_HEAT_COST || marsGame.getPlanetAtTheStartOfThePhase().isTemperatureMax())) {
                 turns.add(TurnType.SKIP_TURN);

@@ -11,6 +11,8 @@ import com.terraforming.ares.services.TerraformingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 /**
  * Created by oleksii.nikitin
  * Creation date 29.04.2022
@@ -31,7 +33,7 @@ public class IncreaseTemperatureTurnProcessor implements TurnProcessor<IncreaseT
         Player player = game.getPlayerByUuid(turn.getPlayerUuid());
 
         player.setHeat(player.getHeat() - Constants.TEMPERATURE_HEAT_COST);
-        terraformingService.increaseTemperature(marsContextProvider.provide(game, player));
+        terraformingService.increaseTemperature(marsContextProvider.provide(game, player, Map.of()));
 
         return null;
     }

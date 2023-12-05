@@ -67,6 +67,8 @@ public class AiCardActionHelper {
             CircuitBoardFactory.class,
             CommunityGardens.class,
             DevelopedInfrastructure.class,
+            Sawmill.class,
+            InterplanetarySuperhighway.class,
             DevelopmentCenter.class,
             FarmersMarket.class,
             HydroElectricEnergy.class,
@@ -130,6 +132,10 @@ public class AiCardActionHelper {
                                     return game.getMilestones().stream().anyMatch(milestone -> milestone.isAchieved(player));
                                 } else if (cardAction == CardAction.GAS_COOLED_REACTORS) {
                                     return player.countPhaseUpgrades() >= 2;
+                                } else if (cardAction == CardAction.SAWMILL) {
+                                    return cardService.countPlayedTags(player, Set.of(Tag.PLANT)) >= 2;
+                                } else if (cardAction == CardAction.INTERPLANETARY_SUPERHIGHWAY) {
+                                    return cardService.countPlayedTags(player, Set.of(Tag.SCIENCE)) >= 4;
                                 }
                                 return true;
                             }

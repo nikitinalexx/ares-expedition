@@ -465,15 +465,18 @@ public class GameController {
                 playerNames.add(simulationPlayer.name() + (counter++));
             }
 
-            GameParameters gameParameters = builder
+            GameParameters.GameParametersBuilder gameParametersBuilder = builder
                     .playerNames(playerNames)
                     .computers(playerDifficulty)
                     .mulligan(true)
                     .expansion(Expansion.BASE)
                     .expansion(Expansion.BUFFED_CORPORATION)
                     .expansion(Expansion.DISCOVERY)
-                    .dummyHand(true)
-                    .build();
+                    .dummyHand(true);
+            if (Constants.INFRASTRUCTURE_SIMULATIONS) {
+                gameParametersBuilder.expansion(Expansion.INFRASTRUCTURE);
+            }
+            GameParameters gameParameters = gameParametersBuilder.build();
 
             List<MarsGame> games = new ArrayList<>();
 

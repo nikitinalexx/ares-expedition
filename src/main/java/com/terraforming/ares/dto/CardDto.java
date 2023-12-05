@@ -32,6 +32,7 @@ public class CardDto {
     List<Tag> tagReq;
     List<ParameterColor> tempReq;
     List<ParameterColor> oxygenReq;
+    List<ParameterColor> infrastructureReq;
     OceanRequirement oceanRequirement;
     List<Gain> bonuses;
     WinPointsInfo winPointsInfo;
@@ -58,6 +59,7 @@ public class CardDto {
                 card.getTagRequirements(),
                 card.getTemperatureRequirement(),
                 card.getOxygenRequirement(),
+                card.getInfrastructureRequirement(),
                 card.getOceanRequirement(),
                 card.getCardMetadata().getBonuses(),
                 card.getCardMetadata().getWinPointsInfo(),

@@ -146,6 +146,11 @@ public class PlayController {
         turnService.increaseTemperature(playerUuidRequest.getPlayer());
     }
 
+    @PostMapping("/turn/infrastructure")
+    public void increaseInfrastructure(@RequestBody PlayerRequestWithParams playerRequestWithParams) {
+        turnService.increaseInfrastructure(playerRequestWithParams.getPlayer(), playerRequestWithParams.getInputParams());
+    }
+
     @PostMapping("/turn/plants-crisis-token")
     public void plantsIntoCrisisToken(@RequestBody PlayerRequest playerUuidRequest) {
         turnService.plantsIntoCrisisToken(playerUuidRequest.getPlayer());
@@ -163,7 +168,7 @@ public class PlayController {
 
     @PostMapping("/turn/standard")
     public void standardProject(@RequestBody StandardProjectRequest request) {
-        turnService.standardProjectTurn(request.getPlayerUuid(), request.getType());
+        turnService.standardProjectTurn(request.getPlayerUuid(), request.getType(), request.getInputParams());
     }
 
     @PostMapping("/turn/heat-exchange")

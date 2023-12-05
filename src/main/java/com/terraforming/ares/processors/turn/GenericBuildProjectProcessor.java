@@ -40,7 +40,7 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
 
         final BuildDto buildOption = buildService.findMostOptimalBuild(card, player, discount);
 
-        final MarsContext marsContext = marsContextProvider.provide(game, player);
+        final MarsContext marsContext = marsContextProvider.provide(game, player, turn.getInputParams());
 
         TurnResponse response = card.buildProject(marsContext);
 

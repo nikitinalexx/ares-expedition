@@ -10,6 +10,8 @@ import com.terraforming.ares.services.TerraformingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 /**
  * Created by oleksii.nikitin
  * Creation date 05.05.2022
@@ -33,7 +35,7 @@ public class CommunityAfforestationActionProcessor implements BlueActionCardProc
 
         player.setMc(player.getMc() - forestPrice);
 
-        terraformingService.buildForest(marsContextProvider.provide(game, player));
+        terraformingService.buildForest(marsContextProvider.provide(game, player, Map.of()));
 
         return null;
     }

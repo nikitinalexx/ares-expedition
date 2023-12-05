@@ -85,6 +85,7 @@ public class CardValidationService {
 
         return validateOxygen(game.getPlanetAtTheStartOfThePhase(), card, playerMayAmplifyGlobalRequirement || builtSpecialDesignLastTurn)
                 .or(() -> validateTemperature(game.getPlanetAtTheStartOfThePhase(), card, playerMayAmplifyGlobalRequirement || builtSpecialDesignLastTurn))
+                .or(() -> validateInfrastructure(game.getPlanetAtTheStartOfThePhase(), card, playerMayAmplifyGlobalRequirement || builtSpecialDesignLastTurn))
                 .or(() -> validateOceans(game.getPlanetAtTheStartOfThePhase(), card))
                 .or(() -> validateTags(player, card))
                 .or(() -> validatePayments(game, card, player, payments, inputParameters))
@@ -144,6 +145,16 @@ public class CardValidationService {
     private Optional<String> validateTemperature(Planet planet, Card card, boolean playerMayAmplifyGlobalRequirement) {
         if (planet.isValidTemperatute(
                 playerMayAmplifyGlobalRequirement ? amplifyRequirement(card.getTemperatureRequirement()) : card.getTemperatureRequirement()
+        )) {
+            return Optional.empty();
+        } else {
+            return Optional.of("Temperature requirement not met");
+        }
+    }
+
+    private Optional<String> validateInfrastructure(Planet planet, Card card, boolean playerMayAmplifyGlobalRequirement) {
+        if (planet.isValidInfrastructure(
+                playerMayAmplifyGlobalRequirement ? amplifyRequirement(card.getInfrastructureRequirement()) : card.getInfrastructureRequirement()
         )) {
             return Optional.empty();
         } else {

@@ -58,7 +58,8 @@ export class SecondPhaseComponent implements OnInit {
       viralEnhancersPlantInput: 0,
       importedHydrogenForm: 'plants',
       largeConvoyForm: 'plants',
-      biomedicalImports: null
+      biomedicalImports: null,
+      cargoShipsHeat: [false]
     });
   }
 

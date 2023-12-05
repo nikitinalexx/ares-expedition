@@ -52,6 +52,8 @@ public class Constants {
     public static final int CRISIS_TOKEN_HEAT_COST = 6;
     public static final int CRISIS_EASY_MODE_TURNS = 3;
     public static final int FOREST_PLANT_COST = 8;
+    public static final int INFRASTRUCTURE_HEAT_COST = 5;
+    public static final int INFRASTRUCTURE_PLANT_COST = 3;
 
     public static final int CRISIS_NORMAL_DIFFICULTY = 0;
     public static final int CRISIS_BEGINNER_DIFFICULTY = -1;
@@ -124,13 +126,14 @@ public class Constants {
 
 
     public static final boolean PLAYER_CHOOSES_CARDS_FOR_FIRST_PLAYER = false;
+    public static final boolean INFRASTRUCTURE_SIMULATIONS = true;
 
-    public static final boolean WRITE_STATISTICS_TO_FILE = false;
+    public static final boolean WRITE_STATISTICS_TO_FILE = true;
     public static final boolean WRITE_STATISTICS_TO_CONSOLE = false;
     public static final boolean SAVE_SIMULATION_GAMES_TO_DB = false;
 
 
-    public static final List<PlayerDifficulty> SIMULATION_PLAYERS = List.of(PlayerDifficulty.NETWORK, PlayerDifficulty.NETWORK);
+    public static final List<PlayerDifficulty> SIMULATION_PLAYERS = List.of(PlayerDifficulty.RANDOM, PlayerDifficulty.RANDOM);
 
     public static final boolean COLLECT_DATASET = false;
     public static final boolean LOG_NET_COMPARISON = false;

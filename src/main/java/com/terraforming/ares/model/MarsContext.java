@@ -7,6 +7,9 @@ import com.terraforming.ares.services.*;
 import lombok.Builder;
 import lombok.Value;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * Created by oleksii.nikitin
  * Creation date 08.05.2022
@@ -22,6 +25,7 @@ public class MarsContext {
     CrysisService crysisService;
     CardResourceService cardResourceService;
     WinPointsService winPointsService;
+    Map<Integer, List<Integer>> inputParams;
 
     public AutoPickCardsAction dealCards(int count) {
         AutoPickCardsAction.AutoPickCardsActionBuilder resultBuilder = AutoPickCardsAction.builder();

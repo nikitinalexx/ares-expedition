@@ -51,6 +51,11 @@
         </div>
       </div>
 
+      <div *ngIf="infrastructureCargoShipsInput()" class="custom-control-input">
+        <input type="checkbox" id="cargoShips" formControlName="cargoShipsHeat">
+        <label for="cargoShips" class="custom-control-label text-white" style="margin-left: 10px">Cargo ships - take heat (default = plants)</label>
+      </div>
+
       <div class="form-row" *ngIf="restructuredResourcesCardAction()">
         <div class="col-sm-1">
           <label for="restructuredResources" class="text-white">Restructured Resources</label>

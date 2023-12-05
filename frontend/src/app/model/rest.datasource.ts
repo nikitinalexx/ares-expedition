@@ -234,6 +234,12 @@ export class RestDataSource {
     );
   }
 
+  increaseInfrastructure(playerUuid: string, inputParams: Map<number, number[]>): Observable<any> {
+    return this.sendRequest<any>('POST', this.url + '/turn/infrastructure',
+      {player: playerUuid, inputParams: inputParams}
+    );
+  }
+
   plantsToCrisisToken(playerUuid: string): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/turn/plants-crisis-token',
       {player: playerUuid}
@@ -250,9 +256,9 @@ export class RestDataSource {
     return this.sendRequest<any>('POST', this.url + '/turn/cards-crisis-token', request);
   }
 
-  standardProject(playerUuid: string, type: StandardProjectType): Observable<any> {
+  standardProject(playerUuid: string, type: StandardProjectType, inputParams: Map<number, number[]>): Observable<any> {
     return this.sendRequest<any>('POST', this.url + '/turn/standard',
-      {playerUuid, type: type.valueOf()}
+      {playerUuid, type: type.valueOf(), inputParams: inputParams}
     );
   }
 

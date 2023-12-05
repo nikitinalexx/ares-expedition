@@ -411,7 +411,23 @@ public class CardFactory {
                 new Pets(400),
                 new Sawmill(401),
                 new InterplanetarySuperhighway(402),
-                new MaglevTrains(403)
+                new MaglevTrains(403),
+                new Microloans(404),
+                new SeedBank(405),
+                new QuantLinkConferencing(406),
+                new CallistoSkybridge(407),
+                new BedrockWellbore(408),
+                new ArchitectureBlueprints(409),
+                new Subways(410),
+                new CityPlanning(411),
+                new LowAtmospherePlanes(412),
+                new PowerGridUplink(413),
+                new GrainSilos(414),
+                new ChpCombustionTurbines(415),
+                new InvasiveIrrigation(416),
+                new JezeroCraterHospital(417),
+                new UrbanForestry(418),
+                new CargoShips(419)
         );
 
         sortedBaseCorporations = List.of(

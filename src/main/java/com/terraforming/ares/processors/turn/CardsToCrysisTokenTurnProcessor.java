@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Map;
 
 /**
  * Created by oleksii.nikitin
@@ -41,7 +42,7 @@ public class CardsToCrysisTokenTurnProcessor implements TurnProcessor<CardsToCri
                 .map(cardService::getCrysisCard)
                 .filter(card -> card.getActiveCardAction() == CrysisActiveCardAction.CARDS_INTO_TOKENS)
                 .forEach(
-                        card -> marsContextProvider.provide(game, game.getPlayerByUuid(turn.getPlayerUuid()))
+                        card -> marsContextProvider.provide(game, game.getPlayerByUuid(turn.getPlayerUuid()), Map.of())
                                 .getCrysisService()
                                 .reduceTokens(game, card, 1)
                 );

@@ -101,6 +101,10 @@ export class GameRepository {
     return this.dataSource.increaseTemperature(playerUuid);
   }
 
+  increaseInfrastructure(playerUuid: string, inputParams: Map<number, number[]>): Observable<any> {
+    return this.dataSource.increaseInfrastructure(playerUuid, inputParams);
+  }
+
   plantsToCrisisToken(playerUuid: string): Observable<any> {
     return this.dataSource.plantsToCrisisToken(playerUuid);
   }
@@ -113,8 +117,8 @@ export class GameRepository {
     return this.dataSource.cardsToCrisisToken(request);
   }
 
-  standardProject(playerUuid: string, type: StandardProjectType): Observable<any> {
-    return this.dataSource.standardProject(playerUuid, type);
+  standardProject(playerUuid: string, type: StandardProjectType, inputParams: Map<number, number[]>): Observable<any> {
+    return this.dataSource.standardProject(playerUuid, type, inputParams);
   }
 
   exchangeHeat(playerUuid: string, value: number): Observable<any> {

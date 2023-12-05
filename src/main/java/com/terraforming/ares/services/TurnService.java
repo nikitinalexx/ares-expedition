@@ -297,6 +297,31 @@ public class TurnService {
         );
     }
 
+    public void increaseInfrastructure(String playerUuid, Map<Integer, List<Integer>> inputParams) {
+        performTurn(
+                new IncreaseInfrastructureTurn(playerUuid, inputParams),
+                playerUuid,
+                game -> {
+                    Player player = game.getPlayerByUuid(playerUuid);
+
+                    if (player.getHeat() < Constants.INFRASTRUCTURE_HEAT_COST) {
+                        return "Not enough heat to increase infrastructure";
+                    }
+
+                    if (player.getPlants() < Constants.INFRASTRUCTURE_PLANT_COST) {
+                        return "Not enough plants to increase infrastructure";
+                    }
+
+                    if (!terraformingService.canIncreaseInfrastructure(game)) {
+                        return "Can't increase infrastructure anymore, already max";
+                    }
+
+                    return null;
+                },
+                SYNC_TURN
+        );
+    }
+
     public void plantsIntoCrisisToken(String playerUuid) {
         performTurn(
                 new PlantsToCrisisTokenTurn(playerUuid),
@@ -377,9 +402,9 @@ public class TurnService {
         );
     }
 
-    public void standardProjectTurn(String playerUuid, StandardProjectType type) {
+    public void standardProjectTurn(String playerUuid, StandardProjectType type, Map<Integer, List<Integer>> inputParams) {
         performTurn(
-                new StandardProjectTurn(playerUuid, type),
+                new StandardProjectTurn(playerUuid, type, inputParams),
                 playerUuid,
                 game -> {
                     Player player = game.getPlayerByUuid(playerUuid);

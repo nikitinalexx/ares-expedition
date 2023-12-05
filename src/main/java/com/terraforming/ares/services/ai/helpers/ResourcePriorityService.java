@@ -51,6 +51,7 @@ public class ResourcePriorityService {
         RESOURCE_VALUES.put(BuffedArclightCorporation.class, MEDIUM);// 1/2vp
         RESOURCE_VALUES.put(EcologicalZone.class, MEDIUM);// 1/2vp
         RESOURCE_VALUES.put(SmallAnimals.class, MEDIUM);// 1/2vp
+        RESOURCE_VALUES.put(Pets.class, MEDIUM);// 1/2vp
         RESOURCE_VALUES.put(Herbivores.class, MEDIUM);// 1/2vp
         RESOURCE_VALUES.put(Birds.class, MAX);// 1vp
         RESOURCE_VALUES.put(Fish.class, MAX);// 1vp
@@ -78,6 +79,7 @@ public class ResourcePriorityService {
         CRITICAL_RESOURCE_VALUES_ON_CARDS.put(BuffedArclightCorporation.class, 2);// 1/2vp
         CRITICAL_RESOURCE_VALUES_ON_CARDS.put(EcologicalZone.class, 2);// 1/2vp
         CRITICAL_RESOURCE_VALUES_ON_CARDS.put(SmallAnimals.class, 2);// 1/2vp
+        CRITICAL_RESOURCE_VALUES_ON_CARDS.put(Pets.class, 2);// 1/2vp
         CRITICAL_RESOURCE_VALUES_ON_CARDS.put(Herbivores.class, 2);// 1/2vp
         CRITICAL_RESOURCE_VALUES_ON_CARDS.put(PhysicsComplex.class, 2);// 1/2vp
     }

@@ -167,6 +167,14 @@ export class CardTemplateComponent {
     return this.generateArray(bonus.value);
   }
 
+  getInfrastructureBonuses(card: Card): number[] {
+    const bonus = card.bonuses.find(gain => gain.type === GainType[GainType.INFRASTRUCTURE]);
+    if (!bonus) {
+      return [];
+    }
+    return this.generateArray(bonus.value);
+  }
+
   getMcBonus(card: Card): number {
     const bonus = card.bonuses.find(gain => gain.type === GainType[GainType.MC]);
     if (!bonus) {
@@ -356,6 +364,10 @@ export class CardTemplateComponent {
 
   actionExtendedResources(card: Card): boolean {
     return card.cardAction === CardAction.EXTENDED_RESOURCES;
+  }
+
+  actionCargoShips(card: Card): boolean {
+    return card.cardAction === CardAction.CARGO_SHIPS;
   }
 
   actionExtremeColdFungus(card: Card): boolean {
@@ -588,6 +600,10 @@ export class CardTemplateComponent {
       || card.cardAction === CardAction.TOPOGRAPHIC_MAPPING
       || card.cardAction === CardAction.CRYOGENIC_SHIPMENT
       || card.cardAction === CardAction[CardAction.SOFTWARE_STREAMLINING];
+  }
+
+  actionCallistoSkybridge(card: Card): boolean {
+    return card.cardAction === CardAction.SKYBRIDGE;
   }
 
   actionDoublePhaseUpdate(card: Card): boolean {
@@ -897,6 +913,10 @@ export class CardTemplateComponent {
     return card.oxygenReq && card.oxygenReq.length !== 0;
   }
 
+  hasInfrastructureRequirements(card: Card): boolean {
+    return card.infrastructureReq && card.infrastructureReq.length !== 0;
+  }
+
   hasOceanRequirement(card: Card): boolean {
     return card.oceanRequirement !== null;
   }
@@ -907,6 +927,10 @@ export class CardTemplateComponent {
 
   getOxygenClass(card: Card): string {
     return this.getTemperatureOxygenClass(card.oxygenReq);
+  }
+
+  getInfrastructureClass(card: Card): string {
+    return this.getTemperatureOxygenClass(card.infrastructureReq);
   }
 
   getOceanRequirementValue(card: Card): string {

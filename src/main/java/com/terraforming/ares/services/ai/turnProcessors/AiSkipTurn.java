@@ -24,10 +24,6 @@ import java.util.Random;
 public class AiSkipTurn implements AiTurnProcessor {
     private final Random random = new Random();
     private final AiTurnService aiTurnService;
-    private final CardService cardService;
-    private final CardValidationService cardValidationService;
-    private final AiPaymentService aiPaymentHelper;
-    private final TerraformingService terraformingService;
     private final StandardProjectService standardProjectService;
 
     @Override

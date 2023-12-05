@@ -24,6 +24,7 @@ export class Card {
               incomes: Gain[],
               tempReq: ParameterColor[],
               oxygenReq: ParameterColor[],
+              infrastructureReq: ParameterColor[],
               cardResource: CardResource,
               resourcesOnBuild: PutResourceOnBuild[],
               active: boolean,
@@ -52,6 +53,7 @@ export class Card {
   tagReq: Tag[];
   tempReq: ParameterColor[];
   oxygenReq: ParameterColor[];
+  infrastructureReq: ParameterColor[];
   oceanRequirement: OceanRequirement;
   winPointsInfo: WinPointsInfo;
   cardResource: CardResource;

@@ -40,7 +40,7 @@ public class StandardProjectTurnProcessor implements TurnProcessor<StandardProje
                 terraformingService.increaseTemperature(marsContextProvider.provide(game, player));
                 break;
             case INFRASTRUCTURE:
-                terraformingService.increaseInfrastructure(marsContextProvider.provide(game, player));
+                terraformingService.increaseInfrastructure(marsContextProvider.provide(game, player, turn.getInputParams()));
                 break;
             default:
                 throw new IllegalStateException("Unknown project type");

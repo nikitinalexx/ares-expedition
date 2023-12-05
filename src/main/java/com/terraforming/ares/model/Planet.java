@@ -64,6 +64,14 @@ public class Planet {
     }
 
     @JsonIgnore
+    public int infrastructureLeft() {
+        if (!measurableGlobalParameters.containsKey(GlobalParameter.INFRASTRUCTURE)) {
+            return 0;
+        }
+        return measurableGlobalParameters.get(GlobalParameter.INFRASTRUCTURE).valueLeft();
+    }
+
+    @JsonIgnore
     public List<Ocean> getRevealedOceans() {
         return oceans.stream().filter(Ocean::isRevealed).collect(Collectors.toList());
     }
@@ -144,6 +152,11 @@ public class Planet {
     @JsonIgnore
     public boolean isValidTemperatute(List<ParameterColor> validParameters) {
         return isValidParameter(validParameters, GlobalParameter.TEMPERATURE);
+    }
+
+    @JsonIgnore
+    public boolean isValidInfrastructure(List<ParameterColor> validParameters) {
+        return isValidParameter(validParameters, GlobalParameter.INFRASTRUCTURE);
     }
 
     @JsonIgnore

@@ -12,6 +12,8 @@ import com.terraforming.ares.services.TerraformingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -31,7 +33,7 @@ public class SawmillActionProcessor implements BlueActionCardProcessor<Sawmill> 
     }
 
     @Override
-    public TurnResponse process(MarsGame game, Player player, Card actionCard) {
+    public TurnResponse process(MarsGame game, Player player, Card actionCard, Map<Integer, List<Integer>> inputParameters) {
         int plantTagsPlayed = cardService.countPlayedTags(player, Set.of(Tag.PLANT));
 
         int infrastructurePrice = Math.max(0, 10 - 2 * plantTagsPlayed);
@@ -39,7 +41,7 @@ public class SawmillActionProcessor implements BlueActionCardProcessor<Sawmill> 
 
         player.setMc(player.getMc() - infrastructurePrice);
 
-        terraformingService.increaseInfrastructure(marsContextProvider.provide(game, player));
+        terraformingService.increaseInfrastructure(marsContextProvider.provide(game, player, inputParameters));
 
         return null;
     }

@@ -277,7 +277,19 @@ public class AiTurnService {
         if (validationResult != null) {
             throw new IllegalStateException(validationResult);
         }
-        makeSyncTurn(player, game, new StandardProjectTurn(player.getUuid(), type));
+        makeSyncTurn(player, game, new StandardProjectTurn(player.getUuid(), type, Map.of()));
+    }
+
+    public void increaseInfrastructure(Player player, MarsGame game, Map<Integer, List<Integer>> inputParams) {
+        if (player.getHeat() < Constants.INFRASTRUCTURE_HEAT_COST) {
+            throw new IllegalStateException("Not enough heat to increase infrastructure");
+        }
+
+        if (player.getPlants() < Constants.INFRASTRUCTURE_PLANT_COST) {
+            throw new IllegalStateException("Not enough plants to increase infrastructure");
+        }
+
+        makeSyncTurn(player, game, new IncreaseInfrastructureTurn(player.getUuid(), inputParams));
     }
 
     public void confirmGameEnd(MarsGame game, Player player) {

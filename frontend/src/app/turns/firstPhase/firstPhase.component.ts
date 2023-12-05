@@ -50,7 +50,8 @@ export class FirstPhaseComponent implements OnInit {
       takeCards: 0,
       restructuredResources: [false],
       viralEnhancersPlantInput: 0,
-      biomedicalImports: null
+      biomedicalImports: null,
+      cargoShipsHeat: [false]
     });
   }
 

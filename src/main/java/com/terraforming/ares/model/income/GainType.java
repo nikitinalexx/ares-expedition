@@ -14,6 +14,7 @@ public enum GainType {
     MICROBE,
     ANIMAL,
     TEMPERATURE,
+    INFRASTRUCTURE,
     OXYGEN,
     OCEAN,
     FOREST,

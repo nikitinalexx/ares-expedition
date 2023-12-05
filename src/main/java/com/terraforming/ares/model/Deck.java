@@ -33,6 +33,9 @@ public class Deck {
     }
 
     public List<Integer> dealCards(int count) {
+        if (count == -1) {
+            System.out.println("WTF");
+        }
         List<Integer> result = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
             result.add(cards.remove(0));

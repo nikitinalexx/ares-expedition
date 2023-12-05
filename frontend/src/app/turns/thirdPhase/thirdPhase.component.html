@@ -84,6 +84,11 @@
         </div>
       </div>
 
+      <div *ngIf="blueActionWithCargoShips()" class="custom-control-input">
+        <input type="checkbox" id="blueActionCargoShips" formControlName="cargoShipsHeat">
+        <label for="blueActionCargoShips" class="custom-control-label text-white" style="margin-left: 10px">Cargo ships - take heat (default = plants)</label>
+      </div>
+
       <div *ngIf="expectsAddDiscardMicrobeInput()" style="margin-left: 20px">
         <div class="form-group">
           <div class="form-row">
@@ -237,6 +242,17 @@
     <label class="custom-control-label text-white" for="increaseTemperature">Increase temperature<span *ngIf="!game.crysisDto">(required)</span></label>
   </div>
 
+  <div *ngIf="increaseInfrastructureTurn()" class="form-check">
+    <input id="increaseInfrastructure" (click)="resetAllInputs()" type="radio" class="form-check-input" value="increaseInfrastructure"
+           formControlName="turn" [checked]="this.parentForm.value?.turn === 'increaseInfrastructure'">
+    <label class="custom-control-label text-white" for="increaseInfrastructure">Increase infrastructure</label>
+
+    <div *ngIf="infrastructureCargoShipsInput()" class="custom-control-input">
+      <input type="checkbox" id="cargoShips" formControlName="cargoShipsHeat">
+      <label for="cargoShips" class="custom-control-label text-white" style="margin-left: 10px">Cargo ships - take heat (default = plants)</label>
+    </div>
+  </div>
+
   <div *ngIf="plantsToCrisisTokenTurn()" class="form-check">
     <input id="plantsToCrisisToken" (click)="resetAllInputs()" type="radio" class="form-check-input" value="plantsToCrisisToken"
            formControlName="turn" [checked]="this.parentForm.value?.turn === 'plantsToCrisisToken'">
@@ -292,6 +308,10 @@
           <input id="standardInfrastructure" type="radio" class="form-check-input" value="infrastructure"
                  formControlName="standardProject">
           <label class="custom-control-label text-white" for="standardInfrastructure">Infrastructure ({{hasStandardTechnology() ? 11 : 15}}mc)</label>
+        </div>
+        <div *ngIf="standardCargoShipsInput()" class="custom-control-input">
+          <input type="checkbox" id="cargoShipsStandardProject" formControlName="cargoShipsHeat">
+          <label for="cargoShipsStandardProject" class="custom-control-label text-white" style="margin-left: 10px">Cargo ships - take heat (default = plants)</label>
         </div>
       </div>
     </div>
