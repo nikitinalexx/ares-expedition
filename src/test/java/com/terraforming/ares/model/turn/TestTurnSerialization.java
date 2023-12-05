@@ -254,7 +254,8 @@ class TestTurnSerialization {
     void testStandardProjectTurn() throws Exception {
         StandardProjectTurn expectedTurn = new StandardProjectTurn(
                 "uuid",
-                StandardProjectType.FOREST
+                StandardProjectType.FOREST,
+                Map.of()
         );
         StandardProjectTurn actualTurn = (StandardProjectTurn) serializeDeserialize(expectedTurn);
 
