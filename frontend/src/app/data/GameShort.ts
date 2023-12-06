@@ -4,6 +4,7 @@ import {BasePlayer} from './BasePlayer';
 export class GameShort {
   constructor(temperature: number,
               oxygen: number,
+              infrastructure: number,
               oceans: Ocean[],
               phaseTemperature?: number,
               phaseInfrastructure?: number,
@@ -14,6 +15,7 @@ export class GameShort {
 
   temperature: number;
   oxygen: number;
+  infrastructure: number;
   oceans: Ocean[];
   phaseTemperature?: number;
   phaseInfrastructure?: number;

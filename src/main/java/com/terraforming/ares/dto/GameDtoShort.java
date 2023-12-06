@@ -14,6 +14,7 @@ import java.util.List;
 public class GameDtoShort {
     private int temperature;
     private int oxygen;
+    private int infrastructure;
     private Integer phaseTemperature;
     private Integer phaseInfrastructure;
     private Integer phaseOxygen;
