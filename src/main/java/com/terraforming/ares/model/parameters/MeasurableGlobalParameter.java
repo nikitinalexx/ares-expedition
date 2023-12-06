@@ -29,7 +29,6 @@ public class MeasurableGlobalParameter {
         return levels.get(currentLevel).getValue();
     }
 
-    @JsonIgnore
     public int getCurrentLevel() {
         return currentLevel;
     }
