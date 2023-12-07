@@ -61,7 +61,8 @@ public class DraftCardsTurnProcessor implements TurnProcessor<DraftCardsTurn> {
                         draftedCards,
                         cardsToDraft - cardsToTake,
                         true,
-                        true
+                        true,
+                        List.of()
                 )
         );
 

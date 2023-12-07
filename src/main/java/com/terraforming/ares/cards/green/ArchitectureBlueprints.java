@@ -51,7 +51,8 @@ public class ArchitectureBlueprints implements InfrastructureExpansionRedCard {
                         List.of(),
                         1,
                         false,
-                        true
+                        true,
+                        List.of()
                 )
         );
 

@@ -694,6 +694,7 @@ export class BuildBlueRedComponent implements OnInit {
         callback(data);
       }, error => {
         this.errorMessage = error;
+        callback(null);
       });
     }
   }

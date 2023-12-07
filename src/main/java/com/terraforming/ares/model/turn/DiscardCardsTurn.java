@@ -3,6 +3,7 @@ package com.terraforming.ares.model.turn;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.List;
 
@@ -15,6 +16,7 @@ import java.util.List;
  */
 @AllArgsConstructor
 @Getter
+@Setter
 @NoArgsConstructor
 public class DiscardCardsTurn implements Turn {
     private String playerUuid;
@@ -22,6 +24,7 @@ public class DiscardCardsTurn implements Turn {
     private int size;
     private boolean onlyFromSelectedCards;
     private boolean expectedAsNextTurn;
+    private List<String> alreadyDrafted;
 
     @Override
     public boolean expectedAsNextTurn() {

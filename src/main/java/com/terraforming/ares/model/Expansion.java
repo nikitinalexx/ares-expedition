@@ -9,5 +9,6 @@ public enum Expansion {
     DISCOVERY,
     BUFFED_CORPORATION,
     CRYSIS,
-    INFRASTRUCTURE
+    INFRASTRUCTURE,
+    EXPERIMENTAL
 }

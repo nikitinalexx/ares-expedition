@@ -67,7 +67,6 @@ public class NitriteReductingBacteria implements BlueCard {
                 marsContext.getPlayer(), this, 3
         );
 
-
         return null;
     }
 

@@ -6,12 +6,14 @@ import {Expansion} from '../data/Expansion';
 @Injectable()
 export class CardRepository {
   private projects: Card[] = new Array<Card>();
+  private experimentalProjects: Card[] = new Array<Card>();
   private improvedCorporations = false;
   private discoveryExpansion = true;
   private infrastructureExpansion = true;
 
   constructor(private dataSource: RestDataSource) {
     this.updateProjects();
+    this.updateExperimentalProjects();
   }
 
   improvedCorporationsFlagChanged(value: boolean) {
@@ -43,8 +45,16 @@ export class CardRepository {
     this.dataSource.getCards(expansions).subscribe(data => this.projects = data);
   }
 
+  updateExperimentalProjects() {
+    this.dataSource.getExperimentalCards().subscribe(data => this.experimentalProjects = data);
+  }
+
   getProjectCards(): Card[] {
     return this.projects;
+  }
+
+  getExperimentalProjects(): Card[] {
+    return this.experimentalProjects;
   }
 
 }

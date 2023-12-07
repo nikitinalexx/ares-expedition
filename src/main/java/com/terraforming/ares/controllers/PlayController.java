@@ -110,7 +110,7 @@ public class PlayController {
     @PostMapping("/turn/cards/discard")
     public TurnResponse discardCards(@RequestBody DiscardCardsRequest request) {
         return turnService.discardCards(
-                new DiscardCardsTurn(request.getPlayerUuid(), request.getCards(), request.getCards().size(), false, false),
+                new DiscardCardsTurn(request.getPlayerUuid(), request.getCards(), request.getCards().size(), false, false, List.of()),
                 request.getPlayerUuid(),
                 request.getCards()
         );

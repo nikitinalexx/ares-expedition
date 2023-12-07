@@ -1,0 +1,16 @@
+<div class="list-container">
+
+  <div class="form-check form-check-inline">
+    <button type="button" class="btn btn-warning btn-lg back-button" style="margin: 5px" routerLink="/">Main Menu</button>
+  </div>
+
+  <ul class="myUL">
+
+    <!--1-->
+    <li *ngFor="let card of getExperimentalProjectCards();" class="filterDiv automated display">
+      <app-card-template [card]="card"></app-card-template>
+    </li>
+
+  </ul>
+</div>
+

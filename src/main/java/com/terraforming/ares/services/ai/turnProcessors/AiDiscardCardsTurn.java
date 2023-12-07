@@ -81,7 +81,7 @@ public class AiDiscardCardsTurn implements AiTurnProcessor {
         aiTurnService.discardCards(
                 game,
                 player,
-                new DiscardCardsTurn(player.getUuid(), cardsToDiscard, cardsToDiscard.size(), false, false),
+                new DiscardCardsTurn(player.getUuid(), cardsToDiscard, cardsToDiscard.size(), false, false, List.of()),
                 cardsToDiscard
         );
 

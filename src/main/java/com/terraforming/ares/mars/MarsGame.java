@@ -92,6 +92,7 @@ public class MarsGame {
                     .difficulty(computers.get(i))
                     .build();
             players.add(player);
+            player.getHand().addCard(1003);
 
         }
 

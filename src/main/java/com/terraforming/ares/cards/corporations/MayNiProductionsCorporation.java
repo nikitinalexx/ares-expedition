@@ -57,7 +57,8 @@ public class MayNiProductionsCorporation implements CorporationCard {
                             List.of(),
                             1,
                             false,
-                            true
+                            true,
+                            List.of()
                     )
             );
         }

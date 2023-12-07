@@ -60,6 +60,10 @@ public class CollectIncomeTurnProcessor implements TurnProcessor<CollectIncomeTu
             cardService.getCard(turn.getDoubleCollectCardId()).payAgain(game, cardService, player);
         }
 
+        player.getPlayed().getCards().stream().map(cardService::getCard).forEach(c -> {
+            c.collectExtraIncome(game, cardService, player);
+        });
+
         return null;
     }
 }

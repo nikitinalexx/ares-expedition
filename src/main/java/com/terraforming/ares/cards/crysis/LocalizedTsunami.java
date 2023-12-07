@@ -88,7 +88,8 @@ public class LocalizedTsunami implements CrysisCard {
                         List.of(),
                         2,
                         false,
-                        true
+                        true,
+                        List.of()
                 )
         );
     }

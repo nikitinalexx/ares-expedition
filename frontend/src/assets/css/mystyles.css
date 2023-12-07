@@ -886,6 +886,10 @@ li.events::before {
   filter: brightness(0.9);
 }
 
+.red-border {
+  border: 3px solid red;
+}
+
 .small-tag {
   background-size: 24px;
   background-position: -1px -1px;

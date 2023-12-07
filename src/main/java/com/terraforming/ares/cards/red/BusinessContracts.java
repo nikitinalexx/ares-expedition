@@ -51,7 +51,8 @@ public class BusinessContracts implements BaseExpansionRedCard {
                         List.of(),
                         2,
                         false,
-                        true
+                        true,
+                        List.of()
                 )
         );
 

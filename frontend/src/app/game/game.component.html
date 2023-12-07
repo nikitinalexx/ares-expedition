@@ -94,7 +94,7 @@
 </div>
 
 
-<div [ngClass]="game.infrastructure !== null ? 'surface_with_infrastructure' : 'surface'">
+<div [ngClass]="game?.infrastructure !== null ? 'surface_with_infrastructure' : 'surface'">
   <div class="tracker temperature_{{game? game.temperature : 0}}"></div>
   <div class="tracker oxygen_{{game ? game.oxygen : 0}}"></div>
   <div *ngIf="game?.infrastructure !== null" class="tracker infrastructure_{{game?.infrastructure ? game.infrastructure : 0}}"></div>

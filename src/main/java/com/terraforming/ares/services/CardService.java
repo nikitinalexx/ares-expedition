@@ -21,7 +21,9 @@ public class CardService {
     private final Map<Integer, Card> baseCorporations;
     private final Map<Integer, Card> discoveryCorporations;
     private final Map<Integer, Card> buffedCorporations;
+    private final Map<Integer, Card> buffedProjects;
     private final Map<Integer, Card> buffedCorporationsMapping;
+    private final Map<Integer, Card> buffedProjectsMapping;
     private final Set<Integer> crysisExcludedCards;
     private final Map<Integer, CrysisCard> crysisCards;
     private final Random random = new Random();
@@ -39,7 +41,9 @@ public class CardService {
         baseCorporations = cardFactory.createBaseCorporations();
         discoveryCorporations = cardFactory.createDiscoveryCorporations();
         buffedCorporations = cardFactory.createBuffedCorporations();
+        buffedProjects = cardFactory.createBuffedProjects();
         buffedCorporationsMapping = cardFactory.getBuffedCorporationsMapping();
+        buffedProjectsMapping = cardFactory.getBuffedProjectsMapping();
         crysisExcludedCards = cardFactory.getCrysisExcludedCards();
         this.crysisCards = cardFactory.getCrysisCards().stream().collect(
                 Collectors.toMap(CrysisCard::getId, Function.identity())
@@ -67,6 +71,15 @@ public class CardService {
         if (expansions.contains(Expansion.CRYSIS)) {
             cardIdsStream = cardIdsStream
                     .filter(cardId -> !crysisExcludedCards.contains(cardId));
+        }
+        if (expansions.contains(Expansion.EXPERIMENTAL)) {
+            cardIdsStream = cardIdsStream.map(cardId -> {
+                if (buffedProjectsMapping.containsKey(cardId)) {
+                    return buffedProjectsMapping.get(cardId).getId();
+                } else {
+                    return cardId;
+                }
+            });
         }
         return createAndShuffleDeck(cardIdsStream);
     }
@@ -189,6 +202,11 @@ public class CardService {
         if (card != null) {
             return card;
         }
+
+        if (buffedProjects.containsKey(id)) {
+            return buffedProjects.get(id);
+        }
+
         return buffedCorporations.get(id);
     }
 

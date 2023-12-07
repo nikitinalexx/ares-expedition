@@ -1,5 +1,6 @@
 package com.terraforming.ares.processors.turn;
 
+import com.terraforming.ares.cards.corporations.DummyCard;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.payments.Payment;
@@ -49,6 +50,15 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
             if (previouslyPlayedCard.onBuiltEffectApplicableToOther()) {
                 previouslyPlayedCard.postProjectBuiltEffect(marsContext, card, turn.getInputParams());
             }
+        }
+
+        for (Player anotherPlayer : game.getPlayerUuidToPlayer().values()) {
+            anotherPlayer.getHand().getCards().stream()
+                    .map(cardService::getCard)
+                    .filter(Card::onBuiltEffectApplicableToAllPlayers)
+                    .forEach(
+                            c -> c.postProjectBuiltEffectForAll(marsContext, new DummyCard(), anotherPlayer, turn.getInputParams())
+                    );
         }
 
         if (game.isCrysis()) {

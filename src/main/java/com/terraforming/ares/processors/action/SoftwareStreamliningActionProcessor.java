@@ -45,7 +45,8 @@ public class SoftwareStreamliningActionProcessor implements BlueActionCardProces
                         List.of(),
                         2,
                         false,
-                        true
+                        true,
+                        List.of()
                 )
         );
 

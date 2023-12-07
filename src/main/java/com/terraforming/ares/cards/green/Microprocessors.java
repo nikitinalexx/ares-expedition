@@ -59,7 +59,8 @@ public class Microprocessors implements BaseExpansionGreenCard {
                         List.of(),
                         1,
                         false,
-                        true
+                        true,
+                        List.of()
                 )
         );
 

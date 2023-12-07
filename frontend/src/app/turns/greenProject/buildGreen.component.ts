@@ -540,6 +540,7 @@ export class BuildGreenComponent implements OnInit {
         callback(data);
       }, error => {
         this.errorMessage = error;
+        callback(null);
       });
     }
   }

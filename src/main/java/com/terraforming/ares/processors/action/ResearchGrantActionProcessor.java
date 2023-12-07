@@ -58,6 +58,15 @@ public class ResearchGrantActionProcessor implements BlueActionCardProcessor<Res
                     .forEach(c -> c.postProjectBuiltEffect(marsContext, new DummyCard(), inputParameters));
         }
 
+        for (Player anotherPlayer : game.getPlayerUuidToPlayer().values()) {
+            anotherPlayer.getHand().getCards().stream()
+                    .map(cardService::getCard)
+                    .filter(Card::onBuiltEffectApplicableToAllPlayers)
+                    .forEach(
+                            c -> c.postProjectBuiltEffectForAll(marsContext, new DummyCard(), anotherPlayer, inputParameters)
+                    );
+        }
+
 
         return null;
     }

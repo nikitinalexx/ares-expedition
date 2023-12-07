@@ -41,7 +41,8 @@ public class BuffedZetacellCorporation implements CorporationCard {
                         List.of(),
                         4,
                         false,
-                        true
+                        true,
+                        List.of()
                 )
         );
         return null;

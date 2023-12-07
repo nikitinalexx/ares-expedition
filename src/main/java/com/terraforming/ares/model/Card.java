@@ -1,6 +1,7 @@
 package com.terraforming.ares.model;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.cards.green.ExperimentExpansionBlueCard;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.milestones.Milestone;
 import com.terraforming.ares.model.parameters.OceanRequirement;
@@ -42,6 +43,9 @@ public interface Card {
     default void payAgain(MarsGame game, CardService cardService, Player player) {
     }
 
+    default void collectExtraIncome(MarsGame game, CardService cardService, Player player) {
+    }
+
     default boolean canPayAgain() {
         return false;
     }
@@ -77,6 +81,9 @@ public interface Card {
     default void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
     }
 
+    default void postProjectBuiltEffectForAll(MarsContext marsContext, Card projectThatIsBuild, Player anotherPlayer, Map<Integer, List<Integer>> inputParams) {
+    }
+
     default void onOceanFlippedEffect(MarsContext context) {
     }
 
@@ -105,6 +112,8 @@ public interface Card {
     default boolean onBuiltEffectApplicableToOther() {
         return false;
     }
+
+    default boolean onBuiltEffectApplicableToAllPlayers() { return false; }
 
     default int heatSpendOnBuild() {
         return 0;

@@ -1239,6 +1239,32 @@
     <div class="tile temperature-tile "></div>
   </div>
 
+  <div *ngIf="actionAdvertising(card)">
+    <div class="resource card"></div>
+    <div class="money resource ">20</div>
+    +
+    <br/>
+    :
+    <br/>
+    <div class="production-box production-box-size0b">
+      <span class="production money">1</span>
+    </div>
+  </div>
+
+  <div *ngIf="actionBuffedGhgProduction(card)">
+    <div class="red-arrow "></div>
+    <div class="microbe resource "></div>
+    <br>
+    OR
+    <div class="microbe resource "></div>
+    <div class="microbe resource "></div>
+    <div class="red-arrow "></div>
+    <div class="tile temperature-tile "></div>
+    <span style="font-size:12px; ">{{card.actionDescription}}</span>
+    <div class="microbe resource "></div>
+    <div class="microbe resource "></div>
+  </div>
+
   <div *ngIf="actionGreenHouses(card)">
     (1-4) X
     <div class="resource heat"></div>
@@ -1265,6 +1291,17 @@
     <div class=" heat resource "></div>
     <div class=" heat resource "></div>
     <br/>
+    <div class=" heat resource "></div>
+    *
+  </div>
+
+  <div *ngIf="actionBuffedHydroElectric(card)">
+    <div class=" money resource ">1</div>
+    <div class="red-arrow"></div>
+    <div class=" heat resource "></div>
+    <div class=" heat resource "></div>
+    <br/>
+    <div class=" heat resource "></div>
     <div class=" heat resource "></div>
     *
   </div>
@@ -1379,6 +1416,24 @@
     <div class="science resource "></div>
   </div>
 
+  <div *ngIf="actionCommunicationCenter(card)">
+    <div class="resource-tag tag-event red-border"></div>
+    :
+    <div class="science resource "></div>
+    <br/>
+    <span class="phase-4 resource" style="border-radius: 5px"></span>-
+    3 <div class="science resource "></div> :  <div class="card resource"></div>
+
+    <br/>
+    <span style="font-size:12px; ">{{card.actionDescription}}</span>
+    <br/>
+    <div class="production-box production-box-size0b" style="margin-right: 20px">
+      -<div class="production heat red-border"></div>
+    </div>
+    <div class="science resource "></div>
+    <div class="science resource "></div>
+  </div>
+
   <div *ngIf="actionSelfReplicatingBacteria(card)">
     <div class="red-arrow "></div>
     <div class="microbe resource "></div>
@@ -1450,6 +1505,20 @@
     <div class="microbe resource "></div>
     <div class="red-arrow "></div>
     <div class="tile oxygen-tile "></div>
+  </div>
+
+  <div *ngIf="actionBuffedRegolithEaters(card)">
+    <div class="red-arrow "></div>
+    <div class="microbe resource "></div>
+    OR
+    <div class="microbe resource "></div>
+    <div class="microbe resource "></div>
+    <div class="red-arrow "></div>
+    <div class="tile oxygen-tile "></div>
+    <span style="font-size:12px; ">{{card.actionDescription}}</span>
+    <br/>
+    <div class="microbe resource "></div>
+    <div class="microbe resource "></div>
   </div>
 
   <div *ngIf="actionRestructuredResources(card)" style="margin-top: 50px">
@@ -1531,6 +1600,12 @@
 
   <div *ngIf="actionThinktank(card)" style="margin-top: 50px">
     <div class="money resource">2</div>
+    <div class="red-arrow"></div>
+    <div class="card resource"></div>
+  </div>
+
+  <div *ngIf="actionBusinessNetwork(card)" style="margin-top: 50px">
+    <div class="money resource">3</div>
     <div class="red-arrow"></div>
     <div class="card resource"></div>
   </div>

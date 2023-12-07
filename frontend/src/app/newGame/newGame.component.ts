@@ -49,6 +49,7 @@ export class NewGameComponent implements OnInit {
       improveWeakCorp: false,
       dummyHand: false,
       infrastructure: false,
+      experimental: false,
       difficulty1: '',
       difficulty2: '',
       difficulty3: '',
@@ -122,6 +123,9 @@ export class NewGameComponent implements OnInit {
       }
       if (this.parentForm.value.infrastructure) {
         expansions.push(Expansion.INFRASTRUCTURE);
+      }
+      if (this.parentForm.value.experimental) {
+        expansions.push(Expansion.EXPERIMENTAL);
       }
       this.loading = true;
       this.players = null;

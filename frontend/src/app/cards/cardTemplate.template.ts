@@ -394,6 +394,14 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.GHG_PRODUCTION;
   }
 
+  actionAdvertising(card: Card): boolean {
+    return card.cardAction === CardAction.ADVERTISING;
+  }
+
+  actionBuffedGhgProduction(card: Card): boolean {
+    return card.cardAction === CardAction.BUFFED_GHG_PRODUCTION;
+  }
+
   actionGreenHouses(card: Card): boolean {
     return card.cardAction === CardAction.GREEN_HOUSES;
   }
@@ -412,6 +420,10 @@ export class CardTemplateComponent {
 
   actionHydroElectric(card: Card): boolean {
     return card.cardAction === CardAction.HYDRO_ELECTRIC;
+  }
+
+  actionBuffedHydroElectric(card: Card): boolean {
+    return card.cardAction === CardAction.BUFFED_HYDRO_ELECTRIC;
   }
 
   actionInterns(card: Card): boolean {
@@ -462,6 +474,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.FIBROUS_COMPOSITE_MATERIAL;
   }
 
+  actionCommunicationCenter(card: Card): boolean {
+    return card.cardAction === CardAction.COMMUNICATION_CENTER;
+  }
+
   actionSelfReplicatingBacteria(card: Card): boolean {
     return card.cardAction === CardAction.SELF_REPLICATING_BACTERIA;
   }
@@ -496,6 +512,10 @@ export class CardTemplateComponent {
 
   actionRegolithEaters(card: Card): boolean {
     return card.cardAction === CardAction.REGOLITH_EATERS;
+  }
+
+  actionBuffedRegolithEaters(card: Card): boolean {
+    return card.cardAction === CardAction.BUFFED_REGOLITH_EATERS;
   }
 
   actionDiscountOne(card: Card): boolean {
@@ -552,6 +572,10 @@ export class CardTemplateComponent {
 
   actionThinktank(card: Card): boolean {
     return card.cardAction === CardAction.THINKTANK;
+  }
+
+  actionBusinessNetwork(card: Card): boolean {
+    return card.cardAction === CardAction.BUSINESS_NETWORK;
   }
 
   actionUnitedPlanetary(card: Card): boolean {

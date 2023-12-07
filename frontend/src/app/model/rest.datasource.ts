@@ -36,6 +36,10 @@ export class RestDataSource {
     );
   }
 
+  getExperimentalCards(): Observable<Card[]> {
+    return this.sendRequest<Card[]>('POST', this.url + '/projects/experimental');
+  }
+
   getLobby(nickname: string): Observable<Lobby> {
     return this.sendRequest<Lobby>('GET', this.url + '/lobby/' + nickname);
   }

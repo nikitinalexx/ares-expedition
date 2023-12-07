@@ -54,7 +54,8 @@ public class InventionContest implements BaseExpansionRedCard {
                         new ArrayList<>(cards),
                         2,
                         true,
-                        true
+                        true,
+                        List.of()
                 )
         );
 

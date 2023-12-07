@@ -838,10 +838,10 @@ public class GameController {
                 .infrastructure(game.getPlanet().getInfrastructureValue())
                 .phaseTemperature(phasePlanet != null ? phasePlanet.getTemperatureValue() : null)
                 .phaseTemperatureColor(phasePlanet != null ? phasePlanet.getTemperatureColor() : null)
-                .phaseInfrastructure(phasePlanet != null ? phasePlanet.getInfrastructureValue(): null)
+                .phaseInfrastructure(phasePlanet != null ? phasePlanet.getInfrastructureValue() : null)
                 .phaseOxygen(phasePlanet != null ? phasePlanet.getOxygenValue() : null)
                 .phaseOxygenColor(phasePlanet != null ? phasePlanet.getOxygenColor() : null)
-                .phaseInfrastructureColor(phasePlanet != null ? phasePlanet.getInfrastructureColor(): null)
+                .phaseInfrastructureColor(phasePlanet != null ? phasePlanet.getInfrastructureColor() : null)
                 .oceans(game.getPlanet().getOceans().stream().map(OceanDto::of).collect(Collectors.toList()))
                 .phaseOceans(phasePlanet != null ? phasePlanet.getRevealedOceans().size() : null)
                 .otherPlayers(buildOtherPlayers(game, playerUuid))
@@ -927,6 +927,17 @@ public class GameController {
     public List<CardDto> getAllProjectCards(@RequestBody AllProjectsRequest request) {
         List<Card> corporations = cardFactory.getAllCorporations(request.getExpansions());
         List<Card> projects = cardFactory.getAllProjects(request.getExpansions());
+
+        return Stream.of(corporations, projects)
+                .flatMap(List::stream)
+                .map(CardDto::from)
+                .collect(Collectors.toList());
+    }
+
+    @PostMapping("/projects/experimental")
+    public List<CardDto> getAllExperimentalProjectCards() {
+        List<Card> corporations = List.of();
+        List<Card> projects = cardFactory.getExperimentalProjects();
 
         return Stream.of(corporations, projects)
                 .flatMap(List::stream)

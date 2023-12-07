@@ -3,6 +3,7 @@ package com.terraforming.ares.services;
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.turn.DiscardCardsTurn;
 import com.terraforming.ares.model.turn.Turn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.processors.turn.TurnProcessor;
@@ -17,6 +18,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -135,7 +137,11 @@ public class GameProcessorService extends BaseProcessorService {
     private Function<MarsGame, TurnResponse> getSyncGameUpdate(Turn turn) {
         return game -> {
             Player player = game.getPlayerByUuid(turn.getPlayerUuid());
-            if (player.getNextTurn() != null && player.getNextTurn().expectedAsNextTurn() && player.getNextTurn().getType() == turn.getType()) {
+            Turn nextTurn = player.getNextTurn();
+            if (nextTurn != null && nextTurn.expectedAsNextTurn() && nextTurn.getType() == turn.getType()) {
+                if (nextTurn instanceof DiscardCardsTurn) {
+                    ((DiscardCardsTurn) turn).setAlreadyDrafted(new ArrayList<>(((DiscardCardsTurn) nextTurn).getAlreadyDrafted()));
+                }
                 player.removeNextTurn();
             }
 
