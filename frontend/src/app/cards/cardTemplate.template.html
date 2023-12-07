@@ -1715,6 +1715,11 @@
     <div class="resource money">-11</div>
   </div>
 
+  <div *ngIf="actionConscription(card)">
+    <span style="font-size:14px;">NEXT CARD (ANY COLOR): </span>
+    <div class="resource money">-16</div>
+  </div>
+
   <div *ngIf="actionEnergyStorage(card)">
     <div class="requirements">7 TR</div>
   </div>
@@ -1845,6 +1850,14 @@
       <div class="production money">1</div>
       /
       <div class="resource-tag production-tag tag-earth"></div>
+    </div>
+  </div>
+
+  <div *ngIf="actionMcNoTagIncome(card)">
+    <div class="production-box production-box-size2a">
+      <div class="production money">1</div>
+      /
+      <div class="resource-tag" style="background-color: white">0</div>
     </div>
   </div>
 

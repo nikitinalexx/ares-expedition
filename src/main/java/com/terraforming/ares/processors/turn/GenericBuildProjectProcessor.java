@@ -53,11 +53,11 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
         }
 
         for (Player anotherPlayer : game.getPlayerUuidToPlayer().values()) {
-            anotherPlayer.getHand().getCards().stream()
+            anotherPlayer.getPlayed().getCards().stream()
                     .map(cardService::getCard)
                     .filter(Card::onBuiltEffectApplicableToAllPlayers)
                     .forEach(
-                            c -> c.postProjectBuiltEffectForAll(marsContext, new DummyCard(), anotherPlayer, turn.getInputParams())
+                            c -> c.postProjectBuiltEffectForAll(marsContext, card, anotherPlayer, turn.getInputParams())
                     );
         }
 

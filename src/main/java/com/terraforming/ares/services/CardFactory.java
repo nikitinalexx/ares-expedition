@@ -454,7 +454,9 @@ public class CardFactory {
                 new Advertising(1000),
                 new BusinessNetwork(1001),
                 new CharityDonation(1002),
-                new CommunicationCenter(1003)
+                new CommunicationCenter(1003),
+                new CommunityServices(1004),
+                new Conscription(1005)
         );
 
         sortedBaseCorporations = List.of(

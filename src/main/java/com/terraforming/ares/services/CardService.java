@@ -273,6 +273,18 @@ public class CardService {
         );
     }
 
+    public int countCardsWithoutTags(Player player) {
+        if (player == null || player.getPlayed() == null || CollectionUtils.isEmpty(player.getPlayed().getCards())) {
+            return 0;
+        }
+
+        return (int) (
+                player.getPlayed().getCards().stream().map(this::getCard)
+                        .filter(card -> CollectionUtils.isEmpty(card.getTags()))
+                        .count()
+        );
+    }
+
     public Map<Tag, Long> countPlayedTagsAsMap(Player player) {
         if (player == null || player.getPlayed() == null || CollectionUtils.isEmpty(player.getPlayed().getCards())) {
             return Map.of();

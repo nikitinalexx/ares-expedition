@@ -690,6 +690,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.WORK_CREWS;
   }
 
+  actionConscription(card: Card): boolean {
+    return card.cardAction === CardAction.CONSCRIPTION;
+  }
+
   actionAstrofarm(card: Card): boolean {
     return card.cardAction === CardAction.ASTROFARM;
   }
@@ -708,6 +712,10 @@ export class CardTemplateComponent {
 
   actionMcEarthIncome(card: Card): boolean {
     return card.cardAction === CardAction.MC_EARTH_INCOME;
+  }
+
+  actionMcNoTagIncome(card: Card): boolean {
+    return card.cardAction === CardAction.ME_NO_TAG_INCOME;
   }
 
   actionPlantPlantIncome(card: Card): boolean {
