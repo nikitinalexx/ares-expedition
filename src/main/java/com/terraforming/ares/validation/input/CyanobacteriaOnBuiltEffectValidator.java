@@ -1,6 +1,6 @@
 package com.terraforming.ares.validation.input;
 
-import com.terraforming.ares.cards.red.ControlledBloom;
+import com.terraforming.ares.cards.red.Cyanobacteria;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardCollectableResource;
 import com.terraforming.ares.model.InputFlag;
@@ -19,14 +19,14 @@ import java.util.Map;
  */
 @Component
 @RequiredArgsConstructor
-public class ControlledBloomOnBuiltEffectValidator implements OnBuiltEffectValidator<ControlledBloom> {
+public class CyanobacteriaOnBuiltEffectValidator implements OnBuiltEffectValidator<Cyanobacteria> {
     private static final String INCORRECT_INPUT_ERROR_MESSAGE =
-            "Controlled Bloom requires input for Microbes";
+            "Cyanobacteria requires input for Microbes";
     private final CardService cardService;
 
     @Override
-    public Class<ControlledBloom> getType() {
-        return ControlledBloom.class;
+    public Class<Cyanobacteria> getType() {
+        return Cyanobacteria.class;
     }
 
     @Override

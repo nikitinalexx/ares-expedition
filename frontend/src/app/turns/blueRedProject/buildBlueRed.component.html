@@ -236,6 +236,19 @@
         </div>
       </div>
 
+      <div *ngIf="inputMicrobeEffect()" class="card-container">
+        <h2 class="text-white">Choose Microbes card</h2>
+        <div class="form-group">
+          <ul class="myUL">
+            <li *ngFor="let card of getMicrobePlayedCards();" (click)="addMicrobeCardClick(card)"
+                [ngClass]="addMicrobeCardClass(card)"
+                class="filterDiv automated display">
+              <app-card-template [card]="card" [player]="game?.player" [showResources]="true"></app-card-template>
+            </li>
+          </ul>
+        </div>
+      </div>
+
       <div *ngIf="largeConvoyEffect()" class="card-container">
         <div class="form-group">
           <div class="form-check">

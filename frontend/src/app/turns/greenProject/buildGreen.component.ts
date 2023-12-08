@@ -28,6 +28,7 @@ export class BuildGreenComponent implements OnInit {
   selectedProject: Card;
   onBuildMicrobeChoice = null;
   onBuildAnimalChoice = null;
+  addMicrobeCard = null;
   projectsToDiscard: number[];
   viralEnhancersTargetCards: number[];
   phaseInput = 0;
@@ -71,6 +72,14 @@ export class BuildGreenComponent implements OnInit {
     this.requirementsService.sortCardsForBuilding(cards, this.game.player, this.game);
 
     return cards;
+  }
+
+  addMicrobeCardClass(card: Card) {
+    if (this.addMicrobeCard && this.addMicrobeCard.id === card.id) {
+      return 'clicked-card';
+    } else {
+      return '';
+    }
   }
 
   canBuildExtraOfPriceTwelve(): string {
@@ -387,6 +396,20 @@ export class BuildGreenComponent implements OnInit {
     return 0;
   }
 
+  inputMicrobeEffect(): boolean {
+    return this.selectedProject.cardAction === CardAction[CardAction.CYANOBACTERIA];
+  }
+
+  addMicrobeCardClick(card: Card) {
+    if (card.cardResource === CardResource[CardResource.MICROBE]) {
+      if (this.addMicrobeCard && this.addMicrobeCard.id === card.id) {
+        this.addMicrobeCard = null;
+      } else {
+        this.addMicrobeCard = card;
+      }
+    }
+  }
+
   buildGreenProject(callback: (value: any) => void) {
     if (!this.selectedProject) {
       this.errorMessage = 'No project selected';
@@ -413,6 +436,12 @@ export class BuildGreenComponent implements OnInit {
         } else {
           inputParams[InputFlag.MARS_UNIVERSITY_CARD.valueOf()] = this.projectsToDiscard;
         }
+      }
+
+      if (this.inputMicrobeEffect()) {
+        inputParams[InputFlag.ADD_MICROBE.valueOf()] = [
+          this.addMicrobeCard ? this.addMicrobeCard.id : InputFlag.SKIP_ACTION.valueOf()
+        ];
       }
 
       if (this.infrastructureCargoShipsInput() && this.parentForm.value.cargoShipsHeat) {

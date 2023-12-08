@@ -92,8 +92,8 @@ public class MarsGame {
                     .difficulty(computers.get(i))
                     .build();
             players.add(player);
-            player.getHand().addCard(1003);
-
+            player.getHand().addCard(58);
+            player.getHand().addCard(1009);
         }
 
         playerUuidToPlayer = players.stream().collect(Collectors.toMap(Player::getUuid, Function.identity()));

@@ -80,6 +80,15 @@ export class RequirementsComponent {
       }
     }
 
+    if (card.cardAction === CardAction.DIVERSITY_SUPPORT) {
+      const allTags = player.played.map(c => c.tags).reduce((acc, val) => acc.concat(val), []);
+
+      const uniqueTags = [...new Set(allTags)];
+      if (uniqueTags.length < 9) {
+        return false;
+      }
+    }
+
     if (card.tempReq && card.tempReq.length > 0) {
       const requirements = playerMayAmplifyGlobalRequirement ? this.amplifyRequirement(card.tempReq) : card.tempReq;
       if (!requirements.find(req => req === game.phaseTemperatureColor)) {

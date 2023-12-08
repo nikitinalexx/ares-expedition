@@ -51,6 +51,19 @@
         </div>
       </div>
 
+      <div *ngIf="inputMicrobeEffect()" class="card-container">
+        <h2 class="text-white">Choose Microbes card</h2>
+        <div class="form-group">
+          <ul class="myUL">
+            <li *ngFor="let card of getMicrobePlayedCards();" (click)="addMicrobeCardClick(card)"
+                [ngClass]="addMicrobeCardClass(card)"
+                class="filterDiv automated display">
+              <app-card-template [card]="card" [player]="game?.player" [showResources]="true"></app-card-template>
+            </li>
+          </ul>
+        </div>
+      </div>
+
       <div *ngIf="infrastructureCargoShipsInput()" class="custom-control-input">
         <input type="checkbox" id="cargoShips" formControlName="cargoShipsHeat">
         <label for="cargoShips" class="custom-control-label text-white" style="margin-left: 10px">Cargo ships - take heat (default = plants)</label>

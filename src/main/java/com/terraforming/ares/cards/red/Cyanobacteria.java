@@ -1,11 +1,10 @@
 package com.terraforming.ares.cards.red;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.cards.green.ExperimentExpansionRedCard;
+import com.terraforming.ares.cards.green.ExperimentExpansionGreenCard;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.income.Gain;
 import com.terraforming.ares.model.income.GainType;
-import com.terraforming.ares.model.parameters.OceanRequirement;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -18,17 +17,17 @@ import java.util.Map;
  */
 @RequiredArgsConstructor
 @Getter
-public class ControlledBloom implements ExperimentExpansionRedCard {
+public class Cyanobacteria implements ExperimentExpansionGreenCard {
     private final int id;
     private final CardMetadata cardMetadata;
 
-    public ControlledBloom(int id) {
+    public Cyanobacteria(int id) {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
-                .name("Controlled Bloom")
-                .description("Gain 3 plants. Add 3 microbes to ANOTHER card.")
-                .bonuses(List.of(Gain.of(GainType.PLANT, 3)))
-                .cardAction(CardAction.CONTROLLED_BLOOM)
+                .name("Cyanobacteria")
+                .description("Raise Oxygen 1 step. Put microbe on another card for every revealed ocean.")
+                .bonuses(List.of(Gain.of(GainType.OXYGEN, 1)))
+                .cardAction(CardAction.CYANOBACTERIA)
                 .build();
     }
 
@@ -46,7 +45,7 @@ public class ControlledBloom implements ExperimentExpansionRedCard {
 
         if (microbesCardId != InputFlag.SKIP_ACTION.getId()) {
             Card microbeCard = marsContext.getCardService().getCard(microbesCardId);
-            marsContext.getCardResourceService().addResources(player, microbeCard, 3);
+            marsContext.getCardResourceService().addResources(player, microbeCard, marsContext.getGame().getPlanetAtTheStartOfThePhase().getRevealedOceans().size());
         }
     }
 
@@ -57,30 +56,18 @@ public class ControlledBloom implements ExperimentExpansionRedCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        Player player = marsContext.getPlayer();
-        player.setPlants(player.getPlants() + 3);
+        marsContext.getTerraformingService().raiseOxygen(marsContext);
         return null;
     }
 
     @Override
     public List<Tag> getTags() {
-        return List.of(Tag.MICROBE, Tag.PLANT, Tag.EVENT);
+        return List.of(Tag.MICROBE);
     }
 
     @Override
     public int getPrice() {
-        return 13;
-    }
-
-
-    @Override
-    public OceanRequirement getOceanRequirement() {
-        return OceanRequirement.builder().minValue(3).maxValue(Constants.MAX_OCEANS).build();
-    }
-
-    @Override
-    public int getWinningPoints() {
-        return 1;
+        return 12;
     }
 
 }

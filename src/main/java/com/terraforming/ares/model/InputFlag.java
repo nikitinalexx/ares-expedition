@@ -40,7 +40,8 @@ public enum InputFlag {
     CRYSIS_INPUT_OPTION_1(29),
     CRYSIS_INPUT_OPTION_2(30),
     CARGO_SHIPS(31),
-    CARGO_SHIPS_HEAT(32)
+    CARGO_SHIPS_HEAT(32),
+    ADD_MICROBE(33)
     ;
 
     private final int id;

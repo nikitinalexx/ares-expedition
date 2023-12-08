@@ -11,11 +11,6 @@ import com.terraforming.ares.model.Expansion;
 public interface ExperimentExpansionRedCard extends RedCard {
 
     @Override
-    default CardColor getColor() {
-        return CardColor.RED;
-    }
-
-    @Override
     default Expansion getExpansion() {
         return Expansion.EXPERIMENTAL;
     }

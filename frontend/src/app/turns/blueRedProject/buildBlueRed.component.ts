@@ -32,6 +32,7 @@ export class BuildBlueRedComponent implements OnInit {
   importedHydrogenMicrobeAnimal = null;
   importedNitrogenMicrobeCard = null;
   importedNitrogenAnimalCard = null;
+  addMicrobeCard = null;
   largeConvoyAnimalCard = null;
   localHeatTrappingCard = null;
   phaseInput = 0;
@@ -90,6 +91,10 @@ export class BuildBlueRedComponent implements OnInit {
     return this.game?.player.played.filter(card => card.cardResource === CardResource[CardResource.ANIMAL]);
   }
 
+  getMicrobePlayedCards(): Card[] {
+    return this.game?.player.played.filter(card => card.cardResource === CardResource[CardResource.MICROBE]);
+  }
+
   expectsTagInput(): boolean {
     return this.selectedProject?.cardAction === CardAction[CardAction.CHOOSE_TAG] ||
       this.selectedProject?.cardAction === CardAction[CardAction.TOPOGRAPHIC_MAPPING];
@@ -104,7 +109,7 @@ export class BuildBlueRedComponent implements OnInit {
       .filter(card => {
         for (const build of this.game?.player.builds) {
           if ((build.type === BuildType.BLUE_RED || build.type === BuildType.GREEN_OR_BLUE
-            || build.type === BuildType.BLUE_RED_OR_MC || build.type === BuildType.BLUE_RED_OR_CARD)
+              || build.type === BuildType.BLUE_RED_OR_MC || build.type === BuildType.BLUE_RED_OR_CARD)
             && (build.priceLimit === 0 || build.priceLimit >= card.price)) {
             return true;
           }
@@ -168,9 +173,27 @@ export class BuildBlueRedComponent implements OnInit {
     }
   }
 
+  addMicrobeCardClick(card: Card) {
+    if (card.cardResource === CardResource[CardResource.MICROBE]) {
+      if (this.addMicrobeCard && this.addMicrobeCard.id === card.id) {
+        this.addMicrobeCard = null;
+      } else {
+        this.addMicrobeCard = card;
+      }
+    }
+  }
+
   importedNitrogenCardClass(card: Card) {
     if (this.importedNitrogenMicrobeCard && this.importedNitrogenMicrobeCard.id === card.id
       || this.importedNitrogenAnimalCard && this.importedNitrogenAnimalCard.id === card.id) {
+      return 'clicked-card';
+    } else {
+      return '';
+    }
+  }
+
+  addMicrobeCardClass(card: Card) {
+    if (this.addMicrobeCard && this.addMicrobeCard.id === card.id) {
       return 'clicked-card';
     } else {
       return '';
@@ -289,6 +312,7 @@ export class BuildBlueRedComponent implements OnInit {
     this.importedHydrogenMicrobeAnimal = null;
     this.importedNitrogenAnimalCard = null;
     this.importedNitrogenMicrobeCard = null;
+    this.addMicrobeCard = null;
     this.largeConvoyAnimalCard = null;
     this.localHeatTrappingCard = null;
     this.projectsToDiscard = [];
@@ -322,7 +346,7 @@ export class BuildBlueRedComponent implements OnInit {
 
   marsUniversityEffect(): boolean {
     return (this.selectedProject.cardAction === CardAction[CardAction.MARS_UNIVERSITY]
-      || this.game.player.played.some(card => card.cardAction === CardAction[CardAction.MARS_UNIVERSITY]))
+        || this.game.player.played.some(card => card.cardAction === CardAction[CardAction.MARS_UNIVERSITY]))
       && (this.selectedProject.tags.some(tag => tag === Tag[Tag.SCIENCE] || this.countTagsUsedAsInput([Tag.SCIENCE]) > 0));
   }
 
@@ -337,7 +361,7 @@ export class BuildBlueRedComponent implements OnInit {
 
   viralEnhancersEffect(): boolean {
     return (this.selectedProject.cardAction === CardAction[CardAction.VIRAL_ENHANCERS]
-      || this.game.player.played.some(card => card.cardAction === CardAction[CardAction.VIRAL_ENHANCERS]))
+        || this.game.player.played.some(card => card.cardAction === CardAction[CardAction.VIRAL_ENHANCERS]))
       && this.selectedProject.tags.some(tag =>
         tag === Tag[Tag.PLANT] || tag === Tag[Tag.MICROBE] || tag === Tag[Tag.ANIMAL]
         || this.countTagsUsedAsInput([Tag.PLANT, Tag.MICROBE, Tag.ANIMAL]) > 0
@@ -358,6 +382,10 @@ export class BuildBlueRedComponent implements OnInit {
 
   importedNitrogenEffect(): boolean {
     return this.selectedProject.cardAction === CardAction[CardAction.IMPORTED_NITROGEN];
+  }
+
+  inputMicrobeEffect(): boolean {
+    return this.selectedProject.cardAction === CardAction[CardAction.CONTROLLED_BLOOM];
   }
 
   largeConvoyEffect(): boolean {
@@ -644,6 +672,12 @@ export class BuildBlueRedComponent implements OnInit {
 
         inputParams[InputFlag.IMPORTED_NITROGEN_ADD_ANIMALS.valueOf()] = [
           this.importedNitrogenAnimalCard ? this.importedNitrogenAnimalCard.id : InputFlag.SKIP_ACTION.valueOf()
+        ];
+      }
+
+      if (this.inputMicrobeEffect()) {
+        inputParams[InputFlag.ADD_MICROBE.valueOf()] = [
+          this.addMicrobeCard ? this.addMicrobeCard.id : InputFlag.SKIP_ACTION.valueOf()
         ];
       }
 

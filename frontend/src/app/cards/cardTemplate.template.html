@@ -787,6 +787,12 @@
          class="ocean-tile tile small-tile"></div>
   </div>
 
+  <div *ngIf="actionDiversitySupport(card)">
+    <div class="requirements">
+      9 <span class="small-tag resource-tag tag-dynamic"></span>
+    </div>
+  </div>
+
   <div *ngIf="actionDiscountOne(card)" style="margin-top: 50px">
     : <span class="money resource ">-1</span>
   </div>
@@ -1981,6 +1987,20 @@
     <div class="microbe resource"></div>
     * 2
     <div class="animal resource"></div>
+    *
+  </div>
+
+  <div *ngIf="actionControlledBloom(card)">
+    <div class="microbe resource"></div>
+    <div class="microbe resource"></div>
+    <div class="microbe resource"></div>
+    *
+  </div>
+
+  <div *ngIf="actionCyanobacteria(card)">
+    <div class="microbe resource"></div>
+    /
+    <div class="tile ocean-tile"></div>
     *
   </div>
 

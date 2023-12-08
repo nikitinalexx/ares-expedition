@@ -604,7 +604,8 @@ export class CardTemplateComponent {
 
   capitalizeDescription(card: Card): boolean {
     return card.cardAction === CardAction.CAPITALISE_DESCRIPTION ||
-      card.cardAction === CardAction.SYNTHETIC_CATASTROPHE;
+      card.cardAction === CardAction.SYNTHETIC_CATASTROPHE ||
+      card.cardAction === CardAction.DIVERSITY_SUPPORT;
   }
 
   actionImportedHydrogen(card: Card): boolean {
@@ -668,6 +669,18 @@ export class CardTemplateComponent {
 
   actionImportedNitrogen(card: Card): boolean {
     return card.cardAction === CardAction.IMPORTED_NITROGEN;
+  }
+
+  actionControlledBloom(card: Card): boolean {
+    return card.cardAction === CardAction.CONTROLLED_BLOOM;
+  }
+
+  actionCyanobacteria(card: Card): boolean {
+    return card.cardAction === CardAction.CYANOBACTERIA;
+  }
+
+  actionDiversitySupport(card: Card): boolean {
+    return card.cardAction === CardAction.DIVERSITY_SUPPORT;
   }
 
   actionLocalHeatTrapping(card: Card): boolean {

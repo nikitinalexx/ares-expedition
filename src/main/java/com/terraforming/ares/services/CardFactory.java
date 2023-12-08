@@ -456,7 +456,11 @@ public class CardFactory {
                 new CharityDonation(1002),
                 new CommunicationCenter(1003),
                 new CommunityServices(1004),
-                new Conscription(1005)
+                new Conscription(1005),
+                new ControlledBloom(1006),
+                new CoronaExtractor(1007),
+                new Cyanobacteria(1008),
+                new DiversitySupport(1009)
         );
 
         sortedBaseCorporations = List.of(
