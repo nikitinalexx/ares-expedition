@@ -32,6 +32,11 @@ public class CommunicationCenter implements ExperimentExpansionBlueCard {
     }
 
     @Override
+    public boolean isActiveCard() {
+        return false;
+    }
+
+    @Override
     public CardCollectableResource getCollectableResource() {
         return CardCollectableResource.SCIENCE;
     }

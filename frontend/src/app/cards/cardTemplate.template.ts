@@ -306,6 +306,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.DRONE_ASSISTED_CONSTRUCTION;
   }
 
+  actionFloydContinuum(card: Card): boolean {
+    return card.cardAction === CardAction.FLOYD_CONTINUUM;
+  }
+
   actionCompostingFactory(card: Card): boolean {
     return card.cardAction === CardAction.COMPOSTING_FACTORY;
   }
@@ -464,6 +468,10 @@ export class CardTemplateComponent {
 
   actionMediaGroup(card: Card): boolean {
     return card.cardAction === CardAction.MEDIA_GROUP;
+  }
+
+  actionGmoContract(card: Card): boolean {
+    return card.cardAction === CardAction.GMO_CONTRACT;
   }
 
   actionNitriteReducting(card: Card): boolean {
@@ -683,6 +691,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.DIVERSITY_SUPPORT;
   }
 
+  actionMcTurnIncome(card: Card): boolean {
+    return card.cardAction === CardAction.MC_TURN_INCOME;
+  }
+
   actionLocalHeatTrapping(card: Card): boolean {
     return card.cardAction === CardAction.LOCAL_HEAT_TRAPPING;
   }
@@ -781,6 +793,10 @@ export class CardTemplateComponent {
 
   actionEnergyStorage(card: Card): boolean {
     return card.cardAction === CardAction.ENERGY_STORAGE;
+  }
+
+  actionHarvest(card: Card): boolean {
+    return card.cardAction === CardAction.HARVEST;
   }
 
   actionPrivateInvestorBeach(card: Card): boolean {

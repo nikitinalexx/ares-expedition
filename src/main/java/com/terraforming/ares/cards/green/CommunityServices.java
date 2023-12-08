@@ -10,7 +10,6 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -18,7 +17,7 @@ import java.util.Set;
  */
 @RequiredArgsConstructor
 @Getter
-public class CommunityServices implements ExperimentExpansionBlueCard {
+public class CommunityServices implements ExperimentExpansionGreenCard {
     private final int id;
     private final CardMetadata cardMetadata;
 

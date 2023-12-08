@@ -917,6 +917,7 @@ public class GameController {
 
         return GameDtoShort.builder()
                 .temperature(game.getPlanet().getTemperatureValue())
+                .infrastructure(game.getPlanet().getInfrastructureValue())
                 .phaseTemperature(phasePlanet != null ? phasePlanet.getTemperatureValue() : null)
                 .phaseInfrastructure(phasePlanet != null ? phasePlanet.getInfrastructureValue() : null)
                 .oxygen(game.getPlanet().getOxygenValue())

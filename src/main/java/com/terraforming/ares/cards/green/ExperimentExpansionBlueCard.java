@@ -11,16 +11,6 @@ import com.terraforming.ares.model.Expansion;
 public interface ExperimentExpansionBlueCard extends BlueCard {
 
     @Override
-    default CardColor getColor() {
-        return CardColor.BLUE;
-    }
-
-    @Override
-    default boolean isActiveCard() {
-        return false;
-    }
-
-    @Override
     default Expansion getExpansion() {
         return Expansion.EXPERIMENTAL;
     }

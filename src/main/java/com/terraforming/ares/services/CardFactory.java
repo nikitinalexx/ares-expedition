@@ -460,7 +460,12 @@ public class CardFactory {
                 new ControlledBloom(1006),
                 new CoronaExtractor(1007),
                 new Cyanobacteria(1008),
-                new DiversitySupport(1009)
+                new DiversitySupport(1009),
+                new DustSeals(1010),
+                new FlatMarsTheory(1011),
+                new FloydContinuum(1012),
+                new GmoContract(1013),
+                new Harvest(1014)
         );
 
         sortedBaseCorporations = List.of(

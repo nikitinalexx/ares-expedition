@@ -70,6 +70,20 @@ export class RequirementsComponent {
       }
     }
 
+    if (card.cardAction === CardAction.MC_TURN_INCOME) {
+      const allTags = player.played.map(c => c.tags).reduce((acc, val) => acc.concat(val), []);
+
+      Object.entries(player.cardToTag).forEach(entry => entry[1].forEach(dynamicTags => allTags.push(dynamicTags)));
+
+      const scienceTags = allTags.filter(tag => tag === Tag.SCIENCE);
+      const scienceTagsCount = scienceTags.length;
+      return scienceTagsCount <= 1;
+    }
+
+    if (card.cardAction === CardAction.HARVEST) {
+      return player.forests >= 3;
+    }
+
     const playerMayAmplifyGlobalRequirement = this.ownsSpecialEffect(player, SpecialEffect.AMPLIFY_GLOBAL_REQUIREMENT)
       || player.builtSpecialDesignLastTurn;
 
@@ -83,7 +97,10 @@ export class RequirementsComponent {
     if (card.cardAction === CardAction.DIVERSITY_SUPPORT) {
       const allTags = player.played.map(c => c.tags).reduce((acc, val) => acc.concat(val), []);
 
-      const uniqueTags = [...new Set(allTags)];
+      Object.entries(player.cardToTag).forEach(entry => entry[1].forEach(dynamicTags => allTags.push(dynamicTags)));
+
+      const uniqueTags = [...new Set(allTags)].filter(tag => tag !== Tag.DYNAMIC);
+
       if (uniqueTags.length < 9) {
         return false;
       }

@@ -47,6 +47,12 @@ export class DiscountComponent {
       discount += 4;
     }
 
+    if (this.ownsSpecialEffect(player, SpecialEffect.GMO_CONTRACT_DISCOUNT_3)) {
+      if (this.cardHasTag(card, Tag.MICROBE, tagInput) || this.cardHasTag(card, Tag.PLANT, tagInput) || this.cardHasTag(card, Tag.ANIMAL, tagInput)) {
+        discount += 3;
+      }
+    }
+
     if (this.ownsSpecialEffect(player, SpecialEffect.INTERPLANETARY_CONFERENCE)) {
       if (this.cardHasTag(card, Tag.EARTH, tagInput)) {
         discount += 3;

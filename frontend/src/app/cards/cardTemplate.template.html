@@ -793,6 +793,16 @@
     </div>
   </div>
 
+  <div *ngIf="actionMcTurnIncome(card)">
+    <div class="requirements">
+      Max 1 <span class="small-tag resource-tag tag-science"></span>
+    </div>
+    <div class="production-box production-box-size2a">
+      <div class="production money">1</div>
+      / <span class="text-warning">TURN-1</span>
+    </div>
+  </div>
+
   <div *ngIf="actionDiscountOne(card)" style="margin-top: 50px">
     : <span class="money resource ">-1</span>
   </div>
@@ -1056,6 +1066,18 @@
     <div></div>
     <div class=" money resource ">2</div>
     *
+  </div>
+
+  <div *ngIf="actionFloydContinuum(card)">
+    <div class="red-arrow"></div>
+    <div class=" money resource ">3</div>
+    /
+    <br/>
+    <div class="tile oxygen-tile "></div>
+    <div class="tile ocean-tile "></div>
+    <br/>
+    <div class="tile temperature-tile "></div>
+    <div class="tile infrastructure-tile "></div>
   </div>
 
   <div *ngIf="actionCompostingFactory(card)">
@@ -1386,6 +1408,12 @@
     <div class="resource-tag tag-event"></div>
     :
     <div class="money resource ">-5</div>
+  </div>
+
+  <div *ngIf="actionGmoContract(card)" style="margin-top: 50px">
+    <div class="resource-tag tag-animal"></div><div class="resource-tag tag-plant"></div><div class="resource-tag tag-microbe"></div>
+    :
+    <div class="money resource ">-3</div>
   </div>
 
   <div *ngIf="actionNitriteReducting(card)">
@@ -1728,6 +1756,14 @@
 
   <div *ngIf="actionEnergyStorage(card)">
     <div class="requirements">7 TR</div>
+  </div>
+
+  <div *ngIf="actionHarvest(card)">
+    <div class="requirements">
+      <div class="small-tile forest-tile tile small-tile"></div>
+      <div class="small-tile forest-tile tile small-tile"></div>
+      <div class="small-tile forest-tile tile small-tile"></div>
+    </div>
   </div>
 
   <div *ngIf="actionPrivateInvestorBeach(card)">
