@@ -1302,6 +1302,13 @@
     <div class="resource plant"></div>
   </div>
 
+  <div *ngIf="actionHiTechLab(card)">
+    X<div class="resource heat"></div>
+    <div class="red-arrow "></div>
+    See X <div class="resource card"></div>
+    Take 1 <div class="resource card"></div>
+  </div>
+
   <div *ngIf="actionHerbivores(card)">
     <div class="tile oxygen-tile "></div>
     /
@@ -1879,6 +1886,22 @@
     </div>
   </div>
 
+  <div *ngIf="actionMcUniqueTagIncome(card)">
+    <div class="production-box production-box-size2a">
+      <div class="production money">1</div>
+      /
+      <div class="resource-tag production-tag" style="background-color: white">U</div>
+    </div>
+  </div>
+
+  <div *ngIf="actionMcIncomePerIncome(card)">
+    <div class="production-box production-box-size0b">
+      <div class="production money">1</div>
+    </div>
+    /
+    <div class="production-box production-box-size0b">U</div>
+  </div>
+
   <div *ngIf="actionCardScienceIncome(card)">
     <div class="production-box production-box-size3 text-white">
       <div class="production card"></div>
@@ -2027,6 +2050,14 @@
   </div>
 
   <div *ngIf="actionControlledBloom(card)">
+    <div class="microbe resource"></div>
+    <div class="microbe resource"></div>
+    <div class="microbe resource"></div>
+    *
+  </div>
+
+  <div *ngIf="actionImportedNutrients(card)">
+    <div class="microbe resource"></div>
     <div class="microbe resource"></div>
     <div class="microbe resource"></div>
     <div class="microbe resource"></div>

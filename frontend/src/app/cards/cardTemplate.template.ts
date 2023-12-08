@@ -410,6 +410,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.GREEN_HOUSES;
   }
 
+  actionHiTechLab(card: Card): boolean {
+    return card.cardAction === CardAction.HITECH_LAB;
+  }
+
   actionInnovativeTechnologies(card: Card): boolean {
     return card.cardAction === CardAction.INNOVATIVE_TECHNOLOGIES;
   }
@@ -683,6 +687,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.CONTROLLED_BLOOM;
   }
 
+  actionImportedNutrients(card: Card): boolean {
+    return card.cardAction === CardAction.IMPORTED_NUTRIENTS;
+  }
+
   actionCyanobacteria(card: Card): boolean {
     return card.cardAction === CardAction.CYANOBACTERIA;
   }
@@ -729,6 +737,14 @@ export class CardTemplateComponent {
 
   actionMcAnimalPlantIncome(card: Card): boolean {
     return card.cardAction === CardAction.MC_ANIMAL_PLANT_INCOME;
+  }
+
+  actionMcUniqueTagIncome(card: Card): boolean {
+    return card.cardAction === CardAction.MC_UNIQUE_TAG_INCOME;
+  }
+
+  actionMcIncomePerIncome(card: Card): boolean {
+    return card.cardAction === CardAction.MC_INCOME_PER_INCOME;
   }
 
   actionCardScienceIncome(card: Card): boolean {

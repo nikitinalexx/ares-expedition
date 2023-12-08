@@ -29,7 +29,7 @@ public class DiversitySupportOnBuiltEffectValidator implements OnBuiltEffectVali
 
     @Override
     public String validate(Card card, Player player, Map<Integer, List<Integer>> input) {
-        int uniquePlayedTags = cardService.countUniquePlayedTags(player, Arrays.stream(Tag.values()).filter(tag -> tag != Tag.DYNAMIC).collect(Collectors.toSet()));
+        int uniquePlayedTags = cardService.countUniquePlayedTags(player);
         if (uniquePlayedTags < 9) {
             return "Not enough different Tags played to build this project";
         }

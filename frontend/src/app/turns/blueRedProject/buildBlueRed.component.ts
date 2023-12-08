@@ -385,7 +385,8 @@ export class BuildBlueRedComponent implements OnInit {
   }
 
   inputMicrobeEffect(): boolean {
-    return this.selectedProject.cardAction === CardAction[CardAction.CONTROLLED_BLOOM];
+    return this.selectedProject.cardAction === CardAction[CardAction.CONTROLLED_BLOOM]
+      || this.selectedProject.cardAction === CardAction[CardAction.IMPORTED_NUTRIENTS];
   }
 
   largeConvoyEffect(): boolean {

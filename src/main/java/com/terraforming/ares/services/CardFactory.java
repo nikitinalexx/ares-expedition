@@ -465,7 +465,11 @@ public class CardFactory {
                 new FlatMarsTheory(1011),
                 new FloydContinuum(1012),
                 new GmoContract(1013),
-                new Harvest(1014)
+                new Harvest(1014),
+                new HiTechLab(1015),
+                new ImportedNutrients(1016),
+                new InterplanetaryTrade(1017),
+                new Landfill(1018)
         );
 
         sortedBaseCorporations = List.of(

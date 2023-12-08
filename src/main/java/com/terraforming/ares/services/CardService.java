@@ -305,6 +305,10 @@ public class CardService {
         return cards.stream().map(this::getCard).flatMap(card -> card.getTags().stream()).collect(Collectors.groupingBy(tag -> tag, Collectors.counting()));
     }
 
+    public int countUniquePlayedTags(Player player) {
+        return countUniquePlayedTags(player, Arrays.stream(Tag.values()).filter(tag -> tag != Tag.DYNAMIC).collect(Collectors.toSet()));
+    }
+
     public int countUniquePlayedTags(Player player, Set<Tag> tagsToCheck) {
         if (player == null || player.getPlayed() == null || CollectionUtils.isEmpty(player.getPlayed().getCards())) {
             return 0;

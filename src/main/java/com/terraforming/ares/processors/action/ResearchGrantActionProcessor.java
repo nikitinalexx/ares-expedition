@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -45,10 +46,13 @@ public class ResearchGrantActionProcessor implements BlueActionCardProcessor<Res
 
         final MarsContext marsContext = marsContextProvider.provide(game, player);
 
+        Map<Integer, List<Integer>> researchGrantInputParameters = new HashMap<>(inputParameters);
+        researchGrantInputParameters.put(InputFlag.RESEARCH_GRANT.getId(), List.of());
+
         player.getPlayed().getCards().stream()
                 .map(cardService::getCard)
                 .filter(Card::onBuiltEffectApplicableToOther)
-                .forEach(card -> card.postProjectBuiltEffect(marsContext, new DummyCard(), inputParameters));
+                .forEach(card -> card.postProjectBuiltEffect(marsContext, new DummyCard(), researchGrantInputParameters));
 
         if (game.isCrysis()) {
             new ArrayList<>(game.getCrysisData()
