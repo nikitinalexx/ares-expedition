@@ -63,6 +63,10 @@ public class DiscountService {
             }
         }
 
+        if (tags.contains(Tag.PLANT) && !tags.contains(Tag.BUILDING) && specialEffectsService.ownsSpecialEffect(player, SpecialEffect.MARTIAN_LUMBER)) {
+            discount += player.getSteelIncome() * 2;
+        }
+
         if (tags.contains(Tag.EVENT) &&
                 specialEffectsService.ownsSpecialEffect(player, SpecialEffect.MEDIA_GROUP)) {
             discount += 5;

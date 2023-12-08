@@ -815,6 +815,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.HARVEST;
   }
 
+  actionMartianLumber(card: Card): boolean {
+    return card.cardAction === CardAction.MARTIAN_LUMBER;
+  }
+
   actionPrivateInvestorBeach(card: Card): boolean {
     return card.cardAction === CardAction.PRIVATE_INVESTOR_BEACH;
   }

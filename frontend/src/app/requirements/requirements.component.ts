@@ -84,6 +84,10 @@ export class RequirementsComponent {
       return player.forests >= 3;
     }
 
+    if (card.cardAction === CardAction.MARTIAN_LUMBER) {
+      return player.forests >= 2;
+    }
+
     const playerMayAmplifyGlobalRequirement = this.ownsSpecialEffect(player, SpecialEffect.AMPLIFY_GLOBAL_REQUIREMENT)
       || player.builtSpecialDesignLastTurn;
 

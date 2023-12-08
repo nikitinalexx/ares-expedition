@@ -42,6 +42,7 @@ public class Player {
     private boolean mulligan;
     @Builder.Default
     private int austellarMilestone = -1;
+    private int lunaProjectOffice = 0;
 
     private boolean confirmedGameEndThirdPhase;
 

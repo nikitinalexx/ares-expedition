@@ -469,7 +469,11 @@ public class CardFactory {
                 new HiTechLab(1015),
                 new ImportedNutrients(1016),
                 new InterplanetaryTrade(1017),
-                new Landfill(1018)
+                new Landfill(1018),
+                new LunaProjectOffice(1019),
+                new MagneticShield(1020),
+                new MartianLumber(1021),
+                new MartianSurvey(1022)
         );
 
         sortedBaseCorporations = List.of(
@@ -524,7 +528,8 @@ public class CardFactory {
                 50, new BuffedRegolithEaters(5050),
                 64, new BuffedWoodBurningStoves(5064),
                 217, new BuffedFilterFeeders(5217),
-                306, new BuffedDroneAssistedConstruction(5306)
+                306, new BuffedDroneAssistedConstruction(5306),
+                12, new BuffedBirds(5012)
         );
 
         crysisExcludedCards = Set.of(

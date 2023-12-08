@@ -78,6 +78,10 @@ export class DiscountComponent {
       discount += 3;
     }
 
+    if (this.cardHasTag(card, Tag.PLANT, tagInput) && !this.cardHasTag(card, Tag.BUILDING, tagInput) && this.ownsSpecialEffect(player, SpecialEffect.MARTIAN_LUMBER)) {
+      discount += player.steelIncome * 2;
+    }
+
     if (this.ownsSpecialEffect(player, SpecialEffect.RESEARCH_OUTPOST_DISCOUNT_1)) {
       discount += 1;
     }

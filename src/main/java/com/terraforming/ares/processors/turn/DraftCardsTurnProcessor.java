@@ -50,6 +50,12 @@ public class DraftCardsTurnProcessor implements TurnProcessor<DraftCardsTurn> {
         int cardsToDraft = initialCardsToDraft + draftCardsService.countExtraCardsToDraft(player);
         int cardsToTake = initialCardsToTake + draftCardsService.countExtraCardsToTake(player);
 
+        if (player.getLunaProjectOffice() > 0) {
+            cardsToDraft++;
+            cardsToTake++;
+            player.setLunaProjectOffice(player.getLunaProjectOffice() - 1);
+        }
+
         cardsToTake = Math.min(cardsToTake, cardsToDraft);
 
         List<Integer> draftedCards = cardService.dealCards(game, cardsToDraft);
