@@ -43,7 +43,7 @@ public class GhgProductionBacteriaActionValidator implements ActionValidator<Ghg
             return ERROR_MESSAGE;
         }
 
-        if (input == 2 && player.getCardResourcesCount().get(GhgProductionBacteria.class) < 2) {
+        if (input == 2 && player.getCardResourcesCount().get(getType()) < 2) {
             return "Not enough microbes to raise temperature";
         }
 
