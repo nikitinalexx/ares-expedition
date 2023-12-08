@@ -96,6 +96,10 @@ public class GameController {
             int playersCount = gameParameters.getPlayerNames().size();
             int[] extraPoints = gameParameters.getExtraPoints();
 
+            if (gameParameters.getExpansions().contains(Expansion.EXPERIMENTAL) && aiPlayerCount > 0) {
+                throw new IllegalArgumentException("AI doesn't know how to play Experimental");
+            }
+
             if (gameParameters.getComputers().contains(PlayerDifficulty.NETWORK) && playersCount != 2) {
                 throw new IllegalArgumentException("AI computer available only for 2 player game");
             }

@@ -80,6 +80,11 @@ export class NewGameComponent implements OnInit {
         }
         names.push(name);
 
+        if (this.parentForm.value.experimental) {
+          this.parentForm?.patchValue({[`difficulty${i}`]: null}, {onlySelf: true, emitEvent: false});
+          this.parentForm?.patchValue({[`computer${i}`]: null}, {onlySelf: true, emitEvent: false});
+        }
+
         if (this.parentForm.value.infrastructure && this.parentForm.get('computer' + i)?.value && this.parentForm.get('difficulty' + i)?.value == 'ai') {
           this.parentForm?.patchValue({[`difficulty${i}`]: null}, {onlySelf: true, emitEvent: false});
         }

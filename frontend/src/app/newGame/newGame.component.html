@@ -35,7 +35,7 @@
     </div>
     <div class="bg-warning text-dark new-game-label" style="width: 260px; border-radius: 5px; margin-top: 10px;">
       <label for="experimental"
-             class="form-label">Experimental</label>
+             class="form-label">Experimental (list in menu)</label>
       <input type="checkbox" class="form-check-input" id="experimental" style="margin-left: 10px; float: right"
              formControlName="experimental">
     </div>
@@ -71,18 +71,18 @@
       <label for="playerName" class="form-label p-1 mb-2 bg-warning text-dark"
              style="border-radius: 5px;">Player {{item}} name</label>
 
-      <label class="form-label p-1 mb-2 bg-warning text-dark"
+      <label class="form-label p-1 mb-2 bg-warning text-dark" *ngIf="!this.parentForm.value.experimental"
              style="margin-left: 5px; border-radius: 5px;">Computer <input type="checkbox"
                                                                            [formControlName]="'computer' + item"/>
       </label>
 
-      <label *ngIf="parentForm.get('computer' + item)?.value && this.parentForm.value.playerCount !== '1'" class="form-label p-1 mb-2 bg-warning text-dark"
+      <label *ngIf="parentForm.get('computer' + item)?.value && this.parentForm.value.playerCount !== '1' && !this.parentForm.value.experimental" class="form-label p-1 mb-2 bg-warning text-dark"
              style="margin-left: 5px; border-radius: 5px;">Easy <input type="radio" value="random" style="width: 30px" [formControlName]="'difficulty' + item"/></label>
 
-      <label *ngIf="parentForm.get('computer' + item)?.value && this.parentForm.value.playerCount !== '1'" class="form-label p-1 mb-2 bg-warning text-dark"
+      <label *ngIf="parentForm.get('computer' + item)?.value && this.parentForm.value.playerCount !== '1' && !this.parentForm.value.experimental" class="form-label p-1 mb-2 bg-warning text-dark"
              style="margin-left: 5px; border-radius: 5px;">Normal <input type="radio" value="smart" style=" width: 30px" [formControlName]="'difficulty' + item"/></label>
 
-      <label *ngIf="parentForm.get('computer' + item)?.value && this.parentForm.value.playerCount === '2' && !this.parentForm.value.infrastructure" class="form-label p-1 mb-2 bg-warning text-dark "
+      <label *ngIf="parentForm.get('computer' + item)?.value && this.parentForm.value.playerCount === '2' && !this.parentForm.value.infrastructure && !this.parentForm.value.experimental" class="form-label p-1 mb-2 bg-warning text-dark "
              style="margin-left: 5px; border-radius: 5px;">Hard <span class="bg-success text-white">(AI)</span>
         <input type="radio" value="ai" style=" width: 30px" [formControlName]="'difficulty' + item" (click)="clickAiComputer()"></label>
 
