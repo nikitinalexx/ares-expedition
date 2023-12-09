@@ -1015,6 +1015,12 @@
     <div class="resource animal"></div>
   </div>
 
+  <div *ngIf="actionMicroIndustry(card)">
+    <div class="resource microbe"></div>
+    * :
+    <div class="money resource">2</div>
+  </div>
+
   <div *ngIf="actionBrainstormingSession(card)">
     <div class="red-arrow"></div>
 
@@ -1058,6 +1064,14 @@
     <div></div>
     <div class=" plant resource "></div>
     *
+  </div>
+
+  <div *ngIf="actionOrbitalCleanup(card)">
+    <div class="red-arrow"></div>
+    <div class=" money resource ">1</div>
+    / <div class="resource-tag tag-science"></div>
+    <br/>
+    <span style="font-size:12px; ">{{card.actionDescription}}</span>
   </div>
 
   <div *ngIf="actionDroneAssistedConstruction(card)">
@@ -1926,6 +1940,14 @@
       <div class="production money">1</div>
       /
       <div class="resource-tag production-tag tag-earth"></div>
+    </div>
+  </div>
+
+  <div *ngIf="actionMcMicrobeIncome(card)">
+    <div class="production-box production-box-size2a">
+      <div class="production money">1</div>
+      /
+      <div class="resource-tag production-tag tag-microbe"></div>
     </div>
   </div>
 

@@ -23,7 +23,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class FibrousCompositeActionProcessor implements BlueActionCardProcessor<FibrousCompositeMaterial> {
     private final CardService cardService;
-    private final CardResourceService cardResourceService = new CardResourceService();
+    private final CardResourceService cardResourceService;
 
     @Override
     public Class<FibrousCompositeMaterial> getType() {

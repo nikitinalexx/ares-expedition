@@ -282,6 +282,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.FILTER_FEEDERS;
   }
 
+  actionMicroIndustry(card: Card): boolean {
+    return card.cardAction === CardAction.MICRO_INDUSTRY;
+  }
+
   actionBrainstormingSession(card: Card): boolean {
     return card.cardAction === CardAction.BRAINSTORMING_SESSION;
   }
@@ -300,6 +304,10 @@ export class CardTemplateComponent {
 
   actionCommunityGardens(card: Card): boolean {
     return card.cardAction === CardAction.COMMUNITY_GARDENS;
+  }
+
+  actionOrbitalCleanup(card: Card): boolean {
+    return card.cardAction === CardAction.ORBITAL_CLEANUP;
   }
 
   actionDroneAssistedConstruction(card: Card): boolean {
@@ -753,6 +761,10 @@ export class CardTemplateComponent {
 
   actionMcEarthIncome(card: Card): boolean {
     return card.cardAction === CardAction.MC_EARTH_INCOME;
+  }
+
+  actionMcMicrobeIncome(card: Card): boolean {
+    return card.cardAction === CardAction.MC_MICROBE_INCOME;
   }
 
   actionMcNoTagIncome(card: Card): boolean {

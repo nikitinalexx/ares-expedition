@@ -473,7 +473,10 @@ public class CardFactory {
                 new LunaProjectOffice(1019),
                 new MagneticShield(1020),
                 new MartianLumber(1021),
-                new MartianSurvey(1022)
+                new MartianSurvey(1022),
+                new MicroorganismIndustry(1023),
+                new MicrobiologyPatents(1024),
+                new OrbitalCleanup(1025)
         );
 
         sortedBaseCorporations = List.of(
@@ -519,7 +522,7 @@ public class CardFactory {
                 10016, new BuffedUnmiCorporation(10108)
         );
 
-        buffedProjectsMapping = Map.of(
+        buffedProjectsMapping = new HashMap<>(Map.of(
                 27, new BuffedExtremeColdFungus(5027),
                 29, new BuffedFarmingCoops(5029),
                 31, new BuffedGhgProductionBacteria(5031),
@@ -530,7 +533,9 @@ public class CardFactory {
                 217, new BuffedFilterFeeders(5217),
                 306, new BuffedDroneAssistedConstruction(5306),
                 12, new BuffedBirds(5012)
-        );
+        ));
+        buffedProjectsMapping.put(16, new BuffedCommunityGardens(5016));
+        buffedProjectsMapping.put(378, new BuffedGeneticallyModifiedVegetables(5378));
 
         crysisExcludedCards = Set.of(
                 1, 18, 97,

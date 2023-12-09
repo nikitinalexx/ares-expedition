@@ -6,6 +6,8 @@ import com.terraforming.ares.cards.blue.FilterFeeders;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardCollectableResource;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.SpecialEffect;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -15,7 +17,9 @@ import java.util.Map;
  * Creation date 07.03.2023
  */
 @Service
+@RequiredArgsConstructor
 public class CardResourceService {
+    private final SpecialEffectsService specialEffectsService;
 
     public void addResources(Player player, Card toCard, int count) {
         final Map<Class<?>, Integer> cardResourcesCount = player.getCardResourcesCount();
@@ -31,6 +35,9 @@ public class CardResourceService {
         if (count > 0 && toCard.getCollectableResource() == CardCollectableResource.MICROBE && (cardResourcesCount.containsKey(FilterFeeders.class) || cardResourcesCount.containsKey(BuffedFilterFeeders.class))) {
             Class<?> resourceCard = (cardResourcesCount.containsKey(FilterFeeders.class) ? FilterFeeders.class : BuffedFilterFeeders.class);
             cardResourcesCount.put(resourceCard, cardResourcesCount.get(resourceCard) + 1);
+        }
+        if (count > 0 && toCard.getCollectableResource() == CardCollectableResource.MICROBE && specialEffectsService.ownsSpecialEffect(player, SpecialEffect.MICRO_INDUSTRY)) {
+            player.setMc(player.getMc() + 2);
         }
     }
 
