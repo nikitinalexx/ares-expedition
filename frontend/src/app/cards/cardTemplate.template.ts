@@ -851,6 +851,10 @@ export class CardTemplateComponent {
     return card.cardAction === CardAction.MOSS;
   }
 
+  actionPotatoes(card: Card): boolean {
+    return card.cardAction === CardAction.POTATOES;
+  }
+
   actionTallStation(card: Card): boolean {
     return card.cardAction === CardAction.TALL_STATION;
   }

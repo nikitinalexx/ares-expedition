@@ -476,7 +476,11 @@ public class CardFactory {
                 new MartianSurvey(1022),
                 new MicroorganismIndustry(1023),
                 new MicrobiologyPatents(1024),
-                new OrbitalCleanup(1025)
+                new OrbitalCleanup(1025),
+                new OrbitalLaboratories(1026),
+                new Penguins(1027),
+                new ProjectInspection(1028),
+                new Potatoes(1029)
         );
 
         sortedBaseCorporations = List.of(

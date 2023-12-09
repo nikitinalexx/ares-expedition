@@ -101,6 +101,7 @@ public enum CardAction {
     MC_ENERGY_INCOME,
     MC_SPACE_INCOME,
     MOSS,
+    POTATOES,
     HEAT_SPACE_INCOME,
     MC_EVENT_INCOME,
     HEAT_ENERGY_INCOME,

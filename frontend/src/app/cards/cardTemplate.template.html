@@ -1823,6 +1823,11 @@
     <div class="resource plant"></div>
   </div>
 
+  <div *ngIf="actionPotatoes(card)">
+    -2
+    <div class="resource plant"></div>
+  </div>
+
   <div *ngIf="actionTallStation(card) || actionAutomatedFactories(card)">
     <div class="resource card card-green"></div>
     *(<=

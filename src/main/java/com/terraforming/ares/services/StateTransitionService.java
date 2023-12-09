@@ -226,6 +226,10 @@ public class StateTransitionService {
                                 }
                             }
                         }
+                        if (player.getProjectInspection() > 0) {
+                            player.setProjectInspection(player.getProjectInspection() - 1);
+                            player.setBlueActionExtraActivationsLeft(player.getBlueActionExtraActivationsLeft() + 1);
+                        }
                     });
         } else if (fromState <= 4 && pickedPhases.contains(4)) {
             game.setStateType(StateType.COLLECT_INCOME, contextProvider.provide(game));
