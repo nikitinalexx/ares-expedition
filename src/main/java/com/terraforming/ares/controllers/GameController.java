@@ -1008,6 +1008,7 @@ public class GameController {
                 .cardResources(getPlayerCardResources(player))
                 .cardToTag(getPlayerCardToTag(player))
                 .activatedBlueCards(player.getActivatedBlueCards().getCards())
+                .activatedBlueCardsTwice(player.getActivatedBlueCardsTwice().getCards())
                 .blueActionExtraActivationsLeft(player.getBlueActionExtraActivationsLeft())
                 .terraformingRating(player.getTerraformingRating())
                 .winPoints(winPointsService.countWinPoints(player, game))

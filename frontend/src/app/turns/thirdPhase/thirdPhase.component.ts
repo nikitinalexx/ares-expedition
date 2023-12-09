@@ -198,8 +198,9 @@ export class ThirdPhaseComponent implements OnInit {
     }
 
     return this.game.player.phase === 3
-      && this.game.player.blueActionExtraActivationsLeft > 0
-      && this.game.player.activatedBlueCards?.length > 0;
+      && this.game.player.activatedBlueCards?.length > 0
+      && (this.game.player.blueActionExtraActivationsLeft > 0
+        && this.game.player.activatedBlueCardsTwice?.length !== this.game.player.activatedBlueCards?.length);
   }
 
   getPlayerHandForAction(): Card[] {
@@ -268,6 +269,7 @@ export class ThirdPhaseComponent implements OnInit {
   getPlayedActiveCards(): Card[] {
     return this.game?.player.played.filter(card =>
       card.active && this.game.player.activatedBlueCards?.find(playedCardId => playedCardId === card.id)
+      && !this.game.player.activatedBlueCardsTwice?.find(playedCardId => playedCardId === card.id)
       && !(card.cardAction === CardAction.RESEARCH_GRANT && this.game.player.cardToTag[card.id].every(tag => tag !== Tag.DYNAMIC))
     );
   }

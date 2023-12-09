@@ -26,6 +26,8 @@ public class Player {
     private Deck corporations;
     @Builder.Default
     private Deck activatedBlueCards = Deck.builder().build();
+    @Builder.Default
+    private Deck activatedBlueCardsTwice = Deck.builder().build();
     private int blueActionExtraActivationsLeft;
     private Integer selectedCorporationCard;
     @Builder.Default
@@ -89,6 +91,7 @@ public class Player {
         this.played = new Deck(copy.played);
 
         this.activatedBlueCards = new Deck(copy.activatedBlueCards);
+        this.activatedBlueCardsTwice = new Deck(copy.activatedBlueCardsTwice);
         this.blueActionExtraActivationsLeft = copy.blueActionExtraActivationsLeft;
         this.selectedCorporationCard = copy.selectedCorporationCard;
         this.corporations = copy.corporations;
@@ -234,6 +237,7 @@ public class Player {
 
         chosenPhase = null;
         activatedBlueCards = Deck.builder().build();
+        activatedBlueCardsTwice = Deck.builder().build();
         blueActionExtraActivationsLeft = 0;
         hasUnmiAction = false;
         didUnmiAction = false;

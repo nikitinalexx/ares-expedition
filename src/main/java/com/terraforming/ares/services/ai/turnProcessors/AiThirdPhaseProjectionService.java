@@ -163,7 +163,8 @@ public class AiThirdPhaseProjectionService {
         float bestState = deepNetwork.testState(playerData.applyDifference(initialDifference).applyOpponentDifference(opponentDifference), network);
 
         //project cards
-        List<Card> activeCards = player.getPlayed().getCards().stream().map(cardService::getCard).filter(Card::isActiveCard).filter(card -> !player.getActivatedBlueCards().containsCard(card.getId()) || player.getBlueActionExtraActivationsLeft() != 0).collect(Collectors.toList());
+        List<Card> activeCards = player.getPlayed().getCards().stream().map(cardService::getCard).filter(Card::isActiveCard)
+                .filter(card -> !player.getActivatedBlueCards().containsCard(card.getId()) || (player.getBlueActionExtraActivationsLeft() != 0 && !player.getActivatedBlueCardsTwice().containsCard(card.getId()))).collect(Collectors.toList());
 
         if (!CollectionUtils.isEmpty(activeCards)) {
 
@@ -199,8 +200,10 @@ public class AiThirdPhaseProjectionService {
             if (bestProjectionRow != null) {
                 Player bestProjectionPlayer = bestGameProjection.getPlayerByUuid(player.getUuid());
                 Deck activatedBlueCards = bestProjectionPlayer.getActivatedBlueCards();
+                Deck activatedBlueCardsTwice = bestProjectionPlayer.getActivatedBlueCardsTwice();
                 if (activatedBlueCards.containsCard(bestCard.getId())) {
                     bestProjectionPlayer.setBlueActionExtraActivationsLeft(bestProjectionPlayer.getBlueActionExtraActivationsLeft() - 1);
+                    activatedBlueCardsTwice.addCard(bestCard.getId());
                 } else {
                     activatedBlueCards.addCard(bestCard.getId());
                 }

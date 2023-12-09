@@ -28,6 +28,7 @@ export class Player extends BasePlayer {
               forests: number,
               builtSpecialDesignLastTurn: boolean,
               activatedBlueCards: number[],
+              activatedBlueCardsTwice: number[],
               phaseCards: number[],
               austellarMilestone: number,
               builds: Build[],
@@ -43,6 +44,7 @@ export class Player extends BasePlayer {
   previousPhase: number;
   nextTurn: any;
   activatedBlueCards: number[];
+  activatedBlueCardsTwice: number[];
   blueActionExtraActivationsLeft: number;
   builtSpecialDesignLastTurn: boolean;
   builds: Build[];

@@ -173,6 +173,7 @@ public class AiThirdPhaseActionProcessor {
 
     private boolean playBlueCards(List<TurnType> possibleTurns, MarsGame game, Player player) {
         Deck activatedBlueCards = player.getActivatedBlueCards();
+        Deck activatedBlueCardsTwice = player.getActivatedBlueCardsTwice();
 
         List<Card> notUsedBlueCards = player.getPlayed().getCards().stream()
                 .map(cardService::getCard)
@@ -186,10 +187,11 @@ public class AiThirdPhaseActionProcessor {
             return true;
         }
 
-        if (player.getChosenPhase() == 3 && player.getBlueActionExtraActivationsLeft() > 0) {
+        if (player.getBlueActionExtraActivationsLeft() > 0) {
             List<Card> actionBlueCards = player.getPlayed().getCards().stream()
                     .map(cardService::getCard)
                     .filter(Card::isActiveCard)
+                    .filter(c -> !activatedBlueCardsTwice.containsCard(c.getId()))
                     .collect(Collectors.toList());
 
             actionPerformed = performCardAction(game, player, actionBlueCards);

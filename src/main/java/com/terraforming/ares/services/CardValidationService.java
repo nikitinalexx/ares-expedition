@@ -115,11 +115,11 @@ public class CardValidationService {
         }
 
         if (player.getActivatedBlueCards().containsCard(cardId)) {
-            if (player.getChosenPhase() != 3) {
-                return "Can't play an action twice if you didn't choose phase 3";
-            }
             if (player.getBlueActionExtraActivationsLeft() < 1) {
                 return "Can't play an action that was already played and extra actions already performed";
+            }
+            if (player.getActivatedBlueCardsTwice().containsCard(cardId)) {
+                return "Action already performed twice";
             }
         }
 
