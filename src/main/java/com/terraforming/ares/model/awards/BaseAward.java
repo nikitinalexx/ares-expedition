@@ -28,6 +28,11 @@ import java.util.concurrent.ConcurrentHashMap;
         @JsonSubTypes.Type(value = IndustrialistAward.class, name = "INDUSTRIALIST"),
         @JsonSubTypes.Type(value = ProjectManagerAward.class, name = "PROJECT_MANAGER"),
         @JsonSubTypes.Type(value = ResearcherAward.class, name = "RESEARCHER"),
+        @JsonSubTypes.Type(value = BotanistAward.class, name = "BOTANIST"),
+        @JsonSubTypes.Type(value = FloraHarvestAward.class, name = "FLORA_HARVEST"),
+        @JsonSubTypes.Type(value = BuilderAward.class, name = "BUILDER"),
+        @JsonSubTypes.Type(value = GardenerAward.class, name = "GARDENER"),
+        @JsonSubTypes.Type(value = CriterionAward.class, name = "CRITERION"),
 })
 public abstract class BaseAward {
     @Setter

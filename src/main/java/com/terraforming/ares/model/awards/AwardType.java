@@ -7,8 +7,20 @@ package com.terraforming.ares.model.awards;
 public enum AwardType {
     CELEBRITY,//mc income
     GENERATOR,//heat income
-    RESEARCHER,//science tags
-    PROJECT_MANAGER,//played cards
+    FLORA_HARVEST,//most plants income
     INDUSTRIALIST,//steel+titanium
+
+    RESEARCHER,//science tags
+    BOTANIST,//microbe/plant tags
+    BUILDER,//most building tags
+
+    PROJECT_MANAGER,//played cards
     COLLECTOR,//resources
+
+    GARDENER,//most forests
+
+    CRITERION,//most cards with requirements
+
+    //highest TR
+    //most cards with requirements
 }

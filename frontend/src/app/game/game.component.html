@@ -214,6 +214,7 @@
 
       <div style="margin-top: -4px">
         <div *ngIf="milestoneMagnate(milestone)">8 green cards</div>
+        <div *ngIf="milestoneTriadMastery(milestone)">3 blue+red+green</div>
         <div *ngIf="milestoneTerraformer(milestone)">
           15
           <div class="tile small-rating"></div>
@@ -229,6 +230,19 @@
         <div *ngIf="milestoneSpaceBaron(milestone)">
           7
           <div class="resource-tag tag-space small-tag"></div>
+        </div>
+        <div *ngIf="milestoneTerran(milestone)">
+          6
+          <div class="resource-tag tag-earth small-tag"></div>
+        </div>
+        <div *ngIf="milestoneEcologist(milestone)">
+          5
+          <div class="resource-tag tag-animal small-tag"></div>
+          <div class="resource-tag tag-plant small-tag"></div>
+          <div class="resource-tag tag-microbe small-tag"></div>
+        </div>
+        <div *ngIf="milestoneMinimalist(milestone)">
+          max 1 card in hand
         </div>
         <div *ngIf="milestoneEnergizer(milestone)">
           10 prod
@@ -283,6 +297,10 @@
         Production
         <div class="resource heat small"></div>
       </div>
+      <div *ngIf="awardTypeFloraHarvest(award)" style="margin-top: -5px">
+        Production
+        <div class="resource plant small"></div>
+      </div>
       <div *ngIf="awardTypeCelebrity(award)" style="margin-top: -5px">
         Production
         <div class="resource money small">
@@ -295,6 +313,22 @@
       <div *ngIf="awardTypeResearcher(award)">
         Most
         <div class="resource-tag tag-science small-tag"></div>
+      </div>
+      <div *ngIf="awardTypeBuilder(award)">
+        Most
+        <div class="resource-tag tag-building small-tag"></div>
+      </div>
+      <div *ngIf="awardTypeGardener(award)">
+        Most
+        <div class="gardener"></div>
+      </div>
+      <div *ngIf="awardTypeCriterion(award)">
+        <div class="requirements">Global Req</div>
+      </div>
+      <div *ngIf="awardTypeBotanist(award)">
+        Most
+        <div class="resource-tag tag-plant small-tag"></div>
+        <div class="resource-tag tag-microbe small-tag"></div>
       </div>
 
     </div>

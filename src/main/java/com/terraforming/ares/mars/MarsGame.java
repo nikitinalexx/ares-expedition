@@ -136,8 +136,20 @@ public class MarsGame {
                 anotherAward = new CelebrityAward();
             } else if (award.getType() == AwardType.COLLECTOR) {
                 anotherAward = new CollectorAward();
-            } else {
+            } else if (award.getType() == AwardType.RESEARCHER) {
                 anotherAward = new ResearcherAward();
+            } else if (award.getType() == AwardType.BOTANIST) {
+                anotherAward = new BotanistAward();
+            } else if (award.getType() == AwardType.FLORA_HARVEST) {
+                anotherAward = new FloraHarvestAward();
+            } else if (award.getType() == AwardType.BUILDER) {
+                anotherAward = new BuilderAward();
+            } else if (award.getType() == AwardType.GARDENER) {
+                anotherAward = new GardenerAward();
+            } else if (award.getType() == AwardType.CRITERION) {
+                anotherAward = new CriterionAward();
+            } else {
+                throw new IllegalStateException("Invalid award type " + award.getType());
             }
             anotherAward.setWinPoints(new ConcurrentHashMap<>(award.getWinPoints()));
             otherAwards.add(anotherAward);
@@ -169,8 +181,18 @@ public class MarsGame {
                 anotherMilestone = new TerraformerMilestone();
             } else if (milestone.getType() == MilestoneType.TYCOON) {
                 anotherMilestone = new TycoonMilestone();
-            } else {
+            } else if (milestone.getType() == MilestoneType.GARDENER) {
                 anotherMilestone = new GardenerMilestone();
+            } else if (milestone.getType() == MilestoneType.ECOLOGIST) {
+                anotherMilestone = new EcologistMilestone();
+            } else if (milestone.getType() == MilestoneType.MINIMALIST) {
+                anotherMilestone = new MinimalistMilestone();
+            } else if (milestone.getType() == MilestoneType.TERRAN) {
+                anotherMilestone = new TerranMilestone();
+            } else if (milestone.getType() == MilestoneType.TRIAD_MASTERY) {
+                anotherMilestone = new TriadMasteryMilestone();
+            } else {
+                throw new IllegalStateException("Unknown milestone type");
             }
 
             anotherMilestone.getAchievedByPlayers().addAll(milestone.getAchievedByPlayers());

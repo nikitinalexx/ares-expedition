@@ -1,5 +1,6 @@
 package com.terraforming.ares.factories;
 
+import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.awards.*;
 import com.terraforming.ares.model.milestones.*;
 import com.terraforming.ares.services.ShuffleService;
@@ -19,7 +20,7 @@ public class AchievementsFactory {
     private final ShuffleService shuffleService;
 
 
-    public List<BaseAward> createAwards(int count) {
+    public List<BaseAward> createAwards(List<Expansion> expansions, int count) {
         List<BaseAward> awards = new ArrayList<>(List.of(
                 new CelebrityAward(),
                 new CollectorAward(),
@@ -29,12 +30,20 @@ public class AchievementsFactory {
                 new ResearcherAward()
         ));
 
+        if (expansions.contains(Expansion.EXPERIMENTAL)) {
+            awards.add(new BotanistAward());
+            awards.add(new FloraHarvestAward());
+            awards.add(new BuilderAward());
+            awards.add(new GardenerAward());
+            awards.add(new CriterionAward());
+        }
+
         shuffleService.shuffle(awards);
 
         return awards.subList(0, count);
     }
 
-    public List<Milestone> createMilestones(int count) {
+    public List<Milestone> createMilestones(List<Expansion> expansions, int count) {
         List<Milestone> milestones = new ArrayList<>(List.of(
                 new BuilderMilestone(),
                 new DiversifierMilestone(),
@@ -48,6 +57,13 @@ public class AchievementsFactory {
                 new TycoonMilestone(),
                 new GardenerMilestone()
         ));
+
+        if (expansions.contains(Expansion.EXPERIMENTAL)) {
+            milestones.add(new EcologistMilestone());
+            milestones.add(new MinimalistMilestone());
+            milestones.add(new TerranMilestone());
+            milestones.add(new TriadMasteryMilestone());
+        }
 
         shuffleService.shuffle(milestones);
 

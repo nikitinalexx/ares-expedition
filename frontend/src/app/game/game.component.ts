@@ -338,6 +338,10 @@ export class GameComponent implements OnInit {
     return milestone.type === MilestoneType.MAGNATE;
   }
 
+  milestoneTriadMastery(milestone: Milestone): boolean {
+    return milestone.type === MilestoneType.TRIAD_MASTERY;
+  }
+
   milestoneTerraformer(milestone: Milestone): boolean {
     return milestone.type === MilestoneType.TERRAFORMER;
   }
@@ -352,6 +356,18 @@ export class GameComponent implements OnInit {
 
   milestoneSpaceBaron(milestone: Milestone): boolean {
     return milestone.type === MilestoneType.SPACE_BARON;
+  }
+
+  milestoneTerran(milestone: Milestone): boolean {
+    return milestone.type === MilestoneType.TERRAN;
+  }
+
+  milestoneEcologist(milestone: Milestone): boolean {
+    return milestone.type === MilestoneType.ECOLOGIST;
+  }
+
+  milestoneMinimalist(milestone: Milestone): boolean {
+    return milestone.type === MilestoneType.MINIMALIST;
   }
 
   milestoneEnergizer(milestone: Milestone): boolean {
@@ -400,6 +416,26 @@ export class GameComponent implements OnInit {
 
   awardTypeResearcher(award: Award): boolean {
     return award.type === AwardType.RESEARCHER;
+  }
+
+  awardTypeBuilder(award: Award): boolean {
+    return award.type === AwardType.BUILDER;
+  }
+
+  awardTypeGardener(award: Award): boolean {
+    return award.type === AwardType.GARDENER;
+  }
+
+  awardTypeCriterion(award: Award): boolean {
+    return award.type === AwardType.CRITERION;
+  }
+
+  awardTypeBotanist(award: Award): boolean {
+    return award.type === AwardType.BOTANIST;
+  }
+
+  awardTypeFloraHarvest(award: Award): boolean {
+    return award.type === AwardType.FLORA_HARVEST;
   }
 
   updateGameShort() {
@@ -591,12 +627,16 @@ export class GameComponent implements OnInit {
     switch (milestone.type) {
       case MilestoneType.MAGNATE:
         return this.getPlayedGreenCards(player)?.length;
+      case MilestoneType.TRIAD_MASTERY:
+        return Math.min(this.getPlayedGreenCards(player)?.length, this.getPlayedBlueCards(player)?.length, this.getPlayedRedCards(player)?.length);
       case MilestoneType.TERRAFORMER:
         return player.terraformingRating;
       case MilestoneType.BUILDER:
         return this.countPlayedTags(player, Tag.BUILDING);
       case MilestoneType.SPACE_BARON:
         return this.countPlayedTags(player, Tag.SPACE);
+      case MilestoneType.ECOLOGIST:
+        return this.countPlayedTags(player, Tag.MICROBE) + this.countPlayedTags(player, Tag.PLANT) + this.countPlayedTags(player, Tag.ANIMAL);
       case MilestoneType.ENERGIZER:
         return player.heatIncome;
       case MilestoneType.FARMER:
@@ -611,6 +651,10 @@ export class GameComponent implements OnInit {
         return this.getPlayedRedCards(player)?.length;
       case MilestoneType.GARDENER:
         return player.forests > 3 ? 3 : player.forests;
+      case MilestoneType.MINIMALIST:
+        return player.hand ? player.hand.length : undefined;
+      case MilestoneType.TERRAN:
+        return this.countPlayedTags(player, Tag.EARTH);
     }
 
     return 0;
@@ -632,6 +676,17 @@ export class GameComponent implements OnInit {
         return Object.values(player.cardResources).reduce((acc, val) => acc + val, 0);
       case AwardType.RESEARCHER:
         return this.countPlayedTags(player, Tag.SCIENCE);
+      case AwardType.BOTANIST:
+        return this.countPlayedTags(player, Tag.PLANT) + this.countPlayedTags(player, Tag.MICROBE);
+      case AwardType.FLORA_HARVEST:
+        return player.plantsIncome;
+      case AwardType.BUILDER:
+        return this.countPlayedTags(player, Tag.BUILDING);
+      case AwardType.GARDENER:
+        return player.forests;
+      case AwardType.CRITERION:
+        return player.played.filter(card => card.oceanRequirement !== null || card.tempReq?.length > 0
+          || card.oxygenReq?.length > 0 || card.infrastructureReq?.length > 0).length;
     }
 
     return 0;
