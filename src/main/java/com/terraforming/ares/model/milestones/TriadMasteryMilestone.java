@@ -24,16 +24,20 @@ public class TriadMasteryMilestone extends Milestone {
     }
 
     private int countSetsOfCards(Player player, CardService cardService) {
-        return player.getPlayed().getCards()
-                .stream()
-                .map(cardService::getCard)
-                .filter(card -> card.getColor() != CardColor.CORPORATION)
-                .collect(Collectors.groupingBy(Card::getColor, Collectors.counting()))
-                .values()
-                .stream()
-                .mapToInt(Long::intValue)
-                .min()
-                .orElse(0);
+        int blueCards = 0;
+        int redCards = 0;
+        int greenCards = 0;
+        for (Integer cardId : player.getPlayed().getCards()) {
+            Card card = cardService.getCard(cardId);
+            if (card.getColor() == CardColor.BLUE) {
+                blueCards++;
+            } else if (card.getColor() == CardColor.GREEN) {
+                greenCards++;
+            } else if (card.getColor() == CardColor.RED) {
+                redCards++;
+            }
+        }
+        return Math.min(blueCards, Math.min(redCards, greenCards));
     }
 
     @Override
