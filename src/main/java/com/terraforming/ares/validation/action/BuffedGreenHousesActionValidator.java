@@ -16,7 +16,7 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 public class BuffedGreenHousesActionValidator implements ActionValidator<BuffedGreenHouses> {
-    private GreenHousesActionValidator validator;
+    private final GreenHousesActionValidator validator;
 
     @Override
     public Class<BuffedGreenHouses> getType() {

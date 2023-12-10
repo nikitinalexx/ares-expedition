@@ -42,7 +42,7 @@ public class Advertising implements ExperimentExpansionBlueCard {
 
     @Override
     public boolean isActiveCard() {
-        return true;
+        return false;
     }
 
     @Override
