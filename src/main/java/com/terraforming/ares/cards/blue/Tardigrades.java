@@ -68,4 +68,14 @@ public class Tardigrades implements BlueCard {
     public int getPrice() {
         return 6;
     }
+
+    @Override
+    public boolean producesMicrobe() {
+        return true;
+    }
+
+    @Override
+    public boolean consumesMicrobe() {
+        return true;
+    }
 }

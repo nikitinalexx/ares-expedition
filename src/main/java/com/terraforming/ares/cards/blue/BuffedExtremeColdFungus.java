@@ -58,4 +58,9 @@ public class BuffedExtremeColdFungus implements BlueCard {
     public int getPrice() {
         return 6;
     }
+
+    @Override
+    public boolean producesMicrobe() {
+        return true;
+    }
 }

@@ -20,7 +20,7 @@ import java.util.List;
  */
 @RequiredArgsConstructor
 @Getter
-public class GeneRepair implements BaseExpansionGreenCard {
+    public class GeneRepair implements BaseExpansionGreenCard {
     private final int id;
     private final CardMetadata cardMetadata;
 

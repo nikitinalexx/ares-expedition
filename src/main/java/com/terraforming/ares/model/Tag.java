@@ -5,6 +5,7 @@ package com.terraforming.ares.model;
  * Creation date 25.04.2022
  */
 public enum Tag {
+    //do not change order, neural network uses indexes
     SPACE, EARTH, EVENT, SCIENCE, PLANT, ENERGY, BUILDING, ANIMAL, JUPITER, MICROBE, DYNAMIC;
 
     public static Tag byIndex(int index) {

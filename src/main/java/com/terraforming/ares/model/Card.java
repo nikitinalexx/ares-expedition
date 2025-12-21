@@ -162,5 +162,13 @@ public interface Card {
         return true;
     }
 
+    default boolean producesMicrobe() {
+        return false;
+    }
+
+    default boolean consumesMicrobe() {
+        return false;
+    }
+
 
 }

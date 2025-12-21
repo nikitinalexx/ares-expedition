@@ -168,25 +168,6 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
         return true;
     }
 
-    private void sellBadCardsBeforeTheTurnStart(MarsGame game, Player player) {
-        List<Integer> allCards = new ArrayList<>(player.getHand().getCards());
-        List<Integer> cardsToSell = new ArrayList<>();
-        for (int i = 0; i < player.getHand(). size(); i++) {
-            CardValueResponse worstCard = aiPickCardProjectionService.getWorstCard(game, player, allCards);
-            if (worstCard.getWorth() < 0) {
-                Integer cardToSell = worstCard.getCardId();
-                cardsToSell.add(cardToSell);
-                allCards.remove(cardToSell);
-            }
-        }
-        if (!cardsToSell.isEmpty()) {
-            aiTurnService.sellCards(player, game, cardsToSell);
-            if (Constants.LOG_NET_COMPARISON) {
-                System.out.println("Selling " + cardsToSell.size());
-            }
-        }
-    }
-
     private PhaseChoiceProjection chooseBetweenFirstAndSecondPhaseAi(MarsGame game, Player player) {
         BuildProjectPrediction prediction = testAiService.getBestCardToBuild(game, player, Set.of(CardColor.GREEN, CardColor.RED, CardColor.BLUE));
         if (!prediction.isCanBuild()) {

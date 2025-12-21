@@ -4,6 +4,7 @@ import com.terraforming.ares.dataset.DatasetCollectionService;
 import com.terraforming.ares.dataset.MarsGameRow;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.services.ai.dl4j.PolicyModelInference;
 import com.terraforming.ares.services.ai.network.DataColumn;
 import com.terraforming.ares.services.ai.network.Network;
 import org.springframework.stereotype.Service;
@@ -32,9 +33,12 @@ public class DeepNetwork {
     private final ThreadLocal<Network> firstNetwork;
     private final ThreadLocal<Network> secondNetwork;
 
+    private final PolicyModelInference policyModelInference;
+
     //the same, both very good
-    public DeepNetwork(DatasetCollectionService datasetCollectionService) throws IOException, ClassNotFoundException {
+    public DeepNetwork(DatasetCollectionService datasetCollectionService, PolicyModelInference policyModelInference) throws IOException, ClassNotFoundException {
         this.datasetCollectionService = datasetCollectionService;
+        this.policyModelInference = policyModelInference;
 
         firstNetwork = ThreadLocal.withInitial(() -> {
             try {
@@ -144,7 +148,23 @@ public class DeepNetwork {
         }
 
 
-        DataColumn someInput = new DataColumn(datasetCollectionService.mapMarsGameToArrayForUse(marsGameRow));
+        float[] values = datasetCollectionService.mapMarsGameToArrayForUse(marsGameRow);
+
+        return testStateByNetworkNumber(values, networkId);
+
+    }
+
+    public float testState(MarsGameRow row, int networkId) {
+        float[] state = datasetCollectionService.mapMarsGameToArrayForUse(row);
+
+        return testStateByNetworkNumber(state, networkId);
+    }
+
+    private float testStateByNetworkNumber(float[] values, int networkId) {
+        if (networkId == 2) {
+            return policyModelInference.predict(values, networkId);
+        }
+        DataColumn someInput = new DataColumn(values);
 
         if (networkId == 1) {
             someInput.div(MAX_INPUTS_DATA_FIRST);
@@ -161,24 +181,6 @@ public class DeepNetwork {
 
 
         return network.getOutput()[0];
-    }
-
-    public float testState(MarsGameRow row, int networknumber) {
-        DataColumn someInput = new DataColumn(datasetCollectionService.mapMarsGameToArrayForUse(row));
-
-        if (networknumber == 1) {
-            someInput.div(MAX_INPUTS_DATA_FIRST);
-        } else {
-            someInput.div(MAX_INPUTS_DATA_SECOND);
-        }
-
-        Network network = (networknumber == 1) ? firstNetwork.get() : secondNetwork.get();
-
-        network.setInput(someInput);
-
-        float[] output = network.getOutput();
-
-        return output[0];
     }
 
 }

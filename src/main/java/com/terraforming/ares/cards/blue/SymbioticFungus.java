@@ -67,4 +67,9 @@ public class SymbioticFungus implements BlueCard {
     public int getPrice() {
         return 3;
     }
+
+    @Override
+    public boolean producesMicrobe() {
+        return true;
+    }
 }

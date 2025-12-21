@@ -113,4 +113,9 @@ public class Decomposers implements BlueCard {
             }
         }
     }
+
+    @Override
+    public boolean consumesMicrobe() {
+        return true;
+    }
 }

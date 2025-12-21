@@ -104,8 +104,6 @@ public class TestAiService {
                 ? players.get(1)
                 : players.get(0);
 
-        BuildProjectPrediction bestPredictionBeforeIncome = getBestCardToBuild(game, player, Set.of(CardColor.GREEN, CardColor.RED, CardColor.BLUE));
-
         addMainIncome(player);
         addMainIncome(anotherPlayer);
 
@@ -120,31 +118,6 @@ public class TestAiService {
             if (doubleIncomeCardId != null) {
                 Card doubleIncomeCard = cardService.getCard(doubleIncomeCardId);
                 doubleIncomeCard.payAgain(game, cardService, player);
-            }
-        }
-
-        if (false) {
-            float bestStateBeforeBuild = deepNetwork.testState(game, player);
-
-            BuildProjectPrediction prediction = getBestCardToBuild(game, player, Set.of(CardColor.GREEN, CardColor.RED, CardColor.BLUE));
-
-            if (prediction.isCanBuild() && prediction.getCard() != null && (!bestPredictionBeforeIncome.isCanBuild() || bestPredictionBeforeIncome.getCard() != prediction.getCard())) {
-                float relativeRatio = (prediction.getExpectedValue() - (bestPredictionBeforeIncome.isCanBuild() ? bestPredictionBeforeIncome.getExpectedValue() : bestStateBeforeBuild)) / (1 - bestStateBeforeBuild);
-                if (relativeRatio >= 1f && prediction.getExpectedValue() != 1.0) {
-                    System.out.println("Relative " + relativeRatio + " " + prediction.getCard());
-                    game = aiBuildProjectService.assumeProjectIsBuiltFromPickPhase(game, player, prediction.getCard());
-                    player = game.getPlayerByUuid(player.getUuid());
-                    anotherPlayer = game.getPlayerByUuid(anotherPlayer.getUuid());
-
-                    if (Constants.LOG_NET_COMPARISON) {
-                        Card bestCardAfterIncome = prediction.getCard();
-                        System.out.println(
-                                "CardBeforeIncome " + (bestPredictionBeforeIncome.isCanBuild() ? bestPredictionBeforeIncome.getCard() : " null ")
-                                        + " " +
-                                        "CardAfterIncome " + bestCardAfterIncome.getClass().getSimpleName()
-                        );
-                    }
-                }
             }
         }
 

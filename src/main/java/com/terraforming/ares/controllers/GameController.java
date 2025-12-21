@@ -35,7 +35,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -756,7 +755,7 @@ public class GameController {
                         .collect(Collectors.toList());
 
                 for (Integer cardId : allCards) {
-                    if (Constants.WRITE_STATISTICS_TO_CONSOLE) {
+                    if (Constants.WRITE_CARD_STATISTICS_TO_CONSOLE) {
                         System.out.println("Id: " + cardId + ". " + cardService.getCard(cardId).getClass().getSimpleName());
                     }
                     writer.write("#" + cardId + " " + cardService.getCard(cardId).getClass().getSimpleName() + "\n");
@@ -765,7 +764,7 @@ public class GameController {
                         Map<Integer, Integer> winCardOccurence = winCardOccurenceByTurn.get(turn);
                         Map<Integer, Integer> cardOccurence = occurenceByTurn.get(turn);
 
-                        if (Constants.WRITE_STATISTICS_TO_CONSOLE) {
+                        if (Constants.WRITE_CARD_STATISTICS_TO_CONSOLE) {
                             System.out.println("Turn " + turn + ". " + (double) winCardOccurence.getOrDefault(cardId, 0) * 100 / cardOccurence.get(cardId));
                         }
                         writer.write("." + turn + " " + (double) winCardOccurence.getOrDefault(cardId, 0) * 100 / cardOccurence.getOrDefault(cardId, 1) + "\n");

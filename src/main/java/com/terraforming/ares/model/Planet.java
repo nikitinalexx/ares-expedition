@@ -2,10 +2,7 @@ package com.terraforming.ares.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.terraforming.ares.model.parameters.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
-import lombok.Singular;
+import lombok.*;
 
 import java.util.List;
 import java.util.Map;
@@ -35,6 +32,10 @@ public class Planet {
         this.lastOpenedOceanIndex = copy.lastOpenedOceanIndex;
     }
 
+    public int getCurrentLevel(GlobalParameter parameter) {
+        return measurableGlobalParameters.get(parameter).getCurrentLevel();
+    }
+
     @JsonIgnore
     public int getMinimumTemperature() {
         return measurableGlobalParameters.get(GlobalParameter.TEMPERATURE).getMin();
@@ -54,13 +55,33 @@ public class Planet {
     }
 
     @JsonIgnore
+    public int oceansBuilt() {
+        return oceansMaxCount() - oceansLeft();
+    }
+
+    @JsonIgnore
+    public int oceansMaxCount() {
+        return oceans.size();
+    }
+
+    @JsonIgnore
     public int temperatureLeft() {
         return measurableGlobalParameters.get(GlobalParameter.TEMPERATURE).valueLeft();
     }
 
     @JsonIgnore
+    public int temperatureMax() {
+        return measurableGlobalParameters.get(GlobalParameter.TEMPERATURE).levelsSize();
+    }
+
+    @JsonIgnore
     public int oxygenLeft() {
         return measurableGlobalParameters.get(GlobalParameter.OXYGEN).valueLeft();
+    }
+
+    @JsonIgnore
+    public int oxygenMax() {
+        return measurableGlobalParameters.get(GlobalParameter.OXYGEN).levelsSize();
     }
 
     @JsonIgnore

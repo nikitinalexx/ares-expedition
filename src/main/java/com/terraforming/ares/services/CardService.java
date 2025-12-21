@@ -256,21 +256,28 @@ public class CardService {
             return 0;
         }
 
-        return (int) (
-                player.getPlayed().getCards().stream().map(this::getCard)
-                        .filter(card -> player.getCardToTag().containsKey(card.getClass()))
-                        .flatMap(card -> player.getCardToTag().get(card.getClass()).stream())
-                        .filter(tagsToCheck::contains)
-                        .count()
+        int result = 0;
 
-                        + player.getPlayed()
-                        .getCards()
-                        .stream()
-                        .map(this::getCard)
-                        .flatMap(card -> card.getTags().stream())
-                        .filter(tagsToCheck::contains)
-                        .count()
-        );
+        for (var rawCard : player.getPlayed().getCards()) {
+            var card = getCard(rawCard);
+
+            var dynamicTags = player.getCardToTag().get(card.getClass());
+            if (dynamicTags != null) {
+                for (var tag : dynamicTags) {
+                    if (tagsToCheck.contains(tag)) {
+                        result++;
+                    }
+                }
+            }
+
+            for (var tag : card.getTags()) {
+                if (tagsToCheck.contains(tag)) {
+                    result++;
+                }
+            }
+        }
+
+        return result;
     }
 
     public int countCardsWithoutTags(Player player) {

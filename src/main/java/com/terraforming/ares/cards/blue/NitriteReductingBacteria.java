@@ -79,4 +79,14 @@ public class NitriteReductingBacteria implements BlueCard {
     public int getPrice() {
         return 11;
     }
+
+    @Override
+    public boolean producesMicrobe() {
+        return true;
+    }
+
+    @Override
+    public boolean consumesMicrobe() {
+        return true;
+    }
 }

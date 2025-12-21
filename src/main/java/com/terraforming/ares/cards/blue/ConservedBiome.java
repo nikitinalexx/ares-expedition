@@ -70,4 +70,9 @@ public class ConservedBiome implements BlueCard {
     public int getPrice() {
         return 25;
     }
+
+    @Override
+    public boolean producesMicrobe() {
+        return true;
+    }
 }

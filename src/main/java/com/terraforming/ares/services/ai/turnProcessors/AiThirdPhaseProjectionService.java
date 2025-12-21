@@ -157,9 +157,7 @@ public class AiThirdPhaseProjectionService {
         Player anotherPlayer = players.get(0) == player ? players.get(1) : players.get(0);
 
         MarsGameRow playerData = datasetCollectionService.collectGameAndPlayers(game, player, anotherPlayer);
-//        if (playerData == null) {
-//            return ProjectionWithGame.SKIP_PHASE;
-//        }
+
         float bestState = deepNetwork.testState(playerData.applyDifference(initialDifference).applyOpponentDifference(opponentDifference), network);
 
         //project cards

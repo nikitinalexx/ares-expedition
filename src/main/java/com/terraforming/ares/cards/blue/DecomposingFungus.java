@@ -78,4 +78,9 @@ public class DecomposingFungus implements BlueCard {
     public int getPrice() {
         return 10;
     }
+
+    @Override
+    public boolean consumesMicrobe() {
+        return true;
+    }
 }

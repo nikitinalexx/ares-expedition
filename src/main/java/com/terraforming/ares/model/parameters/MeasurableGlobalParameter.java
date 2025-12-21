@@ -49,6 +49,11 @@ public class MeasurableGlobalParameter {
     }
 
     @JsonIgnore
+    public int levelsSize() {
+        return levels.size();
+    }
+
+    @JsonIgnore
     public boolean isMin() {
         return currentLevel == 0;
     }

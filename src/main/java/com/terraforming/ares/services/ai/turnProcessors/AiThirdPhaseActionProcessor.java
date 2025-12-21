@@ -181,7 +181,7 @@ public class AiThirdPhaseActionProcessor {
                 .filter(c -> !activatedBlueCards.containsCard(c.getId()))
                 .collect(Collectors.toList());
 
-        boolean actionPerformed = performCardAction(game, player, notUsedBlueCards);
+        boolean actionPerformed = performCardActionOrStandardProject(game, player, notUsedBlueCards);
 
         if (actionPerformed) {
             return true;
@@ -194,7 +194,7 @@ public class AiThirdPhaseActionProcessor {
                     .filter(c -> !activatedBlueCardsTwice.containsCard(c.getId()))
                     .collect(Collectors.toList());
 
-            actionPerformed = performCardAction(game, player, actionBlueCards);
+            actionPerformed = performCardActionOrStandardProject(game, player, actionBlueCards);
         }
 
         if (actionPerformed) {
@@ -228,22 +228,6 @@ public class AiThirdPhaseActionProcessor {
 
         if (buildProjects) {
             return true;
-        }
-
-        if (player.getDifficulty().THIRD_PHASE_ACTION == AiTurnChoice.NETWORK) {
-            float stateBeforeStandardProject = deepNetwork.testState(game, player);
-            StandardProjectType bestStandardProject = null;
-
-            for (StandardProjectType standardProjectType : List.of(StandardProjectType.FOREST, StandardProjectType.OCEAN, StandardProjectType.TEMPERATURE)) {
-                float nextState = testAiService.projectPlayStandardAction(game, player.getUuid(), StandardProjectType.FOREST);
-                if (nextState > stateBeforeStandardProject) {
-                    stateBeforeStandardProject = nextState;
-                    bestStandardProject = standardProjectType;
-                }
-            }
-            if (bestStandardProject != null) {
-                aiTurnService.standardProjectTurn(game, player, bestStandardProject);
-            }
         }
 
         return false;
@@ -349,9 +333,9 @@ public class AiThirdPhaseActionProcessor {
             GasCooledReactors.class
     );
 
-    private boolean performCardAction(MarsGame game, Player player, List<Card> cards) {
+    private boolean performCardActionOrStandardProject(MarsGame game, Player player, List<Card> cards) {
         if (cards.isEmpty()) {
-            return false;
+            return doStandardTurnIfBetterThanChance(deepNetwork.testState(game, player), game, player);
         }
         cards = new ArrayList<>(cards);
 
@@ -374,12 +358,10 @@ public class AiThirdPhaseActionProcessor {
         }
 
         while (!cardsThatDontRequireNetworkValidation.isEmpty()) {
-            int selectedIndex = random.nextInt(cardsThatDontRequireNetworkValidation.size());
-            Card selectedCard = cardsThatDontRequireNetworkValidation.get(selectedIndex);
+            Card selectedCard = cardsThatDontRequireNetworkValidation.get(0);
 
             if (aiCardActionHelper.isUsablePlayAction(game, player, selectedCard)) {
                 ActionInputParamsResponse inputParams = aiCardActionHelper.getActionInputParamsForSmart(game, player, selectedCard);
-
 
                 if (inputParams.isMakeAction()) {
                     aiTurnService.performBlueAction(
@@ -392,7 +374,7 @@ public class AiThirdPhaseActionProcessor {
                 }
             }
 
-            cardsThatDontRequireNetworkValidation.remove(selectedIndex);
+            cardsThatDontRequireNetworkValidation.remove(0);
         }
 
         if (!cardsThatRequireNetworkValidation.isEmpty()) {
@@ -428,6 +410,11 @@ public class AiThirdPhaseActionProcessor {
                     }
                 }
             }
+
+            if (doStandardTurnIfBetterThanChance(bestChance, game, player)) {
+                return true;
+            }
+
             if (bestCard != null) {
                 ActionInputParamsResponse paramsResponse = aiCardActionHelper.getActionInputParamsForSmart(game, player, cardService.getCard(bestCard));
                 aiTurnService.performBlueAction(
@@ -440,6 +427,28 @@ public class AiThirdPhaseActionProcessor {
             }
         }
 
+        return false;
+    }
+
+    private boolean doStandardTurnIfBetterThanChance(float bestChance, MarsGame game, Player player) {
+        StandardProjectType bestStandardProject = null;
+
+        for (StandardProjectType standardProjectType : List.of(StandardProjectType.FOREST, StandardProjectType.OCEAN, StandardProjectType.TEMPERATURE)) {
+            String validationResult = standardProjectService.validateStandardProject(game, player, standardProjectType);
+            if (validationResult != null) {
+                continue;
+            }
+            float nextState = testAiService.projectPlayStandardAction(game, player.getUuid(), standardProjectType);
+            if (nextState > bestChance) {
+                bestChance = nextState;
+                bestStandardProject = standardProjectType;
+            }
+        }
+
+        if (bestStandardProject != null) {
+            aiTurnService.standardProjectTurn(game, player, bestStandardProject);
+            return true;
+        }
         return false;
     }
 
