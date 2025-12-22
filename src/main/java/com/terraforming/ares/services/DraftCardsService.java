@@ -1,10 +1,13 @@
 package com.terraforming.ares.services;
 
 import com.terraforming.ares.cards.blue.BacterialAggregates;
+import com.terraforming.ares.dto.DraftCardsDto;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.SpecialEffect;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -15,49 +18,54 @@ import org.springframework.stereotype.Service;
 public class DraftCardsService {
     private final SpecialEffectsService specialEffectsService;
 
-    public int countExtraCardsToTake(Player player) {
+    public DraftCardsDto countCardsToTakeAndDraft(Player player) {
+        Set<SpecialEffect> playerSpecialEffects = specialEffectsService.getPlayerSpecialEffects(player);
+        return new DraftCardsDto(countExtraCardsToTake(playerSpecialEffects), countExtraCardsToSee(player, playerSpecialEffects));
+    }
+
+    private int countExtraCardsToTake(Set<SpecialEffect> playerSpecialEffects) {
         int extraCardsToTake = 0;
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.EXTENDED_RESOURCES)) {
+        if (playerSpecialEffects.contains(SpecialEffect.EXTENDED_RESOURCES)) {
             extraCardsToTake++;
         }
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.INTERPLANETARY_RELATIONS)) {
+        if (playerSpecialEffects.contains(SpecialEffect.INTERPLANETARY_RELATIONS)) {
             extraCardsToTake++;
         }
 
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.UNITED_PLANETARY_ALLIANCE)) {
+        if (playerSpecialEffects.contains(SpecialEffect.UNITED_PLANETARY_ALLIANCE)) {
             extraCardsToTake++;
         }
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.THARSIS_REPUBLIC)) {
+        if (playerSpecialEffects.contains(SpecialEffect.THARSIS_REPUBLIC)) {
             extraCardsToTake++;
         }
 
         return extraCardsToTake;
     }
 
-    public int countExtraCardsToDraft(Player player) {
+    private int countExtraCardsToSee(Player player, Set<SpecialEffect> playerSpecialEffects) {
         int extraCardsToDraft = 0;
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.INTERPLANETARY_RELATIONS)) {
+        if (playerSpecialEffects.contains(SpecialEffect.INTERPLANETARY_RELATIONS)) {
             extraCardsToDraft++;
         }
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.INTERNS)) {
+        if (playerSpecialEffects.contains(SpecialEffect.INTERNS)) {
             extraCardsToDraft += 2;
         }
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.UNITED_PLANETARY_ALLIANCE)) {
+        if (playerSpecialEffects.contains(SpecialEffect.UNITED_PLANETARY_ALLIANCE)) {
             extraCardsToDraft++;
         }
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.THARSIS_REPUBLIC)) {
+        if (playerSpecialEffects.contains(SpecialEffect.THARSIS_REPUBLIC)) {
             extraCardsToDraft++;
         }
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.BACTERIAL_AGGREGATES)) {
+        if (playerSpecialEffects.contains(SpecialEffect.BACTERIAL_AGGREGATES)) {
             extraCardsToDraft += player.getCardResourcesCount().get(BacterialAggregates.class);
         }
 

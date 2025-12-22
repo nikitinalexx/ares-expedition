@@ -1,9 +1,9 @@
 package com.terraforming.ares.services.ai.turnProcessors;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.dto.DraftCardsDto;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
-import com.terraforming.ares.model.ai.AiExperimentalTurn;
 import com.terraforming.ares.model.ai.AiTurnChoice;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
@@ -11,7 +11,6 @@ import com.terraforming.ares.services.DraftCardsService;
 import com.terraforming.ares.services.SpecialEffectsService;
 import com.terraforming.ares.services.ai.*;
 import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
-import com.terraforming.ares.services.ai.dto.CardValueResponse;
 import com.terraforming.ares.services.ai.dto.PhaseChoiceProjection;
 import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
 import lombok.RequiredArgsConstructor;
@@ -490,7 +489,9 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             return random.nextInt(5) == 0;
         }
 
-        if (draftCardsService.countExtraCardsToTake(player) >= 2 || draftCardsService.countExtraCardsToDraft(player) >= 2) {
+        DraftCardsDto draftCardsDto = draftCardsService.countCardsToTakeAndDraft(player);
+
+        if (draftCardsDto.getCardsToTake() >= 2 || draftCardsDto.getCardsToSee() >= 2) {
             return true;
         }
 

@@ -3,6 +3,7 @@ package com.terraforming.ares.dataset;
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.cards.blue.*;
 import com.terraforming.ares.cards.corporations.*;
+import com.terraforming.ares.dto.DraftCardsDto;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.awards.AbstractAward;
@@ -305,6 +306,7 @@ public class DatasetCollectionService {
         }
 
         Map<Tag, Long> tagToCount = cardService.countPlayedTagsAsMap(currentPlayer);
+        DraftCardsDto draftCardsDto = draftCardsService.countCardsToTakeAndDraft(currentPlayer);
 
         return MarsPlayerRow.builder()
                 .winPoints(winPointsService.countWinPointsWithFloats(currentPlayer, game))
@@ -318,8 +320,8 @@ public class DatasetCollectionService {
                 .heat(currentPlayer.getHeat())
                 .cardsIncome(currentPlayer.getCardIncome())
                 .cardsBuilt(currentPlayer.getPlayed().size() - 1)
-                .extraSeeCards(draftCardsService.countExtraCardsToDraft(currentPlayer))
-                .extraTakeCards(draftCardsService.countExtraCardsToTake(currentPlayer))
+                .extraSeeCards(draftCardsDto.getCardsToSee())
+                .extraTakeCards(draftCardsDto.getCardsToTake())
                 .cards(currentPlayer.getHand().size())
                 .anaerobicMicroorganisms(currentPlayer.getCardResourcesCount().getOrDefault(AnaerobicMicroorganisms.class, 0))
                 .decomposers(currentPlayer.getCardResourcesCount().getOrDefault(Decomposers.class, 0))

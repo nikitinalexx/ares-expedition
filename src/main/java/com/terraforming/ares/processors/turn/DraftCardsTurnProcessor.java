@@ -1,5 +1,6 @@
 package com.terraforming.ares.processors.turn;
 
+import com.terraforming.ares.dto.DraftCardsDto;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
@@ -47,8 +48,10 @@ public class DraftCardsTurnProcessor implements TurnProcessor<DraftCardsTurn> {
             initialCardsToDraft = 8;
         }
 
-        int cardsToDraft = initialCardsToDraft + draftCardsService.countExtraCardsToDraft(player);
-        int cardsToTake = initialCardsToTake + draftCardsService.countExtraCardsToTake(player);
+        DraftCardsDto draftCardsDto = draftCardsService.countCardsToTakeAndDraft(player);
+
+        int cardsToDraft = initialCardsToDraft + draftCardsDto.getCardsToSee();
+        int cardsToTake = initialCardsToTake + draftCardsDto.getCardsToTake();
 
         if (player.getLunaProjectOffice() > 0) {
             cardsToDraft++;

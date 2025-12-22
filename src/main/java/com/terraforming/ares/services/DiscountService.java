@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -23,9 +24,10 @@ public class DiscountService {
         int discount = 0;
 
         List<Tag> tags = cardService.getCardTags(card, inputParameters);
+        Set<SpecialEffect> playerSpecialEffects = specialEffectsService.getPlayerSpecialEffects(player);
 
-        boolean playerOwnsAdvancedAlloys = specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ADVANCED_ALLOYS);
-        boolean playerOwnsPhobolog = specialEffectsService.ownsSpecialEffect(player, SpecialEffect.PHOBOLOG);
+        boolean playerOwnsAdvancedAlloys = playerSpecialEffects.contains(SpecialEffect.ADVANCED_ALLOYS);
+        boolean playerOwnsPhobolog = playerSpecialEffects.contains(SpecialEffect.PHOBOLOG);
 
         if (tags.contains(Tag.BUILDING) && player.getSteelIncome() != 0) {
             discount += player.getSteelIncome() * (2 + (playerOwnsAdvancedAlloys ? 1 : 0));
@@ -35,26 +37,26 @@ public class DiscountService {
             discount += player.getTitaniumIncome() * (3 + (playerOwnsAdvancedAlloys ? 1 : 0) + (playerOwnsPhobolog ? 1 : 0));
         }
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.EARTH_CATAPULT_DISCOUNT_2)) {
+        if (playerSpecialEffects.contains(SpecialEffect.EARTH_CATAPULT_DISCOUNT_2)) {
             discount += 2;
         }
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ORBITAL_OUTPOST_DISCOUNT)
+        if (playerSpecialEffects.contains(SpecialEffect.ORBITAL_OUTPOST_DISCOUNT)
                 && tags.size() <= 1) {
             discount += 3;
         }
 
         if (tags.contains(Tag.ENERGY) &&
-                specialEffectsService.ownsSpecialEffect(player, SpecialEffect.ENERGY_SUBSIDIES_DISCOUNT_4)) {
+                playerSpecialEffects.contains(SpecialEffect.ENERGY_SUBSIDIES_DISCOUNT_4)) {
             discount += 4;
         }
 
         if ((tags.contains(Tag.ANIMAL) || tags.contains(Tag.MICROBE) || tags.contains(Tag.PLANT)) &&
-                specialEffectsService.ownsSpecialEffect(player, SpecialEffect.GMO_CONTRACT_DISCOUNT_3)) {
+                playerSpecialEffects.contains(SpecialEffect.GMO_CONTRACT_DISCOUNT_3)) {
             discount += 3;
         }
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.INTERPLANETARY_CONFERENCE)) {
+        if (playerSpecialEffects.contains(SpecialEffect.INTERPLANETARY_CONFERENCE)) {
             if (tags.contains(Tag.EARTH)) {
                 discount += 3;
             }
@@ -63,44 +65,44 @@ public class DiscountService {
             }
         }
 
-        if (tags.contains(Tag.PLANT) && !tags.contains(Tag.BUILDING) && specialEffectsService.ownsSpecialEffect(player, SpecialEffect.MARTIAN_LUMBER)) {
+        if (tags.contains(Tag.PLANT) && !tags.contains(Tag.BUILDING) && playerSpecialEffects.contains(SpecialEffect.MARTIAN_LUMBER)) {
             discount += player.getSteelIncome() * 2;
         }
 
         if (tags.contains(Tag.EVENT) &&
-                specialEffectsService.ownsSpecialEffect(player, SpecialEffect.MEDIA_GROUP)) {
+                playerSpecialEffects.contains(SpecialEffect.MEDIA_GROUP)) {
             discount += 5;
         }
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.RESEARCH_OUTPOST_DISCOUNT_1)) {
+        if (playerSpecialEffects.contains(SpecialEffect.RESEARCH_OUTPOST_DISCOUNT_1)) {
             discount += 1;
         }
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.HOHMANN_DISCOUNT_1)) {
+        if (playerSpecialEffects.contains(SpecialEffect.HOHMANN_DISCOUNT_1)) {
             discount += 1;
         }
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.DEV_TECHS_DISCOUNT) && card.getColor() == CardColor.GREEN) {
+        if (playerSpecialEffects.contains(SpecialEffect.DEV_TECHS_DISCOUNT) && card.getColor() == CardColor.GREEN) {
             discount += 2;
         }
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.LAUNCH_STAR_DISCOUNT) && card.getColor() == CardColor.BLUE) {
+        if (playerSpecialEffects.contains(SpecialEffect.LAUNCH_STAR_DISCOUNT) && card.getColor() == CardColor.BLUE) {
             discount += 3;
         }
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.TORGATE_ENERGY_DISCOUNT) && tags.contains(Tag.ENERGY)) {
+        if (playerSpecialEffects.contains(SpecialEffect.TORGATE_ENERGY_DISCOUNT) && tags.contains(Tag.ENERGY)) {
             discount += 3;
         }
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.TERACTOR_EARTH_DISCOUNT) && tags.contains(Tag.EARTH)) {
+        if (playerSpecialEffects.contains(SpecialEffect.TERACTOR_EARTH_DISCOUNT) && tags.contains(Tag.EARTH)) {
             discount += 3;
         }
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.INTERPLANETARY_CINEMATICS_DISCOUNT) && tags.contains(Tag.EVENT)) {
+        if (playerSpecialEffects.contains(SpecialEffect.INTERPLANETARY_CINEMATICS_DISCOUNT) && tags.contains(Tag.EVENT)) {
             discount += 2;
         }
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.CREDICOR_DISCOUNT) && card.getPrice() >= 20) {
+        if (playerSpecialEffects.contains(SpecialEffect.CREDICOR_DISCOUNT) && card.getPrice() >= 20) {
             discount += 4;
         }
 

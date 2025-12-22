@@ -5,6 +5,9 @@ import com.terraforming.ares.model.SpecialEffect;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+
 /**
  * Created by oleksii.nikitin
  * Creation date 05.05.2022
@@ -21,6 +24,10 @@ public class SpecialEffectsService {
                 .stream()
                 .map(deckService::getCard)
                 .anyMatch(card -> card.getSpecialEffects().contains(specialEffect));
+    }
+
+    public Set<SpecialEffect> getPlayerSpecialEffects(Player player) {
+        return player.getPlayed().getCards().stream().map(deckService::getCard).flatMap(c -> c.getSpecialEffects().stream()).collect(Collectors.toSet());
     }
 
 }

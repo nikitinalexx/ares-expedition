@@ -3,6 +3,7 @@ package com.terraforming.ares.services.ai;
 import com.terraforming.ares.dataset.DatasetCollectionService;
 import com.terraforming.ares.dataset.MarsGameRow;
 import com.terraforming.ares.dataset.MarsPlayerRow;
+import com.terraforming.ares.dto.DraftCardsDto;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
@@ -199,10 +200,9 @@ public class TestAiService {
             initialCardsToDraft = 8;
         }
 
-        int cardsToTake = draftCardsService.countExtraCardsToTake(player);
-        int cardsToDraft = draftCardsService.countExtraCardsToDraft(player);
+        DraftCardsDto draftCardsDto = draftCardsService.countCardsToTakeAndDraft(player);
 
-        return (initialCardsToTake + cardsToTake) + (initialCardsToDraft + cardsToDraft) * 0.45f;
+        return (initialCardsToTake + draftCardsDto.getCardsToTake()) + (initialCardsToDraft + draftCardsDto.getCardsToSee()) * 0.45f;
     }
 
     private void addCardIncome(Player player, MarsPlayerRow marsPlayerRow) {
