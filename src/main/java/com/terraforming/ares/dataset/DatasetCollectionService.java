@@ -42,8 +42,7 @@ public class DatasetCollectionService {
         List<Card> sortedCorporations = Stream
                 .concat(cardFactory.getSortedBaseCorporations().stream(), cardFactory.getSortedDiscoveryCorporations().stream())
                 .filter(card -> !CORPORATIONS_WITH_REPEATED_EFFECT.contains(card.getClass()))
-                .sorted(Comparator.comparing(Card::getId))
-                .collect(Collectors.toList());
+                .sorted(Comparator.comparing(Card::getId)).toList();
 
         Map<Integer, Card> buffedCorporationsMapping = cardFactory.getBuffedCorporationsMapping();
 
@@ -276,8 +275,7 @@ public class DatasetCollectionService {
 
     private MarsPlayerRow collectPlayerData(MarsGame game, Player currentPlayer) {
         List<Card> playedCards = currentPlayer.getPlayed().getCards().stream()
-                .map(cardService::getCard)
-                .collect(Collectors.toList());
+                .map(cardService::getCard).toList();
 
         Map<CardAction, Integer> cardActionToCount = playedCards.stream()
                 .map(Card::getCardMetadata)

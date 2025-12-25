@@ -3,11 +3,7 @@ package com.terraforming.ares.cards.corporations;
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.CorporationCard;
 import com.terraforming.ares.model.Expansion;
-import com.terraforming.ares.model.Tag;
 import lombok.Getter;
-
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Created by oleksii.nikitin

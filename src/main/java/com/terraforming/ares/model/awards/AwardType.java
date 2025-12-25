@@ -21,6 +21,4 @@ public enum AwardType {
 
     CRITERION,//most cards with requirements
 
-    //highest TR
-    //most cards with requirements
 }

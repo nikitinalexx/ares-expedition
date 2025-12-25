@@ -90,5 +90,8 @@ public class BacterialAggregates implements DiscoveryExpansionBlueCard {
         return 7;
     }
 
-
+    @Override
+    public boolean consumesMicrobe() {
+        return true;
+    }
 }

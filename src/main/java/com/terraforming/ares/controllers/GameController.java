@@ -258,7 +258,7 @@ public class GameController {
                 executor.execute(worker);
             }
             executor.shutdown();
-            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+//            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); TODO WTF
 
             System.out.println("Finished all threads");
 
@@ -333,7 +333,7 @@ public class GameController {
             executor.execute(worker);
         }
         executor.shutdown();
-        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+//        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); TODO WTF
 
         System.out.println("Finished all threads");
 

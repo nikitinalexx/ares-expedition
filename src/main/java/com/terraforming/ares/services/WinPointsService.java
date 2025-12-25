@@ -201,41 +201,6 @@ public class WinPointsService {
                 ).sum();
     }
 
-    public Map<Class<?>, Float> getWinPointsFromCardWithResources(
-            Player player,
-            Set<Card> cards
-    ) {
-        return cards.stream()
-                .filter(card -> card.getCardMetadata().getWinPointsInfo() != null)
-                .collect(Collectors.toMap(
-                        Card::getClass,
-                        card -> {
-                            WinPointsInfo winPointsInfo = card.getCardMetadata().getWinPointsInfo();
-
-                            int resources = 0;
-
-//                            int resources = (winPointsInfo.getType() == card.getCollectableResource())
-//                                    ? player.getCardResourcesCount()
-//                                    .getOrDefault(card.getClass(), 0)
-//                                    : 0;
-
-                            if (winPointsInfo.getType() == CardCollectableResource.FOREST) {
-                                resources = player.getForests();
-                            } else if (winPointsInfo.getType() == CardCollectableResource.EARTH) {
-                                resources = cardService.countPlayedTags(player, Set.of(Tag.EARTH));
-                            }
-
-                            double points = getWinPoints(
-                                    resources,
-                                    winPointsInfo.getPoints(),
-                                    winPointsInfo.getResources()
-                            );
-
-                            return (float) Math.max(points, 0);
-                        }
-                ));
-    }
-
 
     private int getWinPoints(int resources, int pointsRatio, int resourcesRatio) {
         if (pointsRatio >= resourcesRatio) {

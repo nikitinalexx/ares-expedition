@@ -31,26 +31,25 @@ public enum CardEffect {
     }
 
     public int getEffectSize(Set<Class<?>> playedCards) {
-
         if (!doesSummarize) {
-            for (Class<?> playedCard : playedCards) {
-                if (cardsToEffectSignal.containsKey(playedCard)) {
-                    return cardsToEffectSignal.get(playedCard);
+            for (Map.Entry<Class<?>, Integer> entry : cardsToEffectSignal.entrySet()) {
+                if (playedCards.contains(entry.getKey())) {
+                    return entry.getValue();
                 }
             }
         } else {
             int initialSize = 0;
 
-            for (Class<?> playedCard : playedCards) {
-                if (cardsToEffectSignal.containsKey(playedCard)) {
-                    initialSize += cardsToEffectSignal.get(playedCard);
+            for (Map.Entry<Class<?>, Integer> entry : cardsToEffectSignal.entrySet()) {
+                if (playedCards.contains(entry.getKey())) {
+                    initialSize += entry.getValue();
                 }
             }
 
             return initialSize;
         }
 
-        return  0;
+        return 0;
     }
 
 }
