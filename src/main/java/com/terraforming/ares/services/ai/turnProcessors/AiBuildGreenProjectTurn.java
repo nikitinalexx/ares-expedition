@@ -12,6 +12,7 @@ import com.terraforming.ares.services.ai.ProjectionStrategy;
 import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsService;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
+import com.terraforming.ares.services.ai.turnProcessors.random.AiRandomBuildGreenProjectTurnService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -33,6 +34,7 @@ public class AiBuildGreenProjectTurn implements AiTurnProcessor {
     private final ICardValueService cardValueService;
     private final AiBuildProjectService aiBuildProjectService;
     private final DeepNetwork deepNetwork;
+    private final AiRandomBuildGreenProjectTurnService aiRandomBuildGreenProjectTurnService;
     private final Random random = new Random();
 
     @Override

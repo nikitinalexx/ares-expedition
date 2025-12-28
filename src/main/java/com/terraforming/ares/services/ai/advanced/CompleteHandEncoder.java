@@ -1,8 +1,9 @@
-package com.terraforming.ares.services.ai.hand;
+package com.terraforming.ares.services.ai.advanced;
 
 import com.terraforming.ares.cards.blue.*;
 import com.terraforming.ares.cards.buffedCorporations.BuffedArclightCorporation;
-import com.terraforming.ares.cards.corporations.*;
+import com.terraforming.ares.cards.corporations.ApolloIndustriesCorporation;
+import com.terraforming.ares.cards.corporations.ArclightCorporation;
 import com.terraforming.ares.cards.green.*;
 import com.terraforming.ares.cards.red.*;
 import com.terraforming.ares.dto.DraftCardsDto;
@@ -31,42 +32,10 @@ import static com.terraforming.ares.model.parameters.ParameterColor.*;
 @RequiredArgsConstructor
 @Component
 public class CompleteHandEncoder {
-    private static final int VECTOR_SIZE = 1000;//TODO
     //todo should have a vector with max values and divide during collection to avoid future normalization
 
-    private static final Set<Class<?>> ASSEMBLY_LINES_EASY_CARDS = Set.of(
-            CelestiorCorporation.class,
-            HyperionSystemsCorporation.class,
-            ModproCorporation.class,
-            AdvancedScreeningTechnology.class,
-            AiCentral.class,
-            AssetLiquidation.class,
-            Birds.class,
-            BrainstormingSession.class,
-            CircuitBoardFactory.class,
-            CommunityGardens.class,
-            ConservedBiome.class,
-            ExtremeColdFungus.class,
-            FarmersMarket.class,
-            GhgProductionBacteria.class,
-            HydroElectricEnergy.class,
-            MatterGenerator.class,
-            MatterManufactoring.class,
-            NitriteReductingBacteria.class,
-            RedraftedContracts.class,
-            RegolithEaters.class,
-            SelfReplicatingBacteria.class,
-            SymbioticFungus.class,
-            Tardigrades.class,
-            ThinkTank.class,
-            CityCouncil.class,
-            DroneAssistedConstruction.class,
-            FibrousCompositeMaterial.class,
-            VirtualEmployeeDevelopment.class
-    );
 
-
-    private static final Map<Class<?>, Float> CARDS_WITH_VP_PER_RESOURCE =//CHECK WITH CHATGPT IF SUCH ROUGH PARAMETER IS OK
+    private static final Map<Class<?>, Float> CARDS_WITH_VP_PER_RESOURCE =//TODO CHECK WITH CHATGPT IF SUCH ROUGH PARAMETER IS OK
             Map.ofEntries(
                     Map.entry(ArclightCorporation.class, 0.5f),
                     Map.entry(BuffedArclightCorporation.class, 0.5f),
@@ -110,6 +79,10 @@ public class CompleteHandEncoder {
     private final DraftCardsService draftCardsService;
     private final HandEncoderHelperService handEncoderHelperService;
 
+    public float[] evaluate(MarsGame game, Player player, Player anotherPlayer, float[] features, int idx) {
+        return new EncoderCalculator(game, player, anotherPlayer, features, idx).encodeHand();
+    }
+
 
     public class EncoderCalculator {
         private final MarsGame game;
@@ -127,7 +100,10 @@ public class CompleteHandEncoder {
         private final boolean canAmplifyOxygenOrTemperature;
         private final Map<Tag, Long> playedTagToCount;
 
-        public EncoderCalculator(MarsGame game, Player player, Player anotherPlayer) {
+        private final float[] features;
+        private int idx;
+
+        public EncoderCalculator(MarsGame game, Player player, Player anotherPlayer, float[] features, int idx) {
             this.game = game;
             this.player = player;
             this.anotherPlayer = anotherPlayer;
@@ -159,13 +135,11 @@ public class CompleteHandEncoder {
 
             this.playedTagToCount = cardService.countPlayedTagsAsMap(player);
 
-
+            this.features = features;
+            this.idx = idx;
         }
 
         public float[] encodeHand() {
-            float[] features = new float[VECTOR_SIZE];
-            int idx = 0;
-
             if (hand.isEmpty()) {
                 return features; // Все нули
             }
@@ -303,6 +277,9 @@ public class CompleteHandEncoder {
             if (handCardActions.containsKey(CardAction.FARMING_COOPS)) {
                 positivePlantGain.add(3f);//bugfix
             }
+            if (handCardActions.containsKey(CardAction.LOCAL_HEAT_TRAPPING)) {
+                positivePlantGain.add(4f);//bugfix
+            }
             FeatureStats plantGainStats = computeStats(positivePlantGain);
             features[idx++] = plantGainStats.sum;
             features[idx++] = plantGainStats.max;
@@ -382,22 +359,6 @@ public class CompleteHandEncoder {
             features[idx++] = player.getCardIncome() > 0 ? 1 : 0;
             features[idx++] = (float) Math.log1p(player.getCardIncome());
 
-
-            features[idx++] = playedTagToCount.getOrDefault(Tag.SPACE, 0L);
-            features[idx++] = playedTagToCount.getOrDefault(Tag.EARTH, 0L);
-            features[idx++] = playedTagToCount.getOrDefault(Tag.EVENT, 0L);
-            features[idx++] = playedTagToCount.getOrDefault(Tag.SCIENCE, 0L);
-            features[idx++] = playedTagToCount.getOrDefault(Tag.PLANT, 0L);
-            features[idx++] = playedTagToCount.getOrDefault(Tag.ENERGY, 0L);
-            features[idx++] = playedTagToCount.getOrDefault(Tag.BUILDING, 0L);
-            features[idx++] = playedTagToCount.getOrDefault(Tag.ANIMAL, 0L);
-            features[idx++] = playedTagToCount.getOrDefault(Tag.JUPITER, 0L);
-            features[idx++] = playedTagToCount.getOrDefault(Tag.MICROBE, 0L);
-
-
-            features[idx++] = getImmediateMicrobeGainSum();//cards that when built put microbes on any other chosen card
-            features[idx++] = getImmediateAnimalGainSum();//cards that when built put animals on any other chose card
-
             int earth = playedTagToCount.getOrDefault(Tag.EARTH, 0L).intValue();
             int animal = playedTagToCount.getOrDefault(Tag.ANIMAL, 0L).intValue();
             int plant = playedTagToCount.getOrDefault(Tag.PLANT, 0L).intValue();
@@ -409,6 +370,23 @@ public class CompleteHandEncoder {
             int microbe = playedTagToCount.getOrDefault(Tag.MICROBE, 0L).intValue();
             int playedJupiters = playedTagToCount.getOrDefault(Tag.JUPITER, 0L).intValue();
             int forests = player.getForests();
+
+            features[idx++] = space;
+            features[idx++] = earth;
+            features[idx++] = event;
+            features[idx++] = science;
+            features[idx++] = plant;
+            features[idx++] = playedEnergy;
+            features[idx++] = building;
+            features[idx++] = animal;
+            features[idx++] = playedJupiters;
+            features[idx++] = microbe;
+
+            features[idx++] = getImmediateMicrobeGainSum();//cards that when built put microbes on any other chosen card
+            features[idx++] = getImmediateAnimalGainSum();//cards that when built put animals on any other chose card
+            features[idx++] = getImmediatePlantGainCapacity();
+            features[idx++] = getImmediateMicrobeGainCapacity();
+            features[idx++] = getImmediateAnimalGainCapacity();
 
             handleEngineIncome(CardAction.HEAT_EARTH_INCOME, earth, features, idx);
             idx += 4;
@@ -497,18 +475,13 @@ public class CompleteHandEncoder {
             }
             features[idx++] = handCardClasses.contains(Microprocessors.class) ? 1 : 0;//draw 2 cards then discard a card
             features[idx++] = handCardClasses.contains(InventionContest.class) ? 1 : 0;//draw 3 cards then discard a card
-            features[idx++] = (handCardActions.getOrDefault(CardAction.PROCESSING_PLANT, 0L));//gives card with building tag
-
+            features[idx++] = handCardActions.containsKey(CardAction.PROCESSING_PLANT) ? 1 : 0;//gives card with building tag
 
             features[idx++] = handCardClasses.contains(AssortedEnterprises.class) ? 1 : 0;//lets u build any extra card with 2mc discount
             features[idx++] = handCardClasses.contains(BusinessContracts.class) ? 1 : 0;//take 4 cards and discard 2
-            features[idx++] = handCardClasses.contains(CeosFavoriteProject.class) ? 1 : 0;//can put 2 animals or 2 microbes
-            features[idx++] = handCardClasses.contains(ImportedHydrogen.class) ? 1 : 0;//gives 3 plants OR 3 microbes OR 2 animals
-            features[idx++] = handCardClasses.contains(InvestmentLoan.class) ? 1 : 0;//gain 10 mc after built
-            features[idx++] = handCardClasses.contains(LargeConvoy.class) ? 1 : 0;//gives 5 plants or 3 animals
+            features[idx++] = handCardClasses.contains(CeosFavoriteProject.class) ? 1 : 0;//can put any 2 resources
             features[idx++] = handCardClasses.contains(SpecialDesign.class) ? 1 : 0;//lets you build 1 building with +- requirement
             features[idx++] = handCardClasses.contains(BiomedicalImports.class) ? 1 : 0;//raise oxygen or improve phase
-            features[idx++] = handCardClasses.contains(CryogenicShipment.class) ? 1 : 0;//add 3 microbes OR 2 animals
             features[idx++] = handCardClasses.contains(InnovativeTechnologiesAward.class) ? player.getPhaseCards().stream().filter(phaseCard -> phaseCard != 0).count() : 0;
 
             if (handCardClasses.contains(LocalHeatTrapping.class)) {//-3 heat, +4 plants, +2 animals or + 2 microbes
@@ -641,8 +614,7 @@ public class CompleteHandEncoder {
                 features[idx++] = playedAquifer ? 1 : 0;
 
                 features[idx++] = (handAquifer || playedAquifer) ? oceansLeftRatio : 0;
-
-                features[idx++] = game.getPlanet().isOceansMax() ? 0 : Math.min(5, player.getSteelIncome());
+                features[idx++] = (handAquifer || playedAquifer) && !game.getPlanet().isOceansMax() ? (10 - Math.min(5, player.getSteelIncome()) * 2) : 0;
             }
 
             {
@@ -653,17 +625,7 @@ public class CompleteHandEncoder {
                 features[idx++] = playedVolcanicPools ? 1 : 0;
 
                 features[idx++] = playedVolcanicPools || handVolcanicPools ? oceansLeftRatio : 0;
-
-                if (game.getPlanet().isOceansMax()) {//zero utility from discount
-                    features[idx++] = 0;
-                    features[idx++] = 0;
-                } else if (handVolcanicPools || playedVolcanicPools) {
-                    int playerTagEnergyCount = playedTagToCount.getOrDefault(Tag.ENERGY, 0L).intValue();//discount per 1 energy tag
-                    int handEnergyCount = handTagCounts[Tag.ENERGY.ordinal()];
-
-                    features[idx++] = Math.min(1.0f, playerTagEnergyCount / 12.0f);
-                    features[idx++] = Math.min(1.0f, handEnergyCount / 12.0f);
-                }
+                features[idx++] = (handVolcanicPools || playedVolcanicPools) && !game.getPlanet().isOceansMax() ? Math.max(0, 12 - playedEnergy) : 0;
             }
 
             {
@@ -675,18 +637,10 @@ public class CompleteHandEncoder {
 
                 if (handCA || playedCA) {
                     int milestonesAchieved = (int) game.getMilestones().stream().filter(milestone -> milestone.isAchieved(player)).count();
-                    features[idx++] = milestonesAchieved * 4;
+                    features[idx++] = 14 - milestonesAchieved * 4;
                 } else {
                     features[idx++] = 0;
                 }
-            }
-
-            {
-                boolean zetacellCorp = playedCardActions.containsKey(CardAction.ZETACELL_CORPORATION);
-
-                features[idx++] = zetacellCorp ? 1 : 0;
-                features[idx++] = (zetacellCorp) ? oceansLeftRatio : 0;
-                features[idx++] = (zetacellCorp) ? oxygenLeftRatio : 0;
             }
 
             Map<GainType, FeatureStats> gainTypeToCounts = Map.of(
@@ -770,15 +724,19 @@ public class CompleteHandEncoder {
                 features[idx++] = unmiCorp ? (forestsGainStats.nonZeroCount + oxygenGainStats.nonZeroCount + temperatureGainStats.nonZeroCount + oceanGainStats.nonZeroCount + terraformingRatingGainStats.nonZeroCount) : 0;
             }
 
-            {//good example
+            {
+                boolean zetacellCorp = playedCardActions.containsKey(CardAction.ZETACELL_CORPORATION);
                 boolean handAlgae = handCardActions.containsKey(CardAction.ARCTIC_ALGAE);
                 boolean playedAlgae = playedCardActions.containsKey(CardAction.ARCTIC_ALGAE);
 
+                features[idx++] = zetacellCorp ? 1 : 0;
                 features[idx++] = handAlgae ? 1 : 0;
                 features[idx++] = playedAlgae ? 1 : 0;
 
-                features[idx++] = (handAlgae || playedAlgae) ? oceansLeftRatio : 0;
-                features[idx++] = (handAlgae || playedAlgae) ? oxygenLeftRatio : 0;
+                features[idx++] = (zetacellCorp ? 2 : 0) + (playedAlgae ? 4 : 0);
+
+                features[idx++] = (handAlgae || playedAlgae || zetacellCorp) ? oceansLeftRatio : 0;
+                features[idx++] = (handAlgae || playedAlgae || zetacellCorp) ? oxygenLeftRatio : 0;
 
                 features[idx++] = handAlgae ? getMinRedTemperatureAvailabilityProgress() : 0;
             }
@@ -834,7 +792,7 @@ public class CompleteHandEncoder {
                 features[idx++] = playedAL ? 1 : 0;
 
                 if (handAL || playedAL) {
-                    int tableEasyCards = (int) playedCardClasses.stream().filter(ASSEMBLY_LINES_EASY_CARDS::contains).count();
+                    int tableEasyCards = (int) playedCardClasses.stream().filter(EncoderConstants.ASSEMBLY_LINES_EASY_CARDS::contains).count();
                     int handActiveCards = (int) hand.stream().filter(Card::isActiveCard).count();
 
                     features[idx++] = tableEasyCards;
@@ -877,7 +835,7 @@ public class CompleteHandEncoder {
             }
 
             //Useful and potential heat capacity
-            {
+            {//TODO this smells
                 float playerHeatIncome = (float) player.getHeatIncome();
                 if (playedCardActions.containsKey(CardAction.HYDRO_ELECTRIC)) {
                     playerHeatIncome += 2.5f;
@@ -907,6 +865,7 @@ public class CompleteHandEncoder {
             boolean hasHyperionCorp = playedCardActions.containsKey(CardAction.HYPERION_SYSTEMS_CORPORATION);
             boolean hasHandCommunityGardens = handCardClasses.contains(CommunityGardens.class);
             boolean hasPlayedCommunityGardens = playedCardClasses.contains(CommunityGardens.class);
+
             boolean handDroneAC = handCardClasses.contains(DroneAssistedConstruction.class);
             boolean playedDroneAC = playedCardClasses.contains(DroneAssistedConstruction.class);
 
@@ -915,7 +874,7 @@ public class CompleteHandEncoder {
                 features[idx++] = handDroneAC ? 1 : 0;//potential can get MC in 3rd phase
                 features[idx++] = hasPlayedCommunityGardens ? 1 : 0;//can get extra plant if chose 3rd
 
-                features[idx++] = (hasHyperionCorp ? 1 : 0) + (playedDroneAC ? 2 : 0);//extra MC if chosen 3
+                features[idx++] = (hasHyperionCorp ? 1 : 0);//extra MC if chosen 3
                 features[idx++] = (hasPlayedCommunityGardens ? 2 : 0) + (hasHyperionCorp ? 1 : 0) + (playedDroneAC ? 2 : 0);//get MC in 3
             }
 
@@ -1133,8 +1092,7 @@ public class CompleteHandEncoder {
                         .limit(5)
                         .count();
 
-                //reflects the distance to a good discount for the action on this card
-                features[idx++] = (handDevelopedInfrastructure || playedDevelopedInfrastructure) && !game.getPlanet().isTemperatureMax() ? blueCardsCount / 5.0f : 0;
+                features[idx++] = (handDevelopedInfrastructure || playedDevelopedInfrastructure) && !game.getPlanet().isTemperatureMax() ? (10 - (blueCardsCount >= 5 ? 5 : 0)) : 0;
             }
 
             {
@@ -1145,7 +1103,7 @@ public class CompleteHandEncoder {
                 features[idx++] = playedGCR ? 1 : 0;
 
                 features[idx++] = (handGCR || playedGCR) ? temperatureLeftRatio : 0;
-                features[idx++] = (handGCR || playedGCR) && !game.getPlanet().isTemperatureMax() ? player.getPhaseCards().stream().filter(phaseCard -> phaseCard != 0).count() / 5.0f : 0;
+                features[idx++] = (handGCR || playedGCR) && !game.getPlanet().isTemperatureMax() ? (12 - player.getPhaseCards().stream().filter(phaseCard -> phaseCard != 0).count() * 2) : 0;
             }
 
             {
@@ -1165,13 +1123,7 @@ public class CompleteHandEncoder {
 
                 features[idx++] = playedWI || handWI ? oceansLeftRatio : 0;
 
-                if (game.getPlanet().isOceansMax()) {
-                    features[idx++] = 0;
-                    features[idx++] = 0;
-                } else if (handWI || playedWI) {
-                    features[idx++] = Math.min(1.0f, player.getTitaniumIncome() / 12.0f);
-                    features[idx++] = Math.min(1.0f, titaniumStats.sum / 12.0f);
-                }
+                features[idx++] = (handWI || playedWI) && !game.getPlanet().isOceansMax() ? Math.max(0, 12 - player.getTitaniumIncome()) : 0;
 
                 int playedJupiterTagCount = playedTagToCount.getOrDefault(Tag.JUPITER, 0L).intValue();
                 int handJupiterTagCount = handTagCounts[Tag.JUPITER.ordinal()];
@@ -1191,9 +1143,7 @@ public class CompleteHandEncoder {
                 features[idx++] = playedPP || handPP ? oxygenLeftRatio : 0;
 
                 int eventCardsCount = playedTagToCount.getOrDefault(Tag.EVENT, 0L).intValue();
-
-                //reflects the distance to a good discount for the action on this card
-                features[idx++] = (handPP || playedPP) ? Math.min(1.0f, eventCardsCount / 4.0f) : 0;
+                features[idx++] = (handPP || playedPP) && !game.getPlanet().isOxygenMax() ? (10 - (eventCardsCount >= 4 ? 5 : 0)) : 0;
             }
 
             {
@@ -1222,11 +1172,7 @@ public class CompleteHandEncoder {
                 features[idx++] = playedSP ? 1 : 0;
 
                 features[idx++] = playedSP || handSP ? oxygenLeftRatio : 0;
-
-                float tableTitanium = (float) player.getTitaniumIncome();
-                float handTitanium = titaniumStats.sum;
-
-                features[idx++] = (handSP || playedSP) ? Math.min(1.0f, (tableTitanium + handTitanium) / 7.5f) : 0;
+                features[idx++] = (handSP || playedSP) ? Math.max(0, 15 - player.getTitaniumIncome() * 2) : 0;
 
                 //доход говорит о том, что мы в теории можем жать эту карту даже без скидки
                 features[idx++] = (handSP || playedSP) ? (float) Math.log1p(player.getMcIncome() + player.getTerraformingRating()) : 0;
@@ -1277,7 +1223,14 @@ public class CompleteHandEncoder {
                 features[idx++] = playedPhysicsComplex || handPhysicsComplex ? temperatureLeftRatio : 0;
 
                 features[idx++] = handPhysicsComplex && science >= 4 ? 1 : 0;
-                features[idx++] = handPhysicsComplex ? (float) science / 4.f : 0;
+                features[idx++] = handPhysicsComplex ? Math.min(1f, science / 4f) : 0;
+            }
+
+            {//good example
+                boolean plantation = handCardClasses.contains(Plantation.class);
+                features[idx++] = plantation ? 1 : 0;
+                features[idx++] = plantation && science >= 4 ? 1 : 0;
+                features[idx++] = plantation ? Math.min(1f, science / 4f) : 0;
             }
 
             {
@@ -1518,7 +1471,7 @@ public class CompleteHandEncoder {
                 features[idx++] = anotherPlayer.getPhaseCards().get(i) == 2 ? 1 : 0;//second upgrade
             }
 
-            int globalUpgrades = (int) (handCardActions.getOrDefault(CardAction.UPDATE_PHASE_CARD, 0L) + 2 * handCardActions.getOrDefault(CardAction.UPDATE_PHASE_CARD_TWICE, 0L));
+            int globalUpgrades = (int) (handCardActions.getOrDefault(CardAction.UPDATE_PHASE_CARD, 0L) + 2 * handCardActions.getOrDefault(CardAction.UPDATE_PHASE_CARD_TWICE, 0L) + handCardActions.getOrDefault(CardAction.CRYOGENIC_SHIPMENT, 0L));
             int phase1Upgrades = globalUpgrades + handCardActions.getOrDefault(CardAction.UPDATE_PHASE_1_CARD, 0L).intValue();
             int phase2Upgrades = globalUpgrades + handCardActions.getOrDefault(CardAction.UPDATE_PHASE_2_CARD, 0L).intValue();
             int phase3Upgrades = globalUpgrades + handCardActions.getOrDefault(CardAction.COMMUNICATIONS_STREAMLINING, 0L).intValue();
@@ -1904,7 +1857,7 @@ public class CompleteHandEncoder {
 
             if (handCardClasses.contains(Crater.class)) {
                 features[idx++] = 1;
-                features[idx++] = Math.min(3, playedTagToCount.getOrDefault(Tag.EVENT, 0L)) / 3f;
+                features[idx++] = Math.min(1, playedTagToCount.getOrDefault(Tag.EVENT, 0L) / 3f);
             } else {
                 features[idx++] = 0;
                 features[idx++] = 0;
@@ -2169,8 +2122,20 @@ public class CompleteHandEncoder {
             return (handCardActions.containsKey(CardAction.ASTROFARM) ? 2 : 0) + (handCardActions.containsKey(CardAction.IMPORTED_NITROGEN) ? 3 : 0);
         }
 
+        private int getImmediatePlantGainCapacity() {
+            return (handCardActions.containsKey(CardAction.IMPORTED_HYDROGEN) ? 3 : 0) + (handCardActions.containsKey(CardAction.LARGE_CONVOY) ? 5 : 0);
+        }
+
+        private int getImmediateAnimalGainCapacity() {
+            return (handCardClasses.contains(CeosFavoriteProject.class) ? 2 : 0) + (handCardActions.containsKey(CardAction.IMPORTED_HYDROGEN) ? 2 : 0) + (handCardActions.containsKey(CardAction.LARGE_CONVOY) ? 3 : 0);
+        }
+
+        private int getImmediateMicrobeGainCapacity() {
+            return (handCardClasses.contains(CeosFavoriteProject.class) ? 2 : 0) + (handCardActions.containsKey(CardAction.IMPORTED_HYDROGEN) ? 3 : 0) + (handCardActions.containsKey(CardAction.LOCAL_HEAT_TRAPPING) ? 2 : 0) + (handCardActions.containsKey(CardAction.CRYOGENIC_SHIPMENT) ? 3 : 0);
+        }
+
         private int getImmediateAnimalGainSum() {
-            return (handCardActions.containsKey(CardAction.EOS_CHASMA) ? 1 : 0) + (handCardActions.containsKey(CardAction.IMPORTED_NITROGEN) ? 2 : 0);
+            return (handCardActions.containsKey(CardAction.EOS_CHASMA) ? 1 : 0) + (handCardActions.containsKey(CardAction.IMPORTED_NITROGEN) ? 2 : 0) + (handCardActions.containsKey(CardAction.LOCAL_HEAT_TRAPPING) ? 2 : 0) + (handCardActions.containsKey(CardAction.CRYOGENIC_SHIPMENT) ? 2 : 0);
         }
 
         private List<Float> extract(Function<Card, Float> extractor) {

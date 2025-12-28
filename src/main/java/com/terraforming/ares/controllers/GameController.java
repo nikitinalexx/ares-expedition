@@ -1,7 +1,7 @@
 package com.terraforming.ares.controllers;
 
 import com.terraforming.ares.dataset.DatasetCollectionService;
-import com.terraforming.ares.dataset.MarsGameDataset;
+import com.terraforming.ares.dataset.GameResult;
 import com.terraforming.ares.dataset.MarsGameRow;
 import com.terraforming.ares.dto.*;
 import com.terraforming.ares.entity.CrisisRecordEntity;
@@ -22,6 +22,7 @@ import com.terraforming.ares.services.ai.DeepNetwork;
 import com.terraforming.ares.services.ai.TestAiService;
 import com.terraforming.ares.services.ai.dto.CardProjection;
 import com.terraforming.ares.services.ai.turnProcessors.AiMulliganCardsTurn;
+import com.terraforming.ares.services.simulations.DataHolderWithFlush;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.CollectionUtils;
@@ -33,10 +34,9 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.terraforming.ares.model.Constants.WRITE_STATISTICS_TO_FILE;
@@ -227,157 +227,39 @@ public class GameController {
     public void runSimulations(@RequestBody SimulationsRequest request) throws IOException, InterruptedException {
         TURNS_TO_GAMES_COUNT.clear();
         TURNS_TO_POINTS_COUNT.clear();
-        if (request.isWithBatches() && request.getBatches() == 0) {
-            throw new IllegalArgumentException("Batches can't be 0");
-        }
-        if (!request.isWithBatches()) {
-            request.setBatches(1);
-        }
 
         List<PlayerDifficulty> playerDifficulties = Constants.SIMULATION_PLAYERS;
-
-        for (int batch = 0; batch < request.getBatches(); batch++) {
-            request.setFileIndex(batch);
-
-            Constants.FIRST_PLAYER_PHASES = new ConcurrentHashMap<>();
-            Constants.SECOND_PLAYER_PHASES = new ConcurrentHashMap<>();
-
-            int threads = Runtime.getRuntime().availableProcessors();
-
-            if (request.getSimulationsCount() < threads) {
-                return;
-            }
-
-            System.out.println("Starting simulations");
-
-            GameStatistics gameStatistics = new GameStatistics();
-
-            ExecutorService executor = Executors.newFixedThreadPool(threads);
-            for (int i = 0; i < threads; i++) {
-                Runnable worker = new WorkerThread(playerDifficulties, request.getSimulationsCount() / threads, gameStatistics, request.getFileIndex(), i);
-                executor.execute(worker);
-            }
-            executor.shutdown();
-//            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); TODO WTF
-
-            System.out.println("Finished all threads");
-
-
-            printStatistics(gameStatistics);
-
-            if (Constants.COLLECT_DATASET) {
-                List<String> fileNames = new ArrayList<>();
-
-                for (int threadIndex = 0; threadIndex < threads; threadIndex++) {
-                    fileNames.add("dataset_" + playerDifficulties.stream().map(PlayerDifficulty::toString).collect(Collectors.joining("_")) + "_" + request.getFileIndex() + "_" + threadIndex + ".csv");
-                }
-
-                combineAndDelete(fileNames, "dataset_" + playerDifficulties.stream().map(PlayerDifficulty::toString).collect(Collectors.joining("_")) + "_" + request.getFileIndex() + ".csv");
-            }
-
-
-            System.out.println(Constants.FIRST_PLAYER_PHASES);
-            System.out.println(Constants.SECOND_PLAYER_PHASES);
-            System.out.println("Finished");
-
-            System.out.println(maxMcIncome);
-            System.out.println(maxHeatIncome);
-            System.out.println(maxScience);
-            System.out.println(maxCardsPlayed);
-            System.out.println(maxSteelTitanium);
-            System.out.println(maxResources);
-        }
-    }
-
-    @GetMapping("/simulations/networks")
-    public void runSimulations(@RequestBody NetworksSimulationsRequest request) throws IOException, InterruptedException {
-        if (request.getSimulationsCount() < Runtime.getRuntime().availableProcessors()) {
-            return;
-        }
 
         Constants.FIRST_PLAYER_PHASES = new ConcurrentHashMap<>();
         Constants.SECOND_PLAYER_PHASES = new ConcurrentHashMap<>();
 
-        if (request.isWithSmart()) {
-            for (String network : request.getNetworks()) {
-                System.out.println("Starting simulations smart " + network);
-                deepNetwork.updateNetwork(network, 2);
-
-                executeSimulations(List.of(PlayerDifficulty.SMART, PlayerDifficulty.NETWORK), request, "Smart", network);
-            }
-        }
-
-        for (int i = 0; i < request.getNetworks().size() - 1; i++) {
-            for (int j = i + 1; j < request.getNetworks().size(); j++) {
-                String firstNetwork = request.getNetworks().get(i);
-                String secondNetwork = request.getNetworks().get(j);
-                System.out.println("Starting simulations " + firstNetwork + " " + secondNetwork);
-
-                deepNetwork.updateNetwork(firstNetwork, 1);
-                deepNetwork.updateNetwork(secondNetwork, 2);
-
-                executeSimulations(List.of(PlayerDifficulty.NETWORK, PlayerDifficulty.NETWORK), request, firstNetwork, secondNetwork);
-            }
-        }
-    }
-
-    private void executeSimulations(List<PlayerDifficulty> playerDifficulty, NetworksSimulationsRequest request, String firstName, String secondName) throws IOException, InterruptedException {
         int threads = Runtime.getRuntime().availableProcessors();
 
-        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        if (request.getTotalSimulations() < threads) {
+            throw new IllegalArgumentException("Simulation count less than total number of threads");
+        }
+
+        System.out.println("Starting simulations");
 
         GameStatistics gameStatistics = new GameStatistics();
 
-        for (int i = 0; i < threads; i++) {
-            Runnable worker = new WorkerThread(playerDifficulty, request.getSimulationsCount() / threads, gameStatistics, 0, i);
-            executor.execute(worker);
-        }
-        executor.shutdown();
-//        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); TODO WTF
-
+        IntStream.range(0, threads).parallel().forEach(i -> {
+            new WorkerThread(playerDifficulties, request.getTotalSimulations() / threads, gameStatistics, i).run();
+        });
         System.out.println("Finished all threads");
 
-
         printStatistics(gameStatistics);
-
-        if (Constants.COLLECT_DATASET) {
-            List<String> fileNames = new ArrayList<>();
-
-            for (int threadIndex = 0; threadIndex < threads; threadIndex++) {
-                fileNames.add("dataset_" + Constants.SIMULATION_PLAYERS.stream().map(PlayerDifficulty::toString).collect(Collectors.joining("_")) + "_" + 0 + "_" + threadIndex + ".csv");
-            }
-
-            combineAndDelete(fileNames, "dataset_" + firstName + "_" + secondName + "_" + System.currentTimeMillis() + ".csv");
-        }
 
         System.out.println(Constants.FIRST_PLAYER_PHASES);
         System.out.println(Constants.SECOND_PLAYER_PHASES);
         System.out.println("Finished");
-    }
 
-    public static void combineAndDelete(List<String> filePaths, String combinedFilePath) throws IOException {
-        // Create the combined CSV file
-        FileWriter writer = new FileWriter(combinedFilePath);
-        for (String filePath : filePaths) {
-            File f = new File(filePath);
-            if (!f.exists()) {
-                continue;
-            }
-            BufferedReader reader = new BufferedReader(new FileReader(filePath));
-            String line = reader.readLine();
-            while (line != null) {
-                writer.write(line + "\n");
-                line = reader.readLine();
-            }
-            reader.close();
-
-            // Delete the old file
-            File fileToDelete = new File(filePath);
-            if (!fileToDelete.delete()) {
-                System.err.println("Failed to delete file: " + filePath);
-            }
-        }
-        writer.close();
+        System.out.println(maxMcIncome);
+        System.out.println(maxHeatIncome);
+        System.out.println(maxScience);
+        System.out.println(maxCardsPlayed);
+        System.out.println(maxSteelTitanium);
+        System.out.println(maxResources);
     }
 
     @GetMapping("/mulligan/calibrate")
@@ -450,14 +332,12 @@ public class GameController {
     class WorkerThread implements Runnable {
         int simulationCount;
         GameStatistics gameStatistics;
-        int fileIndex;
         int threadIndex;
         List<PlayerDifficulty> playerDifficulty;
 
-        WorkerThread(List<PlayerDifficulty> playerDifficulty, int simulationCount, GameStatistics gameStatistics, int fileIndex, int threadIndex) {
+        WorkerThread(List<PlayerDifficulty> playerDifficulty, int simulationCount, GameStatistics gameStatistics, int threadIndex) {
             this.simulationCount = simulationCount;
             this.gameStatistics = gameStatistics;
-            this.fileIndex = fileIndex;
             this.threadIndex = threadIndex;
             this.playerDifficulty = playerDifficulty;
         }
@@ -489,7 +369,7 @@ public class GameController {
 
             long startTime = System.currentTimeMillis();
 
-            List<MarsGameDataset> marsGameDatasets = new ArrayList<>();
+            DataHolderWithFlush dataHolderWithFlush = new DataHolderWithFlush(threadIndex);
 
             for (int i = 1; i <= simulationCount; i++) {
                 if (BREAK_SIMULATIONS_EARLY) {
@@ -497,10 +377,8 @@ public class GameController {
                 }
                 MarsGame marsGame = gameService.createNewSimulation(gameParameters);
                 if (Constants.COLLECT_DATASET) {
-                    MarsGameDataset dataSet = simulationProcessorService.runSimulationWithDataset(marsGame);
-                    if (dataSet != null) {
-                        marsGameDatasets.add(dataSet);
-                    }
+                    GameResult dataSet = simulationProcessorService.runSimulationWithDataset(marsGame);
+                    dataHolderWithFlush.addResult(dataSet);
                 } else {
                     simulationProcessorService.processSimulation(marsGame);
                 }
@@ -516,77 +394,15 @@ public class GameController {
 
                 if (i % 100 == 0) {
                     gatherStatistics(games, gameStatistics);
-                    if (Constants.SAVE_SIMULATION_GAMES_TO_DB) {
-                        games.forEach(gameRepository::save);
-                    }
-                    saveExceptionalGames(games);
                     games.clear();
                 }
             }
 
             gatherStatistics(games, gameStatistics);
-            if (Constants.SAVE_SIMULATION_GAMES_TO_DB) {
-                games.forEach(gameRepository::save);
-            }
-            saveExceptionalGames(games);
-
-            if (Constants.COLLECT_DATASET) {
-                try {
-                    saveDatasets(marsGameDatasets, fileIndex, threadIndex);
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                }
-            }
         }
     }
 
-    private void saveExceptionalGames(List<MarsGame> games) {
-//        games.stream().filter(game -> game.getTurns() < 34 && game.getPlayerUuidToPlayer().values().stream().anyMatch(
-//                player -> {
-//
-//                    int winPoints = winPointsService.countWinPoints(player, game);
-//
-//                    long activeCardsCount = player.getPlayed().getCards().stream().map(cardService::getCard).filter(Card::isActiveCard).count();
-//                    long greenCardsCount = player.getPlayed().getCards().stream().map(cardService::getCard).filter(card -> card.getColor() == CardColor.GREEN).count();
-//
-//                    if (activeCardsCount > 5 && winPoints > 80 && greenCardsCount < 13) {
-//                        System.out.println("Active cards " + player.getUuid());
-//                    }
-//
-//
-//                    return (activeCardsCount > 5 && winPoints > 80 && greenCardsCount < 13);
-//                }
-//        )).forEach(gameRepository::save);
-
-        games.forEach(game -> {
-            TURNS_TO_GAMES_COUNT.compute(game.getTurns(), (turns, count) -> {
-                if (count == null) {
-                    count = 0;
-                }
-                count++;
-                return count;
-            });
-            TURNS_TO_POINTS_COUNT.compute(game.getTurns(), (turns, pointsCount) -> {
-                if (pointsCount == null) {
-                    pointsCount = 0L;
-                }
-                Integer bestScore = game.getPlayerUuidToPlayer().values().stream().map(
-                        p -> winPointsService.countWinPoints(p, game)
-                ).max(Comparator.naturalOrder()).orElseThrow();
-                pointsCount += bestScore;
-
-                if (TURN_TO_AVERAGE_WINNER.containsKey(game.getTurns()) && bestScore > TURN_TO_AVERAGE_WINNER.get(game.getTurns()) * 1.1) {
-                    gameRepository.save(game);
-                }
-
-                return pointsCount;
-            });
-        });
-    }
-
     private void gatherStatistics(List<MarsGame> games, GameStatistics gameStatistics) {
-
-
         List<MarsGame> finishedGames = games.stream()
                 .filter(MarsGame::gameEndCondition)
                 .filter(game -> game.getTurns() <= GameStatistics.MAX_TURNS_TO_CONSIDER)
@@ -618,7 +434,7 @@ public class GameController {
 
             players.sort(Comparator.comparing(player -> player.getUuid().charAt(player.getUuid().length() - 1)));
 
-            List<Integer> winPoints = players.stream().map(player -> winPointsService.countWinPoints(player, game)).collect(Collectors.toList());
+            List<Integer> winPoints = players.stream().map(player -> winPointsService.countWinPoints(player, game)).toList();
 
             int maxWinPoints = Collections.max(winPoints);
             int winnerIndex = 0;
@@ -655,16 +471,6 @@ public class GameController {
                 players.forEach(player -> {
                     gameStatistics.corporationOccured(player.getSelectedCorporationCard());
                 });
-            }
-        }
-    }
-
-    private synchronized void saveDatasets(List<MarsGameDataset> marsGameDatasets, int index, int threadIndex) throws FileNotFoundException {
-        File csvOutputFile = new File("dataset_" + Constants.SIMULATION_PLAYERS.stream().map(PlayerDifficulty::toString).collect(Collectors.joining("_")) + "_" + index + "_" + threadIndex + ".csv");
-        try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
-            for (MarsGameDataset dataset : marsGameDatasets) {
-                writeMarsGameRows(dataset.getFirstPlayerRows(), pw);
-                writeMarsGameRows(dataset.getSecondPlayerRows(), pw);
             }
         }
     }

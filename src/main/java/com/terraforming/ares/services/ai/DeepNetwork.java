@@ -59,14 +59,6 @@ public class DeepNetwork {
         });
     }
 
-    public void updateNetwork(String file, int network) throws IOException {
-        if (network == 1) {
-            firstNetwork.set(initNetworkFromFile(file));
-        } else {
-            secondNetwork.set(initNetworkFromFile(file));
-        }
-    }
-
     private Network initNetworkFromFile(String fileName) throws IOException {
         int networkSize;
 

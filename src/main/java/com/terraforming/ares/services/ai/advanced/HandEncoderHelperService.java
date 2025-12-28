@@ -1,9 +1,8 @@
-package com.terraforming.ares.services.ai.hand;
+package com.terraforming.ares.services.ai.advanced;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardColor;
-import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.awards.BaseAward;
 import com.terraforming.ares.model.income.Gain;

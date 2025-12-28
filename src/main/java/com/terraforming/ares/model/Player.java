@@ -2,6 +2,7 @@ package com.terraforming.ares.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.terraforming.ares.model.turn.Turn;
+import com.terraforming.ares.services.ai.dto.BuildContext;
 import lombok.*;
 import org.springframework.util.CollectionUtils;
 
@@ -76,6 +77,10 @@ public class Player {
 
     private int extraPoints;
 
+    private boolean aiSoldCards;
+    private boolean aiMadeStandardAction;
+    private BuildContext buildContext;
+
     @Builder.Default
     private List<Integer> phaseCards = new ArrayList<>(List.of(0, 0, 0, 0, 0));
 
@@ -140,6 +145,12 @@ public class Player {
         this.phaseCards = new ArrayList<>(copy.phaseCards);
 
         this.builds = new ArrayList<>(copy.builds);
+
+        this.aiSoldCards = copy.aiSoldCards;
+        this.aiMadeStandardAction = copy.aiMadeStandardAction;
+        if (copy.buildContext != null) {
+            this.buildContext = new BuildContext(copy.buildContext);
+        }
     }
 
     public void setTerraformingRating(int terraformingRating) {
@@ -242,11 +253,15 @@ public class Player {
         hasUnmiAction = false;
         didUnmiAction = false;
         mulligan = true;
+        aiMadeStandardAction = false;
+        buildContext = null;
     }
 
     public void clearPhaseResults() {
         builds = new ArrayList<>();
 
+        buildContext = null;
+        aiSoldCards = false;
         hasUnmiAction = false;
         didUnmiAction = false;
 

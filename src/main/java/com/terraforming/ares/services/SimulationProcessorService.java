@@ -1,17 +1,17 @@
 package com.terraforming.ares.services;
 
-import com.terraforming.ares.dataset.DatasetCollectionService;
+import com.terraforming.ares.dataset.GameResult;
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.dataset.MarsGameDataset;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.processors.turn.TurnProcessor;
 import com.terraforming.ares.services.ai.AiService;
+import com.terraforming.ares.services.ai.advanced.AdvancedAiDataCollectionService;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by oleksii.nikitin
@@ -22,65 +22,47 @@ public class SimulationProcessorService extends BaseProcessorService {
     private final AiService aiService;
     private final StateFactory stateFactory;
     private final WinPointsService winPointsService;
-    private final CardService cardService;
-    private final DatasetCollectionService datasetCollectionService;
+    private final AdvancedAiDataCollectionService advancedAiDataCollectionService;
 
     public SimulationProcessorService(List<TurnProcessor<?>> turnProcessor,
                                       TurnTypeService turnTypeService,
                                       StateFactory stateFactory,
                                       StateContextProvider stateContextProvider,
                                       AiService aiService, WinPointsService winPointsService,
-                                      CardService cardService,
-                                      DatasetCollectionService datasetCollectionService) {
+                                      AdvancedAiDataCollectionService advancedAiDataCollectionService) {
         super(turnTypeService, stateFactory, stateContextProvider, turnProcessor);
         this.aiService = aiService;
         this.stateFactory = stateFactory;
         this.winPointsService = winPointsService;
-        this.cardService = cardService;
-        this.datasetCollectionService = datasetCollectionService;
+        this.advancedAiDataCollectionService = advancedAiDataCollectionService;
     }
 
-    public MarsGameDataset runSimulationWithDataset(MarsGame game) {
-        MarsGameDataset dataSet = new MarsGameDataset(game.getPlayerUuidToPlayer());
+    public GameResult runSimulationWithDataset(MarsGame game) {
+        List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
+
+        GameResult gameResult = new GameResult();
 
         while (game.getStateType() != StateType.GAME_END) {
             while (aiService.waitingAiTurns(game)) {
                 aiService.makeAiTurns(game);
-                datasetCollectionService.collectData(dataSet, game);
             }
 
             while (processFinalTurns(game)) {
                 stateFactory.getCurrentState(game).updateState();
             }
-            datasetCollectionService.collectData(dataSet, game);
+            advancedAiDataCollectionService.collectData(gameResult, game, players);
         }
 
-        String winner = null;
-        int bestPoints = 0;
-        boolean singleWinner = false;
+        int firstPlayerPoints = winPointsService.countWinPoints(players.get(0), game);
+        int secondPlayerPoints = winPointsService.countWinPoints(players.get(0), game);
 
-        for (Map.Entry<String, Player> entry : game.getPlayerUuidToPlayer().entrySet()) {
-            int currentPoints = winPointsService.countWinPoints(entry.getValue(), game);
-
-            if (winner == null) {
-                winner = entry.getKey();
-                bestPoints = currentPoints;
-            } else {
-                if (currentPoints != bestPoints) {
-                    singleWinner = true;
-                }
-                if (currentPoints > bestPoints) {
-                    winner = entry.getKey();
-                }
-            }
+        if (firstPlayerPoints == secondPlayerPoints) {
+            gameResult.markDraw();
+        } else {
+            gameResult.markWinner(firstPlayerPoints > secondPlayerPoints ? 1 : 2);
         }
 
-        if (singleWinner) {
-            dataSet.markWinner(winner);
-            return dataSet;
-        }
-
-        return null;
+        return gameResult;
     }
 
     public void processSimulation(MarsGame game) {

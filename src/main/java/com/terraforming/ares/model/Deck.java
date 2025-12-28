@@ -1,5 +1,6 @@
 package com.terraforming.ares.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -75,6 +76,11 @@ public class Deck {
 
     public int size() {
         return cards.size();
+    }
+
+    @JsonIgnore
+    public boolean isEmpty() {
+        return cards.isEmpty();
     }
 
 }

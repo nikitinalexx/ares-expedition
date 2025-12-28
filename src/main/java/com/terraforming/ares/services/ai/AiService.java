@@ -17,6 +17,7 @@ import com.terraforming.ares.states.Action;
 import com.terraforming.ares.states.State;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -55,11 +56,12 @@ public class AiService {
     }
 
     public void makeAiTurns(MarsGame game) {
-        game.getPlayerUuidToPlayer().values()
+        List<Player> filteredPlayers = game.getPlayerUuidToPlayer().values()
                 .stream()
                 .filter(Player::isComputer)
-                .filter(player -> !passTurnToRealPlayer(player, game))
-                .forEach(player -> processAiTurn(game, player));
+                .filter(player -> !passTurnToRealPlayer(player, game)).collect(Collectors.toList());
+        Collections.shuffle(filteredPlayers);
+        filteredPlayers.forEach(player -> processAiTurn(game, player));
     }
 
     public boolean waitingAiTurns(MarsGame game) {
@@ -116,7 +118,6 @@ public class AiService {
             return;
         }
 
-        //TODO mixing stateType and possibleTurns could be made better?
         List<TurnType> possibleTurns = gameService.getPossibleTurns(game, player.getUuid());
 
         if (possibleTurns.size() == 1 && possibleTurns.get(0) == TurnType.DISCARD_CARDS) {
@@ -148,14 +149,6 @@ public class AiService {
         if (possibleTurns.contains(TurnType.BUILD_GREEN_PROJECT)) {
             return TurnType.BUILD_GREEN_PROJECT;
         }
-
-//        if (possibleTurns.contains(TurnType.BUILD_BLUE_RED_PROJECT)) {
-//            return TurnType.BUILD_BLUE_RED_PROJECT;
-//        }
-
-//        if (possibleTurns.contains(TurnType.PERFORM_BLUE_ACTION)) {
-//            return TurnType.PERFORM_BLUE_ACTION;
-//        }
 
         for (int i = 0; i < possibleTurns.size(); i++) {
             if (possibleTurns.get(i) != TurnType.UNMI_RT && possibleTurns.get(i) != TurnType.SELL_CARDS) {

@@ -4,8 +4,5 @@ import lombok.Data;
 
 @Data
 public class SimulationsRequest {
-    int simulationsCount;
-    boolean withBatches;
-    int batches;
-    int fileIndex;
+    int totalSimulations;
 }

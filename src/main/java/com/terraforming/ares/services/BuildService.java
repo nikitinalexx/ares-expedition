@@ -22,29 +22,45 @@ public class BuildService {
         }
     }
 
-    public BuildDto findMostOptimalBuild(Card card, Player player, int discount) {
+    public BuildDto findMostOptimalBuild(Card card, Player player, int discountAlreadyApplied) {
         BuildDto optimalBuild = null;
+        int bestRealDiscount = -1;
+
+        int remainingPrice = Math.max(0, card.getPrice() - discountAlreadyApplied);
+
         for (BuildDto build : player.getBuilds()) {
-            if ((build.getPriceLimit() == 0 || build.getPriceLimit() >= card.getPrice())
-                    && (build.getType() == BuildType.GREEN_OR_BLUE
-                    || (card.getColor() == CardColor.GREEN && build.getType() == BuildType.GREEN)
-                    || (card.getColor() != CardColor.GREEN && (build.getType() == BuildType.BLUE_RED
-                    || build.getType() == BuildType.BLUE_RED_OR_CARD
-                    || build.getType() == BuildType.BLUE_RED_OR_MC)))) {
-                if (optimalBuild == null) {
-                    optimalBuild = build;
-                }
-                final int buildRealDiscount = Math.min(card.getPrice() - Math.min(card.getPrice(), discount), build.getExtraDiscount());
-                final int optimalBuildRealDiscount = Math.min(card.getPrice() - Math.min(card.getPrice(), discount), optimalBuild.getExtraDiscount());
-                if ((buildRealDiscount > optimalBuildRealDiscount || build.getPriceLimit() < optimalBuild.getPriceLimit())
-                        || (buildRealDiscount == optimalBuildRealDiscount && build.getPriceLimit() == optimalBuild.getPriceLimit()
-                        && build.getType() == BuildType.BLUE_RED)) {
-                    optimalBuild = build;
-                }
+
+            // Ограничение по цене карты
+            if (build.getPriceLimit() > 0 && build.getPriceLimit() < card.getPrice()) {
+                continue;
+            }
+
+            // Проверка типа билда
+            boolean typeMatches =
+                    build.getType() == BuildType.GREEN_OR_BLUE
+                            || (card.getColor() == CardColor.GREEN && build.getType().isGreen())
+                            || (card.getColor() != CardColor.GREEN && (build.getType().isBlueRed()));
+
+            if (!typeMatches) continue;
+
+            int realDiscount = Math.min(remainingPrice, build.getExtraDiscount());
+
+            if (optimalBuild == null
+                    || realDiscount > bestRealDiscount
+                    || (realDiscount == bestRealDiscount
+                    && build.getPriceLimit() < optimalBuild.getPriceLimit())
+                    || (realDiscount == bestRealDiscount
+                    && build.getPriceLimit() == optimalBuild.getPriceLimit()
+                    && build.getType() == BuildType.BLUE_RED)) {
+
+                optimalBuild = build;
+                bestRealDiscount = realDiscount;
             }
         }
+
         return optimalBuild;
     }
+
 
 
 }

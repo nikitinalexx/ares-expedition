@@ -10,6 +10,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
  */
 @Service
 public class PaymentValidationService {
+    public static final String DIDNT_FIND_A_BUILD_MESSAGE = "Unable to build a project of this color";
     private final Map<PaymentType, PaymentValidator> validators;
     private final SpecialEffectsService specialEffectsService;
     private final CardService cardService;
@@ -65,8 +67,11 @@ public class PaymentValidationService {
                 && player.getBuilds().stream()
                 .noneMatch(build -> build.getType().isGreen()
                         && (build.getPriceLimit() == 0 || build.getPriceLimit() >= card.getPrice()))) {
-            int maximumPrice = player.getBuilds().stream().filter(build -> build.getType().isGreen())
-                    .findFirst().orElseThrow().getPriceLimit();
+            Optional<BuildDto> foundBuild = player.getBuilds().stream().filter(build -> build.getType().isGreen()).findFirst();
+            if (foundBuild.isEmpty()) {
+                return DIDNT_FIND_A_BUILD_MESSAGE;
+            }
+            int maximumPrice = foundBuild.get().getPriceLimit();
             return String.format("Can only build a building with print price of %s or less", maximumPrice);
         }
 
@@ -74,8 +79,11 @@ public class PaymentValidationService {
                 && player.getBuilds().stream()
                 .noneMatch(build -> build.getType().isBlueRed()
                         && (build.getPriceLimit() == 0 || build.getPriceLimit() >= card.getPrice()))) {
-            int maximumPrice = player.getBuilds().stream().filter(build -> build.getType().isBlueRed())
-                    .findFirst().orElseThrow().getPriceLimit();
+            Optional<BuildDto> foundBuild = player.getBuilds().stream().filter(build -> build.getType().isBlueRed()).findFirst();
+            if (foundBuild.isEmpty()) {
+                return DIDNT_FIND_A_BUILD_MESSAGE;
+            }
+            int maximumPrice = foundBuild.get().getPriceLimit();
             return String.format("Can only build a building with print price of %s or less", maximumPrice);
         }
 

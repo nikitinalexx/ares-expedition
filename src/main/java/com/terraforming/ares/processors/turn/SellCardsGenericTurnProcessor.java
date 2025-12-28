@@ -6,6 +6,7 @@ import com.terraforming.ares.model.turn.Turn;
 import com.terraforming.ares.services.SpecialEffectsService;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -23,11 +24,13 @@ public abstract class SellCardsGenericTurnProcessor<T extends Turn> implements T
 
         int cardCost = 3;
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.SOLD_CARDS_COST_1_MC_MORE)) {
+        Set<SpecialEffect> playerSpecialEffects = specialEffectsService.getPlayerSpecialEffects(player);
+
+        if (playerSpecialEffects.contains(SpecialEffect.SOLD_CARDS_COST_1_MC_MORE)) {
             cardCost++;
         }
 
-        if (specialEffectsService.ownsSpecialEffect(player, SpecialEffect.EXOCORP_SOLD_CARDS_COST_1_MC_MORE)) {
+        if (playerSpecialEffects.contains(SpecialEffect.EXOCORP_SOLD_CARDS_COST_1_MC_MORE)) {
             cardCost++;
         }
 

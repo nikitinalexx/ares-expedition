@@ -1,0 +1,5 @@
+package com.terraforming.ares.services.ai.dto;
+
+public enum AvailableTurnType {
+    CONVERT_PLANTS, CONVERT_TEMPERATURE, CONVERT_INFRASTRUCTURE, BLUE_ACTION, UNMI_RT, STANDARD_PROJECT, SECOND_PHASE_BONUS, BUILD_PROJECT
+}

@@ -1,6 +1,5 @@
 package com.terraforming.ares.services.ai;
 
-import com.terraforming.ares.cards.green.TopographicMapping;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
@@ -21,7 +20,7 @@ public class AiCardValidationService {
     private final AiPaymentService aiPaymentService;
 
     public boolean isValid(MarsGame game, Player player, Card card) {
-        Map<Integer, List<Integer>> inputParameters = aiCardParamsHelper.getInputParamsForValidation(game, player, card);
+        Map<Integer, List<Integer>> inputParameters = aiCardParamsHelper.getInputParamsForValidation(player, card);
         String errorMessage = cardValidationService.validateCard(
                 player, game, card.getId(),
                 aiPaymentService.getCardPayments(game, player, card, inputParameters),
@@ -29,5 +28,7 @@ public class AiCardValidationService {
         );
         return errorMessage == null;
     }
+
+
 
 }

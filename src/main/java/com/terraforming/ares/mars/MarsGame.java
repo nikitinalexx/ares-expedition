@@ -1,6 +1,7 @@
 package com.terraforming.ares.mars;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.terraforming.ares.cards.blue.SelfReplicatingBacteria;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.awards.*;
 import com.terraforming.ares.model.milestones.*;
@@ -81,11 +82,11 @@ public class MarsGame {
             Player player = Player.builder()
                     .uuid(UUID.randomUUID().toString() + i)
                     .name(playerNames.get(i))
-//                            .hand(Deck.builder().cards(new LinkedList<>(List.of(19, 24, 339))).build())
+//                            .hand(Deck.builder().cards(new LinkedList<>(List.of(209, 102, 100, 114, 115, 127, 141, 339, 326))).build())
                     .hand(projectsDeck.dealCardsDeck(playerHandSize))
                     .extraPoints(extraPoints != null && extraPoints.length > i ? extraPoints[i] : 0)
                     .corporations(corporationsDeck.dealCardsDeck(INITIAL_CORPORATIONS_SIZE))
-                    //.corporations(Deck.builder().cards(new LinkedList<>(List.of(10206, 10005))).build())
+//                    .corporations(Deck.builder().cards(new LinkedList<>(List.of(10108, 10108))).build())
                     .played(Deck.builder().build())
                     //.heat(100)
                     .mulligan(mulligan)

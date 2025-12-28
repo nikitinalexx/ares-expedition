@@ -120,25 +120,18 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
         int chosenPhase;
 
         if (possiblePhases.isEmpty()) {
-            if (RandomBotHelper.isRandomBot(player)) {
-                chosenPhase = random.nextInt(previousChosenPhase != null ? 4 : 5) + 1;
-                if (previousChosenPhase != null && chosenPhase == previousChosenPhase) {
-                    chosenPhase++;
-                }
+            if (previousChosenPhase == null) {
+                chosenPhase = 5;
             } else {
-                if (previousChosenPhase == null) {
-                    chosenPhase = 5;
-                } else {
-                    if (previousChosenPhase != 4 && previousChosenPhase != 5) {
-                        int ratio = random.nextInt(100);
-                        if (ratio < 40) {
-                            chosenPhase = 4;
-                        } else {
-                            chosenPhase = 5;
-                        }
+                if (previousChosenPhase != 4 && previousChosenPhase != 5) {
+                    int ratio = random.nextInt(100);
+                    if (ratio < 40) {
+                        chosenPhase = 4;
                     } else {
-                        chosenPhase = (previousChosenPhase == 4) ? 5 : 4;
+                        chosenPhase = 5;
                     }
+                } else {
+                    chosenPhase = (previousChosenPhase == 4) ? 5 : 4;
                 }
             }
         } else {
@@ -309,12 +302,8 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             return false;
         }
 
-        if (RandomBotHelper.isRandomBot(player)) {
-            if (player.getMc() <= 5) {//when running really low unable to do anything
-                return true;
-            }
-
-            return random.nextInt(5) == 0;
+        if (player.getDifficulty().PICK_PHASE == AiTurnChoice.RANDOM) {
+            return true;
         }
 
         if (player.getMc() <= 5 && player.getCardIncome() >= 3) {//when running really low unable to do anything
@@ -454,9 +443,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
         return player.getPlayed().getCards().stream()
                 .map(cardService::getCard)
                 .filter(Card::isActiveCard)
-                .filter(card -> aiCardActionHelper.isUsablePlayAction(game, player, card))
-                .limit(3)
-                .count() == 3;
+                .anyMatch(card -> aiCardActionHelper.isUsablePlayAction(game, player, card));
     }
 
     private PhaseChoiceProjection mayPlayPhaseThreeAi(MarsGame game, Player player) {
@@ -485,8 +472,8 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             return false;
         }
 
-        if (RandomBotHelper.isRandomBot(player)) {
-            return random.nextInt(5) == 0;
+        if (player.getDifficulty().PICK_PHASE == AiTurnChoice.RANDOM) {
+            return true;
         }
 
         DraftCardsDto draftCardsDto = draftCardsService.countCardsToTakeAndDraft(player);

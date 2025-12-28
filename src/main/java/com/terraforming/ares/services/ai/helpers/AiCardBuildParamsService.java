@@ -5,12 +5,15 @@ import com.terraforming.ares.cards.red.AdvancedEcosystems;
 import com.terraforming.ares.cards.red.InterstellarColonyShip;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.ai.AiTurnChoice;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.ai.AiConstants;
 import com.terraforming.ares.services.ai.AiDiscoveryDecisionService;
 import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.ICardValueService;
 import com.terraforming.ares.services.ai.dto.CardValueResponse;
 import com.terraforming.ares.services.ai.dto.ResourceValue;
+import com.terraforming.ares.services.ai.turnProcessors.random.AiRandomCardBuildParamsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -37,6 +40,7 @@ public class AiCardBuildParamsService {
     private final ResourcePriorityService resourcePriorityService;
 
     private AiPickCardProjectionService aiPickCardProjectionService;
+    private final AiRandomCardBuildParamsService aiRandomCardBuildParamsService;
 
     @Lazy
     @Autowired
@@ -44,12 +48,8 @@ public class AiCardBuildParamsService {
         this.aiPickCardProjectionService = aiPickCardProjectionService;
     }
 
-    private final Set<CardAction> CARDS_WITH_PHASE_UPGRADE_EFFECT = Set.of(
-            CardAction.UPDATE_PHASE_CARD,
-            CardAction.SOFTWARE_STREAMLINING
-    );
 
-    public Map<Integer, List<Integer>> getInputParamsForValidation(MarsGame game, Player player, Card card) {
+    public Map<Integer, List<Integer>> getInputParamsForValidation(Player player, Card card) {
         Map<Integer, List<Integer>> result = null;
         CardAction cardAction = card.getCardMetadata().getCardAction();
 
@@ -133,7 +133,7 @@ public class AiCardBuildParamsService {
             );
         }
 
-        if (cardAction != null && CARDS_WITH_PHASE_UPGRADE_EFFECT.contains(cardAction)) {
+        if (cardAction != null && AiConstants.CARD_ACTIONS_WITH_PHASE_UPGRADE_EFFECT.contains(cardAction)) {
             result = Map.of(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(0));
         }
 
@@ -241,7 +241,7 @@ public class AiCardBuildParamsService {
             result.put(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(aiDiscoveryDecisionService.choosePhaseUpgrade(game, player, Constants.COLLECT_INCOME_PHASE)));
         }
 
-        if (cardAction != null && CARDS_WITH_PHASE_UPGRADE_EFFECT.contains(cardAction)) {
+        if (cardAction != null && AiConstants.CARD_ACTIONS_WITH_PHASE_UPGRADE_EFFECT.contains(cardAction)) {
             result.put(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(aiDiscoveryDecisionService.choosePhaseUpgrade(game, player)));
         }
 
@@ -374,7 +374,7 @@ public class AiCardBuildParamsService {
         return result;
     }
 
-    private Set<Class<?>> SYNTHETIC_CATASTROPHE_IGNORE_LIST = Set.of(
+    private final Set<Class<?>> SYNTHETIC_CATASTROPHE_IGNORE_LIST = Set.of(
             InterstellarColonyShip.class,
             AdvancedEcosystems.class
     );

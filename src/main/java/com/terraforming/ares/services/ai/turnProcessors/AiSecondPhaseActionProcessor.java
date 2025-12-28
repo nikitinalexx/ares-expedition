@@ -16,6 +16,7 @@ import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsService;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
 import com.terraforming.ares.services.ai.turnFlow.AvailableTurnFlow;
 import com.terraforming.ares.services.ai.turnFlow.BestTurnType;
+import com.terraforming.ares.services.ai.turnProcessors.random.AiRandomSecondPhaseActionProcessor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -37,13 +38,14 @@ public class AiSecondPhaseActionProcessor {
     private final AiCardBuildParamsService aiCardParamsHelper;
     private final DeepNetwork deepNetwork;
     private final AiBuildProjectService aiBuildProjectService;
-    private final CardService cardService;
     private final ICardValueService cardValueService;
-    private final AiCardValidationService aiCardValidationService;
-
-    private final Random random = new Random();
+    private final AiRandomSecondPhaseActionProcessor aiRandomSecondPhaseActionProcessor;
 
     public void processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
+        if (player.getDifficulty().BUILD == AiTurnChoice.RANDOM) {
+            aiRandomSecondPhaseActionProcessor.processTurn(possibleTurns, game, player);
+            return;
+        }
         AvailableTurnFlow availableTurnFlow = new AvailableTurnFlow();
 
         if (possibleTurns.contains(TurnType.UNMI_RT) && player.getMc() >= 6) {
@@ -60,9 +62,7 @@ public class AiSecondPhaseActionProcessor {
             {//log random or smart
                 List<Card> availableCards = aiBuildProjectService.getAvailableCardsToBuild(game, player);
 
-                selectedCard = (player.getDifficulty().BUILD == AiTurnChoice.RANDOM)
-                        ? (availableCards.isEmpty() ? null : availableCards.get(random.nextInt(availableCards.size())))
-                        : cardValueService.getBestCardToBuild(game, player, availableCards, game.getTurns(), true);
+                selectedCard = cardValueService.getBestCardToBuild(game, player, availableCards, game.getTurns(), true);
 
                 if (Constants.LOG_NET_COMPARISON) {
                     System.out.println("Available cards: " + availableCards.stream().map(Card::getClass).map(Class::getSimpleName).collect(Collectors.joining(",")));

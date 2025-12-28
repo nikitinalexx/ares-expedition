@@ -52,9 +52,7 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
         List<Integer> cardsToDiscard = new ArrayList<>();
 
         switch (player.getDifficulty().CARDS_PICK) {
-            case RANDOM:
-                int toDiscard = random.nextInt(cards.size());
-                cardsToDiscard.addAll(cards.subList(0, toDiscard));
+            case RANDOM://doesn't discard anything because doesn't see the difference
                 break;
             case FILE_VALUE:
                 while (cardsToDiscard.size() != max) {

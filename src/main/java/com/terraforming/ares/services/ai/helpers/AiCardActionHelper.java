@@ -9,10 +9,7 @@ import com.terraforming.ares.model.action.ActionInputDataType;
 import com.terraforming.ares.model.awards.AwardType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.TerraformingService;
-import com.terraforming.ares.services.ai.AiBalanceService;
-import com.terraforming.ares.services.ai.AiDiscoveryDecisionService;
-import com.terraforming.ares.services.ai.AiPickCardProjectionService;
-import com.terraforming.ares.services.ai.ICardValueService;
+import com.terraforming.ares.services.ai.*;
 import com.terraforming.ares.services.ai.dto.ActionInputParamsResponse;
 import com.terraforming.ares.services.ai.dto.CardValueResponse;
 import com.terraforming.ares.validation.action.ActionValidator;
@@ -57,38 +54,7 @@ public class AiCardActionHelper {
         this.resourcePriorityService = resourcePriorityService;
     }
 
-    private final Set<Class<?>> ACTIONS_WITHOUT_INPUT_PARAMS = Set.of(
-            AquiferPumping.class,
-            ArtificialJungle.class,
-            AssetLiquidation.class,
-            Birds.class,
-            BrainstormingSession.class,
-            CaretakerContract.class,
-            CircuitBoardFactory.class,
-            CommunityGardens.class,
-            DevelopedInfrastructure.class,
-            Sawmill.class,
-            InterplanetarySuperhighway.class,
-            DevelopmentCenter.class,
-            FarmersMarket.class,
-            HydroElectricEnergy.class,
-            IronWorks.class,
-            MatterManufactoring.class,
-            SolarPunk.class,
-            Steelworks.class,
-            Tardigrades.class,
-            ThinkTank.class,
-            VolcanicPools.class,
-            WaterImportFromEuropa.class,
-            WoodBurningStoves.class,
-            ProgressivePolicies.class,
-            DroneAssistedConstruction.class,
-            FibrousCompositeActionValidator.class,
-            SoftwareStreamlining.class,
-            CityCouncil.class,
-            CommunityAfforestation.class,
-            GasCooledReactors.class
-    );
+
 
     /**
      * Shows if card is smart to play in advance. At the moment of making that blue action the situation might be different
@@ -100,7 +66,7 @@ public class AiCardActionHelper {
             return true;
         }
 
-        if (ACTIONS_WITHOUT_INPUT_PARAMS.contains(card.getClass())) {
+        if (AiConstants.ACTIONS_WITHOUT_INPUT_PARAMS.contains(card.getClass())) {
             String validationResult = validator.validate(game, player);
             if (validationResult != null) {
                 return false;
@@ -182,7 +148,7 @@ public class AiCardActionHelper {
     public ActionInputParamsResponse getActionInputParamsForSmart(MarsGame game, Player player, Card card) {
         ActionValidator<Card> validator = (ActionValidator<Card>) blueActionValidators.get(card.getClass());
 
-        if (validator == null || ACTIONS_WITHOUT_INPUT_PARAMS.contains(card.getClass())) {
+        if (validator == null || AiConstants.ACTIONS_WITHOUT_INPUT_PARAMS.contains(card.getClass())) {
             return ActionInputParamsResponse.makeAction();
         }
 

@@ -145,7 +145,7 @@ public class GameRepositoryImpl implements GameRepository {
         try {
             return objectMapper.readValue(gameJson, MarsGame.class);
         } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Error deserializing the game");
+            throw new IllegalStateException("Error deserializing the game", e);
         }
     }
 

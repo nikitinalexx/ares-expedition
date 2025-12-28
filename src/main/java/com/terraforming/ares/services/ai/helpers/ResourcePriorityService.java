@@ -230,8 +230,7 @@ public class ResourcePriorityService {
     private Optional<Card> getRandomMicrobeCard(Player player) {
         final List<Card> microbeCards = player.getPlayed().getCards().stream()
                 .map(cardService::getCard)
-                .filter(card -> card.getCollectableResource() == CardCollectableResource.MICROBE)
-                .collect(Collectors.toList());
+                .filter(card -> card.getCollectableResource() == CardCollectableResource.MICROBE).toList();
         if (microbeCards.isEmpty()) {
             return Optional.empty();
         } else {

@@ -8,6 +8,8 @@ import com.terraforming.ares.model.StandardProjectType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -66,6 +68,48 @@ public class StandardProjectService {
         }
 
         return null;
+    }
+
+    public List<StandardProjectType> getAvailableStandardProjects(MarsGame game, Player player) {
+        List<StandardProjectType> result = new ArrayList<>();
+
+        for (StandardProjectType type : StandardProjectType.values()) {
+            if (isStandardProjectAvailable(game, player, type)) {
+                result.add(type);
+            }
+        }
+
+        return result;
+    }
+
+    public boolean canPerformAnyStandardProject(MarsGame game, Player player) {
+        for (StandardProjectType type : StandardProjectType.values()) {
+            if (isStandardProjectAvailable(game, player, type)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isStandardProjectAvailable(
+            MarsGame game,
+            Player player,
+            StandardProjectType type
+    ) {
+        switch (type) {
+            case OCEAN:
+                if (!terraformingService.canRevealOcean(game)) return false;
+                break;
+            case TEMPERATURE:
+                if (!terraformingService.canIncreaseTemperature(game)) return false;
+                break;
+            case INFRASTRUCTURE:
+                if (!terraformingService.canIncreaseInfrastructure(game)) return false;
+                break;
+        }
+
+        int price = getProjectPrice(player, type);
+        return player.getMc() >= price;
     }
 
     public int getProjectPrice(Player player, StandardProjectType type) {

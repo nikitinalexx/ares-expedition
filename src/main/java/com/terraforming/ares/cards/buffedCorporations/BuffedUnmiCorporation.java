@@ -32,7 +32,7 @@ public class BuffedUnmiCorporation implements CorporationCard {
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
-        player.setMc(45);
+        player.setMc(50);
         player.setUnmiCorporation(true);
         return null;
     }

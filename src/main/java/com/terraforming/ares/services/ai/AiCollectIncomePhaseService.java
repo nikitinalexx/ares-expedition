@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 @Service
@@ -19,42 +20,48 @@ public class AiCollectIncomePhaseService {
     private final DeepNetwork deepNetwork;
     private final CardService cardService;
     private final TerraformingService terraformingService;
+    private final Random random = new Random();
 
     public Integer getDoubleIncomeCard(MarsGame game, Player player) {
         Integer doubleIncomeCard = null;
 
-        List<Card> greenCards = player.getPlayed().getCards().stream().map(cardService::getCard).filter(card -> card.getColor() == CardColor.GREEN && card.canPayAgain()).collect(Collectors.toList());
+        List<Card> greenCards = player.getPlayed().getCards().stream().map(cardService::getCard).filter(card -> card.getColor() == CardColor.GREEN && card.canPayAgain()).toList();
 
-        if (!greenCards.isEmpty()) {
+        if (greenCards.isEmpty()) {
+            return null;
+        }
 
-            boolean canIncreaseOxygen = terraformingService.canIncreaseOxygen(game);
+        if (player.getDifficulty().PICK_PHASE == AiTurnChoice.RANDOM) {
+            return greenCards.get(random.nextInt(greenCards.size())).getId();
+        }
 
-            MarsGame gameCopy = new MarsGame(game);
-            Player playerCopy = gameCopy.getPlayerByUuid(player.getUuid());
+        boolean canIncreaseOxygen = terraformingService.canIncreaseOxygen(game);
 
-            float initialState = 0;
+        MarsGame gameCopy = new MarsGame(game);
+        Player playerCopy = gameCopy.getPlayerByUuid(player.getUuid());
 
-            if (player.getDifficulty().PICK_PHASE == AiTurnChoice.NETWORK) {
-                initialState = deepNetwork.testState(game, player);
+        float initialState = 0;
+
+        if (player.getDifficulty().PICK_PHASE == AiTurnChoice.NETWORK) {
+            initialState = deepNetwork.testState(game, player);
+        }
+
+        for (Card greenCard : greenCards) {
+            greenCard.payAgain(gameCopy, cardService, playerCopy);
+
+            float stateAfterIncome = analyzeStateAfterIncome(gameCopy, player, playerCopy, canIncreaseOxygen);
+
+            if (stateAfterIncome > initialState) {
+                initialState = stateAfterIncome;
+                doubleIncomeCard = greenCard.getId();
             }
 
-            for (Card greenCard : greenCards) {
-                greenCard.payAgain(gameCopy, cardService, playerCopy);
-
-                float stateAfterIncome = analyzeStateAfterIncome(gameCopy, player, playerCopy, canIncreaseOxygen);
-
-                if (stateAfterIncome > initialState) {
-                    initialState = stateAfterIncome;
-                    doubleIncomeCard = greenCard.getId();
-                }
-
-                if (player.getHand().size() != playerCopy.getHand().size()) {
-                    gameCopy = new MarsGame(game);//restore full game
-                } else {
-                    gameCopy.getPlayerUuidToPlayer().put(player.getUuid(), new Player(player));//restore only player
-                }
-                playerCopy = gameCopy.getPlayerByUuid(player.getUuid());
+            if (player.getHand().size() != playerCopy.getHand().size()) {
+                gameCopy = new MarsGame(game);//restore full game
+            } else {
+                gameCopy.getPlayerUuidToPlayer().put(player.getUuid(), new Player(player));//restore only player
             }
+            playerCopy = gameCopy.getPlayerByUuid(player.getUuid());
         }
 
         return doubleIncomeCard;
