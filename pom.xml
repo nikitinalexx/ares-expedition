@@ -5,19 +5,21 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.6.7</version>
+        <version>3.2.5</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
+
     <groupId>com.terraforming.ares</groupId>
     <artifactId>ares-expedition</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>ares-expedition</name>
     <description>Terraforming Mars</description>
+
     <properties>
         <java.version>21</java.version>
         <dl4j.version>1.0.0-M2.1</dl4j.version>
-        <slf4j.version>1.7.36</slf4j.version>
     </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -75,31 +77,18 @@
             <version>${dl4j.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
-
     </dependencies>
 
     <build>
         <plugins>
             <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
                 <configuration>
-                    <excludes>
-                        <exclude>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
+                    <source>21</source>
+                    <target>21</target>
+                    <release>21</release>
                 </configuration>
             </plugin>
         </plugins>

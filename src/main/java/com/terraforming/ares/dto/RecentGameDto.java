@@ -1,11 +1,9 @@
 package com.terraforming.ares.dto;
 
+import jakarta.persistence.Id;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
-
-import javax.persistence.Id;
-import java.time.Instant;
 
 /**
  * Created by oleksii.nikitin

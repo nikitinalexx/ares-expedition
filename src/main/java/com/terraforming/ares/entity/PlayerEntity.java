@@ -1,6 +1,7 @@
 package com.terraforming.ares.entity;
 
-import javax.persistence.*;
+
+import jakarta.persistence.*;
 
 /**
  * Created by oleksii.nikitin

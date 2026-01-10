@@ -34,7 +34,7 @@ public class ImportedConstructionCrews implements DiscoveryExpansionRedCard {
         List<Integer> cardInput = input.get(InputFlag.PHASE_UPGRADE_CARD.getId());
 
         UpgradePhaseHelper.upgradePhase(marsContext.getPlayer(), cardInput.get(0));
-        UpgradePhaseHelper.upgradePhase(marsContext.getPlayer(), cardInput.get(0));
+        UpgradePhaseHelper.upgradePhase(marsContext.getPlayer(), cardInput.get(1));
     }
 
     @Override

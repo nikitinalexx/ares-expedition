@@ -42,7 +42,8 @@ public enum InputFlag {
     CARGO_SHIPS(31),
     CARGO_SHIPS_HEAT(32),
     ADD_MICROBE(33),
-    RESEARCH_GRANT(34)
+    RESEARCH_GRANT(34),
+    MARS_UNIVERSITY_DUMMY_INPUT(35)
     ;
 
     private final int id;

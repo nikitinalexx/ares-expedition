@@ -6,6 +6,7 @@ import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.ai.AiConstants;
 import com.terraforming.ares.services.ai.AiDiscoveryDecisionService;
+import com.terraforming.ares.services.ai.turnProcessors.AiUtility;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -21,6 +22,7 @@ public class AiRandomCardBuildParamsService {
     private static final int PLANT_FLAG = -1;
     private final AiDiscoveryDecisionService aiDiscoveryDecisionService;
     private final CardService cardService;
+    private final AiUtility aiUtility;
     private final Random random = new Random();
 
     /**
@@ -95,7 +97,7 @@ public class AiRandomCardBuildParamsService {
 
         if (!card.getCardMetadata().getResourcesOnBuild().isEmpty()
                 && card.getCardMetadata().getResourcesOnBuild().get(0).getType() == CardCollectableResource.ANY) {
-            List<Card> cardsToPickFrom = getPlayerCardsWithResource(player,
+            List<Card> cardsToPickFrom = aiUtility.getPlayerCardsWithResource(player,
                     Set.of(CardCollectableResource.MICROBE, CardCollectableResource.ANIMAL, CardCollectableResource.SCIENCE));
             if (cardsToPickFrom.isEmpty()) {
                 return null;
@@ -125,8 +127,8 @@ public class AiRandomCardBuildParamsService {
     }
 
     private void addCryogenicShipmentResourceInput(Player player, Map<Integer, List<Integer>> result) {
-        List<Card> microbes = getPlayerCardsWithResource(player, Set.of(CardCollectableResource.MICROBE));
-        List<Card> animals = getPlayerCardsWithResource(player, Set.of(CardCollectableResource.ANIMAL));
+        List<Card> microbes = aiUtility.getPlayerCardsWithResource(player, Set.of(CardCollectableResource.MICROBE));
+        List<Card> animals = aiUtility.getPlayerCardsWithResource(player, Set.of(CardCollectableResource.ANIMAL));
 
         if (microbes.isEmpty() && animals.isEmpty()) {
             result.put(InputFlag.CRYOGENIC_SHIPMENT_PUT_RESOURCE.getId(),
@@ -150,8 +152,8 @@ public class AiRandomCardBuildParamsService {
     }
 
     private void addImportedHydrogenInput(Player player, Map<Integer, List<Integer>> result) {
-        List<Card> microbes = getPlayerCardsWithResource(player, Set.of(CardCollectableResource.MICROBE));
-        List<Card> animals = getPlayerCardsWithResource(player, Set.of(CardCollectableResource.ANIMAL));
+        List<Card> microbes = aiUtility.getPlayerCardsWithResource(player, Set.of(CardCollectableResource.MICROBE));
+        List<Card> animals = aiUtility.getPlayerCardsWithResource(player, Set.of(CardCollectableResource.ANIMAL));
 
         List<Integer> possibleOptions = new ArrayList<>();
         if (!microbes.isEmpty()) {
@@ -171,8 +173,8 @@ public class AiRandomCardBuildParamsService {
     }
 
     private void addImportedNitrogenInput(Player player, Map<Integer, List<Integer>> result) {
-        List<Card> microbeCards = getPlayerCardsWithResource(player, Set.of(CardCollectableResource.MICROBE));
-        List<Card> animalCards = getPlayerCardsWithResource(player, Set.of(CardCollectableResource.ANIMAL));
+        List<Card> microbeCards = aiUtility.getPlayerCardsWithResource(player, Set.of(CardCollectableResource.MICROBE));
+        List<Card> animalCards = aiUtility.getPlayerCardsWithResource(player, Set.of(CardCollectableResource.ANIMAL));
 
         result.put(InputFlag.IMPORTED_NITROGEN_ADD_ANIMALS.getId(),
                 List.of(animalCards.isEmpty() ? InputFlag.SKIP_ACTION.getId() : getRandomCardIdFromList(animalCards)));
@@ -181,7 +183,7 @@ public class AiRandomCardBuildParamsService {
     }
 
     private void addLargeConvoyInput(Player player, Map<Integer, List<Integer>> result) {
-        List<Card> animalCards = getPlayerCardsWithResource(player, Set.of(CardCollectableResource.ANIMAL));
+        List<Card> animalCards = aiUtility.getPlayerCardsWithResource(player, Set.of(CardCollectableResource.ANIMAL));
         boolean shouldPickPlants = random.nextBoolean() || animalCards.isEmpty();
 
         if (shouldPickPlants) {
@@ -192,8 +194,8 @@ public class AiRandomCardBuildParamsService {
     }
 
     private void addLocalHeatTrappingInput(Player player, Map<Integer, List<Integer>> result) {
-        List<Card> animalCards = getPlayerCardsWithResource(player, Set.of(CardCollectableResource.ANIMAL));
-        List<Card> microbeCards = getPlayerCardsWithResource(player, Set.of(CardCollectableResource.MICROBE));
+        List<Card> animalCards = aiUtility.getPlayerCardsWithResource(player, Set.of(CardCollectableResource.ANIMAL));
+        List<Card> microbeCards = aiUtility.getPlayerCardsWithResource(player, Set.of(CardCollectableResource.MICROBE));
 
         List<Integer> options = new ArrayList<>();
         if (!animalCards.isEmpty()) {
@@ -209,7 +211,7 @@ public class AiRandomCardBuildParamsService {
 
     private void addResourceInput(Player player, Map<Integer, List<Integer>> result,
                                   InputFlag inputFlag, Set<CardCollectableResource> resourceTypes) {
-        List<Card> cards = getPlayerCardsWithResource(player, resourceTypes);
+        List<Card> cards = aiUtility.getPlayerCardsWithResource(player, resourceTypes);
         result.put(inputFlag.getId(),
                 List.of(cards.isEmpty() ? InputFlag.SKIP_ACTION.getId() : getRandomCardIdFromList(cards)));
     }
@@ -234,13 +236,21 @@ public class AiRandomCardBuildParamsService {
             return Map.of();
         }
 
-        if (random.nextInt(10) <= 2) {
+        List<Integer> handCards = new ArrayList<>(player.getHand().getCards());
+
+        scienceTagsCount = Math.min(scienceTagsCount, handCards.size());
+
+        if (scienceTagsCount == 0 || random.nextInt(10) <= 2) {
             return Map.of(InputFlag.MARS_UNIVERSITY_CARD.getId(), List.of(InputFlag.SKIP_ACTION.getId()));
         }
+        List<Integer> resultCards = new ArrayList<>();
+        for (int i = 0; i < scienceTagsCount; i++) {
+            int chosenIndex = random.nextInt(handCards.size());
+            resultCards.add(handCards.get(chosenIndex));
+            handCards.remove(chosenIndex);
+        }
 
-        List<Integer> handCards = player.getHand().getCards();
-        return Map.of(InputFlag.MARS_UNIVERSITY_CARD.getId(),
-                List.of(handCards.get(random.nextInt(handCards.size()))));
+        return Map.of(InputFlag.MARS_UNIVERSITY_CARD.getId(), resultCards);
     }
 
     private Map<Integer, List<Integer>> getDecomposersInputIfApplicable(Player player, List<Card> playedCards,
@@ -332,13 +342,6 @@ public class AiRandomCardBuildParamsService {
 
     private int getRandomCardIdFromList(List<Card> cards) {
         return cards.get(random.nextInt(cards.size())).getId();
-    }
-
-    private List<Card> getPlayerCardsWithResource(Player player, Set<CardCollectableResource> resources) {
-        return player.getPlayed().getCards().stream()
-                .map(cardService::getCard)
-                .filter(card -> resources.contains(card.getCollectableResource()))
-                .collect(Collectors.toList());
     }
 
     private List<Card> getCardsWithResource(List<Card> cards, Set<CardCollectableResource> resources) {

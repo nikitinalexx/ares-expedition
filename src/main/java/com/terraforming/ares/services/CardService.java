@@ -26,6 +26,7 @@ public class CardService {
     private final Map<Integer, Card> buffedProjectsMapping;
     private final Set<Integer> crysisExcludedCards;
     private final Map<Integer, CrysisCard> crysisCards;
+    private final Map<Integer, Card> specialDummyCards;
     private final Random random = new Random();
 
     private final Set<Integer> crysisCardsTier1;
@@ -48,6 +49,7 @@ public class CardService {
         this.crysisCards = cardFactory.getCrysisCards().stream().collect(
                 Collectors.toMap(CrysisCard::getId, Function.identity())
         );
+        this.specialDummyCards = cardFactory.getSpecialDummyCards();
 
         this.crysisCardsTier1 = getCrysisCardsByTier(cardFactory, CardTier.T1);
         this.crysisCardsTier2 = getCrysisCardsByTier(cardFactory, CardTier.T2);
@@ -207,6 +209,10 @@ public class CardService {
             return buffedProjects.get(id);
         }
 
+        if (specialDummyCards.containsKey(id)) {
+            return specialDummyCards.get(id);
+        }
+
         return buffedCorporations.get(id);
     }
 
@@ -308,8 +314,8 @@ public class CardService {
         ).collect(Collectors.groupingBy(tag -> tag, Collectors.counting()));
     }
 
-    public Map<Tag, Long> countTagsOnCards(List<Integer> cards) {
-        return cards.stream().map(this::getCard).flatMap(card -> card.getTags().stream()).collect(Collectors.groupingBy(tag -> tag, Collectors.counting()));
+    public Map<Tag, Long> countTagsOnCards(List<Card> cards) {
+        return cards.stream().flatMap(card -> card.getTags().stream()).collect(Collectors.groupingBy(tag -> tag, Collectors.counting()));
     }
 
     public int countUniquePlayedTags(Player player) {

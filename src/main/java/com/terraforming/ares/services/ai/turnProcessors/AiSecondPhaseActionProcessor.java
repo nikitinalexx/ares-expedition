@@ -1,29 +1,27 @@
 package com.terraforming.ares.services.ai.turnProcessors;
 
-import com.terraforming.ares.cards.green.TopographicMapping;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
-import com.terraforming.ares.model.CardColor;
 import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.ai.AiExperimentalTurn;
 import com.terraforming.ares.model.ai.AiTurnChoice;
 import com.terraforming.ares.model.turn.TurnType;
-import com.terraforming.ares.services.CardService;
-import com.terraforming.ares.services.CardValidationService;
-import com.terraforming.ares.services.ai.*;
+import com.terraforming.ares.services.ai.DeepNetwork;
+import com.terraforming.ares.services.ai.ICardValueService;
+import com.terraforming.ares.services.ai.ProjectionStrategy;
 import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsService;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
 import com.terraforming.ares.services.ai.turnFlow.AvailableTurnFlow;
 import com.terraforming.ares.services.ai.turnFlow.BestTurnType;
+import com.terraforming.ares.services.ai.turnProcessors.network2.Network2FirstSecondPhaseActionProcessor;
 import com.terraforming.ares.services.ai.turnProcessors.random.AiRandomSecondPhaseActionProcessor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -40,8 +38,13 @@ public class AiSecondPhaseActionProcessor {
     private final AiBuildProjectService aiBuildProjectService;
     private final ICardValueService cardValueService;
     private final AiRandomSecondPhaseActionProcessor aiRandomSecondPhaseActionProcessor;
+    private final Network2FirstSecondPhaseActionProcessor network2FirstSecondPhaseActionProcessor;
 
     public void processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
+        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
+            network2FirstSecondPhaseActionProcessor.processTurn(possibleTurns, game, player);
+            return;
+        }
         if (player.getDifficulty().BUILD == AiTurnChoice.RANDOM) {
             aiRandomSecondPhaseActionProcessor.processTurn(possibleTurns, game, player);
             return;

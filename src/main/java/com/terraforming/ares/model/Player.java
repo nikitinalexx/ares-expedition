@@ -78,7 +78,7 @@ public class Player {
     private int extraPoints;
 
     private boolean aiSoldCards;
-    private boolean aiMadeStandardAction;
+    private int aiMadeStandardAction;
     private BuildContext buildContext;
 
     @Builder.Default
@@ -158,6 +158,13 @@ public class Player {
             hasUnmiAction = true;
         }
         this.terraformingRating = terraformingRating;
+    }
+
+    public void setCardIncome(int cardIncome) {
+        if (cardIncome < 0) {
+            System.out.println("CARD INCOME NEGATIVE");
+        }
+        this.cardIncome = cardIncome;
     }
 
     public void addNextTurn(Turn turn) {
@@ -253,7 +260,7 @@ public class Player {
         hasUnmiAction = false;
         didUnmiAction = false;
         mulligan = true;
-        aiMadeStandardAction = false;
+        aiMadeStandardAction = 0;
         buildContext = null;
     }
 

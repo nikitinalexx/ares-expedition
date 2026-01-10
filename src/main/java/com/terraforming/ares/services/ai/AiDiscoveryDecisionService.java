@@ -286,7 +286,7 @@ public class AiDiscoveryDecisionService {
             return random.nextInt(milestones.size());
         }
 
-        Map<Tag, Long> tagToCount = cardService.countTagsOnCards(player.getHand().getCards());
+        Map<Tag, Long> tagToCount = cardService.countTagsOnCards(player.getHand().getCards().stream().map(cardService::getCard).toList());
 
         double milestoneRating = 0;
         int bestMilestoneIndex = 0;

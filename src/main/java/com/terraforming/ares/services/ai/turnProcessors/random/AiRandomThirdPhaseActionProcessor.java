@@ -130,7 +130,7 @@ public class AiRandomThirdPhaseActionProcessor {
             }
             case STANDARD_PROJECT -> {
                 List<StandardProjectType> availableStandardProjects = standardProjectService.getAvailableStandardProjects(game, player);
-                player.setAiMadeStandardAction(true);
+                player.setAiMadeStandardAction(player.getAiMadeStandardAction() + 1);
                 aiTurnService.standardProjectTurn(game, player, availableStandardProjects.get(random.nextInt(availableStandardProjects.size())));
                 return true;
             }
@@ -184,11 +184,31 @@ public class AiRandomThirdPhaseActionProcessor {
             availableTurns.add(new AvailableTurn(UNMI_RT));
             addedUnmi = true;
         }
-        if (possibleTurns.contains(TurnType.STANDARD_PROJECT) && !player.isAiMadeStandardAction() && blueCardsTurns.isEmpty() && !addedUnmi && standardProjectService.canPerformAnyStandardProject(game, player)) {
-            availableTurns.add(new AvailableTurn(STANDARD_PROJECT));
+        if (possibleTurns.contains(TurnType.STANDARD_PROJECT) && !(player.getAiMadeStandardAction() >= getStandardActionLimit(player)) && blueCardsTurns.isEmpty() && !addedUnmi && standardProjectService.canPerformAnyStandardProject(game, player)) {
+            if (shouldAllowStandardProject(player)) {
+                availableTurns.add(new AvailableTurn(STANDARD_PROJECT));
+            } else {
+                player.setAiMadeStandardAction(999);//skip for the rest of the phase
+            }
         }
 
         return availableTurns;
+    }
+
+    private boolean shouldAllowStandardProject(Player player) {
+        int mc = player.getMc();
+
+        if (mc < 20) return false;          // early: почти никогда
+        if (mc > 120) return true;          // late: почти всегда
+
+        // линейная вероятность между 20 и 120
+        double p = (mc - 20) / 100.0;       // от 0 до 1
+        return random.nextDouble() < p;
+    }
+
+
+    private int getStandardActionLimit(Player player) {
+        return player.getMc() / 100 + 1;
     }
 
     private boolean buildProjectIfPossible(MarsGame game, Player player) {

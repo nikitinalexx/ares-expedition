@@ -54,7 +54,7 @@ public class SimulationProcessorService extends BaseProcessorService {
         }
 
         int firstPlayerPoints = winPointsService.countWinPoints(players.get(0), game);
-        int secondPlayerPoints = winPointsService.countWinPoints(players.get(0), game);
+        int secondPlayerPoints = winPointsService.countWinPoints(players.get(1), game);
 
         if (firstPlayerPoints == secondPlayerPoints) {
             gameResult.markDraw();

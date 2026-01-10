@@ -1,6 +1,7 @@
 package com.terraforming.ares.services.ai.dl4j;
 
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.springframework.stereotype.Component;

@@ -1,14 +1,11 @@
 package com.terraforming.ares.validation.action;
 
-import com.terraforming.ares.cards.blue.AssetLiquidation;
 import com.terraforming.ares.cards.blue.ExperimentalTechnology;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.validation.input.OnBuiltEffectValidationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Map;

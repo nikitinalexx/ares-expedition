@@ -62,4 +62,9 @@ public class Monocultures implements BaseExpansionGreenCard {
     public int getPrice() {
         return 6;
     }
+
+    @Override
+    public boolean onBuiltEffectApplicableToItself() {
+        return true;
+    }
 }

@@ -61,4 +61,8 @@ public class InvestmentLoan implements BaseExpansionRedCard {
         return 1;
     }
 
+    @Override
+    public boolean onBuiltEffectApplicableToItself() {
+        return true;
+    }
 }

@@ -73,4 +73,9 @@ public class BalancedPortfolios implements BaseExpansionGreenCard {
     public int getPrice() {
         return 8;
     }
+
+    @Override
+    public boolean onBuiltEffectApplicableToItself() {
+        return true;
+    }
 }

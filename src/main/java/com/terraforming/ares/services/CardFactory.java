@@ -9,6 +9,7 @@ import com.terraforming.ares.cards.red.*;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CrysisCard;
 import com.terraforming.ares.model.Expansion;
+import com.terraforming.ares.services.ai.AiConstants;
 import lombok.Getter;
 import org.springframework.stereotype.Service;
 
@@ -64,6 +65,15 @@ public class CardFactory {
     private final Set<Integer> crysisExcludedCards;
 
     private final Map<Integer, Integer> allCardsToIndex;
+
+    @Getter
+    private final Map<Integer, Card> specialDummyCards = Map.of(
+            AiConstants.CEOS_FAVORITE_PROJECT_DUMMY_ID, new CeosFavoriteProjectDummy(AiConstants.CEOS_FAVORITE_PROJECT_DUMMY_ID),
+            AiConstants.SYNTHETIC_CATASTOPHY_DUMMY_ID, new SyntheticCatastropheDummy(AiConstants.SYNTHETIC_CATASTOPHY_DUMMY_ID),
+            AiConstants.PRIVATE_INVESTOR_BEACH_DUMMY_ID, new PrivateInvestorBeachDummy(AiConstants.PRIVATE_INVESTOR_BEACH_DUMMY_ID),
+            AiConstants.RESEARCH_GRANT_DUMMY_ID, AiConstants.RESEARCH_GRANT_DUMMY_CARD,
+            AiConstants.GENERIC_DUMMY_ID, AiConstants.GENERIC_DUMMY_CARD
+    );
 
     @Getter
     private final List<Integer> blueCardsForAi;
@@ -520,7 +530,6 @@ public class CardFactory {
                 //10009, new BuffedPhobologCorporation(10102),
                 10010, new BuffedMiningGuildCorporation(10103),
                 //10011, new BuffedSaturnSystemsCorporation(10104),
-                //10012, new BuffedZetacellCorporation(10105),
                 10013, new BuffedEcolineCorporation(10106),
                 10014, new BuffedInventrix(10107),
                 10016, new BuffedUnmiCorporation(10108)

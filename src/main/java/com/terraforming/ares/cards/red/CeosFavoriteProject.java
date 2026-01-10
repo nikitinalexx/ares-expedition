@@ -49,7 +49,7 @@ public class CeosFavoriteProject implements BaseExpansionRedCard {
     public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
         List<Integer> cardInput = inputParams.get(InputFlag.CEOS_FAVORITE_PUT_RESOURCES.getId());
 
-        int targetCardId = cardInput.get(0);
+        int targetCardId = cardInput.getFirst();
 
         Card targetCard = marsContext.getCardService().getCard(targetCardId);
 

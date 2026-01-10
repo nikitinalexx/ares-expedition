@@ -5,6 +5,7 @@ import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.model.parameters.Ocean;
+import com.terraforming.ares.model.parameters.ParameterColor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

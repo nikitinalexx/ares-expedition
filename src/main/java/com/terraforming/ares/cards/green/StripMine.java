@@ -31,7 +31,6 @@ public class StripMine implements BaseExpansionGreenCard {
                         Gain.of(GainType.STEEL, 2),
                         Gain.of(GainType.TITANIUM, 1)
                 ))
-                //todo validation
                 .bonuses(List.of(Gain.of(GainType.TERRAFORMING_RATING, -1)))
                 .build();
     }
@@ -61,4 +60,10 @@ public class StripMine implements BaseExpansionGreenCard {
     public int getPrice() {
         return 12;
     }
+
+    @Override
+    public boolean onBuiltEffectApplicableToItself() {
+        return true;
+    }
+
 }

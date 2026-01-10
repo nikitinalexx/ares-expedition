@@ -53,6 +53,8 @@ public class SyntheticCatastrophe implements BaseExpansionRedCard {
         player.getPlayed().getCards().stream().map(marsContext.getCardService()::getCard).forEach(
                 card -> card.revertPlayedTags(marsContext.getCardService(), targetCard, player)
         );
+
+        player.getCardToTag().remove(targetCard.getClass());
     }
 
     @Override

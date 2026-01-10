@@ -9,6 +9,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * Creation date 05.05.2022
  */
 public class Constants {
+    public static final int ESTIMATED_TURNS_PER_GAME = 28;
+
     public static Map<Integer, Integer> FIRST_PLAYER_PHASES = new ConcurrentHashMap<>();
     public static Map<Integer, Integer> SECOND_PLAYER_PHASES = new ConcurrentHashMap<>();
 
@@ -136,6 +138,7 @@ public class Constants {
 
     public static final boolean COLLECT_DATASET = false;
     public static final boolean LOG_NET_COMPARISON = false;
+    public static final boolean LOG_NET_COMPARISON_V2 = true;
 
     private Constants() {
     }

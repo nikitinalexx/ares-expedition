@@ -60,28 +60,27 @@ public class Planet {
     }
 
     @JsonIgnore
+    public int temperatureLeft() {
+        return temperatureMax() - measurableGlobalParameters.get(GlobalParameter.TEMPERATURE).getCurrentLevel();
+    }
+    @JsonIgnore
+    public int oxygenLeft() {
+        return oxygenMax() - measurableGlobalParameters.get(GlobalParameter.OXYGEN).getCurrentLevel();
+    }
+
+    @JsonIgnore
     public int oceansMaxCount() {
         return oceans.size();
     }
 
     @JsonIgnore
-    public int temperatureLeft() {
-        return measurableGlobalParameters.get(GlobalParameter.TEMPERATURE).valueLeft();
-    }
-
-    @JsonIgnore
     public int temperatureMax() {
-        return measurableGlobalParameters.get(GlobalParameter.TEMPERATURE).levelsSize();
-    }
-
-    @JsonIgnore
-    public int oxygenLeft() {
-        return measurableGlobalParameters.get(GlobalParameter.OXYGEN).valueLeft();
+        return measurableGlobalParameters.get(GlobalParameter.TEMPERATURE).levelsSize() - 1;
     }
 
     @JsonIgnore
     public int oxygenMax() {
-        return measurableGlobalParameters.get(GlobalParameter.OXYGEN).levelsSize();
+        return measurableGlobalParameters.get(GlobalParameter.OXYGEN).levelsSize() - 1;
     }
 
     @JsonIgnore

@@ -1,10 +1,9 @@
 package com.terraforming.ares.entity;
 
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.beans.factory.annotation.Value;
 
-import javax.persistence.*;
 import java.time.Instant;
 import java.util.Set;
 
@@ -15,11 +14,12 @@ import java.util.Set;
 @Entity
 public class GameEntity {
 
+    @Getter
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(columnDefinition="TEXT")
+    @Column(columnDefinition = "TEXT")
     private String gameJson;
 
     @Column
@@ -32,7 +32,7 @@ public class GameEntity {
     @Setter
     private Instant finishedDate;
 
-    @OneToMany(mappedBy="game")
+    @OneToMany(mappedBy = "game")
     private Set<PlayerEntity> items;
 
     protected GameEntity() {
@@ -40,10 +40,6 @@ public class GameEntity {
 
     public GameEntity(String gameJson) {
         this.gameJson = gameJson;
-    }
-
-    public Long getId() {
-        return id;
     }
 
     public void setId(Long id) {

@@ -66,8 +66,7 @@ public class AiRandomSecondPhaseActionProcessor {
                                     (canBuildBlueRed && (card.getColor() == CardColor.BLUE || card.getColor() == CardColor.RED))
                     )
                     .anyMatch(card -> {
-                        Map<Integer, List<Integer>> inputParams =
-                                aiRandomCardBuildParamsService.getInputParamsForBuild(game, player, card);
+                        Map<Integer, List<Integer>> inputParams = aiRandomCardBuildParamsService.getInputParamsForBuild(game, player, card);
                         if (inputParams == null) {
                             return false;
                         }

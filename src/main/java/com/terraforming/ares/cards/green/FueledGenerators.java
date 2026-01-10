@@ -73,4 +73,9 @@ public class FueledGenerators implements BaseExpansionGreenCard {
     public int getPrice() {
         return 4;
     }
+
+    @Override
+    public boolean onBuiltEffectApplicableToItself() {
+        return true;
+    }
 }

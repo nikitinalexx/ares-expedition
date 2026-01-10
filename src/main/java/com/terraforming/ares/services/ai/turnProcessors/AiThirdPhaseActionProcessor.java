@@ -3,6 +3,7 @@ package com.terraforming.ares.services.ai.turnProcessors;
 import com.terraforming.ares.cards.blue.*;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.ai.AiExperimentalTurn;
 import com.terraforming.ares.model.ai.AiTurnChoice;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
@@ -14,6 +15,7 @@ import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsService;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
+import com.terraforming.ares.services.ai.turnProcessors.network2.Network2ThirdPhaseActionProcessor;
 import com.terraforming.ares.services.ai.turnProcessors.random.AiRandomThirdPhaseActionProcessor;
 import org.springframework.stereotype.Component;
 
@@ -40,6 +42,7 @@ public class AiThirdPhaseActionProcessor {
     private final CardValidationService cardValidationService;
     private final AiEndgameService aiEndgameService;
     private final AiRandomThirdPhaseActionProcessor aiRandomThirdPhaseActionProcessor;
+    private final Network2ThirdPhaseActionProcessor network2ThirdPhaseActionProcessor;
 
     public AiThirdPhaseActionProcessor(AiTurnService aiTurnService,
                                        CardService cardService,
@@ -50,7 +53,7 @@ public class AiThirdPhaseActionProcessor {
                                        TestAiService testAiService,
                                        AiCardValidationService aiCardValidationService, AiBuildProjectService aiBuildProjectService, DeepNetwork deepNetwork, CardValidationService cardValidationService,
                                        AiEndgameService aiEndgameService,
-                                       AiRandomThirdPhaseActionProcessor aiRandomThirdPhaseActionProcessor) {
+                                       AiRandomThirdPhaseActionProcessor aiRandomThirdPhaseActionProcessor, Network2ThirdPhaseActionProcessor network2ThirdPhaseActionProcessor) {
         this.aiTurnService = aiTurnService;
         this.cardService = cardService;
         this.aiPaymentHelper = aiPaymentHelper;
@@ -64,9 +67,18 @@ public class AiThirdPhaseActionProcessor {
         this.cardValidationService = cardValidationService;
         this.aiEndgameService = aiEndgameService;
         this.aiRandomThirdPhaseActionProcessor = aiRandomThirdPhaseActionProcessor;
+        this.network2ThirdPhaseActionProcessor = network2ThirdPhaseActionProcessor;
     }
 
     public boolean processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
+        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
+            boolean didAction = network2ThirdPhaseActionProcessor.processTurn(game, player, possibleTurns);
+            if (didAction) {
+                return true;
+            } else {
+                return aiRandomThirdPhaseActionProcessor.processTurn(game, player, possibleTurns);//TODO should not use random as workaround
+            }
+        }
         if (player.getDifficulty().THIRD_PHASE_ACTION == AiTurnChoice.RANDOM) {
             return aiRandomThirdPhaseActionProcessor.processTurn(game, player, possibleTurns);
         }

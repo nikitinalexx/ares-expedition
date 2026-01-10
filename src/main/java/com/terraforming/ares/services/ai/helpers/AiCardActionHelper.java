@@ -300,12 +300,6 @@ public class AiCardActionHelper {
                     }
                     break;
                 }
-                case RANDOM:
-                    Integer card = cards.get(random.nextInt(cards.size()));
-
-                    cardsToDiscard.add(card);
-                    cards.remove(card);
-                    break;
                 case NETWORK_PROJECTION: {
                     CardValueResponse cardValueResponse = aiPickCardProjectionService.getWorstCard(game, player, cards);
 
@@ -317,6 +311,13 @@ public class AiCardActionHelper {
                     }
                     break;
                 }
+                default:
+                    Integer card = cards.get(random.nextInt(cards.size()));
+
+                    cardsToDiscard.add(card);
+                    cards.remove(card);
+                    break;
+
             }
         }
         return cardsToDiscard;

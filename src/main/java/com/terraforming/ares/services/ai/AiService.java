@@ -10,6 +10,7 @@ import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.GameService;
 import com.terraforming.ares.services.StateContextProvider;
 import com.terraforming.ares.services.TurnTypeService;
+import com.terraforming.ares.services.ai.turnProcessors.AiFirstPhaseActionProcessor;
 import com.terraforming.ares.services.ai.turnProcessors.AiSecondPhaseActionProcessor;
 import com.terraforming.ares.services.ai.turnProcessors.AiThirdPhaseActionProcessor;
 import com.terraforming.ares.services.ai.turnProcessors.AiTurnProcessor;
@@ -33,6 +34,7 @@ public class AiService {
     private final StateFactory stateFactory;
     private final StateContextProvider stateContextProvider;
     private final GameService gameService;
+    private final AiFirstPhaseActionProcessor aiFirstPhaseActionProcessor;
     private final AiSecondPhaseActionProcessor aiSecondPhaseActionProcessor;
     private final AiThirdPhaseActionProcessor aiThirdPhaseActionProcessor;
 
@@ -42,7 +44,7 @@ public class AiService {
                      TurnTypeService turnTypeService,
                      StateFactory stateFactory,
                      StateContextProvider stateContextProvider,
-                     GameService gameService, AiSecondPhaseActionProcessor aiSecondPhaseActionProcessor, AiThirdPhaseActionProcessor aiThirdPhaseActionProcessor) {
+                     GameService gameService, AiFirstPhaseActionProcessor aiFirstPhaseActionProcessor, AiSecondPhaseActionProcessor aiSecondPhaseActionProcessor, AiThirdPhaseActionProcessor aiThirdPhaseActionProcessor) {
         this.turnTypeService = turnTypeService;
         this.stateFactory = stateFactory;
         this.stateContextProvider = stateContextProvider;
@@ -51,6 +53,7 @@ public class AiService {
         turnProcessors = turnProcessor.stream().collect(Collectors.toMap(
                 AiTurnProcessor::getType, Function.identity()
         ));
+        this.aiFirstPhaseActionProcessor = aiFirstPhaseActionProcessor;
         this.aiSecondPhaseActionProcessor = aiSecondPhaseActionProcessor;
         this.aiThirdPhaseActionProcessor = aiThirdPhaseActionProcessor;
     }
@@ -126,8 +129,10 @@ public class AiService {
             aiThirdPhaseActionProcessor.processTurn(possibleTurns, game, player);
         } else if (game.getStateType() == StateType.BUILD_BLUE_RED_PROJECTS || possibleTurns.contains(TurnType.BUILD_BLUE_RED_PROJECT)) {
             aiSecondPhaseActionProcessor.processTurn(possibleTurns, game, player);
+        } else if (game.getStateType() == StateType.BUILD_GREEN_PROJECTS) {
+            aiFirstPhaseActionProcessor.processTurn(possibleTurns, game, player);
         } else {
-            TurnType turnToProcess = getTurnToProcess(possibleTurns, player);
+            TurnType turnToProcess = getTurnToProcess(possibleTurns);
 
             if (turnProcessors.containsKey(turnToProcess)) {
                 turnProcessors.get(turnToProcess).processTurn(game, player);
@@ -137,26 +142,12 @@ public class AiService {
         }
     }
 
-    private TurnType getTurnToProcess(List<TurnType> possibleTurns, Player player) {
+    private TurnType getTurnToProcess(List<TurnType> possibleTurns) {
         if (possibleTurns.contains(TurnType.MULLIGAN)) {
             return TurnType.MULLIGAN;
         }
 
-        if (possibleTurns.contains(TurnType.UNMI_RT) && player.getMc() >= 6) {
-            return TurnType.UNMI_RT;
-        }
-
-        if (possibleTurns.contains(TurnType.BUILD_GREEN_PROJECT)) {
-            return TurnType.BUILD_GREEN_PROJECT;
-        }
-
-        for (int i = 0; i < possibleTurns.size(); i++) {
-            if (possibleTurns.get(i) != TurnType.UNMI_RT && possibleTurns.get(i) != TurnType.SELL_CARDS) {
-                return possibleTurns.get(i);
-            }
-        }
-
-        throw new IllegalStateException("Unreachable");
+        return possibleTurns.get(0);
     }
 
 }

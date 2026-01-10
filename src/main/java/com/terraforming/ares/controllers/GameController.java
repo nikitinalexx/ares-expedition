@@ -1,5 +1,6 @@
 package com.terraforming.ares.controllers;
 
+import com.terraforming.ares.cards.blue.*;
 import com.terraforming.ares.dataset.DatasetCollectionService;
 import com.terraforming.ares.dataset.GameResult;
 import com.terraforming.ares.dataset.MarsGameRow;
@@ -10,6 +11,7 @@ import com.terraforming.ares.factories.GameFactory;
 import com.terraforming.ares.mars.CrysisData;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.parameters.Ocean;
 import com.terraforming.ares.model.request.AllProjectsRequest;
 import com.terraforming.ares.model.turn.*;
 import com.terraforming.ares.repositories.GameRepositoryImpl;
@@ -17,29 +19,41 @@ import com.terraforming.ares.repositories.caching.CachingGameRepository;
 import com.terraforming.ares.repositories.crudRepositories.CrisisRecordEntityRepository;
 import com.terraforming.ares.repositories.crudRepositories.SoloRecordEntityRepository;
 import com.terraforming.ares.services.*;
+import com.terraforming.ares.services.ai.AiConstants;
 import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.DeepNetwork;
 import com.terraforming.ares.services.ai.TestAiService;
+import com.terraforming.ares.services.ai.advanced.CompleteTableEncoder;
 import com.terraforming.ares.services.ai.dto.CardProjection;
 import com.terraforming.ares.services.ai.turnProcessors.AiMulliganCardsTurn;
-import com.terraforming.ares.services.simulations.DataHolderWithFlush;
+import com.terraforming.ares.services.simulations.DatasetWriter;
+import com.terraforming.ares.services.simulations.GameResultProducer;
+import com.terraforming.ares.services.simulations.SampleBatch;
 import lombok.RequiredArgsConstructor;
+import org.nd4j.common.primitives.AtomicDouble;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.terraforming.ares.model.Constants.WRITE_STATISTICS_TO_FILE;
+import static com.terraforming.ares.services.simulations.DatasetWriter.POISON;
 
 /**
  * Created by oleksii.nikitin
@@ -89,6 +103,9 @@ public class GameController {
             if (!gameParameters.getExpansions().contains(Expansion.DISCOVERY)) {
                 throw new IllegalArgumentException("Discovery expansion is a default mode for this game");
             }
+
+            //TODO remove
+            gameParameters.setComputers(List.of(PlayerDifficulty.NONE, PlayerDifficulty.NETWORK_V2));
 
 
             int aiPlayerCount = (int) gameParameters.getComputers().stream().filter(item -> item != PlayerDifficulty.NONE).count();
@@ -223,6 +240,178 @@ public class GameController {
         TURN_TO_AVERAGE_WINNER.put(44, 133.16600036621094);
     }
 
+    @GetMapping("/calculateRaw")
+    public void calculateRaw(@RequestParam int cardId) throws InterruptedException {
+        List<PlayerDifficulty> difficulties = List.of(PlayerDifficulty.RANDOM, PlayerDifficulty.RANDOM);
+
+        GameParameters gameParameters = GameParameters.builder()
+                .playerNames(List.of("a", "b"))
+                .computers(difficulties)
+                .mulligan(true)
+                .expansion(Expansion.BASE)
+                .expansion(Expansion.BUFFED_CORPORATION)
+                .expansion(Expansion.DISCOVERY)
+                .dummyHand(true)
+                .build();
+
+        Semaphore permits = new Semaphore(1000);
+
+        AtomicDouble defaultAtomic  = new AtomicDouble(0);
+        AtomicDouble projectedAtomic = new AtomicDouble(0);
+
+        int cardToTest = cardId;
+
+        try (ExecutorService gameExecutor = Executors.newVirtualThreadPerTaskExecutor()) {
+            for (int i = 0; i < 100; i++) {
+                permits.acquire(); // блокирует, но это platform thread (обычно контроллер)
+
+                gameExecutor.submit(() -> {
+                    try {
+                        MarsGame game = gameService.createNewSimulation(gameParameters);
+                        List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
+                        players.sort(Comparator.comparing(player -> player.getUuid().charAt(player.getUuid().length() - 1)));
+                        Player player = players.get(0);
+                        while (!player.getHand().containsCard(cardToTest)) {
+                            game = gameService.createNewSimulation(gameParameters);
+                            players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
+                            players.sort(Comparator.comparing(p -> p.getUuid().charAt(p.getUuid().length() - 1)));
+                            player = players.get(0);
+                        }
+
+                        Player anotherPlayer = players.get(1);
+                        double defaultRawValue = 0;
+                        for (int j = 0; j < 200; j++) {
+                            MarsGame gameCopy = new MarsGame(game);
+                            simulationProcessorService.processSimulation(gameCopy);
+
+                            int firstPlayerWp = winPointsService.countWinPoints(gameCopy.getPlayerByUuid(player.getUuid()), gameCopy);
+                            int secondPlayerWp = winPointsService.countWinPoints(gameCopy.getPlayerByUuid(anotherPlayer.getUuid()), gameCopy);
+
+                            if (firstPlayerWp > secondPlayerWp) {
+                                defaultRawValue += 1;
+                            } else if (firstPlayerWp == secondPlayerWp) {
+                                defaultRawValue += 0.5;
+                            }
+                        }
+                        defaultRawValue /= 200.0;
+
+
+                        player.getHand().removeCard(cardToTest);
+                        player.getPlayed().addCard(cardToTest);
+
+
+                        double projectedRawValue = 0;
+                        for (int j = 0; j < 200; j++) {
+                            MarsGame gameCopy = new MarsGame(game);
+                            Player playerCopy = gameCopy.getPlayerByUuid(player.getUuid());
+
+//                            playerCopy.setMcIncome(playerCopy.getMcIncome() + 2);
+                            playerCopy.setPlantsIncome(playerCopy.getPlantsIncome() +1);
+                            playerCopy.setCardIncome(playerCopy.getCardIncome() +1);
+//                            playerCopy.setPlants(playerCopy.getPlants() +1);
+//                            playerCopy.setHeatIncome(playerCopy.getHeatIncome() + 3);
+
+
+                            simulationProcessorService.processSimulation(gameCopy);
+
+                            int firstPlayerWp = winPointsService.countWinPoints(gameCopy.getPlayerByUuid(player.getUuid()), gameCopy);
+                            int secondPlayerWp = winPointsService.countWinPoints(gameCopy.getPlayerByUuid(anotherPlayer.getUuid()), gameCopy);
+
+                            if (firstPlayerWp > secondPlayerWp) {
+                                projectedRawValue += 1;
+                            } else if (firstPlayerWp == secondPlayerWp) {
+                                projectedRawValue += 0.5;
+                            }
+                        }
+                        projectedRawValue /= 200.0;
+
+                        System.out.println("Default " + defaultRawValue + " proj " + projectedRawValue);
+
+                        defaultAtomic.addAndGet(defaultRawValue);
+                        projectedAtomic.addAndGet(projectedRawValue);
+
+                    } catch (Throwable t) {
+                        t.printStackTrace();
+                    } finally {
+                        permits.release();
+                    }
+                });
+            }
+        }
+
+        System.out.println(defaultAtomic.get());
+        System.out.println(projectedAtomic.get());
+    }
+
+    @GetMapping("/simulations/v2")
+    public void runSimulationsVs(@RequestBody SimulationsRequest request) throws InterruptedException {
+
+        int MAX_IN_FLIGHT_GAMES = 1000;
+        Semaphore permits = new Semaphore(MAX_IN_FLIGHT_GAMES);
+
+
+        List<PlayerDifficulty> difficulties = List.of(PlayerDifficulty.RANDOM, PlayerDifficulty.NETWORK_V2);
+
+        List<String> playerNames = new ArrayList<>();
+        int counter = 1;
+        for (PlayerDifficulty simulationPlayer : difficulties) {
+            playerNames.add(simulationPlayer.name() + (counter++));
+        }
+
+        GameParameters gameParameters = GameParameters.builder()
+                .playerNames(playerNames)
+                .computers(difficulties)
+                .mulligan(true)
+                .expansion(Expansion.BASE)
+                .expansion(Expansion.BUFFED_CORPORATION)
+                .expansion(Expansion.DISCOVERY)
+                .dummyHand(true)
+                .build();
+
+        AtomicInteger firstWins = new AtomicInteger();
+        AtomicInteger secondWins = new AtomicInteger();
+        AtomicInteger draw = new AtomicInteger();
+
+        try (ExecutorService gameExecutor = Executors.newVirtualThreadPerTaskExecutor()) {
+            for (int i = 0; i < request.getTotalSimulations(); i++) {
+                permits.acquire(); // блокирует, но это platform thread (обычно контроллер)
+
+                gameExecutor.submit(() -> {
+                    try {
+                        MarsGame game = gameService.createNewSimulation(gameParameters);
+                        simulationProcessorService.processSimulation(game);
+
+                        List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
+                        players.sort(Comparator.comparing(player -> player.getUuid().charAt(player.getUuid().length() - 1)));
+
+                        int firstPlayerWp = winPointsService.countWinPoints(players.get(0), game);
+                        int secondPlayerWp = winPointsService.countWinPoints(players.get(1), game);
+
+                        if (firstPlayerWp > secondPlayerWp) {
+                            firstWins.incrementAndGet();
+                        } else if (secondPlayerWp > firstPlayerWp) {
+                            secondWins.incrementAndGet();
+                        } else {
+                            draw.incrementAndGet();
+                        }
+
+                    } catch (Throwable t) {
+                        t.printStackTrace();
+                    } finally {
+                        permits.release();
+                    }
+                });
+                if (i % 10 == 0) {
+                    System.out.printf("Sim done %s/%s. Wins 1=%s,2=%s,d=%s", i, request.getTotalSimulations(), firstWins, secondWins, draw);
+                    System.out.println();
+
+                }
+            }
+        }
+
+        System.out.printf("Wins 1=%s,2=%s,d=%s", firstWins, secondWins, draw);
+    }
+
     @GetMapping("/simulations")
     public void runSimulations(@RequestBody SimulationsRequest request) throws IOException, InterruptedException {
         TURNS_TO_GAMES_COUNT.clear();
@@ -243,10 +432,29 @@ public class GameController {
 
         GameStatistics gameStatistics = new GameStatistics();
 
+
+        BlockingQueue<SampleBatch> queue = new ArrayBlockingQueue<>(1000); // backpressure
+
+        DatasetWriter writer = new DatasetWriter(queue);
+        Thread writerThread = new Thread(writer, "dataset-writer");
+        writerThread.start();
+
         IntStream.range(0, threads).parallel().forEach(i -> {
-            new WorkerThread(playerDifficulties, request.getTotalSimulations() / threads, gameStatistics, i).run();
+            new WorkerThread(
+                    playerDifficulties,
+                    request.getTotalSimulations() / threads,
+                    gameStatistics,
+                    i,
+                    queue // 👈 добавили
+            ).run();
         });
+
+        queue.put(POISON);
+        writerThread.join();
+
         System.out.println("Finished all threads");
+        System.out.println(Arrays.toString(globalMax));
+        writeToFile(globalMax, CompleteTableEncoder.getAllFeatureNames(), Path.of("maxData.txt"));
 
         printStatistics(gameStatistics);
 
@@ -260,6 +468,21 @@ public class GameController {
         System.out.println(maxCardsPlayed);
         System.out.println(maxSteelTitanium);
         System.out.println(maxResources);
+    }
+
+    public static void writeToFile(float[] values, List<String> names, Path filePath)
+            throws IOException {
+
+        if (values.length != names.size()) {
+            throw new IllegalArgumentException("Размеры массива и списка не совпадают");
+        }
+
+        try (BufferedWriter writer = Files.newBufferedWriter(filePath)) {
+            for (int i = 0; i < values.length; i++) {
+                writer.write(names.get(i) + " " + values[i]);
+                writer.newLine();
+            }
+        }
     }
 
     @GetMapping("/mulligan/calibrate")
@@ -329,17 +552,22 @@ public class GameController {
         System.out.println(total);
     }
 
+    float[] globalMax = new float[AiConstants.TABLE_VECTOR_SIZE];
+    final Object lock = new Object();
+
     class WorkerThread implements Runnable {
         int simulationCount;
         GameStatistics gameStatistics;
         int threadIndex;
         List<PlayerDifficulty> playerDifficulty;
+        private final GameResultProducer producer;
 
-        WorkerThread(List<PlayerDifficulty> playerDifficulty, int simulationCount, GameStatistics gameStatistics, int threadIndex) {
+        WorkerThread(List<PlayerDifficulty> playerDifficulty, int simulationCount, GameStatistics gameStatistics, int threadIndex, BlockingQueue<SampleBatch> queue) {
             this.simulationCount = simulationCount;
             this.gameStatistics = gameStatistics;
             this.threadIndex = threadIndex;
             this.playerDifficulty = playerDifficulty;
+            this.producer = new GameResultProducer(queue, 512); // batch size
         }
 
         @Override
@@ -367,9 +595,6 @@ public class GameController {
 
             List<MarsGame> games = new ArrayList<>();
 
-            long startTime = System.currentTimeMillis();
-
-            DataHolderWithFlush dataHolderWithFlush = new DataHolderWithFlush(threadIndex);
 
             for (int i = 1; i <= simulationCount; i++) {
                 if (BREAK_SIMULATIONS_EARLY) {
@@ -378,7 +603,13 @@ public class GameController {
                 MarsGame marsGame = gameService.createNewSimulation(gameParameters);
                 if (Constants.COLLECT_DATASET) {
                     GameResult dataSet = simulationProcessorService.runSimulationWithDataset(marsGame);
-                    dataHolderWithFlush.addResult(dataSet);
+                    float[] localMax = dataSet.getLocalMax();
+                    countGlobalMax(localMax);
+                    try {
+                        producer.addResult(dataSet);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
                 } else {
                     simulationProcessorService.processSimulation(marsGame);
                 }
@@ -386,10 +617,7 @@ public class GameController {
                 games.add(marsGame);
 
                 if (i != 0 && i % 10 == 0) {
-                    long spentTime = System.currentTimeMillis() - startTime;
-
-                    long timePerGame = (spentTime / i);
-                    System.out.println("Time left: " + (simulationCount - i) * timePerGame / 1000);
+                    System.out.printf("Done %s/%s%n", i, simulationCount);
                 }
 
                 if (i % 100 == 0) {
@@ -399,6 +627,14 @@ public class GameController {
             }
 
             gatherStatistics(games, gameStatistics);
+        }
+
+        private void countGlobalMax(float[] localMax) {
+            synchronized (lock) {
+                for (int i = 0; i < AiConstants.TABLE_VECTOR_SIZE; i++) {
+                    globalMax[i] = Math.max(globalMax[i], localMax[i]);
+                }
+            }
         }
     }
 

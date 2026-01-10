@@ -14,11 +14,14 @@ import com.terraforming.ares.repositories.crudRepositories.PlayerEntityRepositor
 import com.terraforming.ares.repositories.crudRepositories.SoloRecordEntityRepository;
 import com.terraforming.ares.services.ai.AiService;
 import com.terraforming.ares.services.ai.DeepNetwork;
+import com.terraforming.ares.services.ai.advanced.AdvancedAiDataCollectionService;
+import com.terraforming.ares.services.ai.dl4j.JudgeOracle;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -40,6 +43,8 @@ public class GameProcessorService extends BaseProcessorService {
     private final CrisisRecordEntityRepository crisisRecordEntityRepository;
     private final GameEntityRepository gameEntityRepository;
     private final PlayerEntityRepository playerEntityRepository;
+    private final JudgeOracle judgeOracle;
+    private final AdvancedAiDataCollectionService advancedAiDataCollectionService;
 
     public GameProcessorService(List<TurnProcessor<?>> turnProcessor,
                                 CachingGameRepository gameRepository,
@@ -51,7 +56,7 @@ public class GameProcessorService extends BaseProcessorService {
                                 CrisisRecordEntityRepository crisisRecordEntityRepository,
                                 GameEntityRepository gameEntityRepository,
                                 PlayerEntityRepository playerEntityRepository,
-                                DeepNetwork deepNetwork) {
+                                DeepNetwork deepNetwork, JudgeOracle judgeOracle, AdvancedAiDataCollectionService advancedAiDataCollectionService) {
         super(
                 turnTypeService,
                 stateFactory,
@@ -66,6 +71,8 @@ public class GameProcessorService extends BaseProcessorService {
         this.gameEntityRepository = gameEntityRepository;
         this.playerEntityRepository = playerEntityRepository;
         this.deepNetwork = deepNetwork;
+        this.judgeOracle = judgeOracle;
+        this.advancedAiDataCollectionService = advancedAiDataCollectionService;
     }
 
     @Scheduled(fixedRate = 20)
@@ -84,6 +91,14 @@ public class GameProcessorService extends BaseProcessorService {
 
                 if (aiService.waitingAiTurns(game)) {
                     registerAsyncGameUpdate(gameId);
+                }
+
+                if (Constants.LOG_NET_COMPARISON_V2) {
+                    List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
+                    players.sort(Comparator.comparing(player -> player.getUuid().charAt(player.getUuid().length() - 1)));
+
+                    Player player = players.getFirst();
+                    System.out.println(judgeOracle.predict(advancedAiDataCollectionService.collectData(game, player)));
                 }
 
                 if (Constants.LOG_NET_COMPARISON && game.getStateType() == StateType.GAME_END) {
