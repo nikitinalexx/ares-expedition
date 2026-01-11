@@ -147,6 +147,10 @@ public class AiService {
             return TurnType.MULLIGAN;
         }
 
+        if (possibleTurns.contains(TurnType.BUILD_GREEN_PROJECT)) {
+            return TurnType.BUILD_GREEN_PROJECT;
+        }
+
         return possibleTurns.get(0);
     }
 
