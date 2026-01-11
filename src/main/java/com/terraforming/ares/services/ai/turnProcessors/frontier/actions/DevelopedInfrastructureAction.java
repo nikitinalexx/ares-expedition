@@ -10,14 +10,23 @@ public class DevelopedInfrastructureAction extends BlueAction {
     }
 
     @Override
-    public boolean canApplyInternal(StateContext stateContext, State state) {
-        return !stateContext.isTemperatureMax() && state.mc >= (10 - (stateContext.getBlueCardsCount() >= 5 ? 5 : 0));
+    public boolean canApplyInternal(StateContext context, State state) {
+        return !context.isTemperatureMax() && canAffordByMc(state, costToPay(context));
     }
 
     @Override
-    public void applyInternal(StateContext stateContext, State state) {
-        state.mc -= (10 - (stateContext.getBlueCardsCount() >= 5 ? 5 : 0));
-        stateContext.temperatureBuilt(state);
+    public void applyInternal(StateContext context, State state) {
+        pay(state, costToPay(context));
+        context.temperatureBuilt(state);
+    }
+
+    private int costToPay(StateContext context) {
+        return 10 - (context.getBlueCardsCount() >= 5 ? 5 : 0);
+    }
+
+    @Override
+    public Object getContext(StateContext context) {
+        return mcContext(costToPay(context));
     }
 
 }

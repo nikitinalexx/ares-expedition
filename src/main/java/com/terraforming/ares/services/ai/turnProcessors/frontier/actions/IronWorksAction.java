@@ -11,7 +11,7 @@ public class IronWorksAction extends BlueAction {
 
     @Override
     public boolean canApplyInternal(StateContext stateContext, State state) {
-        return !stateContext.isOxygenMax() && state.heat >= 4;
+        return !stateContext.isOxygenMax() && state.heat >= 4 && !state.heatAsMc;
     }
 
     @Override

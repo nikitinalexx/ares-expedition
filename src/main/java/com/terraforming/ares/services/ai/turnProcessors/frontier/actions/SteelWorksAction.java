@@ -11,7 +11,7 @@ public class SteelWorksAction extends BlueAction {
 
     @Override
     public boolean canApplyInternal(StateContext stateContext, State state) {
-        return state.heat >= 6;
+        return state.heat >= 6 && !state.heatAsMc;
     }
 
     @Override

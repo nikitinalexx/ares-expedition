@@ -11,7 +11,7 @@ public class DevelopmentCenterAction extends BlueAction {
 
     @Override
     public boolean canApplyInternal(StateContext stateContext, State state) {
-        return state.heat >= 2;
+        return state.heat >= 2 && !state.heatAsMc;
     }
 
     @Override

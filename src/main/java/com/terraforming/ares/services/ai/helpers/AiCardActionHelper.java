@@ -81,27 +81,30 @@ public class AiCardActionHelper {
                                             .map(Card::getColor)
                                             .filter(CardColor.BLUE::equals)
                                             .limit(5)
-                                            .count() == 5;
+                                            .count() == 5 || player.getMc() >= 20 || player.getHeat() < 8;
                                 } else if (cardAction == CardAction.PROGRESSIVE_POLICIES) {
-                                    return cardService.countPlayedTags(player, Set.of(Tag.EVENT)) >= 4;
+                                    return cardService.countPlayedTags(player, Set.of(Tag.EVENT)) >= 4 || player.getMc() >= 20 || player.getPlants() < 8;
                                 } else if (cardAction == CardAction.AQUIFER_PUMPING) {
-                                    return player.getSteelIncome() >= 2;
+                                    return player.getSteelIncome() >= 1;
                                 } else if (cardAction == CardAction.SOLAR_PUNK) {
-                                    return player.getTitaniumIncome() >= 3;
+                                    return player.getTitaniumIncome() >= 2;
                                 } else if (cardAction == CardAction.VOLCANIC_POOLS) {
-                                    return cardService.countPlayedTags(player, Set.of(Tag.ENERGY)) >= 4;
+                                    return cardService.countPlayedTags(player, Set.of(Tag.ENERGY)) >= 2;
                                 } else if (cardAction == CardAction.WATER_IMPORT) {
-                                    return player.getTitaniumIncome() >= 4;
-                                } else if (cardAction == CardAction.EXPERIMENTAL_TECHNOLOGY) {
-                                    return player.countPhaseUpgrades() == 0;
+                                    return player.getTitaniumIncome() >= 2;
                                 } else if (cardAction == CardAction.COMMUNITY_AFFORESTATION) {
                                     return game.getMilestones().stream().anyMatch(milestone -> milestone.isAchieved(player));
                                 } else if (cardAction == CardAction.GAS_COOLED_REACTORS) {
-                                    return player.countPhaseUpgrades() >= 2;
+                                    return player.countPhaseUpgrades() >= 1 || player.getMc() >= 20 || player.getHeat() < 8;
                                 } else if (cardAction == CardAction.SAWMILL) {
-                                    return cardService.countPlayedTags(player, Set.of(Tag.PLANT)) >= 2;
+                                    return cardService.countPlayedTags(player, Set.of(Tag.PLANT)) >= 1;
                                 } else if (cardAction == CardAction.INTERPLANETARY_SUPERHIGHWAY) {
-                                    return cardService.countPlayedTags(player, Set.of(Tag.SCIENCE)) >= 4;
+                                    return cardService.countPlayedTags(player, Set.of(Tag.SCIENCE)) >= 4 || player.getMc() >= 20;
+                                } else if (cardAction == CardAction.ASSET_LIQUIDATION) {
+                                    int tr = player.getTerraformingRating();
+                                    int handSize = player.getHand().size();
+
+                                    return tr >= 5 && (handSize <= 6 || tr >= 8);
                                 }
                                 return true;
                             }
@@ -113,13 +116,13 @@ public class AiCardActionHelper {
         if (cardMetadata != null) {
             List<ActionInputData> actionsInputData = cardMetadata.getActionsInputData();
             if (!actionsInputData.isEmpty()) {
-                ActionInputData actionInputData = actionsInputData.get(0);
+                ActionInputData actionInputData = actionsInputData.getFirst();
                 if (cardMetadata.getCardAction() == CardAction.DECOMPOSING_FUNGUS) {
                     return resourcePriorityService.hasCardWithCheapAnimalOrMicrobe(player);
                 } else if (cardMetadata.getCardAction() == CardAction.CONSERVED_BIOME) {
                     return resourcePriorityService.hasProfitableCardWithCollectableResource(game, player, Set.of(CardCollectableResource.MICROBE, CardCollectableResource.ANIMAL));
                 } else if (actionInputData.getType() == ActionInputDataType.DISCARD_CARD) {
-                    return player.getHand().size() != 0;
+                    return !player.getHand().isEmpty();
                 } else if (actionInputData.getType() == ActionInputDataType.ADD_DISCARD_MICROBE) {
                     return isUsefulAddDiscardMicrobeAction(game, card);
                 } else if (cardMetadata.getCardAction() == CardAction.POWER_INFRASTRUCTURE) {
@@ -139,7 +142,7 @@ public class AiCardActionHelper {
             } else if (cardMetadata.getCardAction() == CardAction.VIRTUAL_EMPLOYEE_DEVELOPMENT) {
                 return true;
             } else if (cardMetadata.getCardAction() == CardAction.EXPERIMENTAL_TECHNOLOGY) {
-                return player.getTerraformingRating() > 0 && player.getPhaseCards().stream().anyMatch(phase -> phase == 0);//there is at least one not upgraded phase card
+                return player.getTerraformingRating() > 0 && player.getPhaseCards().stream().filter(phase -> phase != 0).count() <= 1;//there is at least one not upgraded phase card
             }
         }
         throw new IllegalStateException("NOT REACHABLE");

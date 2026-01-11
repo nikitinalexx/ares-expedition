@@ -10,14 +10,23 @@ public class ThinkTankAction extends BlueAction {
     }
 
     @Override
-    public boolean canApplyInternal(StateContext stateContext, State state) {
-        return state.mc >= 2;
+    public boolean canApplyInternal(StateContext context, State state) {
+        return canAffordByMc(state, costToPay(context));
+    }
+
+    private int costToPay(StateContext context) {
+        return 2;
     }
 
     @Override
-    public void applyInternal(StateContext stateContext, State state) {
-        state.mc -= 2;
+    public void applyInternal(StateContext context, State state) {
+        pay(state, costToPay(context));
         state.cards++;
+    }
+
+    @Override
+    public Object getContext(StateContext context) {
+        return mcContext(costToPay(context));
     }
 
 }

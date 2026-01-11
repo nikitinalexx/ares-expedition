@@ -350,7 +350,7 @@ public class GameController {
         Semaphore permits = new Semaphore(MAX_IN_FLIGHT_GAMES);
 
 
-        List<PlayerDifficulty> difficulties = List.of(PlayerDifficulty.RANDOM, PlayerDifficulty.NETWORK_V2);
+        List<PlayerDifficulty> difficulties = List.of(PlayerDifficulty.RANDOM, PlayerDifficulty.RANDOM);
 
         List<String> playerNames = new ArrayList<>();
         int counter = 1;
@@ -454,7 +454,7 @@ public class GameController {
 
         System.out.println("Finished all threads");
         System.out.println(Arrays.toString(globalMax));
-        writeToFile(globalMax, CompleteTableEncoder.getAllFeatureNames(), Path.of("maxData.txt"));
+//        writeToFile(globalMax, CompleteTableEncoder.getAllFeatureNames(), Path.of("maxData.txt"));
 
         printStatistics(gameStatistics);
 
@@ -603,8 +603,8 @@ public class GameController {
                 MarsGame marsGame = gameService.createNewSimulation(gameParameters);
                 if (Constants.COLLECT_DATASET) {
                     GameResult dataSet = simulationProcessorService.runSimulationWithDataset(marsGame);
-                    float[] localMax = dataSet.getLocalMax();
-                    countGlobalMax(localMax);
+//                    float[] localMax = dataSet.getLocalMax();
+//                    countGlobalMax(localMax);
                     try {
                         producer.addResult(dataSet);
                     } catch (InterruptedException e) {

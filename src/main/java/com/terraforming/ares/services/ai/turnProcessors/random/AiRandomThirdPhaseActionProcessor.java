@@ -297,7 +297,48 @@ public class AiRandomThirdPhaseActionProcessor {
         }
 
         if (AiConstants.ACTIONS_WITHOUT_INPUT_PARAMS.contains(card.getClass())) {
-            return validator.validate(game, player) == null;
+            String validationResult = validator.validate(game, player);
+            if (validationResult != null) {
+                return false;
+            }
+
+            return Optional.ofNullable(card.getCardMetadata()).map(CardMetadata::getCardAction)
+                    .map(
+                            cardAction -> {
+                                if (cardAction == CardAction.DEVELOPED_INFRASTRUCTURE) {
+                                    return player.getPlayed().getCards().stream()
+                                            .map(cardService::getCard)
+                                            .map(Card::getColor)
+                                            .filter(CardColor.BLUE::equals)
+                                            .limit(5)
+                                            .count() == 5 || player.getMc() >= 20 || player.getHeat() < 8;
+                                } else if (cardAction == CardAction.PROGRESSIVE_POLICIES) {
+                                    return cardService.countPlayedTags(player, Set.of(Tag.EVENT)) >= 4 || player.getMc() >= 20 || player.getPlants() < 8;
+                                } else if (cardAction == CardAction.AQUIFER_PUMPING) {
+                                    return player.getSteelIncome() >= 1;
+                                } else if (cardAction == CardAction.SOLAR_PUNK) {
+                                    return player.getTitaniumIncome() >= 2;
+                                } else if (cardAction == CardAction.VOLCANIC_POOLS) {
+                                    return cardService.countPlayedTags(player, Set.of(Tag.ENERGY)) >= 2;
+                                } else if (cardAction == CardAction.WATER_IMPORT) {
+                                    return player.getTitaniumIncome() >= 2;
+                                } else if (cardAction == CardAction.COMMUNITY_AFFORESTATION) {
+                                    return game.getMilestones().stream().anyMatch(milestone -> milestone.isAchieved(player));
+                                } else if (cardAction == CardAction.GAS_COOLED_REACTORS) {
+                                    return player.countPhaseUpgrades() >= 1 || player.getMc() >= 20 || player.getHeat() < 8;
+                                } else if (cardAction == CardAction.SAWMILL) {
+                                    return cardService.countPlayedTags(player, Set.of(Tag.PLANT)) >= 1;
+                                } else if (cardAction == CardAction.INTERPLANETARY_SUPERHIGHWAY) {
+                                    return cardService.countPlayedTags(player, Set.of(Tag.SCIENCE)) >= 4 || player.getMc() >= 20;
+                                } else if (cardAction == CardAction.ASSET_LIQUIDATION) {
+                                    int tr = player.getTerraformingRating();
+                                    int handSize = player.getHand().size();
+
+                                    return tr >= 5 && (handSize <= 6 || tr >= 8);
+                                }
+                                return true;
+                            }
+                    ).orElse(true);
         }
 
         CardMetadata metadata = card.getCardMetadata();
@@ -322,8 +363,7 @@ public class AiRandomThirdPhaseActionProcessor {
         }
 
         if (action == CardAction.EXPERIMENTAL_TECHNOLOGY) {
-            return player.getTerraformingRating() > 0
-                    && player.getPhaseCards().stream().anyMatch(phase -> phase == 0);
+            return player.getTerraformingRating() > 0 && player.getPhaseCards().stream().filter(phase -> phase != 0).count() <= 1;
         }
 
         return true;
@@ -510,8 +550,10 @@ public class AiRandomThirdPhaseActionProcessor {
             );
         }
 
-        boolean canConvert = player.getCardResourcesCount().get(blueCard.getClass()) >= inputData.getMax();
-        boolean shouldConvert = canConvert && random.nextBoolean();
+        int microbes = player.getCardResourcesCount().get(blueCard.getClass());
+        int cost = inputData.getMax();
+        boolean canConvert = microbes >= cost;
+        boolean shouldConvert = canConvert && (random.nextDouble() < Math.min(1.0, 0.5 + 0.2 * (microbes - cost)));
         int microbeCount = shouldConvert ? inputData.getMax() : 1;
 
         return ActionInputParamsResponse.makeActionWithParams(
@@ -520,7 +562,12 @@ public class AiRandomThirdPhaseActionProcessor {
     }
 
     private ActionInputParamsResponse handleSelfReplicatingBacteria(MarsGame game, Player player, Card blueCard, CardAction action, ActionInputData inputData) {
-        boolean canBuild = random.nextBoolean() && player.getCardResourcesCount().get(blueCard.getClass()) >= inputData.getMax();
+        int cost = inputData.getMax();
+        int microbes = player.getCardResourcesCount().get(blueCard.getClass());
+
+        int excess = microbes - cost;
+
+        boolean canBuild = microbes >= cost && (random.nextDouble() <  Math.min(1.0, 0.5 + 0.15 * (microbes - cost)));
         Optional<BuildContext> toBuild = canBuild ? potentialBuildForSelfReplicating(game, player.getUuid()) : Optional.empty();
 
         if (toBuild.isEmpty()) {

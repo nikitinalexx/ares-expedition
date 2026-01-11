@@ -10,14 +10,23 @@ public class SolarPunkAction extends BlueAction {
     }
 
     @Override
-    public boolean canApplyInternal(StateContext stateContext, State state) {
-        return state.mc >= (Math.max(0, 15 - stateContext.getPlayer().getTitaniumIncome() * 2));
+    public boolean canApplyInternal(StateContext context, State state) {
+        return canAffordByMc(state, costToPay(context));
     }
 
     @Override
-    public void applyInternal(StateContext stateContext, State state) {
-        state.mc -= (Math.max(0, 15 - stateContext.getPlayer().getTitaniumIncome() * 2));
-        stateContext.forestBuilt(state);
+    public void applyInternal(StateContext context, State state) {
+        pay(state, costToPay(context));
+        context.forestBuilt(state);
+    }
+
+    private int costToPay(StateContext context) {
+        return Math.max(0, 15 - context.getPlayer().getTitaniumIncome() * 2);
+    }
+
+    @Override
+    public Object getContext(StateContext context) {
+        return mcContext(costToPay(context));
     }
 
 }

@@ -11,13 +11,14 @@ public class CaretakerContractAction extends BlueAction {
 
     @Override
     public boolean canApplyInternal(StateContext stateContext, State state) {
-        return state.heat >= 8;
+        return state.heat >= 8 && !state.heatAsMc;
     }
 
     @Override
     public void applyInternal(StateContext stateContext, State state) {
         state.heat -= 8;
         state.tr++;
+        state.trRaisedThisPhase = true;
     }
 
 }

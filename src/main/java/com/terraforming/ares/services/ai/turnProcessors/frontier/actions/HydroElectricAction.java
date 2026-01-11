@@ -10,17 +10,29 @@ public class HydroElectricAction extends BlueAction {
     }
 
     @Override
-    public boolean canApplyInternal(StateContext stateContext, State state) {
-        return state.mc >= 1;
+    public boolean canApplyInternal(StateContext ctx, State s) {
+        if (s.mc > 0) {
+            return true;
+        }
+        if (s.heatAsMc && ctx.isHelionCorp() && s.heat > 0) {
+            return true;
+        }
+        return false;
     }
 
     @Override
     public void applyInternal(StateContext stateContext, State state) {
-        state.mc--;
+        pay(state, 1);
+
         state.heat += 2;
         if (stateContext.isChose3rdPhase()) {
             state.heat++;
         }
+    }
+
+    @Override
+    public Object getContext(StateContext context) {
+        return mcContext(1);
     }
 
 }

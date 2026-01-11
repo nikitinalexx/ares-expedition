@@ -14,7 +14,8 @@ import java.util.Set;
 public class CorporationsSingleFlagFeature implements FeatureBlock {
     public static final List<String> FEATURE_NAMES = List.of(
             // forest affordability (Ecoline affects cost)
-            "can_afford_forest_or_fraction",
+            "full_forests",
+            "plants_to_forest",
 
             // corporations with special handling (can be buffed)
             "corp_helion",
@@ -39,7 +40,7 @@ public class CorporationsSingleFlagFeature implements FeatureBlock {
 
     @Override
     public int size() {
-        return 5 + CORPORATIONS_WITH_SINGLE_FLAG.size();//12
+        return 6 + CORPORATIONS_WITH_SINGLE_FLAG.size();//12
     }
 
     @Override
@@ -49,7 +50,8 @@ public class CorporationsSingleFlagFeature implements FeatureBlock {
         Player player = ctx.getPlayer();
 
         float forestCost = playedCardActions.containsKey(CardAction.ECOLINE_CORPORATION) ? 7 : 8;
-        out.write(player.getPlants() >= forestCost ? 1f : player.getPlants() / forestCost);
+        out.write(player.getPlants() / forestCost);      // сколько лесов гарантировано
+        out.write((player.getPlants() % forestCost) / forestCost); // прогресс до следующего леса
 
         out.write(playedCardActions.containsKey(CardAction.HELION_CORPORATION) ? 1 : 0);//can be buffed corporation, so requires separate field
         out.write(playedCardActions.containsKey(CardAction.ECOLINE_CORPORATION) ? 1 : 0);//can be buffed

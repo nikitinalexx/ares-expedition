@@ -23,15 +23,14 @@ public class PlayerIncomesFeature implements FeatureBlock {
             "heat_income",
             "card_income",
             "mc",
-            "mc_over_10",
-            "mc_over_20",
             "plants",
             "heat",
-            "heat_over_temp_2",
-            "heat_over_temp_4",
+            "heat_into_tr",
+            "heat_to_tr",
             "played_cards_count",
             "hand_cards_count",
-            "hand_size_over_10",
+            "hand_over_10_count",
+            "effective_count_max_10",
             "forests",
             "draft_cards_to_see",
             "draft_cards_to_take"
@@ -44,7 +43,7 @@ public class PlayerIncomesFeature implements FeatureBlock {
 
     @Override
     public int size() {
-        return 21;
+        return 20;
     }
 
     @Override
@@ -65,17 +64,16 @@ public class PlayerIncomesFeature implements FeatureBlock {
         out.write(player.getHeatIncome());
         out.write(player.getCardIncome());
         out.write(player.getMc());
-        out.write(player.getMc() >= 10 ? 1 : 0);
-        out.write(player.getMc() >= 20 ? 1 : 0);
         out.write(player.getPlants());
         out.write(player.getHeat());
-        int tempLeft = planet.temperatureLeft();
-        out.write(player.getHeat() >= tempLeft * 2 ? 1 : 0);
-        out.write(player.getHeat() >= tempLeft * 4 ? 1 : 0);
+        out.write(player.getHeat() / 8f);
+        out.write((player.getHeat() % 8) / 8f);
 
         out.write(player.getPlayed().size());
         out.write(player.getHand().size());
-        out.write(player.getHand().size() > 10 ? 1 : 0);
+        out.write(Math.max(0, player.getHand().size() - 10));
+        out.write(Math.min(player.getHand().size(), 10));
+
         out.write(player.getForests());
 
         DraftCardsDto draftCardsDto = draftCardsService.countCardsToTakeAndDraft(player);

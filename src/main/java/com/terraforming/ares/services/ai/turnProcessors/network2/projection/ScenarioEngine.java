@@ -40,8 +40,21 @@ public class ScenarioEngine {
             uniquePhases.add(game.getCurrentDummyHand());
         }
 
-        // 3. Фильтруем (только текущая и будущие до 2-й), сортируем и превращаем в итоговый список
-        List<Integer> phasesToProcess = uniquePhases.stream().filter(p -> p >= game.getCurrentPhase() && p <= 2 || p == -1).sorted().toList();
+        List<Integer> phasesToProcess;
+
+        if (game.getCurrentPhase() >= 3) {
+            // Мы уже в 3 фазе — фаз больше нет, просто проигрываем действия
+            phasesToProcess = List.of(game.getCurrentPhase());
+        } else {
+            phasesToProcess = uniquePhases.stream()
+                    .filter(p -> (p >= game.getCurrentPhase() && p <= 2) || p == -1)
+                    .sorted()
+                    .toList();
+
+            if (phasesToProcess.isEmpty() && game.getCurrentPhase() <= 2) {
+                phasesToProcess = List.of(game.getCurrentPhase());
+            }
+        }
 
         // Если список пуст (например, все фазы уже прошли),
         // можно добавить текущую, чтобы бот мог хотя бы проверить действия в ней

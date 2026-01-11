@@ -1,9 +1,11 @@
 package com.terraforming.ares.services.ai.turnProcessors.frontier;
 
 import com.terraforming.ares.cards.blue.*;
+import com.terraforming.ares.cards.buffedCorporations.BuffedUnmiCorporation;
 import com.terraforming.ares.cards.corporations.CelestiorCorporation;
 import com.terraforming.ares.cards.corporations.HyperionSystemsCorporation;
 import com.terraforming.ares.cards.corporations.ModproCorporation;
+import com.terraforming.ares.cards.corporations.UnmiCorporation;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Deck;
@@ -21,6 +23,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class Frontier {
+    public static final int NO_ACTION_ID = -2;
     private final CardService cardService;
     private static final int MAX_ACTIONS = 10;
     private static final int BEAM_WIDTH = 1000;
@@ -40,18 +43,22 @@ public class Frontier {
                 .filter(Card::isActiveCard)
                 .filter(card -> !activatedBlueCards.containsCard(card.getId()) || blueActionExtraActivationsLeft > 0 && !activatedBlueCardsTwice.containsCard(card.getId()))
                 .collect(Collectors.toMap(Card::getClass, Function.identity()));
-        if (cardsThatCanStillBeActivated.isEmpty()) {
+        boolean needUnmiForTraversal = player.isUnmiCorporation() && !player.isDidUnmiAction();
+        if (cardsThatCanStillBeActivated.isEmpty() && !needUnmiForTraversal) {
             return Map.of();
         }
 
         List<Action> actionPoolThatCanBeActivated = collectActionsPool(cardsThatCanStillBeActivated, stateContext);
+        if (needUnmiForTraversal) {
+            actionPoolThatCanBeActivated.add(new UnmiAction(UNMI_ACTION_ID));
+        }
         if (actionPoolThatCanBeActivated.isEmpty()) {
             return Map.of();
         }
 
         long usedActionsMask =
                 collectActionsPool(
-                        activatedBlueCards.getCards().stream().map(cardService::getCard).collect(Collectors.toMap(Card::getClass, Function.identity())), stateContext
+                        activatedBlueCards.getCards().stream().distinct().map(cardService::getCard).collect(Collectors.toMap(Card::getClass, Function.identity())), stateContext
                 )
                         .stream()
                         .mapToLong(action -> 1L << action.id)
@@ -123,25 +130,49 @@ public class Frontier {
                     break;
                 }
             }
+
+            if (!anyActionPossible && stateContext.canUseHeatAsMc()) {
+                State heatState = n.state.copy();
+                heatState.heatAsMc = true;
+
+                for (Action a : actionsPool) {
+                    if (a.canApplyInternal(stateContext, heatState)) {
+                        anyActionPossible = true;
+                        break;
+                    }
+                }
+            }
+
+            if (anyActionPossible) break;
         }
 
         if (!anyActionPossible) {
             return Map.of();
         }
 
-
         Map<State, Node> results = new HashMap<>();
+
+        Node doNothing = new Node(initialState.copy(), 0L, 0L, 0, NO_ACTION_ID, null);
+
+        results.put(doNothing.state, doNothing);
+
 
         for (int step = 0; step < MAX_ACTIONS; step++) {
 
             if (step > 0) {
-                results.putAll(frontier);
+                for (Node node : frontier.values()) {
+                    if (node.firstActionId >= 0) {
+                        results.put(node.state, node);
+                    }
+                }
+
                 results = beamFilter(stateContext, results, RESULTS_BEAM_WIDTH);
             }
 
             Map<State, Node> next = new HashMap<>();
 
             for (Node n : frontier.values()) {
+
                 boolean isRoot = n.firstActionId == -1;
 
                 for (Action a : actionsPool) {
@@ -178,6 +209,22 @@ public class Frontier {
 
                     next.put(s, nextNode);
                 }
+
+                if (!n.state.heatAsMc && stateContext.canUseHeatAsMc()) {
+                    State s2 = n.state.copy();
+                    s2.heatAsMc = true;
+
+                    Node switched = new Node(
+                            s2,
+                            n.usedActionsMask,
+                            n.usedRepeatMask,
+                            n.repeatsLeft,
+                            n.firstActionId,
+                            n.firstActionContext
+                    );
+
+                    next.put(s2, switched);
+                }
             }
 
             if (next.isEmpty()) break;
@@ -187,6 +234,7 @@ public class Frontier {
 
         results.putAll(frontier);
         results = beamFilter(stateContext, results, RESULTS_BEAM_WIDTH);
+        results.keySet().forEach(stateContext::applyMandatoryHeatAndPlants);
 
         for (Node node : results.values()) {
             if (node.firstActionId == -1) {
@@ -249,6 +297,7 @@ public class Frontier {
     public static final int CONSERVED_BIOME_ACTION_ID = 40;
     public static final int DECOMPOSING_FUNGUS_ACTION_ID = 41;
     public static final int SYMBIOTIC_FUNGUS_ACTION_ID = 42;
+    public static final int UNMI_ACTION_ID = 43;
 
     static {
         Map<Class<? extends Card>, List<BlueAction>> map = new HashMap<>();

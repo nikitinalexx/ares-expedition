@@ -7,6 +7,7 @@ import com.terraforming.ares.cards.crysis.*;
 import com.terraforming.ares.cards.green.*;
 import com.terraforming.ares.cards.red.*;
 import com.terraforming.ares.model.Card;
+import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.CrysisCard;
 import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.services.ai.AiConstants;
@@ -126,7 +127,7 @@ public class CardFactory {
                 new OlympusConference(44),
                 new OptimalAerobraking(45),
                 new PhysicsComplex(46),
-                new PowerInfrastructure(47),
+                new PowerInfrastructure(Constants.POWER_INFRASTRUCTURE_CARD_ID),
                 new RecycledDetritus(48),
                 new RedraftedContracts(49),
                 new RegolithEaters(50),

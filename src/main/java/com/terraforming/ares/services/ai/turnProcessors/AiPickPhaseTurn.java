@@ -1,6 +1,7 @@
 package com.terraforming.ares.services.ai.turnProcessors;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.cards.blue.*;
 import com.terraforming.ares.dto.DraftCardsDto;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
@@ -87,8 +88,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                 }
             }
         } else {
-            if (!(player.getDifficulty().PICK_PHASE == AiTurnChoice.RANDOM)
-                    && (previousChosenPhase == null || previousChosenPhase != 1 && previousChosenPhase != 2)) {
+            if (!(player.getDifficulty().PICK_PHASE == AiTurnChoice.RANDOM) && (previousChosenPhase == null || previousChosenPhase != 1 && previousChosenPhase != 2)) {
                 int phase = chooseBetweenFirstAndSecondPhase(game, player);
                 if (phase != 0) {
                     possiblePhases.add(phase);
@@ -443,8 +443,20 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
         return player.getPlayed().getCards().stream()
                 .map(cardService::getCard)
                 .filter(Card::isActiveCard)
+                .filter(card -> card.getClass() != RedraftedContracts.class)
+                .filter(card -> card.getClass() != SoftwareStreamlining.class)
+                .filter(card -> card.getClass() != ResearchGrant.class)
+                .filter(card -> card.getClass() != ExperimentalTechnology.class)
+                .filter(card -> {
+                    if (card.getClass() == AssetLiquidation.class) {
+                        return player.getTerraformingRating() >= 6
+                                && player.getHand().size() <= 6;
+                    }
+                    return true;
+                })
                 .anyMatch(card -> aiCardActionHelper.isUsablePlayAction(game, player, card));
     }
+
 
     private PhaseChoiceProjection mayPlayPhaseThreeAi(MarsGame game, Player player) {
         return aiThirdPhaseProjectionService.projectThirdPhase(game, player);

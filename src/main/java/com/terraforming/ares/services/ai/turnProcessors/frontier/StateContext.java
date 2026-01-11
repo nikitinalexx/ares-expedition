@@ -2,7 +2,9 @@ package com.terraforming.ares.services.ai.turnProcessors.frontier;
 
 import com.terraforming.ares.cards.blue.*;
 import com.terraforming.ares.cards.buffedCorporations.BuffedEcolineCorporation;
+import com.terraforming.ares.cards.buffedCorporations.BuffedHelionCorporation;
 import com.terraforming.ares.cards.corporations.EcolineCorporation;
+import com.terraforming.ares.cards.corporations.HelionCorporation;
 import com.terraforming.ares.cards.corporations.ZetacellCorporation;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
@@ -38,6 +40,11 @@ public class StateContext {
     private int energyTagCount;
     private int milestoneAchieved;
 
+    private boolean transformsHeatIntoMc;
+    private boolean isHelionCorp;
+
+    private int forestPrice;
+
     public static final int wpScore = 5;
 
     public StateContext(CardService cardService, Map<Class<?>, Card> cardsPlayed, Planet planet, Player player, MarsGame game) {
@@ -59,6 +66,13 @@ public class StateContext {
         }
         if (cardsPlayed.containsKey(EcolineCorporation.class) || cardsPlayed.containsKey(BuffedEcolineCorporation.class)) {
             ecolineDiscount = true;
+        }
+        if (cardsPlayed.containsKey(HelionCorporation.class) || cardsPlayed.containsKey(BuffedHelionCorporation.class)) {
+            transformsHeatIntoMc = true;
+            isHelionCorp = true;
+        }
+        if (cardsPlayed.containsKey(PowerInfrastructure.class)) {
+            transformsHeatIntoMc = true;
         }
         if (cardsPlayed.containsKey(ArcticAlgae.class)) {
             plantsOnOcean += 4;
@@ -89,10 +103,31 @@ public class StateContext {
         if (cardsPlayed.containsKey(VolcanicSoil.class)) {
             plantsOnTemperature += 2;
         }
+
+        this.forestPrice = ecolineDiscount ? 7 : 8;
+    }
+
+    public boolean canUseHeatAsMc() {
+        return transformsHeatIntoMc;
+    }
+
+    public void applyMandatoryHeatAndPlants(State state) {
+        if (!isTemperatureMax) {
+            while (state.heat >= 8) {
+                state.heat -= 8;
+                temperatureBuilt(state);
+            }
+        }
+        while (state.plants >= forestPrice) {
+            state.plants -= forestPrice;
+            forestBuilt(state);
+        }
     }
 
     public double score(State state) {
-        int forestPrice = ecolineDiscount ? 7 : 8;
+        state = state.copy();
+        applyMandatoryHeatAndPlants(state);
+
         return state.mc +
                 state.heat * 2 +
                 state.plants * ((isOxygenMax ? 1 : 2) * ((double) 8 / (forestPrice))) + ((double) (state.plants / forestPrice) * wpScore / 2 * halfWpOnForest) +
@@ -115,17 +150,21 @@ public class StateContext {
         state.plants += plantsOnOcean;
         state.tr += 1;
         state.wp += halfWpOnOcean * 3;
+        state.trRaisedThisPhase = true;
+        state.extraMcValue += 2;
     }
 
     public void oxygenBuilt(State state) {
         state.tr += 1;
         state.wp += halfWpOnOxygen * 3;
+        state.trRaisedThisPhase = true;
     }
 
     public void temperatureBuilt(State state) {
         state.tr += 1;
         state.wp += halfWpOnTemperature * 3;
         state.plants += plantsOnTemperature;
+        state.trRaisedThisPhase = true;
     }
 
     public void forestBuilt(State state) {
@@ -162,6 +201,9 @@ public class StateContext {
         state.bacterialAggregates = player.getCardResourcesCount().getOrDefault(BacterialAggregates.class, 0);
         state.decomposers = player.getCardResourcesCount().getOrDefault(Decomposers.class, 0);
         state.decomposingFungus = player.getCardResourcesCount().getOrDefault(DecomposingFungus.class, 0);
+
+        state.trRaisedThisPhase = player.isHasUnmiAction();
+        state.unmiUsedThisPhase = player.isDidUnmiAction();
 
         return state;
     }

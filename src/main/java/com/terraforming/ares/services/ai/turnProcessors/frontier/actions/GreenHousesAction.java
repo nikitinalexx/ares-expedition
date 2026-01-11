@@ -14,7 +14,7 @@ public class GreenHousesAction extends BlueAction {
 
     @Override
     public boolean canApplyInternal(StateContext stateContext, State state) {
-        return state.heat >= exchangeRate;
+        return state.heat >= exchangeRate && !state.heatAsMc;
     }
 
     @Override

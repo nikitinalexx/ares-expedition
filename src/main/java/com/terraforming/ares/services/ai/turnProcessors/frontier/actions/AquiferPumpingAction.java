@@ -10,14 +10,23 @@ public class AquiferPumpingAction extends BlueAction {
     }
 
     @Override
-    public boolean canApplyInternal(StateContext stateContext, State state) {
-        return !stateContext.isOceansMax() && state.mc >= (Math.max(0, 10 - stateContext.getPlayer().getSteelIncome() * 2));
+    public boolean canApplyInternal(StateContext ctx, State s) {
+        return !ctx.isOceansMax() && canAffordByMc(s, costToPay(ctx));
     }
 
     @Override
-    public void applyInternal(StateContext stateContext, State state) {
-        state.mc -= (Math.max(0, 10 - stateContext.getPlayer().getSteelIncome() * 2));
-        stateContext.oceanBuilt(state);
+    public void applyInternal(StateContext ctx, State s) {
+        pay(s, costToPay(ctx));
+        ctx.oceanBuilt(s);
+    }
+
+    @Override
+    public Object getContext(StateContext stateContext) {
+        return mcContext(costToPay(stateContext));
+    }
+
+    private int costToPay(StateContext ctx) {
+        return Math.max(0, 10 - ctx.getPlayer().getSteelIncome() * 2);
     }
 
 }

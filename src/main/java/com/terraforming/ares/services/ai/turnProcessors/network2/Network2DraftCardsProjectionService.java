@@ -19,7 +19,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class Network2DraftCardsProjectionService {
     public static final int CARDS_TO_LOOK_AHEAD = 30;
-    public static final double MIN_AVERAGE_VALUE_GAP = 0.01;
+    public static final double RELATIVE_GAP_FACTOR = 0.02;
+    public static final double MIN_ABSOLUTE_GAP = 0.003;
 
     private final CardService cardService;
     private final NNService nnService;
@@ -37,21 +38,40 @@ public class Network2DraftCardsProjectionService {
 
         double currentProb = nnService.predictBatch(List.of(advancedAiDataCollectionService.collectData(marsGame, player)), NNService.ModelType.OPTIMIZED).getFirst().baseProb;
 
+
+        // ====== ПРОЕКЦИИ ИЗ КОЛОДЫ ======
         List<Card> cardsFromDeck = projectsDeck.dealCards(Math.min(projectsDeck.size(), CARDS_TO_LOOK_AHEAD)).stream().map(cardService::getCard).toList();
-        List<CardWithChanceModifier> projections = network2ProjectBuildService.getBestCardProjectionsIgnoreRequirements(marsGame, player, cardsFromDeck);
 
-        // 3. Считаем средний шанс через Delta-Modifier
-        double avgChance = projections.stream().mapToDouble(p -> calculateAdjustedChance(p, currentProb)).average().orElse(currentProb);
+        List<CardWithChanceModifier> deckProjections = network2ProjectBuildService.getBestCardProjectionsIgnoreRequirements(marsGame, player, cardsFromDeck);
+
+        // средний шанс от КОЛОДЫ (все дельты считаются от currentProb!)
+        double avgChanceFromDeck = deckProjections.stream().mapToDouble(p -> calculateAdjustedChance(p, currentProb))
+                .average()
+                .orElse(currentProb);
 
 
-        return network2ProjectBuildService.getBestCardProjectionsIgnoreRequirements(marsGame, player, player.getHand().getCards().stream().map(cardService::getCard).toList())
-                .stream().peek(c -> {
-                    c.setChance(calculateAdjustedChance(c, avgChance));
+        // ====== ПРОЕКЦИИ ИЗ РУКИ ======
+        List<CardWithChanceModifier> bestHandProjections = network2ProjectBuildService.getBestCardProjectionsIgnoreRequirements(marsGame, player, player.getHand().getCards().stream().map(cardService::getCard).toList());
+
+
+        // ====== ДИНАМИЧЕСКИЙ ПОРОГ ======
+        double dynamicGap = Math.max(
+                MIN_ABSOLUTE_GAP,
+                (1.0 - currentProb) * RELATIVE_GAP_FACTOR
+        );
+
+
+        // ====== ФИЛЬТРАЦИЯ ======
+        return bestHandProjections.stream()
+                .peek(c -> {
+                    // ⚠️ ВСЕГДА от currentProb
+                    c.setChance(calculateAdjustedChance(c, currentProb));
                     c.setModifier(1.0);
                 })
-                .filter(c -> c.getChance() < avgChance - MIN_AVERAGE_VALUE_GAP)
+                .filter(c -> c.getChance() < avgChanceFromDeck - dynamicGap)
                 .sorted(Comparator.comparingDouble(CardWithChanceModifier::getChance))
                 .toList();
+
     }
 
     // Вспомогательный метод для расчета по формуле Delta

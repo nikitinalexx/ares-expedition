@@ -9,10 +9,7 @@ import com.terraforming.ares.services.ai.turnProcessors.AiTurnService;
 import com.terraforming.ares.services.ai.turnProcessors.network2.buildParams.AiMarsUniversityInputHandler;
 import com.terraforming.ares.services.ai.turnProcessors.network2.buildParams.AiOptimalBuildService;
 import com.terraforming.ares.services.ai.turnProcessors.network2.dto.CardWithChanceAndInput;
-import com.terraforming.ares.services.ai.turnProcessors.network2.projection.BatchProjectionService;
-import com.terraforming.ares.services.ai.turnProcessors.network2.projection.ProjectionTask;
-import com.terraforming.ares.services.ai.turnProcessors.network2.projection.Scenario;
-import com.terraforming.ares.services.ai.turnProcessors.network2.projection.ScenarioEngine;
+import com.terraforming.ares.services.ai.turnProcessors.network2.projection.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -46,7 +43,7 @@ public class Network2FirstSecondPhaseActionProcessor {
         List<ProjectionTask<?>> allTasks = new ArrayList<>();
 
         // Задача для всех сценариев (оценка финальных состояний)
-        ProjectionTask<List<Scenario>> scenariosTask = createScenariosBatchTask(scenarios);
+        ProjectionTask<List<Scenario>> scenariosTask = new ScenariosBatchTask(scenarios);
         allTasks.add(scenariosTask);
 
         // Базовая вероятность (Пас) — точка отсчета, чтобы понять, стоит ли вообще что-то делать
@@ -73,32 +70,6 @@ public class Network2FirstSecondPhaseActionProcessor {
             // Если ни один сценарий не улучшил позицию — пасуем
             aiTurnService.skipTurn(player);
         }
-    }
-
-    private ProjectionTask<List<Scenario>> createScenariosBatchTask(List<Scenario> scenarios) {
-        return new ProjectionTask<>() {
-            @Override
-            public List<float[]> getProjections() {
-                return scenarios.stream().map(Scenario::getFinalStateData).toList();
-            }
-
-            @Override
-            public void consumePredictions(List<Prediction> predictions) {
-                for (int i = 0; i < scenarios.size(); i++) {
-                    scenarios.get(i).setFinalChance(predictions.get(i).baseProb);
-                }
-            }
-
-            @Override
-            public List<Scenario> getResults() {
-                return scenarios;
-            }
-
-            @Override
-            public int size() {
-                return scenarios.size();
-            }
-        };
     }
 
     private void executeFirstStep(MarsGame game, Player player, Scenario bestScenario) {

@@ -111,6 +111,8 @@ public class Constants {
     public static final float GREEN_CARDS_RATIOO = 135f / TOTAL_CARDS_COUNT;
     public static final float BLUE_CARDS_RATIOO = 84f / TOTAL_CARDS_COUNT;
 
+    public static final int POWER_INFRASTRUCTURE_CARD_ID = 47;
+
     public static final Map<Tag, Integer> TAG_TO_CARDS_COUNT = Map.of(
             Tag.PLANT, 35,
             Tag.SCIENCE, 41,
@@ -136,7 +138,7 @@ public class Constants {
 
     public static final List<PlayerDifficulty> SIMULATION_PLAYERS = List.of(PlayerDifficulty.RANDOM, PlayerDifficulty.RANDOM);
 
-    public static final boolean COLLECT_DATASET = false;
+    public static final boolean COLLECT_DATASET = true;
     public static final boolean LOG_NET_COMPARISON = false;
     public static final boolean LOG_NET_COMPARISON_V2 = true;
 

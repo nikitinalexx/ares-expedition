@@ -10,14 +10,23 @@ public class ProgressivePoliciesAction extends BlueAction {
     }
 
     @Override
-    public boolean canApplyInternal(StateContext stateContext, State state) {
-        return !stateContext.isOxygenMax() && state.mc >= (10 - (stateContext.getEventTagCount() >= 4 ? 5 : 0));
+    public boolean canApplyInternal(StateContext context, State state) {
+        return !context.isOxygenMax() && canAffordByMc(state, costToPay(context));
     }
 
     @Override
-    public void applyInternal(StateContext stateContext, State state) {
-        state.mc -= (10 - (stateContext.getEventTagCount() >= 4 ? 5 : 0));
-        stateContext.oxygenBuilt(state);
+    public void applyInternal(StateContext context, State state) {
+        pay(state, costToPay(context));
+        context.oxygenBuilt(state);
+    }
+
+    private int costToPay(StateContext context) {
+        return 10 - (context.getEventTagCount() >= 4 ? 5 : 0);
+    }
+
+    @Override
+    public Object getContext(StateContext context) {
+        return mcContext(costToPay(context));
     }
 
 }

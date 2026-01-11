@@ -3,25 +3,27 @@ package com.terraforming.ares.services.ai.turnProcessors.frontier.actions;
 import com.terraforming.ares.services.ai.turnProcessors.frontier.State;
 import com.terraforming.ares.services.ai.turnProcessors.frontier.StateContext;
 
-public class MatterManufactoringAction extends BlueAction {
+public class UnmiAction extends BlueAction {
 
-    public MatterManufactoringAction(int id) {
+    public UnmiAction(int id) {
         super(id);
     }
 
     @Override
     public boolean canApplyInternal(StateContext context, State state) {
-        return canAffordByMc(state, costToPay(context));
-    }
-
-    private int costToPay(StateContext context) {
-        return 1;
+        return state.trRaisedThisPhase && !state.unmiUsedThisPhase && canAffordByMc(state, costToPay(context));
     }
 
     @Override
-    public void applyInternal(StateContext context, State state) {
-        pay(state, costToPay(context));
-        state.cards++;
+    public void applyInternal(StateContext stateContext, State state) {
+        pay(state, costToPay(stateContext));
+
+        state.unmiUsedThisPhase = true;
+        state.tr++;
+    }
+
+    private int costToPay(StateContext context) {
+        return 6;
     }
 
     @Override

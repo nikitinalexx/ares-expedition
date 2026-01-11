@@ -72,12 +72,7 @@ public class AiThirdPhaseActionProcessor {
 
     public boolean processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
         if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
-            boolean didAction = network2ThirdPhaseActionProcessor.processTurn(game, player, possibleTurns);
-            if (didAction) {
-                return true;
-            } else {
-                return aiRandomThirdPhaseActionProcessor.processTurn(game, player, possibleTurns);//TODO should not use random as workaround
-            }
+            return network2ThirdPhaseActionProcessor.processTurn(game, player, possibleTurns);
         }
         if (player.getDifficulty().THIRD_PHASE_ACTION == AiTurnChoice.RANDOM) {
             return aiRandomThirdPhaseActionProcessor.processTurn(game, player, possibleTurns);
