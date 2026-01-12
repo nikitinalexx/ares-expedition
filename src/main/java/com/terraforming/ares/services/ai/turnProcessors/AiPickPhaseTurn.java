@@ -135,6 +135,9 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                 }
             }
         } else {
+            if (possiblePhases.contains(5) && possiblePhases.contains(4)) {
+                possiblePhases.remove((Integer) 4);
+            }
             chosenPhase = possiblePhases.get(random.nextInt(possiblePhases.size()));
         }
 

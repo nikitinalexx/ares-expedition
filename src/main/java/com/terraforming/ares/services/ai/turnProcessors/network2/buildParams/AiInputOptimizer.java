@@ -74,7 +74,7 @@ public class AiInputOptimizer {
 
         steps.stream().filter(DecisionStep::isApplicable).forEach(step -> step.collectSimulations(simulations, dataCollectContext));
 
-        List<Prediction> predictions = simulations.isEmpty() ? List.of() : nnService.predictBatch(simulations, player.isFirstBot() ? NNService.ModelType.BASE : NNService.ModelType.OPTIMIZED);
+        List<Prediction> predictions = simulations.isEmpty() ? List.of() : nnService.predictBatch(simulations, NNService.ModelType.OPTIMIZED);
         PredictionCursor cursor = new PredictionCursor(predictions);
         steps.stream().filter(DecisionStep::isApplicable).forEach(step -> step.applyPredictions(cursor, decisions));
     }

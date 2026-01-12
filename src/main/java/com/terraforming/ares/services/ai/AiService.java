@@ -136,6 +136,8 @@ public class AiService {
 
             if (turnProcessors.containsKey(turnToProcess)) {
                 turnProcessors.get(turnToProcess).processTurn(game, player);
+            } else if (turnToProcess == TurnType.BUILD_GREEN_PROJECT){
+                aiFirstPhaseActionProcessor.processTurn(possibleTurns, game, player);
             } else {
                 throw new IllegalArgumentException("Could not process the turn " + turnToProcess);
             }

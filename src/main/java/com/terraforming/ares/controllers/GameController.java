@@ -350,7 +350,7 @@ public class GameController {
         Semaphore permits = new Semaphore(MAX_IN_FLIGHT_GAMES);
 
 
-        List<PlayerDifficulty> difficulties = List.of(PlayerDifficulty.RANDOM, PlayerDifficulty.RANDOM);
+        List<PlayerDifficulty> difficulties = List.of(PlayerDifficulty.RANDOM, PlayerDifficulty.NETWORK_V2);
 
         List<String> playerNames = new ArrayList<>();
         int counter = 1;

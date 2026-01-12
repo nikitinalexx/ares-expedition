@@ -152,6 +152,10 @@ public class AiTurnService {
         makeAsyncTurn(player, new PickExtraBonusSecondPhase(player.getUuid()));
     }
 
+    public void pickExtraCardTurnSync(Player player, MarsGame game) {
+        makeSyncTurn(player, game, new PickExtraBonusSecondPhase(player.getUuid()));
+    }
+
     public void collectIncomeTurn(Player player, Integer doubleCollectCardId) {
         if (doubleCollectCardId != null && (player.getChosenPhase() != 4 || !player.hasPhaseUpgrade(Constants.PHASE_4_UPGRADE_DOUBLE_PRODUCE))) {
             throw new IllegalStateException("Not allowed to collect income twice");

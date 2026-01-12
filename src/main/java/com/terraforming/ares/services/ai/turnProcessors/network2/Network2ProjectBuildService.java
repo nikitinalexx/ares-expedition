@@ -77,7 +77,7 @@ public class Network2ProjectBuildService {
             }
         }
 
-        List<Prediction> predictions = nnService.predictBatch(buildProjections, player.isFirstBot() ? NNService.ModelType.BASE : NNService.ModelType.OPTIMIZED);
+        List<Prediction> predictions = nnService.predictBatch(buildProjections, NNService.ModelType.OPTIMIZED);
         int pointer = 0;
 
         List<CardWithChanceModifier> cardWithChanceModifiers = new ArrayList<>();

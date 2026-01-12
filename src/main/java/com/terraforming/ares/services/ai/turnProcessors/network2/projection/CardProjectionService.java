@@ -54,7 +54,7 @@ public class CardProjectionService {
             results.add(build(game, player, cardWithChanceAndInput));
         }
 
-        List<Prediction> predictions = nnService.predictBatch(results, player.isFirstBot() ? NNService.ModelType.BASE : NNService.ModelType.OPTIMIZED);
+        List<Prediction> predictions = nnService.predictBatch(results, NNService.ModelType.OPTIMIZED);
         for (int i = 0; i < predictions.size(); i++) {
             availableProjectsSync.get(i).setChance(predictions.get(i).baseProb);
         }

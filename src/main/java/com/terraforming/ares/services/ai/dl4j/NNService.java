@@ -48,7 +48,7 @@ public class NNService {
         // Загружаем обе модели
         this.baseNet = MultiLayerNetwork.load(new File("436_epoch_1_8495_5228.zip"), false);
         // Используем модель 3-й эпохи, так как она показала лучший баланс
-        this.optimizedNet = MultiLayerNetwork.load(new File("436_epoch_1_8565_4821.zip"), false);
+        this.optimizedNet = MultiLayerNetwork.load(new File("mix_4_5_8587_4958.zip"), false);
 
         // Запускаем два независимых батчера
         Thread.ofPlatform().name("nn-batcher-base").start(() -> batchLoop(ModelType.BASE, baseNet));

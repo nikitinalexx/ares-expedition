@@ -27,9 +27,7 @@ public class Network2DiscardCardsProcessor {
     public List<Integer> getBestCards(MarsGame game, Player player, List<Integer> cardsToDiscard, int cardsToKeepCount) {
         if (cardsToDiscard.isEmpty()) return Collections.emptyList();
 
-        NNService.ModelType modelType = player.isFirstBot() ? NNService.ModelType.BASE : NNService.ModelType.OPTIMIZED;
-
-        double currentProb = nnService.predictBatch(List.of(advancedAiDataCollectionService.collectData(game, player)), modelType).getFirst().baseProb;
+        double currentProb = nnService.predictBatch(List.of(advancedAiDataCollectionService.collectData(game, player)), NNService.ModelType.OPTIMIZED).getFirst().baseProb;
 
         List<CardWithChanceModifier> bestCardProjections = network2ProjectBuildService.getBestCardProjectionsIgnoreRequirements(game, player, cardsToDiscard.stream().map(cardService::getCard).toList());
 

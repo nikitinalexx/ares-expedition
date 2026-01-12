@@ -5,10 +5,11 @@ import com.terraforming.ares.cards.blue.ExtremeColdFungus;
 import com.terraforming.ares.cards.blue.SelfReplicatingBacteria;
 import com.terraforming.ares.cards.blue.SymbioticFungus;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.BuildDto;
 import com.terraforming.ares.model.Card;
-import com.terraforming.ares.model.Deck;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.services.ai.AiConstants;
 import com.terraforming.ares.services.ai.turnProcessors.AiTurnService;
 import com.terraforming.ares.services.ai.turnProcessors.network2.buildParams.AiMarsUniversityInputHandler;
 import com.terraforming.ares.services.ai.turnProcessors.network2.dto.CardWithChanceAndInput;
@@ -45,14 +46,14 @@ public class SelfReplicatingBacteriaService {
         MarsGame simGame = new MarsGame(game);
         Player simPlayer = simGame.getPlayerByUuid(player.getUuid());
 
-        return tryDoingSelfReplicatingBacteria(blueCards, simGame, simPlayer);
+        return tryDoingSelfReplicatingBacteria(blueCards, simGame, simPlayer, true);
     }
 
     public MarsGame doSelfReplicatingBacteriaFinalActions(Map<Class<?>, Card> blueCards, MarsGame game, Player player) {
-        return tryDoingSelfReplicatingBacteria(blueCards, game, player);
+        return tryDoingSelfReplicatingBacteria(blueCards, game, player, false);
     }
 
-    private MarsGame tryDoingSelfReplicatingBacteria(Map<Class<?>, Card> blueCards, MarsGame simGame, Player simPlayer) {
+    private MarsGame tryDoingSelfReplicatingBacteria(Map<Class<?>, Card> blueCards, MarsGame simGame, Player simPlayer, boolean isSimulation) {
         if (!blueCards.containsKey(SelfReplicatingBacteria.class)) return null;
 
         Card selfCard = blueCards.get(SelfReplicatingBacteria.class);
@@ -99,14 +100,14 @@ public class SelfReplicatingBacteriaService {
         if (current >= 5) {
             if (canDoFirstActivation(simPlayer, selfCard) || extraLeft > 0 && canDoExtraActivation(simPlayer, selfCard)) {
                 executeSelfReplicateFinalAction(simGame, simPlayer, selfCard);
-                return buildProjectScenario(simGame, simPlayer);
+                return buildProjectScenario(simGame, simPlayer, isSimulation);
             }
         }
 
         return null;
     }
 
-    private MarsGame buildProjectScenario(MarsGame game, Player player) {
+    private MarsGame buildProjectScenario(MarsGame game, Player player, boolean isSimulation) {
         boolean builtSomething = false;
 
         while (true) {
@@ -141,6 +142,13 @@ public class SelfReplicatingBacteriaService {
                 finalizeBuildProject(game, player, bestScenario.getFirstStepCardData());
             } else if (bestScenario != null && bestScenario.getFirstStepType() == Scenario.ActionType.UNMI) {
                 aiTurnService.unmiRtCorporationTurn(game, player);
+            } else if (bestScenario != null && bestScenario.getFirstStepType() == Scenario.ActionType.EXTRA_BONUS) {
+                int handSizeBeforeAction = player.getHand().size();
+                aiTurnService.pickExtraCardTurnSync(player, game);
+                if (isSimulation && (player.getHand().size() > handSizeBeforeAction)) {
+                    player.getHand().getCards().removeLast();
+                    player.getHand().addCard(AiConstants.GENERIC_DUMMY_ID);
+                }
             } else if (bestScenario == null) {
                 break;
             } else {

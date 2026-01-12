@@ -689,8 +689,7 @@ public class Network2ThirdPhaseActionProcessor {
         }
 
         // Запрос в модель (Batch)
-        List<Prediction> allPredictions = nnService.predictBatch(simulationData,
-                player.isFirstBot() ? NNService.ModelType.BASE : NNService.ModelType.OPTIMIZED);
+        List<Prediction> allPredictions = nnService.predictBatch(simulationData, NNService.ModelType.OPTIMIZED);
 
         double bestWinChance = allPredictions.removeFirst().baseProb; // Базовый шанс без действий
         int bestActionIdx = -1;
