@@ -19,7 +19,10 @@ import com.terraforming.ares.services.ai.helpers.AiPaymentService;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.terraforming.ares.model.Constants.COLLECT_INCOME_PHASE;
@@ -35,7 +38,6 @@ public class AiBuildProjectService extends BaseProcessorService {
     private final CardValidationService cardValidationService;
     private final AiPaymentService aiPaymentService;
     private final AiCardBuildParamsService aiCardBuildParamsService;
-    private final Random random = new Random();
     private final DeepNetwork deepNetwork;
     private final AiTurnService aiTurnService;
     private final StateFactory stateFactory;

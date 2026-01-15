@@ -1,7 +1,6 @@
 package com.terraforming.ares.services.ai.advanced.features.hand;
 
 import com.terraforming.ares.dto.DraftCardsDto;
-import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.CardColor;
@@ -208,7 +207,7 @@ public class HandPlayerFeature implements FeatureBlock {
                 extraCardsToTakePotential++;
             }
 
-            DraftCardsDto draftCardsDto = draftCardsService.countCardsToTakeAndDraft(player);
+            DraftCardsDto draftCardsDto = draftCardsService.countExtraCardsToTakeAndDraft(player);
 
             out.write(draftCardsDto.getCardsToSee());
             out.write(draftCardsDto.getCardsToTake());

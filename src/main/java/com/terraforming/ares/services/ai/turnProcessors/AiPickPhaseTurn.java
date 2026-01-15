@@ -5,19 +5,28 @@ import com.terraforming.ares.cards.blue.*;
 import com.terraforming.ares.dto.DraftCardsDto;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.ai.AiExperimentalTurn;
 import com.terraforming.ares.model.ai.AiTurnChoice;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.DraftCardsService;
 import com.terraforming.ares.services.SpecialEffectsService;
-import com.terraforming.ares.services.ai.*;
+import com.terraforming.ares.services.ai.AiCardValidationService;
+import com.terraforming.ares.services.ai.DeepNetwork;
+import com.terraforming.ares.services.ai.ICardValueService;
+import com.terraforming.ares.services.ai.TestAiService;
 import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.dto.PhaseChoiceProjection;
 import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
+import com.terraforming.ares.services.ai.network2.Network2PickPhaseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 /**
@@ -27,7 +36,6 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 public class AiPickPhaseTurn implements AiTurnProcessor {
-    private final Random random = new Random();
     private final AiTurnService aiTurnService;
     private final CardService cardService;
     private final AiCardActionHelper aiCardActionHelper;
@@ -38,8 +46,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
     private final DeepNetwork deepNetwork;
     private final AiThirdPhaseProjectionService aiThirdPhaseProjectionService;
     private final AiCardValidationService aiCardValidationService;
-    private final AiPickCardProjectionService aiPickCardProjectionService;
-
+    private final Network2PickPhaseService network2PickPhaseService;
 
     @Override
     public TurnType getType() {
@@ -48,8 +55,10 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
 
     @Override
     public boolean processTurn(MarsGame game, Player player) {
-        //TODO maybe add back?
-        //sellBadCardsBeforeTheTurnStart(game, player);
+        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
+            aiTurnService.choosePhaseTurn(player, network2PickPhaseService.pickPhase(game, player));
+            return true;
+        }
 
         if (Constants.LOG_NET_COMPARISON) {
             System.out.println("======================New Round========================");
@@ -119,6 +128,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
 
         int chosenPhase;
 
+        ThreadLocalRandom random = ThreadLocalRandom.current();
         if (possiblePhases.isEmpty()) {
             if (previousChosenPhase == null) {
                 chosenPhase = 5;
@@ -491,7 +501,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             return true;
         }
 
-        DraftCardsDto draftCardsDto = draftCardsService.countCardsToTakeAndDraft(player);
+        DraftCardsDto draftCardsDto = draftCardsService.countExtraCardsToTakeAndDraft(player);
 
         if (draftCardsDto.getCardsToTake() >= 2 || draftCardsDto.getCardsToSee() >= 2) {
             return true;

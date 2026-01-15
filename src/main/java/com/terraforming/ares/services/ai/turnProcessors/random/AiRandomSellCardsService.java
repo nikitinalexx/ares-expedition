@@ -6,14 +6,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Component
 @RequiredArgsConstructor
 public class AiRandomSellCardsService {
     private final AiEndgameService aiEndgameService;
-    private final Random random = new Random();
 
     public void sellCardsAsyncByChance(Player player) {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
         if (!player.isAiSoldCards()) {
             player.setAiSoldCards(true);
             if (random.nextInt(5) == 0 && player.getMc() < 10 && player.getHand().size() > 3) {

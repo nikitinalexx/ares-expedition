@@ -1,6 +1,7 @@
 package com.terraforming.ares.services.ai.dl4j;
 
 import com.terraforming.ares.services.ai.AiConstants;
+import com.terraforming.ares.services.ai.network2.PhaseMetrics;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -29,30 +30,28 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class NNService {
-    private static final int MAX_REQUESTS_PER_TICK = 256;//64
-    private static final int MAX_STATES_PER_BATCH = 4096;//512
+    public static final int MAX_REQUESTS_PER_TICK = 256;//64
+    public static final int MAX_STATES_PER_BATCH = 4096;//512
 
     // Перечисление для выбора модели
-    public enum ModelType { BASE, OPTIMIZED }
+    public enum ModelType { OPTIMIZED }
 
     // Две отдельные очереди для разных моделей
-    private final Map<ModelType, BlockingQueue<BatchRequest>> queues = Map.of(
-            ModelType.BASE, new LinkedBlockingQueue<>(),
-            ModelType.OPTIMIZED, new LinkedBlockingQueue<>()
-    );
+    private final Queue<BatchRequest> queue = new ConcurrentLinkedQueue<>();
 
-    private final MultiLayerNetwork baseNet;
     private final MultiLayerNetwork optimizedNet;
 
     public NNService() throws Exception {
         // Загружаем обе модели
-        this.baseNet = MultiLayerNetwork.load(new File("436_epoch_1_8495_5228.zip"), false);
         // Используем модель 3-й эпохи, так как она показала лучший баланс
         this.optimizedNet = MultiLayerNetwork.load(new File("mix_4_5_8587_4958.zip"), false);
 
         // Запускаем два независимых батчера
-        Thread.ofPlatform().name("nn-batcher-base").start(() -> batchLoop(ModelType.BASE, baseNet));
-        Thread.ofPlatform().name("nn-batcher-opt").start(() -> batchLoop(ModelType.OPTIMIZED, optimizedNet));
+//        Thread.ofPlatform().name("nn-batcher-opt").start(() -> batchLoop(ModelType.OPTIMIZED, optimizedNet));
+
+        Thread.ofVirtual()
+                .name("Batcher-" + 0)
+                .start(() -> batchLoop(ModelType.OPTIMIZED, optimizedNet));
     }
 
     /**
@@ -61,39 +60,72 @@ public class NNService {
     public List<Prediction> predictBatch(List<float[]> featuresBatch, ModelType modelType) {
         if (featuresBatch.isEmpty()) return List.of();
 
-        CompletableFuture<List<Prediction>> future = new CompletableFuture<>();
-        queues.get(modelType).add(new BatchRequest(featuresBatch, future));
+        long start = System.nanoTime();
 
-        return future.join();
+        CompletableFuture<List<Prediction>> future = new CompletableFuture<>();
+        queue.add(new BatchRequest(featuresBatch, future));
+
+        long afterAdd = System.nanoTime();
+        PhaseMetrics.QUEUE_ADD_TIME.add(afterAdd - start);
+
+        List<Prediction> result = future.join();
+
+        PhaseMetrics.FUTURE_JOIN_TIME.add(System.nanoTime() - afterAdd);
+
+        return result;
     }
 
     private void batchLoop(ModelType type, MultiLayerNetwork net) {
-        BlockingQueue<BatchRequest> queue = queues.get(type);
+        // Теперь это ConcurrentLinkedQueue (интерфейс Queue)
+        final long BATCH_WINDOW_NANOS = 4_000_000; // 2 мс
+        final int TARGET_BATCH_SIZE = 1024;
 
         while (!Thread.currentThread().isInterrupted()) {
             List<BatchRequest> batch = new ArrayList<>();
             try {
-                BatchRequest first = queue.take(); // Ждем первый запрос
-                batch.add(first);
+                // 1. ОЖИДАНИЕ ПЕРВОГО ЭЛЕМЕНТА (Замена queue.take())
+                long idleStart = System.nanoTime();
+                BatchRequest first = null;
 
+                while ((first = queue.poll()) == null) {
+                    // Если поток прерван — выходим
+                    if (Thread.currentThread().isInterrupted()) return;
+
+                    // Важно: onSpinWait дает сигналу процессору, что мы в пустом цикле ожидания.
+                    // Это гораздо эффективнее для задержек, чем Thread.sleep или yield.
+                    Thread.onSpinWait();
+                }
+                PhaseMetrics.BATCHER_IDLE_TIME.add(System.nanoTime() - idleStart);
+
+                batch.add(first);
                 int currentStatesCount = first.features.size();
 
-                // Собираем батч только из своей очереди
-                while (batch.size() < MAX_REQUESTS_PER_TICK) {
-                    BatchRequest next = queue.peek();
-                    if (next == null || currentStatesCount + next.features.size() > MAX_STATES_PER_BATCH) break;
+                // 2. СБОР БАТЧА (Микрозадержка)
+                long deadline = System.nanoTime() + BATCH_WINDOW_NANOS;
 
-                    batch.add(queue.poll());
-                    currentStatesCount += next.features.size();
+                while (currentStatesCount < MAX_STATES_PER_BATCH) {
+                    BatchRequest next = queue.poll();
+
+                    if (next != null) {
+                        batch.add(next);
+                        currentStatesCount += next.features.size();
+                        if (currentStatesCount >= TARGET_BATCH_SIZE) break;
+                    } else {
+                        if (System.nanoTime() >= deadline) break;
+                        Thread.onSpinWait();
+                    }
                 }
 
-                // Инференс конкретной моделью
+                PhaseMetrics.BATCH_TOTAL_SIZE.add(currentStatesCount);
+                PhaseMetrics.BATCH_COUNT.add(1);
+
                 processInference(batch, net, currentStatesCount);
 
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
             } catch (Throwable t) {
+                if (t instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
                 t.printStackTrace();
                 for (BatchRequest r : batch) r.future.completeExceptionally(t);
             }
@@ -101,26 +133,30 @@ public class NNService {
     }
 
     private void processInference(List<BatchRequest> batch, MultiLayerNetwork net, int totalStates) {
-        // 1. Создаем один плоский массив вместо множества мелких
+        long start = System.nanoTime();
+
+        // 1. Подготовка данных
         float[] allFeatures = new float[totalStates * AiConstants.TABLE_VECTOR_SIZE];
         int currentPos = 0;
-
         for (BatchRequest r : batch) {
             for (float[] feature : r.features) {
                 System.arraycopy(feature, 0, allFeatures, currentPos, feature.length);
                 currentPos += feature.length;
             }
         }
-
-        // 2. Создаем тензор ОДНИМ вызовом
         INDArray tableFeatures = Nd4j.create(allFeatures, new int[]{totalStates, AiConstants.TABLE_VECTOR_SIZE}, 'c');
 
-        // 3. Вычисление
+        long afterPrepare = System.nanoTime();
+        PhaseMetrics.INF_PREPARE_DATA.add(afterPrepare - start);
+
+        // 2. Вычисление (GPU)
         INDArray output = net.output(tableFeatures, false);
 
-        // 4. Оптимизируем чтение (getDouble в цикле тоже медленный)
-        float[] outputData = output.data().asFloat(); // Получаем все вероятности разом
+        long afterCompute = System.nanoTime();
+        PhaseMetrics.INF_GPU_COMPUTE.add(afterCompute - afterPrepare);
 
+        // 3. Пост-обработка
+        float[] outputData = output.data().asFloat();
         int offset = 0;
         for (BatchRequest r : batch) {
             int size = r.features.size();
@@ -131,6 +167,8 @@ public class NNService {
             r.future.complete(subResult);
             offset += size;
         }
+
+        PhaseMetrics.INF_POST_PROCESS.add(System.nanoTime() - afterCompute);
     }
 
     private static class BatchRequest {

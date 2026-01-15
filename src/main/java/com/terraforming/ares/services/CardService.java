@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -27,7 +28,6 @@ public class CardService {
     private final Set<Integer> crysisExcludedCards;
     private final Map<Integer, CrysisCard> crysisCards;
     private final Map<Integer, Card> specialDummyCards;
-    private final Random random = new Random();
 
     private final Set<Integer> crysisCardsTier1;
     private final Set<Integer> crysisCardsTier2;
@@ -165,6 +165,7 @@ public class CardService {
         if (cards.size() < count) {
             throw new IllegalStateException("Unable to create a Crisis deck");
         }
+        ThreadLocalRandom random = ThreadLocalRandom.current();
         for (int i = 0; i < count; i++) {
             cards.remove(random.nextInt(cards.size()));
         }

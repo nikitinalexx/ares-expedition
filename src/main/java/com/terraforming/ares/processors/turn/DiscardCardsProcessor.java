@@ -4,7 +4,6 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
-import com.terraforming.ares.model.turn.Turn;
 import com.terraforming.ares.model.turn.TurnType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -12,7 +11,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Created by oleksii.nikitin
@@ -21,7 +20,6 @@ import java.util.Random;
 @Service
 @RequiredArgsConstructor
 public class DiscardCardsProcessor implements TurnProcessor<DiscardCardsTurn> {
-    private final Random random = new Random();
 
     @Override
     public TurnResponse processTurn(DiscardCardsTurn turn, MarsGame game) {
@@ -36,8 +34,8 @@ public class DiscardCardsProcessor implements TurnProcessor<DiscardCardsTurn> {
             List<String> playersWhoDidntDraft = new ArrayList<>(game.getPlayerUuidToPlayer().keySet());
             playersWhoDidntDraft.removeAll(alreadyDraftedPlayers);
 
-            if (playersWhoDidntDraft.size() > 0) {
-                String nextPlayerUuid = playersWhoDidntDraft.get(random.nextInt(playersWhoDidntDraft.size()));
+            if (!playersWhoDidntDraft.isEmpty()) {
+                String nextPlayerUuid = playersWhoDidntDraft.get(ThreadLocalRandom.current().nextInt(playersWhoDidntDraft.size()));
 
                 Player nextPlayer = game.getPlayerByUuid(nextPlayerUuid);
                 nextPlayer.getHand().addCards(leftCards);

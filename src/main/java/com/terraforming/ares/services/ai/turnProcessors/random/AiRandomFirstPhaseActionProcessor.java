@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Component
 @RequiredArgsConstructor
@@ -24,7 +25,6 @@ public class AiRandomFirstPhaseActionProcessor {
     private final AiRandomPaymentService aiRandomPaymentService;
     private final CardValidationService cardValidationService;
     private final AiRandomSellCardsService aiRandomSellCardsService;
-    private final Random random = new Random();
 
     public void processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
         aiRandomSellCardsService.sellCardsAsyncByChance(player);
@@ -39,6 +39,7 @@ public class AiRandomFirstPhaseActionProcessor {
             availableTurns.add(new AvailableTurn(AvailableTurnType.BUILD_PROJECT));
         }
 
+        ThreadLocalRandom random = ThreadLocalRandom.current();
         while (!availableTurns.isEmpty()) {
             AvailableTurn availableTurn = availableTurns.get(random.nextInt(availableTurns.size()));
 

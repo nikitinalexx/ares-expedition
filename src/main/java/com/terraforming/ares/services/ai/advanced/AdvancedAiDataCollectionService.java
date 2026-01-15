@@ -14,7 +14,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdvancedAiDataCollectionService implements IDataCollect {
     private static final int WIN_POINTS_INDEX_OFFSET = 38;
-    private static final int HAND_SIZE_INDEX_OFFSET = 54;
+    private static final int HAND_SIZE_INDEX_OFFSET = 52;
 
     private final CompleteTableEncoder tableEncoder;
 
@@ -30,7 +30,8 @@ public class AdvancedAiDataCollectionService implements IDataCollect {
     @Override
     public void modifyPlayerHandSize(float[] data, int newSize) {
         modifyDataInline(data, newSize, HAND_SIZE_INDEX_OFFSET);
-        modifyDataInline(data, newSize > 10 ? 1 : 0, HAND_SIZE_INDEX_OFFSET + 1);
+        modifyDataInline(data, Math.max(0, newSize - 10), HAND_SIZE_INDEX_OFFSET + 1);
+        modifyDataInline(data, Math.min(newSize, 10), HAND_SIZE_INDEX_OFFSET + 2);
     }
 
     @Override

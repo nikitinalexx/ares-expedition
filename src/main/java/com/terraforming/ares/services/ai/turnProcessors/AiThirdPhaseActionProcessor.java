@@ -15,7 +15,7 @@ import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsService;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
-import com.terraforming.ares.services.ai.turnProcessors.network2.Network2ThirdPhaseActionProcessor;
+import com.terraforming.ares.services.ai.network2.Network2ThirdPhaseActionProcessor;
 import com.terraforming.ares.services.ai.turnProcessors.random.AiRandomThirdPhaseActionProcessor;
 import org.springframework.stereotype.Component;
 
@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
  */
 @Component
 public class AiThirdPhaseActionProcessor {
-    private final Random random = new Random();
     private final AiTurnService aiTurnService;
     private final CardService cardService;
     private final AiPaymentService aiPaymentHelper;

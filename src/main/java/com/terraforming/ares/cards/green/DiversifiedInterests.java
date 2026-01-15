@@ -60,4 +60,10 @@ public class DiversifiedInterests implements BaseExpansionGreenCard {
     public int getPrice() {
         return 15;
     }
+
+    @Override
+    public boolean canPayAgain() {
+        return true;
+    }
+
 }

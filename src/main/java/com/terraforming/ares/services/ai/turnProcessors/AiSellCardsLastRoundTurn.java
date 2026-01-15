@@ -4,16 +4,14 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ai.AiCardsChoice;
 import com.terraforming.ares.model.turn.TurnType;
-import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.ai.AiPickCardProjectionService;
-import com.terraforming.ares.services.ai.DeepNetwork;
 import com.terraforming.ares.services.ai.ICardValueService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Created by oleksii.nikitin
@@ -22,12 +20,9 @@ import java.util.Random;
 @Component
 @RequiredArgsConstructor
 public class AiSellCardsLastRoundTurn implements AiTurnProcessor {
-    private final Random random = new Random();
     private final AiTurnService aiTurnService;
     private final ICardValueService cardValueService;
-    private final CardService cardService;
     private final AiPickCardProjectionService aiPickCardProjectionService;
-    private final DeepNetwork deepNetwork;
 
     @Override
     public TurnType getType() {
@@ -49,7 +44,7 @@ public class AiSellCardsLastRoundTurn implements AiTurnProcessor {
                 Integer cardToSell;
                 switch (player.getDifficulty().CARDS_PICK) {
                     case RANDOM:
-                        cardToSell = allCards.get(random.nextInt(allCards.size()));
+                        cardToSell = allCards.get(ThreadLocalRandom.current().nextInt(allCards.size()));
                         break;
                     case FILE_VALUE:
                         cardToSell = cardValueService.getWorstCard(game, player, allCards, game.getTurns()).getCardId();

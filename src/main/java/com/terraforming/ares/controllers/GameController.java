@@ -25,6 +25,7 @@ import com.terraforming.ares.services.ai.DeepNetwork;
 import com.terraforming.ares.services.ai.TestAiService;
 import com.terraforming.ares.services.ai.advanced.CompleteTableEncoder;
 import com.terraforming.ares.services.ai.dto.CardProjection;
+import com.terraforming.ares.services.ai.network2.PhaseMetrics;
 import com.terraforming.ares.services.ai.turnProcessors.AiMulliganCardsTurn;
 import com.terraforming.ares.services.simulations.DatasetWriter;
 import com.terraforming.ares.services.simulations.GameResultProducer;
@@ -47,12 +48,14 @@ import java.text.DecimalFormatSymbols;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.terraforming.ares.model.Constants.WRITE_STATISTICS_TO_FILE;
+import static com.terraforming.ares.services.ai.dl4j.NNService.MAX_STATES_PER_BATCH;
 import static com.terraforming.ares.services.simulations.DatasetWriter.POISON;
 
 /**
@@ -105,7 +108,7 @@ public class GameController {
             }
 
             //TODO remove
-            gameParameters.setComputers(List.of(PlayerDifficulty.NONE, PlayerDifficulty.NETWORK_V2));
+            gameParameters.setComputers(List.of(PlayerDifficulty.RANDOM, PlayerDifficulty.NETWORK_V2));
 
 
             int aiPlayerCount = (int) gameParameters.getComputers().stream().filter(item -> item != PlayerDifficulty.NONE).count();
@@ -344,7 +347,7 @@ public class GameController {
     }
 
     @GetMapping("/simulations/v2")
-    public void runSimulationsVs(@RequestBody SimulationsRequest request) throws InterruptedException {
+    public void runSimulationsV2(@RequestBody SimulationsRequest request) throws InterruptedException {
 
         int MAX_IN_FLIGHT_GAMES = 1000;
         Semaphore permits = new Semaphore(MAX_IN_FLIGHT_GAMES);
@@ -394,6 +397,10 @@ public class GameController {
                         } else {
                             draw.incrementAndGet();
                         }
+                        int total = firstWins.get() + secondWins.get() + draw.get();
+                        if (total % 10 == 0) {
+                            System.out.printf("Total done %s/%s.%n", total, request.getTotalSimulations());
+                        }
 
                     } catch (Throwable t) {
                         t.printStackTrace();
@@ -402,7 +409,7 @@ public class GameController {
                     }
                 });
                 if (i % 10 == 0) {
-                    System.out.printf("Sim done %s/%s. Wins 1=%s,2=%s,d=%s", i, request.getTotalSimulations(), firstWins, secondWins, draw);
+                    System.out.printf("Sim loaded %s/%s. Wins 1=%s,2=%s,d=%s", i, request.getTotalSimulations(), firstWins, secondWins, draw);
                     System.out.println();
 
                 }
@@ -410,6 +417,153 @@ public class GameController {
         }
 
         System.out.printf("Wins 1=%s,2=%s,d=%s", firstWins, secondWins, draw);
+    }
+
+    @GetMapping("/simulations/v3")
+    public void runSimulationsV3(@RequestBody SimulationsRequest request) throws InterruptedException {
+        List<PlayerDifficulty> difficulties = List.of(PlayerDifficulty.RANDOM, PlayerDifficulty.NETWORK_V2);
+
+        List<String> playerNames = new ArrayList<>();
+        int counter = 1;
+        for (PlayerDifficulty simulationPlayer : difficulties) {
+            playerNames.add(simulationPlayer.name() + (counter++));
+        }
+
+        GameParameters gameParameters = GameParameters.builder()
+                .playerNames(playerNames)
+                .computers(difficulties)
+                .mulligan(true)
+                .expansion(Expansion.BASE)
+                .expansion(Expansion.BUFFED_CORPORATION)
+                .expansion(Expansion.DISCOVERY)
+                .dummyHand(true)
+                .build();
+
+        int totalSims = request.getTotalSimulations();
+        LongAdder firstWins = new LongAdder(), secondWins = new LongAdder(), draws = new LongAdder();
+        LongAdder completedCount = new LongAdder(); // Счетчик завершенных игр
+        long startTime = System.currentTimeMillis();
+
+        int MAX_CONCURRENT_GAMES = 2000;
+        Semaphore semaphore = new Semaphore(MAX_CONCURRENT_GAMES);
+
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            for (int i = 0; i < totalSims; i++) {
+                executor.submit(() -> {
+                    try {
+                        semaphore.acquire();
+
+                        MarsGame game = gameService.createNewSimulation(gameParameters);
+                        simulationProcessorService.processSimulation(game);
+
+                        List<Player> players = game.getPlayerUuidToPlayer().values().stream()
+                                .sorted(Comparator.comparing(p -> p.getUuid().substring(p.getUuid().length() - 1)))
+                                .toList();
+
+                        int p1 = winPointsService.countWinPoints(players.get(0), game);
+                        int p2 = winPointsService.countWinPoints(players.get(1), game);
+
+                        if (p1 > p2) firstWins.increment();
+                        else if (p2 > p1) secondWins.increment();
+                        else draws.increment();
+
+                        // Увеличиваем общий счетчик и проверяем, нужно ли печатать лог
+                        completedCount.increment();
+                        long currentTotal = completedCount.sum();
+
+                        if (currentTotal % 50 == 0 || currentTotal == totalSims) {
+                            double elapsed = (System.currentTimeMillis() - startTime) / 1000.0;
+                            double speed = currentTotal / Math.max(0.1, elapsed);
+
+                            long f = firstWins.sum();
+                            long s = secondWins.sum();
+
+                            System.out.printf("[SIM] %d/%d (%.1f%%) | Speed: %.1f games/s | P1: %d%%, P2: %d%% %n",
+                                    currentTotal, totalSims, (currentTotal * 100.0 / totalSims),
+                                    speed, (f * 100 / currentTotal), (s * 100 / currentTotal));
+                        }
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    } finally {
+                        semaphore.release();
+                    }
+                });
+                if (i % 100 == 0) { // Реже логируем подачу задач
+                    System.out.print(".");
+                }
+            }
+            // Здесь поток ждет завершения всех задач
+        }
+
+        long totalElapsed = (System.currentTimeMillis() - startTime) / 1000;
+        System.out.printf("%nFinal Result in %ds: 1=%d, 2=%d, D=%d%n",
+                totalElapsed, firstWins.sum(), secondWins.sum(), draws.sum());
+
+//        System.out.println("\n=== PHASE 5 DEEP DIVE (Inside Logic) ===");
+//        long p5Calls = PhaseMetrics.callCount.get(5).sum();
+//
+//        if (p5Calls > 0) {
+//            // Получаем общие суммы наносекунд
+//            long t1 = PhaseMetrics.FIRST.sum();
+//            long t2 = PhaseMetrics.SECOND.sum();
+//            long t3 = PhaseMetrics.THIRD.sum();
+//            long totalP5Time = PhaseMetrics.FOURTH.sum();
+//
+//            // Четвертый блок (остальное: циклы, сортировки, мелкая логика)
+//            long t4_other = totalP5Time - (t1 + t2 + t3);
+//
+//            System.out.printf("Total P5 Calls: %d%n", p5Calls);
+//            printBlock("Block 1: Sequential Card Removal (Base Chances)", t1, p5Calls, totalP5Time);
+//            printBlock("Block 2: Hand Projections Batch", t2, p5Calls, totalP5Time);
+//            printBlock("Block 3: Deck Projections (50 cards)", t3, p5Calls, totalP5Time);
+//            printBlock("Block 4: Simulation Loops & Sorting", t4_other, p5Calls, totalP5Time);
+//        }
+
+        long addTime = PhaseMetrics.QUEUE_ADD_TIME.sum();
+        long joinTime = PhaseMetrics.FUTURE_JOIN_TIME.sum();
+        System.out.printf("NN Latency Breakdown: Queue Add: %.2f s | Future Join: %.2f s%n",
+                addTime / 1_000_000_000.0, joinTime / 1_000_000_000.0);
+
+        long totalStates = PhaseMetrics.BATCH_TOTAL_SIZE.sum();
+        long batchCount = PhaseMetrics.BATCH_COUNT.sum();
+        long idleNanos = PhaseMetrics.BATCHER_IDLE_TIME.sum();
+
+        double avgBatch = batchCount > 0 ? (double) totalStates / batchCount : 0;
+
+        System.out.println("\n=== BATCHER INFRASTRUCTURE METRICS ===");
+        System.out.printf("Average Batch Size: %.2f / %d%n", avgBatch, MAX_STATES_PER_BATCH);
+        System.out.printf("Batcher Idle Time: %.2f s%n", idleNanos / 1_000_000_000.0);
+        System.out.printf("Total GPU Inferences: %d%n", batchCount);
+
+        long prep = PhaseMetrics.INF_PREPARE_DATA.sum();
+        long comp = PhaseMetrics.INF_GPU_COMPUTE.sum();
+        long post = PhaseMetrics.INF_POST_PROCESS.sum();
+        long total = prep + comp + post;
+
+        System.out.println("\n=== INFERENCE INTERNAL METRICS ===");
+        System.out.printf("Data Preparation: %6.2f s (%5.1f%%)%n", prep / 1e9, (prep * 100.0 / total));
+        System.out.printf("GPU Computation:  %6.2f s (%5.1f%%)%n", comp / 1e9, (comp * 100.0 / total));
+        System.out.printf("Post Processing:  %6.2f s (%5.1f%%)%n", post / 1e9, (post * 100.0 / total));
+        System.out.printf("Total Inf Time:   %6.2f s%n", total / 1e9);
+
+        System.out.println("\n=== PHASE PERFORMANCE METRICS ===");
+        for (int i = 1; i <= 5; i++) {
+            long count = PhaseMetrics.callCount.get(i).sum();
+            if (count > 0) {
+                long totalNanos = PhaseMetrics.totalTime.get(i).sum();
+                double avgMillis = (totalNanos / 1_000_000.0) / count;
+                System.out.printf("Phase %d: Total Calls: %d | Avg Time: %.3f ms | Total: %.2f s%n",
+                        i, count, avgMillis, totalNanos / 1_000_000_000.0);
+            }
+        }
+        PhaseMetrics.reset(); // Очищаем для следующего захода
+    }
+
+    private void printBlock(String name, long nanos, long calls, long totalNanos) {
+        double avgMs = (nanos / 1_000_000.0) / calls;
+        double percent = (nanos * 100.0) / totalNanos;
+        System.out.printf("%-45s | Avg: %8.3f ms | Share: %5.1f%%%n", name, avgMs, percent);
     }
 
     @GetMapping("/simulations")

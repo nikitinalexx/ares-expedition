@@ -16,10 +16,8 @@ public class JudgeOracle {
     private final MultiLayerNetwork baseNet;
 
     public JudgeOracle() throws Exception {
-        this.baseNet = MultiLayerNetwork.load(new File("436_epoch_1_8495_5228.zip"), false);
-
+        this.baseNet = MultiLayerNetwork.load(new File("mix_4_5_8587_4958.zip"), false);
     }
-
 
     public Prediction predict(float[] fullFeaturesArray) {
         if (fullFeaturesArray.length != AiConstants.TABLE_VECTOR_SIZE) {

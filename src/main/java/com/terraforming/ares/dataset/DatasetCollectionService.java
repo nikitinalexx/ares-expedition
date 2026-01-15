@@ -304,7 +304,7 @@ public class DatasetCollectionService {
         }
 
         Map<Tag, Long> tagToCount = cardService.countPlayedTagsAsMap(currentPlayer);
-        DraftCardsDto draftCardsDto = draftCardsService.countCardsToTakeAndDraft(currentPlayer);
+        DraftCardsDto draftCardsDto = draftCardsService.countExtraCardsToTakeAndDraft(currentPlayer);
 
         return MarsPlayerRow.builder()
                 .winPoints(winPointsService.countWinPointsWithFloats(currentPlayer, game))

@@ -24,6 +24,7 @@ import com.terraforming.ares.validation.action.ActionValidator;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -42,7 +43,6 @@ public class AiRandomThirdPhaseActionProcessor {
     private final AiRandomPaymentService aiRandomPaymentService;
     private final CardValidationService cardValidationService;
     private final AiRandomSellCardsService aiRandomSellCardsService;
-    private final Random random = new Random();
 
     public AiRandomThirdPhaseActionProcessor(List<ActionValidator<?>> validators,
                                              CardService cardService,
@@ -110,6 +110,7 @@ public class AiRandomThirdPhaseActionProcessor {
             return false;
         }
 
+        ThreadLocalRandom random = ThreadLocalRandom.current();
         AvailableTurn availableTurn = availableTurns.get(random.nextInt(availableTurns.size()));
         switch (availableTurn.getType()) {
             case UNMI_RT -> {
@@ -151,6 +152,8 @@ public class AiRandomThirdPhaseActionProcessor {
     }
 
     private void convertHelionHeat(MarsGame game, Player player) {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+
         int heat = player.getHeat();
         int convert = 0;
 
@@ -203,7 +206,7 @@ public class AiRandomThirdPhaseActionProcessor {
 
         // линейная вероятность между 20 и 120
         double p = (mc - 20) / 100.0;       // от 0 до 1
-        return random.nextDouble() < p;
+        return ThreadLocalRandom.current().nextDouble() < p;
     }
 
 
@@ -484,7 +487,7 @@ public class AiRandomThirdPhaseActionProcessor {
         Map<Integer, List<Integer>> result = new HashMap<>();
 
         boolean canUpgradePhase = player.getCardResourcesCount().get(blueCard.getClass()) >= inputData.getMax();
-        boolean shouldUpgradePhase = canUpgradePhase && random.nextBoolean();
+        boolean shouldUpgradePhase = canUpgradePhase && ThreadLocalRandom.current().nextBoolean();
 
         List<Integer> microbeInput = shouldUpgradePhase ? List.of(inputData.getMax()) : List.of(1);
         result.put(InputFlag.ADD_DISCARD_MICROBE.getId(), microbeInput);
@@ -499,7 +502,7 @@ public class AiRandomThirdPhaseActionProcessor {
 
     private ActionInputParamsResponse handleDecomposingFungus(Player player) {
         List<Card> cardsWithMicrobes = getCardsWithResourceAndCount(player, CardCollectableResource.MICROBE);
-        Card randomCard = cardsWithMicrobes.get(random.nextInt(cardsWithMicrobes.size()));
+        Card randomCard = cardsWithMicrobes.get(ThreadLocalRandom.current().nextInt(cardsWithMicrobes.size()));
 
         return ActionInputParamsResponse.makeActionWithParams(
                 Map.of(InputFlag.CARD_CHOICE.getId(), List.of(randomCard.getId()))
@@ -513,7 +516,7 @@ public class AiRandomThirdPhaseActionProcessor {
                         || c.getCollectableResource() == CardCollectableResource.ANIMAL)
                 .toList();
 
-        Card randomCard = eligibleCards.get(random.nextInt(eligibleCards.size()));
+        Card randomCard = eligibleCards.get(ThreadLocalRandom.current().nextInt(eligibleCards.size()));
 
         return ActionInputParamsResponse.makeActionWithParams(
                 Map.of(InputFlag.CARD_CHOICE.getId(), List.of(randomCard.getId()))
@@ -521,6 +524,7 @@ public class AiRandomThirdPhaseActionProcessor {
     }
 
     private ActionInputParamsResponse handleDiscardCard(Player player, ActionInputData inputData) {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
         int maxCards = Math.min(random.nextInt(inputData.getMax()) + 1, player.getHand().size());
 
         List<Integer> availableCards = new ArrayList<>(player.getHand().getCards());
@@ -553,7 +557,7 @@ public class AiRandomThirdPhaseActionProcessor {
         int microbes = player.getCardResourcesCount().get(blueCard.getClass());
         int cost = inputData.getMax();
         boolean canConvert = microbes >= cost;
-        boolean shouldConvert = canConvert && (random.nextDouble() < Math.min(1.0, 0.5 + 0.2 * (microbes - cost)));
+        boolean shouldConvert = canConvert && (ThreadLocalRandom.current().nextDouble() < Math.min(1.0, 0.5 + 0.2 * (microbes - cost)));
         int microbeCount = shouldConvert ? inputData.getMax() : 1;
 
         return ActionInputParamsResponse.makeActionWithParams(
@@ -567,7 +571,7 @@ public class AiRandomThirdPhaseActionProcessor {
 
         int excess = microbes - cost;
 
-        boolean canBuild = microbes >= cost && (random.nextDouble() <  Math.min(1.0, 0.5 + 0.15 * (microbes - cost)));
+        boolean canBuild = microbes >= cost && (ThreadLocalRandom.current().nextDouble() <  Math.min(1.0, 0.5 + 0.15 * (microbes - cost)));
         Optional<BuildContext> toBuild = canBuild ? potentialBuildForSelfReplicating(game, player.getUuid()) : Optional.empty();
 
         if (toBuild.isEmpty()) {
@@ -601,6 +605,7 @@ public class AiRandomThirdPhaseActionProcessor {
     }
 
     private ActionInputParamsResponse handlePowerInfrastructure(MarsGame game, Player player) {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
         int heat = player.getHeat();
         int convert;
 
@@ -621,7 +626,7 @@ public class AiRandomThirdPhaseActionProcessor {
     }
 
     private ActionInputParamsResponse handleGreenHouses(Player player) {
-        int heatToDiscard = Math.min(random.nextInt(4) + 1, player.getHeat());
+        int heatToDiscard = Math.min(ThreadLocalRandom.current().nextInt(4) + 1, player.getHeat());
 
         return ActionInputParamsResponse.makeActionWithParams(
                 Map.of(InputFlag.DISCARD_HEAT.getId(), List.of(heatToDiscard))
@@ -630,7 +635,7 @@ public class AiRandomThirdPhaseActionProcessor {
 
     private ActionInputParamsResponse handleSymbioticFungud(Player player) {
         List<Card> eligibleCards = getCardsWithResource(player, CardCollectableResource.MICROBE);
-        Card randomCard = eligibleCards.get(random.nextInt(eligibleCards.size()));
+        Card randomCard = eligibleCards.get(ThreadLocalRandom.current().nextInt(eligibleCards.size()));
 
         return ActionInputParamsResponse.makeActionWithParams(
                 Map.of(InputFlag.CARD_CHOICE.getId(), List.of(randomCard.getId()))
@@ -638,6 +643,7 @@ public class AiRandomThirdPhaseActionProcessor {
     }
 
     private ActionInputParamsResponse handleExtremeColdFungus(Player player) {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
         List<Card> eligibleCards = getCardsWithResource(player, CardCollectableResource.MICROBE);
         boolean shouldTakeMicrobe = !eligibleCards.isEmpty() && random.nextBoolean();
 

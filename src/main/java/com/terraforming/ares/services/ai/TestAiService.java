@@ -200,7 +200,7 @@ public class TestAiService {
             initialCardsToDraft = 8;
         }
 
-        DraftCardsDto draftCardsDto = draftCardsService.countCardsToTakeAndDraft(player);
+        DraftCardsDto draftCardsDto = draftCardsService.countExtraCardsToTakeAndDraft(player);
 
         return (initialCardsToTake + draftCardsDto.getCardsToTake()) + (initialCardsToDraft + draftCardsDto.getCardsToSee()) * 0.45f;
     }

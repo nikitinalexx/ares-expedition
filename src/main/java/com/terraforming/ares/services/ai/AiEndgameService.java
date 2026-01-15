@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Component
 @RequiredArgsConstructor
@@ -21,14 +22,13 @@ public class AiEndgameService {
     private final TestAiService testAiService;
     private final CardService cardService;
     private final SpecialEffectsService specialEffectsService;
-    private final Random random = new Random();
 
     public boolean doFinalActionsIfGameFinished(MarsGame game, Player player) {
         if (!game.gameEndCondition()) {
             return false;
         }
 
-        if (player.getHand().size() != 0) {
+        if (!player.getHand().isEmpty()) {
             Card corporation = cardService.getCard(player.getSelectedCorporationCard());
             if (corporation.getCardMetadata().getCardAction() == CardAction.HELION_CORPORATION && player.getHeat() > 0) {
                 player.setMc(player.getMc() + player.getHeat());
@@ -142,7 +142,7 @@ public class AiEndgameService {
     }
 
     private void performRandomStandardProject(MarsGame game, Player player, List<StandardProjectType> standardProjects) {
-        int indexToPick = standardProjects.size() == 1 ? 0 : random.nextInt(standardProjects.size());
+        int indexToPick = standardProjects.size() == 1 ? 0 : ThreadLocalRandom.current().nextInt(standardProjects.size());
         aiTurnService.standardProjectTurn(game, player, standardProjects.get(indexToPick));
     }
 

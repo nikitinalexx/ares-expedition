@@ -3,20 +3,18 @@ package com.terraforming.ares.services.ai.turnProcessors;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardAction;
-import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.request.ChooseCorporationRequest;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.ai.AiDiscoveryDecisionService;
-import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.DeepNetwork;
 import com.terraforming.ares.services.ai.TestAiService;
-import com.terraforming.ares.services.ai.dto.CardProjection;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Created by oleksii.nikitin
@@ -25,12 +23,10 @@ import java.util.*;
 @Component
 @RequiredArgsConstructor
 public class AiPickCorporationTurn implements AiTurnProcessor {
-    private final Random random = new Random();
     private final AiTurnService aiTurnService;
     private final CardService cardService;
     private final TestAiService testAiService;
     private final DeepNetwork deepNetwork;
-    private final AiPickCardProjectionService aiPickCardProjectionService;
     private final AiDiscoveryDecisionService aiDiscoveryDecisionService;
 
 
@@ -47,7 +43,7 @@ public class AiPickCorporationTurn implements AiTurnProcessor {
         switch (player.getDifficulty().CARDS_PICK) {
             case RANDOM:
             case FILE_VALUE:
-                selectedCorporationId = corporations.get(random.nextInt(corporations.size()));
+                selectedCorporationId = corporations.get(ThreadLocalRandom.current().nextInt(corporations.size()));
                 break;
             case NETWORK_PROJECTION:
                 MarsGame gameAfterOpponentPlay = testAiService.projectOpponentCorporationBuildExperiment(game, player);
@@ -80,7 +76,6 @@ public class AiPickCorporationTurn implements AiTurnProcessor {
 
         return true;
     }
-
 
 
 }

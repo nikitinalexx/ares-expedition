@@ -13,6 +13,7 @@ import com.terraforming.ares.services.ai.dto.ResourceValue;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -21,7 +22,6 @@ import static com.terraforming.ares.services.ai.dto.ResourceValue.*;
 @Service
 public class ResourcePriorityService {
     private final CardService cardService;
-    private final Random random = new Random();
 
     private final Map<Class<?>, ResourceValue> RESOURCE_VALUES;
     private final Map<Class<?>, Integer> CRITICAL_RESOURCE_VALUES_ON_CARDS;
@@ -105,7 +105,7 @@ public class ResourcePriorityService {
 
         if (cardsByPriorities.containsKey(ResourceValue.MAX)) {
             List<Card> bestCards = cardsByPriorities.get(ResourceValue.MAX);
-            return Optional.of(bestCards.get(random.nextInt(bestCards.size())).getId());
+            return Optional.of(bestCards.get(ThreadLocalRandom.current().nextInt(bestCards.size())).getId());
         }
 
         for (ResourceValue rv : List.of(ResourceValue.MEDIUM, ResourceValue.MIN)) {
@@ -225,17 +225,6 @@ public class ResourcePriorityService {
             }
         }
         return null;
-    }
-
-    private Optional<Card> getRandomMicrobeCard(Player player) {
-        final List<Card> microbeCards = player.getPlayed().getCards().stream()
-                .map(cardService::getCard)
-                .filter(card -> card.getCollectableResource() == CardCollectableResource.MICROBE).toList();
-        if (microbeCards.isEmpty()) {
-            return Optional.empty();
-        } else {
-            return Optional.of(microbeCards.get(random.nextInt(microbeCards.size())));
-        }
     }
 
 }

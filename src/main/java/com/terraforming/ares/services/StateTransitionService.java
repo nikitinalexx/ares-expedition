@@ -9,7 +9,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 /**
@@ -24,7 +28,6 @@ public class StateTransitionService {
     private final CrisisDetrimentService crisisDetrimentService;
     private final WinPointsService winPointsService;
     private final MarsContextProvider contextProvider;
-    private final Random random = new Random();
 
     public void performStateTransferIntoResolveDetrimentTokens(MarsGame game) {
         if (game.getStateType() == StateType.GAME_END) {
@@ -48,6 +51,7 @@ public class StateTransitionService {
         crisisDetrimentService.updateDetrimentTokens(game);
 
         if (crisisDetrimentService.detrimentFromOceanIsPresent(game)) {
+            ThreadLocalRandom random = ThreadLocalRandom.current();
             List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
 
             final Player player = players.get(random.nextInt(players.size()));

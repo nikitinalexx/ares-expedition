@@ -34,6 +34,7 @@ public class MarsGame {
     private Planet planet;
     private Planet planetAtTheStartOfThePhase;
     private StateType stateType;
+    @Setter
     private int currentPhase = -1;
     @JsonIgnore
     private int updateCounter;

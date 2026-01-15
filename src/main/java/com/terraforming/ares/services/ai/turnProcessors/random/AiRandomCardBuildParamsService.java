@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import static com.terraforming.ares.model.InputFlag.DECOMPOSERS_TAKE_CARD;
@@ -23,7 +24,6 @@ public class AiRandomCardBuildParamsService {
     private final AiDiscoveryDecisionService aiDiscoveryDecisionService;
     private final CardService cardService;
     private final AiUtility aiUtility;
-    private final Random random = new Random();
 
     /**
      * Creates minimal logical input for random play.
@@ -118,7 +118,7 @@ public class AiRandomCardBuildParamsService {
                 return null;
             }
             result.put(InputFlag.SYNTHETIC_CATASTROPHE_CARD.getId(),
-                    List.of(playedRedCards.get(random.nextInt(playedRedCards.size())).getId()));
+                    List.of(playedRedCards.get(ThreadLocalRandom.current().nextInt(playedRedCards.size())).getId()));
         }
 
         result.putAll(getActiveInputFromCards(player, playedCards, card, result));
@@ -141,7 +141,7 @@ public class AiRandomCardBuildParamsService {
     }
 
     private void addBiomedicalImportsInput(MarsGame game, Player player, Map<Integer, List<Integer>> result) {
-        boolean upgradePhase = random.nextBoolean() || game.getPlanetAtTheStartOfThePhase().isOxygenMax();
+        boolean upgradePhase = ThreadLocalRandom.current().nextBoolean() || game.getPlanetAtTheStartOfThePhase().isOxygenMax();
 
         if (upgradePhase) {
             result.put(InputFlag.PHASE_UPGRADE_CARD.getId(),
@@ -164,7 +164,7 @@ public class AiRandomCardBuildParamsService {
         }
         possibleOptions.add(PLANT_FLAG);
 
-        int option = possibleOptions.get(random.nextInt(possibleOptions.size()));
+        int option = possibleOptions.get(ThreadLocalRandom.current().nextInt(possibleOptions.size()));
         if (option == PLANT_FLAG) {
             result.put(InputFlag.IMPORTED_HYDROGEN_PICK_PLANT.getId(), List.of());
         } else {
@@ -184,7 +184,7 @@ public class AiRandomCardBuildParamsService {
 
     private void addLargeConvoyInput(Player player, Map<Integer, List<Integer>> result) {
         List<Card> animalCards = aiUtility.getPlayerCardsWithResource(player, Set.of(CardCollectableResource.ANIMAL));
-        boolean shouldPickPlants = random.nextBoolean() || animalCards.isEmpty();
+        boolean shouldPickPlants = ThreadLocalRandom.current().nextBoolean() || animalCards.isEmpty();
 
         if (shouldPickPlants) {
             result.put(InputFlag.LARGE_CONVOY_PICK_PLANT.getId(), List.of());
@@ -206,7 +206,7 @@ public class AiRandomCardBuildParamsService {
         }
 
         result.put(InputFlag.LOCAL_HEAT_TRAPPING_PUT_RESOURCE.getId(),
-                List.of(options.isEmpty() ? InputFlag.SKIP_ACTION.getId() : options.get(random.nextInt(options.size()))));
+                List.of(options.isEmpty() ? InputFlag.SKIP_ACTION.getId() : options.get(ThreadLocalRandom.current().nextInt(options.size()))));
     }
 
     private void addResourceInput(Player player, Map<Integer, List<Integer>> result,
@@ -236,6 +236,8 @@ public class AiRandomCardBuildParamsService {
             return Map.of();
         }
 
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+
         List<Integer> handCards = new ArrayList<>(player.getHand().getCards());
 
         scienceTagsCount = Math.min(scienceTagsCount, handCards.size());
@@ -263,6 +265,7 @@ public class AiRandomCardBuildParamsService {
             return Map.of();
         }
 
+        ThreadLocalRandom random = ThreadLocalRandom.current();
         int takeMicrobes = 0;
         int takeCards = 0;
         int microbesOnCard = player.getCardResourcesCount().getOrDefault(Decomposers.class, 0);
@@ -314,7 +317,7 @@ public class AiRandomCardBuildParamsService {
 
         Map<Integer, Integer> optionToCount = new HashMap<>();
         for (int i = 0; i < tagsCount; i++) {
-            int option = possibleOptions.get(random.nextInt(possibleOptions.size()));
+            int option = possibleOptions.get(ThreadLocalRandom.current().nextInt(possibleOptions.size()));
             optionToCount.merge(option, 1, Integer::sum);
         }
 
@@ -341,7 +344,7 @@ public class AiRandomCardBuildParamsService {
     }
 
     private int getRandomCardIdFromList(List<Card> cards) {
-        return cards.get(random.nextInt(cards.size())).getId();
+        return cards.get(ThreadLocalRandom.current().nextInt(cards.size())).getId();
     }
 
     private List<Card> getCardsWithResource(List<Card> cards, Set<CardCollectableResource> resources) {
@@ -351,7 +354,7 @@ public class AiRandomCardBuildParamsService {
     }
 
     private List<Card> chooseRandomResourceCards(List<Card> microbes, List<Card> animals) {
-        boolean pickMicrobe = random.nextBoolean();
+        boolean pickMicrobe = ThreadLocalRandom.current().nextBoolean();
         if (pickMicrobe && !microbes.isEmpty()) {
             return microbes;
         } else if (!pickMicrobe && !animals.isEmpty()) {

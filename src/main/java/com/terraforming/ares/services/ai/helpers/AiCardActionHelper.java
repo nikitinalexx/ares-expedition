@@ -1,7 +1,7 @@
 package com.terraforming.ares.services.ai.helpers;
 
 import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.cards.blue.*;
+import com.terraforming.ares.cards.blue.ResearchGrant;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.action.ActionInputData;
@@ -13,10 +13,10 @@ import com.terraforming.ares.services.ai.*;
 import com.terraforming.ares.services.ai.dto.ActionInputParamsResponse;
 import com.terraforming.ares.services.ai.dto.CardValueResponse;
 import com.terraforming.ares.validation.action.ActionValidator;
-import com.terraforming.ares.validation.action.FibrousCompositeActionValidator;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -29,7 +29,6 @@ public class AiCardActionHelper {
     private final Map<Class<?>, ActionValidator<?>> blueActionValidators;
     private final CardService cardService;
     private final TerraformingService terraformingService;
-    private final Random random = new Random();
     private final ICardValueService cardValueService;
     private final AiBalanceService aiBalanceService;
     private final AiPickCardProjectionService aiPickCardProjectionService;
@@ -53,7 +52,6 @@ public class AiCardActionHelper {
         this.aiCardBuildParamsService = aiCardBuildParamsService;
         this.resourcePriorityService = resourcePriorityService;
     }
-
 
 
     /**
@@ -263,6 +261,8 @@ public class AiCardActionHelper {
     }
 
     private List<Integer> getRandomHandCards(Player player, int max) {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+
         List<Integer> cards = new ArrayList<>(player.getHand().getCards());
 
         max = (max == 1) ? 1 : random.nextInt(max - 1) + 1;
@@ -315,7 +315,7 @@ public class AiCardActionHelper {
                     break;
                 }
                 default:
-                    Integer card = cards.get(random.nextInt(cards.size()));
+                    Integer card = cards.get(ThreadLocalRandom.current().nextInt(cards.size()));
 
                     cardsToDiscard.add(card);
                     cards.remove(card);

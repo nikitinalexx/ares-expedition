@@ -2,7 +2,6 @@ package com.terraforming.ares.processors.turn;
 
 import com.terraforming.ares.dto.DraftCardsDto;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.TurnResponse;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
@@ -36,39 +35,16 @@ public class DraftCardsTurnProcessor implements TurnProcessor<DraftCardsTurn> {
     public TurnResponse processTurn(DraftCardsTurn turn, MarsGame game) {
         Player player = game.getPlayerByUuid(turn.getPlayerUuid());
 
-        int initialCardsToDraft = (player.getChosenPhase() == 5 ? 5 : 2);
-        int initialCardsToTake = (player.getChosenPhase() == 5 ? 2 : 1);
+        DraftCardsDto draftCardsDto = draftCardsService.countCardsToTakeAndDraftByChosenPhase(player);
 
-        if (player.getChosenPhase() == 5 && player.hasPhaseUpgrade(Constants.PHASE_5_UPGRADE_KEEP_EXTRA)) {
-            initialCardsToDraft = 4;
-            initialCardsToTake = 3;
-        }
-
-        if (player.getChosenPhase() == 5 && player.hasPhaseUpgrade(Constants.PHASE_5_UPGRADE_SEE_EXTRA)) {
-            initialCardsToDraft = 8;
-        }
-
-        DraftCardsDto draftCardsDto = draftCardsService.countCardsToTakeAndDraft(player);
-
-        int cardsToDraft = initialCardsToDraft + draftCardsDto.getCardsToSee();
-        int cardsToTake = initialCardsToTake + draftCardsDto.getCardsToTake();
-
-        if (player.getLunaProjectOffice() > 0) {
-            cardsToDraft++;
-            cardsToTake++;
-            player.setLunaProjectOffice(player.getLunaProjectOffice() - 1);
-        }
-
-        cardsToTake = Math.min(cardsToTake, cardsToDraft);
-
-        List<Integer> draftedCards = cardService.dealCards(game, cardsToDraft);
+        List<Integer> draftedCards = cardService.dealCards(game, draftCardsDto.getCardsToSee());
         player.getHand().addCards(draftedCards);
 
         player.addNextTurn(
                 new DiscardCardsTurn(
                         player.getUuid(),
                         draftedCards,
-                        cardsToDraft - cardsToTake,
+                        draftCardsDto.getCardsToSee() - draftCardsDto.getCardsToTake(),
                         true,
                         true,
                         List.of()

@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import static com.terraforming.ares.model.InputFlag.DECOMPOSERS_TAKE_CARD;
@@ -33,7 +34,6 @@ import static com.terraforming.ares.model.InputFlag.DECOMPOSERS_TAKE_MICROBE;
 @Service
 @RequiredArgsConstructor
 public class AiCardBuildParamsService {
-    private final Random random = new Random();
     private final CardService cardService;
     private final ICardValueService cardValueService;
     private final AiDiscoveryDecisionService aiDiscoveryDecisionService;
@@ -273,7 +273,7 @@ public class AiCardBuildParamsService {
                     List.of(bestResourceCard.orElseGet(
                             () -> {
                                 List<Card> playerCardsWithAnyResource = getPlayerCardsWithAnyResource(player);
-                                return playerCardsWithAnyResource.get(random.nextInt(playerCardsWithAnyResource.size())).getId();
+                                return playerCardsWithAnyResource.get(ThreadLocalRandom.current().nextInt(playerCardsWithAnyResource.size())).getId();
                             }))
             );
         }
@@ -472,7 +472,7 @@ public class AiCardBuildParamsService {
         return List.of(
                 cards.size() == 1
                         ? cards.get(0).getId()
-                        : cards.get(random.nextInt(cards.size())).getId()
+                        : cards.get(ThreadLocalRandom.current().nextInt(cards.size())).getId()
         );
     }
 
@@ -586,7 +586,7 @@ public class AiCardBuildParamsService {
                     card = cardValueService.getWorstCard(game, player, cards, game.getTurns()).getCardId();
                     break;
                 case RANDOM:
-                    card = cards.get(random.nextInt(cards.size()));
+                    card = cards.get(ThreadLocalRandom.current().nextInt(cards.size()));
                     break;
             }
             if (card != null) {
@@ -600,6 +600,7 @@ public class AiCardBuildParamsService {
     }
 
     private List<Integer> getRandomCards(List<Card> cards, int count) {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
         List<Integer> result = new ArrayList<>();
         for (int i = 0; i < count; i++) {
             if (cards.isEmpty()) {

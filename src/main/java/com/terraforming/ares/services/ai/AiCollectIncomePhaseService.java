@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 @Service
@@ -20,7 +21,6 @@ public class AiCollectIncomePhaseService {
     private final DeepNetwork deepNetwork;
     private final CardService cardService;
     private final TerraformingService terraformingService;
-    private final Random random = new Random();
 
     public Integer getDoubleIncomeCard(MarsGame game, Player player) {
         Integer doubleIncomeCard = null;
@@ -32,7 +32,7 @@ public class AiCollectIncomePhaseService {
         }
 
         if (player.getDifficulty().PICK_PHASE == AiTurnChoice.RANDOM) {
-            return greenCards.get(random.nextInt(greenCards.size())).getId();
+            return greenCards.get(ThreadLocalRandom.current().nextInt(greenCards.size())).getId();
         }
 
         boolean canIncreaseOxygen = terraformingService.canIncreaseOxygen(game);

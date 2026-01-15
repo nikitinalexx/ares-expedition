@@ -76,7 +76,7 @@ public class PlayerIncomesFeature implements FeatureBlock {
 
         out.write(player.getForests());
 
-        DraftCardsDto draftCardsDto = draftCardsService.countCardsToTakeAndDraft(player);
+        DraftCardsDto draftCardsDto = draftCardsService.countExtraCardsToTakeAndDraft(player);
         out.write(draftCardsDto.getCardsToSee());
         out.write(draftCardsDto.getCardsToTake());
     }

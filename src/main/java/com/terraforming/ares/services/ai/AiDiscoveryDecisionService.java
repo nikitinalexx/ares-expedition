@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import static com.terraforming.ares.model.Constants.*;
@@ -26,7 +27,6 @@ import static com.terraforming.ares.model.ai.AiTurnChoice.SMART;
 @Service
 @RequiredArgsConstructor
 public class AiDiscoveryDecisionService {
-    private final Random random = new Random();
     private final DeepNetwork deepNetwork;
     private final CardService cardService;
     private final TerraformingService terraformingService;
@@ -38,7 +38,7 @@ public class AiDiscoveryDecisionService {
         switch (player.getDifficulty().PHASE_TAG_UPGRADE) {
             case RANDOM:
             case SMART:
-                chooseSecondUpgrade = random.nextBoolean();
+                chooseSecondUpgrade = ThreadLocalRandom.current().nextBoolean();
                 break;
             case NETWORK:
                 List<Integer> phaseUpgrades = player.getPhaseCards();
@@ -79,6 +79,7 @@ public class AiDiscoveryDecisionService {
     }
 
     public List<Integer> chooseTwoPhaseUpgrades(MarsGame game, Player player) {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
         switch (player.getDifficulty().PHASE_TAG_UPGRADE) {
             case RANDOM:
                 int firstUpgrade = random.nextInt(5);
@@ -104,7 +105,7 @@ public class AiDiscoveryDecisionService {
                     nonUpdatedPhaseCards.remove((Integer) firstUpdate);
                     secondUpdate = nonUpdatedPhaseCards.get(random.nextInt(nonUpdatedPhaseCards.size()));
                 } else if (nonUpdatedPhaseCards.size() == 1) {
-                    firstUpdate = nonUpdatedPhaseCards.get(0);
+                    firstUpdate = nonUpdatedPhaseCards.getFirst();
                     secondUpdate = updatedPhaseCards.get(random.nextInt(updatedPhaseCards.size()));
                 } else {
                     firstUpdate = updatedPhaseCards.get(random.nextInt(updatedPhaseCards.size()));
@@ -208,7 +209,7 @@ public class AiDiscoveryDecisionService {
             }
         }
 
-        int phaseIndex = candidates.get(random.nextInt(candidates.size()));
+        int phaseIndex = candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
         int currentState = phaseCards.get(phaseIndex);
 
         int upgradeIndex;
@@ -233,7 +234,7 @@ public class AiDiscoveryDecisionService {
 
         int upgradeIndex;
         if (currentState == 0) {
-            upgradeIndex = random.nextBoolean() ? 0 : 1;
+            upgradeIndex = ThreadLocalRandom.current().nextBoolean() ? 0 : 1;
         } else if (currentState == 1) {
             upgradeIndex = 1;
         } else {
@@ -283,7 +284,7 @@ public class AiDiscoveryDecisionService {
         List<Milestone> milestones = game.getMilestones();
 
         if (player.getDifficulty().CARDS_PICK == AiCardsChoice.RANDOM) {
-            return random.nextInt(milestones.size());
+            return ThreadLocalRandom.current().nextInt(milestones.size());
         }
 
         Map<Tag, Long> tagToCount = cardService.countTagsOnCards(player.getHand().getCards().stream().map(cardService::getCard).toList());
@@ -370,7 +371,7 @@ public class AiDiscoveryDecisionService {
         }
 
         // 3. Честный рандом для RANDOM (и как fallback для SMART)
-        return candidates.get(random.nextInt(candidates.size())).ordinal();
+        return candidates.get(ThreadLocalRandom.current().nextInt(candidates.size())).ordinal();
     }
 
 

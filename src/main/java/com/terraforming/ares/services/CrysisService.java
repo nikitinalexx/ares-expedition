@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Created by oleksii.nikitin
@@ -21,9 +21,7 @@ import java.util.Random;
 @RequiredArgsConstructor
 public class CrysisService {
     private static final List<Integer> ALL_PHASES = List.of(1, 2, 3, 4, 5);
-    private final Random random = new Random();
     private final TerraformingService terraformingService;
-    private final CardService cardService;
 
 
     public void reduceTokens(MarsGame game, CrysisCard card, int tokenNumber) {
@@ -46,7 +44,7 @@ public class CrysisService {
     public void forbidRandomNonPlayedPhase(MarsGame game, Player player) {
         final CrysisData crysisData = game.getCrysisData();
 
-        Integer randomPhase = ALL_PHASES.get(random.nextInt(ALL_PHASES.size()));
+        Integer randomPhase = ALL_PHASES.get(ThreadLocalRandom.current().nextInt(ALL_PHASES.size()));
         if (player.getChosenPhase() != null && player.getChosenPhase().equals(randomPhase)) {
             randomPhase++;
             randomPhase %= ALL_PHASES.size();
@@ -67,6 +65,6 @@ public class CrysisService {
             return;
         }
 
-        terraformingService.hideOcean(game, openedOceans.get(random.nextInt(openedOceans.size())));
+        terraformingService.hideOcean(game, openedOceans.get(ThreadLocalRandom.current().nextInt(openedOceans.size())));
     }
 }

@@ -14,7 +14,7 @@ import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsService;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
 import com.terraforming.ares.services.ai.turnFlow.AvailableTurnFlow;
 import com.terraforming.ares.services.ai.turnFlow.BestTurnType;
-import com.terraforming.ares.services.ai.turnProcessors.network2.Network2FirstSecondPhaseActionProcessor;
+import com.terraforming.ares.services.ai.network2.Network2FirstSecondPhaseActionProcessor;
 import com.terraforming.ares.services.ai.turnProcessors.random.AiRandomFirstPhaseActionProcessor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

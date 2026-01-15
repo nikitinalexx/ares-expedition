@@ -24,14 +24,11 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
     private final AiTurnService aiTurnService;
     private final ICardValueService cardValueService;
     private final AiBalanceService aiBalanceService;
-    private final PickCorporationProcessor pickCorporationProcessor;
     private final AiPickCardProjectionService aiPickCardProjectionService;
     private final CardService cardService;
     private final AiDiscoveryDecisionService aiDiscoveryDecisionService;
     private final MarsContextProvider marsContextProvider;
     private final DeepNetwork deepNetwork;
-
-    private final Random random = new Random();
 
 
     @Override

@@ -140,7 +140,7 @@ public class Constants {
 
     public static final boolean COLLECT_DATASET = false;
     public static final boolean LOG_NET_COMPARISON = false;
-    public static final boolean LOG_NET_COMPARISON_V2 = true;
+    public static final boolean LOG_NET_COMPARISON_V2 = false;
 
     private Constants() {
     }

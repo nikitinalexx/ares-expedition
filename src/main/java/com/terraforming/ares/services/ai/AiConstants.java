@@ -4,10 +4,8 @@ import com.terraforming.ares.cards.blue.*;
 import com.terraforming.ares.cards.corporations.GenericDummyCard;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardAction;
-import com.terraforming.ares.services.ai.turnProcessors.network2.buildParams.InputRequirementType;
 import com.terraforming.ares.validation.action.FibrousCompositeActionValidator;
 
-import java.util.List;
 import java.util.Set;
 
 public final class AiConstants {

@@ -3,7 +3,7 @@ package com.terraforming.ares.services;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Created by oleksii.nikitin
@@ -11,9 +11,9 @@ import java.util.Random;
  */
 @Service
 public class ShuffleService {
-    private final Random random = new Random();
 
     public <T> void shuffle(List<T> elements) {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
         for (int i = 0; i < elements.size() - 1; i++) {
             int swapWith = random.nextInt(elements.size());
 

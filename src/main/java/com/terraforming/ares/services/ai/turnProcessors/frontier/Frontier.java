@@ -242,10 +242,10 @@ public class Frontier {
             }
         }
 
-        if (results.size() == RESULTS_BEAM_WIDTH) {
-            System.out.printf("MAX frontier scenarios %s. Time ms: %s%n", results.size(), (System.currentTimeMillis() - startTime));
-
-        }
+//        if (results.size() == RESULTS_BEAM_WIDTH) {
+//            System.out.printf("MAX frontier scenarios %s. Time ms: %s%n", results.size(), (System.currentTimeMillis() - startTime));
+//
+//        }
 
         return results;
     }

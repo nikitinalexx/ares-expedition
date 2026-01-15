@@ -1,36 +1,20 @@
 package com.terraforming.ares.services.ai.turnProcessors;
 
-import com.terraforming.ares.cards.CardMetadata;
-import com.terraforming.ares.cards.green.PrivateInvestorBeach;
-import com.terraforming.ares.cards.red.AdvancedEcosystems;
-import com.terraforming.ares.cards.red.CeosFavoriteProject;
-import com.terraforming.ares.cards.red.Crater;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.ai.AiCardsChoice;
 import com.terraforming.ares.model.ai.AiExperimentalTurn;
-import com.terraforming.ares.model.build.PutResourceOnBuild;
-import com.terraforming.ares.model.milestones.Milestone;
-import com.terraforming.ares.model.parameters.Ocean;
-import com.terraforming.ares.model.parameters.OceanRequirement;
-import com.terraforming.ares.model.parameters.ParameterColor;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
-import com.terraforming.ares.services.SpecialEffectsService;
-import com.terraforming.ares.services.ai.AiConstants;
 import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.ICardValueService;
-import com.terraforming.ares.services.ai.advanced.AdvancedAiDataCollectionService;
-import com.terraforming.ares.services.ai.dl4j.NNService;
-import com.terraforming.ares.services.ai.dl4j.Prediction;
-import com.terraforming.ares.services.ai.dto.CardProjection;
-import com.terraforming.ares.services.ai.turnProcessors.network2.Network2DiscardCardsProcessor;
+import com.terraforming.ares.services.ai.network2.Network2DiscardCardsProcessor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 /**
@@ -40,7 +24,6 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 public class AiDiscardCardsTurn implements AiTurnProcessor {
-    private final Random random = new Random();
     private final AiTurnService aiTurnService;
     private final ICardValueService cardValueService;
     private final CardService cardService;
@@ -86,7 +69,7 @@ public class AiDiscardCardsTurn implements AiTurnProcessor {
                         }
                         break;
                     case RANDOM:
-                        bestCard = cardsToDiscard.get(random.nextInt(cardsToDiscard.size()));
+                        bestCard = cardsToDiscard.get(ThreadLocalRandom.current().nextInt(cardsToDiscard.size()));
                         break;
                 }
 

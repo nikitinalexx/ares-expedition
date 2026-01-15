@@ -93,14 +93,6 @@ public class GameProcessorService extends BaseProcessorService {
                     registerAsyncGameUpdate(gameId);
                 }
 
-                if (Constants.LOG_NET_COMPARISON_V2) {
-                    List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
-                    players.sort(Comparator.comparing(player -> player.getUuid().charAt(player.getUuid().length() - 1)));
-
-                    Player player = players.getFirst();
-                    System.out.println(judgeOracle.predict(advancedAiDataCollectionService.collectData(game, player)));
-                }
-
                 if (Constants.LOG_NET_COMPARISON && game.getStateType() == StateType.GAME_END) {
                     game.getPlayerUuidToPlayer().values().stream().filter(Player::isSecondBot).findFirst().ifPresent(
                             player -> System.out.println("Computer prediction after the game end " + deepNetwork.testState(game, player))
