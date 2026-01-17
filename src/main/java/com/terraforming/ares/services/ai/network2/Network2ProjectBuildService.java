@@ -88,7 +88,7 @@ public class Network2ProjectBuildService {
             }
         }
 
-        List<Prediction> predictions = nnService.predictBatch(buildProjections, NNService.ModelType.OPTIMIZED);
+        List<Prediction> predictions = nnService.predictBatch(buildProjections, player);
         int pointer = 0;
 
         List<CardWithChanceModifier> cardWithChanceModifiers = new ArrayList<>();
@@ -127,8 +127,17 @@ public class Network2ProjectBuildService {
                 return true;
             }
 
-            if (card.getCardMetadata().getCardAction() == CardAction.SYNTHETIC_CATASTROPHE && player.getPlayed().getCards().stream().map(cardService::getCard).noneMatch(c -> c.getColor() == CardColor.RED)) {
-                return true;
+            if (card.getCardMetadata().getCardAction() == CardAction.SYNTHETIC_CATASTROPHE) {
+                List<Card> redCards = player.getPlayed().getCards().stream().map(cardService::getCard).filter(c -> c.getColor() == CardColor.RED).toList();
+                if (redCards.isEmpty()) {
+                    return true;
+                }
+                if (redCards.size() == 1 && redCards.getFirst().getClass() == CeosFavoriteProject.class) {
+                    Map<Class<?>, Integer> cardResourcesCount = player.getCardResourcesCount();
+                    if (cardResourcesCount.size() == 1 && cardResourcesCount.getOrDefault(BacterialAggregates.class, 0) > AiConstants.BACTERIAL_AGGREGATES_COUNT_FOR_MICROBE_PUT) {
+                        return true;
+                    }
+                }
             }
 
             return card.getClass() == PrivateInvestorBeach.class && getMilestoneMultiplier(marsGame, player) < 1;

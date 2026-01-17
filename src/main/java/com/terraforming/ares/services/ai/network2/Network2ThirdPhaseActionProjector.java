@@ -4,30 +4,25 @@ import com.terraforming.ares.cards.blue.*;
 import com.terraforming.ares.cards.corporations.HyperionSystemsCorporation;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
-import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.StandardProjectService;
 import com.terraforming.ares.services.ai.AiConstants;
-import com.terraforming.ares.services.ai.AiEndgameService;
 import com.terraforming.ares.services.ai.advanced.IDataCollect;
 import com.terraforming.ares.services.ai.dl4j.NNService;
 import com.terraforming.ares.services.ai.dl4j.Prediction;
 import com.terraforming.ares.services.ai.network2.buildParams.*;
-import com.terraforming.ares.services.ai.network2.dto.BestFutureOptions;
-import com.terraforming.ares.services.ai.network2.dto.CardWithChanceModifier;
+import com.terraforming.ares.services.ai.network2.dto.ScoredNode;
+import com.terraforming.ares.services.ai.network2.dto.StateWithVector;
 import com.terraforming.ares.services.ai.network2.projection.SelfReplicatingBacteriaService;
 import com.terraforming.ares.services.ai.turnProcessors.AiTurnService;
-import com.terraforming.ares.services.ai.turnProcessors.frontier.Frontier;
-import com.terraforming.ares.services.ai.turnProcessors.frontier.Node;
-import com.terraforming.ares.services.ai.turnProcessors.frontier.RequiresMcPayment;
-import com.terraforming.ares.services.ai.turnProcessors.frontier.State;
-import com.terraforming.ares.services.ai.turnProcessors.frontier.actions.ConsumeResourceEffect;
-import com.terraforming.ares.services.ai.turnProcessors.frontier.actions.PutMicrobeEffect;
+import com.terraforming.ares.services.ai.turnProcessors.frontier.*;
+import com.terraforming.ares.services.ai.turnProcessors.frontier.StateContext;
 import lombok.RequiredArgsConstructor;
 import org.nd4j.common.io.CollectionUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -35,6 +30,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class Network2ThirdPhaseActionProjector {
     private static final double EPS = 5e-4;
+    private static final int BEST_NODES_TO_CHECK_FROM_PLAYER = 4;
 
     private final CardService cardService;
     private final AiTurnService aiTurnService;
@@ -45,10 +41,8 @@ public class Network2ThirdPhaseActionProjector {
     private final AiOptimalBuildService aiOptimalBuildService;
     private final AiCardBuildInputAnalyzer aiCardBuildInputAnalyzer;
     private final Network2DraftCardsProjectionService network2DraftCardsProjectionService;
-    private final AiMarsUniversityInputHandler aiMarsUniversityInputHandler;
     private final StandardProjectService standardProjectService;
     private final Frontier frontier;
-    private final AiEndgameService aiEndgameService;
     private final SelfReplicatingBacteriaService selfReplicatingBacteriaService;
 
     private final Set<Class<?>> DO_IMMEDIATELY_UNCONDITIONALLY = Set.of(
@@ -62,7 +56,147 @@ public class Network2ThirdPhaseActionProjector {
             DroneAssistedConstruction.class
     );
 
-    public double processTurn(MarsGame game, Player player) {
+    public double processTurn(MarsGame game, Player player, Player anotherPlayer) {
+        NNService.ModelType modelType = player.isFirstBot() ? NNService.ModelType.FIRST : NNService.ModelType.SECOND;
+        Map<Class<?>, Card> playerBlueCards = applyPlayerActions(game, player, modelType);
+        applyPlayerActions(game, anotherPlayer, modelType);
+
+        List<ScoredNode> bestRegularFutureOptions = getBestFutureOptions(game, player, modelType);
+        List<ScoredNode> bestOpponentRegularFutureOptions = getBestFutureOptions(game, anotherPlayer, modelType);
+
+
+        if (playerBlueCards.containsKey(SelfReplicatingBacteria.class)) {
+            MarsGame potentialMarsAfterDoingSelfReplicatingBacteria = selfReplicatingBacteriaService.simulateSelfReplicatingBacteriaFinalActions(playerBlueCards, game, player);
+
+            if (potentialMarsAfterDoingSelfReplicatingBacteria != null) {
+                List<ScoredNode> bestFutureOptionsAfterReplicatingBacteria = getBestFutureOptions(potentialMarsAfterDoingSelfReplicatingBacteria, potentialMarsAfterDoingSelfReplicatingBacteria.getPlayerByUuid(player.getUuid()), modelType);
+
+                boolean chooseStateAfterSelfReplicatingBacteria = false;
+
+                if (!bestRegularFutureOptions.isEmpty() && !bestFutureOptionsAfterReplicatingBacteria.isEmpty()) {
+                    chooseStateAfterSelfReplicatingBacteria = (bestFutureOptionsAfterReplicatingBacteria.getFirst().getScore() > bestRegularFutureOptions.getFirst().getScore());
+                } else {
+                    List<float[]> baseProbToCheck = new ArrayList<>();
+                    if (bestRegularFutureOptions.isEmpty()) {
+                        baseProbToCheck.add(iDataCollect.collectData(game, player));
+                    }
+                    if (bestFutureOptionsAfterReplicatingBacteria.isEmpty()) {
+                        baseProbToCheck.add(iDataCollect.collectData(potentialMarsAfterDoingSelfReplicatingBacteria, potentialMarsAfterDoingSelfReplicatingBacteria.getPlayerByUuid(player.getUuid())));
+                    }
+                    List<Prediction> predictions = nnService.predictBatch(baseProbToCheck, player);
+
+                    double bestRegularPrediction = (bestRegularFutureOptions.isEmpty() ? predictions.removeFirst().baseProb : bestRegularFutureOptions.getFirst().getScore());
+                    double bestSelfReplicatingPrediction = (bestFutureOptionsAfterReplicatingBacteria.isEmpty() ? predictions.removeFirst().baseProb : bestFutureOptionsAfterReplicatingBacteria.getFirst().getScore());
+
+                    chooseStateAfterSelfReplicatingBacteria = bestSelfReplicatingPrediction > bestRegularPrediction;
+                }
+
+                if (chooseStateAfterSelfReplicatingBacteria) {
+                    bestRegularFutureOptions = bestFutureOptionsAfterReplicatingBacteria;
+                    game = potentialMarsAfterDoingSelfReplicatingBacteria;
+                    player = potentialMarsAfterDoingSelfReplicatingBacteria.getPlayerByUuid(player.getUuid());
+                    anotherPlayer = potentialMarsAfterDoingSelfReplicatingBacteria.getPlayerByUuid(anotherPlayer.getUuid());
+                }
+            }
+        }
+
+        State bestOpponentStateAfterStandardProjects = getBestOpponentStateAfterStandardProjects(bestOpponentRegularFutureOptions, game, player, anotherPlayer);
+        if (bestRegularFutureOptions.isEmpty()) {
+            StateContext stateContext = createStateContext(game, player);
+            State initialState = stateContext.getInitialState();
+
+            MarsGame gameCopy = new MarsGame(game);
+            Player playerCopy = gameCopy.getPlayerByUuid(player.getUuid());
+            Player opponentCopy = gameCopy.getPlayerByUuid(anotherPlayer.getUuid());
+
+            applyDeltaState(opponentCopy, bestOpponentStateAfterStandardProjects);
+
+            float[] data = iDataCollect.collectData(gameCopy, playerCopy);
+            iDataCollect.modifyOpponentHandSize(data, bestOpponentStateAfterStandardProjects.cards);
+            iDataCollect.modifyOpponentWinPoints(data, (float) (bestOpponentStateAfterStandardProjects.wp + bestOpponentStateAfterStandardProjects.sacrificialWp) / AiConstants.WP_DENOMINATOR_FOR_FRONTIER);
+
+            ScoredNode scoredNode = new ScoredNode(initialState, nnService.predictBatch(List.of(data), modelType).getFirst().baseProb);
+            bestRegularFutureOptions = List.of(scoredNode);
+        }
+
+        return getBestChanceFromOptions(bestRegularFutureOptions, game, player, anotherPlayer, bestOpponentStateAfterStandardProjects);
+    }
+
+    private State getBestOpponentStateAfterStandardProjects(List<ScoredNode> bestRegularFutureOptions, MarsGame game, Player player, Player opponent) {
+        StateContext stateContext = createStateContext(game, opponent);
+
+        if (bestRegularFutureOptions.isEmpty()) {
+            return stateContext.getInitialState();
+        } else {
+            List<float[]> playerStatesAfterStandardProjects = new ArrayList<>();
+            List<List<StateWithVector>> allStatesWithVectors = new ArrayList<>();
+
+            for (int i = 0; i < BEST_NODES_TO_CHECK_FROM_PLAYER && i < bestRegularFutureOptions.size(); i++) {
+                ScoredNode scoredNode = bestRegularFutureOptions.get(i);
+
+                State state = scoredNode.getState();
+
+                List<StateWithVector> stateWithVectors = projectStateWithStandardProjects(stateContext, state, game, opponent);
+                allStatesWithVectors.add(stateWithVectors);
+                playerStatesAfterStandardProjects.addAll(stateWithVectors.stream().map(StateWithVector::getVector).toList());
+            }
+
+            List<Prediction> bestPredictions = nnService.predictBatch(playerStatesAfterStandardProjects, player);
+
+
+            State bestState = stateContext.getInitialState();
+            double bestStateChance = bestRegularFutureOptions.getFirst().getScore();
+            int predictionIndex = 0;
+            for (List<StateWithVector> stateWithVector : allStatesWithVectors) {
+                for (StateWithVector stateVector : stateWithVector) {
+                    Prediction prediction = bestPredictions.get(predictionIndex++);
+                    if (prediction.baseProb > bestStateChance) {
+                        bestStateChance = prediction.baseProb;
+                        bestState = stateVector.getState();
+                    }
+                }
+            }
+
+            return bestState;
+        }
+    }
+
+    private double getBestChanceFromOptions(List<ScoredNode> bestRegularFutureOptions, MarsGame game, Player player, Player anotherPlayer, State bestOpponentState) {
+        StateContext stateContext = createStateContext(game, player);
+
+        List<float[]> playerStatesAfterStandardProjects = new ArrayList<>();
+
+        for (int i = 0; i < BEST_NODES_TO_CHECK_FROM_PLAYER && i < bestRegularFutureOptions.size(); i++) {
+            ScoredNode scoredNode = bestRegularFutureOptions.get(i);
+
+            State state = scoredNode.getState();
+
+            List<StateWithVector> stateWithVectors = projectStateWithStandardProjects(stateContext, state, game, player, anotherPlayer, bestOpponentState);
+
+            playerStatesAfterStandardProjects.addAll(stateWithVectors.stream().map(StateWithVector::getVector).toList());
+        }
+
+        List<Prediction> bestPredictions = nnService.predictBatch(playerStatesAfterStandardProjects, player);
+
+        double bestStateChance = bestRegularFutureOptions.getFirst().getScore();
+
+        for (Prediction bestPrediction : bestPredictions) {
+            if (bestPrediction.baseProb > bestStateChance) {
+                bestStateChance = bestPrediction.baseProb;
+            }
+        }
+
+        return bestStateChance;
+    }
+
+    private StateContext createStateContext(MarsGame game, Player player) {
+        Map<Class<?>, Card> cardsPlayed = player.getPlayed().getCards().stream().map(cardService::getCard).collect(Collectors.toMap(Card::getClass, Function.identity()));
+
+        return new StateContext(cardService, cardsPlayed, game.getPlanetAtTheStartOfThePhase(), player, game);
+    }
+
+
+    private Map<Class<?>, Card> applyPlayerActions(MarsGame game, Player player, NNService.ModelType modelType) {
         Deck activatedBlueCards = player.getActivatedBlueCards();
 
         Map<Class<?>, Card> neverActivatedBlueCards = player.getPlayed().getCards().stream()
@@ -77,8 +211,8 @@ public class Network2ThirdPhaseActionProjector {
         processConservedBiomeAndResearchGrant(game, player, neverActivatedBlueCards);
         boolean phaseUpgradesDone;
         do {
-            phaseUpgradesDone = processPhaseUpgradeCards(game, player, neverActivatedBlueCards);
-        } while(phaseUpgradesDone);
+            phaseUpgradesDone = processPhaseUpgradeCards(game, player, neverActivatedBlueCards, modelType);
+        } while (phaseUpgradesDone);
 
 
         int blueActionExtraActivationsLeft = player.getBlueActionExtraActivationsLeft();
@@ -92,294 +226,141 @@ public class Network2ThirdPhaseActionProjector {
 
         removeCompletelyUnusableCards(game, player, blueCards);
 
+        return blueCards;
+    }
 
-        MarsGame potentialMarsAfterDoingSelfReplicatingBacteria = null;
-        if (blueCards.containsKey(SelfReplicatingBacteria.class)) {
-            potentialMarsAfterDoingSelfReplicatingBacteria = selfReplicatingBacteriaService.simulateSelfReplicatingBacteriaFinalActions(blueCards, game, player);
+    private List<StateWithVector> projectStateWithStandardProjects(StateContext stateContext, State deltaState, MarsGame game, Player player, Player anotherPlayer, State opponentState) {
+        MarsGame gameCopy = new MarsGame(game);
+        Player playerCopy = gameCopy.getPlayerByUuid(player.getUuid());
+        Player anotherPlayerCopy = gameCopy.getPlayerByUuid(anotherPlayer.getUuid());
+        List<StateWithVector> results = new ArrayList<>();
+
+        // Океаны
+        if (!stateContext.isOceansMax()) {
+            projectTypeLoop(results,  deltaState, player, anotherPlayerCopy, gameCopy, playerCopy, anotherPlayerCopy,
+                    StandardProjectType.OCEAN, stateContext::oceanBuilt, opponentState);
         }
 
-        BestFutureOptions bestRegularFutureOptions = getBestFutureOptions(game, player);
-        if (potentialMarsAfterDoingSelfReplicatingBacteria != null) {
-            BestFutureOptions bestFutureOptionsAfterReplicatingBacteria = getBestFutureOptions(potentialMarsAfterDoingSelfReplicatingBacteria, potentialMarsAfterDoingSelfReplicatingBacteria.getPlayerByUuid(player.getUuid()));
+        // Температура
+        if (!stateContext.isTemperatureMax()) {
+            projectTypeLoop(results,  deltaState, player, anotherPlayerCopy, gameCopy, playerCopy, anotherPlayerCopy,
+                    StandardProjectType.TEMPERATURE, stateContext::temperatureBuilt, opponentState);
+        }
 
-            double bestChanceFromReplicatingBacteria = bestFutureOptionsAfterReplicatingBacteria.getBestChance();
-            if (bestFutureOptionsAfterReplicatingBacteria.getBestFutureOptions().isEmpty()) {
-                bestChanceFromReplicatingBacteria = nnService.predictBatch(List.of(iDataCollect.collectData(potentialMarsAfterDoingSelfReplicatingBacteria, potentialMarsAfterDoingSelfReplicatingBacteria.getPlayerByUuid(player.getUuid()))), NNService.ModelType.OPTIMIZED).getFirst().baseProb;
-            }
+        // Леса
+        projectTypeLoop(results,  deltaState, player, anotherPlayerCopy, gameCopy, playerCopy, anotherPlayerCopy,
+                StandardProjectType.FOREST, stateContext::forestBuilt, opponentState);
 
-            double bestChanceFromRegularOptions = bestRegularFutureOptions.getBestChance();
-            if (bestRegularFutureOptions.getBestFutureOptions().isEmpty()) {
-                bestChanceFromRegularOptions = nnService.predictBatch(List.of(iDataCollect.collectData(game, player)), NNService.ModelType.OPTIMIZED).getFirst().baseProb;
-            }
+        return results;
+    }
 
-            return Math.max(bestChanceFromReplicatingBacteria, bestChanceFromRegularOptions);
-        } else {
-            double bestChanceFromRegularOptions = bestRegularFutureOptions.getBestChance();
-            if (bestRegularFutureOptions.getBestFutureOptions().isEmpty()) {
-                bestChanceFromRegularOptions = nnService.predictBatch(List.of(iDataCollect.collectData(game, player)), NNService.ModelType.OPTIMIZED).getFirst().baseProb;
-            }
+    private List<StateWithVector> projectStateWithStandardProjects(StateContext stateContext, State deltaState, MarsGame game, Player player) {
+        MarsGame gameCopy = new MarsGame(game);
+        Player playerCopy = gameCopy.getPlayerByUuid(player.getUuid());
+        List<StateWithVector> results = new ArrayList<>();
 
-            return bestChanceFromRegularOptions;
+        // Океаны
+        if (!stateContext.isOceansMax()) {
+            projectTypeLoop(results,  deltaState, player, gameCopy, playerCopy,
+                    StandardProjectType.OCEAN, stateContext::oceanBuilt);
+        }
+
+        // Температура
+        if (!stateContext.isTemperatureMax()) {
+            projectTypeLoop(results,  deltaState, player, gameCopy, playerCopy,
+                    StandardProjectType.TEMPERATURE, stateContext::temperatureBuilt);
+        }
+
+        // Леса
+        projectTypeLoop(results,  deltaState, player, gameCopy, playerCopy,
+                StandardProjectType.FOREST, stateContext::forestBuilt);
+
+        return results;
+    }
+
+    /**
+     * Универсальный метод для прокрутки цикла по конкретному стандартному проекту
+     */
+    private void projectTypeLoop(
+            List<StateWithVector> results,
+            State deltaState,
+            Player originalPlayer,
+            Player originalOpponent,
+            MarsGame gameCopy,
+            Player playerCopy,
+            Player opponentCopy,
+            StandardProjectType type,
+            Consumer<State> stateUpdateAction,
+            State opponentState) {
+
+        State stateCopy = deltaState.copy();
+        int price = standardProjectService.getProjectPrice(originalPlayer, type);
+
+        while (stateCopy.mc >= price) {
+            stateCopy.mc -= price;
+            stateUpdateAction.accept(stateCopy); // Вызов oceanBuilt, temperatureBuilt или forestBuilt
+
+            // Применяем изменения к временному игроку для генерации вектора
+            applyDeltaState(playerCopy, stateCopy);
+            applyDeltaState(opponentCopy, opponentState);
+
+            float[] data = iDataCollect.collectData(gameCopy, playerCopy);
+            iDataCollect.modifyPlayerHandSize(data, stateCopy.cards);
+            iDataCollect.modifyPlayerWinPoints(data, (float) (stateCopy.wp + stateCopy.sacrificialWp) / AiConstants.WP_DENOMINATOR_FOR_FRONTIER);
+            iDataCollect.modifyOpponentHandSize(data, opponentState.cards);
+            iDataCollect.modifyOpponentWinPoints(data, (float) (opponentState.wp + opponentState.sacrificialWp) / AiConstants.WP_DENOMINATOR_FOR_FRONTIER);
+
+            results.add(new StateWithVector(stateCopy.copy(), data));
+
+            // Откатываем состояние игрока в копии игры для следующей итерации/типа проекта
+            restorePlayerState(playerCopy, originalPlayer);
+            restorePlayerState(opponentCopy, originalOpponent);
         }
     }
 
-    private boolean doStandardTurnIfBetterThanChance(MarsGame game, Player player) {
-        List<float[]> dataToCheck = new ArrayList<>();
-        List<StandardProjectType> standardProjectTypes = new ArrayList<>();
+    /**
+     * Универсальный метод для прокрутки цикла по конкретному стандартному проекту
+     */
+    private void projectTypeLoop(
+            List<StateWithVector> results,
+            State deltaState,
+            Player originalPlayer,
+            MarsGame gameCopy,
+            Player playerCopy,
+            StandardProjectType type,
+            Consumer<State> stateUpdateAction) {
 
-        for (StandardProjectType standardProjectType : List.of(StandardProjectType.FOREST, StandardProjectType.OCEAN, StandardProjectType.TEMPERATURE)) {
-            String validationResult = standardProjectService.validateStandardProject(game, player, standardProjectType);
-            if (validationResult != null) {
-                continue;
-            }
-            float[] standardProjectState = projectPlayStandardAction(game, player.getUuid(), standardProjectType);
-            dataToCheck.add(standardProjectState);
-            standardProjectTypes.add(standardProjectType);
+        State stateCopy = deltaState.copy();
+        int price = standardProjectService.getProjectPrice(originalPlayer, type);
+
+        while (stateCopy.mc >= price) {
+            stateCopy.mc -= price;
+            stateUpdateAction.accept(stateCopy); // Вызов oceanBuilt, temperatureBuilt или forestBuilt
+
+            // Применяем изменения к временному игроку для генерации вектора
+            applyDeltaState(playerCopy, stateCopy);
+
+            float[] data = iDataCollect.collectData(gameCopy, playerCopy);
+            iDataCollect.modifyPlayerHandSize(data, stateCopy.cards);
+            iDataCollect.modifyPlayerWinPoints(data,
+                    (float) (stateCopy.wp + stateCopy.sacrificialWp) / AiConstants.WP_DENOMINATOR_FOR_FRONTIER);
+
+            results.add(new StateWithVector(stateCopy.copy(), data));
+
+            // Откатываем состояние игрока в копии игры для следующей итерации/типа проекта
+            restorePlayerState(playerCopy, originalPlayer);
         }
-
-        if (dataToCheck.isEmpty()) {
-            return false;
-        }
-
-        dataToCheck.add(iDataCollect.collectData(game, player));
-
-        List<Prediction> predictions = nnService.predictBatch(dataToCheck, NNService.ModelType.OPTIMIZED);
-        double baseChance = predictions.removeLast().baseProb;
-
-        StandardProjectType bestProject = null;
-        for (int i = 0; i < standardProjectTypes.size(); i++) {
-            if (predictions.get(i).baseProb > baseChance) {
-                baseChance = predictions.get(i).baseProb;
-                bestProject = standardProjectTypes.get(i);
-            }
-        }
-
-        if (bestProject != null) {
-            aiTurnService.standardProjectTurn(game, player, bestProject);
-            return true;
-        }
-        return false;
     }
 
-    private float[] projectPlayStandardAction(MarsGame game, String playerUuid, StandardProjectType type) {
-        game = new MarsGame(game);
-        Player player = game.getPlayerByUuid(playerUuid);
-
-        int mc = player.getMc();
-
-        if (type == StandardProjectType.OCEAN && mc >= standardProjectService.getProjectPrice(player, type)) {
-            aiTurnService.standardProjectTurn(game, player, StandardProjectType.OCEAN);
-
-            return iDataCollect.collectData(game, player);
-        }
-
-        if (type == StandardProjectType.FOREST && mc >= standardProjectService.getProjectPrice(player, type)) {
-            aiTurnService.standardProjectTurn(game, player, StandardProjectType.FOREST);
-            return iDataCollect.collectData(game, player);
-        }
-
-        if (type == StandardProjectType.TEMPERATURE && mc >= standardProjectService.getProjectPrice(player, type)) {
-            aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
-            return iDataCollect.collectData(game, player);
-        }
-
-        throw new IllegalStateException("Invalid standard project type");
-    }
-
-    private final Set<Class<?>> CARDS_THAT_CAN_SKIP_FOR_ACTION = Set.of(
-            VolcanicPools.class,
-            CommunityAfforestation.class,
-            MatterGenerator.class,
-            PowerInfrastructure.class,
-            AquiferPumping.class,
-            DecomposingFungus.class,
-            SolarPunk.class,
-            DevelopmentCenter.class,
-            FarmingCoops.class,
-            DevelopedInfrastructure.class,
-            ArtificialJungle.class,
-            GasCooledReactors.class,
-            FarmersMarket.class,//TODO strange
-            ProgressivePolicies.class,
-            HydroElectricEnergy.class,//TODO strange
-            WaterImportFromEuropa.class,
-            Steelworks.class,
-            WoodBurningStoves.class,
-            IronWorks.class,
-            GreenHouses.class,
-            SymbioticFungus.class,//TODO double check
-            AssetLiquidation.class
-    );
-
-    private List<Integer> getBadCardsUpToCount(MarsGame game, Player player, int count) {
-        if (player.getHand().isEmpty()) {
-            return List.of();
-        }
-        return network2DraftCardsProjectionService.cardsToDiscardByProjectedValue(game, player)
-                .stream()
-                .map(CardWithChanceModifier::getCard)
-                .limit(count)
-                .map(Card::getId)
-                .toList();
-    }
-
-    private BestFutureOptions getBestFutureOptions(MarsGame game, Player player) {
+    private List<ScoredNode> getBestFutureOptions(MarsGame game, Player player, NNService.ModelType modelType) {
         Map<State, Node> stateNodeMap = frontier.doFrontier(game, player);
-        if (stateNodeMap.isEmpty()) return new BestFutureOptions(List.of(), 0);
+        if (stateNodeMap.isEmpty()) return List.of();
 
-        return projectStateAndGetBestFutureOptions(stateNodeMap, game, player);
-    }
-
-    private boolean performBestActionFromBestSortedOptions(MarsGame game, Player player, BestFutureOptions bestFutureOptions) {
-        List<Map.Entry<State, Node>> sortedOptions = bestFutureOptions.getBestFutureOptions();
-
-        if (sortedOptions.isEmpty()) return false;
-
-        Map<Class<?>, Card> allPlayedCards = player.getPlayed().getCards().stream()
-                .map(cardService::getCard)
-                .collect(Collectors.toMap(Card::getClass, Function.identity()));
-
-        boolean ignoreMatterGenerator = false;
-
-        for (Map.Entry<State, Node> entry : sortedOptions) {
-            Node node = entry.getValue();
-            int actionId = node.firstActionId;
-            Object context = node.firstActionContext;
-
-            switch (actionId) {
-                case Frontier.NO_ACTION_ID -> {
-                    return false;
-                }
-                case Frontier.MATTER_GENERATOR_ACTION_ID, Frontier.FARMING_COOPS_ACTION_ID -> {
-                    if (ignoreMatterGenerator) continue;
-                    Card cardToSell = network2DraftCardsProjectionService.cardsToDiscardByProjectedValue(game, player)
-                            .stream()
-                            .map(CardWithChanceModifier::getCard)
-                            .findFirst().orElse(null);
-                    if (cardToSell != null) {
-                        // Определяем, какую именно карту из синих карт игрока мы активируем
-                        Class<? extends Card> activeCardClass = (actionId == Frontier.MATTER_GENERATOR_ACTION_ID)
-                                ? MatterGenerator.class
-                                : FarmingCoops.class;
-
-                        return perform(allPlayedCards.get(activeCardClass), InputFlag.CARD_CHOICE, cardToSell.getId(), game, player);
-                    }
-                    ignoreMatterGenerator = true;
-                }
-
-                case Frontier.EXTREME_COLD_FUNGUS_ACTION_ID -> {
-                    if (context == null) {
-                        return perform(allPlayedCards.get(ExtremeColdFungus.class), InputFlag.EXTEME_COLD_FUNGUS_PICK_PLANT, 1, game, player);
-                    }
-                    int targetId = findTargetId(((PutMicrobeEffect) context).getTargetClasses(), allPlayedCards);
-                    return perform(allPlayedCards.get(ExtremeColdFungus.class), InputFlag.EXTREME_COLD_FUNGUS_PUT_MICROBE, targetId, game, player);
-                }
-
-                case Frontier.GHG_PRODUCTION_ACTION_ID, Frontier.REGOLITH_EATERS_ACTION_ID,
-                     Frontier.NITRITE_REDUCTION_ACTION_ID, Frontier.SELF_REPLICATING_BACTERIA,
-                     Frontier.FIBROUS_COMPOSITE_ACTION_ID -> {
-                    Class<?> clazz = getCardClassByActionId(actionId);
-                    return perform(allPlayedCards.get(clazz), InputFlag.ADD_DISCARD_MICROBE, (int) context, game, player);
-                }
-
-                case Frontier.CONSERVED_BIOME_ACTION_ID -> {
-                    int targetId = (context instanceof PutMicrobeEffect pme)
-                            ? findTargetId(pme.getTargetClasses(), allPlayedCards)
-                            : allPlayedCards.get((Class<?>) context).getId();
-                    return perform(allPlayedCards.get(ConservedBiome.class), InputFlag.CARD_CHOICE, targetId, game, player);
-                }
-
-                case Frontier.DECOMPOSING_FUNGUS_ACTION_ID, Frontier.SYMBIOTIC_FUNGUS_ACTION_ID -> {
-                    Class<?> cardClass = (actionId == Frontier.DECOMPOSING_FUNGUS_ACTION_ID) ? DecomposingFungus.class : SymbioticFungus.class;
-                    List<Class<? extends Card>> targets = (context instanceof PutMicrobeEffect pme) ? pme.getTargetClasses() : ((ConsumeResourceEffect) context).getTargetClasses();
-                    return perform(allPlayedCards.get(cardClass), InputFlag.CARD_CHOICE, findTargetId(targets, allPlayedCards), game, player);
-                }
-                case Frontier.UNMI_ACTION_ID -> {
-                    convertHeatIfPossible(game, player, context);
-                    aiTurnService.unmiRtCorporationTurn(game, player);
-                    return true;
-                }
-
-                default -> {
-                    convertHeatIfPossible(game, player, context);
-                    Class<? extends Card> cardByActionId = Frontier.ACTION_ID_TO_CARD_MAPPING.get(actionId);
-                    if (cardByActionId == null) {
-                        throw new IllegalStateException("Unknown actionId: " + actionId);
-                    }
-                    Card card = allPlayedCards.get(cardByActionId);
-                    if (card == null) {
-                        throw new IllegalStateException("Card for action not present in available blueCards, actionId: " + actionId);
-                    }
-                    aiTurnService.performBlueAction(game, player, card.getId(), Map.of());
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private void convertHeatIfPossible(MarsGame game, Player player, Object context) {
-        if (!(context instanceof RequiresMcPayment requiredPayment)) {
-            return;
-        }
-        if (player.getMc() >= requiredPayment.mc) {
-            return;
-        }
-        int howMuchHeatToConvert = requiredPayment.mc - player.getMc();
-        convertHeat(game, player, howMuchHeatToConvert);
-    }
-
-    private void convertHeat(MarsGame game, Player player, int howMuchHeatToConvert) {
-        assert player.getHeat() >= howMuchHeatToConvert;
-        boolean isHelionConversion = player.getPlayed().containsCard(10000) || player.getPlayed().containsCard(10100);
-        boolean isCardConversion = !isHelionConversion && player.getPlayed().containsCard(Constants.POWER_INFRASTRUCTURE_CARD_ID);
-
-        assert isCardConversion || isHelionConversion;
-        if (isCardConversion && !player.getActivatedBlueCards().containsCard(Constants.POWER_INFRASTRUCTURE_CARD_ID)) {
-            aiTurnService.performBlueAction(game, player, Constants.POWER_INFRASTRUCTURE_CARD_ID, Map.of(InputFlag.DISCARD_HEAT.getId(), List.of(howMuchHeatToConvert)));
-        } else {
-            player.setMc(player.getMc() + howMuchHeatToConvert);
-            player.setHeat(player.getHeat() - howMuchHeatToConvert);
-        }
-    }
-
-    private boolean isAbleToConvertHeat(Player player) {
-        boolean isHelionConversion = player.getPlayed().containsCard(10000) || player.getPlayed().containsCard(10100);
-        boolean isCardConversion = !isHelionConversion && player.getPlayed().containsCard(Constants.POWER_INFRASTRUCTURE_CARD_ID);
-
-        return isHelionConversion || isCardConversion;
-    }
-
-    // Универсальный метод для вызова экшена, чтобы не писать одну и ту же простыню
-    private boolean perform(Card card, InputFlag flag, int value, MarsGame game, Player player) {
-        aiTurnService.performBlueAction(game, player, card.getId(), Map.of(flag.getId(), List.of(value)));
-        return true;
-    }
-
-    // Поиск первой подходящей карты на столе
-    private int findTargetId(List<Class<? extends Card>> targetClasses, Map<Class<?>, Card> allPlayedCards) {
-        return targetClasses.stream()
-                .map(allPlayedCards::get)
-                .filter(Objects::nonNull)
-                .map(Card::getId)
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Unable to process action: no target cards found"));
-    }
-
-    // Маппинг ID действия на класс карты
-    private Class<?> getCardClassByActionId(int actionId) {
-        return switch (actionId) {
-            case Frontier.GHG_PRODUCTION_ACTION_ID -> GhgProductionBacteria.class;
-            case Frontier.REGOLITH_EATERS_ACTION_ID -> RegolithEaters.class;
-            case Frontier.NITRITE_REDUCTION_ACTION_ID -> NitriteReductingBacteria.class;
-            case Frontier.SELF_REPLICATING_BACTERIA -> SelfReplicatingBacteria.class;
-            case Frontier.FIBROUS_COMPOSITE_ACTION_ID -> FibrousCompositeMaterial.class;
-            default -> throw new IllegalArgumentException("Unknown action id");
-        };
+        return projectStateAndGetBestFutureOptions(stateNodeMap, game, player, modelType);
     }
 
 
-    private BestFutureOptions projectStateAndGetBestFutureOptions(Map<State, Node> stateNodeMap, MarsGame game, Player player) {
+    private List<ScoredNode> projectStateAndGetBestFutureOptions(Map<State, Node> stateNodeMap, MarsGame game, Player player, NNService.ModelType modelType) {
 
         MarsGame gameCopy = new MarsGame(game);
         Player playerCopy = gameCopy.getPlayerByUuid(player.getUuid());
@@ -402,35 +383,27 @@ public class Network2ThirdPhaseActionProjector {
             restorePlayerState(playerCopy, player);
         }
 
-        List<Prediction> predictions = nnService.predictBatch(states, NNService.ModelType.OPTIMIZED);
+        List<Prediction> predictions = nnService.predictBatch(states, modelType);
         double initialProbability = predictions.removeFirst().baseProb;
 
-        record ScoredNode(Map.Entry<State, Node> entry, double score) {
-        }
 
         List<ScoredNode> scoredNodes = new ArrayList<>(stateNodeList.size());
 
         for (int i = 0; i < stateNodeList.size(); i++) {
             double newProbability = predictions.get(i).baseProb;
             if (newProbability + EPS > initialProbability) {
-                scoredNodes.add(new ScoredNode(stateNodeList.get(i), newProbability));
+                scoredNodes.add(new ScoredNode(stateNodeList.get(i).getKey(), newProbability));
             }
         }
 
         if (scoredNodes.isEmpty()) {
-            return new BestFutureOptions(List.of(), 0);
+            return List.of();
         }
 
         // 2. Сортируем (O(N log N)) - используем примитивное сравнение для скорости
         scoredNodes.sort((a, b) -> Double.compare(b.score, a.score));
 
-        // 3. Пересобираем итоговый список (O(N))
-        List<Map.Entry<State, Node>> sortedList = new ArrayList<>(scoredNodes.size());
-        for (ScoredNode sn : scoredNodes) {
-            sortedList.add(sn.entry);
-        }
-
-        return new BestFutureOptions(sortedList, scoredNodes.getFirst().score);
+        return scoredNodes;
     }
 
     private void applyDeltaState(Player copyPlayer, State state) {
@@ -544,7 +517,7 @@ public class Network2ThirdPhaseActionProjector {
         }
     }
 
-    private boolean processPhaseUpgradeCards(MarsGame game, Player player, Map<Class<?>, Card> blueCards) {
+    private boolean processPhaseUpgradeCards(MarsGame game, Player player, Map<Class<?>, Card> blueCards, NNService.ModelType modelType) {
         // Используем входную мапу напрямую
         Card experimentalTech = player.getTerraformingRating() > 0 ? blueCards.get(ExperimentalTechnology.class) : null;
         Card virtualEmployee = blueCards.get(VirtualEmployeeDevelopment.class);
@@ -597,7 +570,7 @@ public class Network2ThirdPhaseActionProjector {
         }
 
         // Запрос в модель (Batch)
-        List<Prediction> allPredictions = nnService.predictBatch(simulationData, NNService.ModelType.OPTIMIZED);
+        List<Prediction> allPredictions = nnService.predictBatch(simulationData, modelType);
 
         double bestWinChance = allPredictions.removeFirst().baseProb; // Базовый шанс без действий
         int bestActionIdx = -1;
@@ -743,22 +716,6 @@ public class Network2ThirdPhaseActionProjector {
         }
     }
 
-    private boolean doMandatoryResourceIntoTerraformingActions(List<TurnType> possibleTurns, MarsGame game, Player player) {
-        if (possibleTurns.contains(TurnType.INCREASE_INFRASTRUCTURE)) {
-            aiTurnService.increaseInfrastructure(player, game, Map.of());
-            return true;
-        }
-        if (possibleTurns.contains(TurnType.INCREASE_TEMPERATURE)) {
-            aiTurnService.increaseTemperature(game, player);
-            return true;
-        }
-        if (possibleTurns.contains(TurnType.PLANT_FOREST)) {
-            aiTurnService.plantForest(game, player);
-            return true;
-        }
-        return false;
-    }
-
     // Вспомогательный метод, чтобы не дублировать логику по бактериям
     private void performMicrobeAction(MarsGame game, Player player, Map<Class<?>, Card> availableCards, Class<?> clazz, boolean condition) {
         Card card = availableCards.get(clazz);
@@ -767,17 +724,5 @@ public class Network2ThirdPhaseActionProjector {
             availableCards.remove(card.getClass());
         }
     }
-
-    private boolean doRedraftedContracts(Map<Class<?>, Card> blueCards, MarsGame game, Player player, Deck activatedBlueCards) {
-        if (blueCards.containsKey(RedraftedContracts.class) && !activatedBlueCards.containsCard(blueCards.get(RedraftedContracts.class).getId())) {
-            List<Integer> badCards = getBadCardsUpToCount(game, player, 3);
-            if (!badCards.isEmpty()) {
-                aiTurnService.performBlueAction(game, player, blueCards.get(RedraftedContracts.class).getId(), Map.of(InputFlag.CARD_CHOICE.getId(), badCards));
-                return true;
-            }
-        }
-        return false;
-    }
-
 
 }

@@ -14,7 +14,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdvancedAiDataCollectionService implements IDataCollect {
     private static final int WIN_POINTS_INDEX_OFFSET = 38;
+    private static final int OPPONENT_WIN_POINTS_INDEX_OFFSET = 242;
     private static final int HAND_SIZE_INDEX_OFFSET = 52;
+    private static final int OPPONENT_HAND_SIZE_INDEX_OFFSET = 256;
 
     private final CompleteTableEncoder tableEncoder;
 
@@ -29,16 +31,34 @@ public class AdvancedAiDataCollectionService implements IDataCollect {
 
     @Override
     public void modifyPlayerHandSize(float[] data, int newSize) {
-        modifyDataInline(data, newSize, HAND_SIZE_INDEX_OFFSET);
-        modifyDataInline(data, Math.max(0, newSize - 10), HAND_SIZE_INDEX_OFFSET + 1);
-        modifyDataInline(data, Math.min(newSize, 10), HAND_SIZE_INDEX_OFFSET + 2);
+        modifyHandSize(data, newSize, HAND_SIZE_INDEX_OFFSET);
+    }
+
+    @Override
+    public void modifyOpponentHandSize(float[] data, int newSize) {
+        modifyHandSize(data, newSize, OPPONENT_HAND_SIZE_INDEX_OFFSET);
+    }
+
+    private void modifyHandSize(float[] data, int newSize, int indexOffset) {
+        modifyDataInline(data, newSize, indexOffset);
+        modifyDataInline(data, Math.max(0, newSize - 10), indexOffset + 1);
+        modifyDataInline(data, Math.min(newSize, 10), indexOffset + 2);
     }
 
     @Override
     public void modifyPlayerWinPoints(float[] data, float wpDelta) {
-        float maxPointsOriginal = data[WIN_POINTS_INDEX_OFFSET] * AiConstants.NORMALIZATION_VECTOR[WIN_POINTS_INDEX_OFFSET];
+        modifyWinPoints(data, wpDelta, WIN_POINTS_INDEX_OFFSET);
+    }
+
+    @Override
+    public void modifyOpponentWinPoints(float[] data, float wpDelta) {
+        modifyWinPoints(data, wpDelta, OPPONENT_WIN_POINTS_INDEX_OFFSET);
+    }
+
+    private void modifyWinPoints(float[] data, float wpDelta, int indexOffset) {
+        float maxPointsOriginal = data[indexOffset] * AiConstants.NORMALIZATION_VECTOR[indexOffset];
         maxPointsOriginal += wpDelta;
-        modifyDataInline(data, maxPointsOriginal, WIN_POINTS_INDEX_OFFSET);
+        modifyDataInline(data, maxPointsOriginal, indexOffset);
     }
 
     private void modifyDataInline(float[] data, float value, int index) {

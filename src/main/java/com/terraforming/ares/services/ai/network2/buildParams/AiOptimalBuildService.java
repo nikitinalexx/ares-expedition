@@ -1,6 +1,8 @@
 package com.terraforming.ares.services.ai.network2.buildParams;
 
+import com.terraforming.ares.cards.blue.BacterialAggregates;
 import com.terraforming.ares.cards.blue.Decomposers;
+import com.terraforming.ares.cards.red.CeosFavoriteProject;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
@@ -264,7 +266,17 @@ public class AiOptimalBuildService {
         if (cardAction == CardAction.SYNTHETIC_CATASTROPHE) {
             List<Map<Integer, List<Integer>>> result = new ArrayList<>();
 
-            player.getPlayed().getCards().stream().map(cardService::getCard).filter(c -> c.getColor() == CardColor.RED).forEach(
+            player.getPlayed().getCards().stream().map(cardService::getCard).filter(c -> c.getColor() == CardColor.RED)
+                    .filter(c -> {
+                        if (c.getClass() == CeosFavoriteProject.class) {
+                            Map<Class<?>, Integer> cardResourcesCount = player.getCardResourcesCount();
+                            if (cardResourcesCount.size() == 1 && cardResourcesCount.getOrDefault(BacterialAggregates.class, 0) > AiConstants.BACTERIAL_AGGREGATES_COUNT_FOR_MICROBE_PUT) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    })
+                    .forEach(
                     redCard -> {
                         CardWithInputParams redCardInputWithParams = generateInputBasedOnOptimizedDecisions(player, redCard, decisions, playedCards);
                         for (Map<Integer, List<Integer>> inputParamsVariation : redCardInputWithParams.getInputParamsVariations()) {

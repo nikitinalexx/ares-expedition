@@ -13,6 +13,7 @@ import com.terraforming.ares.services.ai.dl4j.Prediction;
 import com.terraforming.ares.services.ai.network2.dto.CardWithChanceModifier;
 import com.terraforming.ares.services.ai.network2.projection.*;
 import com.terraforming.ares.services.ai.turnProcessors.frontier.State;
+import com.terraforming.ares.validation.input.NuclearPlantsOnBuiltEffectValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -26,7 +27,7 @@ import java.util.stream.Stream;
 public class Network2PickPhaseService {
     private static final Map<Integer, Double> ALL_PHASES = Map.of(1, 0d, 2, 0d, 3, 0d, 4, 0d, 5, 0d);
     private static final int CARDS_TO_LOOK_AHEAD = 50;
-    private static final int PHASE_5_ITERATIONS = 20;
+    private static final int PHASE_5_ITERATIONS = 10;
 
     private final ScenarioEngine scenarioEngine;
     private final BatchProjectionService batchProjectionService;
@@ -37,60 +38,40 @@ public class Network2PickPhaseService {
     private final Network2ProjectBuildService network2ProjectBuildService;
     private final Network2ThirdPhaseActionProjector network2ThirdPhaseActionProjector;
     private final JudgeOracle judgeOracle;
-
-    public static final boolean LOG_METRICS = true;
+    private final NuclearPlantsOnBuiltEffectValidator nuclearPlantsOnBuiltEffectValidator;
 
     public int pickPhase(MarsGame game, Player player) {
+        if (AiConstants.ENABLE_AI_EXPLORATION) {
+            return choosePhaseWithExploration(game, player);
+        } else {
+            return pickPhaseNoExploration(game, player);
+        }
+    }
+
+    public int pickPhaseNoExploration(MarsGame game, Player player) {
         Map<Integer, Double> allPhases = new HashMap<>(ALL_PHASES);
         if (player.getPreviousChosenPhase() != null) {
             allPhases.remove(player.getPreviousChosenPhase());
         }
 
-        long start;
-
         if (allPhases.containsKey(1)) {
-            start = System.nanoTime();
             allPhases.put(1, getFirstPhaseChance(game, player.getUuid()));
-            if (LOG_METRICS) {
-                PhaseMetrics.totalTime.get(1).add(System.nanoTime() - start);
-                PhaseMetrics.callCount.get(1).increment();
-            }
         }
 
         if (allPhases.containsKey(2)) {
-            start = System.nanoTime();
             allPhases.put(2, getSecondPhaseChance(game, player.getUuid()));
-            if (LOG_METRICS) {
-                PhaseMetrics.totalTime.get(2).add(System.nanoTime() - start);
-                PhaseMetrics.callCount.get(2).increment();
-            }
         }
 
         if (allPhases.containsKey(3)) {
-            start = System.nanoTime();
             allPhases.put(3, getThirdPhaseChance(game, player.getUuid()));
-            if (LOG_METRICS) {
-                PhaseMetrics.totalTime.get(3).add(System.nanoTime() - start);
-                PhaseMetrics.callCount.get(3).increment();
-            }
         }
 
         if (allPhases.containsKey(4)) {
-            start = System.nanoTime();
             allPhases.put(4, getFourthPhaseChance(game, player.getUuid()));
-            if (LOG_METRICS) {
-                PhaseMetrics.totalTime.get(4).add(System.nanoTime() - start);
-                PhaseMetrics.callCount.get(4).increment();
-            }
         }
 
         if (allPhases.containsKey(5)) {
-            start = System.nanoTime();
             allPhases.put(5, getFifthPhaseChance(game, player.getUuid()));
-            if (true) {
-                PhaseMetrics.totalTime.get(5).add(System.nanoTime() - start);
-                PhaseMetrics.callCount.get(5).increment();
-            }
         }
 
         if (Constants.LOG_NET_COMPARISON_V2) {
@@ -112,18 +93,90 @@ public class Network2PickPhaseService {
                 .orElseThrow();
     }
 
+    public int choosePhaseWithExploration(MarsGame game, Player player) {
+
+        Map<Integer, Double> allPhases = new HashMap<>(ALL_PHASES);
+
+        if (player.getPreviousChosenPhase() != null) {
+            allPhases.remove(player.getPreviousChosenPhase());
+        }
+
+        if (allPhases.containsKey(1)) {
+            allPhases.put(1, getFirstPhaseChance(game, player.getUuid()));
+        }
+        if (allPhases.containsKey(2)) {
+            allPhases.put(2, getSecondPhaseChance(game, player.getUuid()));
+        }
+        if (allPhases.containsKey(3)) {
+            allPhases.put(3, getThirdPhaseChance(game, player.getUuid()));
+        }
+        if (allPhases.containsKey(4)) {
+            allPhases.put(4, getFourthPhaseChance(game, player.getUuid()));
+        }
+        if (allPhases.containsKey(5)) {
+            allPhases.put(5, getFifthPhaseChance(game, player.getUuid()));
+        }
+
+        double temperature = phaseExplorationTemperature(game);
+
+        double maxScore = allPhases.values().stream()
+                .mapToDouble(Double::doubleValue)
+                .max()
+                .orElse(0.0);
+
+        List<Integer> phases = new ArrayList<>(allPhases.keySet());
+        double[] weights = new double[phases.size()];
+
+        double sum = 0.0;
+        for (int i = 0; i < phases.size(); i++) {
+            double score = allPhases.get(phases.get(i));
+            double w = Math.exp((score - maxScore) / temperature);
+            weights[i] = w;
+            sum += w;
+        }
+
+        double r = ThreadLocalRandom.current().nextDouble() * sum;
+        double acc = 0.0;
+
+        for (int i = 0; i < phases.size(); i++) {
+            acc += weights[i];
+            if (r <= acc) {
+                return phases.get(i);
+            }
+        }
+
+        return phases.getLast();
+    }
+
+    private double phaseExplorationTemperature(MarsGame game) {
+
+        double expectedGameLength = 28.0;
+        double progress = game.getTurns() / expectedGameLength;
+        progress = Math.min(progress, 1.0);
+
+        double startTemp = 0.12;
+        double endTemp = 0.02;
+
+        return startTemp * (1.0 - progress) + endTemp * progress;
+    }
+
     private Double getThirdPhaseChance(MarsGame game, String uuid) {
         game = new MarsGame(game);
         game.setCurrentPhase(3);
+
+        final List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
         Player player = game.getPlayerByUuid(uuid);
         player.setChosenPhase(3);
         player.setBlueActionExtraActivationsLeft(1);
+
+        Player anotherPlayer = players.get(0) == player ? players.get(1) : players.get(0);
+        anotherPlayer.setChosenPhase(4);
 
         if (player.hasPhaseUpgrade(Constants.PHASE_3_UPGRADE_DOUBLE_REPEAT)) {
             player.setBlueActionExtraActivationsLeft(2);
         }
 
-        return network2ThirdPhaseActionProjector.processTurn(game, player);
+        return network2ThirdPhaseActionProjector.processTurn(game, player, anotherPlayer);
     }
 
     private Double getFirstPhaseChance(MarsGame game, String playerUuid) {
@@ -173,7 +226,7 @@ public class Network2PickPhaseService {
         Set<Card> cardsThatCanPayAgain = player.getPlayed().getCards().stream().map(cardService::getCard).filter(card -> card.getColor() == CardColor.GREEN && card.canPayAgain()).collect(Collectors.toSet());
 
         if (!player.hasPhaseUpgrade(Constants.PHASE_4_UPGRADE_EXTRA_MC) || cardsThatCanPayAgain.isEmpty()) {
-            return nnService.predictBatch(List.of(iDataCollect.collectData(game, player)), NNService.ModelType.OPTIMIZED).getFirst().baseProb;
+            return nnService.predictBatch(List.of(iDataCollect.collectData(game, player)), player).getFirst().baseProb;
         }
 
         List<float[]> statesToCheck = new ArrayList<>();
@@ -194,7 +247,7 @@ public class Network2PickPhaseService {
             restoreStateBeforePayment(player, stateBeforeDoublePayment);
         }
 
-        return nnService.predictBatch(statesToCheck, NNService.ModelType.OPTIMIZED).stream().mapToDouble(p -> p.baseProb).max().orElseThrow();
+        return nnService.predictBatch(statesToCheck, player).stream().mapToDouble(p -> p.baseProb).max().orElseThrow();
     }
 
 
@@ -277,7 +330,7 @@ public class Network2PickPhaseService {
     }
 
     private Double getFifthPhaseChance(MarsGame game, String playerUuid) {
-        long fourthStart = System.nanoTime();
+        ThreadLocalRandom random = ThreadLocalRandom.current();
         game = new MarsGame(game);
         final List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
         Player player = game.getPlayerByUuid(playerUuid);
@@ -289,9 +342,7 @@ public class Network2PickPhaseService {
 
         int cardsSeen = draftCardsDto.getCardsToSee();
         int cardsTaken = draftCardsDto.getCardsToTake();
-        // ===== 2. HAND VALUE (top K) =====
 
-        List<Double> handDeltas = new ArrayList<>();
         List<Integer> originalHand = new ArrayList<>(player.getHand().getCards());
         List<float[]> baseStatesWithoutCardsInHand = new ArrayList<>();
         baseStatesWithoutCardsInHand.add(iDataCollect.collectData(game, player));
@@ -304,10 +355,8 @@ public class Network2PickPhaseService {
         player.getHand().getCards().clear();
         player.getHand().getCards().addAll(originalHand);
 
-        long firstStart = System.nanoTime();
-        List<Prediction> basePredictions = nnService.predictBatch(baseStatesWithoutCardsInHand, NNService.ModelType.OPTIMIZED);
+        List<Prediction> basePredictions = nnService.predictBatch(baseStatesWithoutCardsInHand, player);
         double baseProb = basePredictions.removeFirst().baseProb;
-        PhaseMetrics.FIRST.add(System.nanoTime() - firstStart);
         Map<Integer, Double> cardIdToBaseChance = new HashMap<>();
         for (int i = 0; i < originalHand.size(); i++) {
             cardIdToBaseChance.put(originalHand.get(i), basePredictions.get(i).baseProb);
@@ -318,12 +367,11 @@ public class Network2PickPhaseService {
         projectsDeck.removeCards(player.getPlayed().getCards());
         projectsDeck.removeCards(anotherPlayer.getPlayed().getCards());
 
-        long thirdStart = System.nanoTime();
         List<Card> allCardsToCheck = Stream.concat(player.getHand().getCards().stream().map(cardService::getCard), projectsDeck.dealCards(Math.min(projectsDeck.size(), CARDS_TO_LOOK_AHEAD)).stream().map(cardService::getCard)).toList();
         List<CardWithChanceModifier> allProjections = network2ProjectBuildService.getBestCardProjectionsIgnoreRequirements(game, player, allCardsToCheck);
 
+        List<Double> handDeltas = new ArrayList<>();
         List<Double> deckDeltas = new ArrayList<>();
-
 
         for (CardWithChanceModifier projection : allProjections) {
             double modifier = projection.getModifier();
@@ -337,25 +385,32 @@ public class Network2PickPhaseService {
         }
         handDeltas.sort(Comparator.naturalOrder());
 
-        float handValue = 0f;
+        double handValue = 0.0;
         for (int i = 0; i < Math.min(cardsTaken, handDeltas.size()); i++) {
             handValue += handDeltas.get(i);
         }
 
+        double totalDeckValue = 0;
+        for (int i = 0; i < PHASE_5_ITERATIONS; i++) {
+            List<Double> seenCards = randomSubset(
+                    deckDeltas,
+                    Math.min(cardsSeen, deckDeltas.size()),
+                    random
+            );
 
-        // ===== 3. DECK VALUE (top K from samples) =====
-        double deckValue = getExpectedDeckValue(deckDeltas, cardsSeen, cardsTaken);
+            seenCards.sort(Comparator.reverseOrder());
 
-        double efficiencyFactor = 0.25;
+            double deckValue = 0;
+            for (int j = 0; j < cardsTaken; j++) {
+                deckValue += seenCards.get(j);
+            }
+            totalDeckValue += (deckValue / cardsTaken);
+        }
+        totalDeckValue /= PHASE_5_ITERATIONS;
 
-        PhaseMetrics.THIRD.add(System.nanoTime() - thirdStart);
+        double delta = totalDeckValue - handValue;
 
-        PhaseMetrics.FOURTH.add(System.nanoTime() - fourthStart);
-
-
-        // ===== 4. Финальный шанс =====
-
-        return baseProb + (deckValue - handValue) * efficiencyFactor;
+        return baseProb + delta * player.getAggression();
     }
 
     public <T> List<T> randomSubset(List<T> list, int count, Random rnd) {

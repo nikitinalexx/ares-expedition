@@ -1,14 +1,9 @@
 package com.terraforming.ares.services.ai.network2.buildParams;
 
-import com.terraforming.ares.cards.blue.BacterialAggregates;
-import com.terraforming.ares.cards.red.LagrangeObservatory;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
-import com.terraforming.ares.model.CardAction;
-import com.terraforming.ares.model.CardCollectableResource;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardService;
-import com.terraforming.ares.services.ai.AiConstants;
 import com.terraforming.ares.services.ai.dl4j.NNService;
 import com.terraforming.ares.services.ai.dl4j.Prediction;
 import com.terraforming.ares.services.ai.turnProcessors.AiUtility;
@@ -78,7 +73,7 @@ public class AiInputOptimizer {
 
         steps.stream().filter(DecisionStep::isApplicable).forEach(step -> step.collectSimulations(simulations, dataCollectContext));
 
-        List<Prediction> predictions = simulations.isEmpty() ? List.of() : nnService.predictBatch(simulations, NNService.ModelType.OPTIMIZED);
+        List<Prediction> predictions = simulations.isEmpty() ? List.of() : nnService.predictBatch(simulations, player);
         PredictionCursor cursor = new PredictionCursor(predictions);
         steps.stream().filter(DecisionStep::isApplicable).forEach(step -> step.applyPredictions(cursor, decisions));
     }

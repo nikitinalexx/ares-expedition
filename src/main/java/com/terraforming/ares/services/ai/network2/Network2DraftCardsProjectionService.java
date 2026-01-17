@@ -36,7 +36,7 @@ public class Network2DraftCardsProjectionService {
         projectsDeck.removeCards(player.getPlayed().getCards());
         projectsDeck.removeCards(anotherPlayer.getPlayed().getCards());
 
-        double currentProb = nnService.predictBatch(List.of(advancedAiDataCollectionService.collectData(marsGame, player)), NNService.ModelType.OPTIMIZED).getFirst().baseProb;
+        double currentProb = nnService.predictBatch(List.of(advancedAiDataCollectionService.collectData(marsGame, player)), player).getFirst().baseProb;
 
 
         // ====== ПРОЕКЦИИ ИЗ КОЛОДЫ ======

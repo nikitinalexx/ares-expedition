@@ -1,5 +1,6 @@
 package com.terraforming.ares.services.ai.turnProcessors.frontier;
 
+
 public final class Node {
     public final State state;
     public final long usedActionsMask;

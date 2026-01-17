@@ -1,6 +1,5 @@
 package com.terraforming.ares.controllers;
 
-import com.terraforming.ares.cards.blue.*;
 import com.terraforming.ares.dataset.DatasetCollectionService;
 import com.terraforming.ares.dataset.GameResult;
 import com.terraforming.ares.dataset.MarsGameRow;
@@ -11,7 +10,6 @@ import com.terraforming.ares.factories.GameFactory;
 import com.terraforming.ares.mars.CrysisData;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
-import com.terraforming.ares.model.parameters.Ocean;
 import com.terraforming.ares.model.request.AllProjectsRequest;
 import com.terraforming.ares.model.turn.*;
 import com.terraforming.ares.repositories.GameRepositoryImpl;
@@ -23,10 +21,9 @@ import com.terraforming.ares.services.ai.AiConstants;
 import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.DeepNetwork;
 import com.terraforming.ares.services.ai.TestAiService;
-import com.terraforming.ares.services.ai.advanced.CompleteTableEncoder;
 import com.terraforming.ares.services.ai.dto.CardProjection;
-import com.terraforming.ares.services.ai.network2.PhaseMetrics;
 import com.terraforming.ares.services.ai.turnProcessors.AiMulliganCardsTurn;
+import com.terraforming.ares.services.simulations.CardPickStatistics;
 import com.terraforming.ares.services.simulations.DatasetWriter;
 import com.terraforming.ares.services.simulations.GameResultProducer;
 import com.terraforming.ares.services.simulations.SampleBatch;
@@ -55,7 +52,6 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.terraforming.ares.model.Constants.WRITE_STATISTICS_TO_FILE;
-import static com.terraforming.ares.services.ai.dl4j.NNService.MAX_STATES_PER_BATCH;
 import static com.terraforming.ares.services.simulations.DatasetWriter.POISON;
 
 /**
@@ -83,6 +79,7 @@ public class GameController {
     private final AiMulliganCardsTurn aiMulliganCardsTurn;
     private final AiPickCardProjectionService aiPickCardProjectionService;
     private final TestAiService testAiService;
+    private final CardPickStatistics cardPickStatistics;
 
     @PostMapping("/state/test/{networkNumber}")
     public float testGameState(@RequestBody MarsGameRow row, @PathVariable int networkNumber) {
@@ -108,7 +105,7 @@ public class GameController {
             }
 
             //TODO remove
-            gameParameters.setComputers(List.of(PlayerDifficulty.RANDOM, PlayerDifficulty.NETWORK_V2));
+            gameParameters.setComputers(List.of(PlayerDifficulty.NETWORK, PlayerDifficulty.NETWORK_V2));
 
 
             int aiPlayerCount = (int) gameParameters.getComputers().stream().filter(item -> item != PlayerDifficulty.NONE).count();
@@ -353,7 +350,7 @@ public class GameController {
         Semaphore permits = new Semaphore(MAX_IN_FLIGHT_GAMES);
 
 
-        List<PlayerDifficulty> difficulties = List.of(PlayerDifficulty.RANDOM, PlayerDifficulty.NETWORK_V2);
+        List<PlayerDifficulty> difficulties = List.of(PlayerDifficulty.NETWORK_V2, PlayerDifficulty.NETWORK_V2);
 
         List<String> playerNames = new ArrayList<>();
         int counter = 1;
@@ -447,6 +444,21 @@ public class GameController {
         int MAX_CONCURRENT_GAMES = 2000;
         Semaphore semaphore = new Semaphore(MAX_CONCURRENT_GAMES);
 
+        BlockingQueue<SampleBatch> queue = null;
+        Thread writerThread = null;
+        if (request.isCollectData()) {
+            queue = new ArrayBlockingQueue<>(1000); // backpressure
+
+            DatasetWriter writer = new DatasetWriter(queue);
+            writerThread = new Thread(writer, "dataset-writer");
+            writerThread.start();
+        }
+
+        Constants.FIRST_PLAYER_PHASES = new ConcurrentHashMap<>();
+        Constants.SECOND_PLAYER_PHASES = new ConcurrentHashMap<>();
+
+        GameResultProducer sharedProducer = queue != null ? new GameResultProducer(queue, 512) : null;
+
         try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
             for (int i = 0; i < totalSims; i++) {
                 executor.submit(() -> {
@@ -454,7 +466,13 @@ public class GameController {
                         semaphore.acquire();
 
                         MarsGame game = gameService.createNewSimulation(gameParameters);
-                        simulationProcessorService.processSimulation(game);
+                        if (request.isCollectData()) {
+                            GameResult gameResult = simulationProcessorService.runSimulationWithDataset(game);
+                            sharedProducer.addResult(gameResult);
+                        } else {
+                            simulationProcessorService.processSimulation(game);
+                        }
+
 
                         List<Player> players = game.getPlayerUuidToPlayer().values().stream()
                                 .sorted(Comparator.comparing(p -> p.getUuid().substring(p.getUuid().length() - 1)))
@@ -496,74 +514,65 @@ public class GameController {
             // Здесь поток ждет завершения всех задач
         }
 
+        printCardStatistics();
+
+        if (request.isCollectData()) {
+            queue.put(POISON);
+            writerThread.join();
+        }
+
         long totalElapsed = (System.currentTimeMillis() - startTime) / 1000;
         System.out.printf("%nFinal Result in %ds: 1=%d, 2=%d, D=%d%n",
                 totalElapsed, firstWins.sum(), secondWins.sum(), draws.sum());
 
-//        System.out.println("\n=== PHASE 5 DEEP DIVE (Inside Logic) ===");
-//        long p5Calls = PhaseMetrics.callCount.get(5).sum();
-//
-//        if (p5Calls > 0) {
-//            // Получаем общие суммы наносекунд
-//            long t1 = PhaseMetrics.FIRST.sum();
-//            long t2 = PhaseMetrics.SECOND.sum();
-//            long t3 = PhaseMetrics.THIRD.sum();
-//            long totalP5Time = PhaseMetrics.FOURTH.sum();
-//
-//            // Четвертый блок (остальное: циклы, сортировки, мелкая логика)
-//            long t4_other = totalP5Time - (t1 + t2 + t3);
-//
-//            System.out.printf("Total P5 Calls: %d%n", p5Calls);
-//            printBlock("Block 1: Sequential Card Removal (Base Chances)", t1, p5Calls, totalP5Time);
-//            printBlock("Block 2: Hand Projections Batch", t2, p5Calls, totalP5Time);
-//            printBlock("Block 3: Deck Projections (50 cards)", t3, p5Calls, totalP5Time);
-//            printBlock("Block 4: Simulation Loops & Sorting", t4_other, p5Calls, totalP5Time);
-//        }
-
-        long addTime = PhaseMetrics.QUEUE_ADD_TIME.sum();
-        long joinTime = PhaseMetrics.FUTURE_JOIN_TIME.sum();
-        System.out.printf("NN Latency Breakdown: Queue Add: %.2f s | Future Join: %.2f s%n",
-                addTime / 1_000_000_000.0, joinTime / 1_000_000_000.0);
-
-        long totalStates = PhaseMetrics.BATCH_TOTAL_SIZE.sum();
-        long batchCount = PhaseMetrics.BATCH_COUNT.sum();
-        long idleNanos = PhaseMetrics.BATCHER_IDLE_TIME.sum();
-
-        double avgBatch = batchCount > 0 ? (double) totalStates / batchCount : 0;
-
-        System.out.println("\n=== BATCHER INFRASTRUCTURE METRICS ===");
-        System.out.printf("Average Batch Size: %.2f / %d%n", avgBatch, MAX_STATES_PER_BATCH);
-        System.out.printf("Batcher Idle Time: %.2f s%n", idleNanos / 1_000_000_000.0);
-        System.out.printf("Total GPU Inferences: %d%n", batchCount);
-
-        long prep = PhaseMetrics.INF_PREPARE_DATA.sum();
-        long comp = PhaseMetrics.INF_GPU_COMPUTE.sum();
-        long post = PhaseMetrics.INF_POST_PROCESS.sum();
-        long total = prep + comp + post;
-
-        System.out.println("\n=== INFERENCE INTERNAL METRICS ===");
-        System.out.printf("Data Preparation: %6.2f s (%5.1f%%)%n", prep / 1e9, (prep * 100.0 / total));
-        System.out.printf("GPU Computation:  %6.2f s (%5.1f%%)%n", comp / 1e9, (comp * 100.0 / total));
-        System.out.printf("Post Processing:  %6.2f s (%5.1f%%)%n", post / 1e9, (post * 100.0 / total));
-        System.out.printf("Total Inf Time:   %6.2f s%n", total / 1e9);
-
-        System.out.println("\n=== PHASE PERFORMANCE METRICS ===");
-        for (int i = 1; i <= 5; i++) {
-            long count = PhaseMetrics.callCount.get(i).sum();
-            if (count > 0) {
-                long totalNanos = PhaseMetrics.totalTime.get(i).sum();
-                double avgMillis = (totalNanos / 1_000_000.0) / count;
-                System.out.printf("Phase %d: Total Calls: %d | Avg Time: %.3f ms | Total: %.2f s%n",
-                        i, count, avgMillis, totalNanos / 1_000_000_000.0);
-            }
-        }
-        PhaseMetrics.reset(); // Очищаем для следующего захода
+        System.out.println(Constants.FIRST_PLAYER_PHASES);
+        System.out.println(Constants.SECOND_PLAYER_PHASES);
     }
 
-    private void printBlock(String name, long nanos, long calls, long totalNanos) {
-        double avgMs = (nanos / 1_000_000.0) / calls;
-        double percent = (nanos * 100.0) / totalNanos;
-        System.out.printf("%-45s | Avg: %8.3f ms | Share: %5.1f%%%n", name, avgMs, percent);
+    public void printCardStatistics() {
+        System.out.println("=== CARD PICK STATISTICS ===");
+
+        cardPickStatistics.getStats().entrySet().stream()
+                .filter(e -> e.getValue().timesPicked > 20)
+                .map(entry -> {
+                    int cardId = entry.getKey();
+                    CardPickStatistics.CardStats s = entry.getValue();
+
+                    double avgRank = s.averagePickedRank();
+                    double winRate = s.winRate();
+                    double score = avgRank * winRate * Math.log1p(s.timesPicked);
+
+                    return new Object() {
+                        final int id = cardId;
+                        final CardPickStatistics.CardStats stats = s;
+                        final double undervaluationScore = score;
+                    };
+                })
+                .sorted(Comparator.comparingDouble(o -> -o.undervaluationScore))
+//                .limit(30)
+                .forEach(o -> {
+                    CardPickStatistics.CardStats s = o.stats;
+
+                    boolean suspicious =
+                            s.averagePickedRank() > 6.0 &&
+                                    s.winRate() > 0.55;
+
+                    String marker = suspicious ? "  <<< ⚠ UNDERRATED" : "";
+
+                    System.out.printf(
+                            "score=%7.2f | picked=%4d | avgRank=%6.2f | winRate=%5.2f%% | games=%4d | %s%s%n",
+                            o.undervaluationScore,
+                            s.timesPicked,
+                            s.averagePickedRank(),
+                            s.winRate() * 100.0,
+                            s.totalGames,
+                            cardService.getCard(o.id).getCardMetadata().getName(),
+                            marker
+                    );
+                });
+
+
+        System.out.println("=== END ===");
     }
 
     @GetMapping("/simulations")

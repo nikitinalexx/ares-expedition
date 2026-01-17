@@ -56,7 +56,24 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
     @Override
     public boolean processTurn(MarsGame game, Player player) {
         if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
-            aiTurnService.choosePhaseTurn(player, network2PickPhaseService.pickPhase(game, player));
+            int phaseId = network2PickPhaseService.pickPhase(game, player);
+            if (player.isFirstBot()) {
+                Constants.FIRST_PLAYER_PHASES.compute(phaseId, (key, value) -> {
+                    if (value == null) {
+                        value = 0;
+                    }
+                    return value + 1;
+                });
+            }
+            if (player.isSecondBot()) {
+                Constants.SECOND_PLAYER_PHASES.compute(phaseId, (key, value) -> {
+                    if (value == null) {
+                        value = 0;
+                    }
+                    return value + 1;
+                });
+            }
+            aiTurnService.choosePhaseTurn(player, phaseId);
             return true;
         }
 

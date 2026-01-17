@@ -8,6 +8,7 @@ import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.processors.turn.TurnProcessor;
 import com.terraforming.ares.services.ai.AiService;
 import com.terraforming.ares.services.ai.advanced.AdvancedAiDataCollectionService;
+import com.terraforming.ares.services.simulations.CardPickStatistics;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -23,18 +24,21 @@ public class SimulationProcessorService extends BaseProcessorService {
     private final StateFactory stateFactory;
     private final WinPointsService winPointsService;
     private final AdvancedAiDataCollectionService advancedAiDataCollectionService;
+    private final CardPickStatistics cardPickStatistics;
 
     public SimulationProcessorService(List<TurnProcessor<?>> turnProcessor,
                                       TurnTypeService turnTypeService,
                                       StateFactory stateFactory,
                                       StateContextProvider stateContextProvider,
                                       AiService aiService, WinPointsService winPointsService,
-                                      AdvancedAiDataCollectionService advancedAiDataCollectionService) {
+                                      AdvancedAiDataCollectionService advancedAiDataCollectionService,
+                                      CardPickStatistics cardPickStatistics) {
         super(turnTypeService, stateFactory, stateContextProvider, turnProcessor);
         this.aiService = aiService;
         this.stateFactory = stateFactory;
         this.winPointsService = winPointsService;
         this.advancedAiDataCollectionService = advancedAiDataCollectionService;
+        this.cardPickStatistics = cardPickStatistics;
     }
 
     public GameResult runSimulationWithDataset(MarsGame game) {
@@ -62,6 +66,8 @@ public class SimulationProcessorService extends BaseProcessorService {
             gameResult.markWinner(firstPlayerPoints > secondPlayerPoints ? 1 : 2);
         }
 
+        cardPickStatistics.collectFromGame(firstPlayerPoints == secondPlayerPoints ? 0 : (firstPlayerPoints > secondPlayerPoints ? 1 : 2), players);
+
         return gameResult;
     }
 
@@ -75,6 +81,11 @@ public class SimulationProcessorService extends BaseProcessorService {
                 stateFactory.getCurrentState(game).updateState();
             }
         }
+
+        List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
+        int firstPlayerPoints = winPointsService.countWinPoints(players.get(0), game);
+        int secondPlayerPoints = winPointsService.countWinPoints(players.get(1), game);
+        cardPickStatistics.collectFromGame(firstPlayerPoints == secondPlayerPoints ? 0 : (firstPlayerPoints > secondPlayerPoints ? 1 : 2), players);
     }
 
 }

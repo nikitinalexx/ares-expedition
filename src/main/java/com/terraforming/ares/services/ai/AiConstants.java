@@ -71,4 +71,7 @@ public final class AiConstants {
             CardAction.UPDATE_PHASE_CARD,
             CardAction.SOFTWARE_STREAMLINING
     );
+
+    public static final boolean ENABLE_AI_EXPLORATION = true;
+    public static final boolean COLLECT_CARD_RANK_STATS = false;
 }

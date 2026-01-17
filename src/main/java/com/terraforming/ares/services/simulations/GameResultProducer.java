@@ -19,7 +19,7 @@ public class GameResultProducer {
         this.batchSize = batchSize;
     }
 
-    public void addResult(GameResult gameResult) throws InterruptedException {
+    public synchronized void addResult(GameResult gameResult) throws InterruptedException {
         float firstLabel = gameResult.isDraw() ? 0.5f : (gameResult.getWinner() == 1 ? 1f : 0f);
         float secondLabel = gameResult.isDraw() ? 0.5f : (gameResult.getWinner() == 2 ? 1f : 0f);
 

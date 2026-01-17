@@ -26,7 +26,7 @@ public class BatchProjectionService {
         // 2. ОДИН вызов нейронки на всех
         List<Prediction> allPredictions = nnService.predictBatch(
                 allInputs,
-                NNService.ModelType.OPTIMIZED
+                player
         );
 
         // 3. Раздаем результаты обратно по коллбекам

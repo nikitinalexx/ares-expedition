@@ -123,12 +123,12 @@ public class Network2ThirdPhaseActionProcessor {
 
             double bestChanceFromReplicatingBacteria = bestFutureOptionsAfterReplicatingBacteria.getBestChance();
             if (bestFutureOptionsAfterReplicatingBacteria.getBestFutureOptions().isEmpty()) {
-                bestChanceFromReplicatingBacteria = nnService.predictBatch(List.of(iDataCollect.collectData(potentialMarsAfterDoingSelfReplicatingBacteria, potentialMarsAfterDoingSelfReplicatingBacteria.getPlayerByUuid(player.getUuid()))), NNService.ModelType.OPTIMIZED).getFirst().baseProb;
+                bestChanceFromReplicatingBacteria = nnService.predictBatch(List.of(iDataCollect.collectData(potentialMarsAfterDoingSelfReplicatingBacteria, potentialMarsAfterDoingSelfReplicatingBacteria.getPlayerByUuid(player.getUuid()))), player).getFirst().baseProb;
             }
 
             double bestChanceFromRegularOptions = bestRegularFutureOptions.getBestChance();
             if (bestRegularFutureOptions.getBestFutureOptions().isEmpty()) {
-                bestChanceFromRegularOptions = nnService.predictBatch(List.of(iDataCollect.collectData(game, player)), NNService.ModelType.OPTIMIZED).getFirst().baseProb;
+                bestChanceFromRegularOptions = nnService.predictBatch(List.of(iDataCollect.collectData(game, player)), player).getFirst().baseProb;
             }
 
             if (bestChanceFromReplicatingBacteria > bestChanceFromRegularOptions) {
@@ -221,7 +221,7 @@ public class Network2ThirdPhaseActionProcessor {
 
         dataToCheck.add(iDataCollect.collectData(game, player));
 
-        List<Prediction> predictions = nnService.predictBatch(dataToCheck, NNService.ModelType.OPTIMIZED);
+        List<Prediction> predictions = nnService.predictBatch(dataToCheck, player);
         double baseChance = predictions.removeLast().baseProb;
 
         StandardProjectType bestProject = null;
@@ -480,7 +480,7 @@ public class Network2ThirdPhaseActionProcessor {
             restorePlayerState(playerCopy, player);
         }
 
-        List<Prediction> predictions = nnService.predictBatch(states, NNService.ModelType.OPTIMIZED);
+        List<Prediction> predictions = nnService.predictBatch(states, player);
         double initialProbability = predictions.removeFirst().baseProb;
 
         record ScoredNode(Map.Entry<State, Node> entry, double score) {
@@ -689,7 +689,7 @@ public class Network2ThirdPhaseActionProcessor {
         }
 
         // Запрос в модель (Batch)
-        List<Prediction> allPredictions = nnService.predictBatch(simulationData, NNService.ModelType.OPTIMIZED);
+        List<Prediction> allPredictions = nnService.predictBatch(simulationData, player);
 
         double bestWinChance = allPredictions.removeFirst().baseProb; // Базовый шанс без действий
         int bestActionIdx = -1;
