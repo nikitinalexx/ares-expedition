@@ -6,28 +6,29 @@ import java.util.Set;
 
 @Data
 public class SharedInputAnalysis {
-    boolean requiresPhaseUpgrade;
-    boolean requiresPhase1Upgrade;
-    boolean requiresPhase2Upgrade;
-    boolean requiresPhase3Upgrade;
-    boolean requiresPhase4Upgrade;
+    public boolean requiresPhaseUpgrade;
+    public boolean requiresPhase1Upgrade;
+    public boolean requiresPhase2Upgrade;
+    public boolean requiresPhase3Upgrade;
+    public boolean requiresPhase4Upgrade;
+    public boolean requiresPhase5Upgrade;
 
-    boolean requiresTagChoice;
+    public boolean requiresTagChoice;
 
-    boolean requiresMicrobeInput;
-    Set<Integer> microbeTargets;
-    boolean requiresAnimalInput;
-    Set<Integer> animalTargets;
-    boolean requiresScienceResourceInput;
-    Set<Integer> scienceResourceTargets;
+    public boolean requiresMicrobeInput;
+    public Set<Integer> microbeTargets;
+    public boolean requiresAnimalInput;
+    public Set<Integer> animalTargets;
+    public boolean requiresScienceResourceInput;
+    public Set<Integer> scienceResourceTargets;
 
-    boolean decomposersActive;
-    boolean marsUniversityActive;
-    boolean viralEnhancersActive;
+    public boolean decomposersActive;
+    public boolean marsUniversityActive;
+    public boolean viralEnhancersActive;
 
-    boolean requiresOxygenCheck;
-    boolean requiresRedCard;
-    Set<Integer> redCardTargets;
+    public boolean requiresOxygenCheck;
+    public boolean requiresRedCard;
+    public Set<Integer> redCardTargets;
 
-    int phaseUpgradeCounter;
+    public int phaseUpgradeCounter;
 }

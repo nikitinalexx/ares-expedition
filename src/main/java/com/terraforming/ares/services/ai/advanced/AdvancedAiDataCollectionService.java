@@ -3,6 +3,7 @@ package com.terraforming.ares.services.ai.advanced;
 import com.terraforming.ares.dataset.GameResult;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.services.ai.AiConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -17,6 +18,7 @@ public class AdvancedAiDataCollectionService implements IDataCollect {
     private static final int OPPONENT_WIN_POINTS_INDEX_OFFSET = 242;
     private static final int HAND_SIZE_INDEX_OFFSET = 52;
     private static final int OPPONENT_HAND_SIZE_INDEX_OFFSET = 256;
+    private static final int PLAYED_TAG_OFFSET = 58;
 
     private final CompleteTableEncoder tableEncoder;
 
@@ -53,6 +55,15 @@ public class AdvancedAiDataCollectionService implements IDataCollect {
     @Override
     public void modifyOpponentWinPoints(float[] data, float wpDelta) {
         modifyWinPoints(data, wpDelta, OPPONENT_WIN_POINTS_INDEX_OFFSET);
+    }
+
+    @Override
+    public void modifyTagCount(float[] data, Tag tag, int tagCountDelta) {
+        int indexOffset = PLAYED_TAG_OFFSET + tag.ordinal();
+
+        float tagCount = data[indexOffset] * AiConstants.NORMALIZATION_VECTOR[indexOffset];
+        tagCount += tagCountDelta;
+        modifyDataInline(data, tagCount, indexOffset);
     }
 
     private void modifyWinPoints(float[] data, float wpDelta, int indexOffset) {

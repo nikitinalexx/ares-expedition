@@ -70,6 +70,7 @@ public class TagWithoutChoiceStep implements DecisionStep {
             aiUtility.simulateDummyHandInsteadOfNewCards(playerCopy, originalPlayerHandSize);
 
             float[] currentFeatures = dataCollect.collectData(gameCopy, playerCopy);
+            dataCollect.modifyTagCount(currentFeatures, value, 1);
             result.add(currentFeatures);
 
         }

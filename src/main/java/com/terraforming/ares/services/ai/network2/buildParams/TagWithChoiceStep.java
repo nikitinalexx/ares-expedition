@@ -7,6 +7,7 @@ import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.MarsContextProvider;
 import com.terraforming.ares.services.ai.AiConstants;
+import com.terraforming.ares.services.ai.advanced.IDataCollect;
 import com.terraforming.ares.services.ai.dl4j.Prediction;
 import com.terraforming.ares.services.ai.turnProcessors.AiUtility;
 
@@ -84,7 +85,12 @@ public class TagWithChoiceStep implements DecisionStep {
 
                 aiUtility.simulateDummyHandInsteadOfNewCards(playerCopy, originalPlayerHandSize);
 
-                simulationsByTag.add(dataCollectContext.getDataCollect().collectData(gameCopy, playerCopy));
+                IDataCollect dataCollect = dataCollectContext.getDataCollect();
+
+                float[] currentFeatures = dataCollect.collectData(gameCopy, playerCopy);
+                dataCollect.modifyTagCount(currentFeatures, value, 1);
+
+                simulationsByTag.add(currentFeatures);
             }
         }
 

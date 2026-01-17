@@ -11,6 +11,9 @@ import com.terraforming.ares.services.ai.AiDiscoveryDecisionService;
 import com.terraforming.ares.services.ai.advanced.IDataCollect;
 import com.terraforming.ares.services.ai.dl4j.NNService;
 import com.terraforming.ares.services.ai.dl4j.Prediction;
+import com.terraforming.ares.services.ai.network2.buildParams.AiInputOptimizer;
+import com.terraforming.ares.services.ai.network2.buildParams.OptimizedInputDecisions;
+import com.terraforming.ares.services.ai.network2.buildParams.SharedInputAnalysis;
 import com.terraforming.ares.services.ai.network2.dto.CardWithChanceModifier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
@@ -29,6 +33,8 @@ public class Network2CorporationMulliganService {
     private final MarsContextProvider marsContextProvider;
     private final AiDiscoveryDecisionService aiDiscoveryDecisionService;
     private final Network2ProjectBuildService network2ProjectBuildService;
+    private final Network2CorporationInputService network2CorporationInputService;
+    private final AiInputOptimizer optimizer;
 
     private final IDataCollect iDataCollect;
     private final NNService nnService;
@@ -44,10 +50,16 @@ public class Network2CorporationMulliganService {
     public List<Integer> getCardsToDiscardForMulligan(MarsGame game, String playerUuid) {
         game = new MarsGame(game);
         final List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
-
         Player player = game.getPlayerByUuid(playerUuid);
         Player anotherPlayer = players.get(0) == player ? players.get(1) : players.get(0);
+
+        SharedInputAnalysis sharedInputAnalysis = network2CorporationInputService.analyzeCorporationsForSharedInput(player.getCorporations().getCards().stream().map(id -> cardService.getCard(id))
+                .map(card -> card.getCardMetadata().getCardAction()).collect(Collectors.toSet())
+        );
+        OptimizedInputDecisions optimizedDecisions = (sharedInputAnalysis == null ? null : optimizer.optimizeInputDecisions(game, player, sharedInputAnalysis));
+
         anotherPlayer.setMc(60);//TODO NEED TO CHECK CHANCE
+
 
         MarsGame corp1Game = projectPlayerBuildCorporationExperiment(game, player, player.getCorporations().getCards().getFirst());
         MarsGame corp2Game = projectPlayerBuildCorporationExperiment(game, player, player.getCorporations().getCards().getLast());

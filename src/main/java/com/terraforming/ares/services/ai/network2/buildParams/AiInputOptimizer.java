@@ -101,6 +101,10 @@ public class AiInputOptimizer {
             upgradesToSimulate.addAll(getUpgradesForPhase(player, 4));
         }
 
+        if (analysis.requiresPhase5Upgrade) {
+            upgradesToSimulate.addAll(getUpgradesForPhase(player, 5));
+        }
+
         return upgradesToSimulate;
     }
 
