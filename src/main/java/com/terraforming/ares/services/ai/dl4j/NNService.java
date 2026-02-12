@@ -43,13 +43,37 @@ public class NNService {
     public NNService() throws Exception {
         networks.put(
                 ModelType.FIRST,
-                MultiLayerNetwork.load(new File("self_play_iter_1_8643_4708.zip"), false)
-//                MultiLayerNetwork.load(new File("mix_4_5_8587_4958.zip"), false)
+//                MultiLayerNetwork.load(new File("self_play_iter_3_8876_4278_a15_l55.zip"), false)
+
+
+//                MultiLayerNetwork.load(new File("self_play_iter_2_8853_4430_batch200_a15_l14.zip"), false)
+
+//                MultiLayerNetwork.load(new File("iter5_epoch_3.zip"), false)
+//                MultiLayerNetwork.load(new File("epoch_4_150.zip"), false)
+                MultiLayerNetwork.load(new File("iter8_v4_350k_epoch_2_375.zip"), false)
+
+
+
+
+
+
+//                MultiLayerNetwork.load(new File("self_play_iter_2_9331_3374.zip"), false)
         );
 
         networks.put(
                 ModelType.SECOND,
-                MultiLayerNetwork.load(new File("self_play_iter_1_8643_4708.zip"), false)
+//                MultiLayerNetwork.load(new File("self_play_iter_2_8853_4430_batch200_a15_l14.zip"), false)
+//                MultiLayerNetwork.load(new File("epoch_1_120.zip"), false)
+                MultiLayerNetwork.load(new File("iter8_v4_350k_epoch_2_375.zip"), false)
+
+
+//                MultiLayerNetwork.load(new File("iter8_epoch_3_50_dropout79_150k_files.zip"), false)
+
+
+
+//                MultiLayerNetwork.load(new File("epoch_1_1768944741372.zip"), false)
+//                MultiLayerNetwork.load(new File("epoch_1_1768929578929.zip"), false)
+
         );
 
         // Инициализируем очереди и батчеры

@@ -21,7 +21,11 @@ import com.terraforming.ares.services.ai.AiConstants;
 import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.DeepNetwork;
 import com.terraforming.ares.services.ai.TestAiService;
+import com.terraforming.ares.services.ai.advanced.IDataCollect;
+import com.terraforming.ares.services.ai.dl4j.NNService;
 import com.terraforming.ares.services.ai.dto.CardProjection;
+import com.terraforming.ares.services.ai.network2.Network2ThirdPhaseActionProcessor;
+import com.terraforming.ares.services.ai.network2.Network2ThirdPhaseActionProjector;
 import com.terraforming.ares.services.ai.turnProcessors.AiMulliganCardsTurn;
 import com.terraforming.ares.services.simulations.CardPickStatistics;
 import com.terraforming.ares.services.simulations.DatasetWriter;
@@ -45,6 +49,7 @@ import java.text.DecimalFormatSymbols;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -80,6 +85,9 @@ public class GameController {
     private final AiPickCardProjectionService aiPickCardProjectionService;
     private final TestAiService testAiService;
     private final CardPickStatistics cardPickStatistics;
+    private final CardCombinationCounter cardCombinationCounter;
+    private final NNService nnService;
+    private final IDataCollect dataCollect;
 
     @PostMapping("/state/test/{networkNumber}")
     public float testGameState(@RequestBody MarsGameRow row, @PathVariable int networkNumber) {
@@ -105,7 +113,7 @@ public class GameController {
             }
 
             //TODO remove
-            gameParameters.setComputers(List.of(PlayerDifficulty.NETWORK, PlayerDifficulty.NETWORK_V2));
+            gameParameters.setComputers(List.of(PlayerDifficulty.NONE, PlayerDifficulty.NETWORK_V2));
 
 
             int aiPlayerCount = (int) gameParameters.getComputers().stream().filter(item -> item != PlayerDifficulty.NONE).count();
@@ -242,7 +250,7 @@ public class GameController {
 
     @GetMapping("/calculateRaw")
     public void calculateRaw(@RequestParam int cardId) throws InterruptedException {
-        List<PlayerDifficulty> difficulties = List.of(PlayerDifficulty.RANDOM, PlayerDifficulty.RANDOM);
+        List<PlayerDifficulty> difficulties = List.of(PlayerDifficulty.NETWORK_V2, PlayerDifficulty.NETWORK_V2);
 
         GameParameters gameParameters = GameParameters.builder()
                 .playerNames(List.of("a", "b"))
@@ -262,7 +270,7 @@ public class GameController {
         int cardToTest = cardId;
 
         try (ExecutorService gameExecutor = Executors.newVirtualThreadPerTaskExecutor()) {
-            for (int i = 0; i < 100; i++) {
+            for (int i = 0; i < 50; i++) {
                 permits.acquire(); // блокирует, но это platform thread (обычно контроллер)
 
                 gameExecutor.submit(() -> {
@@ -280,7 +288,7 @@ public class GameController {
 
                         Player anotherPlayer = players.get(1);
                         double defaultRawValue = 0;
-                        for (int j = 0; j < 200; j++) {
+                        for (int j = 0; j < 50; j++) {
                             MarsGame gameCopy = new MarsGame(game);
                             simulationProcessorService.processSimulation(gameCopy);
 
@@ -301,15 +309,10 @@ public class GameController {
 
 
                         double projectedRawValue = 0;
-                        for (int j = 0; j < 200; j++) {
+                        for (int j = 0; j < 50; j++) {
                             MarsGame gameCopy = new MarsGame(game);
                             Player playerCopy = gameCopy.getPlayerByUuid(player.getUuid());
 
-//                            playerCopy.setMcIncome(playerCopy.getMcIncome() + 2);
-                            playerCopy.setPlantsIncome(playerCopy.getPlantsIncome() +1);
-                            playerCopy.setCardIncome(playerCopy.getCardIncome() +1);
-//                            playerCopy.setPlants(playerCopy.getPlants() +1);
-//                            playerCopy.setHeatIncome(playerCopy.getHeatIncome() + 3);
 
 
                             simulationProcessorService.processSimulation(gameCopy);
@@ -418,7 +421,7 @@ public class GameController {
 
     @GetMapping("/simulations/v3")
     public void runSimulationsV3(@RequestBody SimulationsRequest request) throws InterruptedException {
-        List<PlayerDifficulty> difficulties = List.of(PlayerDifficulty.RANDOM, PlayerDifficulty.NETWORK_V2);
+        List<PlayerDifficulty> difficulties = List.of(PlayerDifficulty.NETWORK_V2, PlayerDifficulty.NETWORK_V2);
 
         List<String> playerNames = new ArrayList<>();
         int counter = 1;
@@ -457,7 +460,13 @@ public class GameController {
         Constants.FIRST_PLAYER_PHASES = new ConcurrentHashMap<>();
         Constants.SECOND_PLAYER_PHASES = new ConcurrentHashMap<>();
 
+        ConcurrentHashMap<Integer, AtomicLong> pointsByTurn = new ConcurrentHashMap<>();
+        ConcurrentHashMap<Integer, AtomicLong> countByTurn = new ConcurrentHashMap<>();
+
         GameResultProducer sharedProducer = queue != null ? new GameResultProducer(queue, 512) : null;
+
+        AtomicLong winPoints = new AtomicLong(0);
+        AtomicLong turns = new AtomicLong(0);
 
         try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
             for (int i = 0; i < totalSims; i++) {
@@ -466,13 +475,12 @@ public class GameController {
                         semaphore.acquire();
 
                         MarsGame game = gameService.createNewSimulation(gameParameters);
-                        if (request.isCollectData()) {
-                            GameResult gameResult = simulationProcessorService.runSimulationWithDataset(game);
-                            sharedProducer.addResult(gameResult);
-                        } else {
+
+                        if (!request.isCollectData()) {
                             simulationProcessorService.processSimulation(game);
                         }
 
+                        GameResult gameResult = request.isCollectData() ? simulationProcessorService.runSimulationWithDataset(game) : null;
 
                         List<Player> players = game.getPlayerUuidToPlayer().values().stream()
                                 .sorted(Comparator.comparing(p -> p.getUuid().substring(p.getUuid().length() - 1)))
@@ -480,6 +488,53 @@ public class GameController {
 
                         int p1 = winPointsService.countWinPoints(players.get(0), game);
                         int p2 = winPointsService.countWinPoints(players.get(1), game);
+
+                        if (Network2ThirdPhaseActionProcessor.MAP.containsKey(players.get(1).getUuid())) {
+                            if (p2 < p1) {
+                                //System.out.println("LOOWER");
+                            }
+                            if (Network2ThirdPhaseActionProcessor.MAP.get(players.get(1).getUuid()) != game.getTurns()) {
+                                System.out.println("Diff turns");
+                            }
+                        }
+
+                        if (Network2ThirdPhaseActionProcessor.MAP.containsKey(players.get(0).getUuid())) {
+                            if (p1 < p2) {
+                                //System.out.println("LOOWER");
+                            }
+                            if (Network2ThirdPhaseActionProcessor.MAP.get(players.get(0).getUuid()) != game.getTurns()) {
+                                System.out.println("Diff turns");
+                            }
+                        }
+
+                        if (Network2ThirdPhaseActionProjector.FINISHING_THROUGH_THIRD.containsKey(players.get(1).getUuid())) {
+                            if (p2 < p1) {
+                                System.out.println("LOOWER FINISHER");
+                            }
+                        }
+
+                        if (Network2ThirdPhaseActionProjector.FINISHING_THROUGH_THIRD.containsKey(players.get(0).getUuid())) {
+                            if (p1 < p2) {
+                                System.out.println("LOOWER FINISHER");
+                            }
+                        }
+
+
+
+                        if (request.isCollectData()) {
+//                            int p = Math.max(p1, p2);
+//
+//                            if (p >= getEliteThreshold(game.getTurns()) * 0.90) {
+//                                // Записываем только если результат на 20% лучше среднего для ЭТОГО хода
+//                                sharedProducer.addResult(gameResult);
+//                            }
+                            sharedProducer.addResult(gameResult);
+                        }
+
+
+
+
+                        turns.addAndGet(game.getTurns());
 
                         if (p1 > p2) firstWins.increment();
                         else if (p2 > p1) secondWins.increment();
@@ -499,6 +554,16 @@ public class GameController {
                             System.out.printf("[SIM] %d/%d (%.1f%%) | Speed: %.1f games/s | P1: %d%%, P2: %d%% %n",
                                     currentTotal, totalSims, (currentTotal * 100.0 / totalSims),
                                     speed, (f * 100 / currentTotal), (s * 100 / currentTotal));
+                        }
+
+                        // Собираем очки для обоих игроков
+                        for (Player player : players) {
+                            int p = winPointsService.countWinPoints(player, game);
+                            winPoints.addAndGet(p);
+
+                            // Статистика в разрезе конкретного хода
+                            pointsByTurn.computeIfAbsent(game.getTurns(), k -> new AtomicLong(0)).addAndGet(p);
+                            countByTurn.computeIfAbsent(game.getTurns(), k -> new AtomicLong(0)).incrementAndGet();
                         }
 
                     } catch (Exception e) {
@@ -525,8 +590,37 @@ public class GameController {
         System.out.printf("%nFinal Result in %ds: 1=%d, 2=%d, D=%d%n",
                 totalElapsed, firstWins.sum(), secondWins.sum(), draws.sum());
 
+        System.out.println("Average win points " + winPoints.get() / 2 / request.getTotalSimulations() + ". Avg turns " + turns.get() / request.getTotalSimulations() + ".");
+
         System.out.println(Constants.FIRST_PLAYER_PHASES);
         System.out.println(Constants.SECOND_PLAYER_PHASES);
+
+        // 2. После завершения цикла выводим таблицу "Нормативов"
+        System.out.println("\n--- Performance Benchmarks (Average Points per Turn) ---");
+        pointsByTurn.keySet().stream().sorted().forEach(t -> {
+            long totalP = pointsByTurn.get(t).get();
+            long games = countByTurn.get(t).get();
+            double avg = (double) totalP / games;
+            System.out.printf("Turn %d: Avg Points = %.2f (based on %d players)%n", t, avg, games);
+        });
+
+//        System.out.println("Unique combinations " + cardCombinationCounter.getTotalUniqueCards() + " " + cardCombinationCounter.getUniqueCount());
+    }
+
+    public double getEliteThreshold(int turn) {
+        // Базовая кривая на основе твоих данных
+        if (turn <= 20) return 75.0;  // Для коротких игр планка высокая
+        if (turn == 21) return 76.0;
+        if (turn == 22) return 78.0;
+        if (turn == 23) return 82.0;
+        if (turn == 24) return 85.0;
+        if (turn == 25) return 88.0; // +18 очков к среднему
+        if (turn == 26) return 92.0;
+        if (turn == 27) return 95.0;
+        if (turn == 28) return 98.0;
+        if (turn == 29) return 102.0;
+        if (turn >= 30) return 110.0; // Для долгих игр требуем сверхрезультата
+        return 120.0;
     }
 
     public void printCardStatistics() {
@@ -1032,7 +1126,9 @@ public class GameController {
             aiComputerCount = 0;
             winProbability = 0;
         } else {
-            winProbability = deepNetwork.testState(game, aiComputer);
+
+//            winProbability = deepNetwork.testState(game, aiComputer);
+            winProbability = (float) nnService.predictBatch(List.of(dataCollect.collectData(game, aiComputer)), NNService.ModelType.SECOND).getFirst().baseProb;
         }
 
         Planet phasePlanet = game.getPlanetAtTheStartOfThePhase();

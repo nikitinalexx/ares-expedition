@@ -2,6 +2,7 @@ package com.terraforming.ares.services.ai;
 
 import com.terraforming.ares.cards.blue.*;
 import com.terraforming.ares.cards.corporations.GenericDummyCard;
+import com.terraforming.ares.cards.green.BusinessNetwork;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.validation.action.FibrousCompositeActionValidator;
@@ -39,6 +40,8 @@ public final class AiConstants {
             ArtificialJungle.class,
             AssetLiquidation.class,
             Birds.class,
+            BuffedBirds.class,
+            Penguins.class,
             BrainstormingSession.class,
             CaretakerContract.class,
             CircuitBoardFactory.class,
@@ -51,6 +54,7 @@ public final class AiConstants {
             HydroElectricEnergy.class,
             IronWorks.class,
             MatterManufactoring.class,
+            BusinessNetwork.class,
             SolarPunk.class,
             Steelworks.class,
             Tardigrades.class,

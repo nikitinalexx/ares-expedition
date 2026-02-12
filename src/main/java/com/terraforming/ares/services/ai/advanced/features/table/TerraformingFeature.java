@@ -33,7 +33,7 @@ public class TerraformingFeature implements FeatureBlock {
     @Override
     public void encode(TableContext ctx, FeatureWriter out) {
         MarsGame game = ctx.getGame();
-        Planet planet = game.getPlanetAtTheStartOfThePhase();
+        Planet planet = game.getPlanet();
 
         float oxygenLeftRatio = (float) planet.oxygenLeft() / planet.oxygenMax();
         float temperatureLeftRatio = (float) planet.temperatureLeft() / planet.temperatureMax();

@@ -46,14 +46,7 @@ public class CargoShips implements InfrastructureExpansionBlueCard {
 
             List<Integer> cargoShipsInput = inputParams.getOrDefault(InputFlag.CARGO_SHIPS.getId(), List.of());
 
-            if (!CollectionUtils.isEmpty(cargoShipsInput) && cargoShipsInput.get(0) == InputFlag.CARGO_SHIPS_HEAT.getId()) {
-                takePlants = false;
-            }
-        }
-
-        if (player.isComputer()) {
-            Planet planet = game.getPlanetAtTheStartOfThePhase();
-            if (planet.isOxygenMax() && !planet.isTemperatureMax()) {
+            if (!CollectionUtils.isEmpty(cargoShipsInput) && cargoShipsInput.getFirst() == InputFlag.CARGO_SHIPS_HEAT.getId()) {
                 takePlants = false;
             }
         }

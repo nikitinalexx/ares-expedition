@@ -30,4 +30,20 @@ public class SpecialEffectsService {
         return player.getPlayed().getCards().stream().map(deckService::getCard).flatMap(c -> c.getSpecialEffects().stream()).collect(Collectors.toSet());
     }
 
+    public int getCardPrice(Player player) {
+        int cardCost = 3;
+
+        Set<SpecialEffect> playerSpecialEffects = getPlayerSpecialEffects(player);
+
+        if (playerSpecialEffects.contains(SpecialEffect.SOLD_CARDS_COST_1_MC_MORE)) {
+            cardCost++;
+        }
+
+        if (playerSpecialEffects.contains(SpecialEffect.EXOCORP_SOLD_CARDS_COST_1_MC_MORE)) {
+            cardCost++;
+        }
+
+        return cardCost;
+    }
+
 }

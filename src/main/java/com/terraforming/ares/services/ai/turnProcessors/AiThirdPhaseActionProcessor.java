@@ -154,8 +154,8 @@ public class AiThirdPhaseActionProcessor {
         }
 
         if (!game.gameEndCondition() && aiEndgameService.canFinishGame(game, player) && (player.getDifficulty().THIRD_PHASE_ACTION != AiTurnChoice.NETWORK || deepNetwork.testState(game, player) >= 0.6)) {
-            if (player.getHand().size() != 0) {
-                aiTurnService.sellCards(player, game, player.getHand().getCards());
+            if (!player.getHand().isEmpty()) {
+                aiTurnService.sellCards(player, game, new ArrayList<>(player.getHand().getCards()));
                 return true;
             }
             if (game.getPlanet().temperatureLeft() > 0) {

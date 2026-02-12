@@ -97,9 +97,6 @@ public class MarsGame {
                     .difficulty(computers.get(i))
                     .build();
             players.add(player);
-            if (i == 1) {
-                player.setAggression(ThreadLocalRandom.current().nextDouble(0.6, 1.2));
-            }
         }
 
         playerUuidToPlayer = players.stream().collect(Collectors.toMap(Player::getUuid, Function.identity()));

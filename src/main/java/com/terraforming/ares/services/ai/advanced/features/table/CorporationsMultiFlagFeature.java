@@ -166,7 +166,7 @@ public class CorporationsMultiFlagFeature implements FeatureBlock {
 
             out.write(zetacell ? 1 : 0);//signals about 2mc discount per ocean
             out.write((zetacell ? 2 : 0) + (arcticAlgae ? 4 : 0));//signals about plants per ocean
-            out.write((zetacell || arcticAlgae) && !game.getPlanetAtTheStartOfThePhase().isOceansMax() ? 1 : 0);
+            out.write((zetacell || arcticAlgae) && !game.getPlanet().isOceansMax() ? 1 : 0);
         }
 
         {

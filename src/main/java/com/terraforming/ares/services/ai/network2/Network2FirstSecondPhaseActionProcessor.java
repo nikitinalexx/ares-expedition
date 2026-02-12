@@ -1,14 +1,13 @@
 package com.terraforming.ares.services.ai.network2;
 
-import com.terraforming.ares.cards.red.SyntheticCatastrophe;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.TurnType;
-import com.terraforming.ares.services.ai.turnProcessors.AiTurnService;
 import com.terraforming.ares.services.ai.network2.buildParams.AiMarsUniversityInputHandler;
 import com.terraforming.ares.services.ai.network2.dto.CardWithChanceAndInput;
 import com.terraforming.ares.services.ai.network2.projection.*;
+import com.terraforming.ares.services.ai.turnProcessors.AiTurnService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

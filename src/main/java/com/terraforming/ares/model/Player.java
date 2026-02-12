@@ -87,8 +87,6 @@ public class Player {
     @Builder.Default
     private List<BuildDto> builds = new ArrayList<>();
 
-    private double aggression;
-
     public Player(Player copy) {
         this.uuid = copy.uuid;
         this.name = copy.name;
@@ -153,7 +151,6 @@ public class Player {
         if (copy.buildContext != null) {
             this.buildContext = new BuildContext(copy.buildContext);
         }
-        this.aggression = copy.aggression;
     }
 
     public void setTerraformingRating(int terraformingRating) {

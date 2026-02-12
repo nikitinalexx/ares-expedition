@@ -3,6 +3,7 @@ package com.terraforming.ares.services.simulations;
 import com.terraforming.ares.dataset.GameResult;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 
@@ -20,28 +21,34 @@ public class GameResultProducer {
     }
 
     public synchronized void addResult(GameResult gameResult) throws InterruptedException {
-        float firstLabel = gameResult.isDraw() ? 0.5f : (gameResult.getWinner() == 1 ? 1f : 0f);
-        float secondLabel = gameResult.isDraw() ? 0.5f : (gameResult.getWinner() == 2 ? 1f : 0f);
+        // Обрабатываем каждого игрока отдельно
+        processPlayerStates(gameResult.getFirstPlayerStates(),
+                gameResult.isDraw() ? 0.5f : (gameResult.getWinner() == 1 ? 1f : 0f));
 
-        for (float[] state : gameResult.getFirstPlayerStates()) {
-            featureBuffer.add(state);
-            labelBuffer.add(firstLabel);
-        }
-        for (float[] state : gameResult.getSecondPlayerStates()) {
-            featureBuffer.add(state);
-            labelBuffer.add(secondLabel);
-        }
+        processPlayerStates(gameResult.getSecondPlayerStates(),
+                gameResult.isDraw() ? 0.5f : (gameResult.getWinner() == 2 ? 1f : 0f));
+    }
 
+    private void processPlayerStates(LinkedHashSet<FloatArrayWrapper> states, float finalOutcome)
+            throws InterruptedException {
+
+        if (states.isEmpty()) return;
+
+        for (FloatArrayWrapper state : states) {
+            featureBuffer.add(state.data());
+            labelBuffer.add(finalOutcome);
+
+            checkAndFlush();
+        }
+    }
+
+    private void checkAndFlush() throws InterruptedException {
         if (featureBuffer.size() >= batchSize) {
-            queue.put(
-                    new SampleBatch(
-                            new ArrayList<>(featureBuffer),
-                            new ArrayList<>(labelBuffer)
-                    )
-            );
+            queue.put(new SampleBatch(new ArrayList<>(featureBuffer), new ArrayList<>(labelBuffer)));
             featureBuffer.clear();
             labelBuffer.clear();
         }
     }
+
 }
 

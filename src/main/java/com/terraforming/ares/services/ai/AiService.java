@@ -6,6 +6,7 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateType;
+import com.terraforming.ares.model.ai.AiExperimentalTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.GameService;
 import com.terraforming.ares.services.StateContextProvider;
@@ -123,8 +124,8 @@ public class AiService {
 
         List<TurnType> possibleTurns = gameService.getPossibleTurns(game, player.getUuid());
 
-        if (possibleTurns.size() == 1 && possibleTurns.get(0) == TurnType.DISCARD_CARDS) {
-            turnProcessors.get(possibleTurns.get(0)).processTurn(game, player);
+        if (possibleTurns.size() == 1 && possibleTurns.getFirst() == TurnType.DISCARD_CARDS) {
+            turnProcessors.get(possibleTurns.getFirst()).processTurn(game, player);
         } else if (game.getStateType() == StateType.PERFORM_BLUE_ACTION) {
             aiThirdPhaseActionProcessor.processTurn(possibleTurns, game, player);
         } else if (game.getStateType() == StateType.BUILD_BLUE_RED_PROJECTS || possibleTurns.contains(TurnType.BUILD_BLUE_RED_PROJECT)) {

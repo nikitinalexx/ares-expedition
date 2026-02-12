@@ -9,6 +9,7 @@ import com.terraforming.ares.services.ai.turnProcessors.AiTurnService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -34,7 +35,7 @@ public class AiEndgameService {
                 player.setMc(player.getMc() + player.getHeat());
                 player.setHeat(0);
             }
-            aiTurnService.sellCards(player, game, player.getHand().getCards());
+            aiTurnService.sellCards(player, game, new ArrayList<>(player.getHand().getCards()));
             return true;
         }
 
@@ -74,33 +75,29 @@ public class AiEndgameService {
 
     public boolean isFinishingGame(MarsGame game, Player player) {
         if (!game.gameEndCondition() && canFinishGame(game, player)) {
-            if (player.getHand().size() != 0) {
-                aiTurnService.sellCards(player, game, player.getHand().getCards());
-                return true;
+            if (!player.getHand().isEmpty()) {
+                aiTurnService.sellCards(player, game, new ArrayList<>(player.getHand().getCards()));
             }
-            if (game.getPlanet().temperatureLeft() > 0) {
+            while (game.getPlanet().temperatureLeft() > 0) {
                 aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
-                return true;
             }
-            if (game.getPlanet().oxygenLeft() > 0) {
+            while (game.getPlanet().oxygenLeft() > 0) {
                 aiTurnService.standardProjectTurn(game, player, StandardProjectType.FOREST);
-                return true;
             }
-            if (game.getPlanet().oceansLeft() > 0) {
+            while (game.getPlanet().oceansLeft() > 0) {
                 aiTurnService.standardProjectTurn(game, player, StandardProjectType.OCEAN);
-                return true;
             }
-            if (game.getPlanet().infrastructureLeft() > 0) {
+            while (game.getPlanet().infrastructureLeft() > 0) {
                 aiTurnService.standardProjectTurn(game, player, StandardProjectType.INFRASTRUCTURE);
-                return true;
             }
+            return true;
         }
         return false;
     }
 
     public boolean canFinishGame(MarsGame game, Player player) {
         int mc = player.getMc();
-        mc += player.getHand().size() * getCardPrice(player);
+        mc += player.getHand().size() * specialEffectsService.getCardPrice(player);
 
         mc -= game.getPlanet().oceansLeft() * standardProjectService.getProjectPrice(player, StandardProjectType.OCEAN);
 
@@ -123,22 +120,6 @@ public class AiEndgameService {
         mc -= game.getPlanet().infrastructureLeft() * standardProjectService.getProjectPrice(player, StandardProjectType.INFRASTRUCTURE);
 
         return mc >= 0;
-    }
-
-    public int getCardPrice(Player player) {
-        int cardCost = 3;
-
-        Set<SpecialEffect> playerSpecialEffects = specialEffectsService.getPlayerSpecialEffects(player);
-
-        if (playerSpecialEffects.contains(SpecialEffect.SOLD_CARDS_COST_1_MC_MORE)) {
-            cardCost++;
-        }
-
-        if (playerSpecialEffects.contains(SpecialEffect.EXOCORP_SOLD_CARDS_COST_1_MC_MORE)) {
-            cardCost++;
-        }
-
-        return cardCost;
     }
 
     private void performRandomStandardProject(MarsGame game, Player player, List<StandardProjectType> standardProjects) {

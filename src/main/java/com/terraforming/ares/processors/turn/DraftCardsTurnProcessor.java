@@ -9,7 +9,6 @@ import com.terraforming.ares.model.turn.DraftCardsTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.DraftCardsService;
-import com.terraforming.ares.services.SpecialEffectsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +21,6 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class DraftCardsTurnProcessor implements TurnProcessor<DraftCardsTurn> {
-    private final SpecialEffectsService specialEffectsService;
     private final CardService cardService;
     private final DraftCardsService draftCardsService;
 

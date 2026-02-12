@@ -1,8 +1,10 @@
 package com.terraforming.ares.services.ai.turnProcessors.random;
 
+import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.cards.blue.Decomposers;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.ai.AiConstants;
 import com.terraforming.ares.services.ai.AiDiscoveryDecisionService;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.terraforming.ares.model.InputFlag.DECOMPOSERS_TAKE_CARD;
@@ -30,7 +33,8 @@ public class AiRandomCardBuildParamsService {
      */
     public Map<Integer, List<Integer>> getInputParamsForBuild(MarsGame game, Player player, Card card) {
         Map<Integer, List<Integer>> result = new HashMap<>();
-        CardAction cardAction = card.getCardMetadata().getCardAction();
+        CardMetadata cardMetadata = card.getCardMetadata();
+        CardAction cardAction = cardMetadata.getCardAction();
 
         if (cardAction == CardAction.CRYOGENIC_SHIPMENT) {
             result.put(InputFlag.PHASE_UPGRADE_CARD.getId(),
@@ -95,8 +99,8 @@ public class AiRandomCardBuildParamsService {
             addLocalHeatTrappingInput(player, result);
         }
 
-        if (!card.getCardMetadata().getResourcesOnBuild().isEmpty()
-                && card.getCardMetadata().getResourcesOnBuild().get(0).getType() == CardCollectableResource.ANY) {
+        if (!cardMetadata.getResourcesOnBuild().isEmpty()
+                && cardMetadata.getResourcesOnBuild().get(0).getType() == CardCollectableResource.ANY) {
             List<Card> cardsToPickFrom = aiUtility.getPlayerCardsWithResource(player,
                     Set.of(CardCollectableResource.MICROBE, CardCollectableResource.ANIMAL, CardCollectableResource.SCIENCE));
             if (cardsToPickFrom.isEmpty()) {
@@ -122,6 +126,12 @@ public class AiRandomCardBuildParamsService {
         }
 
         result.putAll(getActiveInputFromCards(player, playedCards, card, result));
+
+        if (!cardMetadata.getBonuses().isEmpty() && cardMetadata.getBonuses().stream().anyMatch(bonus -> bonus.getType() == GainType.INFRASTRUCTURE)) {
+            if (ThreadLocalRandom.current().nextBoolean()) {
+                result.put(InputFlag.CARGO_SHIPS.getId(), List.of(InputFlag.CARGO_SHIPS_HEAT.getId()));
+            }
+        }
 
         return result;
     }

@@ -144,6 +144,8 @@ public class AiThirdPhaseProjectionService {
             }
         }
 
+
+
         //todo what if spending heat,plants + standard project is a better turn than skip phase?
         return PhaseChoiceProjection.SKIP_PHASE;
     }

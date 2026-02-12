@@ -1,9 +1,11 @@
 package com.terraforming.ares.dataset;
 
+import com.terraforming.ares.services.simulations.FloatArrayWrapper;
 import lombok.Getter;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * Created by oleksii.nikitin
@@ -11,22 +13,22 @@ import java.util.List;
  */
 @Getter
 public class GameResult {
-    private final List<float[]> firstPlayerStates;
-    private final List<float[]> secondPlayerStates;
+    private final LinkedHashSet<FloatArrayWrapper> firstPlayerStates;
+    private final LinkedHashSet<FloatArrayWrapper> secondPlayerStates;
     private int winner;
     private boolean draw;
 
     public GameResult() {
-        firstPlayerStates = new ArrayList<>(120);
-        secondPlayerStates = new ArrayList<>(120);
+        firstPlayerStates = new LinkedHashSet<>();
+        secondPlayerStates = new LinkedHashSet<>();
     }
 
     public void addFirstPlayerState(float[] state) {
-        firstPlayerStates.add(state);
+        firstPlayerStates.add(new FloatArrayWrapper(state));
     }
 
     public void addSecondPlayerState(float[] state) {
-        secondPlayerStates.add(state);
+        secondPlayerStates.add(new FloatArrayWrapper(state));
     }
 
     public void markWinner(int winner) {
@@ -35,24 +37,6 @@ public class GameResult {
 
     public void markDraw() {
         this.draw = true;
-    }
-
-    public float[] getLocalMax() {
-        int vectorSize = firstPlayerStates.get(0).length;
-        float[] localMax = new float[vectorSize];
-
-        for (float[] state : firstPlayerStates) {
-            for (int i = 0; i < vectorSize; i++) {
-                localMax[i] = Math.max(localMax[i], state[i]);
-            }
-        }
-
-        for (float[] state : secondPlayerStates) {
-            for (int i = 0; i < vectorSize; i++) {
-                localMax[i] = Math.max(localMax[i], state[i]);
-            }
-        }
-        return localMax;
     }
 
 }

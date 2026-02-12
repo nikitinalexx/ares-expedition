@@ -1,0 +1,51 @@
+public static final MultiLayerConfiguration CONFIG_TD_SUPER_POWER =
+            new NeuralNetConfiguration.Builder()
+                    .seed(12345)
+                    .weightInit(WeightInit.RELU)
+                    // Оставляем Adam, потому что на 768 нейронах Nesterovs будет слишком неповоротлив
+                    .updater(new Adam(0.0005))
+                    .l2(1e-5) // Используем L2 вместо L1 для стабильности TD
+                    .list()
+                    .layer(new DenseLayer.Builder()
+                            .nIn(436).nOut(768) // Твоя мощная ширина
+                            .activation(Activation.LEAKYRELU) // Чтобы нейроны не засыпали
+                            .build())
+                    .layer(new DenseLayer.Builder()
+                            .nOut(768) // Второй мощный слой
+                            .activation(Activation.LEAKYRELU)
+                            .build())
+                    .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
+                            .nOut(1)
+                            .activation(Activation.SIGMOID)
+                            .build())
+                    .build();
+
+
+Final Result in 125s: 1=236, 2=251, D=13
+Average win points 73. Avg turns 25.
+{1=2754, 2=4085, 3=1830, 4=1541, 5=2612}
+{1=2872, 2=4085, 3=1757, 4=1882, 5=2226}
+
+File #112 | File Avg Loss: 0,008699 | Epoch Rolling Mean: 0,009658
+Trained on batch 112/112. Wait time: 0,000 sec. GPU time: 61,193 sec.
+
+AUC       = 0.872196194582647
+LogLoss   = 0.00986806053729539
+
+
+========================Evaluation Metrics========================
+ # of classes:    2
+ Accuracy:        0,9996
+ Precision:       0,9489
+ Recall:          0,9723
+ F1 Score:        0,9604
+Precision, recall & F1: reported for positive class (class 1 - "1") only
+
+
+=========================Confusion Matrix=========================
+      0      1
+---------------
+ 198975     51 | 0 = 0
+     27    947 | 1 = 1
+
+Confusion matrix format: Actual (rowClass) predicted as (columnClass) N times

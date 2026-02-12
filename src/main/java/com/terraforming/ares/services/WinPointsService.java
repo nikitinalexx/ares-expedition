@@ -142,7 +142,9 @@ public class WinPointsService {
             Herbivores.class,
             PhysicsComplex.class,
             SmallAnimals.class,
+            BuffedBirds.class,
             Birds.class,
+            Penguins.class,
             Fish.class,
             Livestock.class,
             FilterFeeders.class,
@@ -157,7 +159,11 @@ public class WinPointsService {
                 + collectableResources.getOrDefault(PhysicsComplex.class, 0)
                 + collectableResources.getOrDefault(SmallAnimals.class, 0);
 
-        int onePointAnimals = collectableResources.getOrDefault(Birds.class, 0) + collectableResources.getOrDefault(Fish.class, 0) + collectableResources.getOrDefault(Livestock.class, 0);
+        int onePointAnimals = collectableResources.getOrDefault(Birds.class, 0)
+                + collectableResources.getOrDefault(BuffedBirds.class, 0)
+                + collectableResources.getOrDefault(Fish.class, 0)
+                + collectableResources.getOrDefault(Livestock.class, 0)
+                + collectableResources.getOrDefault(Penguins.class, 0);
 
         int oneThirdPointResources = collectableResources.getOrDefault(FilterFeeders.class, 0) + collectableResources.getOrDefault(Tardigrades.class, 0);
 

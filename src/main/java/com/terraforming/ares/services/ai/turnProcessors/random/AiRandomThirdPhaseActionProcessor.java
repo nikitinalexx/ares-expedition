@@ -1,17 +1,17 @@
 package com.terraforming.ares.services.ai.turnProcessors.random;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.cards.blue.InterplanetarySuperhighway;
 import com.terraforming.ares.cards.blue.ResearchGrant;
+import com.terraforming.ares.cards.blue.Sawmill;
+import com.terraforming.ares.cards.green.CargoShips;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.action.ActionInputData;
 import com.terraforming.ares.model.action.ActionInputDataType;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.turn.TurnType;
-import com.terraforming.ares.services.CardService;
-import com.terraforming.ares.services.CardValidationService;
-import com.terraforming.ares.services.StandardProjectService;
-import com.terraforming.ares.services.TerraformingService;
+import com.terraforming.ares.services.*;
 import com.terraforming.ares.services.ai.AiConstants;
 import com.terraforming.ares.services.ai.AiDiscoveryDecisionService;
 import com.terraforming.ares.services.ai.AiEndgameService;
@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.terraforming.ares.services.ai.dto.AvailableTurnType.*;
@@ -43,6 +44,7 @@ public class AiRandomThirdPhaseActionProcessor {
     private final AiRandomPaymentService aiRandomPaymentService;
     private final CardValidationService cardValidationService;
     private final AiRandomSellCardsService aiRandomSellCardsService;
+    private final SpecialEffectsService specialEffectsService;
 
     public AiRandomThirdPhaseActionProcessor(List<ActionValidator<?>> validators,
                                              CardService cardService,
@@ -53,7 +55,7 @@ public class AiRandomThirdPhaseActionProcessor {
                                              TerraformingService terraformingService,
                                              AiRandomCardBuildParamsService aiRandomCardBuildParamsService,
                                              AiRandomPaymentService aiRandomPaymentService,
-                                             CardValidationService cardValidationService, AiRandomSellCardsService aiRandomSellCardsService) {
+                                             CardValidationService cardValidationService, AiRandomSellCardsService aiRandomSellCardsService, SpecialEffectsService specialEffectsService) {
         blueActionValidators = validators.stream().collect(
                 Collectors.toMap(
                         ActionValidator::getType,
@@ -70,6 +72,7 @@ public class AiRandomThirdPhaseActionProcessor {
         this.aiRandomPaymentService = aiRandomPaymentService;
         this.cardValidationService = cardValidationService;
         this.aiRandomSellCardsService = aiRandomSellCardsService;
+        this.specialEffectsService = specialEffectsService;
     }
 
     public boolean processTurn(MarsGame game, Player player, List<TurnType> possibleTurns) {
@@ -105,12 +108,21 @@ public class AiRandomThirdPhaseActionProcessor {
         return true;
     }
 
+
     private boolean performOneOfAvailableTurns(MarsGame game, Player player, List<AvailableTurn> availableTurns) {
         if (availableTurns.isEmpty()) {
             return false;
         }
-
         ThreadLocalRandom random = ThreadLocalRandom.current();
+
+
+        Supplier<Map<Integer, List<Integer>>> cargoShipsInputSupplier = () -> {
+            if (random.nextBoolean()) {
+                return Map.of(InputFlag.CARGO_SHIPS.getId(), List.of(InputFlag.CARGO_SHIPS_HEAT.getId()));
+            }
+            return Map.of();
+        };
+
         AvailableTurn availableTurn = availableTurns.get(random.nextInt(availableTurns.size()));
         switch (availableTurn.getType()) {
             case UNMI_RT -> {
@@ -126,18 +138,24 @@ public class AiRandomThirdPhaseActionProcessor {
                 return true;
             }
             case CONVERT_INFRASTRUCTURE -> {
-                aiTurnService.increaseInfrastructure(player, game, Map.of());
+                aiTurnService.increaseInfrastructure(player, game, cargoShipsInputSupplier.get());
                 return true;
             }
             case STANDARD_PROJECT -> {
                 List<StandardProjectType> availableStandardProjects = standardProjectService.getAvailableStandardProjects(game, player);
                 player.setAiMadeStandardAction(player.getAiMadeStandardAction() + 1);
-                aiTurnService.standardProjectTurn(game, player, availableStandardProjects.get(random.nextInt(availableStandardProjects.size())));
+
+                StandardProjectType standardProjectType = availableStandardProjects.get(random.nextInt(availableStandardProjects.size()));
+                if (standardProjectType == StandardProjectType.INFRASTRUCTURE) {
+                    aiTurnService.standardProjectTurn(game, player, standardProjectType, cargoShipsInputSupplier.get());
+                } else {
+                    aiTurnService.standardProjectTurn(game, player, standardProjectType);
+                }
                 return true;
             }
             case BLUE_ACTION -> {
                 Card blueCard = cardService.getCard(availableTurn.getCard());
-                ActionInputParamsResponse inputParams = getActionInputParams(game, player, blueCard);
+                ActionInputParamsResponse inputParams = getActionInputParams(game, player, blueCard, cargoShipsInputSupplier);
 
                 aiTurnService.performBlueAction(
                         game,
@@ -387,7 +405,7 @@ public class AiRandomThirdPhaseActionProcessor {
             return !player.getHand().isEmpty();
         }
 
-        if (action == CardAction.POWER_INFRASTRUCTURE || action == CardAction.GREEN_HOUSES) {
+        if (action == CardAction.POWER_INFRASTRUCTURE || action == CardAction.GREEN_HOUSES || action == CardAction.HITECH_LAB) {
             return player.getHeat() > 0;
         }
 
@@ -413,10 +431,13 @@ public class AiRandomThirdPhaseActionProcessor {
     }
 
     @SuppressWarnings("unchecked")
-    public ActionInputParamsResponse getActionInputParams(MarsGame game, Player player, Card blueCard) {
+    public ActionInputParamsResponse getActionInputParams(MarsGame game, Player player, Card blueCard, Supplier<Map<Integer, List<Integer>>> cargoShipsInputSupplier) {
         ActionValidator<Card> validator = (ActionValidator<Card>) blueActionValidators.get(blueCard.getClass());
 
         if (validator == null || AiConstants.ACTIONS_WITHOUT_INPUT_PARAMS.contains(blueCard.getClass())) {
+            if (blueCard.getClass() == InterplanetarySuperhighway.class || blueCard.getClass() == Sawmill.class) {
+                return ActionInputParamsResponse.makeActionWithParams(cargoShipsInputSupplier.get());
+            }
             return ActionInputParamsResponse.makeAction();
         }
 
@@ -568,8 +589,6 @@ public class AiRandomThirdPhaseActionProcessor {
     private ActionInputParamsResponse handleSelfReplicatingBacteria(MarsGame game, Player player, Card blueCard, CardAction action, ActionInputData inputData) {
         int cost = inputData.getMax();
         int microbes = player.getCardResourcesCount().get(blueCard.getClass());
-
-        int excess = microbes - cost;
 
         boolean canBuild = microbes >= cost && (ThreadLocalRandom.current().nextDouble() <  Math.min(1.0, 0.5 + 0.15 * (microbes - cost)));
         Optional<BuildContext> toBuild = canBuild ? potentialBuildForSelfReplicating(game, player.getUuid()) : Optional.empty();

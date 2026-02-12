@@ -1,9 +1,9 @@
 package com.terraforming.ares.services.ai.advanced.features.hand;
 
 public class Stats {
-    float sum;
-    float max;
-    int nonZero;
+    public float sum;
+    public float max;
+    public int nonZero;
 
     void add(float v) {
         sum += v;

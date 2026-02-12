@@ -25,7 +25,7 @@ public class GlobalRequiremensFeature implements FeatureBlock {
             Map.entry(GreenHouses.class, 0.095475),
             Map.entry(RegolithEaters.class, 0.1907),
             Map.entry(SmallAnimals.class, 0.139175),
-            Map.entry(SymbioticFungus.class, 0.0546),
+            Map.entry(SymbioticFungus.class, 0.051),
             Map.entry(ArtificialLake.class, 0.134875),
             Map.entry(LakeMariners.class, 0.1453),
             Map.entry(PermafrostExtraction.class, 0.126425),

@@ -191,7 +191,7 @@ public class TableMicrobesFeature implements FeatureBlock {
             boolean ghgProduction = playedCardActions.containsKey(CardAction.GHG_PRODUCTION);
             if (ghgProduction) {
                 out.write(1);
-                out.write(game.getPlanetAtTheStartOfThePhase().isTemperatureMax() ? 0 : 1);
+                out.write(game.getPlanet().isTemperatureMax() ? 0 : 1);
                 out.write(player.getCardResourcesCount().get(GhgProductionBacteria.class));
                 totalMicrobeGenerationStrength++;
             } else {
@@ -205,7 +205,7 @@ public class TableMicrobesFeature implements FeatureBlock {
             boolean nitriteReducting = playedCardActions.containsKey(CardAction.NITRITE_REDUCTING);
             if (nitriteReducting) {
                 out.write(1);
-                out.write(game.getPlanetAtTheStartOfThePhase().isOceansMax() ? 0 : 1);
+                out.write(game.getPlanet().isOceansMax() ? 0 : 1);
                 out.write(player.getCardResourcesCount().get(NitriteReductingBacteria.class));
                 totalMicrobeGenerationStrength++;
             } else {
@@ -219,7 +219,7 @@ public class TableMicrobesFeature implements FeatureBlock {
             boolean regolithEaters = playedCardActions.containsKey(CardAction.REGOLITH_EATERS);
             if (regolithEaters) {
                 out.write(1);
-                out.write(game.getPlanetAtTheStartOfThePhase().isOxygenMax() ? 0 : 1);
+                out.write(game.getPlanet().isOxygenMax() ? 0 : 1);
                 out.write(player.getCardResourcesCount().get(RegolithEaters.class));
                 totalMicrobeGenerationStrength++;
             } else {
@@ -245,7 +245,6 @@ public class TableMicrobesFeature implements FeatureBlock {
             boolean symbioticFungus = playedCardActions.containsKey(CardAction.SYMBIOTIC_FUNGUD);
             if (symbioticFungus) {
                 out.write(1);
-                givesMicrobeToAnotherCapacity++;
             } else {
                 out.write(0);
             }

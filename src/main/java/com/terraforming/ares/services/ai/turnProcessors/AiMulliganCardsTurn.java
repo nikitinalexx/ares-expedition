@@ -4,14 +4,11 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.ai.AiExperimentalTurn;
 import com.terraforming.ares.model.turn.TurnType;
-import com.terraforming.ares.processors.turn.PickCorporationProcessor;
-import com.terraforming.ares.services.CardFactory;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.MarsContextProvider;
 import com.terraforming.ares.services.ai.*;
 import com.terraforming.ares.services.ai.dto.CardValueResponse;
-import com.terraforming.ares.services.ai.network2.Network2CorporationMulliganService;
-import com.terraforming.ares.services.ai.network2.Network2DiscardCardsProcessor;
+import com.terraforming.ares.services.ai.network2.Network2CorporationAndMulliganService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -32,7 +29,7 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
     private final AiDiscoveryDecisionService aiDiscoveryDecisionService;
     private final MarsContextProvider marsContextProvider;
     private final DeepNetwork deepNetwork;
-    private final Network2CorporationMulliganService network2CorporationMulliganService;
+    private final Network2CorporationAndMulliganService network2CorporationAndMulliganService;
 
 
     @Override
@@ -51,7 +48,7 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
         List<Integer> cards = new ArrayList<>(player.getHand().getCards());
 
         if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
-            return network2CorporationMulliganService.getCardsToDiscardForMulligan(game, player.getUuid());
+            return network2CorporationAndMulliganService.getCardsToDiscardForMulligan(game, player.getUuid());
         }
 
         List<Integer> cardsToDiscard = new ArrayList<>();

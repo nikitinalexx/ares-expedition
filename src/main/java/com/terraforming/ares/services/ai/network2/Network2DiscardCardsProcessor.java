@@ -163,7 +163,7 @@ public class Network2DiscardCardsProcessor {
 
         List<CardRating> window = new ArrayList<>(ratedCards.subList(0, windowSize));
 
-        double temperature = explorationTemperature(game);
+        double temperature = explorationTemperature(game) * 0.01;
 
         List<Integer> result = new ArrayList<>(cardsToKeepCount);
         Random rnd = ThreadLocalRandom.current();
@@ -213,14 +213,16 @@ public class Network2DiscardCardsProcessor {
     private double explorationTemperature(MarsGame game) {
         int generation = game.getTurns(); // или аналогичный счётчик хода
 
+        double explorationFactor = 1;
+
         if (generation <= 5) {
-            return 0.45;
+            return 0.45 * explorationFactor;
         } else if (generation <= 15) {
-            return 0.30;
+            return 0.30 * explorationFactor;
         } else if (generation <= 22) {
-            return 0.18;
+            return 0.18 * explorationFactor;
         } else {
-            return 0.08;
+            return 0.08 * explorationFactor;
         }
     }
 

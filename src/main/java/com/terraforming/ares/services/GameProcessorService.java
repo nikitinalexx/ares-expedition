@@ -15,7 +15,6 @@ import com.terraforming.ares.repositories.crudRepositories.SoloRecordEntityRepos
 import com.terraforming.ares.services.ai.AiService;
 import com.terraforming.ares.services.ai.DeepNetwork;
 import com.terraforming.ares.services.ai.advanced.AdvancedAiDataCollectionService;
-import com.terraforming.ares.services.ai.dl4j.JudgeOracle;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,7 +42,6 @@ public class GameProcessorService extends BaseProcessorService {
     private final CrisisRecordEntityRepository crisisRecordEntityRepository;
     private final GameEntityRepository gameEntityRepository;
     private final PlayerEntityRepository playerEntityRepository;
-    private final JudgeOracle judgeOracle;
     private final AdvancedAiDataCollectionService advancedAiDataCollectionService;
 
     public GameProcessorService(List<TurnProcessor<?>> turnProcessor,
@@ -56,7 +54,7 @@ public class GameProcessorService extends BaseProcessorService {
                                 CrisisRecordEntityRepository crisisRecordEntityRepository,
                                 GameEntityRepository gameEntityRepository,
                                 PlayerEntityRepository playerEntityRepository,
-                                DeepNetwork deepNetwork, JudgeOracle judgeOracle, AdvancedAiDataCollectionService advancedAiDataCollectionService) {
+                                DeepNetwork deepNetwork, AdvancedAiDataCollectionService advancedAiDataCollectionService) {
         super(
                 turnTypeService,
                 stateFactory,
@@ -71,7 +69,6 @@ public class GameProcessorService extends BaseProcessorService {
         this.gameEntityRepository = gameEntityRepository;
         this.playerEntityRepository = playerEntityRepository;
         this.deepNetwork = deepNetwork;
-        this.judgeOracle = judgeOracle;
         this.advancedAiDataCollectionService = advancedAiDataCollectionService;
     }
 

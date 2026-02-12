@@ -5,15 +5,14 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.DraftCardsService;
+import com.terraforming.ares.services.SpecialEffectsService;
 import com.terraforming.ares.services.ai.AiConstants;
 import com.terraforming.ares.services.ai.advanced.IDataCollect;
-import com.terraforming.ares.services.ai.dl4j.JudgeOracle;
 import com.terraforming.ares.services.ai.dl4j.NNService;
 import com.terraforming.ares.services.ai.dl4j.Prediction;
 import com.terraforming.ares.services.ai.network2.dto.CardWithChanceModifier;
 import com.terraforming.ares.services.ai.network2.projection.*;
 import com.terraforming.ares.services.ai.turnProcessors.frontier.State;
-import com.terraforming.ares.validation.input.NuclearPlantsOnBuiltEffectValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -37,15 +36,10 @@ public class Network2PickPhaseService {
     private final DraftCardsService draftCardsService;
     private final Network2ProjectBuildService network2ProjectBuildService;
     private final Network2ThirdPhaseActionProjector network2ThirdPhaseActionProjector;
-    private final JudgeOracle judgeOracle;
-    private final NuclearPlantsOnBuiltEffectValidator nuclearPlantsOnBuiltEffectValidator;
+    private final SpecialEffectsService specialEffectsService;
 
     public int pickPhase(MarsGame game, Player player) {
-        if (AiConstants.ENABLE_AI_EXPLORATION) {
-            return choosePhaseWithExploration(game, player);
-        } else {
-            return pickPhaseNoExploration(game, player);
-        }
+        return pickPhaseNoExploration(game, player);
     }
 
     public int pickPhaseNoExploration(MarsGame game, Player player) {
@@ -73,18 +67,6 @@ public class Network2PickPhaseService {
         if (allPhases.containsKey(5)) {
             allPhases.put(5, getFifthPhaseChance(game, player.getUuid()));
         }
-
-        if (Constants.LOG_NET_COMPARISON_V2) {
-            System.out.println(judgeOracle.predict(iDataCollect.collectData(game, player)));
-            allPhases.entrySet().stream()
-                    .sorted(Map.Entry.comparingByKey()) // Сортируем по номеру фазы для порядка
-                    .forEach(entry -> {
-                        System.out.printf("Phase %d: [%6.2f%%]%n",
-                                entry.getKey(),
-                                entry.getValue() * 100);
-                    });
-        }
-
 
 
         return allPhases.entrySet().stream()
@@ -214,8 +196,8 @@ public class Network2PickPhaseService {
         Player player = game.getPlayerByUuid(playerUuid);
         Player anotherPlayer = players.get(0) == player ? players.get(1) : players.get(0);
 
-        addIncome(player);
-        addIncome(anotherPlayer);
+        addIncome(player, 1);
+        addIncome(anotherPlayer, 0.5);
 
         if (player.hasPhaseUpgrade(Constants.PHASE_4_UPGRADE_EXTRA_MC)) {
             player.setMc(player.getMc() + 7);
@@ -269,17 +251,17 @@ public class Network2PickPhaseService {
         }
     }
 
-    private void addCardIncome(Player player) {
-        for (int i = 0; i < player.getCardIncome(); i++) {
+    private void addCardIncome(Player player, double multiplier) {
+        for (int i = 0; i < Math.min(player.getCardIncome(), player.getCardIncome() * multiplier); i++) {
             player.getHand().addCard(AiConstants.GENERIC_DUMMY_ID);
         }
     }
 
-    private void addIncome(Player player) {
-        player.setMc(player.getMc() + player.getMcIncome() + player.getTerraformingRating());
-        player.setHeat(player.getHeat() + player.getHeatIncome());
-        player.setPlants(player.getPlants() + player.getPlantsIncome());
-        addCardIncome(player);
+    private void addIncome(Player player, double multiplier) {
+        player.setMc((int) (player.getMc() + (player.getMcIncome() + player.getTerraformingRating()) * multiplier));
+        player.setHeat((int) (player.getHeat() + player.getHeatIncome() * multiplier));
+        player.setPlants((int) (player.getPlants() + player.getPlantsIncome() * multiplier));
+        addCardIncome(player, multiplier);
     }
 
     private Double getBestPhaseScenarioFinalChance(MarsGame game, Player player) {
@@ -336,6 +318,7 @@ public class Network2PickPhaseService {
         Player player = game.getPlayerByUuid(playerUuid);
         Player anotherPlayer = players.get(0) == player ? players.get(1) : players.get(0);
         player.setChosenPhase(5);
+        anotherPlayer.setChosenPhase(4);
 
         // ===== 1. Определяем правила пятой фазы =====
         DraftCardsDto draftCardsDto = draftCardsService.countCardsToTakeAndDraftByChosenPhase(player);
@@ -410,7 +393,33 @@ public class Network2PickPhaseService {
 
         double delta = totalDeckValue - handValue;
 
-        return baseProb + delta * player.getAggression();
+        addDummyCardsOrMoney(draftCardsDto, player);
+        addDummyCardsOrMoney(draftCardsService.countCardsToTakeAndDraftByChosenPhase(anotherPlayer), anotherPlayer);
+
+        double massEffectProb = nnService.predictBatch(List.of(iDataCollect.collectData(game, player)), player).getFirst().baseProb;
+
+        double massDelta = massEffectProb - baseProb;
+
+        return baseProb + delta + massDelta;
+    }
+
+    private void addDummyCardsOrMoney(DraftCardsDto draftCardsDto, Player player) {
+
+        int cardsTaken = draftCardsDto.getCardsToTake();
+
+        int spaceLeft = Math.max(0, 10 - player.getHand().size());
+        int dummyCardsToAdd = Math.min(cardsTaken, spaceLeft);
+        int overflowToMoney = Math.max(0, cardsTaken - spaceLeft);
+
+        for (int i = 0; i < dummyCardsToAdd; i++) {
+            player.getHand().addCard(AiConstants.GENERIC_DUMMY_ID);
+        }
+
+        // 4. Добавляем деньги за оверфлоу
+        if (overflowToMoney > 0) {
+            // В Марсе карта при оверфлоу обычно дает 3 мегакредита
+            player.setMc(player.getMc() + overflowToMoney * specialEffectsService.getCardPrice(player));
+        }
     }
 
     public <T> List<T> randomSubset(List<T> list, int count, Random rnd) {

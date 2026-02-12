@@ -277,11 +277,15 @@ public class AiTurnService {
     }
 
     public void standardProjectTurn(MarsGame game, Player player, StandardProjectType type) {
+        standardProjectTurn(game, player, type, Map.of());
+    }
+
+    public void standardProjectTurn(MarsGame game, Player player, StandardProjectType type, Map<Integer, List<Integer>> inputParams) {
         String validationResult = standardProjectService.validateStandardProject(game, player, type);
         if (validationResult != null) {
             throw new IllegalStateException(validationResult);
         }
-        makeSyncTurn(player, game, new StandardProjectTurn(player.getUuid(), type, Map.of()));
+        makeSyncTurn(player, game, new StandardProjectTurn(player.getUuid(), type, inputParams));
     }
 
     public void increaseInfrastructure(Player player, MarsGame game, Map<Integer, List<Integer>> inputParams) {

@@ -92,12 +92,6 @@ public class CardProjectionService {
         return filteredCards;
     }
 
-    private float[] build(MarsGame game, Player player, CardWithChanceAndInput cardWithChanceAndInput) {
-        MarsGame projectedMarsGame = projectBuildCardWithRequirements(game, player, cardWithChanceAndInput);
-
-        return advancedAiDataCollectionService.collectData(projectedMarsGame, projectedMarsGame.getPlayerByUuid(player.getUuid()));
-    }
-
     public MarsGame projectBuildCardWithRequirements(MarsGame game, Player player, CardWithChanceAndInput cardWithChanceAndInput) {
         game = new MarsGame(game);
         player = game.getPlayerByUuid(player.getUuid());

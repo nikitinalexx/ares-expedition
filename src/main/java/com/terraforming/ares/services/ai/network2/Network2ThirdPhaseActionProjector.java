@@ -7,6 +7,7 @@ import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.StandardProjectService;
 import com.terraforming.ares.services.ai.AiConstants;
+import com.terraforming.ares.services.ai.AiEndgameService;
 import com.terraforming.ares.services.ai.advanced.IDataCollect;
 import com.terraforming.ares.services.ai.dl4j.NNService;
 import com.terraforming.ares.services.ai.dl4j.Prediction;
@@ -22,6 +23,7 @@ import org.nd4j.common.io.CollectionUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -44,6 +46,7 @@ public class Network2ThirdPhaseActionProjector {
     private final StandardProjectService standardProjectService;
     private final Frontier frontier;
     private final SelfReplicatingBacteriaService selfReplicatingBacteriaService;
+    private final AiEndgameService aiEndgameService;
 
     private final Set<Class<?>> DO_IMMEDIATELY_UNCONDITIONALLY = Set.of(
             HyperionSystemsCorporation.class,
@@ -63,7 +66,6 @@ public class Network2ThirdPhaseActionProjector {
 
         List<ScoredNode> bestRegularFutureOptions = getBestFutureOptions(game, player, modelType);
         List<ScoredNode> bestOpponentRegularFutureOptions = getBestFutureOptions(game, anotherPlayer, modelType);
-
 
         if (playerBlueCards.containsKey(SelfReplicatingBacteria.class)) {
             MarsGame potentialMarsAfterDoingSelfReplicatingBacteria = selfReplicatingBacteriaService.simulateSelfReplicatingBacteriaFinalActions(playerBlueCards, game, player);
@@ -121,6 +123,8 @@ public class Network2ThirdPhaseActionProjector {
 
         return getBestChanceFromOptions(bestRegularFutureOptions, game, player, anotherPlayer, bestOpponentStateAfterStandardProjects);
     }
+
+    public static final ConcurrentHashMap<String, String> FINISHING_THROUGH_THIRD = new ConcurrentHashMap<>();
 
     private State getBestOpponentStateAfterStandardProjects(List<ScoredNode> bestRegularFutureOptions, MarsGame game, Player player, Player opponent) {
         StateContext stateContext = createStateContext(game, opponent);

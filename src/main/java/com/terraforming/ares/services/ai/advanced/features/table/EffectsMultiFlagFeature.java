@@ -160,8 +160,8 @@ public class EffectsMultiFlagFeature implements FeatureBlock {
 
         {
             boolean aquiferPumping = playedCardActions.containsKey(CardAction.AQUIFER_PUMPING);
-            out.write(aquiferPumping ? 1 : 0);
-            out.write(aquiferPumping && !game.getPlanetAtTheStartOfThePhase().isOceansMax() ? Math.max(0, 10 - player.getTitaniumIncome() * 2) : 0);
+            out.write(aquiferPumping && !game.getPlanet().isOceansMax() ? 1 : 0);
+            out.write(aquiferPumping && !game.getPlanet().isOceansMax() ? Math.max(0, 10 - player.getTitaniumIncome() * 2) : (aquiferPumping ? 10 : 0));
         }
 
         {
@@ -172,11 +172,11 @@ public class EffectsMultiFlagFeature implements FeatureBlock {
 
         {
             boolean canTradeMcToTemperature = playedCardActions.containsKey(CardAction.DEVELOPED_INFRASTRUCTURE);
-            boolean hasTemperatureLeft = !game.getPlanetAtTheStartOfThePhase().isTemperatureMax();
+            boolean hasTemperatureLeft = !game.getPlanet().isTemperatureMax();
 
             out.write(canTradeMcToTemperature && hasTemperatureLeft ? 1 : 0);
             out.write(canTradeMcToTemperature
-                    && hasTemperatureLeft ? (player.getPlayed().getCards().stream().map(cardService::getCard).filter(card -> card.getColor() == CardColor.BLUE).limit(5).count() >= 5 ? 5 : 10) : 0);//TODO extract stream of cards into list of cards?
+                    && hasTemperatureLeft ? (player.getPlayed().getCards().stream().map(cardService::getCard).filter(card -> card.getColor() == CardColor.BLUE).limit(5).count() >= 5 ? 5 : 10) : (canTradeMcToTemperature ? 10 : 0));
         }
 
         {
@@ -189,7 +189,7 @@ public class EffectsMultiFlagFeature implements FeatureBlock {
         {
             boolean fish = playedCardActions.containsKey(CardAction.FISH);
             out.write(fish ? 1 : 0);
-            out.write(fish && !game.getPlanetAtTheStartOfThePhase().isOceansMax() ? 1 : 0);
+            out.write(fish && !game.getPlanet().isOceansMax() ? 1 : 0);
             out.write(fish ? player.getCardResourcesCount().get(Fish.class) : 0);
         }
 
@@ -213,19 +213,19 @@ public class EffectsMultiFlagFeature implements FeatureBlock {
 
         {
             boolean ironWorks = playedCardActions.containsKey(CardAction.IRON_WORKS);
-            out.write(ironWorks && !game.getPlanetAtTheStartOfThePhase().isOxygenMax() ? 1 : 0);
+            out.write(ironWorks && !game.getPlanet().isOxygenMax() ? 1 : 0);
         }
 
         {
             boolean steelWorks = playedCardActions.containsKey(CardAction.STEELWORKS);
             out.write(steelWorks ? 1 : 0);//can get 2mc when spent 6heat
-            out.write(steelWorks && !game.getPlanetAtTheStartOfThePhase().isOxygenMax() ? 1 : 0);//loses oxygen raise if it is max
+            out.write(steelWorks && !game.getPlanet().isOxygenMax() ? 1 : 0);//loses oxygen raise if it is max
         }
 
         {
             boolean livestock = playedCardActions.containsKey(CardAction.LIVESTOCK);
             out.write(livestock ? 1 : 0);
-            out.write(livestock && !game.getPlanetAtTheStartOfThePhase().isTemperatureMax() ? 1 : 0);
+            out.write(livestock && !game.getPlanet().isTemperatureMax() ? 1 : 0);
             out.write(livestock ? player.getCardResourcesCount().get(Livestock.class) : 0);
         }
 
@@ -241,17 +241,17 @@ public class EffectsMultiFlagFeature implements FeatureBlock {
         {
             boolean physicsComplex = playedCardActions.containsKey(CardAction.PHYSICS_COMPLEX);
             out.write(physicsComplex ? 1 : 0);
-            out.write(physicsComplex && !game.getPlanetAtTheStartOfThePhase().isTemperatureMax() ? 1 : 0);
+            out.write(physicsComplex && !game.getPlanet().isTemperatureMax() ? 1 : 0);
             out.write(physicsComplex ? player.getCardResourcesCount().get(PhysicsComplex.class) : 0);
         }
 
         {
             boolean canTradeMcToOxygen = playedCardActions.containsKey(CardAction.PROGRESSIVE_POLICIES);
-            boolean hasOxygenLeft = !game.getPlanetAtTheStartOfThePhase().isOxygenMax();
+            boolean hasOxygenLeft = !game.getPlanet().isOxygenMax();
 
             out.write(canTradeMcToOxygen && hasOxygenLeft ? 1 : 0);
             out.write(canTradeMcToOxygen
-                    && hasOxygenLeft ? (playedTagToCount.getOrDefault(Tag.EVENT, 0L) >= 4 ? 5 : 10) : 0);
+                    && hasOxygenLeft ? (playedTagToCount.getOrDefault(Tag.EVENT, 0L) >= 4 ? 5 : 10) : (canTradeMcToOxygen ? 10 : 0));
         }
 
         {
@@ -275,25 +275,25 @@ public class EffectsMultiFlagFeature implements FeatureBlock {
 
         {
             boolean volcanicPools = playedCardActions.containsKey(CardAction.VOLCANIC_POOLS);
-            boolean hasOceansLeft = !game.getPlanetAtTheStartOfThePhase().isOceansMax();
+            boolean hasOceansLeft = !game.getPlanet().isOceansMax();
 
             out.write(volcanicPools && hasOceansLeft ? 1 : 0);
-            out.write(volcanicPools && hasOceansLeft ? Math.max(0, 12 - playedTagToCount.getOrDefault(Tag.ENERGY, 0L)) : 0);
+            out.write(volcanicPools && hasOceansLeft ? Math.max(0, 12 - playedTagToCount.getOrDefault(Tag.ENERGY, 0L)) : (volcanicPools ? 12 : 0));
         }
 
         {
             boolean waterImportFromEuropa = playedCardActions.containsKey(CardAction.WATER_IMPORT);
             boolean ioMiningIndustries = playedCardClasses.contains(IoMiningIndustries.class);
-            boolean hasOceansLeft = !game.getPlanetAtTheStartOfThePhase().isOceansMax();
+            boolean hasOceansLeft = !game.getPlanet().isOceansMax();
 
             out.write(waterImportFromEuropa && hasOceansLeft ? 1 : 0);
-            out.write(waterImportFromEuropa && hasOceansLeft ? Math.max(0, 12 - player.getTitaniumIncome()) : 0);
+            out.write(waterImportFromEuropa && hasOceansLeft ? Math.max(0, 12 - player.getTitaniumIncome()) : (waterImportFromEuropa ? 12 : 0));
             out.write((waterImportFromEuropa ? 1 : 0) + (ioMiningIndustries ? 1 : 0));
         }
 
         {
             boolean woodBurningStoves = playedCardActions.containsKey(CardAction.WOOD_BURNING_STOVES);
-            out.write(woodBurningStoves && !game.getPlanetAtTheStartOfThePhase().isTemperatureMax() ? 1 : 0);
+            out.write(woodBurningStoves && !game.getPlanet().isTemperatureMax() ? 1 : 0);
         }
 
         {
@@ -311,10 +311,10 @@ public class EffectsMultiFlagFeature implements FeatureBlock {
 
         {
             boolean gasCooledReactors = playedCardActions.containsKey(CardAction.GAS_COOLED_REACTORS);
-            boolean hasTemperatureLeft = !game.getPlanetAtTheStartOfThePhase().isTemperatureMax();
+            boolean hasTemperatureLeft = !game.getPlanet().isTemperatureMax();
 
             out.write(gasCooledReactors && hasTemperatureLeft ? 1 : 0);
-            out.write(gasCooledReactors && hasTemperatureLeft ? (12 - player.getPhaseCards().stream().filter(phaseCard -> phaseCard != 0).count() * 2) : 0);
+            out.write(gasCooledReactors && hasTemperatureLeft ? (12 - player.getPhaseCards().stream().filter(phaseCard -> phaseCard != 0).count() * 2) : (gasCooledReactors ? 12 : 0));
         }
 
         {
@@ -335,7 +335,7 @@ public class EffectsMultiFlagFeature implements FeatureBlock {
 
         {
             boolean volcanicSoil = playedCardActions.containsKey(CardAction.VOLCANIC_SOIL);
-            out.write(volcanicSoil && !game.getPlanetAtTheStartOfThePhase().isTemperatureMax() ? 1 : 0);
+            out.write(volcanicSoil && !game.getPlanet().isTemperatureMax() ? 1 : 0);
         }
 
         {

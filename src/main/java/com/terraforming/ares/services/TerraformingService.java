@@ -153,7 +153,7 @@ public class TerraformingService {
                 .map(cardService::getCard)
                 .forEach(project -> project.onInfrastructureChangedEffect(context));
 
-        player.getHand().addCard(cardService.dealCards(game, 1).get(0));
+        player.getHand().addCard(cardService.dealCards(game, 1).getFirst());
     }
 
     public void reduceTemperature(MarsContext context) {
