@@ -1,11 +1,9 @@
 package com.terraforming.ares.services.simulations;
 
-import com.terraforming.ares.services.ai.AiConstants;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.io.File;
 import java.time.LocalDateTime;
@@ -29,7 +27,7 @@ public class DatasetWriter implements Runnable {
     private final List<Float> labelBuffer = new ArrayList<>(TARGET_FILE_ROWS);
 
     private final Random rnd = new Random();
-    private static final AtomicInteger FILE_INDEX = new AtomicInteger(300);
+    private static final AtomicInteger FILE_INDEX = new AtomicInteger(301);
 
     private static final String FULL_DATA_DIR;
 
@@ -76,7 +74,7 @@ public class DatasetWriter implements Runnable {
 
         // Подготовка плоских массивов
         float[] flatFeatures = new float[usableSize * totalFeatureSize];
-        float[] flatLabels   = new float[usableSize];
+        float[] flatLabels = new float[usableSize];
 
         for (int i = 0; i < usableSize; i++) {
             System.arraycopy(

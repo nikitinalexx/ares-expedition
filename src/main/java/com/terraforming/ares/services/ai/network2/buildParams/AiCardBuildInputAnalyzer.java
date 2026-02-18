@@ -34,14 +34,6 @@ public class AiCardBuildInputAnalyzer {
             analyzeBaseCardRequirements(player, card.getCardMetadata(), analysis);
         }
 
-        if (analysis.requiresRedCard) {
-            List<Card> redCardsToCheck = analysis.getRedCardTargets().stream().map(cardService::getCard).toList();
-            analyzeActiveEffectRequirements(player, redCardsToCheck, analysis);
-            for (Card card : redCardsToCheck) {
-                analyzeBaseCardRequirements(player, card.getCardMetadata(), analysis);
-            }
-        }
-
         if (analysis.requiresMicrobeInput) {
             analysis.microbeTargets = aiUtility.getPlayerCardsWithResource(player, Set.of(CardCollectableResource.MICROBE)).stream().filter(
                             card -> card.getCardMetadata().getCardAction() != CardAction.BACTERIAL_AGGREGATES ||
@@ -150,12 +142,11 @@ public class AiCardBuildInputAnalyzer {
                 }
 
                 case SYNTHETIC_CATASTROPHE -> {
-                    analysis.requiresRedCard = true;
                     analysis.redCardTargets = player.getPlayed().getCards().stream()
                             .map(cardService::getCard)
                             .filter(card -> card.getColor() == CardColor.RED)
                             .map(Card::getId)
-                            .collect(Collectors.toSet());
+                            .collect(Collectors.toList());
                     return;
                 }
             }
@@ -196,7 +187,7 @@ public class AiCardBuildInputAnalyzer {
         boolean containsAnimalPlantMicrobe = containsDynamicTag || tagLongMap.containsKey(Tag.ANIMAL) || tagLongMap.containsKey(Tag.PLANT) || tagLongMap.containsKey(Tag.MICROBE);
 
         analysis.decomposersActive = analysis.decomposersActive || activeTagEffects.contains(CardAction.DECOMPOSERS) && containsAnimalPlantMicrobe;
-        analysis.marsUniversityActive = analysis.marsUniversityActive ||  activeTagEffects.contains(CardAction.MARS_UNIVERSITY) && (containsDynamicTag || tagLongMap.containsKey(Tag.SCIENCE));
+        analysis.marsUniversityActive = analysis.marsUniversityActive || activeTagEffects.contains(CardAction.MARS_UNIVERSITY) && (containsDynamicTag || tagLongMap.containsKey(Tag.SCIENCE));
         analysis.viralEnhancersActive = analysis.viralEnhancersActive || activeTagEffects.contains(CardAction.VIRAL_ENHANCERS) && containsAnimalPlantMicrobe;
     }
 

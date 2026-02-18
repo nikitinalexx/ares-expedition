@@ -4,35 +4,31 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.MarsContextProvider;
-import com.terraforming.ares.services.ai.AiDiscoveryDecisionService;
+import com.terraforming.ares.services.ai.AiConstants;
 import com.terraforming.ares.services.ai.advanced.IDataCollect;
 import com.terraforming.ares.services.ai.dl4j.NNService;
 import com.terraforming.ares.services.ai.dl4j.Prediction;
 import com.terraforming.ares.services.ai.network2.buildParams.AiInputOptimizer;
 import com.terraforming.ares.services.ai.network2.buildParams.OptimizedInputDecisions;
 import com.terraforming.ares.services.ai.network2.buildParams.SharedInputAnalysis;
-import com.terraforming.ares.services.ai.network2.dto.CardWithChanceAndInput;
-import com.terraforming.ares.services.ai.network2.dto.CardWithChanceModifier;
-import com.terraforming.ares.services.ai.network2.projection.CardProjectionService;
-import com.terraforming.ares.services.ai.network2.projection.Scenario;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
 public class Network2CorporationAndMulliganService {
     private static final int MULLIGAN_CARDS_TO_CHECK_FROM_DECK = 100;
+    private static final int CORP_SIMULATIONS = 50;
+
     private final CardService cardService;
     private final MarsContextProvider marsContextProvider;
-    private final AiDiscoveryDecisionService aiDiscoveryDecisionService;
-    private final Network2ProjectBuildService network2ProjectBuildService;
     private final Network2CorporationInputService network2CorporationInputService;
     private final AiInputOptimizer optimizer;
-    private final CardProjectionService cardProjectionService;
+    private final Network2DiscardCardsProcessor network2DiscardCardsProcessor;
 
     private final IDataCollect iDataCollect;
     private final NNService nnService;
@@ -47,70 +43,212 @@ public class Network2CorporationAndMulliganService {
     public record CorpEvaluation(
             int corporationId,
             OptimizedInputDecisions inputDecisions
-    ) {}
-
-
-    public List<Integer> getCardsToDiscardForMulligan(MarsGame game, String playerUuid) {
-        game = new MarsGame(game);
-        final List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
-        Player player = game.getPlayerByUuid(playerUuid);
-        Player anotherPlayer = players.get(0) == player ? players.get(1) : players.get(0);
-
-        SharedInputAnalysis sharedInputAnalysis = network2CorporationInputService.analyzeCorporationsForSharedInput(player.getCorporations().getCards().stream().map(cardService::getCard)
-                .map(card -> card.getCardMetadata().getCardAction()).collect(Collectors.toSet())
-        );
-        OptimizedInputDecisions optimizedDecisions = (sharedInputAnalysis == null ? null : optimizer.optimizeInputDecisions(game, player, sharedInputAnalysis));
-
-        anotherPlayer.setMc(60);//TODO NEED TO CHECK CHANCE
-        //TODO not all corporations are projected well
-
-
-        MarsGame corp1Game = projectPlayerBuildCorporationExperiment(game, player, player.getCorporations().getCards().getFirst(), optimizedDecisions);
-        MarsGame corp2Game = projectPlayerBuildCorporationExperiment(game, player, player.getCorporations().getCards().getLast(), optimizedDecisions);
-
-        List<Prediction> predictions = nnService.predictBatch(List.of(iDataCollect.collectData(corp1Game, corp1Game.getPlayerByUuid(playerUuid)), iDataCollect.collectData(corp2Game, corp2Game.getPlayerByUuid(playerUuid))), player);
-        List<Double> baseChances = List.of(predictions.getFirst().baseProb, predictions.getLast().baseProb);
-        if (dominates(baseChances.getFirst(), baseChances.getLast())) {
-            return discardCardsOnlyForOneCorp(evaluateHandForCorp(corp1Game, playerUuid, baseChances.getFirst()), corp1Game.getPlayerByUuid(playerUuid).getHand().getCards());
-        } else if (dominates(baseChances.getLast(), baseChances.getFirst())) {
-            return discardCardsOnlyForOneCorp(evaluateHandForCorp(corp2Game, playerUuid, baseChances.getLast()), corp2Game.getPlayerByUuid(playerUuid).getHand().getCards());
-        }
-
-        return discardCardsForTwoCorps(
-                corp1Game,
-                corp2Game,
-                playerUuid,
-                baseChances.getFirst(),
-                baseChances.getLast()
-        );
+    ) {
     }
 
-    private List<Integer> discardCardsOnlyForOneCorp(
-            HandEvaluation eval,
-            List<Integer> hand
-    ) {
-        List<Integer> discard = new ArrayList<>();
+    public record StartupDecision(int corporationId, List<Integer> cardsToDiscard, double expectedValue) {
+    }
 
-        for (Integer cardId : hand) {
-            double delta = eval.cardIdToDelta().get(cardId);
-            if (delta < eval.avgDeckDelta) {
-                discard.add(cardId);
+    public List<Integer> getCardsToDiscard(MarsGame originalGame, String playerUuid) {
+        originalGame = new MarsGame(originalGame);
+        final List<Player> players = new ArrayList<>(originalGame.getPlayerUuidToPlayer().values());
+        Player originalPlayer = originalGame.getPlayerByUuid(playerUuid);
+        Player anotherPlayer = players.get(0) == originalPlayer ? players.get(1) : players.get(0);
+        anotherPlayer.setMc(60);
+
+        List<Integer> startupHand = new ArrayList<>(originalPlayer.getHand().getCards());
+        List<Integer> corps = new ArrayList<>(originalPlayer.getCorporations().getCards());
+
+        List<StartupDecision> options = new ArrayList<>();
+
+        SharedInputAnalysis sharedInputAnalysis = network2CorporationInputService.analyzeCorporationsForSharedInput(originalPlayer.getCorporations().getCards().stream().map(cardService::getCard)
+                .map(card -> card.getCardMetadata().getCardAction()).collect(Collectors.toSet())
+        );
+        OptimizedInputDecisions optimizedDecisions = (sharedInputAnalysis == null ? null : optimizer.optimizeInputDecisions(originalGame, originalPlayer, sharedInputAnalysis));
+
+        Deck projectsDeck = cardService.createProjectsDeck(originalGame.getExpansions());
+        projectsDeck.removeCards(originalPlayer.getHand().getCards());
+        List<Integer> deck = new ArrayList<>(projectsDeck.getCards());
+
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+
+        for (Integer corpId : corps) {
+            // Проводим N симуляций для каждой корпорации
+            double totalValue = 0;
+
+            MarsGame simGame = new MarsGame(originalGame);
+            Player simPlayer = simGame.getPlayerByUuid(playerUuid);
+            applyCorporationEffect(simGame, simPlayer, corpId, optimizedDecisions);
+
+            double baseProbBeforeMulligan = nnService.predictBatch(List.of(iDataCollect.collectData(simGame, simPlayer)), simPlayer).getFirst().baseProb;
+            List<Integer> currentKeep = optimizeMulliganForCorp(simGame, simPlayer, startupHand, baseProbBeforeMulligan);
+            Card corporationCard = cardService.getCard(corpId);
+            CardAction cardAction = corporationCard.getCardMetadata().getCardAction();
+
+            List<float[]> simAfterMulligan = new ArrayList<>();
+
+            for (int i = 0; i < CORP_SIMULATIONS; i++) {
+                // 3. Выполняем "честный" муллиган именно под эту корпу
+                // Здесь внутри используется нейронка, которая уже видит построенную корпу!
+                int totalCardsGet = startupHand.size() - currentKeep.size();
+                if (cardAction == CardAction.INVENTRIX_CORPORATION) {
+                    totalCardsGet += 3;
+                }
+
+                List<Integer> newCards = randomSubset(deck, totalCardsGet, random);
+                if (cardAction == CardAction.ZETACELL_CORPORATION) {
+                    newCards.addAll(getFiveRandomCards(deck, random, newCards));
+                } else if (cardAction == CardAction.DEVTECHS_CORPORATION) {
+                    getFiveRandomCards(deck, random, newCards).stream().map(cardService::getCard).filter(c -> c.getColor() == CardColor.GREEN).forEach(c -> newCards.add(c.getId()));
+                } else if (cardAction == CardAction.LAUNCH_STAR_CORPORATION) {
+                    while (true) {
+                        int randomCard = deck.get(random.nextInt(deck.size()));
+                        if (newCards.contains(randomCard)) {
+                            continue;
+                        }
+                        Card card = cardService.getCard(randomCard);
+                        if (card.getColor() != CardColor.BLUE) {
+                            continue;
+                        }
+                        newCards.add(randomCard);
+                        break;
+                    }
+                } else if (cardAction == CardAction.MINING_GUILD_CORPORATION) {
+                    while (true) {
+                        int randomCard = deck.get(random.nextInt(deck.size()));
+                        if (newCards.contains(randomCard)) {
+                            continue;
+                        }
+                        Card card = cardService.getCard(randomCard);
+                        if (!card.getTags().contains(Tag.BUILDING)) {
+                            continue;
+                        }
+                        newCards.add(randomCard);
+                        break;
+                    }
+                } else if (cardAction == CardAction.ECOLINE_CORPORATION) {
+                    while (true) {
+                        int randomCard = deck.get(random.nextInt(deck.size()));
+                        if (newCards.contains(randomCard)) {
+                            continue;
+                        }
+                        Card card = cardService.getCard(randomCard);
+                        if (!card.getTags().contains(Tag.PLANT)) {
+                            continue;
+                        }
+                        newCards.add(randomCard);
+                        break;
+                    }
+                }
+
+                simPlayer.getHand().addCards(newCards);
+
+                if (cardAction == CardAction.ZETACELL_CORPORATION) {
+                    List<Integer> bestCards = network2DiscardCardsProcessor.getBestCards(simGame, simPlayer, new ArrayList<>(simPlayer.getHand().getCards()), simPlayer.getHand().getCards().size() - 4);
+                    simPlayer.getHand().getCards().clear();
+                    simPlayer.getHand().getCards().addAll(bestCards);
+                }
+
+                simAfterMulligan.add(iDataCollect.collectData(simGame, simPlayer));
+
+                simPlayer.getHand().getCards().clear();
+                simPlayer.getHand().addCards(currentKeep);
+            }
+
+            List<Prediction> predictions = nnService.predictBatch(simAfterMulligan, simPlayer);
+
+            for (Prediction pred : predictions) {
+                totalValue += pred.baseProb;
+            }
+            List<Integer> cardsToDiscard = new ArrayList<>(startupHand);
+            cardsToDiscard.removeAll(currentKeep);
+
+            options.add(new StartupDecision(corpId, cardsToDiscard, totalValue / CORP_SIMULATIONS));
+        }
+
+        return getBestStartupDecision(options).cardsToDiscard();
+    }
+
+    private StartupDecision getBestStartupDecision(List<StartupDecision> options) {
+        StartupDecision bestStartupDecision;
+        if (AiConstants.EXPLORATION_ON_CORP_PICK && (ThreadLocalRandom.current().nextInt(10) == 1 || Math.abs(options.get(0).expectedValue - options.get(1).expectedValue) <= 0.02)) {
+            bestStartupDecision = options.get(ThreadLocalRandom.current().nextInt(2));
+        } else {
+            bestStartupDecision = options.stream().max(Comparator.comparingDouble(StartupDecision::expectedValue)).orElseThrow();
+        }
+        return bestStartupDecision;
+    }
+
+    private List<Integer> getFiveRandomCards(List<Integer> deck, ThreadLocalRandom random, List<Integer> newCards) {
+        List<Integer> fiveRandomCards = new ArrayList<>();
+        while (fiveRandomCards.size() < 5) {
+            int randomCard = deck.get(random.nextInt(deck.size()));
+            if (newCards.contains(randomCard) || fiveRandomCards.contains(randomCard)) {
+                continue;
+            }
+            fiveRandomCards.add(randomCard);
+        }
+        return fiveRandomCards;
+    }
+
+    public <T> List<T> randomSubset(List<T> list, int count, Random rnd) {
+        int size = list.size();
+        if (count >= size) return list;
+
+        return rnd.ints(0, size)
+                .distinct()
+                .limit(count)
+                .mapToObj(list::get)
+                .collect(Collectors.toList());
+    }
+
+    private void applyCorporationEffect(MarsGame simGame, Player simPlayer, int selectedCorporationId, OptimizedInputDecisions optimizedDecisions) {
+        simPlayer.setSelectedCorporationCard(selectedCorporationId);
+        simPlayer.setMulligan(false);
+        simPlayer.getPlayed().addCard(selectedCorporationId);
+        List<Integer> originalHand = new ArrayList<>(simPlayer.getHand().getCards());
+
+        CorporationCard card = (CorporationCard) cardService.getCard(selectedCorporationId);
+        final MarsContext marsContext = marsContextProvider.provide(simGame, simPlayer);
+        card.buildProject(marsContext);
+        if (card.onBuiltEffectApplicableToItself()) {
+            card.postProjectBuiltEffect(marsContext, card, network2CorporationInputService.getCorporationInput(simGame, simPlayer, card.getCardMetadata().getCardAction(), optimizedDecisions));
+        }
+        simPlayer.getHand().getCards().clear();
+        simPlayer.getHand().getCards().addAll(originalHand);
+    }
+
+    private List<Integer> optimizeMulliganForCorp(MarsGame game, Player player, List<Integer> fullHand, double baseProb) {
+        // ВАЖНО: Мы здесь используем твой метод, который считает дельты карт,
+        // но так как корпа уже "построена" в simGame, дельты будут ОЧЕНЬ точными.
+        // Нейронка скажет: "Для этой корпы сталь бесполезна, дельта карты 0.001 -> сброс".
+
+        HandEvaluation eval = evaluateHandForCorp(game, player.getUuid(), baseProb);
+        List<Integer> toKeep = new ArrayList<>();
+
+        for (Integer cardId : fullHand) {
+            if (eval.cardIdToDelta().getOrDefault(cardId, 0.0) >= eval.avgDeckDelta()) {
+                toKeep.add(cardId);
             }
         }
 
-        return discard;
+        // Применяем изменения к руке симуляционного игрока
+        player.getHand().getCards().clear();
+        player.getHand().addCards(toKeep);
+
+        return toKeep;
     }
 
     private HandEvaluation evaluateHandForCorp(
             MarsGame game,
             String playerUuid,
-            double baseProb
+            double baseProb // Вероятность с текущей полной рукой
     ) {
         Player player = game.getPlayerByUuid(playerUuid);
-
         List<Integer> originalHand = new ArrayList<>(player.getHand().getCards());
 
-        // ==== 1. Base prob without each hand card ====
+        // ==== 1. Оценка ценности каждой карты в руке ====
+        // Считаем дельту: (Шанс с рукой) - (Шанс без этой конкретной карты)
         List<float[]> statesWithoutCards = new ArrayList<>();
         for (Integer cardId : originalHand) {
             player.getHand().removeCard(cardId);
@@ -118,205 +256,181 @@ public class Network2CorporationAndMulliganService {
             player.getHand().addCard(cardId);
         }
 
-        List<Prediction> preds = nnService.predictBatch(statesWithoutCards, player);
-
-        Map<Integer, Double> cardIdToBaseChance = new HashMap<>();
-        for (int i = 0; i < originalHand.size(); i++) {
-            cardIdToBaseChance.put(originalHand.get(i), preds.get(i).baseProb);
-        }
-
-        // ==== 2. Projections (hand + deck sample) ====
         Deck deck = cardService.createProjectsDeck(game.getExpansions());
         deck.removeCards(player.getHand().getCards());
+        List<Integer> deckSample = deck.dealCards(Math.min(deck.size(), MULLIGAN_CARDS_TO_CHECK_FROM_DECK));
 
-        List<Card> cardsToCheck = Stream.concat(
-                originalHand.stream().map(cardService::getCard),
-                deck.dealCards(Math.min(deck.size(), MULLIGAN_CARDS_TO_CHECK_FROM_DECK))
-                        .stream()
-                        .map(cardService::getCard)
-        ).toList();
+        List<float[]> statesWithExtraCard = new ArrayList<>();
+        for (Integer deckCardId : deckSample) {
+            // ВАЖНО: Мы добавляем карту в ПОЛНУЮ руку (8+1)
+            player.getHand().addCard(deckCardId);
+            statesWithExtraCard.add(iDataCollect.collectData(game, player));
+            player.getHand().removeCard(deckCardId);
+        }
 
-        List<CardWithChanceModifier> projections =
-                network2ProjectBuildService.getBestCardProjectionsIgnoreRequirements(
-                        game,
-                        player,
-                        cardsToCheck
-                );
+        List<float[]> allStates = new ArrayList<>(statesWithoutCards);
+        allStates.addAll(statesWithExtraCard);
+
+        List<Prediction> allPreds = nnService.predictBatch(allStates, player);
+
+
+        List<Prediction> handPreds = allPreds.subList(0, statesWithoutCards.size());
+        List<Prediction> deckPreds = allPreds.subList(statesWithoutCards.size(), allPreds.size());
+
 
         Map<Integer, Double> handDeltas = new HashMap<>();
-        double totalDeckDelta = 0;
-        int deckCount = 0;
+        double totalHandValue = 0;
 
-        for (CardWithChanceModifier p : projections) {
-            int cardId = p.getCard().getId();
-            boolean isHandCard = originalHand.contains(cardId);
+        for (int i = 0; i < originalHand.size(); i++) {
+            int cardId = originalHand.get(i);
+            // Дельта показывает, сколько "шансов на победу" приносит именно эта карта, находясь в руке
+            double delta = baseProb - handPreds.get(i).baseProb;
 
-            double delta = (p.getChance() - (isHandCard ? cardIdToBaseChance.get(cardId) : baseProb)) * p.getModifier();
-
-            if (originalHand.contains(cardId)) {
-                handDeltas.put(cardId, delta);
-            } else {
-                totalDeckDelta += delta;
-                deckCount++;
-            }
+            // Мы берем только положительные дельты (карты-активы)
+            double score = Math.max(0, delta);
+            handDeltas.put(cardId, score);
+            totalHandValue += score;
         }
 
-        double avgDeckDelta = deckCount > 0
-                ? totalDeckDelta / deckCount
+
+        // Считаем среднюю вероятность "руки со случайной дырой"
+        // Это наш реалистичный Baseline: "у меня 7 карт, и я жду восьмую"
+        double sumBaseMinusOne = handPreds.stream()
+                .mapToDouble(p -> p.baseProb)
+                .average()
+                .orElse(baseProb);
+
+
+        double totalDeckDelta = 0;
+
+        for (Prediction p : deckPreds) {
+            // СРАВНИВАЕМ: (Шанс с новой картой) против (Среднего шанса без одной старой карты)
+            // Это и есть цена замены: мы "платим" за вход новой карты потерей одной старой
+            double swapValue = p.baseProb - sumBaseMinusOne;
+            totalDeckDelta += Math.max(0, swapValue);
+        }
+
+        double avgDeckDelta = !deckPreds.isEmpty()
+                ? totalDeckDelta / deckPreds.size()
                 : 0;
 
-        double handValue = handDeltas.values().stream()
-                .mapToDouble(d -> Math.max(0, d))
-                .sum();
-
-        return new HandEvaluation(handDeltas, handValue, avgDeckDelta);
+        return new HandEvaluation(handDeltas, totalHandValue, avgDeckDelta);
     }
 
-    private List<Integer> discardCardsForTwoCorps(
-            MarsGame corpAGame,
-            MarsGame corpBGame,
-            String playerUuid,
-            double baseProbA,
-            double baseProbB
-    ) {
-        HandEvaluation handA = evaluateHandForCorp(corpAGame, playerUuid, baseProbA);
-        HandEvaluation handB = evaluateHandForCorp(corpBGame, playerUuid, baseProbB);
+    public CorpEvaluation chooseCorporation(MarsGame originalGame, String playerUuid) {
+        originalGame = new MarsGame(originalGame);
+        final List<Player> players = new ArrayList<>(originalGame.getPlayerUuidToPlayer().values());
+        Player originalPlayer = originalGame.getPlayerByUuid(playerUuid);
+        Player anotherPlayer = players.get(0) == originalPlayer ? players.get(1) : players.get(0);
+        anotherPlayer.setMc(60);
 
-        Player player = corpAGame.getPlayerByUuid(playerUuid);
-        List<Integer> originalHand = new ArrayList<>(player.getHand().getCards());
+        List<Integer> startupHand = new ArrayList<>(originalPlayer.getHand().getCards());
+        List<Integer> corps = new ArrayList<>(originalPlayer.getCorporations().getCards());
 
-        // ==== 1. A доминирует ====
-        if (handDominates(handA.handValue(), handB.handValue())) {
-            return discardCardsOnlyForOneCorp(handA, originalHand);
-        }
+        List<StartupDecision> options = new ArrayList<>();
 
-        // ==== 2. B доминирует ====
-        if (handDominates(handB.handValue(), handA.handValue())) {
-            return discardCardsOnlyForOneCorp(handB, originalHand);
-        }
+        SharedInputAnalysis sharedInputAnalysis = network2CorporationInputService.analyzeCorporationsForSharedInput(originalPlayer.getCorporations().getCards().stream().map(cardService::getCard)
+                .map(card -> card.getCardMetadata().getCardAction()).collect(Collectors.toSet())
+        );
+        OptimizedInputDecisions optimizedDecisions = (sharedInputAnalysis == null ? null : optimizer.optimizeInputDecisions(originalGame, originalPlayer, sharedInputAnalysis));
 
-        // ==== 3. Универсальный режим ====
-        List<Integer> discard = new ArrayList<>();
-        double threshold = (handA.avgDeckDelta() + handB.avgDeckDelta()) * 0.5;
+        Deck projectsDeck = cardService.createProjectsDeck(originalGame.getExpansions());
+        projectsDeck.removeCards(originalPlayer.getHand().getCards());
+        List<Integer> deck = projectsDeck.getCards();
 
-        for (Integer cardId : originalHand) {
-            double bestDelta = Math.max(
-                    handA.cardIdToDelta().getOrDefault(cardId, 0.0),
-                    handB.cardIdToDelta().getOrDefault(cardId, 0.0)
-            );
+        ThreadLocalRandom random = ThreadLocalRandom.current();
 
-            if (bestDelta < threshold) {
-                discard.add(cardId);
+        for (Integer corpId : corps) {
+            // Проводим N симуляций для каждой корпорации
+            double totalValue = 0;
+
+            MarsGame simGame = new MarsGame(originalGame);
+            Player simPlayer = simGame.getPlayerByUuid(playerUuid);
+            applyCorporationEffect(simGame, simPlayer, corpId, optimizedDecisions);
+
+            Card corporationCard = cardService.getCard(corpId);
+            CardAction cardAction = corporationCard.getCardMetadata().getCardAction();
+
+
+            if (cardAction != CardAction.INVENTRIX_CORPORATION
+                    && cardAction != CardAction.DEVTECHS_CORPORATION
+                    && cardAction != CardAction.LAUNCH_STAR_CORPORATION
+                    && cardAction != CardAction.MINING_GUILD_CORPORATION
+                    && cardAction != CardAction.ECOLINE_CORPORATION
+                    && cardAction != CardAction.ZETACELL_CORPORATION) {
+                options.add(new StartupDecision(corpId, List.of(), nnService.predictBatch(List.of(iDataCollect.collectData(simGame, simPlayer)), simPlayer).getFirst().baseProb));
+            } else {
+                List<float[]> simAfterCardsAcquisition = new ArrayList<>();
+
+                for (int i = 0; i < CORP_SIMULATIONS; i++) {
+                    int totalCardsGet = 0;
+
+                    List<Integer> newCards = new ArrayList<>();
+
+                    if (cardAction == CardAction.INVENTRIX_CORPORATION) {
+                        newCards.addAll(randomSubset(deck, totalCardsGet, random));
+                    } else if (cardAction == CardAction.ZETACELL_CORPORATION) {
+                        newCards.addAll(getFiveRandomCards(deck, random, newCards));
+                    } else if (cardAction == CardAction.DEVTECHS_CORPORATION) {
+                        getFiveRandomCards(deck, random, newCards).stream().map(cardService::getCard).filter(c -> c.getColor() == CardColor.GREEN).forEach(c -> newCards.add(c.getId()));
+                    } else if (cardAction == CardAction.LAUNCH_STAR_CORPORATION) {
+                        while (true) {
+                            int randomCard = deck.get(random.nextInt(deck.size()));
+                            Card card = cardService.getCard(randomCard);
+                            if (card.getColor() != CardColor.BLUE) {
+                                continue;
+                            }
+                            newCards.add(randomCard);
+                            break;
+                        }
+                    } else if (cardAction == CardAction.MINING_GUILD_CORPORATION) {
+                        while (true) {
+                            int randomCard = deck.get(random.nextInt(deck.size()));
+                            Card card = cardService.getCard(randomCard);
+                            if (!card.getTags().contains(Tag.BUILDING)) {
+                                continue;
+                            }
+                            newCards.add(randomCard);
+                            break;
+                        }
+                    } else if (cardAction == CardAction.ECOLINE_CORPORATION) {
+                        while (true) {
+                            int randomCard = deck.get(random.nextInt(deck.size()));
+                            Card card = cardService.getCard(randomCard);
+                            if (!card.getTags().contains(Tag.PLANT)) {
+                                continue;
+                            }
+                            newCards.add(randomCard);
+                            break;
+                        }
+                    }
+
+                    simPlayer.getHand().addCards(newCards);
+
+                    if (cardAction == CardAction.ZETACELL_CORPORATION) {
+                        List<Integer> bestCards = network2DiscardCardsProcessor.getBestCards(simGame, simPlayer, new ArrayList<>(simPlayer.getHand().getCards()), simPlayer.getHand().getCards().size() - 4);
+                        simPlayer.getHand().getCards().clear();
+                        simPlayer.getHand().getCards().addAll(bestCards);
+                    }
+
+                    simAfterCardsAcquisition.add(iDataCollect.collectData(simGame, simPlayer));
+
+                    simPlayer.getHand().getCards().clear();
+                    simPlayer.getHand().addCards(startupHand);
+
+                }
+
+                List<Prediction> predictions = nnService.predictBatch(simAfterCardsAcquisition, simPlayer);
+
+                for (Prediction pred : predictions) {
+                    totalValue += pred.baseProb;
+                }
+
+                options.add(new StartupDecision(corpId, List.of(), totalValue / CORP_SIMULATIONS));
             }
         }
 
-        return discard;
+        return new CorpEvaluation(getBestStartupDecision(options).corporationId(), optimizedDecisions);
     }
-
-
-    private boolean handDominates(double handA, double handB) {
-        return (handA - handB >= 0.08) || ((handA - handB) >= 0.5 * Math.max(handB, 0.05));
-    }
-
-    private boolean dominates(double a, double b) {
-        if (true) {
-            return false;//TODO
-        }
-        double diff = a - b;
-        if (diff >= 0.12) return true;
-
-        double relative = diff / (1.0 - Math.min(a, b));
-        return relative >= 0.35;
-    }
-
-
-    private MarsGame projectPlayerBuildCorporationExperiment(MarsGame game, Player player, int selectedCorporationId, OptimizedInputDecisions optimizedDecisions) {
-        game = new MarsGame(game);
-        player = game.getPlayerByUuid(player.getUuid());
-        List<Integer> originalHandBeforeCorporationBuild = new ArrayList<>(player.getHand().getCards());
-
-        player.setSelectedCorporationCard(selectedCorporationId);
-        player.setMulligan(false);
-        player.getPlayed().addCard(selectedCorporationId);
-
-        Card card = cardService.getCard(selectedCorporationId);
-        final MarsContext marsContext = marsContextProvider.provide(game, player);
-        card.buildProject(marsContext);
-        if (card.onBuiltEffectApplicableToItself()) {
-            card.postProjectBuiltEffect(marsContext, card, network2CorporationInputService.getCorporationInput(game, player, card.getCardMetadata().getCardAction(), optimizedDecisions));
-        }
-        player.getHand().getCards().clear();
-        player.getHand().getCards().addAll(originalHandBeforeCorporationBuild);
-
-        return game;
-    }
-
-    public CorpEvaluation chooseCorporation(MarsGame game, String playerUuid) {
-        game = new MarsGame(game);
-        final List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
-        Player player = game.getPlayerByUuid(playerUuid);
-        Player anotherPlayer = players.get(0) == player ? players.get(1) : players.get(0);
-
-        SharedInputAnalysis sharedInputAnalysis = network2CorporationInputService.analyzeCorporationsForSharedInput(player.getCorporations().getCards().stream().map(cardService::getCard)
-                .map(card -> card.getCardMetadata().getCardAction()).collect(Collectors.toSet())
-        );
-        OptimizedInputDecisions optimizedDecisions = (sharedInputAnalysis == null ? null : optimizer.optimizeInputDecisions(game, player, sharedInputAnalysis));
-        anotherPlayer.setMc(60);//TODO NEED TO CHECK CHANCE
-
-        MarsGame corp1Game = projectPlayerBuildCorporationExperiment(game, player, player.getCorporations().getCards().getFirst(), optimizedDecisions);
-        MarsGame corp2Game = projectPlayerBuildCorporationExperiment(game, player, player.getCorporations().getCards().getLast(), optimizedDecisions);
-
-        List<Prediction> predictions = nnService.predictBatch(List.of(iDataCollect.collectData(corp1Game, corp1Game.getPlayerByUuid(playerUuid)), iDataCollect.collectData(corp2Game, corp2Game.getPlayerByUuid(playerUuid))), player);
-
-        double corp1Synergy = evaluateHandSynergy(corp1Game, playerUuid);
-        double corp2Synergy = evaluateHandSynergy(corp2Game, playerUuid);
-
-        if (Math.max(predictions.getFirst().baseProb, corp1Synergy) > Math.max(predictions.getLast().baseProb, corp2Synergy)) {
-            return new CorpEvaluation(player.getCorporations().getCards().getFirst(), optimizedDecisions);
-        } else {
-            return new CorpEvaluation(player.getCorporations().getCards().getLast(), optimizedDecisions);
-        }
-    }
-
-    private double evaluateHandSynergy(
-            MarsGame game,
-            String playerUuid
-    ) {
-        Player player = game.getPlayerByUuid(playerUuid);
-        player.setBuilds(List.of(new BuildDto(BuildType.GREEN_OR_BLUE)));
-
-        List<CardWithChanceAndInput> validCards = cardProjectionService.getAvailableProjectsSync(game, player, null);
-
-        List<float[]> futureStates = new ArrayList<>();
-        for (CardWithChanceAndInput cardProj : validCards) {
-            // Симулируем шаг
-            MarsGame nextGame = cardProjectionService.projectBuildCardWithRequirements(game, player, cardProj);
-            futureStates.add(iDataCollect.collectData(nextGame, nextGame.getPlayerByUuid(player.getUuid())));
-        }
-
-        List<Prediction> predictions = nnService.predictBatch(futureStates, player);
-
-        List<Double> chances = new ArrayList<>();
-
-        for (Prediction prediction : predictions) {
-            chances.add(prediction.baseProb);
-
-        }
-
-        chances.sort(Comparator.reverseOrder());
-
-        int K = Math.min(4, chances.size());
-
-        double sum = 0;
-        for (int i = 0; i < K; i++) {
-            sum += chances.get(i);
-        }
-
-        return sum / K;
-    }
-
-
-
-
 
 }

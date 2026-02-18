@@ -23,7 +23,7 @@ public class CharityDonation implements ExperimentExpansionRedCard {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
                 .name("Charity Donation")
-                .description("Reveal cards from the deck equal to number of players + 1. In random order starting from you, everyone takes 1 card.")
+                .description("Everyone takes 1 card.")
                 .cardAction(CardAction.CAPITALISE_DESCRIPTION)
                 .build();
     }
@@ -35,25 +35,12 @@ public class CharityDonation implements ExperimentExpansionRedCard {
 
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
-        int toDiscardCount = marsContext.getGame().getPlayerUuidToPlayer().size();
-        List<Integer> cards = marsContext.getCardService().dealCards(marsContext.getGame(), toDiscardCount + 1);
+        int playerCount = marsContext.getGame().getPlayerUuidToPlayer().size();
+        List<Integer> cards = marsContext.getCardService().dealCards(marsContext.getGame(), playerCount);
 
-        Player player = marsContext.getPlayer();
-
-        for (Integer card : cards) {
-            player.getHand().addCard(card);
+        for (Player player : marsContext.getGame().getPlayerUuidToPlayer().values()) {
+            player.getHand().addCard(cards.getLast());
         }
-
-        player.addNextTurn(
-                new DiscardCardsTurn(
-                        player.getUuid(),
-                        new ArrayList<>(cards),
-                        toDiscardCount,
-                        true,
-                        true,
-                        new ArrayList<>(List.of(player.getUuid()))
-                )
-        );
 
         return null;
     }
@@ -70,6 +57,6 @@ public class CharityDonation implements ExperimentExpansionRedCard {
 
     @Override
     public int getPrice() {
-        return 7;
+        return 4;
     }
 }

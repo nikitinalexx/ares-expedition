@@ -264,32 +264,12 @@ public class AiOptimalBuildService {
 
 
         if (cardAction == CardAction.SYNTHETIC_CATASTROPHE) {
+            assert decisions.getBestRedCardToRollback() != null;
             List<Map<Integer, List<Integer>>> result = new ArrayList<>();
 
-            player.getPlayed().getCards().stream().map(cardService::getCard).filter(c -> c.getColor() == CardColor.RED)
-                    .filter(c -> {
-                        if (c.getClass() == CeosFavoriteProject.class) {
-                            Map<Class<?>, Integer> cardResourcesCount = player.getCardResourcesCount();
-                            if (cardResourcesCount.size() == 1 && cardResourcesCount.getOrDefault(BacterialAggregates.class, 0) > AiConstants.BACTERIAL_AGGREGATES_COUNT_FOR_MICROBE_PUT) {
-                                return false;
-                            }
-                        }
-                        return true;
-                    })
-                    .forEach(
-                    redCard -> {
-                        CardWithInputParams redCardInputWithParams = generateInputBasedOnOptimizedDecisions(player, redCard, decisions, playedCards);
-                        for (Map<Integer, List<Integer>> inputParamsVariation : redCardInputWithParams.getInputParamsVariations()) {
-                            Map<Integer, List<Integer>> redCardInputParams = new HashMap<>(inputParamsVariation);
-                            if (redCardInputParams.containsKey(InputFlag.MARS_UNIVERSITY_DUMMY_INPUT.getId())) {
-                                redCardInputParams.remove(InputFlag.MARS_UNIVERSITY_DUMMY_INPUT.getId());
-                                redCardInputParams.put(InputFlag.MARS_UNIVERSITY_CARD.getId(), List.of(InputFlag.SKIP_ACTION.getId()));
-                            }
-                            redCardInputParams.put(InputFlag.SYNTHETIC_CATASTROPHE_CARD.getId(), List.of(redCard.getId()));
-                            result.add(redCardInputParams);
-                        }
-                    }
-            );
+            Map<Integer, List<Integer>> redCardInputParams = new HashMap<>();
+            redCardInputParams.put(InputFlag.SYNTHETIC_CATASTROPHE_CARD.getId(), List.of(decisions.getBestRedCardToRollback()));
+            result.add(redCardInputParams);
 
             return new CardWithInputParams(card, result);
         }

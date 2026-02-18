@@ -308,7 +308,6 @@ public class Frontier {
         map.put(ArtificialJungle.class, List.of(new ArtificialJungleAction(4)));
         map.put(AssetLiquidation.class, List.of(new AssetLiquidationAction(5)));
         map.put(Birds.class, List.of(new BirdsAction(6)));
-        map.put(BuffedBirds.class, List.of(new BirdsAction(6)));
         map.put(BrainstormingSession.class, List.of(new BrainstormingSessionAction(7)));
         map.put(CaretakerContract.class, List.of(new CaretakerContractAction(8)));
         map.put(CelestiorCorporation.class, List.of(new CelestiorAction(9)));

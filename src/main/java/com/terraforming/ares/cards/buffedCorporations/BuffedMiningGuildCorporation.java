@@ -28,7 +28,7 @@ public class BuffedMiningGuildCorporation implements CorporationCard {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
                 .name("Mining Guild")
-                .description("37 Mc. 1 Steel income. 1 card with Building tag. Whenever you play a card that increases Steel income, gain 1 TR.")
+                .description("30 Mc. 1 Steel income. 1 card with Building tag. Whenever you play a card that increases Steel income, gain 1 TR.")
                 .cardAction(CardAction.MINING_GUILD_CORPORATION)
                 .build();
     }
@@ -63,7 +63,7 @@ public class BuffedMiningGuildCorporation implements CorporationCard {
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
-        player.setMc(37);
+        player.setMc(30);
         player.setSteelIncome(player.getSteelIncome() + 1);
 
         player.getHand().addCard(
@@ -80,7 +80,7 @@ public class BuffedMiningGuildCorporation implements CorporationCard {
 
     @Override
     public int getPrice() {
-        return 37;
+        return 30;
     }
 
 }

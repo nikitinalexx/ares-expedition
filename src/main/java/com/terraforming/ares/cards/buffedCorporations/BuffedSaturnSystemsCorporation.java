@@ -26,7 +26,7 @@ public class BuffedSaturnSystemsCorporation implements CorporationCard {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
                 .name("Saturn Systems")
-                .description("28 Mc. 1 Titanium income. 1 Space card. Whenever you play a Jupiter tag, excluding this, gain 1 TR.")
+                .description("30 Mc. 1 Titanium income. Whenever you play a Jupiter tag, excluding this, gain 1 TR.")
                 .cardAction(CardAction.SATURN_SYSTEMS_CORPORATION)
                 .build();
     }
@@ -53,12 +53,8 @@ public class BuffedSaturnSystemsCorporation implements CorporationCard {
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         Player player = marsContext.getPlayer();
-        player.setMc(28);
+        player.setMc(30);
         player.setTitaniumIncome(player.getTitaniumIncome() + 1);
-
-        player.getHand().addCard(
-                marsContext.getCardService().dealCardWithTag(Tag.SPACE, marsContext.getGame())
-        );
 
         return null;
     }
@@ -70,7 +66,7 @@ public class BuffedSaturnSystemsCorporation implements CorporationCard {
 
     @Override
     public int getPrice() {
-        return 28;
+        return 30;
     }
 
 }

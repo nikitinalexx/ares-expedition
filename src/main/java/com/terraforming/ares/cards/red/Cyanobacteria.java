@@ -39,13 +39,14 @@ public class Cyanobacteria implements ExperimentExpansionGreenCard {
     @Override
     public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> input) {
         List<Integer> microbesInput = input.get(InputFlag.ADD_MICROBE.getId());
-        Integer microbesCardId = microbesInput.get(0);
+        Integer microbesCardId = microbesInput.getFirst();
 
         final Player player = marsContext.getPlayer();
 
-        if (microbesCardId != InputFlag.SKIP_ACTION.getId()) {
+        int revealedOceans = marsContext.getGame().getPlanetAtTheStartOfThePhase().getRevealedOceans().size();
+        if (microbesCardId != InputFlag.SKIP_ACTION.getId() && revealedOceans > 0) {
             Card microbeCard = marsContext.getCardService().getCard(microbesCardId);
-            marsContext.getCardResourceService().addResources(player, microbeCard, marsContext.getGame().getPlanetAtTheStartOfThePhase().getRevealedOceans().size());
+            marsContext.getCardResourceService().addResources(player, microbeCard, revealedOceans);
         }
     }
 

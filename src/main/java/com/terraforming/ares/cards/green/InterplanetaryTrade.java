@@ -52,7 +52,7 @@ public class InterplanetaryTrade implements ExperimentExpansionGreenCard {
 
         CardService cardService = marsContext.getCardService();
 
-        Map<Tag, Long> playedTagsMap = cardService.countPlayedTagsAsMap(player);
+        int[] playedTagsMap = cardService.countPlayedTags(player);
 
         Set<Tag> newTags = new HashSet<>(project.getTags());
 
@@ -60,19 +60,18 @@ public class InterplanetaryTrade implements ExperimentExpansionGreenCard {
         if (input != null && !input.containsKey(InputFlag.RESEARCH_GRANT.getId()) && input.containsKey(InputFlag.TAG_INPUT.getId())) {
             List<Integer> tagInput = input.get(InputFlag.TAG_INPUT.getId());
 
-            Tag playedTag = Tag.byIndex(tagInput.get(0));
+            Tag playedTag = Tag.byIndex(tagInput.getFirst());
             newTags.add(playedTag);
         } else if (input != null && input.containsKey(InputFlag.RESEARCH_GRANT.getId())) {
             List<Integer> tagInput = input.get(InputFlag.TAG_INPUT.getId());
-            Tag playedTag = Tag.byIndex(tagInput.get(0));
 
-            if (playedTagsMap.get(playedTag) == 1L) {
+            if (playedTagsMap[tagInput.getFirst()] == 1L) {
                 incomeAdjustment++;
             }
         }
 
         for (Tag newTag : newTags) {
-            if (newTag != Tag.DYNAMIC && (!playedTagsMap.containsKey(newTag) || playedTagsMap.get(newTag) <= 0)) {
+            if (newTag != Tag.DYNAMIC && (playedTagsMap[newTag.ordinal()] == 0)) {
                 incomeAdjustment++;
             }
         }
@@ -85,10 +84,10 @@ public class InterplanetaryTrade implements ExperimentExpansionGreenCard {
         CardService cardService = marsContext.getCardService();
         Player player = marsContext.getPlayer();
 
-        Map<Tag, Long> playedTagsMap = cardService.countPlayedTagsAsMap(player);
+        int[] playedTagsMap = cardService.countPlayedTags(player);
 
         int extraIncome = cardService.countUniquePlayedTags(player);
-        if (playedTagsMap.getOrDefault(Tag.SPACE, 0L) <= 0) {
+        if (playedTagsMap[Tag.SPACE.ordinal()] == 0) {
             extraIncome++;
         }
 

@@ -98,6 +98,9 @@ public class AiRandomCardBuildParamsService {
         if (cardAction == CardAction.LOCAL_HEAT_TRAPPING) {
             addLocalHeatTrappingInput(player, result);
         }
+        if (cardAction == CardAction.CONTROLLED_BLOOM || cardAction == CardAction.IMPORTED_NUTRIENTS || cardAction == CardAction.CYANOBACTERIA) {
+            addResourceInput(player, result, InputFlag.ADD_MICROBE, Set.of(CardCollectableResource.MICROBE));
+        }
 
         if (!cardMetadata.getResourcesOnBuild().isEmpty()
                 && cardMetadata.getResourcesOnBuild().get(0).getType() == CardCollectableResource.ANY) {

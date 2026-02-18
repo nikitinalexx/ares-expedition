@@ -2,6 +2,7 @@ package com.terraforming.ares.services.ai.network2.buildParams;
 
 import lombok.Data;
 
+import java.util.List;
 import java.util.Set;
 
 @Data
@@ -27,8 +28,7 @@ public class SharedInputAnalysis {
     public boolean viralEnhancersActive;
 
     public boolean requiresOxygenCheck;
-    public boolean requiresRedCard;
-    public Set<Integer> redCardTargets;
+    public List<Integer> redCardTargets;
 
     public int phaseUpgradeCounter;
 }

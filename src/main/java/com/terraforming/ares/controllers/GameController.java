@@ -21,11 +21,11 @@ import com.terraforming.ares.services.ai.AiConstants;
 import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.DeepNetwork;
 import com.terraforming.ares.services.ai.TestAiService;
+import com.terraforming.ares.services.ai.advanced.CompleteHandEncoder;
+import com.terraforming.ares.services.ai.advanced.CompleteTableEncoder;
 import com.terraforming.ares.services.ai.advanced.IDataCollect;
 import com.terraforming.ares.services.ai.dl4j.NNService;
 import com.terraforming.ares.services.ai.dto.CardProjection;
-import com.terraforming.ares.services.ai.network2.Network2ThirdPhaseActionProcessor;
-import com.terraforming.ares.services.ai.network2.Network2ThirdPhaseActionProjector;
 import com.terraforming.ares.services.ai.turnProcessors.AiMulliganCardsTurn;
 import com.terraforming.ares.services.simulations.CardPickStatistics;
 import com.terraforming.ares.services.simulations.DatasetWriter;
@@ -112,17 +112,13 @@ public class GameController {
                 throw new IllegalArgumentException("Discovery expansion is a default mode for this game");
             }
 
-            //TODO remove
             gameParameters.setComputers(List.of(PlayerDifficulty.NONE, PlayerDifficulty.NETWORK_V2));
-
 
             int aiPlayerCount = (int) gameParameters.getComputers().stream().filter(item -> item != PlayerDifficulty.NONE).count();
             int playersCount = gameParameters.getPlayerNames().size();
             int[] extraPoints = gameParameters.getExtraPoints();
 
-            if (gameParameters.getExpansions().contains(Expansion.EXPERIMENTAL) && aiPlayerCount > 0) {
-                throw new IllegalArgumentException("AI doesn't know how to play Experimental");
-            }
+//            gameParameters.getExpansions().add(Expansion.EXPERIMENTAL);//TODO remove
 
             if (gameParameters.getComputers().contains(PlayerDifficulty.NETWORK) && playersCount != 2) {
                 throw new IllegalArgumentException("AI computer available only for 2 player game");
@@ -264,7 +260,7 @@ public class GameController {
 
         Semaphore permits = new Semaphore(1000);
 
-        AtomicDouble defaultAtomic  = new AtomicDouble(0);
+        AtomicDouble defaultAtomic = new AtomicDouble(0);
         AtomicDouble projectedAtomic = new AtomicDouble(0);
 
         int cardToTest = cardId;
@@ -312,7 +308,6 @@ public class GameController {
                         for (int j = 0; j < 50; j++) {
                             MarsGame gameCopy = new MarsGame(game);
                             Player playerCopy = gameCopy.getPlayerByUuid(player.getUuid());
-
 
 
                             simulationProcessorService.processSimulation(gameCopy);
@@ -468,6 +463,10 @@ public class GameController {
         AtomicLong winPoints = new AtomicLong(0);
         AtomicLong turns = new AtomicLong(0);
 
+        ConcurrentHashMap<Integer, AtomicLong> pickedCorporation = new ConcurrentHashMap<>();
+        ConcurrentHashMap<Integer, AtomicLong> wonCorporation = new ConcurrentHashMap<>();
+
+
         try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
             for (int i = 0; i < totalSims; i++) {
                 executor.submit(() -> {
@@ -485,54 +484,26 @@ public class GameController {
                         List<Player> players = game.getPlayerUuidToPlayer().values().stream()
                                 .sorted(Comparator.comparing(p -> p.getUuid().substring(p.getUuid().length() - 1)))
                                 .toList();
+                        players.forEach(p -> pickedCorporation
+                                .computeIfAbsent(p.getSelectedCorporationCard(), k -> new AtomicLong(0))
+                                .incrementAndGet());
 
-                        int p1 = winPointsService.countWinPoints(players.get(0), game);
-                        int p2 = winPointsService.countWinPoints(players.get(1), game);
 
-                        if (Network2ThirdPhaseActionProcessor.MAP.containsKey(players.get(1).getUuid())) {
-                            if (p2 < p1) {
-                                //System.out.println("LOOWER");
-                            }
-                            if (Network2ThirdPhaseActionProcessor.MAP.get(players.get(1).getUuid()) != game.getTurns()) {
-                                System.out.println("Diff turns");
-                            }
+                        Player firstPlayer = players.get(0);
+                        Player secondPlayer = players.get(1);
+                        int p1 = winPointsService.countWinPoints(firstPlayer, game);
+                        int p2 = winPointsService.countWinPoints(secondPlayer, game);
+
+                        if (p1 != p2) {
+                            int currentWonCorporation = p1 > p2 ? firstPlayer.getSelectedCorporationCard() : secondPlayer.getSelectedCorporationCard();
+
+                            wonCorporation.computeIfAbsent(currentWonCorporation, k -> new AtomicLong(0)).incrementAndGet();
                         }
-
-                        if (Network2ThirdPhaseActionProcessor.MAP.containsKey(players.get(0).getUuid())) {
-                            if (p1 < p2) {
-                                //System.out.println("LOOWER");
-                            }
-                            if (Network2ThirdPhaseActionProcessor.MAP.get(players.get(0).getUuid()) != game.getTurns()) {
-                                System.out.println("Diff turns");
-                            }
-                        }
-
-                        if (Network2ThirdPhaseActionProjector.FINISHING_THROUGH_THIRD.containsKey(players.get(1).getUuid())) {
-                            if (p2 < p1) {
-                                System.out.println("LOOWER FINISHER");
-                            }
-                        }
-
-                        if (Network2ThirdPhaseActionProjector.FINISHING_THROUGH_THIRD.containsKey(players.get(0).getUuid())) {
-                            if (p1 < p2) {
-                                System.out.println("LOOWER FINISHER");
-                            }
-                        }
-
 
 
                         if (request.isCollectData()) {
-//                            int p = Math.max(p1, p2);
-//
-//                            if (p >= getEliteThreshold(game.getTurns()) * 0.90) {
-//                                // Записываем только если результат на 20% лучше среднего для ЭТОГО хода
-//                                sharedProducer.addResult(gameResult);
-//                            }
                             sharedProducer.addResult(gameResult);
                         }
-
-
-
 
                         turns.addAndGet(game.getTurns());
 
@@ -604,30 +575,36 @@ public class GameController {
             System.out.printf("Turn %d: Avg Points = %.2f (based on %d players)%n", t, avg, games);
         });
 
-//        System.out.println("Unique combinations " + cardCombinationCounter.getTotalUniqueCards() + " " + cardCombinationCounter.getUniqueCount());
-    }
+        System.out.println("\n" + "=".repeat(75));
+        System.out.printf("%-30s | %-8s | %-6s | %-8s%n", "CORPORATION NAME", "PICKED", "WON", "WIN RATE");
+        System.out.println("-".repeat(75));
 
-    public double getEliteThreshold(int turn) {
-        // Базовая кривая на основе твоих данных
-        if (turn <= 20) return 75.0;  // Для коротких игр планка высокая
-        if (turn == 21) return 76.0;
-        if (turn == 22) return 78.0;
-        if (turn == 23) return 82.0;
-        if (turn == 24) return 85.0;
-        if (turn == 25) return 88.0; // +18 очков к среднему
-        if (turn == 26) return 92.0;
-        if (turn == 27) return 95.0;
-        if (turn == 28) return 98.0;
-        if (turn == 29) return 102.0;
-        if (turn >= 30) return 110.0; // Для долгих игр требуем сверхрезультата
-        return 120.0;
+        // Сортируем по количеству выборов (от популярных к редким)
+        pickedCorporation.entrySet().stream()
+                .sorted((a, b) -> Long.compare(b.getValue().get(), a.getValue().get()))
+                .forEach(entry -> {
+                    Card card = cardService.getCard(entry.getKey());
+                    String name = card.getClass().getSimpleName();
+                    long picked = entry.getValue().get();
+                    long won = wonCorporation.getOrDefault(card.getId(), new AtomicLong(0)).get();
+                    double winRate = (picked > 0) ? (won * 100.0 / picked) : 0;
+
+                    // Печатаем строку: %-30s (30 символов под имя), %8d (8 под число) и т.д.
+                    System.out.printf("%-30s | %8d | %6d | %7.1f%%%n",
+                            name, picked, won, winRate);
+                });
+
+        System.out.println("=".repeat(75) + "\n");
     }
 
     public void printCardStatistics() {
         System.out.println("=== CARD PICK STATISTICS ===");
 
         cardPickStatistics.getStats().entrySet().stream()
-                .filter(e -> e.getValue().timesPicked > 20)
+                .filter(entry -> {
+                    Integer cardId = entry.getKey();
+                    return cardService.getCard(cardId).getColor() != CardColor.CORPORATION;
+                })
                 .map(entry -> {
                     int cardId = entry.getKey();
                     CardPickStatistics.CardStats s = entry.getValue();
@@ -671,6 +648,13 @@ public class GameController {
 
     @GetMapping("/simulations")
     public void runSimulations(@RequestBody SimulationsRequest request) throws IOException, InterruptedException {
+        ArrayList<String> allFeatures = new ArrayList<>(CompleteTableEncoder.getAllFeatureNames());
+        allFeatures.addAll(CompleteHandEncoder.getAllFeatureNames());
+
+        System.out.println("All features " + allFeatures);
+
+        assert allFeatures.size() == AiConstants.TOTAL_SIZE;
+
         TURNS_TO_GAMES_COUNT.clear();
         TURNS_TO_POINTS_COUNT.clear();
 
@@ -711,7 +695,8 @@ public class GameController {
 
         System.out.println("Finished all threads");
         System.out.println(Arrays.toString(globalMax));
-//        writeToFile(globalMax, CompleteTableEncoder.getAllFeatureNames(), Path.of("maxData.txt"));
+
+        writeToFile(globalMax, allFeatures, Path.of("maxData.txt"));
 
         printStatistics(gameStatistics);
 
@@ -809,7 +794,7 @@ public class GameController {
         System.out.println(total);
     }
 
-    float[] globalMax = new float[AiConstants.TABLE_VECTOR_SIZE];
+    float[] globalMax = new float[AiConstants.TOTAL_SIZE];
     final Object lock = new Object();
 
     class WorkerThread implements Runnable {
@@ -860,13 +845,13 @@ public class GameController {
                 MarsGame marsGame = gameService.createNewSimulation(gameParameters);
                 if (Constants.COLLECT_DATASET) {
                     GameResult dataSet = simulationProcessorService.runSimulationWithDataset(marsGame);
-//                    float[] localMax = dataSet.getLocalMax();
-//                    countGlobalMax(localMax);
-                    try {
-                        producer.addResult(dataSet);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
+                    float[] localMax = dataSet.getLocalMax();
+                    countGlobalMax(localMax);
+//                    try {
+//                        producer.addResult(dataSet);
+//                    } catch (InterruptedException e) {
+//                        throw new RuntimeException(e);
+//                    }
                 } else {
                     simulationProcessorService.processSimulation(marsGame);
                 }
@@ -888,7 +873,7 @@ public class GameController {
 
         private void countGlobalMax(float[] localMax) {
             synchronized (lock) {
-                for (int i = 0; i < AiConstants.TABLE_VECTOR_SIZE; i++) {
+                for (int i = 0; i < AiConstants.TOTAL_SIZE; i++) {
                     globalMax[i] = Math.max(globalMax[i], localMax[i]);
                 }
             }

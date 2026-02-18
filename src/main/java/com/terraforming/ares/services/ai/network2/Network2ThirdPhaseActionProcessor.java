@@ -72,6 +72,8 @@ public class Network2ThirdPhaseActionProcessor {
     private final SelfReplicatingBacteriaService selfReplicatingBacteriaService;
 
     public boolean processTurn(MarsGame game, Player player, List<TurnType> possibleTurns) {
+        network2DraftCardsProjectionService.performProactiveSale(game, player);
+
         Deck activatedBlueCards = player.getActivatedBlueCards();
 
         Map<Class<?>, Card> neverActivatedBlueCards = player.getPlayed().getCards().stream()
@@ -240,7 +242,6 @@ public class Network2ThirdPhaseActionProcessor {
             boolean isBetterChance = chance >= 0.6;
             //TODO still better to do all projections and then check
             if (isBetterChance && aiEndgameService.isFinishingGame(game, player)) {
-                MAP.put(player.getUuid(), game.getTurns());
                 return true;
             }
         }
@@ -249,7 +250,6 @@ public class Network2ThirdPhaseActionProcessor {
         return true;
     }
 
-    public static final ConcurrentHashMap<String, Integer> MAP = new ConcurrentHashMap<>();
 
     private boolean doStandardTurn(MarsGame game, Player player, boolean onlyIfBetter) {
         List<float[]> dataToCheck = new ArrayList<>();

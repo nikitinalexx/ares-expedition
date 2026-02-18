@@ -528,9 +528,9 @@ public class CardFactory {
         buffedCorporationsMapping = Map.of(
                 10000, new BuffedHelionCorporation(10100),
                 10008, new BuffedArclightCorporation(10101),
-                //10009, new BuffedPhobologCorporation(10102),
+                10009, new BuffedPhobologCorporation(10102),
                 10010, new BuffedMiningGuildCorporation(10103),
-                //10011, new BuffedSaturnSystemsCorporation(10104),
+                10011, new BuffedSaturnSystemsCorporation(10104),
                 10013, new BuffedEcolineCorporation(10106),
                 10014, new BuffedInventrix(10107),
                 10016, new BuffedUnmiCorporation(10108)

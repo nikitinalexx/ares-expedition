@@ -10,14 +10,9 @@ import java.util.List;
 
 public class TerraformingFeature implements FeatureBlock {
     public static final List<String> FEATURE_NAMES = List.of(
-            "oxygen_phase_start",
-            "oxygen_phase_start_neg",
-
-            "temp_phase_start",
-            "temp_phase_start_neg",
-
-            "oceans_phase_start",
-            "oceans_phase_start_neg"
+            "oxygen_left",
+            "temperature_left",
+            "oceans_left"
     );
 
     @Override
@@ -27,7 +22,7 @@ public class TerraformingFeature implements FeatureBlock {
 
     @Override
     public int size() {
-        return 6;
+        return 3;
     }
 
     @Override
@@ -40,13 +35,8 @@ public class TerraformingFeature implements FeatureBlock {
         float oceansLeftRatio = (float) planet.oceansLeft() / planet.oceansMaxCount();
 
         out.write(oxygenLeftRatio);
-        out.write(1f - oxygenLeftRatio);
-
         out.write(temperatureLeftRatio);
-        out.write(1f - temperatureLeftRatio);
-
         out.write(oceansLeftRatio);
-        out.write(1f - oceansLeftRatio);
     }
 
 }

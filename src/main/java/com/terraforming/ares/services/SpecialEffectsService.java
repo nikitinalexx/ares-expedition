@@ -1,10 +1,13 @@
 package com.terraforming.ares.services;
 
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.SpecialEffect;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -27,8 +30,28 @@ public class SpecialEffectsService {
     }
 
     public Set<SpecialEffect> getPlayerSpecialEffects(Player player) {
-        return player.getPlayed().getCards().stream().map(deckService::getCard).flatMap(c -> c.getSpecialEffects().stream()).collect(Collectors.toSet());
+        if (player == null
+                || player.getPlayed() == null
+                || player.getPlayed().getCards() == null
+                || player.getPlayed().getCards().isEmpty()) {
+            return EnumSet.noneOf(SpecialEffect.class);
+        }
+
+        EnumSet<SpecialEffect> result = EnumSet.noneOf(SpecialEffect.class);
+
+        for (int cardRef : player.getPlayed().getCards()) {
+            Card card = deckService.getCard(cardRef);
+            if (card == null) continue;
+
+            Set<SpecialEffect> effects = card.getSpecialEffects();
+            if (effects == null || effects.isEmpty()) continue;
+
+            result.addAll(effects);
+        }
+
+        return result;
     }
+
 
     public int getCardPrice(Player player) {
         int cardCost = 3;

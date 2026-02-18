@@ -34,17 +34,17 @@ public class PlayedTagsFeature implements FeatureBlock {
 
     @Override
     public void encode(TableContext ctx, FeatureWriter out) {
-        Map<Tag, Long> playedTagToCount = ctx.getPlayedTagToCount();
+        int[] playedTagToCount = ctx.getPlayedTagToCount();
 
-        out.write(playedTagToCount.getOrDefault(Tag.SPACE, 0L).intValue());
-        out.write(playedTagToCount.getOrDefault(Tag.EARTH, 0L).intValue());
-        out.write(playedTagToCount.getOrDefault(Tag.EVENT, 0L).intValue());
-        out.write(playedTagToCount.getOrDefault(Tag.SCIENCE, 0L).intValue());
-        out.write(playedTagToCount.getOrDefault(Tag.PLANT, 0L).intValue());
-        out.write(playedTagToCount.getOrDefault(Tag.ENERGY, 0L).intValue());
-        out.write(playedTagToCount.getOrDefault(Tag.BUILDING, 0L).intValue());
-        out.write(playedTagToCount.getOrDefault(Tag.ANIMAL, 0L).intValue());
-        out.write(playedTagToCount.getOrDefault(Tag.JUPITER, 0L).intValue());
-        out.write(playedTagToCount.getOrDefault(Tag.MICROBE, 0L).intValue());
+        out.write(playedTagToCount[Tag.SPACE.ordinal()]);
+        out.write(playedTagToCount[Tag.EARTH.ordinal()]);
+        out.write(playedTagToCount[Tag.EVENT.ordinal()]);
+        out.write(playedTagToCount[Tag.SCIENCE.ordinal()]);
+        out.write(playedTagToCount[Tag.PLANT.ordinal()]);
+        out.write(playedTagToCount[Tag.ENERGY.ordinal()]);
+        out.write(playedTagToCount[Tag.BUILDING.ordinal()]);
+        out.write(playedTagToCount[Tag.ANIMAL.ordinal()]);
+        out.write(playedTagToCount[Tag.JUPITER.ordinal()]);
+        out.write(playedTagToCount[Tag.MICROBE.ordinal()]);
     }
 }

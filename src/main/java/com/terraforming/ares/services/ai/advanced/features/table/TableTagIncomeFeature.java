@@ -1,7 +1,6 @@
 package com.terraforming.ares.services.ai.advanced.features.table;
 
 import com.terraforming.ares.model.CardAction;
-import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.services.ai.advanced.FeatureWriter;
 import com.terraforming.ares.services.ai.advanced.TableContext;
 import com.terraforming.ares.services.ai.advanced.features.FeatureBlock;
@@ -9,7 +8,7 @@ import com.terraforming.ares.services.ai.advanced.features.FeatureBlock;
 import java.util.List;
 import java.util.Map;
 
-public class TagIncomeFeature implements FeatureBlock {
+public class TableTagIncomeFeature implements FeatureBlock {
     public static final List<String> FEATURE_NAMES = List.of(
             "HEAT_EARTH_INCOME",
             "MC_ANIMAL_PLANT_INCOME",

@@ -299,21 +299,42 @@ public class CardService {
         );
     }
 
-    public Map<Tag, Long> countPlayedTagsAsMap(Player player) {
-        if (player == null || player.getPlayed() == null || CollectionUtils.isEmpty(player.getPlayed().getCards())) {
-            return Map.of();
+    public int[] countPlayedTags(Player player) {
+        if (player == null
+                || player.getPlayed() == null
+                || CollectionUtils.isEmpty(player.getPlayed().getCards())) {
+            return new int[Tag.values().length];
         }
 
-        return Stream.concat(player.getCardToTag().values().stream().flatMap(
-                        List::stream
-                ),
-                player.getPlayed()
-                        .getCards()
-                        .stream()
-                        .map(this::getCard)
-                        .flatMap(card -> card.getTags().stream())
-        ).collect(Collectors.groupingBy(tag -> tag, Collectors.counting()));
+        int[] counts = new int[Tag.values().length];
+
+        // 1. Теги из cardToTag
+        Map<?, List<Tag>> cardToTag = player.getCardToTag();
+        if (cardToTag != null && !cardToTag.isEmpty()) {
+            for (List<Tag> tags : cardToTag.values()) {
+                if (tags == null) continue;
+                for (Tag tag : tags) {
+                    counts[tag.ordinal()]++;
+                }
+            }
+        }
+
+        // 2. Теги из played cards
+        for (int cardRef : player.getPlayed().getCards()) {
+            Card card = getCard(cardRef);
+            if (card == null) continue;
+
+            List<Tag> tags = card.getTags();
+            if (tags == null) continue;
+
+            for (Tag tag : tags) {
+                counts[tag.ordinal()]++;
+            }
+        }
+
+        return counts;
     }
+
 
     public Map<Tag, Long> countTagsOnCards(List<Card> cards) {
         return cards.stream().flatMap(card -> card.getTags().stream()).collect(Collectors.groupingBy(tag -> tag, Collectors.counting()));

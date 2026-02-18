@@ -27,4 +27,6 @@ public class OptimizedInputDecisions {
     private boolean microbeIsBetter;
     private boolean viralEnhancersTakePlants;
 
+    private Integer bestRedCardToRollback;
+
 }

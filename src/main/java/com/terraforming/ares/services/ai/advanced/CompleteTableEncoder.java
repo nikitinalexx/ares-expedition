@@ -7,7 +7,6 @@ import com.terraforming.ares.services.DraftCardsService;
 import com.terraforming.ares.services.SpecialEffectsService;
 import com.terraforming.ares.services.WinPointsService;
 import com.terraforming.ares.services.ai.advanced.features.FeatureBlock;
-import com.terraforming.ares.services.ai.advanced.features.hand.HandEncoderHelperService;
 import com.terraforming.ares.services.ai.advanced.features.table.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -22,33 +21,31 @@ public class CompleteTableEncoder {
     private final WinPointsService winPointsService;
     private final DraftCardsService draftCardsService;
     private final SpecialEffectsService specialEffectsService;
-    private final HandEncoderHelperService handEncoderHelperService;
 
     private static final List<FeatureBlock> GENERIC_TABLE_FEATURES = List.of(
             new TerraformingFeature(),
-            new MilestonesFeature(),
-            new AwardFeature(),
-            new GlobalRequiremensFeature()
+            new MilestonesAwardsFeature()
+            //total 61
     );
 
     private static final List<FeatureBlock> PLAYER_TABLE_FEATURES = List.of(
             new PhaseUpgradeFeature(),
             new PlayerIncomesFeature(),
             new PlayedTagsFeature(),
-            new TagIncomeFeature(),
-            new CorporationsSingleFlagFeature(),
-            new CorporationsMultiFlagFeature(),
-            new EffectsSingleFlagFeature(),
-            new TableMicrobesFeature(),
-            new EffectsMultiFlagFeature()
+            new TableTagIncomeFeature(),
+            new CorporationsFeature(),
+            new TableCardEffectsFeature(),
+            new TableResourcesFeature()
+            //total=178
+
     );
 
     public void encodeTable(MarsGame game, Player player, Player opponent, FeatureWriter featureWriter) {
         TableContext playerContext = new TableContext(
-                game, player, opponent, cardService, winPointsService, draftCardsService, specialEffectsService, handEncoderHelperService
+                game, player, opponent, cardService, winPointsService, draftCardsService, specialEffectsService
         );
         TableContext opponentContext = new TableContext(
-                game, opponent, player, cardService, winPointsService, draftCardsService, specialEffectsService, handEncoderHelperService
+                game, opponent, player, cardService, winPointsService, draftCardsService, specialEffectsService
         );
         for (FeatureBlock genericTableFeature : GENERIC_TABLE_FEATURES) {
             genericTableFeature.encode(playerContext, featureWriter);

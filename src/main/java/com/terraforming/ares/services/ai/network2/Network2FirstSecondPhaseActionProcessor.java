@@ -23,8 +23,12 @@ public class Network2FirstSecondPhaseActionProcessor {
     private final BatchProjectionService batchProjectionService;
     private final ScenarioEngine scenarioEngine;
     private final AiMarsUniversityInputHandler aiMarsUniversityInputHandler;
+    private final Network2DraftCardsProjectionService network2DraftCardsProjectionService;
+    private final BaseChanceProjectionService baseChanceProjectionService;
 
     public void processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
+        network2DraftCardsProjectionService.performProactiveSale(game, player);
+
         // 1. Генерируем все возможные цепочки действий (сценарии)
         // Внутри этого метода происходит вся рекурсия и симуляция стейтов
         List<Scenario> scenarios = scenarioEngine.generateAllScenarios(game, player);
@@ -45,14 +49,14 @@ public class Network2FirstSecondPhaseActionProcessor {
         allTasks.add(scenariosTask);
 
         // Базовая вероятность (Пас) — точка отсчета, чтобы понять, стоит ли вообще что-то делать
-//        BaseChanceProjectionTask baseTask = baseChanceProjectionService.createBaseChanceProjectionTask(game, player);
-//        allTasks.add(baseTask);
+        BaseChanceProjectionTask baseTask = baseChanceProjectionService.createBaseChanceProjectionTask(game, player);
+        allTasks.add(baseTask);
 
         // 3. Отправляем в нейронку ОДНИМ пакетом
         batchProjectionService.executeAll(player, allTasks);
 
         // 4. Выбираем лучшее решение
-        double currentProb = 0;//TODO when it becomes smart baseTask.getResults();
+        double currentProb = baseTask.getResults();
 
         // Ищем сценарий, который дает максимальный прирост вероятности относительно "паса"
         Scenario bestScenario = scenarios.stream()

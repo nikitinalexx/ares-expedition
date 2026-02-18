@@ -8,9 +8,9 @@ import com.terraforming.ares.services.DraftCardsService;
 import com.terraforming.ares.services.SpecialEffectsService;
 import com.terraforming.ares.services.ai.AiConstants;
 import com.terraforming.ares.services.ai.advanced.IDataCollect;
+import com.terraforming.ares.services.ai.advanced.features.hand.AllHandCardsFeature;
 import com.terraforming.ares.services.ai.dl4j.NNService;
 import com.terraforming.ares.services.ai.dl4j.Prediction;
-import com.terraforming.ares.services.ai.network2.dto.CardWithChanceModifier;
 import com.terraforming.ares.services.ai.network2.projection.*;
 import com.terraforming.ares.services.ai.turnProcessors.frontier.State;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -65,7 +64,7 @@ public class Network2PickPhaseService {
         }
 
         if (allPhases.containsKey(5)) {
-            allPhases.put(5, getFifthPhaseChance(game, player.getUuid()));
+            allPhases.put(5, getFifthPhaseChanceAnother(game, player.getUuid()));
         }
 
 
@@ -196,8 +195,8 @@ public class Network2PickPhaseService {
         Player player = game.getPlayerByUuid(playerUuid);
         Player anotherPlayer = players.get(0) == player ? players.get(1) : players.get(0);
 
-        addIncome(player, 1);
-        addIncome(anotherPlayer, 0.5);
+        addIncome(player);
+        addIncome(anotherPlayer);
 
         if (player.hasPhaseUpgrade(Constants.PHASE_4_UPGRADE_EXTRA_MC)) {
             player.setMc(player.getMc() + 7);
@@ -251,17 +250,17 @@ public class Network2PickPhaseService {
         }
     }
 
-    private void addCardIncome(Player player, double multiplier) {
-        for (int i = 0; i < Math.min(player.getCardIncome(), player.getCardIncome() * multiplier); i++) {
+    private void addCardIncome(Player player) {
+        for (int i = 0; i < player.getCardIncome(); i++) {
             player.getHand().addCard(AiConstants.GENERIC_DUMMY_ID);
         }
     }
 
-    private void addIncome(Player player, double multiplier) {
-        player.setMc((int) (player.getMc() + (player.getMcIncome() + player.getTerraformingRating()) * multiplier));
-        player.setHeat((int) (player.getHeat() + player.getHeatIncome() * multiplier));
-        player.setPlants((int) (player.getPlants() + player.getPlantsIncome() * multiplier));
-        addCardIncome(player, multiplier);
+    private void addIncome(Player player) {
+        player.setMc(player.getMc() + (player.getMcIncome() + player.getTerraformingRating()));
+        player.setHeat(player.getHeat() + player.getHeatIncome());
+        player.setPlants(player.getPlants() + player.getPlantsIncome());
+        addCardIncome(player);
     }
 
     private Double getBestPhaseScenarioFinalChance(MarsGame game, Player player) {
@@ -320,105 +319,196 @@ public class Network2PickPhaseService {
         player.setChosenPhase(5);
         anotherPlayer.setChosenPhase(4);
 
-        // ===== 1. Определяем правила пятой фазы =====
-        DraftCardsDto draftCardsDto = draftCardsService.countCardsToTakeAndDraftByChosenPhase(player);
+        // Фиксируем выбор фаз для корректного сбора данных
+        player.setChosenPhase(5);
+        // Для оппонента ставим любую другую фазу для баланса
+        game.getPlayerUuidToPlayer().values().stream()
+                .filter(p -> !p.getUuid().equals(playerUuid))
+                .findFirst()
+                .ifPresent(p -> p.setChosenPhase(4));
 
-        int cardsSeen = draftCardsDto.getCardsToSee();
-        int cardsTaken = draftCardsDto.getCardsToTake();
+        // 1. Собираем базовую вероятность (Текущее состояние)
+        float[] currentFeatures = iDataCollect.collectData(game, player);
+        double baseProb = nnService.predictBatch(List.of(currentFeatures), player).getFirst().baseProb;
 
-        List<Integer> originalHand = new ArrayList<>(player.getHand().getCards());
-        List<float[]> baseStatesWithoutCardsInHand = new ArrayList<>();
-        baseStatesWithoutCardsInHand.add(iDataCollect.collectData(game, player));
-
-        for (Integer cardId : originalHand) {
-            player.getHand().removeCard(cardId);
-            baseStatesWithoutCardsInHand.add(iDataCollect.collectData(game, player));
-            player.getHand().addCard(cardId);
-        }
-        player.getHand().getCards().clear();
-        player.getHand().getCards().addAll(originalHand);
-
-        List<Prediction> basePredictions = nnService.predictBatch(baseStatesWithoutCardsInHand, player);
-        double baseProb = basePredictions.removeFirst().baseProb;
-        Map<Integer, Double> cardIdToBaseChance = new HashMap<>();
-        for (int i = 0; i < originalHand.size(); i++) {
-            cardIdToBaseChance.put(originalHand.get(i), basePredictions.get(i).baseProb);
-        }
-
+        // 2. Оцениваем "качество колоды" (Average Value of a New Card)
+        // Мы смотрим, насколько одна любая карта из колоды в среднем повышает шанс, попадая в руку
         Deck projectsDeck = cardService.createProjectsDeck(game.getExpansions());
         projectsDeck.removeCards(player.getHand().getCards());
         projectsDeck.removeCards(player.getPlayed().getCards());
         projectsDeck.removeCards(anotherPlayer.getPlayed().getCards());
 
-        List<Card> allCardsToCheck = Stream.concat(player.getHand().getCards().stream().map(cardService::getCard), projectsDeck.dealCards(Math.min(projectsDeck.size(), CARDS_TO_LOOK_AHEAD)).stream().map(cardService::getCard)).toList();
-        List<CardWithChanceModifier> allProjections = network2ProjectBuildService.getBestCardProjectionsIgnoreRequirements(game, player, allCardsToCheck);
+        // Берем выборку из колоды для оценки
+        List<Integer> deckSample = projectsDeck.dealCards(Math.min(projectsDeck.size(), CARDS_TO_LOOK_AHEAD));
+        List<float[]> statesWithOneExtra = new ArrayList<>();
 
-        List<Double> handDeltas = new ArrayList<>();
-        List<Double> deckDeltas = new ArrayList<>();
-
-        for (CardWithChanceModifier projection : allProjections) {
-            double modifier = projection.getModifier();
-            boolean isHandCard = originalHand.contains(projection.getCard().getId());
-            double delta = (projection.getChance() - (isHandCard ? cardIdToBaseChance.get(projection.getCard().getId()) : baseProb)) * modifier;
-            if (isHandCard) {
-                handDeltas.add(delta);
-            } else {
-                deckDeltas.add(delta);
-            }
-        }
-        handDeltas.sort(Comparator.naturalOrder());
-
-        double handValue = 0.0;
-        for (int i = 0; i < Math.min(cardsTaken, handDeltas.size()); i++) {
-            handValue += handDeltas.get(i);
+        for (Integer cardId : deckSample) {
+            player.getHand().addCard(cardId);
+            statesWithOneExtra.add(iDataCollect.collectData(game, player));
+            player.getHand().removeCard(cardId);
         }
 
-        double totalDeckValue = 0;
+        List<Prediction> samplePreds = nnService.predictBatch(statesWithOneExtra, player);
+        List<Double> deckDeltas = samplePreds.stream()
+                .map(p -> Math.max(0, p.baseProb - baseProb)) // Нас интересуют только полезные карты
+                .collect(Collectors.toList());
+
+        // 3. Симулируем процесс Research (Draft)
+        // В фазе 5 мы видим N карт и выбираем M лучших.
+        DraftCardsDto draftDto = draftCardsService.countCardsToTakeAndDraftByChosenPhase(player);
+        int cardsSeen = draftDto.getCardsToSee();
+        int cardsToKeep = draftDto.getCardsToTake();
+
+        double totalDraftBenefit = 0;
         for (int i = 0; i < PHASE_5_ITERATIONS; i++) {
-            List<Double> seenCards = randomSubset(
-                    deckDeltas,
-                    Math.min(cardsSeen, deckDeltas.size()),
-                    random
-            );
+            List<Double> iterationSeen = randomSubset(deckDeltas, Math.min(cardsSeen, deckDeltas.size()), random);
+            iterationSeen.sort(Comparator.reverseOrder()); // Выбираем лучшие из увиденных
 
-            seenCards.sort(Comparator.reverseOrder());
-
-            double deckValue = 0;
-            for (int j = 0; j < cardsTaken; j++) {
-                deckValue += seenCards.get(j);
+            double bestCardsValue = 0;
+            for (int j = 0; j < Math.min(cardsToKeep, iterationSeen.size()); j++) {
+                bestCardsValue += iterationSeen.get(j);
             }
-            totalDeckValue += (deckValue / cardsTaken);
+            totalDraftBenefit += bestCardsValue;
         }
-        totalDeckValue /= PHASE_5_ITERATIONS;
+        double avgResearchGain = totalDraftBenefit / PHASE_5_ITERATIONS;
 
-        double delta = totalDeckValue - handValue;
+        // 4. Оцениваем Mass Effect (прирост ресурсов и само событие фазы)
+        // Добавляем "пустышки", чтобы нейронка увидела факт наличия новых карт и денег в руке
+        addDummyCards(draftCardsService.countCardsToTakeAndDraftByChosenPhase(anotherPlayer), anotherPlayer);
 
-        addDummyCardsOrMoney(draftCardsDto, player);
-        addDummyCardsOrMoney(draftCardsService.countCardsToTakeAndDraftByChosenPhase(anotherPlayer), anotherPlayer);
+        float[] finalFeatures = iDataCollect.collectData(game, player);
+        double massEffectProb = nnService.predictBatch(List.of(finalFeatures), player).getFirst().baseProb;
 
-        double massEffectProb = nnService.predictBatch(List.of(iDataCollect.collectData(game, player)), player).getFirst().baseProb;
+        // Итоговая дельта = (Выгода от качества выбранных карт) + (Эффект от самого факта добора/бонусов фазы)
+        // Мы используем разницу между massEffectProb и baseProb, чтобы учесть "физический" добор.
+        double finalDelta = avgResearchGain + (massEffectProb - baseProb);
 
-        double massDelta = massEffectProb - baseProb;
-
-        return baseProb + delta + massDelta;
+        return baseProb + finalDelta;
     }
 
-    private void addDummyCardsOrMoney(DraftCardsDto draftCardsDto, Player player) {
+    private Double getFifthPhaseChanceAnother(MarsGame game, String playerUuid) {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        game = new MarsGame(game);
+        final List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
+        Player player = game.getPlayerByUuid(playerUuid);
+        Player anotherPlayer = players.get(0) == player ? players.get(1) : players.get(0);
+        player.setChosenPhase(5);
+        anotherPlayer.setChosenPhase(4);
 
-        int cardsTaken = draftCardsDto.getCardsToTake();
+        addDummyCards(draftCardsService.countCardsToTakeAndDraftByChosenPhase(anotherPlayer), anotherPlayer);
 
-        int spaceLeft = Math.max(0, 10 - player.getHand().size());
-        int dummyCardsToAdd = Math.min(cardsTaken, spaceLeft);
-        int overflowToMoney = Math.max(0, cardsTaken - spaceLeft);
+        // 1. Базовая вероятность (текущий шанс на победу)
+        float[] currentFeatures = iDataCollect.collectData(game, player);
+        double baseProb = nnService.predictBatch(List.of(currentFeatures), player).getFirst().baseProb;
 
-        for (int i = 0; i < dummyCardsToAdd; i++) {
+        // 2. Подготовка колоды (исключаем то, что уже вышло)
+        Deck projectsDeck = cardService.createProjectsDeck(game.getExpansions());
+        projectsDeck.removeCards(player.getHand().getCards());
+        projectsDeck.removeCards(player.getPlayed().getCards());
+        projectsDeck.removeCards(anotherPlayer.getPlayed().getCards());
+
+        // 3. Параметры драфта
+        DraftCardsDto draftDto = draftCardsService.countCardsToTakeAndDraftByChosenPhase(player);
+        int cardsToSee = draftDto.getCardsToSee();
+        int cardsToKeep = draftDto.getCardsToTake();
+
+        // 4. Симуляция синергии через пакетную оценку
+        double totalSynergyBenefit = 0;
+        int iterations = 50; // Оптимально для точности/скорости
+
+        // 1. ПРЕ-СКОРИНГ: Оцениваем "полезность" каждой карты в вакууме
+        // Берем выборку из колоды (например, 20-30 карт), чтобы понять их средний вес
+        List<Integer> sampleCards = projectsDeck.dealCards(Math.min(projectsDeck.size(), CARDS_TO_LOOK_AHEAD));
+        List<float[]> preScoreStates = new ArrayList<>();
+        float[] baseVector = baseVectorWithSomeExtraCards(1, game, player);
+
+        for (Integer cardId : sampleCards) {
+            float[] state = baseVector.clone();
+
+            int bitIndex =  AllHandCardsFeature.INDEX_BY_CLASS.get(cardService.getCard(cardId).getClass());
+            state[AiConstants.HAND_BIT_MASKS_OFFSET + bitIndex] = 1f;
+
+            preScoreStates.add(state);
+        }
+
+        // Получаем веса каждой карты
+        List<Prediction> preScores = nnService.predictBatch(preScoreStates, player);
+        Map<Integer, Double> cardWeights = new HashMap<>();
+        for (int i = 0; i < sampleCards.size(); i++) {
+            cardWeights.put(sampleCards.get(i), preScores.get(i).baseProb - baseProb);
+        }
+
+        // 2. СИМУЛЯЦИЯ ДРАФТА: Выбираем лучшие из увиденных
+        List<float[]> synergyStates = new ArrayList<>();
+
+        float[] baseVectorForSynergy = baseVectorWithSomeExtraCards(cardsToKeep, game, player);
+
+        for (int i = 0; i < iterations; i++) {
+            // Имитируем, что мы увидели cardsToSee карт
+            List<Integer> seenCards = randomSubset(sampleCards, cardsToSee, random);
+
+            // Сортируем их по нашему пре-скорингу и берем ТОП (имитируем выбор игрока)
+            List<Integer> bestToKeep = seenCards.stream()
+                    .sorted((id1, id2) -> Double.compare(cardWeights.get(id2), cardWeights.get(id1)))
+                    .limit(cardsToKeep)
+                    .toList();
+
+            float[] state = baseVectorForSynergy.clone();
+
+            for (int j = 0; j < cardsToKeep; j++) {
+                int cardId = bestToKeep.get(j);
+                int bitIndex =  AllHandCardsFeature.INDEX_BY_CLASS.get(cardService.getCard(cardId).getClass());
+                state[AiConstants.HAND_BIT_MASKS_OFFSET + bitIndex] = 1f;
+            }
+            synergyStates.add(state);
+        }
+
+        // 3. ФИНАЛЬНЫЙ ЗАМЕР: Оцениваем группы с учетом синергии
+        List<Prediction> finalPredictions = nnService.predictBatch(synergyStates, player);
+        for (Prediction p : finalPredictions) {
+            totalSynergyBenefit += (p.baseProb - baseProb);
+        }
+
+
+        // Средний профит от новых комбинаций в руке
+        double avgComboGain = totalSynergyBenefit / iterations;
+
+        // 5. Учет стоимости покупки карт (Mass Effect)
+        // В 5-й фазе мы не просто получаем карты, мы за них ПЛАТИМ (обычно 3 монеты за штуку)
+        // А также получаем бонус фазы (+2 карты или скидки)
+
+
+        float[] physicsFeatures = iDataCollect.collectData(game, player);
+        double physicsProb = nnService.predictBatch(List.of(physicsFeatures), player).getFirst().baseProb;
+
+        // Итоговое предсказание:
+        // Шанс с учетом "физики" (трата денег, смена фазы) + Ожидаемая мощь новых комбинаций
+        double finalProb = physicsProb + avgComboGain;
+
+        return Math.min(1.0, Math.max(0.0, finalProb));
+    }
+
+    private float[] baseVectorWithSomeExtraCards(int cardsToAdd, MarsGame game, Player player) {
+
+// добавляем maxCardsAdded dummy
+        for (int i = 0; i < cardsToAdd; i++) {
             player.getHand().addCard(AiConstants.GENERIC_DUMMY_ID);
         }
 
-        // 4. Добавляем деньги за оверфлоу
-        if (overflowToMoney > 0) {
-            // В Марсе карта при оверфлоу обычно дает 3 мегакредита
-            player.setMc(player.getMc() + overflowToMoney * specialEffectsService.getCardPrice(player));
+// получаем базовый вектор
+        float[] baseVector = iDataCollect.collectData(game, player);
+
+// удаляем dummy обратно
+        for (int i = 0; i < cardsToAdd; i++) {
+            player.getHand().removeCard(AiConstants.GENERIC_DUMMY_ID);
+        }
+
+        return baseVector;
+    }
+
+    private void addDummyCards(DraftCardsDto draftCardsDto, Player player) {
+        for (int i = 0; i < draftCardsDto.getCardsToTake(); i++) {
+            player.getHand().addCard(AiConstants.GENERIC_DUMMY_ID);
         }
     }
 

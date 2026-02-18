@@ -14,13 +14,14 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class AdvancedAiDataCollectionService implements IDataCollect {
-    private static final int WIN_POINTS_INDEX_OFFSET = 38;
-    private static final int OPPONENT_WIN_POINTS_INDEX_OFFSET = 242;
-    private static final int HAND_SIZE_INDEX_OFFSET = 52;
-    private static final int OPPONENT_HAND_SIZE_INDEX_OFFSET = 256;
-    private static final int PLAYED_TAG_OFFSET = 58;
+    private static final int WIN_POINTS_INDEX_OFFSET = 75;
+    private static final int OPPONENT_WIN_POINTS_INDEX_OFFSET = 253;
+    private static final int HAND_SIZE_INDEX_OFFSET = 89;
+    private static final int OPPONENT_HAND_SIZE_INDEX_OFFSET = 267;
+    private static final int PLAYED_TAG_OFFSET = 90;
 
     private final CompleteTableEncoder tableEncoder;
+    private final CompleteHandEncoder handEncoder;
 
     public void collectData(GameResult gameResult, MarsGame marsGame, List<Player> players) {
         Player currentPlayer = players.get(0);
@@ -86,9 +87,10 @@ public class AdvancedAiDataCollectionService implements IDataCollect {
         List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
         Player anotherPlayer = (players.get(0).getUuid().equals(player.getUuid())) ? players.get(1) : players.get(0);
 
-        FeatureWriter featureWriter = new FeatureWriter(AiConstants.TABLE_VECTOR_SIZE);
+        FeatureWriter featureWriter = new FeatureWriter(AiConstants.TABLE_VECTOR_SIZE + AiConstants.HAND_VECTOR_SIZE);
 
         tableEncoder.encodeTable(game, player, anotherPlayer, featureWriter);
+        handEncoder.encodeHand(game, player, anotherPlayer, featureWriter);
 
         return normalize(featureWriter.getData(), AiConstants.NORMALIZATION_VECTOR);
     }

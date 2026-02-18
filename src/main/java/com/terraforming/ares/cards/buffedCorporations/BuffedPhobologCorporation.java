@@ -30,7 +30,7 @@ public class BuffedPhobologCorporation implements CorporationCard {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
                 .name("Phobolog")
-                .description("27 Mc. 1 Titanium income. 1 Space card. Each Titanium you have is worth 1 MC extra.")
+                .description("27 Mc. 1 Titanium income. Each Titanium you have is worth 1 MC extra.")
                 .cardAction(CardAction.PHOBOLOG_CORPORATION)
                 .build();
     }
@@ -46,10 +46,6 @@ public class BuffedPhobologCorporation implements CorporationCard {
         Player player = marsContext.getPlayer();
         player.setMc(27);
         player.setTitaniumIncome(player.getTitaniumIncome() + 1);
-
-        player.getHand().addCard(
-                marsContext.getCardService().dealCardWithTag(Tag.SPACE, marsContext.getGame())
-        );
 
         return null;
     }

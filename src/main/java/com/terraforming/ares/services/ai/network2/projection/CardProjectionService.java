@@ -10,23 +10,23 @@ import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.CardValidationService;
 import com.terraforming.ares.services.ai.AiConstants;
-import com.terraforming.ares.services.ai.advanced.AdvancedAiDataCollectionService;
-import com.terraforming.ares.services.ai.dl4j.NNService;
-import com.terraforming.ares.services.ai.dl4j.Prediction;
-import com.terraforming.ares.services.ai.network2.buildParams.OptimizedInputDecisions;
-import com.terraforming.ares.services.ai.network2.buildParams.SharedInputAnalysis;
-import com.terraforming.ares.services.ai.turnProcessors.AiTurnService;
-import com.terraforming.ares.services.ai.turnProcessors.AiUtility;
 import com.terraforming.ares.services.ai.network2.Network2PaymentService;
 import com.terraforming.ares.services.ai.network2.Network2ProjectBuildService;
 import com.terraforming.ares.services.ai.network2.buildParams.AiOptimalBuildService;
 import com.terraforming.ares.services.ai.network2.buildParams.CardWithInputParams;
+import com.terraforming.ares.services.ai.network2.buildParams.OptimizedInputDecisions;
+import com.terraforming.ares.services.ai.network2.buildParams.SharedInputAnalysis;
 import com.terraforming.ares.services.ai.network2.dto.CardWithChanceAndInput;
+import com.terraforming.ares.services.ai.turnProcessors.AiTurnService;
+import com.terraforming.ares.services.ai.turnProcessors.AiUtility;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,7 +36,6 @@ public class CardProjectionService {
     private final AiOptimalBuildService aiOptimalBuildService;
     private final Network2PaymentService network2PaymentService;
     private final CardValidationService cardValidationService;
-    private final AdvancedAiDataCollectionService advancedAiDataCollectionService;
     private final AiTurnService aiTurnService;
     private final AiUtility aiUtility;
     private final CardService cardService;
@@ -67,7 +66,6 @@ public class CardProjectionService {
             }
         }
 
-
         return cardWithChanceAndInputs.stream().filter(cardWithChanceAndInput -> {
             Map<Integer, List<Integer>> inputParameters = cardWithChanceAndInput.getInputParameters();
             if (inputParameters.containsKey(InputFlag.MARS_UNIVERSITY_DUMMY_INPUT.getId())) {
@@ -88,7 +86,7 @@ public class CardProjectionService {
                 .filter(card -> !card.isBlankCard() //blank cards only simulate cards that come to hand but aren't playable in reality
                         && (canBuildGreen && card.getColor() == CardColor.GREEN) || (canBuildBlueRed && (card.getColor() == CardColor.BLUE || card.getColor() == CardColor.RED)))
                 .collect(Collectors.toCollection(ArrayList::new));
-        filteredCards.removeAll(network2ProjectBuildService.getCardsWithStrongRestrictions(game, player, filteredCards));
+        filteredCards.removeAll(network2ProjectBuildService.getCardsWithStrongRestrictions(player, filteredCards));
         return filteredCards;
     }
 

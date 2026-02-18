@@ -151,6 +151,8 @@ public class Player {
         if (copy.buildContext != null) {
             this.buildContext = new BuildContext(copy.buildContext);
         }
+        this.lunaProjectOffice = copy.lunaProjectOffice;
+        this.projectInspection = copy.projectInspection;
     }
 
     public void setTerraformingRating(int terraformingRating) {

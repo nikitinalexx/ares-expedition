@@ -2,6 +2,7 @@ package com.terraforming.ares.services.ai.dl4j;
 
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.ai.AiConstants;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -38,7 +39,7 @@ public class NNService {
     // Две отдельные очереди для разных моделей
     private final Map<ModelType, Queue<BatchRequest>> queues = new EnumMap<>(ModelType.class);
 
-    private final Map<ModelType, MultiLayerNetwork> networks = new EnumMap<>(ModelType.class);
+    private final Map<ModelType, ComputationGraph> networks = new EnumMap<>(ModelType.class);
 
     public NNService() throws Exception {
         networks.put(
@@ -50,8 +51,8 @@ public class NNService {
 
 //                MultiLayerNetwork.load(new File("iter5_epoch_3.zip"), false)
 //                MultiLayerNetwork.load(new File("epoch_4_150.zip"), false)
-                MultiLayerNetwork.load(new File("iter8_v4_350k_epoch_2_375.zip"), false)
-
+//                MultiLayerNetwork.load(new File("iter8_v4_350k_epoch_2_375.zip"), false)
+                ComputationGraph.load(new File("epoch_2_65.zip"), false)
 
 
 
@@ -64,7 +65,7 @@ public class NNService {
                 ModelType.SECOND,
 //                MultiLayerNetwork.load(new File("self_play_iter_2_8853_4430_batch200_a15_l14.zip"), false)
 //                MultiLayerNetwork.load(new File("epoch_1_120.zip"), false)
-                MultiLayerNetwork.load(new File("iter8_v4_350k_epoch_2_375.zip"), false)
+                ComputationGraph.load(new File("epoch_2_65.zip"), false)
 
 
 //                MultiLayerNetwork.load(new File("iter8_epoch_3_50_dropout79_150k_files.zip"), false)
@@ -81,7 +82,7 @@ public class NNService {
             Queue<BatchRequest> queue = new ConcurrentLinkedQueue<>();
             queues.put(type, queue);
 
-            MultiLayerNetwork net = networks.get(type);
+            ComputationGraph net = networks.get(type);
 
             Thread.ofVirtual()
                     .name("Batcher-" + type)
@@ -113,7 +114,7 @@ public class NNService {
     private void batchLoop(
             ModelType type,
             Queue<BatchRequest> queue,
-            MultiLayerNetwork net
+            ComputationGraph net
     ) {
         final long BATCH_WINDOW_NANOS = 4_000_000; // 4 мс
         final int TARGET_BATCH_SIZE = 1024;
@@ -158,32 +159,52 @@ public class NNService {
         }
     }
 
-    private void processInference(List<BatchRequest> batch, MultiLayerNetwork net, int totalStates) {
-        // 1. Подготовка данных
-        float[] allFeatures = new float[totalStates * AiConstants.TABLE_VECTOR_SIZE];
-        int currentPos = 0;
+    private void processInference(List<BatchRequest> batch, ComputationGraph net, int totalStates) {
+        // 1. Определяем размеры из твоих констант (подставь свои имена констант)
+        int tableSize = AiConstants.TABLE_VECTOR_SIZE;
+        int handSize = AiConstants.HAND_VECTOR_SIZE;
+
+        // 2. Подготовка данных (два отдельных плоских массива)
+        float[] tableFlat = new float[totalStates * tableSize];
+        float[] handFlat = new float[totalStates * handSize];
+
+        int tablePos = 0;
+        int handPos = 0;
+
         for (BatchRequest r : batch) {
-            for (float[] feature : r.features) {
-                System.arraycopy(feature, 0, allFeatures, currentPos, feature.length);
-                currentPos += feature.length;
+            for (float[] fullFeature : r.features) {
+                // Копируем первую часть вектора в массив стола
+                System.arraycopy(fullFeature, 0, tableFlat, tablePos, tableSize);
+                tablePos += tableSize;
+
+                // Копируем вторую часть вектора в массив руки
+                System.arraycopy(fullFeature, tableSize, handFlat, handPos, handSize);
+                handPos += handSize;
             }
         }
-        INDArray tableFeatures = Nd4j.create(allFeatures, new int[]{totalStates, AiConstants.TABLE_VECTOR_SIZE}, 'c');
 
-        // 2. Вычисление (GPU)
-        INDArray output = net.output(tableFeatures, false);
+        try (INDArray tableInput = Nd4j.create(tableFlat, new int[]{totalStates, tableSize}, 'c');
+             INDArray handInput  = Nd4j.create(handFlat,  new int[]{totalStates, handSize},  'c')) {
 
-        // 3. Пост-обработка
-        float[] outputData = output.data().asFloat();
-        int offset = 0;
-        for (BatchRequest r : batch) {
-            int size = r.features.size();
-            List<Prediction> subResult = new ArrayList<>(size);
-            for (int i = 0; i < size; i++) {
-                subResult.add(new Prediction(outputData[offset + i]));
+            INDArray[] output = net.output(false, tableInput, handInput);
+
+            try {
+                float[] outputData = output[0].data().asFloat();
+                int offset = 0;
+                for (BatchRequest r : batch) {
+                    int size = r.features.size();
+                    List<Prediction> subResult = new ArrayList<>(size);
+                    for (int i = 0; i < size; i++) {
+                        subResult.add(new Prediction(outputData[offset + i]));
+                    }
+                    r.future.complete(subResult);
+                    offset += size;
+                }
+            } finally {
+                for (INDArray o : output) {
+                    if (o != null) o.close();
+                }
             }
-            r.future.complete(subResult);
-            offset += size;
         }
     }
 

@@ -23,8 +23,7 @@ import java.util.stream.Collectors;
 public class WinPointsService {
     public final CardService cardService;
 
-
-    public int countWinPoints(Player player, MarsGame game) {
+    public int countWinPointsWithoutResources(Player player, MarsGame game) {
         if (game.isCrysis()) {
             return countCrysisWinPoints(game);
         }
@@ -35,21 +34,28 @@ public class WinPointsService {
         List<Card> cards = player.getPlayed()
                 .getCards()
                 .stream()
-                .map(cardService::getCard).collect(Collectors.toList());
+                .map(cardService::getCard).toList();
 
         winPoints += cards
                 .stream()
                 .mapToInt(Card::getWinningPoints)
                 .sum();
 
-
-        winPoints += getWinPointsFromResourceCards(player, cards);
-
         winPoints += milestonesWinPoints(player, game);
 
         winPoints += awardsWinPoints(player, game);
 
         return winPoints + player.getExtraPoints();
+    }
+
+
+    public int countWinPoints(Player player, MarsGame game) {
+        List<Card> cards = player.getPlayed()
+                .getCards()
+                .stream()
+                .map(cardService::getCard).toList();
+
+        return countWinPointsWithoutResources(player, game) + getWinPointsFromResourceCards(player, cards);
     }
 
     public float countWinPointsWithFloats(Player player, MarsGame game) {
@@ -74,7 +80,7 @@ public class WinPointsService {
 
         winPoints += awardsWinPoints(player, game);
 
-        return winPoints;
+        return winPoints + player.getExtraPoints();
     }
 
     public int countCrysisWinPoints(MarsGame game) {

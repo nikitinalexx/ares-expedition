@@ -124,8 +124,6 @@ public class Network2ThirdPhaseActionProjector {
         return getBestChanceFromOptions(bestRegularFutureOptions, game, player, anotherPlayer, bestOpponentStateAfterStandardProjects);
     }
 
-    public static final ConcurrentHashMap<String, String> FINISHING_THROUGH_THIRD = new ConcurrentHashMap<>();
-
     private State getBestOpponentStateAfterStandardProjects(List<ScoredNode> bestRegularFutureOptions, MarsGame game, Player player, Player opponent) {
         StateContext stateContext = createStateContext(game, opponent);
 

@@ -303,7 +303,7 @@ public class DatasetCollectionService {
             }
         }
 
-        Map<Tag, Long> tagToCount = cardService.countPlayedTagsAsMap(currentPlayer);
+        int[] tagToCount = cardService.countPlayedTags(currentPlayer);
         DraftCardsDto draftCardsDto = draftCardsService.countExtraCardsToTakeAndDraft(currentPlayer);
 
         return MarsPlayerRow.builder()
@@ -330,16 +330,16 @@ public class DatasetCollectionService {
                 .selfReplicatingBacteria(currentPlayer.getCardResourcesCount().getOrDefault(SelfReplicatingBacteria.class, 0))
                 .fibrousCompositeScience(currentPlayer.getCardResourcesCount().getOrDefault(FibrousCompositeMaterial.class, 0))
 
-                .spaceTagsCount(tagToCount.getOrDefault(Tag.SPACE, 0L).intValue())
-                .earthTagsCount(tagToCount.getOrDefault(Tag.EARTH, 0L).intValue())
-                .eventTagsCount(tagToCount.getOrDefault(Tag.EVENT, 0L).intValue())
-                .scienceTagsCount(tagToCount.getOrDefault(Tag.SCIENCE, 0L).intValue())
-                .plantTagsCount(tagToCount.getOrDefault(Tag.PLANT, 0L).intValue())
-                .energyTagsCount(tagToCount.getOrDefault(Tag.ENERGY, 0L).intValue())
-                .buildingTagsCount(tagToCount.getOrDefault(Tag.BUILDING, 0L).intValue())
-                .animalTagsCount(tagToCount.getOrDefault(Tag.ANIMAL, 0L).intValue())
-                .jupiterTagsCount(tagToCount.getOrDefault(Tag.JUPITER, 0L).intValue())
-                .microbeTagsCount(tagToCount.getOrDefault(Tag.MICROBE, 0L).intValue())
+                .spaceTagsCount(tagToCount[Tag.SPACE.ordinal()])
+                .earthTagsCount(tagToCount[Tag.EARTH.ordinal()])
+                .eventTagsCount(tagToCount[Tag.EVENT.ordinal()])
+                .scienceTagsCount(tagToCount[Tag.SCIENCE.ordinal()])
+                .plantTagsCount(tagToCount[Tag.PLANT.ordinal()])
+                .energyTagsCount(tagToCount[Tag.ENERGY.ordinal()])
+                .buildingTagsCount(tagToCount[Tag.BUILDING.ordinal()])
+                .animalTagsCount(tagToCount[Tag.ANIMAL.ordinal()])
+                .jupiterTagsCount(tagToCount[Tag.JUPITER.ordinal()])
+                .microbeTagsCount(tagToCount[Tag.MICROBE.ordinal()])
 
 
                 .amplifyEffect(CardEffect.AMPLIFY.getEffectSize(cardTypes))

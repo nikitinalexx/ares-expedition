@@ -8,9 +8,12 @@ import com.terraforming.ares.services.SpecialEffectsService;
 import com.terraforming.ares.services.WinPointsService;
 import com.terraforming.ares.services.ai.advanced.features.FeatureBlock;
 import com.terraforming.ares.services.ai.advanced.features.hand.*;
+import com.terraforming.ares.services.ai.advanced.features.table.MilestonesAwardsFeature;
+import com.terraforming.ares.services.ai.advanced.features.table.TableCardEffectsFeature;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -19,34 +22,35 @@ public class CompleteHandEncoder {
     private final CardService cardService;
     private final SpecialEffectsService specialEffectsService;
     private final DraftCardsService draftCardsService;
-    private final HandEncoderHelperService handEncoderHelperService;
     private final WinPointsService winPointsService;
 
     public static final List<FeatureBlock> GENERIC_HAND_FEATURES = List.of(
-            new HandPlayerFeature(),
-            new CardIncomeStatsFeature(),
-            new CardGainStatsFeature(),
-            new HandTagsFeature(),
+            new MarsAndPlayerIncomesFeature(),
+            new MilestonesAwardsFeature(),
             new PlayedTagsFeature(),
             new CorporationsHandFeature(),
-            new CardRequirementsFeature(),
-            new SingleParamHandFeature(),
-            new MultiParamHandFeature(),
-            new MicrobeFeature()
+            new AllHandCardsFeature(),
+            new HandFromTableTagIncomeFeature(),
+            new TableCardEffectsFeature()
     );
 
-    public void evaluate(MarsGame game, Player player, Player opponent, FeatureWriter featureWriter) {
-        if (player.getHand().size() == 0) {
-            return;
-        }
-
+    public void encodeHand(MarsGame game, Player player, Player opponent, FeatureWriter featureWriter) {
         TableContext playerContext = new TableContext(
-                game, player, opponent, cardService, winPointsService, draftCardsService, specialEffectsService, handEncoderHelperService
+                game, player, opponent, cardService, winPointsService, draftCardsService, specialEffectsService
         );
 
-        for (FeatureBlock handFeature : GENERIC_HAND_FEATURES) {
-            handFeature.encode(playerContext, featureWriter);
+        for (FeatureBlock genericTableFeature : GENERIC_HAND_FEATURES) {
+            genericTableFeature.encode(playerContext, featureWriter);
         }
+    }
+
+    public static List<String> getAllFeatureNames() {
+        List<String> finalResult = new ArrayList<>();
+        for (FeatureBlock genericTableFeature : GENERIC_HAND_FEATURES) {
+            finalResult.addAll(genericTableFeature.getFeatureNames());
+        }
+
+        return finalResult;
     }
 
 

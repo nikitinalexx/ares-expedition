@@ -1,12 +1,12 @@
 package com.terraforming.ares.services.ai.network2;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Deck;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.ai.advanced.AdvancedAiDataCollectionService;
 import com.terraforming.ares.services.ai.dl4j.NNService;
+import com.terraforming.ares.services.ai.dl4j.Prediction;
 import com.terraforming.ares.services.ai.network2.dto.CardWithChanceModifier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,67 +24,123 @@ public class Network2DraftCardsProjectionService {
 
     private final CardService cardService;
     private final NNService nnService;
-    private final AdvancedAiDataCollectionService advancedAiDataCollectionService;
-    private final Network2ProjectBuildService network2ProjectBuildService;
+    private final AdvancedAiDataCollectionService iDataCollect;
+
 
     public List<CardWithChanceModifier> cardsToDiscardByProjectedValue(MarsGame marsGame, Player player) {
+        List<Integer> handCards = new ArrayList<>(player.getHand().getCards());
+        if (handCards.isEmpty()) return List.of();
+
         List<Player> players = new ArrayList<>(marsGame.getPlayerUuidToPlayer().values());
         Player anotherPlayer = (players.get(0).getUuid().equals(player.getUuid())) ? players.get(1) : players.get(0);
 
-        Deck projectsDeck = cardService.createProjectsDeck(marsGame.getExpansions());
-        projectsDeck.removeCards(player.getHand().getCards());
-        projectsDeck.removeCards(player.getPlayed().getCards());
-        projectsDeck.removeCards(anotherPlayer.getPlayed().getCards());
+        // 1. Текущая база (шанс со всей рукой)
+        float[] currentFeatures = iDataCollect.collectData(marsGame, player);
+        double currentProb = nnService.predictBatch(List.of(currentFeatures), player).getFirst().baseProb;
 
-        double currentProb = nnService.predictBatch(List.of(advancedAiDataCollectionService.collectData(marsGame, player)), player).getFirst().baseProb;
+        // 2. Оцениваем ценность владения каждой картой (Ownership Value)
+        // Убираем по одной и смотрим, насколько просядет шанс
+        List<float[]> statesWithoutOne = new ArrayList<>();
+        for (Integer cardId : handCards) {
+            player.getHand().removeCard(cardId);
+            statesWithoutOne.add(iDataCollect.collectData(marsGame, player));
+            player.getHand().addCard(cardId);
+        }
 
+        // 3. Оцениваем потенциал колоды (Deck Potential)
+        // Нам нужно знать, на что мы в среднем можем рассчитывать при доборе
+        Deck deck = cardService.createProjectsDeck(marsGame.getExpansions());
+        deck.removeCards(player.getHand().getCards());
+        deck.removeCards(player.getPlayed().getCards());
+        deck.removeCards(anotherPlayer.getPlayed().getCards());
 
-        // ====== ПРОЕКЦИИ ИЗ КОЛОДЫ ======
-        List<Card> cardsFromDeck = projectsDeck.dealCards(Math.min(projectsDeck.size(), CARDS_TO_LOOK_AHEAD)).stream().map(cardService::getCard).toList();
+        List<Integer> deckSample = deck.dealCards(Math.min(deck.size(), CARDS_TO_LOOK_AHEAD));
 
-        List<CardWithChanceModifier> deckProjections = network2ProjectBuildService.getBestCardProjectionsIgnoreRequirements(marsGame, player, cardsFromDeck);
+        List<float[]> statesWithExtra = new ArrayList<>();
+        for (Integer deckCardId : deckSample) {
+            player.getHand().addCard(deckCardId);
+            statesWithExtra.add(iDataCollect.collectData(marsGame, player));
+            player.getHand().removeCard(deckCardId);
+        }
 
-        // средний шанс от КОЛОДЫ (все дельты считаются от currentProb!)
-        double avgChanceFromDeck = deckProjections.stream().mapToDouble(p -> calculateAdjustedChance(p, currentProb))
+        // 1. Собираем всё в один список
+        List<float[]> totalBatch = new ArrayList<>(statesWithoutOne);
+        totalBatch.addAll(statesWithExtra);
+
+        // 2. Делаем ОДИН вызов нейронки
+        List<Prediction> allPreds = nnService.predictBatch(totalBatch, player);
+
+        // 3. Распределяем результаты обратно
+        // Первые N предсказаний — это шансы без одной карты
+        List<Prediction> preds = allPreds.subList(0, statesWithoutOne.size());
+
+        // Остальные — это шансы с доп. картой из колоды
+        double avgDeckProb = allPreds.subList(statesWithoutOne.size(), allPreds.size()).stream()
+                .mapToDouble(p -> p.baseProb)
                 .average()
                 .orElse(currentProb);
 
+        // 4. Динамический порог (Gap)
+        // Чем ближе мы к победе, тем меньше должны рисковать, скидывая карты
+        double dynamicGap = Math.max(MIN_ABSOLUTE_GAP, (1.0 - currentProb) * RELATIVE_GAP_FACTOR);
 
-        // ====== ПРОЕКЦИИ ИЗ РУКИ ======
-        List<CardWithChanceModifier> bestHandProjections = network2ProjectBuildService.getBestCardProjectionsIgnoreRequirements(marsGame, player, player.getHand().getCards().stream().map(cardService::getCard).toList());
+        // 5. Формируем результат
+        List<CardWithChanceModifier> results = new ArrayList<>();
+        for (int i = 0; i < handCards.size(); i++) {
+            int cardId = handCards.get(i);
+            double probWithoutThisCard = preds.get(i).baseProb;
 
+            // Карта считается "кандидатом на выброс", если:
+            // Вероятность БЕЗ неё не сильно ниже, чем средняя вероятность с новой картой из колоды минус зазор.
+            // Или проще: если владение этой картой дает профит меньше, чем ожидание от колоды.
+            if (probWithoutThisCard > avgDeckProb - dynamicGap) {
+                CardWithChanceModifier cm = new CardWithChanceModifier(cardService.getCard(cardId), probWithoutThisCard, 1.0f);
+                results.add(cm);
+            }
+        }
 
-        // ====== ДИНАМИЧЕСКИЙ ПОРОГ ======
-        double dynamicGap = Math.max(
-                MIN_ABSOLUTE_GAP,
-                (1.0 - currentProb) * RELATIVE_GAP_FACTOR
-        );
+        // Сортируем: в начале самые "безопасные" для удаления карты (те, без которых шанс выше)
+        results.sort(Comparator.comparingDouble(CardWithChanceModifier::getChance).reversed());
 
-
-        // ====== ФИЛЬТРАЦИЯ ======
-        return bestHandProjections.stream()
-                .peek(c -> {
-                    // ⚠️ ВСЕГДА от currentProb
-                    c.setChance(calculateAdjustedChance(c, currentProb));
-                    c.setModifier(1.0);
-                })
-                .filter(c -> c.getChance() < avgChanceFromDeck - dynamicGap)
-                .sorted(Comparator.comparingDouble(CardWithChanceModifier::getChance))
-                .toList();
-
+        return results;
     }
 
-    // Вспомогательный метод для расчета по формуле Delta
-    private double calculateAdjustedChance(CardWithChanceModifier p, double currentProb) {
-        double delta = p.getChance() - currentProb;
-
-        // Применяем модификатор к дельте (неважно, положительная она или отрицательная)
-        double adjustedDelta = delta * p.getModifier();
-
-        // Итоговый результат с ограничением от 0 до 1
-        double finalChance = currentProb + adjustedDelta;
-
-        return Math.max(0.0, Math.min(1.0, finalChance));
+    public void performProactiveSale(MarsGame game, Player player) {
+//        outer:
+//        while (true) {
+//            List<Integer> hand = new ArrayList<>(player.getHand().getCards());
+//            if (hand.isEmpty()) return;
+//
+//            int cardPrice = specialEffectsService.getCardPrice(player);
+//
+//            // 3. Оцениваем каждую карту на "токсичность"
+//            List<float[]> statesWithCardSold = new ArrayList<>();
+//            statesWithCardSold.add(iDataCollect.collectData(game, player));
+//
+//            for (Integer cardId : hand) {
+//                player.getHand().removeCard(cardId);
+//                player.setMc(player.getMc() + cardPrice);
+//
+//                statesWithCardSold.add(iDataCollect.collectData(game, player));
+//                player.setMc(player.getMc() - cardPrice); // Откат
+//                player.getHand().addCard(cardId);
+//            }
+//
+//            List<Prediction> preds = nnService.predictBatch(statesWithCardSold, player);
+//            double baseProb = preds.removeFirst().baseProb;
+//
+//            for (int i = 0; i < hand.size(); i++) {
+//                int cardId = hand.get(i);
+//                double probWithoutCard = preds.get(i).baseProb;
+//
+//                double relativeImprovement = (probWithoutCard - baseProb) / (1.0001 - baseProb);
+//                if (relativeImprovement > 0.01) { // Улучшение шансов на 1% от оставшегося пути к победе
+//                    aiTurnService.sellCards(player, game, List.of(cardId));
+//                    continue outer;
+//                }
+//            }
+//            break;
+//        }
     }
 
 }

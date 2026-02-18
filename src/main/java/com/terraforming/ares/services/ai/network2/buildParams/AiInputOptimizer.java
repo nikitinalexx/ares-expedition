@@ -48,7 +48,8 @@ public class AiInputOptimizer {
                 new PhaseUpgradeStep(game, player, phaseUpgradesToSimulate),
                 new ResourceStep(game, player, resourcesToSimulate),
                 new OxygenStep(game, player, analysis.requiresOxygenCheck),
-                new TagWithoutChoiceStep(game, player, needToSimulateTags && !needTagSimulationWithChoice)
+                new TagWithoutChoiceStep(game, player, needToSimulateTags && !needTagSimulationWithChoice),
+                new SyntheticCatastropheStep(game, player, analysis.redCardTargets)
         );
 
         doDecisionSteps(initialSteps, dataCollectContext, player, decisions);

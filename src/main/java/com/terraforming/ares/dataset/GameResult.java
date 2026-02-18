@@ -39,4 +39,25 @@ public class GameResult {
         this.draw = true;
     }
 
+    public float[] getLocalMax() {
+        int vectorSize = firstPlayerStates.getFirst().data().length;
+        float[] localMax = new float[vectorSize];
+
+        for (FloatArrayWrapper s: firstPlayerStates) {
+            float[] state = s.data();
+            for (int i = 0; i < vectorSize; i++) {
+                localMax[i] = Math.max(localMax[i], state[i]);
+            }
+        }
+
+        for (FloatArrayWrapper s: secondPlayerStates) {
+            float[] state = s.data();
+
+            for (int i = 0; i < vectorSize; i++) {
+                localMax[i] = Math.max(localMax[i], state[i]);
+            }
+        }
+        return localMax;
+    }
+
 }

@@ -48,7 +48,7 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
         List<Integer> cards = new ArrayList<>(player.getHand().getCards());
 
         if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
-            return network2CorporationAndMulliganService.getCardsToDiscardForMulligan(game, player.getUuid());
+            return network2CorporationAndMulliganService.getCardsToDiscard(game, player.getUuid());
         }
 
         List<Integer> cardsToDiscard = new ArrayList<>();
