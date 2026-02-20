@@ -29,15 +29,13 @@ import lombok.RequiredArgsConstructor;
 import org.nd4j.common.io.CollectionUtils;
 import org.springframework.stereotype.Component;
 
-import javax.swing.text.Caret;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
-public class Network2ThirdPhaseActionProcessor {
+public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
     private static final double EPS = 5e-4;
 
     private final CardService cardService;
@@ -540,7 +538,6 @@ public class Network2ThirdPhaseActionProcessor {
 
             float[] data = iDataCollect.collectData(gameCopy, playerCopy);
             iDataCollect.modifyPlayerHandSize(data, deltaState.cards);
-            iDataCollect.modifyPlayerWinPoints(data, (float) (deltaState.wp + deltaState.sacrificialWp) / AiConstants.WP_DENOMINATOR_FOR_FRONTIER);
             states.add(data);
             restorePlayerState(playerCopy, player);
         }
@@ -574,40 +571,6 @@ public class Network2ThirdPhaseActionProcessor {
         }
 
         return new BestFutureOptions(sortedList, scoredNodes.getFirst().score);
-    }
-
-    private void applyDeltaState(Player copyPlayer, State state) {
-        copyPlayer.setMc((int) (state.mc + state.extraMcValue));
-        copyPlayer.setHeat(state.heat);
-        copyPlayer.setPlants(state.plants);
-        copyPlayer.setTerraformingRating(state.tr);
-        copyPlayer.setForests(copyPlayer.getForests() + state.extraForests);
-
-        Map<Class<?>, Integer> cardResourcesCount = copyPlayer.getCardResourcesCount();
-        if (cardResourcesCount.containsKey(GhgProductionBacteria.class)) {
-            cardResourcesCount.put(GhgProductionBacteria.class, state.ghgBacteriaCount);
-        }
-        if (cardResourcesCount.containsKey(NitriteReductingBacteria.class)) {
-            cardResourcesCount.put(NitriteReductingBacteria.class, state.nitriteReductingBacteria);
-        }
-        if (cardResourcesCount.containsKey(RegolithEaters.class)) {
-            cardResourcesCount.put(RegolithEaters.class, state.regolithEaters);
-        }
-        if (cardResourcesCount.containsKey(SelfReplicatingBacteria.class)) {
-            cardResourcesCount.put(SelfReplicatingBacteria.class, state.selfReplicatingBacteria);
-        }
-        if (cardResourcesCount.containsKey(AnaerobicMicroorganisms.class)) {
-            cardResourcesCount.put(AnaerobicMicroorganisms.class, state.anaerobicMicroorganisms);
-        }
-        if (cardResourcesCount.containsKey(BacterialAggregates.class)) {
-            cardResourcesCount.put(BacterialAggregates.class, state.bacterialAggregates);
-        }
-        if (cardResourcesCount.containsKey(Decomposers.class)) {
-            cardResourcesCount.put(Decomposers.class, state.decomposers);
-        }
-        if (cardResourcesCount.containsKey(DecomposingFungus.class)) {
-            cardResourcesCount.put(DecomposingFungus.class, state.decomposingFungus);
-        }
     }
 
     private void restorePlayerState(Player copyPlayer, Player originalPlayer) {

@@ -14,8 +14,6 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class AdvancedAiDataCollectionService implements IDataCollect {
-    private static final int WIN_POINTS_INDEX_OFFSET = 75;
-    private static final int OPPONENT_WIN_POINTS_INDEX_OFFSET = 253;
     private static final int HAND_SIZE_INDEX_OFFSET = 89;
     private static final int OPPONENT_HAND_SIZE_INDEX_OFFSET = 267;
     private static final int PLAYED_TAG_OFFSET = 90;
@@ -31,7 +29,6 @@ public class AdvancedAiDataCollectionService implements IDataCollect {
         gameResult.addSecondPlayerState(collectData(marsGame, anotherPlayer));
     }
 
-
     @Override
     public void modifyPlayerHandSize(float[] data, int newSize) {
         modifyHandSize(data, newSize, HAND_SIZE_INDEX_OFFSET);
@@ -44,18 +41,6 @@ public class AdvancedAiDataCollectionService implements IDataCollect {
 
     private void modifyHandSize(float[] data, int newSize, int indexOffset) {
         modifyDataInline(data, newSize, indexOffset);
-        modifyDataInline(data, Math.max(0, newSize - 10), indexOffset + 1);
-        modifyDataInline(data, Math.min(newSize, 10), indexOffset + 2);
-    }
-
-    @Override
-    public void modifyPlayerWinPoints(float[] data, float wpDelta) {
-        modifyWinPoints(data, wpDelta, WIN_POINTS_INDEX_OFFSET);
-    }
-
-    @Override
-    public void modifyOpponentWinPoints(float[] data, float wpDelta) {
-        modifyWinPoints(data, wpDelta, OPPONENT_WIN_POINTS_INDEX_OFFSET);
     }
 
     @Override
@@ -65,12 +50,6 @@ public class AdvancedAiDataCollectionService implements IDataCollect {
         float tagCount = data[indexOffset] * AiConstants.NORMALIZATION_VECTOR[indexOffset];
         tagCount += tagCountDelta;
         modifyDataInline(data, tagCount, indexOffset);
-    }
-
-    private void modifyWinPoints(float[] data, float wpDelta, int indexOffset) {
-        float maxPointsOriginal = data[indexOffset] * AiConstants.NORMALIZATION_VECTOR[indexOffset];
-        maxPointsOriginal += wpDelta;
-        modifyDataInline(data, maxPointsOriginal, indexOffset);
     }
 
     private void modifyDataInline(float[] data, float value, int index) {

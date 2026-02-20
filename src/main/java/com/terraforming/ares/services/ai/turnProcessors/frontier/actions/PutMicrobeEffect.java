@@ -23,7 +23,7 @@ public enum PutMicrobeEffect implements StateEffect {
             sm -> sm.getPlayer().getCardResourcesCount().getOrDefault(BacterialAggregates.class, 0) < 5),
     DECOMPOSERS(s -> s.decomposers++, List.of(Decomposers.class)),
     DECOMPOSING_FUNGUS(s -> s.decomposingFungus++, List.of(DecomposingFungus.class)),
-    TARDIGRADES(s -> s.sacrificialWp += 2, List.of(Tardigrades.class));
+    TARDIGRADES(s -> s.tardigrades++, List.of(Tardigrades.class));
 
     private final Consumer<State> applyFn;
     @Getter

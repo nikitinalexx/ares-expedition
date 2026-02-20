@@ -37,7 +37,7 @@ public class Network2FirstSecondPhaseActionProcessor {
             return;
         }
 
-        if (scenarios.size() > 4999) {
+        if (scenarios.size() > 49999) {
             System.out.println("Generated a lot of scenarios in 1-2 phase projection: " + scenarios.size());
         }
 

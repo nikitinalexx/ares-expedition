@@ -17,7 +17,6 @@ public final class AiConstants {
 
     }
 
-    public static final int WP_DENOMINATOR_FOR_FRONTIER = 6;
     public static final int BACTERIAL_AGGREGATES_COUNT_FOR_MICROBE_PUT = 4;
     public static final int TABLE_VECTOR_SIZE = 417;
     public static final int HAND_VECTOR_SIZE = 481;
@@ -103,7 +102,7 @@ public final class AiConstants {
             CardAction.SOFTWARE_STREAMLINING
     );
 
-    public static final boolean ENABLE_AI_EXPLORATION = true;
-    public static final boolean EXPLORATION_ON_CORP_PICK = true;
+    public static final boolean ENABLE_AI_EXPLORATION = false;
+    public static final boolean EXPLORATION_ON_CORP_PICK = false;
     public static final boolean COLLECT_CARD_RANK_STATS = false;
 }

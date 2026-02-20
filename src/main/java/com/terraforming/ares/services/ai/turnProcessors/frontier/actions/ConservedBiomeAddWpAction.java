@@ -18,18 +18,34 @@ public class ConservedBiomeAddWpAction extends BlueAction {
 
     @Override
     public boolean canApplyInternal(StateContext stateContext, State state) {
-        return bestVpFromAnimal(stateContext.getCards()) > 0;
+        return hasAnimalForWp(stateContext.getCards());
     }
 
     @Override
     public void applyInternal(StateContext stateContext, State state) {
-        int wp = bestVpFromAnimal(stateContext.getCards());
-        if (wp == 2) {
-            state.sacrificialWp += wp;
-        } else {
-            state.wp += wp;
-        }
+        addAnimalToState(stateContext.getCards(), state);
+    }
 
+    private void addAnimalToState(Map<Class<?>, Card> cards, State state) {
+        if (cards.containsKey(Birds.class)) {
+            state.birds++;
+        } else if (cards.containsKey(Fish.class)) {
+            state.fish++;
+        } else if (cards.containsKey(Livestock.class)) {
+            state.livestock++;
+        } else if (cards.containsKey(Zoos.class)) {
+            state.zoos++;
+        } else if (cards.containsKey(ArclightCorporation.class) || cards.containsKey(BuffedArclightCorporation.class)) {
+            state.arclight++;
+        } else if (cards.containsKey(EcologicalZone.class)) {
+            state.ecologicalZone++;
+        } else if (cards.containsKey(Herbivores.class)) {
+            state.herbivores++;
+        } else if (cards.containsKey(SmallAnimals.class)) {
+            state.smallAnimals++;
+        } else if (cards.containsKey(FilterFeeders.class)) {
+            state.filterFeeders++;
+        }
     }
 
     private static final List<Set<Class<?>>> ANIMAL_VP_PRIORITY = List.of(
@@ -37,15 +53,6 @@ public class ConservedBiomeAddWpAction extends BlueAction {
             Set.of(ArclightCorporation.class, BuffedArclightCorporation.class, EcologicalZone.class, Herbivores.class, SmallAnimals.class), // 3 VP
             Set.of(FilterFeeders.class) // 2 VP
     );
-
-    private int getVpByPriorityIndex(int index) {
-        return switch (index) {
-            case 0 -> 6;
-            case 1 -> 3;
-            case 2 -> 2;
-            default -> 0;
-        };
-    }
 
     // Метод для получения класса лучшего животного
     private Class<?> getBestAnimalClass(Map<Class<?>, Card> cardClasses) {
@@ -59,16 +66,16 @@ public class ConservedBiomeAddWpAction extends BlueAction {
         return null;
     }
 
-    // Метод для получения значения VP
-    private int bestVpFromAnimal(Map<Class<?>, Card> cardClasses) {
-        for (int i = 0; i < ANIMAL_VP_PRIORITY.size(); i++) {
-            Set<Class<?>> group = ANIMAL_VP_PRIORITY.get(i);
+    private boolean hasAnimalForWp(Map<Class<?>, Card> cardClasses) {
+        for (Set<Class<?>> group : ANIMAL_VP_PRIORITY) {
             // Если хотя бы одна карта из этой группы есть в мапе
-            if (group.stream().anyMatch(cardClasses::containsKey)) {
-                return getVpByPriorityIndex(i);
+            for (Class<?> targetClass : group) {
+                if (cardClasses.containsKey(targetClass)) {
+                    return true;
+                }
             }
         }
-        return 0;
+        return false;
     }
 
     @Override

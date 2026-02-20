@@ -7,7 +7,6 @@ import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.StandardProjectService;
 import com.terraforming.ares.services.ai.AiConstants;
-import com.terraforming.ares.services.ai.AiEndgameService;
 import com.terraforming.ares.services.ai.advanced.IDataCollect;
 import com.terraforming.ares.services.ai.dl4j.NNService;
 import com.terraforming.ares.services.ai.dl4j.Prediction;
@@ -16,21 +15,22 @@ import com.terraforming.ares.services.ai.network2.dto.ScoredNode;
 import com.terraforming.ares.services.ai.network2.dto.StateWithVector;
 import com.terraforming.ares.services.ai.network2.projection.SelfReplicatingBacteriaService;
 import com.terraforming.ares.services.ai.turnProcessors.AiTurnService;
-import com.terraforming.ares.services.ai.turnProcessors.frontier.*;
+import com.terraforming.ares.services.ai.turnProcessors.frontier.Frontier;
+import com.terraforming.ares.services.ai.turnProcessors.frontier.Node;
+import com.terraforming.ares.services.ai.turnProcessors.frontier.State;
 import com.terraforming.ares.services.ai.turnProcessors.frontier.StateContext;
 import lombok.RequiredArgsConstructor;
 import org.nd4j.common.io.CollectionUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
-public class Network2ThirdPhaseActionProjector {
+public class Network2ThirdPhaseActionProjector extends AbstractPhaseProcessor {
     private static final double EPS = 5e-4;
     private static final int BEST_NODES_TO_CHECK_FROM_PLAYER = 4;
 
@@ -42,11 +42,9 @@ public class Network2ThirdPhaseActionProjector {
     private final NNService nnService;
     private final AiOptimalBuildService aiOptimalBuildService;
     private final AiCardBuildInputAnalyzer aiCardBuildInputAnalyzer;
-    private final Network2DraftCardsProjectionService network2DraftCardsProjectionService;
     private final StandardProjectService standardProjectService;
     private final Frontier frontier;
     private final SelfReplicatingBacteriaService selfReplicatingBacteriaService;
-    private final AiEndgameService aiEndgameService;
 
     private final Set<Class<?>> DO_IMMEDIATELY_UNCONDITIONALLY = Set.of(
             HyperionSystemsCorporation.class,
@@ -76,7 +74,7 @@ public class Network2ThirdPhaseActionProjector {
                 boolean chooseStateAfterSelfReplicatingBacteria = false;
 
                 if (!bestRegularFutureOptions.isEmpty() && !bestFutureOptionsAfterReplicatingBacteria.isEmpty()) {
-                    chooseStateAfterSelfReplicatingBacteria = (bestFutureOptionsAfterReplicatingBacteria.getFirst().getScore() > bestRegularFutureOptions.getFirst().getScore());
+                    chooseStateAfterSelfReplicatingBacteria = (bestFutureOptionsAfterReplicatingBacteria.getFirst().getBaseProb() > bestRegularFutureOptions.getFirst().getBaseProb());
                 } else {
                     List<float[]> baseProbToCheck = new ArrayList<>();
                     if (bestRegularFutureOptions.isEmpty()) {
@@ -87,8 +85,8 @@ public class Network2ThirdPhaseActionProjector {
                     }
                     List<Prediction> predictions = nnService.predictBatch(baseProbToCheck, player);
 
-                    double bestRegularPrediction = (bestRegularFutureOptions.isEmpty() ? predictions.removeFirst().baseProb : bestRegularFutureOptions.getFirst().getScore());
-                    double bestSelfReplicatingPrediction = (bestFutureOptionsAfterReplicatingBacteria.isEmpty() ? predictions.removeFirst().baseProb : bestFutureOptionsAfterReplicatingBacteria.getFirst().getScore());
+                    double bestRegularPrediction = (bestRegularFutureOptions.isEmpty() ? predictions.removeFirst().baseProb : bestRegularFutureOptions.getFirst().getBaseProb());
+                    double bestSelfReplicatingPrediction = (bestFutureOptionsAfterReplicatingBacteria.isEmpty() ? predictions.removeFirst().baseProb : bestFutureOptionsAfterReplicatingBacteria.getFirst().getBaseProb());
 
                     chooseStateAfterSelfReplicatingBacteria = bestSelfReplicatingPrediction > bestRegularPrediction;
                 }
@@ -102,7 +100,7 @@ public class Network2ThirdPhaseActionProjector {
             }
         }
 
-        State bestOpponentStateAfterStandardProjects = getBestOpponentStateAfterStandardProjects(bestOpponentRegularFutureOptions, game, player, anotherPlayer);
+        State bestOpponentStateAfterStandardProjects = getBestOpponentStateAfterStandardProjects(bestOpponentRegularFutureOptions, game, anotherPlayer);
         if (bestRegularFutureOptions.isEmpty()) {
             StateContext stateContext = createStateContext(game, player);
             State initialState = stateContext.getInitialState();
@@ -115,7 +113,6 @@ public class Network2ThirdPhaseActionProjector {
 
             float[] data = iDataCollect.collectData(gameCopy, playerCopy);
             iDataCollect.modifyOpponentHandSize(data, bestOpponentStateAfterStandardProjects.cards);
-            iDataCollect.modifyOpponentWinPoints(data, (float) (bestOpponentStateAfterStandardProjects.wp + bestOpponentStateAfterStandardProjects.sacrificialWp) / AiConstants.WP_DENOMINATOR_FOR_FRONTIER);
 
             ScoredNode scoredNode = new ScoredNode(initialState, nnService.predictBatch(List.of(data), modelType).getFirst().baseProb);
             bestRegularFutureOptions = List.of(scoredNode);
@@ -124,7 +121,7 @@ public class Network2ThirdPhaseActionProjector {
         return getBestChanceFromOptions(bestRegularFutureOptions, game, player, anotherPlayer, bestOpponentStateAfterStandardProjects);
     }
 
-    private State getBestOpponentStateAfterStandardProjects(List<ScoredNode> bestRegularFutureOptions, MarsGame game, Player player, Player opponent) {
+    private State getBestOpponentStateAfterStandardProjects(List<ScoredNode> bestRegularFutureOptions, MarsGame game, Player opponent) {
         StateContext stateContext = createStateContext(game, opponent);
 
         if (bestRegularFutureOptions.isEmpty()) {
@@ -143,11 +140,10 @@ public class Network2ThirdPhaseActionProjector {
                 playerStatesAfterStandardProjects.addAll(stateWithVectors.stream().map(StateWithVector::getVector).toList());
             }
 
-            List<Prediction> bestPredictions = nnService.predictBatch(playerStatesAfterStandardProjects, player);
+            List<Prediction> bestPredictions = nnService.predictBatch(playerStatesAfterStandardProjects, opponent);
 
-
-            State bestState = stateContext.getInitialState();
-            double bestStateChance = bestRegularFutureOptions.getFirst().getScore();
+            State bestState = bestRegularFutureOptions.getFirst().getState();
+            double bestStateChance = bestRegularFutureOptions.getFirst().getBaseProb();
             int predictionIndex = 0;
             for (List<StateWithVector> stateWithVector : allStatesWithVectors) {
                 for (StateWithVector stateVector : stateWithVector) {
@@ -164,31 +160,66 @@ public class Network2ThirdPhaseActionProjector {
     }
 
     private double getBestChanceFromOptions(List<ScoredNode> bestRegularFutureOptions, MarsGame game, Player player, Player anotherPlayer, State bestOpponentState) {
-        StateContext stateContext = createStateContext(game, player);
+        double bestStateChanceWithOpponent;
+        {
+            StateContext stateContext = createStateContext(game, player);
 
-        List<float[]> playerStatesAfterStandardProjects = new ArrayList<>();
+            List<float[]> playerStatesAfterStandardProjects = new ArrayList<>();
 
-        for (int i = 0; i < BEST_NODES_TO_CHECK_FROM_PLAYER && i < bestRegularFutureOptions.size(); i++) {
-            ScoredNode scoredNode = bestRegularFutureOptions.get(i);
+            for (int i = 0; i < BEST_NODES_TO_CHECK_FROM_PLAYER && i < bestRegularFutureOptions.size(); i++) {
+                ScoredNode scoredNode = bestRegularFutureOptions.get(i);
 
-            State state = scoredNode.getState();
+                State state = scoredNode.getState();
 
-            List<StateWithVector> stateWithVectors = projectStateWithStandardProjects(stateContext, state, game, player, anotherPlayer, bestOpponentState);
+                List<StateWithVector> stateWithVectors = projectStateWithStandardProjects(stateContext, state, game, player, anotherPlayer, bestOpponentState);
 
-            playerStatesAfterStandardProjects.addAll(stateWithVectors.stream().map(StateWithVector::getVector).toList());
+                playerStatesAfterStandardProjects.addAll(stateWithVectors.stream().map(StateWithVector::getVector).toList());
+            }
+
+            List<Prediction> bestPredictions = nnService.predictBatch(playerStatesAfterStandardProjects, player);
+
+            double bestStateChance = bestRegularFutureOptions.getFirst().getBaseProb();
+
+            for (Prediction bestPrediction : bestPredictions) {
+                if (bestPrediction.baseProb > bestStateChance) {
+                    bestStateChance = bestPrediction.baseProb;
+                }
+            }
+            bestStateChanceWithOpponent = bestStateChance;
         }
+        {
+            StateContext opponentStateContext = createStateContext(game, anotherPlayer);
+            State initialOpponentState = opponentStateContext.getInitialState();
 
-        List<Prediction> bestPredictions = nnService.predictBatch(playerStatesAfterStandardProjects, player);
+            StateContext stateContext = createStateContext(game, player);
 
-        double bestStateChance = bestRegularFutureOptions.getFirst().getScore();
+            List<float[]> playerStatesAfterStandardProjects = new ArrayList<>();
 
-        for (Prediction bestPrediction : bestPredictions) {
-            if (bestPrediction.baseProb > bestStateChance) {
-                bestStateChance = bestPrediction.baseProb;
+            for (int i = 0; i < BEST_NODES_TO_CHECK_FROM_PLAYER && i < bestRegularFutureOptions.size(); i++) {
+                ScoredNode scoredNode = bestRegularFutureOptions.get(i);
+
+                State state = scoredNode.getState();
+
+                List<StateWithVector> stateWithVectors = projectStateWithStandardProjects(stateContext, state, game, player, anotherPlayer, initialOpponentState);
+
+                playerStatesAfterStandardProjects.addAll(stateWithVectors.stream().map(StateWithVector::getVector).toList());
+            }
+
+            List<Prediction> bestPredictions = nnService.predictBatch(playerStatesAfterStandardProjects, player);
+
+            double bestStateChance = bestRegularFutureOptions.getFirst().getBaseProb();
+
+            for (Prediction bestPrediction : bestPredictions) {
+                if (bestPrediction.baseProb > bestStateChance) {
+                    bestStateChance = bestPrediction.baseProb;
+                }
+            }
+
+            if (bestStateChanceWithOpponent - bestStateChance > 0.01) {
+                System.out.println("WTF");
             }
         }
-
-        return bestStateChance;
+        return bestStateChanceWithOpponent;
     }
 
     private StateContext createStateContext(MarsGame game, Player player) {
@@ -199,6 +230,7 @@ public class Network2ThirdPhaseActionProjector {
 
 
     private Map<Class<?>, Card> applyPlayerActions(MarsGame game, Player player, NNService.ModelType modelType) {
+        List<Integer> startingHand = new ArrayList<>(player.getHand().getCards());
         Deck activatedBlueCards = player.getActivatedBlueCards();
 
         Map<Class<?>, Card> neverActivatedBlueCards = player.getPlayed().getCards().stream()
@@ -228,6 +260,15 @@ public class Network2ThirdPhaseActionProjector {
 
         removeCompletelyUnusableCards(game, player, blueCards);
 
+        int extraCardsReceived = player.getHand().getCards().size() - startingHand.size();
+        if (extraCardsReceived > 0) {
+            player.getHand().getCards().clear();
+            player.getHand().getCards().addAll(startingHand);
+            for (int i = 0; i < extraCardsReceived; i++) {
+                player.getHand().addCard(AiConstants.GENERIC_DUMMY_ID);
+            }
+        }
+
         return blueCards;
     }
 
@@ -239,18 +280,18 @@ public class Network2ThirdPhaseActionProjector {
 
         // Океаны
         if (!stateContext.isOceansMax()) {
-            projectTypeLoop(results,  deltaState, player, anotherPlayerCopy, gameCopy, playerCopy, anotherPlayerCopy,
+            projectTypeLoop(results, deltaState, player, anotherPlayerCopy, gameCopy, playerCopy, anotherPlayerCopy,
                     StandardProjectType.OCEAN, stateContext::oceanBuilt, opponentState);
         }
 
         // Температура
         if (!stateContext.isTemperatureMax()) {
-            projectTypeLoop(results,  deltaState, player, anotherPlayerCopy, gameCopy, playerCopy, anotherPlayerCopy,
+            projectTypeLoop(results, deltaState, player, anotherPlayerCopy, gameCopy, playerCopy, anotherPlayerCopy,
                     StandardProjectType.TEMPERATURE, stateContext::temperatureBuilt, opponentState);
         }
 
         // Леса
-        projectTypeLoop(results,  deltaState, player, anotherPlayerCopy, gameCopy, playerCopy, anotherPlayerCopy,
+        projectTypeLoop(results, deltaState, player, anotherPlayerCopy, gameCopy, playerCopy, anotherPlayerCopy,
                 StandardProjectType.FOREST, stateContext::forestBuilt, opponentState);
 
         return results;
@@ -263,18 +304,18 @@ public class Network2ThirdPhaseActionProjector {
 
         // Океаны
         if (!stateContext.isOceansMax()) {
-            projectTypeLoop(results,  deltaState, player, gameCopy, playerCopy,
+            projectTypeLoop(results, deltaState, player, gameCopy, playerCopy,
                     StandardProjectType.OCEAN, stateContext::oceanBuilt);
         }
 
         // Температура
         if (!stateContext.isTemperatureMax()) {
-            projectTypeLoop(results,  deltaState, player, gameCopy, playerCopy,
+            projectTypeLoop(results, deltaState, player, gameCopy, playerCopy,
                     StandardProjectType.TEMPERATURE, stateContext::temperatureBuilt);
         }
 
         // Леса
-        projectTypeLoop(results,  deltaState, player, gameCopy, playerCopy,
+        projectTypeLoop(results, deltaState, player, gameCopy, playerCopy,
                 StandardProjectType.FOREST, stateContext::forestBuilt);
 
         return results;
@@ -308,16 +349,15 @@ public class Network2ThirdPhaseActionProjector {
 
             float[] data = iDataCollect.collectData(gameCopy, playerCopy);
             iDataCollect.modifyPlayerHandSize(data, stateCopy.cards);
-            iDataCollect.modifyPlayerWinPoints(data, (float) (stateCopy.wp + stateCopy.sacrificialWp) / AiConstants.WP_DENOMINATOR_FOR_FRONTIER);
             iDataCollect.modifyOpponentHandSize(data, opponentState.cards);
-            iDataCollect.modifyOpponentWinPoints(data, (float) (opponentState.wp + opponentState.sacrificialWp) / AiConstants.WP_DENOMINATOR_FOR_FRONTIER);
 
             results.add(new StateWithVector(stateCopy.copy(), data));
 
-            // Откатываем состояние игрока в копии игры для следующей итерации/типа проекта
-            restorePlayerState(playerCopy, originalPlayer);
-            restorePlayerState(opponentCopy, originalOpponent);
         }
+
+        // Откатываем состояние игрока в копии игры для следующей итерации/типа проекта
+        restorePlayerState(playerCopy, originalPlayer);
+        restorePlayerState(opponentCopy, originalOpponent);
     }
 
     /**
@@ -344,14 +384,12 @@ public class Network2ThirdPhaseActionProjector {
 
             float[] data = iDataCollect.collectData(gameCopy, playerCopy);
             iDataCollect.modifyPlayerHandSize(data, stateCopy.cards);
-            iDataCollect.modifyPlayerWinPoints(data,
-                    (float) (stateCopy.wp + stateCopy.sacrificialWp) / AiConstants.WP_DENOMINATOR_FOR_FRONTIER);
 
             results.add(new StateWithVector(stateCopy.copy(), data));
-
-            // Откатываем состояние игрока в копии игры для следующей итерации/типа проекта
-            restorePlayerState(playerCopy, originalPlayer);
         }
+
+        // Откатываем состояние игрока в копии игры для следующей итерации/типа проекта
+        restorePlayerState(playerCopy, originalPlayer);
     }
 
     private List<ScoredNode> getBestFutureOptions(MarsGame game, Player player, NNService.ModelType modelType) {
@@ -380,7 +418,6 @@ public class Network2ThirdPhaseActionProjector {
 
             float[] data = iDataCollect.collectData(gameCopy, playerCopy);
             iDataCollect.modifyPlayerHandSize(data, deltaState.cards);
-            iDataCollect.modifyPlayerWinPoints(data, (float) (deltaState.wp + deltaState.sacrificialWp) / AiConstants.WP_DENOMINATOR_FOR_FRONTIER);
             states.add(data);
             restorePlayerState(playerCopy, player);
         }
@@ -403,43 +440,9 @@ public class Network2ThirdPhaseActionProjector {
         }
 
         // 2. Сортируем (O(N log N)) - используем примитивное сравнение для скорости
-        scoredNodes.sort((a, b) -> Double.compare(b.score, a.score));
+        scoredNodes.sort((a, b) -> Double.compare(b.baseProb, a.baseProb));
 
         return scoredNodes;
-    }
-
-    private void applyDeltaState(Player copyPlayer, State state) {
-        copyPlayer.setMc((int) (state.mc + state.extraMcValue));
-        copyPlayer.setHeat(state.heat);
-        copyPlayer.setPlants(state.plants);
-        copyPlayer.setTerraformingRating(state.tr);
-        copyPlayer.setForests(copyPlayer.getForests() + state.extraForests);
-
-        Map<Class<?>, Integer> cardResourcesCount = copyPlayer.getCardResourcesCount();
-        if (cardResourcesCount.containsKey(GhgProductionBacteria.class)) {
-            cardResourcesCount.put(GhgProductionBacteria.class, state.ghgBacteriaCount);
-        }
-        if (cardResourcesCount.containsKey(NitriteReductingBacteria.class)) {
-            cardResourcesCount.put(NitriteReductingBacteria.class, state.nitriteReductingBacteria);
-        }
-        if (cardResourcesCount.containsKey(RegolithEaters.class)) {
-            cardResourcesCount.put(RegolithEaters.class, state.regolithEaters);
-        }
-        if (cardResourcesCount.containsKey(SelfReplicatingBacteria.class)) {
-            cardResourcesCount.put(SelfReplicatingBacteria.class, state.selfReplicatingBacteria);
-        }
-        if (cardResourcesCount.containsKey(AnaerobicMicroorganisms.class)) {
-            cardResourcesCount.put(AnaerobicMicroorganisms.class, state.anaerobicMicroorganisms);
-        }
-        if (cardResourcesCount.containsKey(BacterialAggregates.class)) {
-            cardResourcesCount.put(BacterialAggregates.class, state.bacterialAggregates);
-        }
-        if (cardResourcesCount.containsKey(Decomposers.class)) {
-            cardResourcesCount.put(Decomposers.class, state.decomposers);
-        }
-        if (cardResourcesCount.containsKey(DecomposingFungus.class)) {
-            cardResourcesCount.put(DecomposingFungus.class, state.decomposingFungus);
-        }
     }
 
     private void restorePlayerState(Player copyPlayer, Player originalPlayer) {
@@ -454,7 +457,6 @@ public class Network2ThirdPhaseActionProjector {
             copyPlayer.setCardResourcesCount(new HashMap<>(originalResourceCount));
         }
     }
-
 
     private void processConservedBiomeAndResearchGrant(MarsGame game, Player player, Map<Class<?>, Card> blueCards) {
         // Мгновенный поиск вместо цикла

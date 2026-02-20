@@ -16,7 +16,7 @@ public class CityCouncilAction extends BlueAction {
 
     @Override
     public void applyInternal(StateContext stateContext, State state) {
-        state.cards += (1 + stateContext.getMilestoneAchieved());
+        state.cards += (short) (1 + stateContext.getMilestoneAchieved());
     }
 
 }

@@ -3,34 +3,46 @@ package com.terraforming.ares.services.ai.turnProcessors.frontier;
 import java.util.Objects;
 
 public class State {
-    public int mc;
-    public int heat;
-    public int plants;
-    public int cards;
-    public int tr;
-    public int wp;//1 real win point = 6 wp
-    public int sacrificialWp;
+    public short mc;
+    public short heat;
+    public short plants;
+    public short cards;
+    public short tr;
     public double extraMcValue;
 
     //not displaying the collectable cards with win points only
-    public int ghgBacteriaCount;
-    public int nitriteReductingBacteria;
-    public int regolithEaters;
-    public int selfReplicatingBacteria;
+    public short ghgBacteriaCount;
+    public short nitriteReductingBacteria;
+    public short regolithEaters;
+    public short selfReplicatingBacteria;
 
-    public int anaerobicMicroorganisms;
-    public int bacterialAggregates;
-    public int decomposers;
-    public int decomposingFungus;
+    public short anaerobicMicroorganisms;
+    public short bacterialAggregates;
+    public short decomposers;
+    public short decomposingFungus;
 
-    public int extraForests;
+    public short birds;
+    public short filterFeeders;
+    public short fish;
+    public short livestock;
+    public short zoos;
+    public short ecologicalZone;
+    public short herbivores;
+    public short smallAnimals;
+    public short tardigrades;
+    public short arclight;
+    public short physixComplex;
+    public short fibrousComposite;
+
+
+    public short extraForests;
 
     public boolean trRaisedThisPhase;
     public boolean unmiUsedThisPhase;
 
     public boolean heatAsMc;
 
-    public double scoreCache;
+    public float scoreCache;
 
     public State copy() {
         State s = new State();
@@ -39,17 +51,33 @@ public class State {
         s.plants = plants;
         s.cards = cards;
         s.tr = tr;
-        s.wp = wp;
-        s.sacrificialWp = sacrificialWp;
+        s.extraMcValue = extraMcValue;
+
         s.ghgBacteriaCount = ghgBacteriaCount;
         s.nitriteReductingBacteria = nitriteReductingBacteria;
         s.regolithEaters = regolithEaters;
         s.selfReplicatingBacteria = selfReplicatingBacteria;
+
         s.anaerobicMicroorganisms = anaerobicMicroorganisms;
         s.bacterialAggregates = bacterialAggregates;
         s.decomposers = decomposers;
         s.decomposingFungus = decomposingFungus;
-        s.extraMcValue = extraMcValue;
+
+        s.birds = birds;
+        s.filterFeeders = filterFeeders;
+        s.fish = fish;
+        s.livestock = livestock;
+        s.zoos = zoos;
+        s.ecologicalZone = ecologicalZone;
+        s.herbivores = herbivores;
+        s.smallAnimals = smallAnimals;
+        s.tardigrades = tardigrades;
+        s.arclight = arclight;
+        s.physixComplex = physixComplex;
+        s.fibrousComposite = fibrousComposite;
+
+        s.extraForests = extraForests;
+
         s.trRaisedThisPhase = trRaisedThisPhase;
         s.unmiUsedThisPhase = unmiUsedThisPhase;
         s.heatAsMc = heatAsMc;
@@ -60,11 +88,11 @@ public class State {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         State state = (State) o;
-        return mc == state.mc && heat == state.heat && plants == state.plants && cards == state.cards && tr == state.tr && wp == state.wp && sacrificialWp == state.sacrificialWp && ghgBacteriaCount == state.ghgBacteriaCount && nitriteReductingBacteria == state.nitriteReductingBacteria && regolithEaters == state.regolithEaters && selfReplicatingBacteria == state.selfReplicatingBacteria && anaerobicMicroorganisms == state.anaerobicMicroorganisms && bacterialAggregates == state.bacterialAggregates && decomposers == state.decomposers && decomposingFungus == state.decomposingFungus && extraForests == state.extraForests && extraMcValue == state.extraMcValue && trRaisedThisPhase == state.trRaisedThisPhase && unmiUsedThisPhase == state.unmiUsedThisPhase && heatAsMc == state.heatAsMc;
+        return mc == state.mc && heat == state.heat && plants == state.plants && cards == state.cards && tr == state.tr && Double.compare(extraMcValue, state.extraMcValue) == 0 && ghgBacteriaCount == state.ghgBacteriaCount && nitriteReductingBacteria == state.nitriteReductingBacteria && regolithEaters == state.regolithEaters && selfReplicatingBacteria == state.selfReplicatingBacteria && anaerobicMicroorganisms == state.anaerobicMicroorganisms && bacterialAggregates == state.bacterialAggregates && decomposers == state.decomposers && decomposingFungus == state.decomposingFungus && birds == state.birds && filterFeeders == state.filterFeeders && fish == state.fish && livestock == state.livestock && zoos == state.zoos && ecologicalZone == state.ecologicalZone && herbivores == state.herbivores && smallAnimals == state.smallAnimals && tardigrades == state.tardigrades && arclight == state.arclight && extraForests == state.extraForests && trRaisedThisPhase == state.trRaisedThisPhase && unmiUsedThisPhase == state.unmiUsedThisPhase && heatAsMc == state.heatAsMc && physixComplex == state.physixComplex && fibrousComposite == state.fibrousComposite;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(mc, heat, plants, cards, tr, wp, sacrificialWp, ghgBacteriaCount, nitriteReductingBacteria, regolithEaters, selfReplicatingBacteria, anaerobicMicroorganisms, bacterialAggregates, decomposers, decomposingFungus, extraForests, extraMcValue, trRaisedThisPhase, unmiUsedThisPhase, heatAsMc);
+        return Objects.hash(mc, heat, plants, cards, tr, extraMcValue, ghgBacteriaCount, nitriteReductingBacteria, regolithEaters, selfReplicatingBacteria, anaerobicMicroorganisms, bacterialAggregates, decomposers, decomposingFungus, birds, filterFeeders, fish, livestock, zoos, ecologicalZone, herbivores, smallAnimals, tardigrades, arclight, extraForests, trRaisedThisPhase, unmiUsedThisPhase, heatAsMc, physixComplex, fibrousComposite);
     }
 }

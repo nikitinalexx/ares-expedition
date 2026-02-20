@@ -1,11 +1,9 @@
 package com.terraforming.ares.services.simulations;
 
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.io.File;
+import java.io.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -27,7 +25,7 @@ public class DatasetWriter implements Runnable {
     private final List<Float> labelBuffer = new ArrayList<>(TARGET_FILE_ROWS);
 
     private final Random rnd = new Random();
-    private static final AtomicInteger FILE_INDEX = new AtomicInteger(301);
+    private static final AtomicInteger FILE_INDEX = new AtomicInteger(924);
 
     private static final String FULL_DATA_DIR;
 
@@ -72,53 +70,28 @@ public class DatasetWriter implements Runnable {
         int usableSize = TARGET_FILE_ROWS;
         int totalFeatureSize = featureBuffer.getFirst().length;
 
-        // Подготовка плоских массивов
-        float[] flatFeatures = new float[usableSize * totalFeatureSize];
-        float[] flatLabels = new float[usableSize];
-
-        for (int i = 0; i < usableSize; i++) {
-            System.arraycopy(
-                    featureBuffer.get(i), 0,
-                    flatFeatures, i * totalFeatureSize,
-                    totalFeatureSize
-            );
-            flatLabels[i] = labelBuffer.get(i);
-        }
-
-        // Создание единого DataSet (TABLE / FULL)
-        INDArray tableFeatures = Nd4j.create(
-                DataType.FLOAT16,
-                new long[]{usableSize, totalFeatureSize},
-                'c'
-        ).assign(
-                Nd4j.create(flatFeatures, new long[]{usableSize, totalFeatureSize}, 'c')
-        );
-
-        INDArray labels = Nd4j.create(
-                DataType.FLOAT16,
-                new long[]{usableSize, 1},
-                'c'
-        ).assign(
-                Nd4j.create(flatLabels, new long[]{usableSize, 1}, 'c')
-        );
-
-        // Проверка на валидность данных перед сохранением
-        if (tableFeatures.isNaN().any() || tableFeatures.isInfinite().any()) {
-            throw new IllegalStateException("NaN or Inf detected in features during flush");
-        }
-
-        DataSet fullDs = new DataSet(tableFeatures, labels);
-
-        // =========================================================
-        // SAVE (Единый выходной файл)
-        // =========================================================
         int idx = FILE_INDEX.getAndIncrement();
         File outputFile = new File(FULL_DATA_DIR, "dataset_" + idx + ".bin");
-        fullDs.save(outputFile);
 
-        // =========================================================
-        // CLEANUP
-        // =========================================================
+        try (DataOutputStream dos = new DataOutputStream(
+                new BufferedOutputStream(new FileOutputStream(outputFile), 1 << 20))) {
+
+            // Заголовок чтобы знать размеры при чтении
+            dos.writeInt(usableSize);
+            dos.writeInt(totalFeatureSize);
+
+            for (int i = 0; i < usableSize; i++) {
+                float[] features = featureBuffer.get(i);
+                for (float f : features) {
+                    dos.writeShort(Float.floatToFloat16(f));
+                }
+                dos.writeShort(Float.floatToFloat16(labelBuffer.get(i)));
+            }
+
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write dataset", e);
+        }
+
         featureBuffer.subList(0, usableSize).clear();
         labelBuffer.subList(0, usableSize).clear();
 

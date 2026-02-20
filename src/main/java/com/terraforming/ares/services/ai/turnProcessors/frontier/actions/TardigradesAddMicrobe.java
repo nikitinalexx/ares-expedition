@@ -16,7 +16,7 @@ public class TardigradesAddMicrobe extends BlueAction {
 
     @Override
     public void applyInternal(StateContext stateContext, State state) {
-        state.sacrificialWp += 2;
+        state.tardigrades++;
         stateContext.onMicrobeGained(state, 1);
     }
 

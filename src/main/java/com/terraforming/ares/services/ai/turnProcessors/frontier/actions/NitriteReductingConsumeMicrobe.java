@@ -16,7 +16,7 @@ public class NitriteReductingConsumeMicrobe extends BlueAction {
 
     @Override
     public void applyInternal(StateContext stateContext, State state) {
-        state.nitriteReductingBacteria++;
+        state.nitriteReductingBacteria -= 3;
         stateContext.oceanBuilt(state);
     }
 

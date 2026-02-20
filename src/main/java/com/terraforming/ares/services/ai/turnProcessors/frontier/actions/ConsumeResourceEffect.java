@@ -1,6 +1,8 @@
 package com.terraforming.ares.services.ai.turnProcessors.frontier.actions;
 
 import com.terraforming.ares.cards.blue.*;
+import com.terraforming.ares.cards.buffedCorporations.BuffedArclightCorporation;
+import com.terraforming.ares.cards.corporations.ArclightCorporation;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.services.ai.turnProcessors.frontier.State;
 import com.terraforming.ares.services.ai.turnProcessors.frontier.StateContext;
@@ -21,7 +23,13 @@ public enum ConsumeResourceEffect implements StateEffect {
     AGGREGATES(s -> s.bacterialAggregates--, List.of(BacterialAggregates.class), s -> s.bacterialAggregates > 0),
     DECOMPOSERS(s -> s.decomposers--, List.of(Decomposers.class), s -> s.decomposers > 0),
     DECOMPOSING_FUNGUS(s -> s.decomposingFungus--, List.of(DecomposingFungus.class), s -> s.decomposingFungus > 0),
-    SACRIFICIAL(s -> s.sacrificialWp -= 2, List.of(Tardigrades.class, FilterFeeders.class), s -> s.sacrificialWp >= 2);
+    FILTER_FEEDERS(s -> s.filterFeeders--, List.of(FilterFeeders.class), s -> s.filterFeeders > 0),
+    TARDIGRADES(s -> s.tardigrades--, List.of(Tardigrades.class), s -> s.tardigrades > 0),
+    ARCLIGHT(s -> s.arclight--, List.of(ArclightCorporation.class, BuffedArclightCorporation.class), s -> s.arclight > 0),
+    ECOLOGICAL_ZONE(s -> s.ecologicalZone--, List.of(EcologicalZone.class), s -> s.ecologicalZone > 0),
+    HERBIVORES(s -> s.herbivores--, List.of(Herbivores.class), s -> s.herbivores > 0),
+    SMALL_ANIMALS(s -> s.smallAnimals--, List.of(SmallAnimals.class), s -> s.smallAnimals > 0),
+    ;
 
     private final Consumer<State> applyFn;
     @Getter

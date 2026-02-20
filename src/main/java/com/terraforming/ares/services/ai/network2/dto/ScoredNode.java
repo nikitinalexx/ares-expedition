@@ -8,5 +8,5 @@ import lombok.Data;
 @AllArgsConstructor
 public class ScoredNode {
     public State state;
-    public double score;
+    public double baseProb;
 }

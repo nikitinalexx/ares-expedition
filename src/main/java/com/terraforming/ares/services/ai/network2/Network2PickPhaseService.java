@@ -234,10 +234,10 @@ public class Network2PickPhaseService {
 
     private State getStateBeforePayment(Player player) {
         State state = new State();
-        state.mc = player.getMc();
-        state.heat = player.getHeat();
-        state.plants = player.getPlants();
-        state.cards = player.getHand().size();
+        state.mc = (short) player.getMc();
+        state.heat = (short) player.getHeat();
+        state.plants = (short) player.getPlants();
+        state.cards = (short) player.getHand().size();
         return state;
     }
 

@@ -242,11 +242,6 @@ public class Frontier {
             }
         }
 
-//        if (results.size() == RESULTS_BEAM_WIDTH) {
-//            System.out.printf("MAX frontier scenarios %s. Time ms: %s%n", results.size(), (System.currentTimeMillis() - startTime));
-//
-//        }
-
         return results;
     }
 
@@ -254,7 +249,7 @@ public class Frontier {
         // сортируем состояния по score (лучшие сверху)
         List<State> list = new ArrayList<>(input.keySet());
         for (State state : list) {
-            state.scoreCache = stateContext.score(state);
+            state.scoreCache = (float) stateContext.score(state);
         }
         list.sort(Comparator.comparingDouble((State state) -> state.scoreCache).reversed());
 

@@ -16,7 +16,7 @@ public class FibrousCompositeAction extends BlueAction {
 
     @Override
     public void applyInternal(StateContext stateContext, State state) {
-        state.extraMcValue++;
+        state.fibrousComposite++;
     }
 
     @Override

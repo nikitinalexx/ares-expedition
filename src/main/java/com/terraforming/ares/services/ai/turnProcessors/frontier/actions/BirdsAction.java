@@ -16,7 +16,7 @@ public class BirdsAction extends BlueAction {
 
     @Override
     public void applyInternal(StateContext stateContext, State state) {
-        state.wp += 6;
+        state.birds++;
     }
 
 }

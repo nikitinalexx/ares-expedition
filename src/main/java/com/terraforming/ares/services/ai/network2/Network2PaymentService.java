@@ -29,31 +29,6 @@ public class Network2PaymentService {
     private final BuildService buildService;
     private final SpecialEffectsService specialEffectsService;
 
-    public MegacreditsPayment getMcPaymentOnly(MarsGame game, Player player, Card card, Map<Integer, List<Integer>> inputParameters) {
-
-        /* -------------------------------------------------
-         * 1. FREE DISCOUNTS (теги, доходы, корпорации)
-         * ------------------------------------------------- */
-        int freeDiscount = discountService.getDiscount(game, card, player, inputParameters);
-        int price = Math.max(0, card.getPrice() - freeDiscount);
-
-        /* -------------------------------------------------
-         * 2. BUILD-CONTEXT DISCOUNT (SRB, next-card, etc.)
-         * ------------------------------------------------- */
-        int discountAlreadyApplied = card.getPrice() - price;
-        BuildDto optimalBuild = buildService.findMostOptimalBuild(card, player, discountAlreadyApplied);
-
-        if (optimalBuild != null && price > 0) {
-            int buildDiscount = Math.min(price, optimalBuild.getExtraDiscount());
-            price -= buildDiscount;
-        }
-
-        /* -------------------------------------------------
-         * 4. FINAL MC PAYMENT
-         * ------------------------------------------------- */
-        return new MegacreditsPayment(Math.max(0, price));
-    }
-
     public List<List<Payment>> getAllPossibleCardPayments(MarsGame game, Player player, Card card, Map<Integer, List<Integer>> inputParameters) {
         List<List<Payment>> allVariations = new ArrayList<>();
 

@@ -6,11 +6,10 @@ import com.terraforming.ares.model.Tag;
 
 public interface IDataCollect {
     float[] collectData(MarsGame game, Player player);
+
     void modifyPlayerHandSize(float[] data, int newSize);
-    void modifyPlayerWinPoints(float[] data, float wpDelta);
 
     void modifyOpponentHandSize(float[] data, int newSize);
-    void modifyOpponentWinPoints(float[] data, float wpDelta);
 
     void modifyTagCount(float[] data, Tag tag, int tagCountDelta);
 }
