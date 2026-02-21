@@ -15,16 +15,22 @@ public class ResourceStep implements DecisionStep {
 
     private final MarsGame game;
     private final Player player;
+    private final Player opponent;
     private final Map<InputRequirementType, List<Card>> resourcesToSimulate;
+    private final boolean collectByOpponent;
 
     public ResourceStep(
             MarsGame game,
             Player player,
-            Map<InputRequirementType, List<Card>> resourcesToSimulate
+            Player opponent,
+            Map<InputRequirementType, List<Card>> resourcesToSimulate,
+            boolean collectByOpponent
     ) {
         this.game = game;
         this.player = player;
+        this.opponent = opponent;
         this.resourcesToSimulate = resourcesToSimulate;
+        this.collectByOpponent = collectByOpponent;
     }
 
     @Override
@@ -56,7 +62,7 @@ public class ResourceStep implements DecisionStep {
             List<Card> cardsWithResources = resourcesToSimulate.get(inputType);
             for (Card cardWithResource : cardsWithResources) {
                 player.getCardResourcesCount().merge(cardWithResource.getClass(), 1, Integer::sum);
-                float[] currentFeatures = dataCollectContext.getDataCollect().collectData(game, player);
+                float[] currentFeatures = dataCollectContext.getDataCollect().collectData(game, (collectByOpponent ? opponent : player).getUuid());
                 result.add(currentFeatures);
                 player.setCardResourcesCount(new HashMap<>(initialResourcesCount));
             }
@@ -74,12 +80,12 @@ public class ResourceStep implements DecisionStep {
             List<Card> cards = resourcesToSimulate.get(inputType);
             Card bestCardForThisType = null;
             Prediction bestPredictionForThisType = null;
-            double maxProb = -1.0;
+            double maxProb = collectByOpponent ? 1.0 : -1.0;
 
             for (Card card : cards) {
                 Prediction prediction = resourcePredictions.get(predictionIdx++);
                 double prob = prediction.baseProb;
-                if (prob > maxProb) {
+                if (collectByOpponent && prob < maxProb || !collectByOpponent && prob > maxProb) {
                     maxProb = prob;
                     bestCardForThisType = card;
                     bestPredictionForThisType = prediction;
@@ -104,7 +110,7 @@ public class ResourceStep implements DecisionStep {
             if (bestAnimal == null) {
                 microbeIsBetter = true;
             } else {
-                microbeIsBetter = bestMicrobePrediction.prediction.baseProb > bestAnimalPrediction.prediction.baseProb;
+                microbeIsBetter = collectByOpponent && bestMicrobePrediction.prediction.baseProb < bestAnimalPrediction.prediction.baseProb || !collectByOpponent && bestMicrobePrediction.prediction.baseProb > bestAnimalPrediction.prediction.baseProb;
             }
         }
         decisions.setMicrobeIsBetter(microbeIsBetter);

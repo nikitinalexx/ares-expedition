@@ -74,7 +74,7 @@ public class Network2CorporationInputService {
             List<float[]> statesWithAustellar = new ArrayList<>();
             for (int i = 0; i < game.getMilestones().size(); i++) {
                 player.setAustellarMilestone(i);
-                statesWithAustellar.add(iDataCollect.collectData(game, player));
+                statesWithAustellar.add(iDataCollect.collectData(game, player.getUuid()));
             }
             player.setAustellarMilestone(-1);
             List<Prediction> predictions = nnService.predictBatch(statesWithAustellar, player);

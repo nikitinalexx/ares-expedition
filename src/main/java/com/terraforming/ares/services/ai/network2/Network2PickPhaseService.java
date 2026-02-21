@@ -207,7 +207,7 @@ public class Network2PickPhaseService {
         Set<Card> cardsThatCanPayAgain = player.getPlayed().getCards().stream().map(cardService::getCard).filter(card -> card.getColor() == CardColor.GREEN && card.canPayAgain()).collect(Collectors.toSet());
 
         if (!player.hasPhaseUpgrade(Constants.PHASE_4_UPGRADE_EXTRA_MC) || cardsThatCanPayAgain.isEmpty()) {
-            return nnService.predictBatch(List.of(iDataCollect.collectData(game, player)), player).getFirst().baseProb;
+            return nnService.predictBatch(List.of(iDataCollect.collectData(game, player.getUuid())), player).getFirst().baseProb;
         }
 
         List<float[]> statesToCheck = new ArrayList<>();
@@ -224,7 +224,7 @@ public class Network2PickPhaseService {
                     player.getHand().addCard(AiConstants.GENERIC_DUMMY_ID);
                 }
             }
-            statesToCheck.add(iDataCollect.collectData(game, player));
+            statesToCheck.add(iDataCollect.collectData(game, player.getUuid()));
             restoreStateBeforePayment(player, stateBeforeDoublePayment);
         }
 
@@ -328,7 +328,7 @@ public class Network2PickPhaseService {
                 .ifPresent(p -> p.setChosenPhase(4));
 
         // 1. Собираем базовую вероятность (Текущее состояние)
-        float[] currentFeatures = iDataCollect.collectData(game, player);
+        float[] currentFeatures = iDataCollect.collectData(game, player.getUuid());
         double baseProb = nnService.predictBatch(List.of(currentFeatures), player).getFirst().baseProb;
 
         // 2. Оцениваем "качество колоды" (Average Value of a New Card)
@@ -344,7 +344,7 @@ public class Network2PickPhaseService {
 
         for (Integer cardId : deckSample) {
             player.getHand().addCard(cardId);
-            statesWithOneExtra.add(iDataCollect.collectData(game, player));
+            statesWithOneExtra.add(iDataCollect.collectData(game, player.getUuid()));
             player.getHand().removeCard(cardId);
         }
 
@@ -376,7 +376,7 @@ public class Network2PickPhaseService {
         // Добавляем "пустышки", чтобы нейронка увидела факт наличия новых карт и денег в руке
         addDummyCards(draftCardsService.countCardsToTakeAndDraftByChosenPhase(anotherPlayer), anotherPlayer);
 
-        float[] finalFeatures = iDataCollect.collectData(game, player);
+        float[] finalFeatures = iDataCollect.collectData(game, player.getUuid());
         double massEffectProb = nnService.predictBatch(List.of(finalFeatures), player).getFirst().baseProb;
 
         // Итоговая дельта = (Выгода от качества выбранных карт) + (Эффект от самого факта добора/бонусов фазы)
@@ -398,7 +398,7 @@ public class Network2PickPhaseService {
         addDummyCards(draftCardsService.countCardsToTakeAndDraftByChosenPhase(anotherPlayer), anotherPlayer);
 
         // 1. Базовая вероятность (текущий шанс на победу)
-        float[] currentFeatures = iDataCollect.collectData(game, player);
+        float[] currentFeatures = iDataCollect.collectData(game, player.getUuid());
         double baseProb = nnService.predictBatch(List.of(currentFeatures), player).getFirst().baseProb;
 
         // 2. Подготовка колоды (исключаем то, что уже вышло)
@@ -478,7 +478,7 @@ public class Network2PickPhaseService {
         // А также получаем бонус фазы (+2 карты или скидки)
 
 
-        float[] physicsFeatures = iDataCollect.collectData(game, player);
+        float[] physicsFeatures = iDataCollect.collectData(game, player.getUuid());
         double physicsProb = nnService.predictBatch(List.of(physicsFeatures), player).getFirst().baseProb;
 
         // Итоговое предсказание:
@@ -496,7 +496,7 @@ public class Network2PickPhaseService {
         }
 
 // получаем базовый вектор
-        float[] baseVector = iDataCollect.collectData(game, player);
+        float[] baseVector = iDataCollect.collectData(game, player.getUuid());
 
 // удаляем dummy обратно
         for (int i = 0; i < cardsToAdd; i++) {

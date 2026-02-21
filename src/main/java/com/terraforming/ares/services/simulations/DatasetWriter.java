@@ -25,7 +25,7 @@ public class DatasetWriter implements Runnable {
     private final List<Float> labelBuffer = new ArrayList<>(TARGET_FILE_ROWS);
 
     private final Random rnd = new Random();
-    private static final AtomicInteger FILE_INDEX = new AtomicInteger(924);
+    private static final AtomicInteger FILE_INDEX = new AtomicInteger(158);
 
     private static final String FULL_DATA_DIR;
 

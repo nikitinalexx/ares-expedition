@@ -94,7 +94,7 @@ public class ViralEnhancersChoiceStep implements DecisionStep {
 
         dataCollectContext.getAiUtility().simulateDummyHandInsteadOfNewCards(player, originalPlayerHandSize);
 
-        return dataCollectContext.getDataCollect().collectData(game, player);
+        return dataCollectContext.getDataCollect().collectData(game, player.getUuid());
     }
 
 

@@ -80,7 +80,7 @@ public class Network2CorporationAndMulliganService {
             Player simPlayer = simGame.getPlayerByUuid(playerUuid);
             applyCorporationEffect(simGame, simPlayer, corpId, optimizedDecisions);
 
-            double baseProbBeforeMulligan = nnService.predictBatch(List.of(iDataCollect.collectData(simGame, simPlayer)), simPlayer).getFirst().baseProb;
+            double baseProbBeforeMulligan = nnService.predictBatch(List.of(iDataCollect.collectData(simGame, simPlayer.getUuid())), simPlayer).getFirst().baseProb;
             List<Integer> currentKeep = optimizeMulliganForCorp(simGame, simPlayer, startupHand, baseProbBeforeMulligan);
             Card corporationCard = cardService.getCard(corpId);
             CardAction cardAction = corporationCard.getCardMetadata().getCardAction();
@@ -149,7 +149,7 @@ public class Network2CorporationAndMulliganService {
                     simPlayer.getHand().getCards().addAll(bestCards);
                 }
 
-                simAfterMulligan.add(iDataCollect.collectData(simGame, simPlayer));
+                simAfterMulligan.add(iDataCollect.collectData(simGame, simPlayer.getUuid()));
 
                 simPlayer.getHand().getCards().clear();
                 simPlayer.getHand().addCards(currentKeep);
@@ -252,7 +252,7 @@ public class Network2CorporationAndMulliganService {
         List<float[]> statesWithoutCards = new ArrayList<>();
         for (Integer cardId : originalHand) {
             player.getHand().removeCard(cardId);
-            statesWithoutCards.add(iDataCollect.collectData(game, player));
+            statesWithoutCards.add(iDataCollect.collectData(game, player.getUuid()));
             player.getHand().addCard(cardId);
         }
 
@@ -264,7 +264,7 @@ public class Network2CorporationAndMulliganService {
         for (Integer deckCardId : deckSample) {
             // ВАЖНО: Мы добавляем карту в ПОЛНУЮ руку (8+1)
             player.getHand().addCard(deckCardId);
-            statesWithExtraCard.add(iDataCollect.collectData(game, player));
+            statesWithExtraCard.add(iDataCollect.collectData(game, player.getUuid()));
             player.getHand().removeCard(deckCardId);
         }
 
@@ -358,7 +358,7 @@ public class Network2CorporationAndMulliganService {
                     && cardAction != CardAction.MINING_GUILD_CORPORATION
                     && cardAction != CardAction.ECOLINE_CORPORATION
                     && cardAction != CardAction.ZETACELL_CORPORATION) {
-                options.add(new StartupDecision(corpId, List.of(), nnService.predictBatch(List.of(iDataCollect.collectData(simGame, simPlayer)), simPlayer).getFirst().baseProb));
+                options.add(new StartupDecision(corpId, List.of(), nnService.predictBatch(List.of(iDataCollect.collectData(simGame, simPlayer.getUuid())), simPlayer).getFirst().baseProb));
             } else {
                 List<float[]> simAfterCardsAcquisition = new ArrayList<>();
 
@@ -413,7 +413,7 @@ public class Network2CorporationAndMulliganService {
                         simPlayer.getHand().getCards().addAll(bestCards);
                     }
 
-                    simAfterCardsAcquisition.add(iDataCollect.collectData(simGame, simPlayer));
+                    simAfterCardsAcquisition.add(iDataCollect.collectData(simGame, simPlayer.getUuid()));
 
                     simPlayer.getHand().getCards().clear();
                     simPlayer.getHand().addCards(startupHand);

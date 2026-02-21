@@ -132,7 +132,7 @@ public class ScenarioEngine {
             // Конец цепочки фаз
             // Теперь здесь всегда будет либо действие из 1 фазы, либо SKIP из 1 фазы
             if (currentScenario.getFirstStepType() != null) {
-                currentScenario.setFinalStateData(dataService.collectData(game, player));
+                currentScenario.setFinalStateData(dataService.collectData(game, player.getUuid()));
                 results.add(currentScenario);
             }
         }

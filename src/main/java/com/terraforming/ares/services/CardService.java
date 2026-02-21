@@ -224,6 +224,10 @@ public class CardService {
     public int countCardTagsWithDynamic(Card card, Player player, Set<Tag> tagsToCount) {
         int tagCount = 0;
 
+        if (card == null) {
+            System.out.println("Card is null");
+        }
+
         if (card.getTags().contains(Tag.DYNAMIC) && player.getCardToTag().containsKey(card.getClass())
                 && player.getCardToTag().get(card.getClass()).stream().anyMatch(tagsToCount::contains)) {
             tagCount++;

@@ -11,7 +11,6 @@ import com.terraforming.ares.cards.corporations.ZetacellCorporation;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
-import com.terraforming.ares.services.ai.AiConstants;
 import lombok.Getter;
 
 import java.util.Map;
@@ -133,7 +132,7 @@ public class StateContext {
 
         return state.mc +
                 state.heat * 2 +
-                state.extraForests * wpScore +
+                state.forests * wpScore +
                 state.plants * ((isOxygenMax ? 1 : 2) * ((double) 8 / (forestPrice))) + ((double) (state.plants / forestPrice) * wpScore / 2 * (conservedBiome ? 1 : 0)) +
                 state.cards * 3 +
                 state.tr * 10 +
@@ -146,7 +145,7 @@ public class StateContext {
                 state.decomposers * 1.5 +
                 state.decomposingFungus * 3 +
                 state.fibrousComposite * 1.5 +
-                (state.birds + (float) state.filterFeeders / 3 + state.fish + state.livestock + state.zoos + (float) state.ecologicalZone / 2 + (float) state.herbivores / 2 + (float) state.smallAnimals / 2 + (float) state.tardigrades / 3 + (float) state.arclight / 2 + (float) state.physixComplex / 2 ) * wpScore +
+                (state.birds + (float) state.filterFeeders / 3 + state.fish + state.livestock + state.zoos + (float) state.ecologicalZone / 2 + (float) state.herbivores / 2 + (float) state.smallAnimals / 2 + (float) state.tardigrades / 3 + (float) state.arclight / 2 + (float) state.physixComplex / 2) * wpScore +
                 state.extraMcValue;
     }
 
@@ -194,7 +193,7 @@ public class StateContext {
         if (smallAnimals) {
             state.smallAnimals++;
         }
-        state.extraForests++;
+        state.forests++;
     }
 
     public void onMicrobeGained(State state, int count) {
@@ -207,9 +206,10 @@ public class StateContext {
         State state = new State();
         state.mc = (short) player.getMc();
         state.heat = (short) player.getHeat();
-        state.plants =(short) player.getPlants();
-        state.cards =(short) player.getHand().size();
-        state.tr =(short) player.getTerraformingRating();
+        state.plants = (short) player.getPlants();
+        state.cards = (short) player.getHand().size();
+        state.tr = (short) player.getTerraformingRating();
+        state.forests = (short) player.getForests();
 
         state.ghgBacteriaCount = (short) (player.getCardResourcesCount().getOrDefault(GhgProductionBacteria.class, 0).shortValue() + player.getCardResourcesCount().getOrDefault(BuffedGhgProductionBacteria.class, 0).shortValue());
         state.nitriteReductingBacteria = player.getCardResourcesCount().getOrDefault(NitriteReductingBacteria.class, 0).shortValue();

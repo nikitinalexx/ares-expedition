@@ -15,16 +15,22 @@ public class TagWithoutChoiceStep implements DecisionStep {
 
     private final MarsGame game;
     private final Player player;
+    private final Player opponent;
     private final boolean requiresTagCheck;
+    private final boolean collectByOpponent;
 
     public TagWithoutChoiceStep(
             MarsGame game,
             Player player,
-            boolean requiresTagCheck
+            Player opponent,
+            boolean requiresTagCheck,
+            boolean collectByOpponent
     ) {
         this.game = game;
         this.player = player;
+        this.opponent = opponent;
         this.requiresTagCheck = requiresTagCheck;
+        this.collectByOpponent = collectByOpponent;
     }
 
     @Override
@@ -60,6 +66,7 @@ public class TagWithoutChoiceStep implements DecisionStep {
 
             MarsGame gameCopy = new MarsGame(originalGame);
             Player playerCopy = gameCopy.getPlayerByUuid(originalPlayer.getUuid());
+            Player opponentCopy = gameCopy.getPlayerByUuid(opponent.getUuid());
 
             MarsContext context = marsContextProvider.provide(gameCopy, playerCopy);
 
@@ -69,8 +76,12 @@ public class TagWithoutChoiceStep implements DecisionStep {
 
             aiUtility.simulateDummyHandInsteadOfNewCards(playerCopy, originalPlayerHandSize);
 
-            float[] currentFeatures = dataCollect.collectData(gameCopy, playerCopy);
-            dataCollect.modifyTagCount(currentFeatures, value, 1);
+            float[] currentFeatures = dataCollect.collectData(gameCopy, (collectByOpponent ? opponentCopy : playerCopy).getUuid());
+            if (collectByOpponent) {
+                dataCollect.modifyOpponentTagCount(currentFeatures, value, 1);
+            } else {
+                dataCollect.modifyTagCount(currentFeatures, value, 1);
+            }
             result.add(currentFeatures);
 
         }
@@ -91,7 +102,11 @@ public class TagWithoutChoiceStep implements DecisionStep {
         }
 
         // Сортируем по убыванию вероятности
-        allDecisions.sort((a, b) -> Double.compare(b.getPrediction().baseProb, a.getPrediction().baseProb));
+        if (collectByOpponent) {
+            allDecisions.sort(Comparator.comparingDouble(a -> a.getPrediction().baseProb));
+        } else {
+            allDecisions.sort((a, b) -> Double.compare(b.getPrediction().baseProb, a.getPrediction().baseProb));
+        }
 
         // Берем топ-3 (с проверкой на случай, если тегов вдруг меньше 3)
         List<DecisionWithPrediction<Tag>> top3 = allDecisions.subList(0, Math.min(3, allDecisions.size()));

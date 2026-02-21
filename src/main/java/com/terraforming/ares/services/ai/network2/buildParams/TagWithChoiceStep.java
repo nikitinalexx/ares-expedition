@@ -11,10 +11,7 @@ import com.terraforming.ares.services.ai.advanced.IDataCollect;
 import com.terraforming.ares.services.ai.dl4j.Prediction;
 import com.terraforming.ares.services.ai.turnProcessors.AiUtility;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class TagWithChoiceStep implements DecisionStep {
 
@@ -24,6 +21,7 @@ public class TagWithChoiceStep implements DecisionStep {
     private final OptimizedInputDecisions decisions;
     private final SharedInputAnalysis analysis;
     private final boolean needTagSimulationWithChoice;
+    private final boolean collectByOpponent;
 
     public TagWithChoiceStep(
             MarsGame game,
@@ -31,13 +29,15 @@ public class TagWithChoiceStep implements DecisionStep {
             Player anotherPlayer,
             OptimizedInputDecisions decisions,
             SharedInputAnalysis analysis,
-            boolean needTagSimulationWithChoice) {
+            boolean needTagSimulationWithChoice,
+            boolean collectByOpponent) {
         this.game = game;
         this.player = player;
         this.anotherPlayer = anotherPlayer;
         this.decisions = decisions;
         this.analysis = analysis;
         this.needTagSimulationWithChoice = needTagSimulationWithChoice;
+        this.collectByOpponent = collectByOpponent;
     }
 
     @Override
@@ -79,6 +79,7 @@ public class TagWithChoiceStep implements DecisionStep {
             } else {
                 MarsGame gameCopy = new MarsGame(originalGame);
                 Player playerCopy = gameCopy.getPlayerByUuid(originalPlayer.getUuid());
+                Player opponentCopy = gameCopy.getPlayerByUuid(originalAnotherPlayer.getUuid());
 
                 MarsContext context = marsContextProvider.provide(gameCopy, playerCopy);
                 applicableCards.forEach(c -> c.postProjectBuiltEffect(context, new DummyCard(), inputParameters));
@@ -87,9 +88,12 @@ public class TagWithChoiceStep implements DecisionStep {
 
                 IDataCollect dataCollect = dataCollectContext.getDataCollect();
 
-                float[] currentFeatures = dataCollect.collectData(gameCopy, playerCopy);
-                dataCollect.modifyTagCount(currentFeatures, value, 1);
-
+                float[] currentFeatures = dataCollect.collectData(gameCopy, (collectByOpponent ? opponentCopy : playerCopy).getUuid());
+                if (collectByOpponent) {
+                    dataCollect.modifyOpponentTagCount(currentFeatures, value, 1);
+                } else {
+                    dataCollect.modifyTagCount(currentFeatures, value, 1);
+                }
                 simulationsByTag.add(currentFeatures);
             }
         }
@@ -100,6 +104,7 @@ public class TagWithChoiceStep implements DecisionStep {
     private float[] simulateScienceTagWithMarsUniversity(MarsGame game, Player player, Map<Integer, List<Integer>> inputParameters, List<Card> applicableCards, DataCollectContext dataCollectContext) {
         game = new MarsGame(game);
         player = game.getPlayerByUuid(player.getUuid());
+        Player opponent = game.getPlayerByUuid(anotherPlayer.getUuid());
 
         int originalPlayerHandSize = player.getHand().getCards().size();
         boolean pretendMarsUniversityRotatesCard = false;
@@ -119,7 +124,7 @@ public class TagWithChoiceStep implements DecisionStep {
             player.setMc(player.getMc() - 3);
         }
 
-        return dataCollectContext.getDataCollect().collectData(game, player);
+        return dataCollectContext.getDataCollect().collectData(game, (collectByOpponent ? opponent : player).getUuid());
     }
 
     private float[] simulateDecomposersWithViralEnhancers(MarsGame game, Player player, Player opponent, Map<Integer, List<Integer>> inputParameters, List<Card> applicableCards, OptimizedInputDecisions decisions, SharedInputAnalysis analysis, DataCollectContext dataCollectContext) {
@@ -134,7 +139,7 @@ public class TagWithChoiceStep implements DecisionStep {
         if (!analysis.viralEnhancersActive) {
             game = new MarsGame(game);
             player = game.getPlayerByUuid(player.getUuid());
-            return simulateCardWithInput(game, player, applicableCards, inputParameters, dataCollectContext);
+            return simulateCardWithInput(game, player, opponent, applicableCards, inputParameters, dataCollectContext);
         }
 
         if (decisions.isViralEnhancersTakePlants()) {
@@ -145,7 +150,7 @@ public class TagWithChoiceStep implements DecisionStep {
             inputParametersCopy.put(InputFlag.VIRAL_ENHANCERS_TAKE_PLANT.getId(), List.of(1));
 
             playerCopy.setPlants(playerCopy.getPlants() + 1);
-            return simulateCardWithInput(gameCopy, playerCopy, applicableCards, inputParametersCopy, dataCollectContext);
+            return simulateCardWithInput(gameCopy, playerCopy, gameCopy.getPlayerByUuid(opponent.getUuid()), applicableCards, inputParametersCopy, dataCollectContext);
         } else {
             MarsGame gameCopy = new MarsGame(game);
             Player playerCopy = gameCopy.getPlayerByUuid(player.getUuid());
@@ -153,11 +158,11 @@ public class TagWithChoiceStep implements DecisionStep {
             Map<Integer, List<Integer>> inputParametersCopy = new HashMap<>(inputParameters);
             inputParametersCopy.put(InputFlag.VIRAL_ENHANCERS_PUT_RESOURCE.getId(), List.of(decisions.getBestResourceCardPerType().get(decisions.isMicrobeIsBetter() ? InputRequirementType.MICROBE_INPUT : InputRequirementType.ANIMAL_INPUT).value.getId()));
 
-            return simulateCardWithInput(gameCopy, playerCopy, applicableCards, inputParametersCopy, dataCollectContext);
+            return simulateCardWithInput(gameCopy, playerCopy, gameCopy.getPlayerByUuid(opponent.getUuid()), applicableCards, inputParametersCopy, dataCollectContext);
         }
     }
 
-    private float[] simulateCardWithInput(MarsGame game, Player player, List<Card> applicableCards, Map<Integer, List<Integer>> inputParameters, DataCollectContext dataCollectContext) {
+    private float[] simulateCardWithInput(MarsGame game, Player player, Player opponent, List<Card> applicableCards, Map<Integer, List<Integer>> inputParameters, DataCollectContext dataCollectContext) {
         int originalPlayerHandSize = player.getHand().getCards().size();
 
         MarsContext context = dataCollectContext.getContextProvider().provide(game, player);
@@ -165,7 +170,7 @@ public class TagWithChoiceStep implements DecisionStep {
 
         dataCollectContext.getAiUtility().simulateDummyHandInsteadOfNewCards(player, originalPlayerHandSize);
 
-        return dataCollectContext.getDataCollect().collectData(game, player);
+        return dataCollectContext.getDataCollect().collectData(game, (collectByOpponent ? opponent : player).getUuid());
     }
 
     private void addOptimizedTagDecisions(OptimizedInputDecisions decisions, List<Prediction> tagPredictions) {
@@ -181,7 +186,11 @@ public class TagWithChoiceStep implements DecisionStep {
         }
 
         // Сортируем по убыванию вероятности
-        allDecisions.sort((a, b) -> Double.compare(b.getPrediction().baseProb, a.getPrediction().baseProb));
+        if (collectByOpponent) {
+            allDecisions.sort(Comparator.comparingDouble(a -> a.getPrediction().baseProb));
+        } else {
+            allDecisions.sort((a, b) -> Double.compare(b.getPrediction().baseProb, a.getPrediction().baseProb));
+        }
 
         // Берем топ-3 (с проверкой на случай, если тегов вдруг меньше 3)
         List<DecisionWithPrediction<Tag>> top3 = allDecisions.subList(0, Math.min(3, allDecisions.size()));

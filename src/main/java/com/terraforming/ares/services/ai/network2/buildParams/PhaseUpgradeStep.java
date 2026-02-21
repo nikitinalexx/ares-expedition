@@ -13,16 +13,22 @@ public class PhaseUpgradeStep implements DecisionStep {
 
     private final MarsGame game;
     private final Player player;
+    private final Player opponent;
     private final List<Integer> upgrades;
+    private final boolean collectByOpponent;
 
     public PhaseUpgradeStep(
             MarsGame game,
             Player player,
-            List<Integer> upgrades
+            Player opponent,
+            List<Integer> upgrades,
+            boolean collectByOpponent
     ) {
         this.game = game;
         this.player = player;
+        this.opponent = opponent;
         this.upgrades = upgrades;
+        this.collectByOpponent = collectByOpponent;
     }
 
     @Override
@@ -50,7 +56,7 @@ public class PhaseUpgradeStep implements DecisionStep {
 
         for (Integer phaseUpgrade : upgradesToSimulate) {//(0,1) or (2,3) or (4,5) or (6,7) or (8,9)
             player.getPhaseCards().set(phaseUpgrade / 2, phaseUpgrade % 2 + 1);
-            float[] currentFeatures = dataCollectContext.getDataCollect().collectData(game, player);
+            float[] currentFeatures = dataCollectContext.getDataCollect().collectData(game, (collectByOpponent ? opponent : player).getUuid());
             result.add(currentFeatures);
 
             player.setPhaseCards(new ArrayList<>(initialPhaseCards));
@@ -69,8 +75,8 @@ public class PhaseUpgradeStep implements DecisionStep {
         int bestIndex = -1;
         int secondBestIndex = -1;
 
-        double bestProb = -1.0;
-        double secondBestProb = -1.0;
+        double bestProb = collectByOpponent ? 1.0 : -1.0;
+        double secondBestProb = collectByOpponent ? 1.0 : -1.0;
 
         int bestPhase = -1;
 
@@ -79,7 +85,7 @@ public class PhaseUpgradeStep implements DecisionStep {
             int upgradeId = upgradesToSimulate.get(i);
             int phase = upgradeId / 2;
 
-            if (prob > bestProb) {
+            if (collectByOpponent && prob < bestProb || !collectByOpponent && prob > bestProb) {
                 // сдвигаем лучший в secondBest, если фаза отличается
                 if (bestIndex != -1 && phase != bestPhase) {
                     secondBestProb = bestProb;
@@ -90,7 +96,7 @@ public class PhaseUpgradeStep implements DecisionStep {
                 bestIndex = i;
                 bestPhase = phase;
 
-            } else if (phase != bestPhase && prob > secondBestProb) {
+            } else if (phase != bestPhase && (collectByOpponent && prob < secondBestProb || !collectByOpponent && prob > secondBestProb)) {
                 secondBestProb = prob;
                 secondBestIndex = i;
             }
@@ -116,7 +122,7 @@ public class PhaseUpgradeStep implements DecisionStep {
             double prob = predictions.get(i).baseProb;
             int phase = upgradeId / 2;
 
-            if (prob > bestProbsByPhase.getOrDefault(phase, -1.0)) {
+            if (collectByOpponent && prob < bestProbsByPhase.getOrDefault(phase, 1.0) || !collectByOpponent && prob > bestProbsByPhase.getOrDefault(phase, -1.0)) {
                 bestProbsByPhase.put(phase, prob);
                 optimizedInputDecisions.getPhaseUpgradeDecisions().put(phase, new DecisionWithPrediction<>(upgradeId, predictions.get(i)));
             }

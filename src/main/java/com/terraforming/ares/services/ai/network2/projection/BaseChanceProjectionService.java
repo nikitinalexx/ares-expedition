@@ -12,7 +12,7 @@ public class BaseChanceProjectionService {
     private final IDataCollect iDataCollect;
 
     public BaseChanceProjectionTask createBaseChanceProjectionTask(MarsGame game, Player player) {
-        return new BaseChanceProjectionTask(iDataCollect.collectData(game, player));
+        return new BaseChanceProjectionTask(iDataCollect.collectData(game, player.getUuid()));
     }
 
 }

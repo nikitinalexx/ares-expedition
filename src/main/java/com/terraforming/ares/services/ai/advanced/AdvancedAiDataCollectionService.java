@@ -17,6 +17,7 @@ public class AdvancedAiDataCollectionService implements IDataCollect {
     private static final int HAND_SIZE_INDEX_OFFSET = 89;
     private static final int OPPONENT_HAND_SIZE_INDEX_OFFSET = 267;
     private static final int PLAYED_TAG_OFFSET = 90;
+    private static final int OPPONENT_PLAYED_TAG_OFFSET = 268;
 
     private final CompleteTableEncoder tableEncoder;
     private final CompleteHandEncoder handEncoder;
@@ -25,8 +26,8 @@ public class AdvancedAiDataCollectionService implements IDataCollect {
         Player currentPlayer = players.get(0);
         Player anotherPlayer = players.get(1);
 
-        gameResult.addFirstPlayerState(collectData(marsGame, currentPlayer));
-        gameResult.addSecondPlayerState(collectData(marsGame, anotherPlayer));
+        gameResult.addFirstPlayerState(collectData(marsGame, currentPlayer.getUuid()));
+        gameResult.addSecondPlayerState(collectData(marsGame, anotherPlayer.getUuid()));
     }
 
     @Override
@@ -52,6 +53,15 @@ public class AdvancedAiDataCollectionService implements IDataCollect {
         modifyDataInline(data, tagCount, indexOffset);
     }
 
+    @Override
+    public void modifyOpponentTagCount(float[] data, Tag tag, int tagCountDelta) {
+        int indexOffset = OPPONENT_PLAYED_TAG_OFFSET + tag.ordinal();
+
+        float tagCount = data[indexOffset] * AiConstants.NORMALIZATION_VECTOR[indexOffset];
+        tagCount += tagCountDelta;
+        modifyDataInline(data, tagCount, indexOffset);
+    }
+
     private void modifyDataInline(float[] data, float value, int index) {
         float max = AiConstants.NORMALIZATION_VECTOR[index];
         if (max > 1f) {
@@ -62,8 +72,9 @@ public class AdvancedAiDataCollectionService implements IDataCollect {
     }
 
     @Override
-    public float[] collectData(MarsGame game, Player player) {
+    public float[] collectData(MarsGame game, String playerUuid) {
         List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
+        Player player = game.getPlayerByUuid(playerUuid);
         Player anotherPlayer = (players.get(0).getUuid().equals(player.getUuid())) ? players.get(1) : players.get(0);
 
         FeatureWriter featureWriter = new FeatureWriter(AiConstants.TABLE_VECTOR_SIZE + AiConstants.HAND_VECTOR_SIZE);

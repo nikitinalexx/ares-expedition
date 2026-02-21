@@ -35,7 +35,7 @@ public class State {
     public short fibrousComposite;
 
 
-    public short extraForests;
+    public short forests;
 
     public boolean trRaisedThisPhase;
     public boolean unmiUsedThisPhase;
@@ -76,7 +76,7 @@ public class State {
         s.physixComplex = physixComplex;
         s.fibrousComposite = fibrousComposite;
 
-        s.extraForests = extraForests;
+        s.forests = forests;
 
         s.trRaisedThisPhase = trRaisedThisPhase;
         s.unmiUsedThisPhase = unmiUsedThisPhase;
@@ -88,11 +88,11 @@ public class State {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         State state = (State) o;
-        return mc == state.mc && heat == state.heat && plants == state.plants && cards == state.cards && tr == state.tr && Double.compare(extraMcValue, state.extraMcValue) == 0 && ghgBacteriaCount == state.ghgBacteriaCount && nitriteReductingBacteria == state.nitriteReductingBacteria && regolithEaters == state.regolithEaters && selfReplicatingBacteria == state.selfReplicatingBacteria && anaerobicMicroorganisms == state.anaerobicMicroorganisms && bacterialAggregates == state.bacterialAggregates && decomposers == state.decomposers && decomposingFungus == state.decomposingFungus && birds == state.birds && filterFeeders == state.filterFeeders && fish == state.fish && livestock == state.livestock && zoos == state.zoos && ecologicalZone == state.ecologicalZone && herbivores == state.herbivores && smallAnimals == state.smallAnimals && tardigrades == state.tardigrades && arclight == state.arclight && extraForests == state.extraForests && trRaisedThisPhase == state.trRaisedThisPhase && unmiUsedThisPhase == state.unmiUsedThisPhase && heatAsMc == state.heatAsMc && physixComplex == state.physixComplex && fibrousComposite == state.fibrousComposite;
+        return mc == state.mc && heat == state.heat && plants == state.plants && cards == state.cards && tr == state.tr && Double.compare(extraMcValue, state.extraMcValue) == 0 && ghgBacteriaCount == state.ghgBacteriaCount && nitriteReductingBacteria == state.nitriteReductingBacteria && regolithEaters == state.regolithEaters && selfReplicatingBacteria == state.selfReplicatingBacteria && anaerobicMicroorganisms == state.anaerobicMicroorganisms && bacterialAggregates == state.bacterialAggregates && decomposers == state.decomposers && decomposingFungus == state.decomposingFungus && birds == state.birds && filterFeeders == state.filterFeeders && fish == state.fish && livestock == state.livestock && zoos == state.zoos && ecologicalZone == state.ecologicalZone && herbivores == state.herbivores && smallAnimals == state.smallAnimals && tardigrades == state.tardigrades && arclight == state.arclight && forests == state.forests && trRaisedThisPhase == state.trRaisedThisPhase && unmiUsedThisPhase == state.unmiUsedThisPhase && heatAsMc == state.heatAsMc && physixComplex == state.physixComplex && fibrousComposite == state.fibrousComposite;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(mc, heat, plants, cards, tr, extraMcValue, ghgBacteriaCount, nitriteReductingBacteria, regolithEaters, selfReplicatingBacteria, anaerobicMicroorganisms, bacterialAggregates, decomposers, decomposingFungus, birds, filterFeeders, fish, livestock, zoos, ecologicalZone, herbivores, smallAnimals, tardigrades, arclight, extraForests, trRaisedThisPhase, unmiUsedThisPhase, heatAsMc, physixComplex, fibrousComposite);
+        return Objects.hash(mc, heat, plants, cards, tr, extraMcValue, ghgBacteriaCount, nitriteReductingBacteria, regolithEaters, selfReplicatingBacteria, anaerobicMicroorganisms, bacterialAggregates, decomposers, decomposingFungus, birds, filterFeeders, fish, livestock, zoos, ecologicalZone, herbivores, smallAnimals, tardigrades, arclight, forests, trRaisedThisPhase, unmiUsedThisPhase, heatAsMc, physixComplex, fibrousComposite);
     }
 }

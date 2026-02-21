@@ -6,18 +6,19 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.ai.dl4j.NNService;
 import com.terraforming.ares.services.ai.dl4j.Prediction;
-import com.terraforming.ares.services.ai.turnProcessors.AiUtility;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
 public class AiInputOptimizer {
-    private final AiUtility aiUtility;
     private final NNService nnService;
     private final DataCollectContextProvider dataCollectContextProvider;
     private final CardService cardService;
@@ -26,6 +27,15 @@ public class AiInputOptimizer {
             MarsGame game,
             Player player,
             SharedInputAnalysis analysis
+    ) {
+        return optimizeInputDecisions(game, player, analysis, false);
+    }
+
+    public OptimizedInputDecisions optimizeInputDecisions(
+            MarsGame game,
+            Player player,
+            SharedInputAnalysis analysis,
+            boolean collectByOpponent
     ) {
         DataCollectContext dataCollectContext = dataCollectContextProvider.getDataCollectContext();
 
@@ -45,36 +55,36 @@ public class AiInputOptimizer {
         // ======== ФАЗА 1: Predictive steps ========
 
         List<DecisionStep> initialSteps = List.of(
-                new PhaseUpgradeStep(game, player, phaseUpgradesToSimulate),
-                new ResourceStep(game, player, resourcesToSimulate),
+                new PhaseUpgradeStep(game, player, anotherPlayer, phaseUpgradesToSimulate, collectByOpponent),
+                new ResourceStep(game, player, anotherPlayer, resourcesToSimulate, collectByOpponent),
                 new OxygenStep(game, player, analysis.requiresOxygenCheck),
-                new TagWithoutChoiceStep(game, player, needToSimulateTags && !needTagSimulationWithChoice),
+                new TagWithoutChoiceStep(game, player, anotherPlayer, needToSimulateTags && !needTagSimulationWithChoice, collectByOpponent),
                 new SyntheticCatastropheStep(game, player, analysis.redCardTargets)
         );
 
-        doDecisionSteps(initialSteps, dataCollectContext, player, decisions);
+        doDecisionSteps(initialSteps, dataCollectContext, player, anotherPlayer, decisions, collectByOpponent);
 
 
         List<DecisionStep> viralEnhancersStep = List.of(
                 new ViralEnhancersChoiceStep(game, player, decisions, analysis.viralEnhancersActive)
         );
-        doDecisionSteps(viralEnhancersStep, dataCollectContext, player, decisions);
+        doDecisionSteps(viralEnhancersStep, dataCollectContext, player, anotherPlayer, decisions, collectByOpponent);
 
 
         List<DecisionStep> tagWithChoiceStep = List.of(
-                new TagWithChoiceStep(game, player, anotherPlayer, decisions, analysis, needTagSimulationWithChoice)
+                new TagWithChoiceStep(game, player, anotherPlayer, decisions, analysis, needTagSimulationWithChoice, collectByOpponent)
         );
-        doDecisionSteps(tagWithChoiceStep, dataCollectContext, player, decisions);
+        doDecisionSteps(tagWithChoiceStep, dataCollectContext, player, anotherPlayer, decisions, collectByOpponent);
 
         return decisions;
     }
 
-    private void doDecisionSteps(List<DecisionStep> steps, DataCollectContext dataCollectContext, Player player, OptimizedInputDecisions decisions) {
+    private void doDecisionSteps(List<DecisionStep> steps, DataCollectContext dataCollectContext, Player player, Player opponent, OptimizedInputDecisions decisions, boolean collectByOpponent) {
         List<float[]> simulations = new ArrayList<>();
 
         steps.stream().filter(DecisionStep::isApplicable).forEach(step -> step.collectSimulations(simulations, dataCollectContext));
 
-        List<Prediction> predictions = simulations.isEmpty() ? List.of() : nnService.predictBatch(simulations, player);
+        List<Prediction> predictions = simulations.isEmpty() ? List.of() : nnService.predictBatch(simulations, collectByOpponent ? opponent : player);
         PredictionCursor cursor = new PredictionCursor(predictions);
         steps.stream().filter(DecisionStep::isApplicable).forEach(step -> step.applyPredictions(cursor, decisions));
     }

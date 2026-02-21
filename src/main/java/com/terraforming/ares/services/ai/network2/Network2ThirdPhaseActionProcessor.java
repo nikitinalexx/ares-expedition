@@ -125,12 +125,12 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
 
             double bestChanceFromReplicatingBacteria = bestFutureOptionsAfterReplicatingBacteria.getBestChance();
             if (bestFutureOptionsAfterReplicatingBacteria.getBestFutureOptions().isEmpty()) {
-                bestChanceFromReplicatingBacteria = nnService.predictBatch(List.of(iDataCollect.collectData(potentialMarsAfterDoingSelfReplicatingBacteria, potentialMarsAfterDoingSelfReplicatingBacteria.getPlayerByUuid(player.getUuid()))), player).getFirst().baseProb;
+                bestChanceFromReplicatingBacteria = nnService.predictBatch(List.of(iDataCollect.collectData(potentialMarsAfterDoingSelfReplicatingBacteria, player.getUuid())), player).getFirst().baseProb;
             }
 
             double bestChanceFromRegularOptions = bestRegularFutureOptions.getBestChance();
             if (bestRegularFutureOptions.getBestFutureOptions().isEmpty()) {
-                bestChanceFromRegularOptions = nnService.predictBatch(List.of(iDataCollect.collectData(game, player)), player).getFirst().baseProb;
+                bestChanceFromRegularOptions = nnService.predictBatch(List.of(iDataCollect.collectData(game, player.getUuid())), player).getFirst().baseProb;
             }
 
             if (bestChanceFromReplicatingBacteria > bestChanceFromRegularOptions) {
@@ -236,7 +236,7 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
         }
 
         if (!game.gameEndCondition() && aiEndgameService.canFinishGame(game, player)) {
-            double chance = nnService.predictBatch(List.of(iDataCollect.collectData(game, player)), player).getFirst().baseProb;
+            double chance = nnService.predictBatch(List.of(iDataCollect.collectData(game, player.getUuid())), player).getFirst().baseProb;
             boolean isBetterChance = chance >= 0.6;
             //TODO still better to do all projections and then check
             if (isBetterChance && aiEndgameService.isFinishingGame(game, player)) {
@@ -273,7 +273,7 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
         }
 
         if (onlyIfBetter) {
-            dataToCheck.add(iDataCollect.collectData(game, player));
+            dataToCheck.add(iDataCollect.collectData(game, player.getUuid()));
         }
 
         List<Prediction> predictions = nnService.predictBatch(dataToCheck, player);
@@ -306,17 +306,17 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
         if (type == StandardProjectType.OCEAN && mc >= standardProjectService.getProjectPrice(player, type)) {
             aiTurnService.standardProjectTurn(game, player, StandardProjectType.OCEAN);
 
-            return iDataCollect.collectData(game, player);
+            return iDataCollect.collectData(game, player.getUuid());
         }
 
         if (type == StandardProjectType.FOREST && mc >= standardProjectService.getProjectPrice(player, type)) {
             aiTurnService.standardProjectTurn(game, player, StandardProjectType.FOREST);
-            return iDataCollect.collectData(game, player);
+            return iDataCollect.collectData(game, player.getUuid());
         }
 
         if (type == StandardProjectType.TEMPERATURE && mc >= standardProjectService.getProjectPrice(player, type)) {
             aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
-            return iDataCollect.collectData(game, player);
+            return iDataCollect.collectData(game, player.getUuid());
         }
 
         throw new IllegalStateException("Invalid standard project type");
@@ -528,7 +528,7 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
         List<Map.Entry<State, Node>> stateNodeList = new ArrayList<>();
         List<float[]> states = new ArrayList<>();
 
-        states.add(iDataCollect.collectData(game, player));
+        states.add(iDataCollect.collectData(gameCopy, player.getUuid()));
 
         for (Map.Entry<State, Node> entryNode : stateNodeMap.entrySet()) {
             stateNodeList.add(entryNode);
@@ -536,7 +536,7 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
             applyDeltaState(playerCopy, deltaState);
 
 
-            float[] data = iDataCollect.collectData(gameCopy, playerCopy);
+            float[] data = iDataCollect.collectData(gameCopy, playerCopy.getUuid());
             iDataCollect.modifyPlayerHandSize(data, deltaState.cards);
             states.add(data);
             restorePlayerState(playerCopy, player);
@@ -748,20 +748,20 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
         List<Runnable> actions = new ArrayList<>();
 
         // Собираем данные для нейронки: текущее состояние + варианты действий
-        simulationData.add(iDataCollect.collectData(game, player));
+        simulationData.add(iDataCollect.collectData(game, player.getUuid()));
 
         if (experimentalTech != null) {
-            simulationData.add(actionProjectionDataCollector.experimentalTechnology(game, player, bestPhaseUpgrade));
+            simulationData.add(actionProjectionDataCollector.experimentalTechnology(game, player, null, bestPhaseUpgrade, false));
             actions.add(() -> aiTurnService.performBlueAction(game, player, experimentalTech.getId(), Map.of(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(bestPhaseUpgrade))));
         }
 
         if (virtualEmployee != null) {
-            simulationData.add(actionProjectionDataCollector.virtualEmployee(game, player, bestPhaseUpgrade));
+            simulationData.add(actionProjectionDataCollector.virtualEmployee(game, player, null, bestPhaseUpgrade, false));
             actions.add(() -> aiTurnService.performBlueAction(game, player, virtualEmployee.getId(), Map.of(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(bestPhaseUpgrade))));
         }
 
         if (fibrousComposite != null) {
-            simulationData.add(actionProjectionDataCollector.fibrousCompositeMaterial(game, player, bestPhaseUpgrade));
+            simulationData.add(actionProjectionDataCollector.fibrousCompositeMaterial(game, player, null, bestPhaseUpgrade, false));
             actions.add(() -> aiTurnService.performBlueAction(game, player, fibrousComposite.getId(), Map.of(
                     InputFlag.ADD_DISCARD_MICROBE.getId(), List.of(3),
                     InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(bestPhaseUpgrade))));

@@ -54,7 +54,7 @@ public class Network2DiscardCardsProcessor {
             player.getHand().removeCard(cardId);
 
             // Собираем вектор (AdvancedAiDataCollectionService теперь сам увидит обновленную руку)
-            featureBatch.add(advancedAiDataCollectionService.collectData(game, player));
+            featureBatch.add(advancedAiDataCollectionService.collectData(game, player.getUuid()));
 
             // Возвращаем карту обратно для следующей итерации
             player.getHand().addCard(cardId);
@@ -108,7 +108,7 @@ public class Network2DiscardCardsProcessor {
         List<float[]> featureBatch = new ArrayList<>();
         for (Integer cardId : cardsToDiscard) {
             player.getHand().removeCard(cardId);
-            featureBatch.add(advancedAiDataCollectionService.collectData(game, player));
+            featureBatch.add(advancedAiDataCollectionService.collectData(game, player.getUuid()));
             player.getHand().addCard(cardId);
         }
 

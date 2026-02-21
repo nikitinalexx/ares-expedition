@@ -18,29 +18,29 @@ public class ActionProjectionDataCollector {
     private final IDataCollect iDataCollect;
     private final CardService cardService;
 
-    public float[] experimentalTechnology(MarsGame game, Player player, int upgrade) {
+    public float[] experimentalTechnology(MarsGame game, Player player, Player opponent, int upgrade, boolean projectByOpponent) {
         List<Integer> originalUpgrades = new ArrayList<>(player.getPhaseCards());
         UpgradePhaseHelper.upgradePhase(player, upgrade);
         player.setTerraformingRating(player.getTerraformingRating() - 1);
-        float[] data = iDataCollect.collectData(game, player);
+        float[] data = iDataCollect.collectData(game, (projectByOpponent ? opponent : player).getUuid());
         player.setPhaseCards(originalUpgrades);
         player.setTerraformingRating(player.getTerraformingRating() + 1);
         return data;
     }
 
-    public float[] virtualEmployee(MarsGame game, Player player, int upgrade) {
+    public float[] virtualEmployee(MarsGame game, Player player, Player opponent, int upgrade, boolean projectByOpponent) {
         List<Integer> originalUpgrades = new ArrayList<>(player.getPhaseCards());
         UpgradePhaseHelper.upgradePhase(player, upgrade);
-        float[] data = iDataCollect.collectData(game, player);
+        float[] data = iDataCollect.collectData(game, (projectByOpponent ? opponent : player).getUuid());
         player.setPhaseCards(originalUpgrades);
         return data;
     }
 
-    public float[] fibrousCompositeMaterial(MarsGame game, Player player, int upgrade) {
+    public float[] fibrousCompositeMaterial(MarsGame game, Player player, Player opponent, int upgrade, boolean projectByOpponent) {
         List<Integer> originalUpgrades = new ArrayList<>(player.getPhaseCards());
         UpgradePhaseHelper.upgradePhase(player, upgrade);
         player.getCardResourcesCount().put(FibrousCompositeMaterial.class, player.getCardResourcesCount().get(FibrousCompositeMaterial.class) - 3);
-        float[] data = iDataCollect.collectData(game, player);
+        float[] data = iDataCollect.collectData(game, (projectByOpponent ? opponent : player).getUuid());
         player.setPhaseCards(originalUpgrades);
         player.getCardResourcesCount().put(FibrousCompositeMaterial.class, player.getCardResourcesCount().get(FibrousCompositeMaterial.class) + 3);
         return data;

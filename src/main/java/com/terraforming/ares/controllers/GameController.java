@@ -416,7 +416,7 @@ public class GameController {
 
     @GetMapping("/simulations/v3")
     public void runSimulationsV3(@RequestBody SimulationsRequest request) throws InterruptedException {
-        List<PlayerDifficulty> difficulties = List.of(PlayerDifficulty.NETWORK_V2, PlayerDifficulty.NETWORK_V2);
+        List<PlayerDifficulty> difficulties = List.of(PlayerDifficulty.NETWORK, PlayerDifficulty.NETWORK_V2);
 
         List<String> playerNames = new ArrayList<>();
         int counter = 1;
@@ -1113,7 +1113,7 @@ public class GameController {
         } else {
 
 //            winProbability = deepNetwork.testState(game, aiComputer);
-            winProbability = (float) nnService.predictBatch(List.of(dataCollect.collectData(game, aiComputer)), NNService.ModelType.SECOND).getFirst().baseProb;
+            winProbability = (float) nnService.predictBatch(List.of(dataCollect.collectData(game, aiComputer.getUuid())), NNService.ModelType.SECOND).getFirst().baseProb;
         }
 
         Planet phasePlanet = game.getPlanetAtTheStartOfThePhase();

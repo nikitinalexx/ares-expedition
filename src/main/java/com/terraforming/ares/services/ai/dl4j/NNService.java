@@ -47,12 +47,14 @@ public class NNService {
     public NNService() throws Exception {
         networks.put(
                 ModelType.FIRST,
-                ComputationGraph.load(new File("iter2_epoch_1_200.zip"), false)
+                ComputationGraph.load(new File("iter4_epoch_2_93.zip"), false)
+
         );
 
         networks.put(
                 ModelType.SECOND,
-                ComputationGraph.load(new File("iter3_epoch_4_30.zip"), false)
+                ComputationGraph.load(new File("iter4_epoch_2_93.zip"), false)
+
         );
 
         // Инициализируем очереди и батчеры
@@ -154,8 +156,7 @@ public class NNService {
             long usedMb = (total.get() - free.get()) / 1024 / 1024;
             long totalMb = total.get() / 1024 / 1024;
             long freeMb = free.get() / 1024 / 1024;
-            System.out.printf("[%s] batch=%d states=%d | GPU: %d/%d MB (free=%d MB)%n",
-                    type, batchCount, states, usedMb, totalMb, freeMb);
+            System.out.printf("GPU: %d/%d MB (free=%d MB)%n",usedMb, totalMb, freeMb);
         } catch (Throwable t) {
             System.out.println("GPU mem log failed: " + t.getMessage());
         }

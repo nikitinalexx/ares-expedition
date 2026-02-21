@@ -15,7 +15,7 @@ public abstract class AbstractPhaseProcessor {
         copyPlayer.setHeat(state.heat);
         copyPlayer.setPlants(state.plants);
         copyPlayer.setTerraformingRating(state.tr);
-        copyPlayer.setForests(copyPlayer.getForests() + state.extraForests);
+        copyPlayer.setForests(state.forests);
 
         Map<Class<?>, Integer> cardResourcesCount = copyPlayer.getCardResourcesCount();
         if (cardResourcesCount.containsKey(GhgProductionBacteria.class)) {

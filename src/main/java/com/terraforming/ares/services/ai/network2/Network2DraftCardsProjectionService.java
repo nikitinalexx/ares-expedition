@@ -35,7 +35,7 @@ public class Network2DraftCardsProjectionService {
         Player anotherPlayer = (players.get(0).getUuid().equals(player.getUuid())) ? players.get(1) : players.get(0);
 
         // 1. Текущая база (шанс со всей рукой)
-        float[] currentFeatures = iDataCollect.collectData(marsGame, player);
+        float[] currentFeatures = iDataCollect.collectData(marsGame, player.getUuid());
         double currentProb = nnService.predictBatch(List.of(currentFeatures), player).getFirst().baseProb;
 
         // 2. Оцениваем ценность владения каждой картой (Ownership Value)
@@ -43,7 +43,7 @@ public class Network2DraftCardsProjectionService {
         List<float[]> statesWithoutOne = new ArrayList<>();
         for (Integer cardId : handCards) {
             player.getHand().removeCard(cardId);
-            statesWithoutOne.add(iDataCollect.collectData(marsGame, player));
+            statesWithoutOne.add(iDataCollect.collectData(marsGame, player.getUuid()));
             player.getHand().addCard(cardId);
         }
 
@@ -59,7 +59,7 @@ public class Network2DraftCardsProjectionService {
         List<float[]> statesWithExtra = new ArrayList<>();
         for (Integer deckCardId : deckSample) {
             player.getHand().addCard(deckCardId);
-            statesWithExtra.add(iDataCollect.collectData(marsGame, player));
+            statesWithExtra.add(iDataCollect.collectData(marsGame, player.getUuid()));
             player.getHand().removeCard(deckCardId);
         }
 

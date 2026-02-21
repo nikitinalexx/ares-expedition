@@ -44,7 +44,7 @@ public class OxygenStep implements DecisionStep {
         game.getPlanetAtTheStartOfThePhase().increaseOxygen();
         player.setTerraformingRating(player.getTerraformingRating() + 1);
 
-        return dataCollectContext.getDataCollect().collectData(game, player);
+        return dataCollectContext.getDataCollect().collectData(game, player.getUuid());
     }
 
 }

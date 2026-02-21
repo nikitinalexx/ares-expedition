@@ -40,7 +40,7 @@ public class SyntheticCatastropheStep implements DecisionStep {
             playerCopy.getPlayed().removeCard(redCardToCheck);
             playerCopy.getHand().addCard(redCardToCheck);
 
-            simulations.add(dataCollectContext.getDataCollect().collectData(gameCopy, playerCopy));
+            simulations.add(dataCollectContext.getDataCollect().collectData(gameCopy, playerCopy.getUuid()));
 
             playerCopy.getPlayed().addCard(redCardToCheck);
             playerCopy.getHand().removeCard(redCardToCheck);
