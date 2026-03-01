@@ -22,7 +22,8 @@ public class AdvancedAiDataCollectionService implements IDataCollect {
     private final CompleteTableEncoder tableEncoder;
     private final CompleteHandEncoder handEncoder;
 
-    public void collectData(GameResult gameResult, MarsGame marsGame, List<Player> players) {
+    @Override
+    public void collectGameData(GameResult gameResult, MarsGame marsGame, List<Player> players) {
         Player currentPlayer = players.get(0);
         Player anotherPlayer = players.get(1);
 

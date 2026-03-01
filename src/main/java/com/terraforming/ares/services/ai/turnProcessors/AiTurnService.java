@@ -8,6 +8,7 @@ import com.terraforming.ares.model.turn.*;
 import com.terraforming.ares.processors.turn.TurnProcessor;
 import com.terraforming.ares.services.*;
 import com.terraforming.ares.services.ai.AiCardValidationService;
+import com.terraforming.ares.services.policyai.PolicyCollectService;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -29,6 +30,7 @@ public class AiTurnService {
     private final StandardProjectService standardProjectService;
     private final CardService cardService;
     private final AiCardValidationService aiCardValidationService;
+    private final PolicyCollectService policyCollectService;
 
     public AiTurnService(List<TurnProcessor<?>> turnProcessor,
                          CardValidationService cardValidationService,
@@ -37,7 +39,8 @@ public class AiTurnService {
                          TurnTypeService turnTypeService,
                          StandardProjectService standardProjectService,
                          CardService cardService,
-                         AiCardValidationService aiCardValidationService) {
+                         AiCardValidationService aiCardValidationService,
+                         PolicyCollectService policyCollectService) {
         this.cardValidationService = cardValidationService;
         this.paymentValidationService = paymentValidationService;
 
@@ -49,6 +52,7 @@ public class AiTurnService {
         this.standardProjectService = standardProjectService;
         this.cardService = cardService;
         this.aiCardValidationService = aiCardValidationService;
+        this.policyCollectService = policyCollectService;
     }
 
     public void chooseCorporationTurn(MarsGame game, ChooseCorporationRequest chooseCorporationRequest) {
@@ -161,7 +165,7 @@ public class AiTurnService {
             throw new IllegalStateException("Not allowed to collect income twice");
         }
 
-        makeAsyncTurn(player, new CollectIncomeTurn(player.getUuid(), null));
+        makeAsyncTurn(player, new CollectIncomeTurn(player.getUuid(), doubleCollectCardId));
     }
 
     public void skipTurn(Player player) {
@@ -217,14 +221,6 @@ public class AiTurnService {
             makeAsyncTurn(player, turn);
         }
 
-    }
-
-    public void unmiRtCorporationTurnSync(MarsGame game, Player player) {
-        if (player.getMc() < 6) {
-            throw new IllegalArgumentException("Not enough MC to perform the action");
-        }
-
-        makeSyncTurn(player, game, new UnmiRtTurn(player.getUuid()));
     }
 
     public void unmiRtCorporationTurn(MarsGame game, Player player) {

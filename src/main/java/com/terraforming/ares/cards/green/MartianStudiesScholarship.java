@@ -33,10 +33,9 @@ public class MartianStudiesScholarship implements DiscoveryExpansionRedCard {
     public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> input) {
         List<Integer> cardInput = input.get(InputFlag.PHASE_UPGRADE_CARD.getId());
 
-        final MarsGame game = marsContext.getGame();
         final Player player = marsContext.getPlayer();
 
-        UpgradePhaseHelper.upgradePhase(player, cardInput.get(0));
+        UpgradePhaseHelper.upgradePhase(player, cardInput.getFirst());
 
         if (player.hasPhaseUpgrade(Constants.PHASE_2_UPGRADE_PROJECT_AND_CARD)) {
             player.getBuilds().add(new BuildDto(BuildType.BLUE_RED_OR_CARD));

@@ -189,8 +189,7 @@ public class AiOptimalBuildService {
                 return new CardWithInputParams(card, Map.of(InputFlag.IMPORTED_HYDROGEN_PICK_PLANT.getId(), List.of()));
             }
 
-            List<Map<Integer, List<Integer>>> result = new ArrayList<>(2);
-            result.add(Map.of(InputFlag.IMPORTED_HYDROGEN_PICK_PLANT.getId(), List.of()));
+            List<Map<Integer, List<Integer>>> result = new ArrayList<>();
             result.add(Map.of(InputFlag.IMPORTED_HYDROGEN_PUT_RESOURCE.getId(), List.of(decisions.isMicrobeIsBetter() ? bestMicrobe.getId() : bestAnimal.getId())));
 
             return new CardWithInputParams(card, result);

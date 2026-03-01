@@ -7,8 +7,10 @@ import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.MarsContextProvider;
 import com.terraforming.ares.services.ai.*;
+import com.terraforming.ares.services.ai.advanced.IDataCollect;
 import com.terraforming.ares.services.ai.dto.CardValueResponse;
 import com.terraforming.ares.services.ai.network2.Network2CorporationAndMulliganService;
+import com.terraforming.ares.services.policyai.PolicyCollectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -30,6 +32,7 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
     private final MarsContextProvider marsContextProvider;
     private final DeepNetwork deepNetwork;
     private final Network2CorporationAndMulliganService network2CorporationAndMulliganService;
+    private final PolicyCollectService policyCollectService;
 
 
     @Override
@@ -48,7 +51,14 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
         List<Integer> cards = new ArrayList<>(player.getHand().getCards());
 
         if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
-            return network2CorporationAndMulliganService.getCardsToDiscard(game, player.getUuid());
+            List<Integer> cardsToDiscard = network2CorporationAndMulliganService.getCardsToDiscard(game, player.getUuid());
+
+            final List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
+            Player anotherPlayer = players.get(0) == player ? players.get(1) : players.get(0);
+
+            policyCollectService.mulliganCards(game, List.of(player, anotherPlayer), cardsToDiscard);
+
+            return cardsToDiscard;
         }
 
         List<Integer> cardsToDiscard = new ArrayList<>();

@@ -549,7 +549,6 @@ public class CardFactory {
                 12, new BuffedBirds(5012)
         ));
         buffedProjectsMapping.put(16, new BuffedCommunityGardens(5016));
-        buffedProjectsMapping.put(378, new BuffedGeneticallyModifiedVegetables(5378));
 
         crysisExcludedCards = Set.of(
                 1, 18, 97,

@@ -1,5 +1,6 @@
 package com.terraforming.ares.model.parameters;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -38,4 +39,10 @@ public class Ocean {
     public void hide() {
         revealed = false;
     }
+
+    @JsonIgnore
+    public int key() {
+        return (getCards() << 16) | (getMc() << 8) | getPlants();
+    }
+
 }

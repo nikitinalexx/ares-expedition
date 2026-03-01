@@ -64,7 +64,7 @@ public class GeneticallyModifiedVegetables implements DiscoveryExpansionGreenCar
 
     @Override
     public int getPrice() {
-        return 26;
+        return 21;
     }
 
 }

@@ -44,9 +44,7 @@ public class SultiraCorporation implements CorporationCard {
         if (project.getClass() == SultiraCorporation.class) {
             List<Integer> cardInput = inputParams.get(InputFlag.PHASE_UPGRADE_CARD.getId());
 
-            final MarsGame game = marsContext.getGame();
-
-            UpgradePhaseHelper.upgradePhase(player, cardInput.get(0));
+            UpgradePhaseHelper.upgradePhase(player, cardInput.getFirst());
         }
     }
 

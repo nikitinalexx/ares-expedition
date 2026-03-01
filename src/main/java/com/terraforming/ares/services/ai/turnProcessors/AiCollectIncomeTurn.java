@@ -9,6 +9,7 @@ import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.TerraformingService;
 import com.terraforming.ares.services.ai.AiCollectIncomePhaseService;
+import com.terraforming.ares.services.policyai.PolicyCollectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +26,8 @@ import java.util.stream.Collectors;
 public class AiCollectIncomeTurn implements AiTurnProcessor {
     private final AiTurnService aiTurnService;
     private final AiCollectIncomePhaseService  aiCollectIncomePhaseService;
+    private final PolicyCollectService policyCollectService;
+    private final CardService cardService;
 
     @Override
     public TurnType getType() {
@@ -38,6 +41,10 @@ public class AiCollectIncomeTurn implements AiTurnProcessor {
 
         if (player.getChosenPhase() == 4 && player.hasPhaseUpgrade(Constants.PHASE_4_UPGRADE_DOUBLE_PRODUCE)) {
             doubleIncomeCard = aiCollectIncomePhaseService.getDoubleIncomeCard(game, player);
+
+            if (doubleIncomeCard != null) {
+                policyCollectService.collectIncomeDoubleCardChoice(game, player, cardService.getCard(doubleIncomeCard));
+            }
         }
 
         aiTurnService.collectIncomeTurn(player, doubleIncomeCard);

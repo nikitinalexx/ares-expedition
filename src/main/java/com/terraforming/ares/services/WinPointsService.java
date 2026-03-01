@@ -31,15 +31,10 @@ public class WinPointsService {
 
         winPoints += player.getForests();
 
-        List<Card> cards = player.getPlayed()
-                .getCards()
-                .stream()
-                .map(cardService::getCard).toList();
-
-        winPoints += cards
-                .stream()
-                .mapToInt(Card::getWinningPoints)
-                .sum();
+        for (Integer playedCardId : player.getPlayed().getCards()) {
+            Card card = cardService.getCard(playedCardId);
+            winPoints += card.getWinningPoints();
+        }
 
         winPoints += milestonesWinPoints(player, game);
 

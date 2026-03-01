@@ -1,9 +1,9 @@
 package com.terraforming.ares.services.ai.turnProcessors;
 
+import com.terraforming.ares.cards.corporations.MayNiProductionsCorporation;
+import com.terraforming.ares.cards.corporations.ZetacellCorporation;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Card;
-import com.terraforming.ares.model.CardAction;
-import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.ai.AiExperimentalTurn;
 import com.terraforming.ares.model.request.ChooseCorporationRequest;
 import com.terraforming.ares.model.turn.TurnType;
@@ -13,9 +13,11 @@ import com.terraforming.ares.services.ai.DeepNetwork;
 import com.terraforming.ares.services.ai.TestAiService;
 import com.terraforming.ares.services.ai.network2.Network2CorporationAndMulliganService;
 import com.terraforming.ares.services.ai.network2.Network2CorporationInputService;
+import com.terraforming.ares.services.policyai.PolicyCollectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -34,6 +36,7 @@ public class AiPickCorporationTurn implements AiTurnProcessor {
     private final AiDiscoveryDecisionService aiDiscoveryDecisionService;
     private final Network2CorporationAndMulliganService network2CorporationAndMulliganService;
     private final Network2CorporationInputService network2CorporationInputService;
+    private final PolicyCollectService policyCollectService;
 
 
     @Override
@@ -71,10 +74,35 @@ public class AiPickCorporationTurn implements AiTurnProcessor {
         }
 
         if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
-            Network2CorporationAndMulliganService.CorpEvaluation corporation = network2CorporationAndMulliganService.chooseCorporation(game, player.getUuid());
+            Network2CorporationAndMulliganService.CorpEvaluation corpEvaluation = network2CorporationAndMulliganService.chooseCorporation(game, player.getUuid());
 
-            selectedCorporationId = corporation.corporationId();
-            Map<Integer, List<Integer>> corporationInput = network2CorporationInputService.getCorporationInput(game, player, cardService.getCard(selectedCorporationId).getCardMetadata().getCardAction(), corporation.inputDecisions());
+            selectedCorporationId = corpEvaluation.corporationId();
+            Card corporation = cardService.getCard(selectedCorporationId);
+
+            final List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
+            Player anotherPlayer = players.get(0) == player ? players.get(1) : players.get(0);
+
+
+            CardAction cardAction = cardService.getCard(selectedCorporationId).getCardMetadata().getCardAction();
+
+            Map<Integer, List<Integer>> corporationInput = network2CorporationInputService.getCorporationInput(game, player, cardAction, corpEvaluation.inputDecisions());
+
+            policyCollectService.chooseCorporation(game, List.of(player, anotherPlayer), selectedCorporationId);
+            if (cardAction == CardAction.SULTIRA_CORPORATION) {
+                policyCollectService.sultiraCorporationPhaseChoice(game, List.of(player, anotherPlayer), corporation, corporationInput.get(InputFlag.PHASE_UPGRADE_CARD.getId()).getFirst());
+            } else if (cardAction == CardAction.APOLLO_CORPORATION) {
+                policyCollectService.apolloCorporationPhaseChoice(game, List.of(player, anotherPlayer), corporation, corporationInput.get(InputFlag.PHASE_UPGRADE_CARD.getId()).getFirst());
+            } else if (cardAction == CardAction.HYPERION_SYSTEMS_CORPORATION) {
+                policyCollectService.hyperionCorporationChoice(game, List.of(player, anotherPlayer), corporation, corporationInput.get(InputFlag.PHASE_UPGRADE_CARD.getId()).getFirst());
+            } else if (cardAction == CardAction.EXOCORP_CORPORATION) {
+                policyCollectService.exocorpCorporationChoice(game, List.of(player, anotherPlayer), corporation, corporationInput.get(InputFlag.PHASE_UPGRADE_CARD.getId()).getFirst());
+            } else if (cardAction == CardAction.NEBU_LABS_CORPORATION) {
+                policyCollectService.nebulabsCorporationChoice(game, List.of(player, anotherPlayer), corporation, corporationInput.get(InputFlag.PHASE_UPGRADE_CARD.getId()).getFirst());
+            } else if (cardAction == CardAction.MODPRO_CORPORATION) {
+                policyCollectService.modProCorporationChoice(game, List.of(player, anotherPlayer), corporation, corporationInput.get(InputFlag.TAG_INPUT.getId()).getFirst());
+            } else if (cardAction == CardAction.AUSTELLAR_CORPORATION) {
+                policyCollectService.austellarTagAndMilestoneChoice(game, List.of(player, anotherPlayer), corporation, corporationInput.get(InputFlag.AUSTELLAR_CORPORATION_MILESTONE.getId()).getFirst(), corporationInput.get(InputFlag.TAG_INPUT.getId()).getFirst());
+            }
 
             aiTurnService.chooseCorporationTurn(game, ChooseCorporationRequest.builder()
                     .playerUuid(player.getUuid())

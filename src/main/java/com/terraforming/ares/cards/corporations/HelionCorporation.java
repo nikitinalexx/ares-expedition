@@ -1,7 +1,11 @@
 package com.terraforming.ares.cards.corporations;
 
 import com.terraforming.ares.cards.CardMetadata;
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
+import com.terraforming.ares.services.CardService;
 import lombok.Getter;
 
 import java.util.Collections;

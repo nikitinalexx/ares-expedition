@@ -27,10 +27,11 @@ import com.terraforming.ares.services.ai.advanced.IDataCollect;
 import com.terraforming.ares.services.ai.dl4j.NNService;
 import com.terraforming.ares.services.ai.dto.CardProjection;
 import com.terraforming.ares.services.ai.turnProcessors.AiMulliganCardsTurn;
-import com.terraforming.ares.services.simulations.CardPickStatistics;
-import com.terraforming.ares.services.simulations.DatasetWriter;
-import com.terraforming.ares.services.simulations.GameResultProducer;
-import com.terraforming.ares.services.simulations.SampleBatch;
+import com.terraforming.ares.services.policyai.GameArenaContext;
+import com.terraforming.ares.services.policyai.analyzer.PolicyRecordAnalyzer;
+import com.terraforming.ares.services.policyai.dto.GameRecordArena;
+import com.terraforming.ares.services.policyai.dto.PolicyRecord;
+import com.terraforming.ares.services.simulations.*;
 import lombok.RequiredArgsConstructor;
 import org.nd4j.common.primitives.AtomicDouble;
 import org.springframework.http.HttpStatus;
@@ -117,8 +118,6 @@ public class GameController {
             int aiPlayerCount = (int) gameParameters.getComputers().stream().filter(item -> item != PlayerDifficulty.NONE).count();
             int playersCount = gameParameters.getPlayerNames().size();
             int[] extraPoints = gameParameters.getExtraPoints();
-
-//            gameParameters.getExpansions().add(Expansion.EXPERIMENTAL);//TODO remove
 
             if (gameParameters.getComputers().contains(PlayerDifficulty.NETWORK) && playersCount != 2) {
                 throw new IllegalArgumentException("AI computer available only for 2 player game");
@@ -595,6 +594,210 @@ public class GameController {
                 });
 
         System.out.println("=".repeat(75) + "\n");
+    }
+
+    @GetMapping("/simulations/v4/collect")
+    public void collectSimulationsDataV4(@RequestBody CollectDataRequest request) throws InterruptedException {
+        List<PlayerDifficulty> difficulties = List.of(PlayerDifficulty.NETWORK_V2, PlayerDifficulty.NETWORK_V2);
+
+        List<String> playerNames = new ArrayList<>();
+        int counter = 1;
+        for (PlayerDifficulty simulationPlayer : difficulties) {
+            playerNames.add(simulationPlayer.name() + (counter++));
+        }
+
+        GameParameters gameParameters = GameParameters.builder()
+                .playerNames(playerNames)
+                .computers(difficulties)
+                .mulligan(true)
+                .expansion(Expansion.BASE)
+                .expansion(Expansion.BUFFED_CORPORATION)
+                .expansion(Expansion.DISCOVERY)
+                .dummyHand(true)
+                .build();
+
+        int totalSims = request.getTotalSimulations();
+        LongAdder firstWins = new LongAdder(), secondWins = new LongAdder(), draws = new LongAdder();
+        LongAdder completedCount = new LongAdder(); // Счетчик завершенных игр
+        long startTime = System.currentTimeMillis();
+
+        int MAX_CONCURRENT_GAMES = 2000;
+        Semaphore semaphore = new Semaphore(MAX_CONCURRENT_GAMES);
+
+        BlockingQueue<GameRecordArena> finishedGames = new ArrayBlockingQueue<>(1000); // backpressure
+
+        PolicyDatasetWriter writer = new PolicyDatasetWriter(finishedGames);
+
+        Thread writerThread = new Thread(writer, "dataset-writer");
+        writerThread.start();
+
+        Constants.FIRST_PLAYER_PHASES = new ConcurrentHashMap<>();
+        Constants.SECOND_PLAYER_PHASES = new ConcurrentHashMap<>();
+
+        ConcurrentHashMap<Integer, AtomicLong> pointsByTurn = new ConcurrentHashMap<>();
+        ConcurrentHashMap<Integer, AtomicLong> countByTurn = new ConcurrentHashMap<>();
+
+        AtomicLong winPoints = new AtomicLong(0);
+        AtomicLong turns = new AtomicLong(0);
+
+        ConcurrentHashMap<Integer, AtomicLong> pickedCorporation = new ConcurrentHashMap<>();
+        ConcurrentHashMap<Integer, AtomicLong> wonCorporation = new ConcurrentHashMap<>();
+
+        AtomicLong sumOfRecords = new AtomicLong(0);
+
+        ConcurrentLinkedQueue<PolicyRecordAnalyzer> finishedAnalyzers = new ConcurrentLinkedQueue<>();
+
+
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            for (int i = 0; i < totalSims; i++) {
+                executor.submit(() -> {
+                    try {
+                        semaphore.acquire();
+
+                        MarsGame game = gameService.createNewSimulation(gameParameters);
+                        GameRecordArena gameArena = new GameRecordArena();
+
+                        ScopedValue.where(
+                                GameArenaContext.ARENA,
+                                gameArena
+                        ).run(() -> simulationProcessorService.runSimulationWithGameRecordArena(game, gameArena));
+
+
+                        PolicyRecordAnalyzer localAnalyzer = new PolicyRecordAnalyzer();
+
+                        PolicyRecord[] records = gameArena.records();
+
+                        for (int j = 0; j < gameArena.size(); j++) {
+                            localAnalyzer.analyze(records[j]);
+                        }
+
+                        // lock-free добавление в очередь
+                        finishedAnalyzers.add(localAnalyzer);
+
+//                        finishedGames.add(gameArena);
+
+                        sumOfRecords.addAndGet(gameArena.size());
+
+                        List<Player> players = game.getPlayerUuidToPlayer().values().stream()
+                                .sorted(Comparator.comparing(p -> p.getUuid().substring(p.getUuid().length() - 1)))
+                                .toList();
+                        players.forEach(p -> pickedCorporation
+                                .computeIfAbsent(p.getSelectedCorporationCard(), k -> new AtomicLong(0))
+                                .incrementAndGet());
+
+
+                        Player firstPlayer = players.get(0);
+                        Player secondPlayer = players.get(1);
+                        int p1 = winPointsService.countWinPoints(firstPlayer, game);
+                        int p2 = winPointsService.countWinPoints(secondPlayer, game);
+
+                        if (p1 != p2) {
+                            int currentWonCorporation = p1 > p2 ? firstPlayer.getSelectedCorporationCard() : secondPlayer.getSelectedCorporationCard();
+
+                            wonCorporation.computeIfAbsent(currentWonCorporation, k -> new AtomicLong(0)).incrementAndGet();
+                        }
+
+
+
+
+                        turns.addAndGet(game.getTurns());
+
+                        if (p1 > p2) firstWins.increment();
+                        else if (p2 > p1) secondWins.increment();
+                        else draws.increment();
+
+                        // Увеличиваем общий счетчик и проверяем, нужно ли печатать лог
+                        completedCount.increment();
+                        long currentTotal = completedCount.sum();
+
+                        if (currentTotal % 50 == 0 || currentTotal == totalSims) {
+                            double elapsed = (System.currentTimeMillis() - startTime) / 1000.0;
+                            double speed = currentTotal / Math.max(0.1, elapsed);
+
+                            long f = firstWins.sum();
+                            long s = secondWins.sum();
+
+                            System.out.printf("[SIM] %d/%d (%.1f%%) | Speed: %.1f games/s | P1: %d%%, P2: %d%% %n",
+                                    currentTotal, totalSims, (currentTotal * 100.0 / totalSims),
+                                    speed, (f * 100 / currentTotal), (s * 100 / currentTotal));
+                        }
+
+                        // Собираем очки для обоих игроков
+                        for (Player player : players) {
+                            int p = winPointsService.countWinPoints(player, game);
+                            winPoints.addAndGet(p);
+
+                            // Статистика в разрезе конкретного хода
+                            pointsByTurn.computeIfAbsent(game.getTurns(), k -> new AtomicLong(0)).addAndGet(p);
+                            countByTurn.computeIfAbsent(game.getTurns(), k -> new AtomicLong(0)).incrementAndGet();
+                        }
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    } finally {
+                        semaphore.release();
+                    }
+                });
+                if (i % 100 == 0) { // Реже логируем подачу задач
+                    System.out.print(".");
+                }
+            }
+            // Здесь поток ждет завершения всех задач
+        }
+
+        printCardStatistics();
+
+
+
+        long totalElapsed = (System.currentTimeMillis() - startTime) / 1000;
+        System.out.printf("%nFinal Result in %ds: 1=%d, 2=%d, D=%d%n",
+                totalElapsed, firstWins.sum(), secondWins.sum(), draws.sum());
+
+        System.out.println("Average win points " + winPoints.get() / 2 / request.getTotalSimulations() + ". Avg turns " + turns.get() / request.getTotalSimulations() + ".");
+
+        System.out.println(Constants.FIRST_PLAYER_PHASES);
+        System.out.println(Constants.SECOND_PLAYER_PHASES);
+
+        // 2. После завершения цикла выводим таблицу "Нормативов"
+        System.out.println("\n--- Performance Benchmarks (Average Points per Turn) ---");
+        pointsByTurn.keySet().stream().sorted().forEach(t -> {
+            long totalP = pointsByTurn.get(t).get();
+            long games = countByTurn.get(t).get();
+            double avg = (double) totalP / games;
+            System.out.printf("Turn %d: Avg Points = %.2f (based on %d players)%n", t, avg, games);
+        });
+
+        System.out.println("\n" + "=".repeat(75));
+        System.out.printf("%-30s | %-8s | %-6s | %-8s%n", "CORPORATION NAME", "PICKED", "WON", "WIN RATE");
+        System.out.println("-".repeat(75));
+
+        // Сортируем по количеству выборов (от популярных к редким)
+        pickedCorporation.entrySet().stream()
+                .sorted((a, b) -> Long.compare(b.getValue().get(), a.getValue().get()))
+                .forEach(entry -> {
+                    Card card = cardService.getCard(entry.getKey());
+                    String name = card.getClass().getSimpleName();
+                    long picked = entry.getValue().get();
+                    long won = wonCorporation.getOrDefault(card.getId(), new AtomicLong(0)).get();
+                    double winRate = (picked > 0) ? (won * 100.0 / picked) : 0;
+
+                    // Печатаем строку: %-30s (30 символов под имя), %8d (8 под число) и т.д.
+                    System.out.printf("%-30s | %8d | %6d | %7.1f%%%n",
+                            name, picked, won, winRate);
+                });
+
+        System.out.println("=".repeat(75) + "\n");
+
+        PolicyRecordAnalyzer globalAnalyzer = new PolicyRecordAnalyzer();
+
+        // Все виртуальные потоки завершились — merge однопоточно, без синхронизации
+        for (PolicyRecordAnalyzer finished : finishedAnalyzers) {
+            globalAnalyzer.merge(finished);
+        }
+
+        globalAnalyzer.buildReport().print();
+
+        System.out.println("Sum of records " + sumOfRecords.get() / request.getTotalSimulations());
     }
 
     public void printCardStatistics() {

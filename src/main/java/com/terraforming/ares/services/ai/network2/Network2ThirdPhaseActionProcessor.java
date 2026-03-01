@@ -25,16 +25,17 @@ import com.terraforming.ares.services.ai.turnProcessors.frontier.RequiresMcPayme
 import com.terraforming.ares.services.ai.turnProcessors.frontier.State;
 import com.terraforming.ares.services.ai.turnProcessors.frontier.actions.ConsumeResourceEffect;
 import com.terraforming.ares.services.ai.turnProcessors.frontier.actions.PutMicrobeEffect;
-import lombok.RequiredArgsConstructor;
+import com.terraforming.ares.services.policyai.PolicyActionCollectService;
+import com.terraforming.ares.services.policyai.PolicyCollectService;
 import org.nd4j.common.io.CollectionUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
-@RequiredArgsConstructor
 public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
     private static final double EPS = 5e-4;
 
@@ -51,6 +52,7 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
     private final StandardProjectService standardProjectService;
     private final Frontier frontier;
     private final AiEndgameService aiEndgameService;
+    private final PolicyCollectService policyCollectService;
 
     private final Set<Class<?>> DO_IMMEDIATELY_UNCONDITIONALLY = Set.of(
             AiCentral.class,
@@ -69,8 +71,29 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
     );
     private final SelfReplicatingBacteriaService selfReplicatingBacteriaService;
 
+    protected Network2ThirdPhaseActionProcessor(Network2PaymentService network2PaymentService, PolicyCollectService policyCollectService, AiTurnService aiTurnService, CardService cardService, AiTurnService aiTurnService1, AiInputOptimizer aiInputOptimizer, ActionProjectionDataCollector actionProjectionDataCollector, IDataCollect iDataCollect, NNService nnService, AiOptimalBuildService aiOptimalBuildService, AiCardBuildInputAnalyzer aiCardBuildInputAnalyzer, Network2DraftCardsProjectionService network2DraftCardsProjectionService, AiMarsUniversityInputHandler aiMarsUniversityInputHandler, StandardProjectService standardProjectService, Frontier frontier, AiEndgameService aiEndgameService, PolicyCollectService policyCollectService1, PolicyActionCollectService actionPolicyCollectService, SelfReplicatingBacteriaService selfReplicatingBacteriaService) {
+        super(policyCollectService, actionPolicyCollectService, aiTurnService, aiMarsUniversityInputHandler, network2PaymentService);
+        this.cardService = cardService;
+        this.aiTurnService = aiTurnService1;
+        this.aiInputOptimizer = aiInputOptimizer;
+        this.actionProjectionDataCollector = actionProjectionDataCollector;
+        this.iDataCollect = iDataCollect;
+        this.nnService = nnService;
+        this.aiOptimalBuildService = aiOptimalBuildService;
+        this.aiCardBuildInputAnalyzer = aiCardBuildInputAnalyzer;
+        this.network2DraftCardsProjectionService = network2DraftCardsProjectionService;
+        this.aiMarsUniversityInputHandler = aiMarsUniversityInputHandler;
+        this.standardProjectService = standardProjectService;
+        this.frontier = frontier;
+        this.aiEndgameService = aiEndgameService;
+        this.policyCollectService = policyCollectService1;
+        this.selfReplicatingBacteriaService = selfReplicatingBacteriaService;
+    }
+
     public boolean processTurn(MarsGame game, Player player, List<TurnType> possibleTurns) {
-        network2DraftCardsProjectionService.performProactiveSale(game, player);
+        if (AiConstants.ENABLE_SELL_AND_HEAT_EXPLORATION && ThreadLocalRandom.current().nextInt(30) == 0) {
+            network2DraftCardsProjectionService.performProactiveSale(game, player);
+        }
 
         Deck activatedBlueCards = player.getActivatedBlueCards();
 
@@ -165,7 +188,7 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
 
         //software streamlining/redrafted contracts/research grant
         if (blueCards.containsKey(SoftwareStreamlining.class)) {
-            aiTurnService.performBlueAction(game, player, blueCards.get(SoftwareStreamlining.class).getId(), Map.of());
+            finalizeBlueAction(game, player, blueCards.get(SoftwareStreamlining.class), Map.of());
             return true;
         }
         if (blueCards.containsKey(RedraftedContracts.class) && doRedraftedContracts(blueCards, game, player, activatedBlueCardsTwice)) {
@@ -198,7 +221,7 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
             }
 
             if (DO_IMMEDIATELY_UNCONDITIONALLY.contains(card.getClass())) {
-                aiTurnService.performBlueAction(game, player, card.getId(), Map.of());
+                finalizeBlueAction(game, player, card, Map.of());
                 return true;
             }
         }
@@ -221,9 +244,9 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
             if (!player.getHand().isEmpty()) {
                 Card corporation = cardService.getCard(player.getSelectedCorporationCard());
                 if (corporation.getCardMetadata().getCardAction() == CardAction.HELION_CORPORATION && player.getHeat() > 0) {
-                    player.setMc(player.getMc() + player.getHeat());
-                    player.setHeat(0);
+                    convertHeat(game, player, player.getHeat());
                 }
+                policyCollectService.sellCards(game, player, player.getHand().getCards().stream().map(cardService::getCard).collect(Collectors.toList()));
                 aiTurnService.sellCards(player, game, new ArrayList<>(player.getHand().getCards()));
             }
 
@@ -244,6 +267,7 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
             }
         }
 
+        policyCollectService.skipTurn(game, player);
         aiTurnService.skipTurn(player);
         return true;
     }
@@ -268,7 +292,7 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
         }
 
         if (!onlyIfBetter && standardProjectTypes.size() == 1) {
-            aiTurnService.standardProjectTurn(game, player, standardProjectTypes.getFirst());
+            finalizeStandardProject(game, player, standardProjectTypes.getFirst());
             return true;
         }
 
@@ -291,10 +315,15 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
         }
 
         if (bestProject != null) {
-            aiTurnService.standardProjectTurn(game, player, bestProject);
+            finalizeStandardProject(game, player, bestProject);
             return true;
         }
         return false;
+    }
+
+    private void finalizeStandardProject(MarsGame game, Player player, StandardProjectType standardProjectType) {
+        policyCollectService.standardProjectTurn(game, player, standardProjectType);
+        aiTurnService.standardProjectTurn(game, player, standardProjectType);
     }
 
     private float[] projectPlayStandardAction(MarsGame game, String playerUuid, StandardProjectType type) {
@@ -437,7 +466,7 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
                 }
                 case Frontier.UNMI_ACTION_ID -> {
                     convertHeatIfPossible(game, player, context);
-                    aiTurnService.unmiRtCorporationTurn(game, player);
+                    finalizeUnmiTurn(game, player);
                     return true;
                 }
 
@@ -451,7 +480,7 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
                     if (card == null) {
                         throw new IllegalStateException("Card for action not present in available blueCards, actionId: " + actionId);
                     }
-                    aiTurnService.performBlueAction(game, player, card.getId(), Map.of());
+                    finalizeBlueAction(game, player, card, Map.of());
                     return true;
                 }
             }
@@ -477,8 +506,9 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
 
         assert isCardConversion || isHelionConversion;
         if (isCardConversion && !player.getActivatedBlueCards().containsCard(Constants.POWER_INFRASTRUCTURE_CARD_ID)) {
-            aiTurnService.performBlueAction(game, player, Constants.POWER_INFRASTRUCTURE_CARD_ID, Map.of(InputFlag.DISCARD_HEAT.getId(), List.of(howMuchHeatToConvert)));
+            finalizeBlueAction(game, player, cardService.getCard(Constants.POWER_INFRASTRUCTURE_CARD_ID), Map.of(InputFlag.DISCARD_HEAT.getId(), List.of(howMuchHeatToConvert)));
         } else {
+            policyCollectService.helionExchangeHeat(game, player, howMuchHeatToConvert);
             player.setMc(player.getMc() + howMuchHeatToConvert);
             player.setHeat(player.getHeat() - howMuchHeatToConvert);
         }
@@ -493,7 +523,7 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
 
     // Универсальный метод для вызова экшена, чтобы не писать одну и ту же простыню
     private boolean perform(Card card, InputFlag flag, int value, MarsGame game, Player player) {
-        aiTurnService.performBlueAction(game, player, card.getId(), Map.of(flag.getId(), List.of(value)));
+        finalizeBlueAction(game, player, card, Map.of(flag.getId(), List.of(value)));
         return true;
     }
 
@@ -605,8 +635,9 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
         if (badCards.isEmpty()) {
             return false;
         }
+        policyCollectService.sellCards(game, player, badCards.stream().map(cardService::getCard).collect(Collectors.toList()));
         aiTurnService.sellCards(player, game, badCards);
-        aiTurnService.performBlueAction(game, player, (matterManufactoring != null ? matterManufactoring : thinkTank).getId(), Map.of());
+        finalizeBlueAction(game, player, (matterManufactoring != null ? matterManufactoring : thinkTank), Map.of());
         return true;
     }
 
@@ -657,7 +688,7 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
             Map<Integer, List<Integer>> inputParams = cardWithInputParams.getInputParamsVariations().getFirst();
 
             aiMarsUniversityInputHandler.updateMarsUniversityInput(game, player, cardWithInputParams.getCard().getId(), inputParams);
-            aiTurnService.performBlueAction(game, player, researchGrant.getId(), inputParams);
+            finalizeBlueAction(game, player, researchGrant, inputParams);
             return true;
         }
 
@@ -666,7 +697,7 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
             var animalDecision = decisions.getBestResourceCardPerType().get(InputRequirementType.ANIMAL_INPUT);
             if (animalDecision != null) {
                 Card bestAnimalCard = animalDecision.getValue();
-                aiTurnService.performBlueAction(game, player, conservedBiome.getId(), Map.of(InputFlag.CARD_CHOICE.getId(), List.of(bestAnimalCard.getId())));
+                finalizeBlueAction(game, player, conservedBiome, Map.of(InputFlag.CARD_CHOICE.getId(), List.of(bestAnimalCard.getId())));
                 return true;
             }
         }
@@ -697,7 +728,7 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
         if (conservedBiome != null) {
             var microbeOrAnimalDecision = decisions.getBestResourceCardPerType().get(decisions.isMicrobeIsBetter() ? InputRequirementType.MICROBE_INPUT : InputRequirementType.ANIMAL_INPUT);
             if (microbeOrAnimalDecision != null) {
-                aiTurnService.performBlueAction(game, player, conservedBiome.getId(), Map.of(InputFlag.CARD_CHOICE.getId(), List.of(microbeOrAnimalDecision.getValue().getId())));
+                finalizeBlueAction(game, player, conservedBiome, Map.of(InputFlag.CARD_CHOICE.getId(), List.of(microbeOrAnimalDecision.getValue().getId())));
                 return true;
             }
         }
@@ -705,7 +736,7 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
         if (symbioticFungus != null) {
             var microbeDecision = decisions.getBestResourceCardPerType().get(InputRequirementType.MICROBE_INPUT);
             if (microbeDecision != null) {
-                aiTurnService.performBlueAction(game, player, symbioticFungus.getId(), Map.of(InputFlag.CARD_CHOICE.getId(), List.of(microbeDecision.getValue().getId())));
+                finalizeBlueAction(game, player, symbioticFungus, Map.of(InputFlag.CARD_CHOICE.getId(), List.of(microbeDecision.getValue().getId())));
                 return true;
             }
         }
@@ -713,10 +744,10 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
         if (extremeColdFungus != null) {
             var microbeDecision = decisions.getBestResourceCardPerType().get(InputRequirementType.MICROBE_INPUT);
             if (microbeDecision != null) {
-                aiTurnService.performBlueAction(game, player, extremeColdFungus.getId(), Map.of(InputFlag.EXTREME_COLD_FUNGUS_PUT_MICROBE.getId(), List.of(microbeDecision.getValue().getId())));
+                finalizeBlueAction(game, player, extremeColdFungus, Map.of(InputFlag.EXTREME_COLD_FUNGUS_PUT_MICROBE.getId(), List.of(microbeDecision.getValue().getId())));
                 return true;
             } else {
-                aiTurnService.performBlueAction(game, player, extremeColdFungus.getId(), Map.of(InputFlag.EXTEME_COLD_FUNGUS_PICK_PLANT.getId(), List.of(1)));
+                finalizeBlueAction(game, player, extremeColdFungus, Map.of(InputFlag.EXTEME_COLD_FUNGUS_PICK_PLANT.getId(), List.of(1)));
                 return true;
             }
         }
@@ -752,17 +783,17 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
 
         if (experimentalTech != null) {
             simulationData.add(actionProjectionDataCollector.experimentalTechnology(game, player, null, bestPhaseUpgrade, false));
-            actions.add(() -> aiTurnService.performBlueAction(game, player, experimentalTech.getId(), Map.of(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(bestPhaseUpgrade))));
+            actions.add(() -> finalizeBlueAction(game, player, experimentalTech, Map.of(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(bestPhaseUpgrade))));
         }
 
         if (virtualEmployee != null) {
             simulationData.add(actionProjectionDataCollector.virtualEmployee(game, player, null, bestPhaseUpgrade, false));
-            actions.add(() -> aiTurnService.performBlueAction(game, player, virtualEmployee.getId(), Map.of(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(bestPhaseUpgrade))));
+            actions.add(() -> finalizeBlueAction(game, player, virtualEmployee, Map.of(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(bestPhaseUpgrade))));
         }
 
         if (fibrousComposite != null) {
             simulationData.add(actionProjectionDataCollector.fibrousCompositeMaterial(game, player, null, bestPhaseUpgrade, false));
-            actions.add(() -> aiTurnService.performBlueAction(game, player, fibrousComposite.getId(), Map.of(
+            actions.add(() -> finalizeBlueAction(game, player, fibrousComposite, Map.of(
                     InputFlag.ADD_DISCARD_MICROBE.getId(), List.of(3),
                     InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(bestPhaseUpgrade))));
         }
@@ -795,7 +826,7 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
         }
         if (fibrousComposite != null) {
             // Особенность Fibrous: если не выгодно тратить 3 ресурса на апгрейд, просто добавляем 1 ресурс
-            aiTurnService.performBlueAction(game, player, fibrousComposite.getId(),
+            finalizeBlueAction(game, player, fibrousComposite,
                     Map.of(InputFlag.ADD_DISCARD_MICROBE.getId(), List.of(1)));
             return true;
         }
@@ -879,7 +910,7 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
     private boolean doImmediateUnconditionalActions(MarsGame game, Player player, Map<Class<?>, Card> availableCards) {
         for (Map.Entry<Class<?>, Card> cardEntry : availableCards.entrySet()) {
             if (DO_IMMEDIATELY_UNCONDITIONALLY.contains(cardEntry.getKey())) {
-                aiTurnService.performBlueAction(game, player, cardEntry.getValue().getId(), Map.of());
+                finalizeBlueAction(game, player, cardEntry.getValue(), Map.of());
                 return true;
             }
         }
@@ -891,7 +922,7 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
         Card fungus = availableCards.getOrDefault(ExtremeColdFungus.class, availableCards.get(BuffedExtremeColdFungus.class));
         if (fungus != null) {
             if (player.getPlayed().getCards().stream().map(cardService::getCard).noneMatch(c -> c.getCollectableResource() == CardCollectableResource.MICROBE)) {
-                aiTurnService.performBlueAction(game, player, fungus.getId(), Map.of(InputFlag.EXTEME_COLD_FUNGUS_PICK_PLANT.getId(), List.of(0)));
+                finalizeBlueAction(game, player, fungus, Map.of(InputFlag.EXTEME_COLD_FUNGUS_PICK_PLANT.getId(), List.of(0)));
                 return true;
             }
         }
@@ -899,24 +930,24 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
         // 2. Matter Manufacturing & Think Tank
         Card matter = availableCards.get(MatterManufactoring.class);
         if (matter != null && player.getMc() > 0) {
-            aiTurnService.performBlueAction(game, player, matter.getId(), Map.of());
+            finalizeBlueAction(game, player, matter, Map.of());
             return true;
         }
         Card thinkTank = availableCards.get(ThinkTank.class);
         if (thinkTank != null && player.getMc() > 1) {
-            aiTurnService.performBlueAction(game, player, thinkTank.getId(), Map.of());
+            finalizeBlueAction(game, player, thinkTank, Map.of());
             return true;
         }
 
         // 3. Aquifer Pumping & Solar Punk
         Card aquifer = availableCards.get(AquiferPumping.class);
         if (aquifer != null && player.getSteelIncome() >= 5) {
-            aiTurnService.performBlueAction(game, player, aquifer.getId(), Map.of());
+            finalizeBlueAction(game, player, aquifer, Map.of());
             return true;
         }
         Card solarPunk = availableCards.get(SolarPunk.class);
         if (solarPunk != null && player.getTitaniumIncome() >= 8) {
-            aiTurnService.performBlueAction(game, player, solarPunk.getId(), Map.of());
+            finalizeBlueAction(game, player, solarPunk, Map.of());
             return true;
         }
 
@@ -935,26 +966,10 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
         // 5. Fibrous Composite Material
         Card fibrous = availableCards.get(FibrousCompositeMaterial.class);
         if (fibrous != null && player.getCardResourcesCount().getOrDefault(FibrousCompositeMaterial.class, 0) < 3) {
-            aiTurnService.performBlueAction(game, player, fibrous.getId(), Map.of(InputFlag.ADD_DISCARD_MICROBE.getId(), List.of(1)));
+            finalizeBlueAction(game, player, fibrous, Map.of(InputFlag.ADD_DISCARD_MICROBE.getId(), List.of(1)));
             return true;
         }
 
-        return false;
-    }
-
-    private boolean doMandatoryResourceIntoTerraformingActions(List<TurnType> possibleTurns, MarsGame game, Player player) {
-        if (possibleTurns.contains(TurnType.INCREASE_INFRASTRUCTURE)) {
-            aiTurnService.increaseInfrastructure(player, game, Map.of());
-            return true;
-        }
-        if (possibleTurns.contains(TurnType.INCREASE_TEMPERATURE)) {
-            aiTurnService.increaseTemperature(game, player);
-            return true;
-        }
-        if (possibleTurns.contains(TurnType.PLANT_FOREST)) {
-            aiTurnService.plantForest(game, player);
-            return true;
-        }
         return false;
     }
 
@@ -962,7 +977,7 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
     private boolean performMicrobeAction(MarsGame game, Player player, Map<Class<?>, Card> availableCards, Class<?> clazz, boolean condition) {
         Card card = availableCards.get(clazz);
         if (card != null && condition) {
-            aiTurnService.performBlueAction(game, player, card.getId(), Map.of(InputFlag.ADD_DISCARD_MICROBE.getId(), List.of(1)));
+            finalizeBlueAction(game, player, card, Map.of(InputFlag.ADD_DISCARD_MICROBE.getId(), List.of(1)));
             return true;
         }
         return false;
@@ -972,12 +987,29 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
         if (blueCards.containsKey(RedraftedContracts.class) && !activatedBlueCards.containsCard(blueCards.get(RedraftedContracts.class).getId())) {
             List<Integer> badCards = getBadCardsUpToCount(game, player, 3);
             if (!badCards.isEmpty()) {
-                aiTurnService.performBlueAction(game, player, blueCards.get(RedraftedContracts.class).getId(), Map.of(InputFlag.CARD_CHOICE.getId(), badCards));
+                finalizeBlueAction(game, player, blueCards.get(RedraftedContracts.class), Map.of(InputFlag.CARD_CHOICE.getId(), badCards));
                 return true;
             }
         }
         return false;
     }
 
+    private boolean doMandatoryResourceIntoTerraformingActions(List<TurnType> possibleTurns, MarsGame game, Player player) {
+        if (possibleTurns.contains(TurnType.INCREASE_INFRASTRUCTURE)) {
+            aiTurnService.increaseInfrastructure(player, game, Map.of());
+            return true;
+        }
+        if (possibleTurns.contains(TurnType.INCREASE_TEMPERATURE)) {
+            policyCollectService.mandatoryHeatPlantsConversion(game, player, TurnType.INCREASE_TEMPERATURE);
+            aiTurnService.increaseTemperature(game, player);
+            return true;
+        }
+        if (possibleTurns.contains(TurnType.PLANT_FOREST)) {
+            policyCollectService.mandatoryHeatPlantsConversion(game, player, TurnType.PLANT_FOREST);
+            aiTurnService.plantForest(game, player);
+            return true;
+        }
+        return false;
+    }
 
 }

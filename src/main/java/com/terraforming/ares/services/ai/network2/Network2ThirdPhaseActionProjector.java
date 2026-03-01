@@ -19,7 +19,8 @@ import com.terraforming.ares.services.ai.turnProcessors.frontier.Frontier;
 import com.terraforming.ares.services.ai.turnProcessors.frontier.Node;
 import com.terraforming.ares.services.ai.turnProcessors.frontier.State;
 import com.terraforming.ares.services.ai.turnProcessors.frontier.StateContext;
-import lombok.RequiredArgsConstructor;
+import com.terraforming.ares.services.policyai.PolicyActionCollectService;
+import com.terraforming.ares.services.policyai.PolicyCollectService;
 import org.nd4j.common.io.CollectionUtils;
 import org.springframework.stereotype.Component;
 
@@ -29,7 +30,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
-@RequiredArgsConstructor
 public class Network2ThirdPhaseActionProjector extends AbstractPhaseProcessor {
     private static final double EPS = 5e-4;
     private static final int BEST_NODES_TO_CHECK_FROM_PLAYER = 4;
@@ -56,6 +56,21 @@ public class Network2ThirdPhaseActionProjector extends AbstractPhaseProcessor {
             CityCouncil.class,
             DroneAssistedConstruction.class
     );
+
+    protected Network2ThirdPhaseActionProjector(Network2PaymentService network2PaymentService, PolicyCollectService policyCollectService, PolicyActionCollectService policyActionCollectService, AiTurnService aiTurnService, CardService cardService, AiInputOptimizer aiInputOptimizer, ActionProjectionDataCollector actionProjectionDataCollector, IDataCollect iDataCollect, NNService nnService, AiOptimalBuildService aiOptimalBuildService, AiCardBuildInputAnalyzer aiCardBuildInputAnalyzer, StandardProjectService standardProjectService, Frontier frontier, SelfReplicatingBacteriaService selfReplicatingBacteriaService, AiMarsUniversityInputHandler aiMarsUniversityInputHandler) {
+        super(policyCollectService, policyActionCollectService, aiTurnService, aiMarsUniversityInputHandler, network2PaymentService);
+        this.cardService = cardService;
+        this.aiTurnService = aiTurnService;
+        this.aiInputOptimizer = aiInputOptimizer;
+        this.actionProjectionDataCollector = actionProjectionDataCollector;
+        this.iDataCollect = iDataCollect;
+        this.nnService = nnService;
+        this.aiOptimalBuildService = aiOptimalBuildService;
+        this.aiCardBuildInputAnalyzer = aiCardBuildInputAnalyzer;
+        this.standardProjectService = standardProjectService;
+        this.frontier = frontier;
+        this.selfReplicatingBacteriaService = selfReplicatingBacteriaService;
+    }
 
     public double processTurn(MarsGame game, Player player, Player anotherPlayer) {
         NNService.ModelType modelType = player.isFirstBot() ? NNService.ModelType.FIRST : NNService.ModelType.SECOND;
@@ -616,7 +631,7 @@ public class Network2ThirdPhaseActionProjector extends AbstractPhaseProcessor {
         }
 
         if (virtualEmployee != null) {
-            simulationData.add(actionProjectionDataCollector.virtualEmployee(game, player,opponent, bestPhaseUpgrade, projectByOpponent));
+            simulationData.add(actionProjectionDataCollector.virtualEmployee(game, player, opponent, bestPhaseUpgrade, projectByOpponent));
             actions.add(() -> {
                 aiTurnService.performBlueAction(game, player, virtualEmployee.getId(), Map.of(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(bestPhaseUpgrade)));
                 blueCards.remove(virtualEmployee.getClass());
@@ -624,7 +639,7 @@ public class Network2ThirdPhaseActionProjector extends AbstractPhaseProcessor {
         }
 
         if (fibrousComposite != null) {
-            simulationData.add(actionProjectionDataCollector.fibrousCompositeMaterial(game, player, opponent,bestPhaseUpgrade, projectByOpponent));
+            simulationData.add(actionProjectionDataCollector.fibrousCompositeMaterial(game, player, opponent, bestPhaseUpgrade, projectByOpponent));
             actions.add(() -> {
                 aiTurnService.performBlueAction(game, player, fibrousComposite.getId(), Map.of(
                         InputFlag.ADD_DISCARD_MICROBE.getId(), List.of(3),

@@ -1,7 +1,8 @@
 package com.terraforming.ares.model;
 
-import java.util.List;
-import java.util.Map;
+import com.terraforming.ares.model.parameters.Ocean;
+
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -18,33 +19,9 @@ public class Constants {
 
     public static final int CORPORATION_ID_OFFSET = 10000;
 
-    public static final List<Integer> CORPORATION_PRIORITY = List.of(
-            10006, /* Tharsis */
-            10015, /* MayNi */
-            10104, 10011, /* Saturn */
-            10105, 10012, /* Zetacell */
-            10102, 10009, /* Phobolog */
-            10203, /*Apollo*/
-            10200, /*Sultira*/
-            10017, /* Interplanetary */
-            10003, /* LaunchStar */
-            10002, /* DevTechs */
-            10007, /* Credicor */
-            10005, /* Teractor */
-            10202,/*Exocorp*/
-            10107, 10014, /* Inventrix */
-            10004, /* Thorgate */
-            10103, 10010, /* Mining */
-            10106, 10013, /* Ecoline */
-            10001, /* Celestior */
-            10101, 10008, /* Arclight */
-            10206,/*Nebulabs*/
-            10201,/*Hyperion*/
-            10205,/*Modpro*/
-            10108, 10016, /* UNMI */
-            10100, 10000,/* Helion */
-            10204 /*Austellar*/
-    );
+
+
+
 
 
     public static final int MAX_OCEANS = 9;
@@ -85,25 +62,20 @@ public class Constants {
 
     public static final int ACHIEVEMENTS_SIZE = 3;
 
-    public static final int PHASE_1_NO_UPGRADE = 0;
-    public static final int PHASE_1_UPGRADE_DISCOUNT = 1;
-    public static final int PHASE_1_UPGRADE_BUILD_EXTRA = 2;
+    public static final int PHASE_1_UPGRADE_DISCOUNT = 0;
+    public static final int PHASE_1_UPGRADE_BUILD_EXTRA = 1;
 
-    public static final int PHASE_2_NO_UPGRADE = 3;
-    public static final int PHASE_2_UPGRADE_PROJECT_AND_MC = 4;
-    public static final int PHASE_2_UPGRADE_PROJECT_AND_CARD = 5;
+    public static final int PHASE_2_UPGRADE_PROJECT_AND_MC = 2;
+    public static final int PHASE_2_UPGRADE_PROJECT_AND_CARD = 3;
 
-    public static final int PHASE_3_NO_UPGRADE = 6;
-    public static final int PHASE_3_UPGRADE_DOUBLE_REPEAT = 7;
-    public static final int PHASE_3_UPGRADE_REVEAL_CARDS = 8;
+    public static final int PHASE_3_UPGRADE_DOUBLE_REPEAT = 4;
+    public static final int PHASE_3_UPGRADE_REVEAL_CARDS = 5;
 
-    public static final int PHASE_4_NO_UPGRADE = 9;
-    public static final int PHASE_4_UPGRADE_EXTRA_MC = 10;
-    public static final int PHASE_4_UPGRADE_DOUBLE_PRODUCE = 11;
+    public static final int PHASE_4_UPGRADE_EXTRA_MC = 6;
+    public static final int PHASE_4_UPGRADE_DOUBLE_PRODUCE = 7;
 
-    public static final int PHASE_5_NO_UPGRADE = 12;
-    public static final int PHASE_5_UPGRADE_KEEP_EXTRA = 13;
-    public static final int PHASE_5_UPGRADE_SEE_EXTRA = 14;
+    public static final int PHASE_5_UPGRADE_KEEP_EXTRA = 8;
+    public static final int PHASE_5_UPGRADE_SEE_EXTRA = 9;
 
     public static final int TOTAL_CARDS_COUNT = 268;
 

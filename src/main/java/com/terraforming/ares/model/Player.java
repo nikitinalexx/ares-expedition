@@ -3,7 +3,10 @@ package com.terraforming.ares.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.terraforming.ares.model.turn.Turn;
 import com.terraforming.ares.services.ai.dto.BuildContext;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
@@ -214,7 +217,11 @@ public class Player {
     }
 
     public boolean hasPhaseUpgrade(int upgrade) {
-        return phaseCards.get(upgrade / 3) == (upgrade % 3);
+        int index = upgrade / 2;
+        int expected = upgrade % 2;
+        int phaseUpgrade = phaseCards.get(index);
+
+        return phaseUpgrade > 0 && phaseUpgrade - 1 == expected;
     }
 
     public boolean isPhaseUpgraded(int phase) {

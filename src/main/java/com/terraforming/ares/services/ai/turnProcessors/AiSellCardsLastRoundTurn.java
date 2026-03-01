@@ -3,9 +3,12 @@ package com.terraforming.ares.services.ai.turnProcessors;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ai.AiCardsChoice;
+import com.terraforming.ares.model.ai.AiExperimentalTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.ICardValueService;
+import com.terraforming.ares.services.ai.network2.Network2DiscardCardsProcessor;
+import com.terraforming.ares.services.policyai.PolicyCollectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -23,6 +26,8 @@ public class AiSellCardsLastRoundTurn implements AiTurnProcessor {
     private final AiTurnService aiTurnService;
     private final ICardValueService cardValueService;
     private final AiPickCardProjectionService aiPickCardProjectionService;
+    private final Network2DiscardCardsProcessor network2DiscardCardsProcessor;
+    private final PolicyCollectService policyCollectService;
 
     @Override
     public TurnType getType() {
@@ -37,7 +42,14 @@ public class AiSellCardsLastRoundTurn implements AiTurnProcessor {
 
         List<Integer> cardsToSell = new ArrayList<>();
 
-        if (player.getDifficulty().CARDS_PICK == AiCardsChoice.NETWORK_PROJECTION) {
+        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
+            List<Integer> cardsToKeep = network2DiscardCardsProcessor.getBestCards(game, player, allCards, 10);
+            cardsToSell.addAll(allCards);
+            cardsToSell.removeAll(cardsToKeep);
+
+            policyCollectService.sellCardsAfterGenerationEnd(game, player, cardsToSell);
+
+        } else if (player.getDifficulty().CARDS_PICK == AiCardsChoice.NETWORK_PROJECTION) {
             cardsToSell = aiPickCardProjectionService.getCardsToSell(game, player, allCards, cardsToSellCount);
         } else {
             for (int i = 0; i < cardsToSellCount; i++) {

@@ -69,7 +69,7 @@ public class MarsUniversity implements BlueCard {
 
         Card cardToDiscard = cardService.getCard(cardIdToDiscard);
 
-        int cardsToReceive = cardToDiscard.getTags().contains(Tag.PLANT) || cardToDiscard.getTags().contains(Tag.DYNAMIC) ? 2 : 1;
+        int cardsToReceive = (cardToDiscard.getTags().contains(Tag.PLANT) || cardToDiscard.getTags().contains(Tag.DYNAMIC)) ? 2 : 1;
 
         for (Integer dealedCard : cardService.dealCards(game, cardsToReceive)) {
             player.getHand().addCard(dealedCard);

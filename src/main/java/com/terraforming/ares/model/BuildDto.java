@@ -1,5 +1,6 @@
 package com.terraforming.ares.model;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -9,6 +10,7 @@ import lombok.NoArgsConstructor;
  */
 @Getter
 @NoArgsConstructor
+@EqualsAndHashCode
 public class BuildDto {
     BuildType type;
     int extraDiscount;

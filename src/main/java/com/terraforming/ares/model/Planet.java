@@ -20,6 +20,7 @@ public class Planet {
     @Singular
     private Map<GlobalParameter, MeasurableGlobalParameter> measurableGlobalParameters;
     private List<Ocean> oceans;
+    @Getter
     private int lastOpenedOceanIndex;
 
     public Planet(Planet copy) {

@@ -19,6 +19,7 @@ import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.dto.PhaseChoiceProjection;
 import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
 import com.terraforming.ares.services.ai.network2.Network2PickPhaseService;
+import com.terraforming.ares.services.policyai.PolicyCollectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -47,6 +48,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
     private final AiThirdPhaseProjectionService aiThirdPhaseProjectionService;
     private final AiCardValidationService aiCardValidationService;
     private final Network2PickPhaseService network2PickPhaseService;
+    private final PolicyCollectService policyCollectService;
 
     @Override
     public TurnType getType() {
@@ -73,6 +75,8 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                     return value + 1;
                 });
             }
+
+            policyCollectService.choosePhase(game, player, phaseId);
             aiTurnService.choosePhaseTurn(player, phaseId);
             return true;
         }

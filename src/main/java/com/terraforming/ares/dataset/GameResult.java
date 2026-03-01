@@ -3,9 +3,7 @@ package com.terraforming.ares.dataset;
 import com.terraforming.ares.services.simulations.FloatArrayWrapper;
 import lombok.Getter;
 
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by oleksii.nikitin

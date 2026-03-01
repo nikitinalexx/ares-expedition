@@ -1,19 +1,22 @@
 package com.terraforming.ares.services.ai;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.Card;
+import com.terraforming.ares.model.CardAction;
+import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.StandardProjectType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.SpecialEffectsService;
 import com.terraforming.ares.services.StandardProjectService;
 import com.terraforming.ares.services.ai.turnProcessors.AiTurnService;
+import com.terraforming.ares.services.policyai.PolicyCollectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -23,6 +26,7 @@ public class AiEndgameService {
     private final TestAiService testAiService;
     private final CardService cardService;
     private final SpecialEffectsService specialEffectsService;
+    private final PolicyCollectService policyCollectService;
 
     public boolean doFinalActionsIfGameFinished(MarsGame game, Player player) {
         if (!game.gameEndCondition()) {
@@ -76,16 +80,17 @@ public class AiEndgameService {
     public boolean isFinishingGame(MarsGame game, Player player) {
         if (!game.gameEndCondition() && canFinishGame(game, player)) {
             if (!player.getHand().isEmpty()) {
+                policyCollectService.sellCards(game, player, player.getHand().getCards().stream().map(cardService::getCard).collect(Collectors.toList()));
                 aiTurnService.sellCards(player, game, new ArrayList<>(player.getHand().getCards()));
             }
             while (game.getPlanet().temperatureLeft() > 0) {
-                aiTurnService.standardProjectTurn(game, player, StandardProjectType.TEMPERATURE);
+                finalizeStandardProject(game, player, StandardProjectType.TEMPERATURE);
             }
             while (game.getPlanet().oxygenLeft() > 0) {
-                aiTurnService.standardProjectTurn(game, player, StandardProjectType.FOREST);
+                finalizeStandardProject(game, player, StandardProjectType.FOREST);
             }
             while (game.getPlanet().oceansLeft() > 0) {
-                aiTurnService.standardProjectTurn(game, player, StandardProjectType.OCEAN);
+                finalizeStandardProject(game, player, StandardProjectType.OCEAN);
             }
             while (game.getPlanet().infrastructureLeft() > 0) {
                 aiTurnService.standardProjectTurn(game, player, StandardProjectType.INFRASTRUCTURE);
@@ -93,6 +98,11 @@ public class AiEndgameService {
             return true;
         }
         return false;
+    }
+
+    private void finalizeStandardProject(MarsGame game, Player player, StandardProjectType standardProjectType) {
+        policyCollectService.standardProjectTurn(game, player, standardProjectType);
+        aiTurnService.standardProjectTurn(game, player, standardProjectType);
     }
 
     public boolean canFinishGame(MarsGame game, Player player) {

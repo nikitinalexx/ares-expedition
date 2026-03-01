@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class PhaseUpgradeStep implements DecisionStep {
 
@@ -103,8 +104,14 @@ public class PhaseUpgradeStep implements DecisionStep {
         }
 
         if (bestIndex != -1) {
+            Integer upgradeId = upgradesToSimulate.get(bestIndex);
+            int phase = upgradeId / 2;
+            int upgradeType = upgradeId % 2;
+            if (phase == 3 &&  upgradeType == 0 && (game.getTurns() > 10  && ThreadLocalRandom.current().nextInt(10) < 8 || game.getTurns() <= 10 && ThreadLocalRandom.current().nextInt(10) < 5)) {
+                upgradeId++;
+            }
             optimizedInputDecisions.setBestPhaseUpgradeOverall(
-                    new DecisionWithPrediction<>(upgradesToSimulate.get(bestIndex), predictions.get(bestIndex))
+                    new DecisionWithPrediction<>(upgradeId, predictions.get(bestIndex))
             );
         }
 

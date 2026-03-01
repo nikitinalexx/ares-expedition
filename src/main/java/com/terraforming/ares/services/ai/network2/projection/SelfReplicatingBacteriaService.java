@@ -9,10 +9,12 @@ import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.ai.AiConstants;
-import com.terraforming.ares.services.ai.turnProcessors.AiTurnService;
+import com.terraforming.ares.services.ai.network2.AbstractPhaseProcessor;
+import com.terraforming.ares.services.ai.network2.Network2PaymentService;
 import com.terraforming.ares.services.ai.network2.buildParams.AiMarsUniversityInputHandler;
-import com.terraforming.ares.services.ai.network2.dto.CardWithChanceAndInput;
-import lombok.RequiredArgsConstructor;
+import com.terraforming.ares.services.ai.turnProcessors.AiTurnService;
+import com.terraforming.ares.services.policyai.PolicyActionCollectService;
+import com.terraforming.ares.services.policyai.PolicyCollectService;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -21,38 +23,35 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-@RequiredArgsConstructor
-public class SelfReplicatingBacteriaService {
-    private final AiTurnService aiTurnService;
+public class SelfReplicatingBacteriaService extends AbstractPhaseProcessor {
     private final ScenarioEngine scenarioEngine;
     private final BatchProjectionService batchProjectionService;
-    private final AiMarsUniversityInputHandler aiMarsUniversityInputHandler;
 
-    private List<Class<?>> MICROBE_APPLY_ORDER = List.of(
-            SymbioticFungus.class,
-            ExtremeColdFungus.class,
-            ConservedBiome.class
-    );
-
-    private Map<Class<?>, Integer> CARD_TO_INPUT_FLAG = Map.of(
+    private final Map<Class<?>, Integer> CARD_TO_INPUT_FLAG = Map.of(
             SymbioticFungus.class, InputFlag.CARD_CHOICE.getId(),
             ExtremeColdFungus.class, InputFlag.EXTREME_COLD_FUNGUS_PUT_MICROBE.getId(),
             ConservedBiome.class, InputFlag.CARD_CHOICE.getId(),
             SelfReplicatingBacteria.class, InputFlag.ADD_DISCARD_MICROBE.getId()
     );
 
+    public SelfReplicatingBacteriaService(Network2PaymentService network2PaymentService, AiTurnService aiTurnService, ScenarioEngine scenarioEngine, BatchProjectionService batchProjectionService, AiMarsUniversityInputHandler aiMarsUniversityInputHandler, PolicyCollectService policyCollectService, PolicyActionCollectService policyActionCollectService) {
+        super(policyCollectService, policyActionCollectService, aiTurnService, aiMarsUniversityInputHandler, network2PaymentService);
+        this.scenarioEngine = scenarioEngine;
+        this.batchProjectionService = batchProjectionService;
+    }
+
     public MarsGame simulateSelfReplicatingBacteriaFinalActions(Map<Class<?>, Card> blueCards, MarsGame game, Player player) {
         MarsGame simGame = new MarsGame(game);
         Player simPlayer = simGame.getPlayerByUuid(player.getUuid());
 
-        return tryDoingSelfReplicatingBacteria(blueCards, simGame, simPlayer, true);
+        return doSelfReplicatingBacteria(blueCards, simGame, simPlayer, true);
     }
 
-    public MarsGame doSelfReplicatingBacteriaFinalActions(Map<Class<?>, Card> blueCards, MarsGame game, Player player) {
-        return tryDoingSelfReplicatingBacteria(blueCards, game, player, false);
+    public void doSelfReplicatingBacteriaFinalActions(Map<Class<?>, Card> blueCards, MarsGame game, Player player) {
+        doSelfReplicatingBacteria(blueCards, game, player, false);
     }
 
-    private MarsGame tryDoingSelfReplicatingBacteria(Map<Class<?>, Card> blueCards, MarsGame simGame, Player simPlayer, boolean isSimulation) {
+    private MarsGame doSelfReplicatingBacteria(Map<Class<?>, Card> blueCards, MarsGame simGame, Player simPlayer, boolean isSimulation) {
         if (!blueCards.containsKey(SelfReplicatingBacteria.class)) return null;
 
         Card selfCard = blueCards.get(SelfReplicatingBacteria.class);
@@ -70,7 +69,7 @@ public class SelfReplicatingBacteriaService {
             if (blueCards.containsKey(clazz)) {
                 Card donor = blueCards.get(clazz);
                 if (canDoFirstActivation(simPlayer, donor) && getMicrobes(simPlayer) < 5) {
-                    executeMicrobeAction(simGame, simPlayer, donor, selfCard);
+                    executeMicrobeAction(simGame, simPlayer, donor, selfCard, isSimulation);
                 }
             }
         }
@@ -80,7 +79,7 @@ public class SelfReplicatingBacteriaService {
             if (blueCards.containsKey(clazz)) {
                 Card donor = blueCards.get(clazz);
                 if (extraLeft > 0 && getMicrobes(simPlayer) < 5 && canDoExtraActivation(simPlayer, donor)) {
-                    executeMicrobeAction(simGame, simPlayer, donor, selfCard);
+                    executeMicrobeAction(simGame, simPlayer, donor, selfCard, isSimulation);
                     extraLeft--;
                 }
             }
@@ -91,14 +90,14 @@ public class SelfReplicatingBacteriaService {
 
         // Если нам не хватает 1 микроба до 5, мы обязаны сделать базовую активацию, доп активация здесь уже никак не поможет
         if (current == 4 && canDoFirstActivation(simPlayer, selfCard)) {
-            executeMicrobeAction(simGame, simPlayer, selfCard, selfCard);// Сама на себя (+1)
+            executeMicrobeAction(simGame, simPlayer, selfCard, selfCard, isSimulation);// Сама на себя (+1)
             current++;
         }
 
         // Если у нас уже есть 5 микробов и либо основное, либо доп действие, то делаем
         if (current >= 5) {
             if (canDoFirstActivation(simPlayer, selfCard) || extraLeft > 0 && canDoExtraActivation(simPlayer, selfCard)) {
-                executeSelfReplicateFinalAction(simGame, simPlayer, selfCard);
+                executeSelfReplicateFinalAction(simGame, simPlayer, selfCard, isSimulation);
                 return buildProjectScenario(simGame, simPlayer, isSimulation);
             }
         }
@@ -138,12 +137,12 @@ public class SelfReplicatingBacteriaService {
                 break;
             } else if (bestScenario != null && bestScenario.getFirstStepType() == Scenario.ActionType.BUILD) {
                 builtSomething = true;
-                finalizeBuildProject(game, player, bestScenario.getFirstStepCardData());
+                finalizeBuildProject(game, player, bestScenario.getFirstStepCardData(), isSimulation);
             } else if (bestScenario != null && bestScenario.getFirstStepType() == Scenario.ActionType.UNMI) {
-                aiTurnService.unmiRtCorporationTurn(game, player);
+                finalizeUnmiTurn(game, player, isSimulation);
             } else if (bestScenario != null && bestScenario.getFirstStepType() == Scenario.ActionType.EXTRA_BONUS) {
                 int handSizeBeforeAction = player.getHand().size();
-                aiTurnService.pickExtraCardTurnSync(player, game);
+                finalizeDoExtraAction(game, player, isSimulation);
                 if (isSimulation && (player.getHand().size() > handSizeBeforeAction)) {
                     player.getHand().getCards().removeLast();
                     player.getHand().addCard(AiConstants.GENERIC_DUMMY_ID);
@@ -162,23 +161,12 @@ public class SelfReplicatingBacteriaService {
         }
     }
 
-    private void finalizeBuildProject(MarsGame game, Player player, CardWithChanceAndInput bestCard) {
-        Map<Integer, List<Integer>> params = bestCard.getInputParameters();
-
-        // Логика Mars University
-        if (params.containsKey(InputFlag.MARS_UNIVERSITY_DUMMY_INPUT.getId())) {
-            aiMarsUniversityInputHandler.updateMarsUniversityInput(game, player, bestCard.getCard().getId(), params);
-        }
-
-        aiTurnService.buildProject(game, player, bestCard.getCard().getId(), bestCard.getPayments(), params);
+    private void executeMicrobeAction(MarsGame game, Player player, Card donor, Card selfCard, boolean isSimulation) {
+        finalizeBlueAction(game, player, donor, Map.of(CARD_TO_INPUT_FLAG.get(donor.getClass()), List.of((donor == selfCard ? 1 : selfCard.getId()))), isSimulation);
     }
 
-    private void executeMicrobeAction(MarsGame game, Player player, Card donor, Card selfCard) {
-        aiTurnService.performBlueAction(game, player, donor.getId(), Map.of(CARD_TO_INPUT_FLAG.get(donor.getClass()), List.of((donor == selfCard ? 1 : selfCard.getId()))));
-    }
-
-    private void executeSelfReplicateFinalAction(MarsGame game, Player player, Card selfCard) {
-        aiTurnService.performBlueAction(game, player, selfCard.getId(), Map.of(CARD_TO_INPUT_FLAG.get(selfCard.getClass()), List.of(5)));
+    private void executeSelfReplicateFinalAction(MarsGame game, Player player, Card selfCard, boolean isSimulation) {
+        finalizeBlueAction(game, player, selfCard, Map.of(CARD_TO_INPUT_FLAG.get(selfCard.getClass()), List.of(5)), isSimulation);
     }
 
     private int getMicrobes(Player p) {

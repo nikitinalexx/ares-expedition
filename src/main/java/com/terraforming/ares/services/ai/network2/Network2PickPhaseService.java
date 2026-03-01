@@ -8,7 +8,6 @@ import com.terraforming.ares.services.DraftCardsService;
 import com.terraforming.ares.services.SpecialEffectsService;
 import com.terraforming.ares.services.ai.AiConstants;
 import com.terraforming.ares.services.ai.advanced.IDataCollect;
-import com.terraforming.ares.services.ai.advanced.features.hand.AllHandCardsFeature;
 import com.terraforming.ares.services.ai.dl4j.NNService;
 import com.terraforming.ares.services.ai.dl4j.Prediction;
 import com.terraforming.ares.services.ai.network2.projection.*;
@@ -33,9 +32,7 @@ public class Network2PickPhaseService {
     private final IDataCollect iDataCollect;
     private final CardService cardService;
     private final DraftCardsService draftCardsService;
-    private final Network2ProjectBuildService network2ProjectBuildService;
     private final Network2ThirdPhaseActionProjector network2ThirdPhaseActionProjector;
-    private final SpecialEffectsService specialEffectsService;
 
     public int pickPhase(MarsGame game, Player player) {
         return pickPhaseNoExploration(game, player);
@@ -425,7 +422,7 @@ public class Network2PickPhaseService {
         for (Integer cardId : sampleCards) {
             float[] state = baseVector.clone();
 
-            int bitIndex =  AllHandCardsFeature.INDEX_BY_CLASS.get(cardService.getCard(cardId).getClass());
+            int bitIndex = AiConstants.ALL_CARDS_INDEX_BY_CLASS.get(cardService.getCard(cardId).getClass());
             state[AiConstants.HAND_BIT_MASKS_OFFSET + bitIndex] = 1f;
 
             preScoreStates.add(state);
@@ -457,7 +454,7 @@ public class Network2PickPhaseService {
 
             for (int j = 0; j < cardsToKeep; j++) {
                 int cardId = bestToKeep.get(j);
-                int bitIndex =  AllHandCardsFeature.INDEX_BY_CLASS.get(cardService.getCard(cardId).getClass());
+                int bitIndex = AiConstants.ALL_CARDS_INDEX_BY_CLASS.get(cardService.getCard(cardId).getClass());
                 state[AiConstants.HAND_BIT_MASKS_OFFSET + bitIndex] = 1f;
             }
             synergyStates.add(state);

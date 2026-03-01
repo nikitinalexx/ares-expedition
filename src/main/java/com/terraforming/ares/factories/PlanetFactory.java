@@ -106,7 +106,7 @@ public class PlanetFactory {
     }
 
     private List<Ocean> generateOceans(GameParameters gameParameters) {
-        List<Ocean> oceans = new ArrayList<>(Arrays.asList(
+        List<Ocean> oceans = new ArrayList<>(List.of(
                 new Ocean(0, 0, 2),
                 new Ocean(0, 4, 0),
                 new Ocean(1, 1, 0),

@@ -1,7 +1,11 @@
 package com.terraforming.ares.services.ai.advanced;
 
+import lombok.Getter;
+
 public class FeatureWriter {
+    @Getter
     private final float[] data;
+    @Getter
     private int index;
 
     public FeatureWriter(int size) {
@@ -12,8 +16,8 @@ public class FeatureWriter {
         data[index++] = value;
     }
 
-    public float[] getData() {
-        return data;
+    public void skip(int count) {
+        index += count;
     }
 
 }

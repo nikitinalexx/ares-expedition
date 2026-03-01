@@ -4,16 +4,17 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardColor;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.ai.AiExperimentalTurn;
 import com.terraforming.ares.model.ai.AiTurnChoice;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.TerraformingService;
+import com.terraforming.ares.services.ai.advanced.IDataCollect;
+import com.terraforming.ares.services.ai.dl4j.NNService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +22,8 @@ public class AiCollectIncomePhaseService {
     private final DeepNetwork deepNetwork;
     private final CardService cardService;
     private final TerraformingService terraformingService;
+    private final IDataCollect iDataCollect;
+    private final NNService nnService;
 
     public Integer getDoubleIncomeCard(MarsGame game, Player player) {
         Integer doubleIncomeCard = null;
@@ -31,7 +34,7 @@ public class AiCollectIncomePhaseService {
             return null;
         }
 
-        if (player.getDifficulty().PICK_PHASE == AiTurnChoice.RANDOM) {
+        if (player.getDifficulty().PICK_PHASE == AiTurnChoice.RANDOM && player.getDifficulty().EXPERIMENTAL_TURN != AiExperimentalTurn.EXPERIMENT) {
             return greenCards.get(ThreadLocalRandom.current().nextInt(greenCards.size())).getId();
         }
 
@@ -42,7 +45,9 @@ public class AiCollectIncomePhaseService {
 
         float initialState = 0;
 
-        if (player.getDifficulty().PICK_PHASE == AiTurnChoice.NETWORK) {
+        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
+            initialState = (float) nnService.predictBatch(List.of(iDataCollect.collectData(game, player.getUuid())), player).getFirst().baseProb;
+        } else if (player.getDifficulty().PICK_PHASE == AiTurnChoice.NETWORK) {
             initialState = deepNetwork.testState(game, player);
         }
 
@@ -68,6 +73,9 @@ public class AiCollectIncomePhaseService {
     }
 
     private float analyzeStateAfterIncome(MarsGame game, Player player, Player playerCopy, boolean canIncreaseOxygen) {
+        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
+            return (float) nnService.predictBatch(List.of(iDataCollect.collectData(game, player.getUuid())), player).getFirst().baseProb;
+        }
         switch (player.getDifficulty().PICK_PHASE) {
             case SMART:
             case RANDOM:

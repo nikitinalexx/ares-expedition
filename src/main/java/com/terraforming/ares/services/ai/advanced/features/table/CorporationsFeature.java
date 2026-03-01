@@ -78,6 +78,7 @@ public class CorporationsFeature implements FeatureBlock {
         }
     }
 
+    //16
     private final List<Class<?>> CORPORATIONS_WITH_SINGLE_FLAG = List.of(
             CelestiorCorporation.class,
             ThorgateCorporation.class,

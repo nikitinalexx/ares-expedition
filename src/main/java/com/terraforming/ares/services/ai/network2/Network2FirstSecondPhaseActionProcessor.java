@@ -1,13 +1,20 @@
 package com.terraforming.ares.services.ai.network2;
 
+import com.terraforming.ares.cards.red.ImportedHydrogen;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.TurnType;
+import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.ai.AiConstants;
+import com.terraforming.ares.services.ai.advanced.TableContext;
 import com.terraforming.ares.services.ai.network2.buildParams.AiMarsUniversityInputHandler;
 import com.terraforming.ares.services.ai.network2.dto.CardWithChanceAndInput;
 import com.terraforming.ares.services.ai.network2.projection.*;
 import com.terraforming.ares.services.ai.turnProcessors.AiTurnService;
+import com.terraforming.ares.services.policyai.PolicyActionCollectService;
+import com.terraforming.ares.services.policyai.PolicyCollectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -15,25 +22,64 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Component
-@RequiredArgsConstructor
-public class Network2FirstSecondPhaseActionProcessor {
+public class Network2FirstSecondPhaseActionProcessor extends AbstractPhaseProcessor {
     private final AiTurnService aiTurnService;
     private final BatchProjectionService batchProjectionService;
     private final ScenarioEngine scenarioEngine;
-    private final AiMarsUniversityInputHandler aiMarsUniversityInputHandler;
     private final Network2DraftCardsProjectionService network2DraftCardsProjectionService;
     private final BaseChanceProjectionService baseChanceProjectionService;
+    private final PolicyCollectService policyCollectService;
+    private final CardService cardService;
+
+    public Network2FirstSecondPhaseActionProcessor(Network2PaymentService network2PaymentService, AiTurnService aiTurnService, BatchProjectionService batchProjectionService, ScenarioEngine scenarioEngine, AiMarsUniversityInputHandler aiMarsUniversityInputHandler, Network2DraftCardsProjectionService network2DraftCardsProjectionService, BaseChanceProjectionService baseChanceProjectionService, PolicyCollectService policyCollectService, CardService cardService, PolicyActionCollectService policyActionCollectService) {
+        super(policyCollectService, policyActionCollectService, aiTurnService, aiMarsUniversityInputHandler, network2PaymentService);
+        this.aiTurnService = aiTurnService;
+        this.batchProjectionService = batchProjectionService;
+        this.scenarioEngine = scenarioEngine;
+        this.network2DraftCardsProjectionService = network2DraftCardsProjectionService;
+        this.baseChanceProjectionService = baseChanceProjectionService;
+        this.policyCollectService = policyCollectService;
+        this.cardService = cardService;
+    }
 
     public void processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
-        network2DraftCardsProjectionService.performProactiveSale(game, player);
+        if (AiConstants.ENABLE_SELL_AND_HEAT_EXPLORATION && ThreadLocalRandom.current().nextInt(10) == 0) {
+            network2DraftCardsProjectionService.performProactiveSale(game, player);
+        }
+
+        // 1. Увеличим частоту проверки до 30%, чтобы чаще видеть это в логах
+        if (AiConstants.ENABLE_SELL_AND_HEAT_EXPLORATION && ThreadLocalRandom.current().nextInt(10) < 3) {
+            boolean isHelion = player.getSelectedCorporationCard() != null
+                    && cardService.getCard(player.getSelectedCorporationCard()).getCardMetadata().getCardAction() == CardAction.HELION_CORPORATION;
+
+            if (isHelion && player.getHeat() > 0) {
+
+                // 3. Или если денег просто критически мало (меньше 10)
+                boolean isBroke = player.getMc() < 10;
+
+                if (isBroke) {
+                    int targetBalance = 10 + ThreadLocalRandom.current().nextInt(5);
+                    int needed = targetBalance - player.getMc();
+
+                    if (needed > 0) {
+                        int toExchange = Math.min(player.getHeat(), needed);
+                        policyCollectService.helionExchangeHeat(game, player, toExchange);
+                        player.setMc(player.getMc() + toExchange);
+                        player.setHeat(player.getHeat() - toExchange);
+                    }
+
+                }
+            }
+        }
 
         // 1. Генерируем все возможные цепочки действий (сценарии)
         // Внутри этого метода происходит вся рекурсия и симуляция стейтов
         List<Scenario> scenarios = scenarioEngine.generateAllScenarios(game, player);
         if (scenarios.isEmpty()) {
-            aiTurnService.skipTurn(player);
+            skipTurn(game, player);
             return;
         }
 
@@ -69,32 +115,25 @@ public class Network2FirstSecondPhaseActionProcessor {
 //            logScenarioSelection(bestScenario, currentProb); // Опционально: лог того, что выбрал бот
             executeFirstStep(game, player, bestScenario);
         } else {
-            // Если ни один сценарий не улучшил позицию — пасуем
-            aiTurnService.skipTurn(player);
+            skipTurn(game, player);
         }
+    }
+
+    private void skipTurn(MarsGame game, Player player) {
+        policyCollectService.skipTurn(game, player);
+        // Если ни один сценарий не улучшил позицию — пасуем
+        aiTurnService.skipTurn(player);
     }
 
     private void executeFirstStep(MarsGame game, Player player, Scenario bestScenario) {
         switch (bestScenario.getFirstStepType()) {
-            case BUILD -> finalizeBuildProject(game, player, bestScenario.getFirstStepCardData());
-            case UNMI -> aiTurnService.unmiRtCorporationTurn(game, player);
-            case EXTRA_BONUS -> aiTurnService.pickExtraCardTurnAsync(player);
-            case SKIP -> aiTurnService.skipTurn(player);
+            case BUILD -> finalizeBuildProject(game, player, bestScenario.getFirstStepCardData(), false);
+            case UNMI -> finalizeUnmiTurn(game, player);
+            case EXTRA_BONUS -> finalizeDoExtraAction(game, player);
+            case SKIP -> skipTurn(game, player);
         }
     }
 
-    /**
-     * Инкапсулированная логика донастройки параметров (Mars University и т.д.) и самого хода
-     */
-    private void finalizeBuildProject(MarsGame game, Player player, CardWithChanceAndInput bestCard) {
-        Map<Integer, List<Integer>> params = bestCard.getInputParameters();
 
-        // Логика Mars University
-        if (params.containsKey(InputFlag.MARS_UNIVERSITY_DUMMY_INPUT.getId())) {
-            aiMarsUniversityInputHandler.updateMarsUniversityInput(game, player, bestCard.getCard().getId(), params);
-        }
-
-        aiTurnService.buildProject(game, player, bestCard.getCard().getId(), bestCard.getPayments(), params);
-    }
 
 }
