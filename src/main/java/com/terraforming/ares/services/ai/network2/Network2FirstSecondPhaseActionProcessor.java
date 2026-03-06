@@ -1,27 +1,21 @@
 package com.terraforming.ares.services.ai.network2;
 
-import com.terraforming.ares.cards.red.ImportedHydrogen;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.CardAction;
-import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.ai.AiConstants;
-import com.terraforming.ares.services.ai.advanced.TableContext;
 import com.terraforming.ares.services.ai.network2.buildParams.AiMarsUniversityInputHandler;
-import com.terraforming.ares.services.ai.network2.dto.CardWithChanceAndInput;
 import com.terraforming.ares.services.ai.network2.projection.*;
 import com.terraforming.ares.services.ai.turnProcessors.AiTurnService;
 import com.terraforming.ares.services.policyai.PolicyActionCollectService;
 import com.terraforming.ares.services.policyai.PolicyCollectService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Component
@@ -46,35 +40,6 @@ public class Network2FirstSecondPhaseActionProcessor extends AbstractPhaseProces
     }
 
     public void processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
-        if (AiConstants.ENABLE_SELL_AND_HEAT_EXPLORATION && ThreadLocalRandom.current().nextInt(10) == 0) {
-            network2DraftCardsProjectionService.performProactiveSale(game, player);
-        }
-
-        // 1. Увеличим частоту проверки до 30%, чтобы чаще видеть это в логах
-        if (AiConstants.ENABLE_SELL_AND_HEAT_EXPLORATION && ThreadLocalRandom.current().nextInt(10) < 3) {
-            boolean isHelion = player.getSelectedCorporationCard() != null
-                    && cardService.getCard(player.getSelectedCorporationCard()).getCardMetadata().getCardAction() == CardAction.HELION_CORPORATION;
-
-            if (isHelion && player.getHeat() > 0) {
-
-                // 3. Или если денег просто критически мало (меньше 10)
-                boolean isBroke = player.getMc() < 10;
-
-                if (isBroke) {
-                    int targetBalance = 10 + ThreadLocalRandom.current().nextInt(5);
-                    int needed = targetBalance - player.getMc();
-
-                    if (needed > 0) {
-                        int toExchange = Math.min(player.getHeat(), needed);
-                        policyCollectService.helionExchangeHeat(game, player, toExchange);
-                        player.setMc(player.getMc() + toExchange);
-                        player.setHeat(player.getHeat() - toExchange);
-                    }
-
-                }
-            }
-        }
-
         // 1. Генерируем все возможные цепочки действий (сценарии)
         // Внутри этого метода происходит вся рекурсия и симуляция стейтов
         List<Scenario> scenarios = scenarioEngine.generateAllScenarios(game, player);

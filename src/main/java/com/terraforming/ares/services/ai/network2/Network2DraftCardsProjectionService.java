@@ -28,8 +28,6 @@ public class Network2DraftCardsProjectionService {
     private final CardService cardService;
     private final NNService nnService;
     private final AdvancedAiDataCollectionService iDataCollect;
-    private final PolicyCollectService policyCollectService;
-
 
     public List<CardWithChanceModifier> cardsToDiscardByProjectedValue(MarsGame marsGame, Player player) {
         List<Integer> handCards = new ArrayList<>(player.getHand().getCards());
@@ -107,44 +105,6 @@ public class Network2DraftCardsProjectionService {
         results.sort(Comparator.comparingDouble(CardWithChanceModifier::getChance).reversed());
 
         return results;
-    }
-
-    private final SpecialEffectsService specialEffectsService;
-    private final AiTurnService aiTurnService;
-
-    public void performProactiveSale(MarsGame game, Player player) {
-        List<Integer> hand = new ArrayList<>(player.getHand().getCards());
-        if (hand.isEmpty()) return;
-
-        int cardPrice = specialEffectsService.getCardPrice(player);
-
-        // 3. Оцениваем каждую карту на "токсичность"
-        List<float[]> statesWithCardSold = new ArrayList<>();
-        statesWithCardSold.add(iDataCollect.collectData(game, player.getUuid()));
-
-        for (Integer cardId : hand) {
-            player.getHand().removeCard(cardId);
-            player.setMc(player.getMc() + cardPrice);
-
-            statesWithCardSold.add(iDataCollect.collectData(game, player.getUuid()));
-            player.setMc(player.getMc() - cardPrice); // Откат
-            player.getHand().addCard(cardId);
-        }
-
-        List<Prediction> preds = nnService.predictBatch(statesWithCardSold, player);
-        double baseProb = preds.removeFirst().baseProb;
-
-        for (int i = 0; i < hand.size(); i++) {
-            int cardId = hand.get(i);
-            double probWithoutCard = preds.get(i).baseProb;
-
-            double relativeImprovement = (probWithoutCard - baseProb) / (1.0001 - baseProb);
-            if (relativeImprovement > 0.01) { // Улучшение шансов на 1% от оставшегося пути к победе
-                policyCollectService.sellCards(game, player, List.of(cardService.getCard(cardId)));
-                aiTurnService.sellCards(player, game, List.of(cardId));
-                return;
-            }
-        }
     }
 
 }

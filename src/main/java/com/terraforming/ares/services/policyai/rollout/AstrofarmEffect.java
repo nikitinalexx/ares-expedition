@@ -9,6 +9,7 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.policyai.ResourceHelper;
 import com.terraforming.ares.services.policyai.action.ActionInputService;
+import com.terraforming.ares.services.policyai.action.HeadAction;
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
 import org.apache.commons.collections4.CollectionUtils;
 
@@ -54,8 +55,8 @@ public class AstrofarmEffect extends AbstractTagEffect {
 
         return List.of(new EffectDecision() {
             @Override
-            public int getChosenAction() {
-                return ActionInputService.getMicrobeTargetActionIndex(target);
+            public HeadAction getChosenAction() {
+                return ActionInputService.getMicrobeTargetAction(target);
             }
 
             @Override
@@ -63,11 +64,6 @@ public class AstrofarmEffect extends AbstractTagEffect {
                 rolloutMicrobe(target.getClass(), record, 2);
             }
         });
-    }
-
-    @Override
-    public void applySideEffect(PolicyRecord record) {
-        rolloutMicrobe(cardService.getCard(putResource.getFirst()).getClass(), record, 2);
     }
 
 }

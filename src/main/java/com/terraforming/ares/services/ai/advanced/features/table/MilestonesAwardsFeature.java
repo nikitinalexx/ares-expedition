@@ -8,7 +8,6 @@ import com.terraforming.ares.model.awards.BaseAward;
 import com.terraforming.ares.model.milestones.Milestone;
 import com.terraforming.ares.model.milestones.MilestoneType;
 import com.terraforming.ares.services.CardService;
-import com.terraforming.ares.services.ai.AiConstants;
 import com.terraforming.ares.services.ai.advanced.FeatureWriter;
 import com.terraforming.ares.services.ai.advanced.TableContext;
 import com.terraforming.ares.services.ai.advanced.features.FeatureBlock;
@@ -18,6 +17,8 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
+
+import static com.terraforming.ares.services.ai.AiConstants.AWARD_TYPES;
 
 public class MilestonesAwardsFeature implements FeatureBlock {
     private static final List<String> FEATURE_NAMES = List.of(
@@ -109,6 +110,19 @@ public class MilestonesAwardsFeature implements FeatureBlock {
         return 58;
     }
 
+    private static final List<MilestoneType> MILESTONE_TYPES = List.of(
+            MilestoneType.DIVERSIFIER,
+            MilestoneType.ENERGIZER,
+            MilestoneType.FARMER,
+            MilestoneType.LEGEND,
+            MilestoneType.MAGNATE,
+            MilestoneType.PLANNER,
+            MilestoneType.SPACE_BARON,
+            MilestoneType.TERRAFORMER,
+            MilestoneType.TYCOON,
+            MilestoneType.GARDENER
+    );
+
     @Override
     public void encode(TableContext ctx, FeatureWriter out) {
         MarsGame game = ctx.getGame();
@@ -118,7 +132,7 @@ public class MilestonesAwardsFeature implements FeatureBlock {
         CardService cardService = ctx.getCardService();
 
         Map<MilestoneType, Milestone> typeToMilestone = game.getMilestones().stream().collect(Collectors.toMap(Milestone::getType, Function.identity()));
-        for (MilestoneType milestoneType : AiConstants.MILESTONE_TYPES) {
+        for (MilestoneType milestoneType : MILESTONE_TYPES) {
             if (!typeToMilestone.containsKey(milestoneType) || typeToMilestone.get(milestoneType).isAchieved()) {
                 out.write(0f);
                 out.write(0f);
@@ -138,7 +152,7 @@ public class MilestonesAwardsFeature implements FeatureBlock {
         }
 
         Map<AwardType, BaseAward> typeToAward = game.getAwards().stream().collect(Collectors.toMap(BaseAward::getType, Function.identity()));
-        for (AwardType awardType : AiConstants.AWARD_TYPES) {
+        for (AwardType awardType : AWARD_TYPES) {
             if (!typeToAward.containsKey(awardType)) {
                 out.write(0f);
                 out.write(0f);

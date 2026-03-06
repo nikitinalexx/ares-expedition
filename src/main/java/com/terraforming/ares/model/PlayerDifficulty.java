@@ -45,8 +45,15 @@ public enum PlayerDifficulty {
             AiTurnChoice.RANDOM,
             AiTurnChoice.RANDOM,
             AiExperimentalTurn.EXPERIMENT
-            )
-    ;
+    ),
+
+    POLICY_NETWORK(AiCardsChoice.POLICY,
+            AiTurnChoice.POLICY,
+            AiTurnChoice.POLICY,
+            AiTurnChoice.POLICY,
+            AiTurnChoice.POLICY,
+            AiExperimentalTurn.POLICY
+    );
 
     public final AiCardsChoice CARDS_PICK;
     public final AiTurnChoice PICK_PHASE;

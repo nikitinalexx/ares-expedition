@@ -1,7 +1,6 @@
 package com.terraforming.ares.services.ai.turnProcessors.random;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardColor;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.payments.Payment;
@@ -49,7 +48,7 @@ public class AiRandomSecondPhaseActionProcessor {
             if (availableTurn.getType() != AvailableTurnType.BUILD_PROJECT) {
                 switch (availableTurn.getType()) {
                     case UNMI_RT -> aiTurnService.unmiRtCorporationTurn(game, player);
-                    case SECOND_PHASE_BONUS -> aiTurnService.pickExtraCardTurnAsync(player);
+                    case SECOND_PHASE_BONUS -> aiTurnService.pickExtraBonusTurnAsync(player);
                 }
                 return;
             }

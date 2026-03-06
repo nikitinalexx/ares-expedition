@@ -5,6 +5,7 @@ import com.terraforming.ares.model.CardCollectableResource;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.policyai.action.ActionInputService;
+import com.terraforming.ares.services.policyai.action.HeadAction;
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
 import org.apache.commons.collections4.CollectionUtils;
 
@@ -41,12 +42,11 @@ public class ViralEnhancersResourceEffect extends AbstractTagEffect {
     public List<EffectDecision> resolveDecisions(EffectStateReader state) {
         // Старый AI кладёт все ресурсы на одну и ту же карту
         Card targetCard = cardService.getCard(putResources.getFirst());
-        int action = resolveAction(targetCard);
 
         return Collections.nCopies(putResources.size(), new EffectDecision() {
             @Override
-            public int getChosenAction() {
-                return action;
+            public HeadAction getChosenAction() {
+                return resolveAction(targetCard);
             }
 
             @Override
@@ -57,11 +57,11 @@ public class ViralEnhancersResourceEffect extends AbstractTagEffect {
         });
     }
 
-    private int resolveAction(Card card) {
+    private HeadAction resolveAction(Card card) {
         if (card.getCollectableResource() == CardCollectableResource.ANIMAL) {
-            return ActionInputService.getAnimalTargetActionIndex(card);
+            return ActionInputService.getAnimalTargetAction(card);
         } else {
-            return ActionInputService.getMicrobeTargetActionIndex(card);
+            return ActionInputService.getMicrobeTargetAction(card);
         }
     }
 

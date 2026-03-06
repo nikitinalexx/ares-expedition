@@ -42,7 +42,7 @@ public class PolicyActionCollectService {
 
         PolicyRecord record = GameArenaContext.current().next();
         TableContext playerContext = encoder.encode(game, player, anotherPlayer, record);
-        record.chosenAction = ActionInputService.getBlueAction(card);
+        record.setAction(ActionInputService.getBlueAction(card));
 
         if (AiConstants.NO_PAYMENT_BLUE_ACTIONS.contains(card.getClass())) {
             return;
@@ -58,12 +58,12 @@ public class PolicyActionCollectService {
             record = GameArenaContext.current().next();
             record.copyFrom(temp);
             record.conservedBiomeAction = true;
-            record.chosenAction = targetCard.getCollectableResource() == CardCollectableResource.ANIMAL ? ActionInputService.getAnimalTargetActionIndex(targetCard) : ActionInputService.getMicrobeTargetActionIndex(targetCard);
+            record.setAction(targetCard.getCollectableResource() == CardCollectableResource.ANIMAL ? ActionInputService.getAnimalTargetAction(targetCard) : ActionInputService.getMicrobeTargetAction(targetCard));
             return;
         }
 
         if (card.getClass() == DecomposingFungus.class) {
-            if (ResourceHelper.countCardsWithAtLeastOneMicrobe(playerContext) <= 1) {
+            if (ResourceHelper.countCardsWithAtLeastOneMicrobeOrAnimal(playerContext) <= 1) {//this is wrong, it can discard animals
                 return;//no real choice, it can only choose one card
             }
             Card targetCard = cardService.getCard(inputParams.get(InputFlag.CARD_CHOICE.getId()).getFirst());
@@ -72,7 +72,7 @@ public class PolicyActionCollectService {
             record = GameArenaContext.current().next();
             record.copyFrom(temp);
             record.decomposingFungus = true;
-            record.chosenAction = targetCard.getCollectableResource() == CardCollectableResource.ANIMAL ? ActionInputService.getAnimalTargetActionIndex(targetCard) : ActionInputService.getMicrobeTargetActionIndex(targetCard);
+            record.setAction(targetCard.getCollectableResource() == CardCollectableResource.ANIMAL ? ActionInputService.getAnimalTargetAction(targetCard) : ActionInputService.getMicrobeTargetAction(targetCard));
             return;
         }
 
@@ -85,15 +85,15 @@ public class PolicyActionCollectService {
             record.copyFrom(temp);
             record.extremeColdFungus = true;
             if (inputParams.containsKey(InputFlag.EXTEME_COLD_FUNGUS_PICK_PLANT.getId())) {
-                record.chosenAction = ActionInputService.takePlantTargetAction();
+                record.setAction(ActionInputService.takePlantTargetAction());
             } else {
                 Card targetCard = cardService.getCard(inputParams.get(InputFlag.EXTREME_COLD_FUNGUS_PUT_MICROBE.getId()).getFirst());
-                record.chosenAction = ActionInputService.getMicrobeTargetActionIndex(targetCard);
+                record.setAction(ActionInputService.getMicrobeTargetAction(targetCard));
             }
             return;
         }
 
-        if (card.getClass() == SymbioticFungus.class) {
+        if (card.getClass() == SymbioticFungus.class) {//TODO wtf, it is not extreme cold fungus
             if (ResourceHelper.countPlayedMicrobeCards(playerContext) == 0) {
                 return;//no real choice, it always takes a plant
             }
@@ -104,7 +104,7 @@ public class PolicyActionCollectService {
             record = GameArenaContext.current().next();
             record.copyFrom(temp);
             record.microbePutCount = 1;
-            record.chosenAction = ActionInputService.getMicrobeTargetActionIndex(targetCard);
+            record.setAction(ActionInputService.getMicrobeTargetAction(targetCard));
             return;
         }
 
@@ -118,7 +118,7 @@ public class PolicyActionCollectService {
             record = GameArenaContext.current().next();
             record.copyFrom(temp);
             record.farmingCoops = true;
-            record.chosenAction = ActionInputService.sellDiscardCardActionIndex(targetCard);
+            record.setAction(ActionInputService.sellDiscardCardAction(targetCard));
             return;
         }
 
@@ -132,13 +132,13 @@ public class PolicyActionCollectService {
             record = GameArenaContext.current().next();
             record.copyFrom(temp);
             record.greenHouses = true;
-            record.chosenAction = ActionInputService.action1To4Count(count);
+            record.setAction(ActionInputService.action1To4Count(count));
             return;
         }
 
         if (card.getClass() == MatterGenerator.class) {
             if (player.getHand().size() == 1) {
-                return;//no real choice, it discards the last card
+                 return;//no real choice, it discards the last card
             }
             Card targetCard = cardService.getCard(inputParams.get(InputFlag.CARD_CHOICE.getId()).getFirst());
 
@@ -146,7 +146,7 @@ public class PolicyActionCollectService {
             record = GameArenaContext.current().next();
             record.copyFrom(temp);
             record.matterGenerator = true;
-            record.chosenAction = ActionInputService.sellDiscardCardActionIndex(targetCard);
+            record.setAction(ActionInputService.sellDiscardCardAction(targetCard));
             return;
         }
 
@@ -172,7 +172,7 @@ public class PolicyActionCollectService {
             if (card.getClass() == SelfReplicatingBacteria.class) {
                 record.selfReplicatingBacteria = true;
             }
-            record.chosenAction = addDiscardInput.getFirst() == 1 ? ActionInputService.actionTakeMicrobe() : ActionInputService.actionUseMicrobe();
+            record.setAction(addDiscardInput.getFirst() == 1 ? ActionInputService.actionTakeMicrobe() : ActionInputService.actionUseMicrobe());
             return;
         }
 
@@ -190,7 +190,7 @@ public class PolicyActionCollectService {
 
             for (int i = 0; i < count; i++) {
                 // ---- decision in S_t ----
-                record.chosenAction = ActionInputService.exchange1Heat();
+                record.setAction(ActionInputService.exchange1Heat());
 
                 if (record.heat[0] == 1) {
                     //no choice to log here, exit, rollout not needed
@@ -205,7 +205,7 @@ public class PolicyActionCollectService {
                 record.heat[0]--;
             }
 
-            record.chosenAction = ActionInputService.passActionId();
+            record.setAction(ActionInputService.passAction());
 
             return;
         }
@@ -225,9 +225,9 @@ public class PolicyActionCollectService {
             for (int i = 0; i < cardsToDiscard.size(); i++) {
                 // ---- decision in S_t ----
                 Card cardToDiscard = cardService.getCard(cardsToDiscard.get(i));
-                record.chosenAction = ActionInputService.sellDiscardCardActionIndex(cardToDiscard);
+                record.setAction(ActionInputService.sellDiscardCardAction(cardToDiscard));
 
-                if (record.handSize[0] == 1) {
+                if (record.handSize[0] == 1 || record.redraftedDiscarded == 2) {
                     //no choice to log here, exit, rollout not needed
                     return;
                 }
@@ -241,7 +241,7 @@ public class PolicyActionCollectService {
                 record = prev;
             }
 
-            record.chosenAction = ActionInputService.passActionId();
+            record.setAction(ActionInputService.passAction());
             return;
         }
 
@@ -254,9 +254,9 @@ public class PolicyActionCollectService {
             record.copyFrom(prev);
             record.universalPhaseUpgradeCount = 1;
             if (player.countPhaseUpgrades() == 5 && player.hasPhaseUpgrade(phaseUpgrade)) {
-                record.chosenAction = ActionInputService.passActionId();
+                record.setAction(ActionInputService.passAction());
             } else {
-                record.chosenAction = ActionInputService.choosePhaseUpgradeIndex(phaseUpgrade);
+                record.setAction(ActionInputService.choosePhaseUpgradeAction(phaseUpgrade));
             }
             return;
         }
@@ -276,11 +276,11 @@ public class PolicyActionCollectService {
             record.copyFrom(temp);
             record.fibrousComposite = true;
             if (shouldTakeScience) {
-                record.chosenAction = ActionInputService.actionTakeMicrobe();
+                record.setAction(ActionInputService.actionTakeMicrobe());
                 return;
             }
             shouldTakeScience = addDiscardInput.getFirst() == 1;
-            record.chosenAction = shouldTakeScience ? ActionInputService.actionTakeMicrobe() : ActionInputService.actionUseMicrobe();
+            record.setAction(shouldTakeScience ? ActionInputService.actionTakeMicrobe() : ActionInputService.actionUseMicrobe());
 
             if (!shouldTakeScience) {
                 temp = record;
@@ -288,7 +288,7 @@ public class PolicyActionCollectService {
                 record.copyFrom(temp);
                 record.fibrousComposite = false;
                 record.universalPhaseUpgradeCount = 1;
-                record.chosenAction = ActionInputService.choosePhaseUpgradeIndex(inputParams.get(InputFlag.PHASE_UPGRADE_CARD.getId()).getFirst());
+                record.setAction(ActionInputService.choosePhaseUpgradeAction(inputParams.get(InputFlag.PHASE_UPGRADE_CARD.getId()).getFirst()));
             }
 
             return;
@@ -300,7 +300,7 @@ public class PolicyActionCollectService {
                     new ViralEnhancersPlantsEffect(inputParams, player, cardService),
                     new ViralEnhancersResourceEffect(inputParams, cardService),
                     new DecomposersEffect(inputParams),
-                    new MarsUniversityEffect(inputParams, player, cardService)
+                    new MarsUniversityEffect(inputParams, player, cardService, card)
             );
 
             effectChainProcessor.process(effects, game, player, anotherPlayer, null);

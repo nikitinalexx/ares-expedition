@@ -47,31 +47,19 @@ public abstract class AbstractPhaseProcessor {
         if (!isSimulation) {
             TableContext buildPlayerContext = policyCollectService.build(game, player, bestCard.getCard());
             if (network2PaymentService.getAllPossibleCardPayments(game, player, bestCard.getCard(), params).size() > 1) {
-                List<Payment> realPayments = bestCard.getPayments();
-                int type = 0;
-                if (realPayments.size() == 3) {
-                    type = 3;
-                } else if (realPayments.size() == 2) {
-                    if (realPayments.getFirst().getType() == PaymentType.RESTRUCTURED_RESOURCES) {
-                        type = 1;
-                    } else if (realPayments.getFirst().getType() == PaymentType.ANAEROBIC_MICROORGANISMS) {
-                        type = 2;
-                    } else {
-                        throw new IllegalStateException("Invalid payment");
-                    }
-                }
+                int type = getPaymentType(bestCard.getPayments());
 
-                policyCollectService.payForTheBuild(game, player, type);
+                policyCollectService.payForTheBuild(game, player, type, bestCard.getCard());
             }
 
             if (!params.isEmpty() && buildPlayerContext != null) {
                 //can be a separate step
                 if (params.containsKey(InputFlag.CEOS_FAVORITE_PUT_RESOURCES.getId())) {
-                    policyCollectService.ceosFavoriteProject(game, player, params, buildPlayerContext);
+                    policyCollectService.ceosFavoriteProject(game, player, params, buildPlayerContext, bestCard.getCard());
                 } else if (params.containsKey(InputFlag.SYNTHETIC_CATASTROPHE_CARD.getId())) {//can be a separate step
-                    policyCollectService.syntheticCatastrophe(game, player, params);
+                    policyCollectService.syntheticCatastrophe(game, player, params, bestCard.getCard());
                 } else if (bestCard.getCard().getClass() == ImportedHydrogen.class) {//can be a separate step
-                    policyCollectService.importedHydrogen(game, player, params);
+                    policyCollectService.importedHydrogen(game, player, params, bestCard.getCard());
                 } else {
                     policyCollectService.onTagPlayedMixIn(game, player, bestCard.getCard(), params);
                 }
@@ -79,6 +67,22 @@ public abstract class AbstractPhaseProcessor {
         }
 
         aiTurnService.buildProject(game, player, bestCard.getCard().getId(), bestCard.getPayments(), params);
+    }
+
+    protected int getPaymentType(List<Payment> payments) {
+        int type = 0;
+        if (payments.size() == 3) {
+            type = 3;
+        } else if (payments.size() == 2) {
+            if (payments.getFirst().getType() == PaymentType.RESTRUCTURED_RESOURCES) {
+                type = 1;
+            } else if (payments.getFirst().getType() == PaymentType.ANAEROBIC_MICROORGANISMS) {
+                type = 2;
+            } else {
+                throw new IllegalStateException("Invalid payment");
+            }
+        }
+        return type;
     }
 
     protected void finalizeUnmiTurn(MarsGame game, Player player, boolean isSimulation) {
@@ -96,7 +100,7 @@ public abstract class AbstractPhaseProcessor {
 
     protected void finalizeDoExtraAction(MarsGame game, Player player, boolean isSimulation) {
         if (isSimulation) {
-            aiTurnService.pickExtraCardTurnAsync(player);
+            aiTurnService.pickExtraBonusTurnSync(player, game);
         } else {
             finalizeDoExtraAction(game, player);
         }
@@ -104,7 +108,7 @@ public abstract class AbstractPhaseProcessor {
 
     protected void finalizeDoExtraAction(MarsGame game, Player player) {
         policyCollectService.takeBonusTurn(game, player);
-        aiTurnService.pickExtraCardTurnAsync(player);
+        aiTurnService.pickExtraBonusTurnAsync(player);
     }
 
     protected void finalizeBlueAction(MarsGame game, Player player, Card blueCard, Map<Integer, List<Integer>> inputParams, boolean isSimulation) {
@@ -116,7 +120,6 @@ public abstract class AbstractPhaseProcessor {
     }
 
     protected void finalizeBlueAction(MarsGame game, Player player, Card blueCard, Map<Integer, List<Integer>> inputParams) {
-        policyActionCollectService.collectAction(game, player, blueCard, inputParams);
         aiTurnService.performBlueAction(game, player, blueCard.getId(), inputParams);
     }
 

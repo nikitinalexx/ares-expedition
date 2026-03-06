@@ -14,6 +14,7 @@ import com.terraforming.ares.services.simulations.CardPickStatistics;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -74,7 +75,9 @@ public class SimulationProcessorService extends BaseProcessorService {
     }
 
     public void runSimulationWithGameRecordArena(MarsGame game, GameRecordArena arena) {
-        List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
+        List<Player> players = game.getPlayerUuidToPlayer().values().stream()
+                .sorted(Comparator.comparing(p -> p.getUuid().substring(p.getUuid().length() - 1)))
+                .toList();
 
         while (game.getStateType() != StateType.GAME_END) {
             while (aiService.waitingAiTurns(game)) {
@@ -101,20 +104,18 @@ public class SimulationProcessorService extends BaseProcessorService {
         float p2;
 
         if (winner == 0) {
-            p1 = 0f;
-            p2 = 0f;
+            p1 = 0.5f;
+            p2 = 0.5f;
         } else {
-            p1 = winner == 1 ? 1f : -1f;
-            p2 = -p1;
+            p1 = (byte) ((winner == 1) ? 1 : 0);
+            p2 = (byte) ((winner == 2) ? 1 : 0);
         }
-
 
         for (int i = 0; i < arena.size(); i++) {
             PolicyRecord r = arena.records()[i];
 
             r.outcome = r.isFirstPlayer ? p1 : p2;
         }
-
     }
 
     public void processSimulation(MarsGame game) {

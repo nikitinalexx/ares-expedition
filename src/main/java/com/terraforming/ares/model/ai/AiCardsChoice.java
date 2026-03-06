@@ -4,5 +4,6 @@ public enum AiCardsChoice {
     RANDOM,
     FILE_VALUE,
     NETWORK_PROJECTION,
-    NETWORK_V2
+    NETWORK_V2,
+    POLICY
 }

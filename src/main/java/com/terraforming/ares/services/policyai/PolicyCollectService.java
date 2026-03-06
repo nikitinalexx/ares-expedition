@@ -1,5 +1,6 @@
 package com.terraforming.ares.services.policyai;
 
+import com.terraforming.ares.cards.blue.BacterialAggregates;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.milestones.Milestone;
@@ -10,6 +11,7 @@ import com.terraforming.ares.services.SpecialEffectsService;
 import com.terraforming.ares.services.ai.AiConstants;
 import com.terraforming.ares.services.ai.advanced.TableContext;
 import com.terraforming.ares.services.policyai.action.ActionInputService;
+import com.terraforming.ares.services.policyai.action.HeadAction;
 import com.terraforming.ares.services.policyai.dto.GameRecordArena;
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
 import com.terraforming.ares.services.policyai.encoder.IncomeCategory;
@@ -32,91 +34,6 @@ public class PolicyCollectService {
     private final EffectChainProcessor effectChainProcessor;
     private final SpecialEffectsService specialEffectsService;
 
-    /**
-     * Mulligan cards go through SELL_DISCARD action.
-     */
-    public void mulliganCards(MarsGame game, List<Player> players, List<Integer> cardsToDiscard) {
-        if (!AiConstants.POLICY_TEACHING) {
-            return;
-        }
-        GameRecordArena arena = GameArenaContext.current();
-
-        Player currentPlayer = players.get(0);
-        Player anotherPlayer = players.get(1);
-
-        PolicyRecord mainRecord = arena.next();
-        encoder.encode(game, currentPlayer, anotherPlayer, mainRecord);
-        mainRecord.initialSetup = true;
-        mainRecord.doingMulligan = true;
-        mainRecord.mulliganToDraw = 0;
-
-        for (int cardToDiscard : cardsToDiscard) {
-            Card card = cardService.getCard(cardToDiscard);
-            mainRecord.chosenAction = ActionInputService.sellDiscardCardActionIndex(card);
-
-            if (mainRecord.handSize[0] == 1) {
-                return;//because after hand gets to 0 there is no choice
-            }
-
-            PolicyRecord policyRecord = arena.next();
-            policyRecord.copyFrom(mainRecord);
-            policyRecord.removeCardFromHand(card);
-            policyRecord.mulliganToDraw++;
-
-            mainRecord = policyRecord;
-        }
-
-        mainRecord.chosenAction = ActionInputService.passActionId();
-    }
-
-    /**
-     * Simply discard N cards from hand after any build effect be it corp or regular build
-     */
-    public void discardingFromHandPostBuild(MarsGame game, Player player, List<Integer> cardsToDiscard) {
-        if (!AiConstants.POLICY_TEACHING) {
-            return;
-        }
-
-        discardingCardsFromHand(game, player, cardsToDiscard, true);
-    }
-
-    public void sellCardsAfterGenerationEnd(MarsGame game, Player player, List<Integer> cardsToDiscard) {
-        if (!AiConstants.POLICY_TEACHING) {
-            return;
-        }
-
-        discardingCardsFromHand(game, player, cardsToDiscard, false);
-    }
-
-    private void discardingCardsFromHand(MarsGame game, Player player, List<Integer> cardsToDiscard, boolean isPostBuild) {
-        final List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
-        Player anotherPlayer = players.get(0) == player ? players.get(1) : players.get(0);
-
-        GameRecordArena arena = GameArenaContext.current();
-
-        PolicyRecord mainRecord = arena.next();
-        encoder.encode(game, player, anotherPlayer, mainRecord);
-        mainRecord.cardsLeftToDiscard = (byte) cardsToDiscard.size();
-        if (isPostBuild) {
-            mainRecord.postBuildDiscarding = true;
-        } else {
-            mainRecord.discardingLastTurn = true;
-        }
-
-        for (int cardToDiscard : cardsToDiscard) {
-            Card card = cardService.getCard(cardToDiscard);
-            mainRecord.chosenAction = ActionInputService.sellDiscardCardActionIndex(card);
-            if (mainRecord.cardsLeftToDiscard > 1) {
-                PolicyRecord policyRecord = arena.next();
-                policyRecord.copyFrom(mainRecord);
-                policyRecord.removeCardFromHand(card);
-                policyRecord.cardsLeftToDiscard--;
-
-                mainRecord = policyRecord;
-            }
-        }
-    }
-
     public void sellCards(MarsGame game,
                           Player player,
                           List<Card> cardsToSell) {
@@ -134,7 +51,7 @@ public class PolicyCollectService {
         // --- S0 ---
         PolicyRecord record = GameArenaContext.current().next();
         encoder.encode(game, player, anotherPlayer, record);
-        record.chosenAction = ActionInputService.enterSellingModeAction();
+        record.setAction(ActionInputService.enterSellingModeAction());
 
         PolicyRecord prev = record;
         record = GameArenaContext.current().next();
@@ -144,7 +61,7 @@ public class PolicyCollectService {
         for (Card card : cardsToSell) {
 
             // --- S_t : decision SELL ---
-            record.chosenAction = ActionInputService.sellDiscardCardActionIndex(card);
+            record.setAction(ActionInputService.sellDiscardCardAction(card));
 
             if (record.handSize[0] == 1) {
                 return;//after current sell there will be no cards left, so no choice
@@ -159,7 +76,7 @@ public class PolicyCollectService {
         }
 
         // --- final decision ---
-        record.chosenAction = ActionInputService.passActionId();
+        record.setAction(ActionInputService.passAction());
     }
 
     public void helionExchangeHeat(MarsGame game,
@@ -176,7 +93,7 @@ public class PolicyCollectService {
         // --- S0 ---
         PolicyRecord record = GameArenaContext.current().next();
         encoder.encode(game, player, anotherPlayer, record);
-        record.chosenAction = ActionInputService.enterHelionModeAction();
+        record.setAction(ActionInputService.enterHelionModeAction());
 
         if (record.heat[0] == 1) {
             return;//there is no choice
@@ -188,7 +105,7 @@ public class PolicyCollectService {
         record.helionExchanging = true;
 
         for (int i = 0; i < count; i++) {
-            record.chosenAction = ActionInputService.exchange1Heat();
+            record.setAction(ActionInputService.exchange1Heat());
 
             if (record.heat[0] == 1) {
                 //no choice to log here, exit, rollout not needed
@@ -203,7 +120,7 @@ public class PolicyCollectService {
 
         }
 
-        record.chosenAction = ActionInputService.passActionId();
+        record.setAction(ActionInputService.passAction());
     }
 
     public void discardingFromSelected(
@@ -238,7 +155,7 @@ public class PolicyCollectService {
 
         for (int cardToDiscard : cardsToDiscard) {
             Card card = cardService.getCard(cardToDiscard);
-            mainRecord.chosenAction = ActionInputService.sellDiscardCardActionIndex(card);
+            mainRecord.setAction(ActionInputService.sellDiscardCardAction(card));
 
             if (mainRecord.cardsLeftToDiscard > 1) {
                 PolicyRecord policyRecord = arena.next();
@@ -265,7 +182,7 @@ public class PolicyCollectService {
         encoder.encode(game, currentPlayer, anotherPlayer, mainRecord);
         mainRecord.initialSetup = true;
         mainRecord.pickingCorporation = true;
-        mainRecord.chosenAction = ActionInputService.chooseCorporationActionIndex(cardService.getCard(corporationId));
+        mainRecord.setAction(ActionInputService.chooseCorporationAction(cardService.getCard(corporationId)));
     }
 
     public void choosePhase(MarsGame game, Player player, int phaseId) {
@@ -280,7 +197,7 @@ public class PolicyCollectService {
         PolicyRecord mainRecord = arena.next();
         encoder.encode(game, player, anotherPlayer, mainRecord);
         mainRecord.choosingPhase = true;
-        mainRecord.chosenAction = ActionInputService.choosePhaseUpgradeIndex(phaseId);
+        mainRecord.setAction(ActionInputService.choosePhaseTurn(phaseId));
     }
 
     public void sultiraCorporationPhaseChoice(MarsGame game, List<Player> players, Card sultiraCorporation, int upgrade) {
@@ -298,7 +215,7 @@ public class PolicyCollectService {
         encoder.encode(game, player, players.getLast(), mainRecord);
         mainRecord.initialSetup = true;
         mainRecord.choosingPhase1Upgrade = true;
-        mainRecord.chosenAction = ActionInputService.choosePhaseUpgradeIndex(upgrade);
+        mainRecord.setAction(ActionInputService.choosePhaseUpgradeAction(upgrade));
 
         player.setMc(0);
         player.setHeat(0);
@@ -318,9 +235,9 @@ public class PolicyCollectService {
 
         PolicyRecord mainRecord = GameArenaContext.current().next();
         encoder.encode(game, player, players.getLast(), mainRecord);
-        mainRecord.chosenAction = ActionInputService.choosePhaseUpgradeIndex(upgrade);
         mainRecord.initialSetup = true;
         mainRecord.choosingPhase2Upgrade = true;
+        mainRecord.setAction(ActionInputService.choosePhaseUpgradeAction(upgrade));
 
         player.setMc(0);
         player.getPlayed().getCards().clear();
@@ -339,7 +256,7 @@ public class PolicyCollectService {
 
         PolicyRecord mainRecord = GameArenaContext.current().next();
         encoder.encode(game, player, players.getLast(), mainRecord);
-        mainRecord.chosenAction = ActionInputService.choosePhaseUpgradeIndex(upgrade);
+        mainRecord.setAction(ActionInputService.choosePhaseUpgradeAction(upgrade));
         mainRecord.initialSetup = true;
         mainRecord.choosingPhase3Upgrade = true;
 
@@ -360,9 +277,9 @@ public class PolicyCollectService {
 
         PolicyRecord mainRecord = GameArenaContext.current().next();
         encoder.encode(game, player, players.getLast(), mainRecord);
-        mainRecord.chosenAction = ActionInputService.choosePhaseUpgradeIndex(upgrade);
         mainRecord.initialSetup = true;
         mainRecord.choosingPhase5Upgrade = true;
+        mainRecord.setAction(ActionInputService.choosePhaseUpgradeAction(upgrade));
 
         player.setMc(0);
         player.getPlayed().getCards().clear();
@@ -381,9 +298,9 @@ public class PolicyCollectService {
 
         PolicyRecord mainRecord = GameArenaContext.current().next();
         encoder.encode(game, player, players.getLast(), mainRecord);
-        mainRecord.chosenAction = ActionInputService.choosePhaseUpgradeIndex(upgrade);
         mainRecord.universalPhaseUpgradeCount = 1;
         mainRecord.initialSetup = true;
+        mainRecord.setAction(ActionInputService.choosePhaseUpgradeAction(upgrade));
 
         player.setMc(0);
         player.getPlayed().getCards().clear();
@@ -404,7 +321,7 @@ public class PolicyCollectService {
         encoder.encode(game, player, players.getLast(), mainRecord);
         mainRecord.choosingTag = true;
         mainRecord.initialSetup = true;
-        mainRecord.chosenAction = ActionInputService.chooseTag(tag);
+        mainRecord.setAction(ActionInputService.chooseTag(tag));
 
         player.setMc(0);
         player.getPlayed().getCards().clear();
@@ -425,7 +342,7 @@ public class PolicyCollectService {
         encoder.encode(game, player, players.getLast(), mainRecord);
         mainRecord.choosingTag = true;
         mainRecord.initialSetup = true;
-        mainRecord.chosenAction = ActionInputService.chooseTag(tag);
+        mainRecord.setAction(ActionInputService.chooseTag(tag));
 
         PolicyRecord anotherRecord = GameArenaContext.current().next();
         anotherRecord.copyFrom(mainRecord);
@@ -446,7 +363,7 @@ public class PolicyCollectService {
 
         List<Milestone> milestones = game.getMilestones();
         MilestoneType chosenMilestone = milestones.get(milestone).getType();
-        anotherRecord.chosenAction = ActionInputService.austellarMilestoneChoice(AiConstants.MILESTONE_TYPES.indexOf(chosenMilestone));
+        mainRecord.setAction(ActionInputService.austellarMilestoneChoice(AiConstants.MILESTONE_TYPES.indexOf(chosenMilestone)));
 
         player.setMc(0);
         player.getPlayed().getCards().clear();
@@ -463,7 +380,7 @@ public class PolicyCollectService {
 
         PolicyRecord mainRecord = GameArenaContext.current().next();
         encoder.encode(game, player, anotherPlayer, mainRecord);
-        mainRecord.chosenAction = ActionInputService.passActionId();
+        mainRecord.setAction(ActionInputService.passAction());
     }
 
     public TableContext build(MarsGame game, Player player, Card card) {
@@ -475,7 +392,7 @@ public class PolicyCollectService {
 
         PolicyRecord mainRecord = GameArenaContext.current().next();
         TableContext playerContext = encoder.encode(game, player, anotherPlayer, mainRecord);
-        mainRecord.chosenAction = ActionInputService.buildProjectActionId(card);
+        mainRecord.setAction(ActionInputService.buildProjectAction(card));
 
         return playerContext;
     }
@@ -492,21 +409,22 @@ public class PolicyCollectService {
 
         Integer specialGreenCardIndex = AiConstants.GREEN_CARDS_INDEX_BY_CLASS.get(card.getClass());
 
-        int actionId;
+        HeadAction action;
         if (specialGreenCardIndex != null) {
-            actionId = ActionInputService.specialGreenCardThatPays(specialGreenCardIndex);
+            action = ActionInputService.specialGreenCardThatPays(specialGreenCardIndex);
         } else {
             IncomeCategory incomeCategory = PolicyTableGreenCardsFeature.resolveIncomeCategory(card, mainRecord, mainRecord.forests[0]);
-            actionId = ActionInputService.specialPhasePaymentByIncomeType(incomeCategory);
+            action = ActionInputService.specialPhasePaymentByIncomeType(incomeCategory);
         }
 
-        mainRecord.chosenAction = actionId;
+        mainRecord.setAction(action);
     }
 
     public void ceosFavoriteProject(MarsGame game,
                                     Player player,
                                     Map<Integer, List<Integer>> params,
-                                    TableContext buildContext) {
+                                    TableContext buildContext,
+                                    Card ceosFavoriteCard) {
 
         if (!AiConstants.POLICY_TEACHING) {
             return;
@@ -524,18 +442,20 @@ public class PolicyCollectService {
         PolicyRecord record = GameArenaContext.current().next();
         encoder.encode(game, player, anotherPlayer, record);
         record.ceosFavoriteProjectEffect = true;
+        record.selectCard(ceosFavoriteCard);
         if (targetCard.getCollectableResource() == CardCollectableResource.ANIMAL) {
-            record.chosenAction = ActionInputService.getAnimalTargetActionIndex(targetCard);
+            record.setAction(ActionInputService.getAnimalTargetAction(targetCard));
         } else if (targetCard.getCollectableResource() == CardCollectableResource.MICROBE) {
-            record.chosenAction = ActionInputService.getMicrobeTargetActionIndex(targetCard);
+            record.setAction(ActionInputService.getMicrobeTargetAction(targetCard));
         } else {
-            record.chosenAction = ActionInputService.getScienceResourceTargetActionIndex(targetCard);
+            record.setAction(ActionInputService.getScienceResourceTargetAction(targetCard));
         }
     }
 
     public void syntheticCatastrophe(MarsGame game,
                                      Player player,
-                                     Map<Integer, List<Integer>> params) {
+                                     Map<Integer, List<Integer>> params,
+                                     Card syntheticCatastrophe) {
 
         if (!AiConstants.POLICY_TEACHING) {
             return;
@@ -559,7 +479,8 @@ public class PolicyCollectService {
         PolicyRecord record = GameArenaContext.current().next();
         encoder.encode(game, player, anotherPlayer, record);
         record.syntheticCatastropheEffect = true;
-        record.chosenAction = ActionInputService.getRedCardTargetActionIndex(targetCard);
+        record.selectCard(syntheticCatastrophe);
+        record.setAction(ActionInputService.getRedCardTargetAction(targetCard));
     }
 
     public void unmiTurn(MarsGame game,
@@ -577,7 +498,7 @@ public class PolicyCollectService {
         if (!record.unmiTurnAvailable) {
             throw new IllegalStateException("Making UNMI turn with unmi is not available");
         }
-        record.chosenAction = ActionInputService.unmiActionId();
+        record.setAction(ActionInputService.unmiAction());
     }
 
     public void standardProjectTurn(MarsGame game, Player player, StandardProjectType type) {
@@ -590,7 +511,7 @@ public class PolicyCollectService {
 
         PolicyRecord record = GameArenaContext.current().next();
         encoder.encode(game, player, anotherPlayer, record);
-        record.chosenAction = ActionInputService.standardProject(type);
+        record.setAction(ActionInputService.standardProject(type));
     }
 
     public void mandatoryHeatPlantsConversion(MarsGame game, Player player, TurnType turnType) {
@@ -603,10 +524,10 @@ public class PolicyCollectService {
 
         PolicyRecord record = GameArenaContext.current().next();
         encoder.encode(game, player, anotherPlayer, record);
-        record.chosenAction = (turnType == TurnType.INCREASE_TEMPERATURE ? ActionInputService.convertHeatToTemperature() : ActionInputService.convertPlantsToTemperature());
+        record.setAction(turnType == TurnType.INCREASE_TEMPERATURE ? ActionInputService.convertHeatToTemperature() : ActionInputService.convertPlantsToForest());
     }
 
-    public void payForTheBuild(MarsGame game, Player player, int type) {
+    public void payForTheBuild(MarsGame game, Player player, int type, Card card) {
         if (!AiConstants.POLICY_TEACHING) {
             return;
         }
@@ -616,9 +537,10 @@ public class PolicyCollectService {
 
         PolicyRecord record = GameArenaContext.current().next();
         encoder.encode(game, player, anotherPlayer, record);
+        record.selectCard(card);
         record.payingForTheBuild = true;
 
-        record.chosenAction = ActionInputService.payForTheBuild(type);
+        record.setAction(ActionInputService.payForTheBuild(type));
     }
 
     public void takeBonusTurn(MarsGame game, Player player) {
@@ -632,18 +554,19 @@ public class PolicyCollectService {
 
         PolicyRecord record = GameArenaContext.current().next();
         encoder.encode(game, player, anotherPlayer, record);
-        record.chosenAction = ActionInputService.takeBonusAction();
+        record.setAction(ActionInputService.takeBonusAction());
     }
 
     public void importedHydrogen(MarsGame game,
                                  Player player,
-                                 Map<Integer, List<Integer>> params) {
+                                 Map<Integer, List<Integer>> params,
+                                 Card importedHydrogen) {
 
         if (!AiConstants.POLICY_TEACHING) {
             return;
         }
 
-        if (player.getPlayed().getCards().stream().map(cardService::getCard).noneMatch(c -> c.getCollectableResource() == CardCollectableResource.ANIMAL || c.getCollectableResource() == CardCollectableResource.MICROBE)) {
+        if (player.getPlayed().getCards().stream().map(cardService::getCard).noneMatch(c -> c.getCollectableResource() == CardCollectableResource.ANIMAL || c.getCollectableResource() == CardCollectableResource.MICROBE && !(c.getClass() == BacterialAggregates.class && player.getCardResourcesCount().get(BacterialAggregates.class) == 5))) {
             //there is no decision to be made, engine will simply take plants
             return;
         }
@@ -656,14 +579,15 @@ public class PolicyCollectService {
         PolicyRecord record = GameArenaContext.current().next();
         encoder.encode(game, player, anotherPlayer, record);
         record.importedHydrogenEffect = true;
+        record.selectCard(importedHydrogen);
         if (isTakingPlants) {
-            record.chosenAction = ActionInputService.takePlantTargetAction();
+            record.setAction(ActionInputService.takePlantTargetAction());
         } else {
             Card targetCard = cardService.getCard(params.get(InputFlag.IMPORTED_HYDROGEN_PUT_RESOURCE.getId()).getFirst());
             if (targetCard.getCollectableResource() == CardCollectableResource.ANIMAL) {
-                record.chosenAction = ActionInputService.getAnimalTargetActionIndex(targetCard);
+                record.setAction(ActionInputService.getAnimalTargetAction(targetCard));
             } else {
-                record.chosenAction = ActionInputService.getMicrobeTargetActionIndex(targetCard);
+                record.setAction(ActionInputService.getMicrobeTargetAction(targetCard));
             }
         }
     }
@@ -688,11 +612,11 @@ public class PolicyCollectService {
                 new ViralEnhancersPlantsEffect(params, player, cardService),
                 new ViralEnhancersResourceEffect(params, cardService),
                 new DecomposersEffect(params),
-                new MarsUniversityEffect(params, player, cardService),
+                new MarsUniversityEffect(params, player, cardService, playedCard),
                 new ImportedNitrogenMicrobeEffect(params, cardService, player),
                 new ImportedNitrogenAnimalEffect(params, cardService, player),
                 new LargeConvoyEffect(params, cardService, player),
-                new LocalHeatTrapping(params, cardService, player),
+                new LocalHeatTrappingEffect(params, cardService, player),
                 new AstrofarmEffect(params, cardService, player)
         );
 

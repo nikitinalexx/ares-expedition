@@ -85,6 +85,29 @@ public class Network2PaymentService {
         return allVariations;
     }
 
+    public boolean hasEnoughMoneyForAnyBuild(MarsGame game, Player player, Card card, Map<Integer, List<Integer>> inputParameters) {
+        List<List<Payment>> paymentVariations = getAllPossibleCardPayments(game, player, card, inputParameters);
+
+        int playerMc = player.getMc();
+
+        for (List<Payment> variation : paymentVariations) {
+            int requiredMc = 0;
+
+            for (Payment payment : variation) {
+                if (payment instanceof MegacreditsPayment mcPayment) {
+                    requiredMc = mcPayment.getValue();
+                    break;
+                }
+            }
+
+            if (playerMc >= requiredMc) {
+                return true; // early exit
+            }
+        }
+
+        return false;
+    }
+
     private int getRequiredPlants(Card card) {
         int requiredPlants = 1; // цена скидки
 

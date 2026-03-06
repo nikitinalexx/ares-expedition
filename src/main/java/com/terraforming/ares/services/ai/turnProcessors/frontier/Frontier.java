@@ -105,6 +105,12 @@ public class Frontier {
             }
         }
 
+        if (cards.containsKey(GreenHouses.class)) {
+            for (int i = 1; i <= 4; i++) {
+                actions.add(new GreenHousesAction(GREEN_HOUSES_ACTION_ID, i));
+            }
+        }
+
         return actions;
     }
 
@@ -293,6 +299,7 @@ public class Frontier {
     public static final int DECOMPOSING_FUNGUS_ACTION_ID = 41;
     public static final int SYMBIOTIC_FUNGUS_ACTION_ID = 42;
     public static final int UNMI_ACTION_ID = 43;
+    public static final int GREEN_HOUSES_ACTION_ID = 44;
 
     static {
         Map<Class<? extends Card>, List<BlueAction>> map = new HashMap<>();

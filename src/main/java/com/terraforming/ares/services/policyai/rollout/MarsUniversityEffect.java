@@ -1,9 +1,12 @@
 package com.terraforming.ares.services.policyai.rollout;
 
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.policyai.action.ActionInputService;
+import com.terraforming.ares.services.policyai.action.HeadAction;
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
 import org.apache.commons.collections4.CollectionUtils;
 
@@ -15,11 +18,13 @@ public class MarsUniversityEffect implements TagEffect {
     private final List<Integer> marsUniversity;
     private final Player player;
     private final CardService cardService;
+    private final Card playedCard;
 
-    public MarsUniversityEffect(Map<Integer, List<Integer>> params, Player player, CardService cardService) {
+    public MarsUniversityEffect(Map<Integer, List<Integer>> params, Player player, CardService cardService, Card playedCard) {
         this.marsUniversity = params.get(InputFlag.MARS_UNIVERSITY_CARD.getId());
         this.player = player;
         this.cardService = cardService;
+        this.playedCard = playedCard;
     }
 
     @Override
@@ -54,8 +59,8 @@ public class MarsUniversityEffect implements TagEffect {
     private EffectDecision skipDecision() {
         return new EffectDecision() {
             @Override
-            public int getChosenAction() {
-                return ActionInputService.passActionId();
+            public HeadAction getChosenAction() {
+                return ActionInputService.passAction();
             }
 
             @Override
@@ -69,8 +74,8 @@ public class MarsUniversityEffect implements TagEffect {
     private EffectDecision discardDecision(int cardId) {
         return new EffectDecision() {
             @Override
-            public int getChosenAction() {
-                return ActionInputService.sellDiscardCardActionIndex(cardService.getCard(cardId));
+            public HeadAction getChosenAction() {
+                return ActionInputService.sellDiscardCardAction(cardService.getCard(cardId));
             }
 
             @Override
@@ -82,6 +87,19 @@ public class MarsUniversityEffect implements TagEffect {
     }
 
     private int maxDecisions() {
-        return player.getHand().size() - 1;
+        int scienceCount = 0;
+        int dynamicCount = 0;
+        for (Tag tag : playedCard.getTags()) {
+            if (tag == Tag.SCIENCE) {
+                scienceCount++;
+            } else if (tag == Tag.DYNAMIC) {
+                dynamicCount++;
+            }
+        }
+        if (dynamicCount > 0) {
+            return 1;
+        } else {
+            return scienceCount;
+        }
     }
 }

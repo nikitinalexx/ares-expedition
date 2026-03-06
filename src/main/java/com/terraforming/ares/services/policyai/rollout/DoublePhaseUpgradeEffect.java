@@ -4,6 +4,7 @@ import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.services.policyai.action.ActionInputService;
+import com.terraforming.ares.services.policyai.action.HeadAction;
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
 
 import java.util.List;
@@ -41,8 +42,8 @@ public class DoublePhaseUpgradeEffect extends AbstractTagEffect {
 
         EffectDecision first = new EffectDecision() {
             @Override
-            public int getChosenAction() {
-                return ActionInputService.choosePhaseUpgradeIndex(firstUpgrade);
+            public HeadAction getChosenAction() {
+                return ActionInputService.choosePhaseUpgradeAction(firstUpgrade);
             }
 
             @Override
@@ -54,8 +55,8 @@ public class DoublePhaseUpgradeEffect extends AbstractTagEffect {
 
         EffectDecision second = new EffectDecision() {
             @Override
-            public int getChosenAction() {
-                return ActionInputService.choosePhaseUpgradeIndex(secondUpgrade);
+            public HeadAction getChosenAction() {
+                return ActionInputService.choosePhaseUpgradeAction(secondUpgrade);
             }
 
             @Override

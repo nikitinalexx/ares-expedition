@@ -45,7 +45,7 @@ public class AiCollectIncomePhaseService {
 
         float initialState = 0;
 
-        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
+        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT || player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.POLICY) {
             initialState = (float) nnService.predictBatch(List.of(iDataCollect.collectData(game, player.getUuid())), player).getFirst().baseProb;
         } else if (player.getDifficulty().PICK_PHASE == AiTurnChoice.NETWORK) {
             initialState = deepNetwork.testState(game, player);
@@ -73,7 +73,7 @@ public class AiCollectIncomePhaseService {
     }
 
     private float analyzeStateAfterIncome(MarsGame game, Player player, Player playerCopy, boolean canIncreaseOxygen) {
-        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
+        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT || player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.POLICY) {
             return (float) nnService.predictBatch(List.of(iDataCollect.collectData(game, player.getUuid())), player).getFirst().baseProb;
         }
         switch (player.getDifficulty().PICK_PHASE) {

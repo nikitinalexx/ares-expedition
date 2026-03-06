@@ -22,10 +22,12 @@ import java.util.stream.IntStream;
 
 
 public final class AiConstants {
-    public static final boolean POLICY_TEACHING = true;
-    public static final boolean ENABLE_AI_EXPLORATION = true;
-    public static final boolean ENABLE_SELL_AND_HEAT_EXPLORATION = true;
-    public static final boolean EXPLORATION_ON_CORP_PICK = true;
+    public static final boolean POLICY_PLAYING = true;
+
+    public static final boolean POLICY_TEACHING = false;
+    public static final boolean ENABLE_AI_EXPLORATION = false;
+    public static final boolean ENABLE_SELL_AND_HEAT_EXPLORATION = false;
+    public static final boolean EXPLORATION_ON_CORP_PICK = false;
 
     public static final boolean COLLECT_CARD_RANK_STATS = false;
 
@@ -51,16 +53,19 @@ public final class AiConstants {
     public static final Card GENERIC_DUMMY_CARD = new GenericDummyCard(AiConstants.GENERIC_DUMMY_ID);
     public static final Card RESEARCH_GRANT_DUMMY_CARD = new ResearchGrantDummy(AiConstants.RESEARCH_GRANT_DUMMY_ID);
 
+    public static final List<Integer> ALL_PHASES = List.of(1, 2, 3, 4, 5);
+
     public static final List<MilestoneType> MILESTONE_TYPES = List.of(
-            MilestoneType.DIVERSIFIER,
+            MilestoneType.MAGNATE,
+            MilestoneType.TERRAFORMER,
+            MilestoneType.BUILDER,
+            MilestoneType.SPACE_BARON,
             MilestoneType.ENERGIZER,
             MilestoneType.FARMER,
-            MilestoneType.LEGEND,
-            MilestoneType.MAGNATE,
-            MilestoneType.PLANNER,
-            MilestoneType.SPACE_BARON,
-            MilestoneType.TERRAFORMER,
             MilestoneType.TYCOON,
+            MilestoneType.PLANNER,
+            MilestoneType.DIVERSIFIER,
+            MilestoneType.LEGEND,
             MilestoneType.GARDENER
     );
 
@@ -102,7 +107,6 @@ public final class AiConstants {
             WoodBurningStoves.class,
             ProgressivePolicies.class,
             DroneAssistedConstruction.class,
-            FibrousCompositeActionValidator.class,
             SoftwareStreamlining.class,
             CityCouncil.class,
             CommunityAfforestation.class,
@@ -545,30 +549,30 @@ public final class AiConstants {
 
     public static final List<CardAction> corpCardActions = List.of(
             CardAction.HELION_CORPORATION,
+            CardAction.ECOLINE_CORPORATION,
+            CardAction.MINING_GUILD_CORPORATION,
+            CardAction.SATURN_SYSTEMS_CORPORATION,
+            CardAction.PHOBOLOG_CORPORATION,
+            CardAction.INVENTRIX_CORPORATION,
+            CardAction.UNMI_CORPORATION,
+            CardAction.ARCLIGHT_CORPORATION,
             CardAction.CELESTIOR_CORPORATION,
+            CardAction.THORGATE_CORPORATION,
             CardAction.DEVTECHS_CORPORATION,
             CardAction.LAUNCH_STAR_CORPORATION,
-            CardAction.THORGATE_CORPORATION,
+            CardAction.CREDICOR_CORPORATION,
+            CardAction.MODPRO_CORPORATION,
+            CardAction.MAY_NI_PRODUCTIONS_CORPORATION,
+            CardAction.SULTIRA_CORPORATION,
             CardAction.TERACTOR_CORPORATION,
             CardAction.THARSIS_CORPORATION,
-            CardAction.CREDICOR_CORPORATION,
-            CardAction.ARCLIGHT_CORPORATION,
-            CardAction.SULTIRA_CORPORATION,
-            CardAction.PHOBOLOG_CORPORATION,
             CardAction.HYPERION_SYSTEMS_CORPORATION,
-            CardAction.MINING_GUILD_CORPORATION,
             CardAction.EXOCORP_CORPORATION,
-            CardAction.SATURN_SYSTEMS_CORPORATION,
             CardAction.APOLLO_CORPORATION,
             CardAction.ZETACELL_CORPORATION,
-            CardAction.AUSTELLAR_CORPORATION,
-            CardAction.ECOLINE_CORPORATION,
-            CardAction.MODPRO_CORPORATION,
-            CardAction.INVENTRIX_CORPORATION,
             CardAction.NEBU_LABS_CORPORATION,
-            CardAction.MAY_NI_PRODUCTIONS_CORPORATION,
-            CardAction.UNMI_CORPORATION,
-            CardAction.INTERPLANETARY_CINEMATICS
+            CardAction.INTERPLANETARY_CINEMATICS,
+            CardAction.AUSTELLAR_CORPORATION
     );
 
     //12

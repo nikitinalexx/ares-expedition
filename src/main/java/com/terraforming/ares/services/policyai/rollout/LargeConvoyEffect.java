@@ -6,6 +6,7 @@ import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.policyai.action.ActionInputService;
+import com.terraforming.ares.services.policyai.action.HeadAction;
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
 import org.apache.commons.collections4.CollectionUtils;
 
@@ -58,8 +59,8 @@ public class LargeConvoyEffect extends AbstractTagEffect {
         Card target = cardService.getCard(addAnimal.getFirst());
         return List.of(new EffectDecision() {
             @Override
-            public int getChosenAction() {
-                return ActionInputService.getAnimalTargetActionIndex(target);
+            public HeadAction getChosenAction() {
+                return ActionInputService.getAnimalTargetAction(target);
             }
 
             @Override
@@ -72,7 +73,7 @@ public class LargeConvoyEffect extends AbstractTagEffect {
     private EffectDecision pickPlantsDecision() {
         return new EffectDecision() {
             @Override
-            public int getChosenAction() {
+            public HeadAction getChosenAction() {
                 return ActionInputService.takePlantTargetAction();
             }
 

@@ -23,6 +23,11 @@ public abstract class AbstractTagEffect implements TagEffect {
     }
 
     protected void rolloutMicrobe(Class<?> target, PolicyRecord record, int count) {
+        if (target == BacterialAggregates.class) {
+            int currentMicrobes = record.microbeResources[0][ActionRegistry.MICROBE_TARGET_TO_OFFSET.get(target)];
+            int maxCanAdd = (5 - currentMicrobes);
+            count = Math.min(maxCanAdd, count);
+        }
         record.microbeResources[0][ActionRegistry.MICROBE_TARGET_TO_OFFSET.get(target)] += (byte) count;
 
         int total = count;

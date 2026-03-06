@@ -41,7 +41,7 @@ public class AiSecondPhaseActionProcessor {
     private final Network2FirstSecondPhaseActionProcessor network2FirstSecondPhaseActionProcessor;
 
     public void processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
-        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
+        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT || player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.POLICY) {
             network2FirstSecondPhaseActionProcessor.processTurn(possibleTurns, game, player);
             return;
         }
@@ -94,7 +94,7 @@ public class AiSecondPhaseActionProcessor {
         if (availableTurnFlow.getBestTurnType() == BestTurnType.SKIP) {
             aiTurnService.skipTurn(player);
         } else if (availableTurnFlow.getBestTurnType() == BestTurnType.EXTRA_CARD) {
-            aiTurnService.pickExtraCardTurnAsync(player);
+            aiTurnService.pickExtraBonusTurnAsync(player);
         } else if (availableTurnFlow.getBestTurnType() == BestTurnType.UNMI) {
             aiTurnService.unmiRtCorporationTurn(game, player);
         } else if (availableTurnFlow.getBestTurnType() == BestTurnType.PROJECT) {

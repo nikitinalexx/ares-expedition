@@ -40,7 +40,7 @@ public class PolicyPlayerIncomesFeature implements PlayerPolicyFeatureBlock {
         out.heatIncome[playerIndex] = (byte) player.getHeatIncome();
         out.cardIncome[playerIndex] = (byte) player.getCardIncome();
 
-        out.mc[playerIndex] = (float) player.getMc();
+        out.mc[playerIndex] = (short) player.getMc();
         out.plants[playerIndex] = (short) player.getPlants();
         out.heat[playerIndex] = (short) player.getHeat();
 

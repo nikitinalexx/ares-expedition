@@ -7,6 +7,7 @@ import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.policyai.action.ActionInputService;
+import com.terraforming.ares.services.policyai.action.HeadAction;
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
 import org.nd4j.common.io.CollectionUtils;
 
@@ -36,7 +37,7 @@ public class BiomedicalImportsEffect extends AbstractTagEffect {
 
     @Override
     public void prepareContext(PolicyRecord record) {
-        record.biomedicalImportsEffect = false;
+        record.biomedicalImportsEffect = true;
     }
 
     @Override
@@ -65,8 +66,8 @@ public class BiomedicalImportsEffect extends AbstractTagEffect {
 
         return new EffectDecision() {
             @Override
-            public int getChosenAction() {
-                return ActionInputService.choosePhaseUpgradeIndex(phaseUpgradeIndex);
+            public HeadAction getChosenAction() {
+                return ActionInputService.choosePhaseUpgradeAction(phaseUpgradeIndex);
             }
 
             @Override
@@ -82,7 +83,7 @@ public class BiomedicalImportsEffect extends AbstractTagEffect {
 
         return new EffectDecision() {
             @Override
-            public int getChosenAction() {
+            public HeadAction getChosenAction() {
                 if (choseOxygen) {
                     return ActionInputService.biomedicalImportsUpgradeOxygen();
                 } else {

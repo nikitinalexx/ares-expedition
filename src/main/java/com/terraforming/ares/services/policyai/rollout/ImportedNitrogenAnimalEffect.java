@@ -5,6 +5,7 @@ import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.policyai.action.ActionInputService;
+import com.terraforming.ares.services.policyai.action.HeadAction;
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
 import org.apache.commons.collections4.CollectionUtils;
 
@@ -30,11 +31,13 @@ public class ImportedNitrogenAnimalEffect extends AbstractTagEffect {
 
     @Override
     public void prepareContext(PolicyRecord ctx) {
+        ctx.microbePutCount = 3;
         ctx.animalPutCount = 2;
     }
 
     @Override
     public void clearContext(PolicyRecord ctx) {
+        ctx.microbePutCount = 0;
         ctx.animalPutCount = 0;
     }
 
@@ -50,8 +53,8 @@ public class ImportedNitrogenAnimalEffect extends AbstractTagEffect {
 
         return List.of(new EffectDecision() {
             @Override
-            public int getChosenAction() {
-                return ActionInputService.getAnimalTargetActionIndex(target);
+            public HeadAction getChosenAction() {
+                return ActionInputService.getAnimalTargetAction(target);
             }
 
             @Override

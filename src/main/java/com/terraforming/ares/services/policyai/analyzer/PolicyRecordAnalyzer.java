@@ -204,13 +204,13 @@ public class PolicyRecordAnalyzer {
     // -------------------------------------------------------------------------
 
     private void accumulateDataMax(FieldMeta meta, PolicyRecord record) throws IllegalAccessException {
-        Object value =value = meta.field.get(record);
+        Object value = meta.field.get(record);
         if (value == null) return;
 
         double max = 0.0;
 
         switch (meta.fieldKind) {
-            case PRIMITIVE_BYTE:   max = ((Byte)    value) & 0xFF; break;
+            case PRIMITIVE_BYTE:   max = ((Byte)    value); break;
             case PRIMITIVE_SHORT:  max = (short)    (Short)   value; break;
             case PRIMITIVE_INT:    max = (int)      (Integer) value; break;
             case PRIMITIVE_FLOAT:  max = (float)    (Float)   value; break;
@@ -218,7 +218,7 @@ public class PolicyRecordAnalyzer {
             case PRIMITIVE_BOOL:   max = ((Boolean) value) ? 1.0 : 0.0; break;
 
             case ARRAY_BYTE:
-                for (byte  v : (byte[])  value) max = Math.max(max, v & 0xFF); break;
+                for (byte  v : (byte[])  value) max = Math.max(max, v); break;
             case ARRAY_SHORT:
                 for (short v : (short[]) value) max = Math.max(max, v); break;
             case ARRAY_INT:
@@ -229,7 +229,7 @@ public class PolicyRecordAnalyzer {
                 for (long  v : (long[])  value) max = Math.max(max, v); break;
 
             case ARRAY2D_BYTE:
-                for (byte[]  row : (byte[][])  value) for (byte  v : row) max = Math.max(max, v & 0xFF); break;
+                for (byte[]  row : (byte[][])  value) for (byte  v : row) max = Math.max(max, v); break;
             case ARRAY2D_FLOAT:
                 for (float[] row : (float[][]) value) for (float v : row) max = Math.max(max, v); break;
 

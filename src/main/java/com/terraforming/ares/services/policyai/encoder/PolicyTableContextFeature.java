@@ -92,9 +92,8 @@ public class PolicyTableContextFeature implements PolicyFeatureBlock {
         out.builtSpecialDesignLastTurn = player.isBuiltSpecialDesignLastTurn();
         out.unmiTurnAvailable = player.isHasUnmiAction();
 
-
         if (currentPhase >= 1 && currentPhase <= 5) {
-            out.currentPhaseMask = 1 << (currentPhase - 1);
+            out.currentPhaseMask = (byte) (1 << (currentPhase - 1));
         }
 
 

@@ -17,6 +17,7 @@ import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsService;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
 import com.terraforming.ares.services.ai.network2.Network2ThirdPhaseActionProcessor;
 import com.terraforming.ares.services.ai.turnProcessors.random.AiRandomThirdPhaseActionProcessor;
+import com.terraforming.ares.services.policyai.service.PolicyActionProcessor;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -42,6 +43,7 @@ public class AiThirdPhaseActionProcessor {
     private final AiEndgameService aiEndgameService;
     private final AiRandomThirdPhaseActionProcessor aiRandomThirdPhaseActionProcessor;
     private final Network2ThirdPhaseActionProcessor network2ThirdPhaseActionProcessor;
+    private final PolicyActionProcessor policyActionProcessor;
 
     public AiThirdPhaseActionProcessor(AiTurnService aiTurnService,
                                        CardService cardService,
@@ -52,7 +54,7 @@ public class AiThirdPhaseActionProcessor {
                                        TestAiService testAiService,
                                        AiCardValidationService aiCardValidationService, AiBuildProjectService aiBuildProjectService, DeepNetwork deepNetwork, CardValidationService cardValidationService,
                                        AiEndgameService aiEndgameService,
-                                       AiRandomThirdPhaseActionProcessor aiRandomThirdPhaseActionProcessor, Network2ThirdPhaseActionProcessor network2ThirdPhaseActionProcessor) {
+                                       AiRandomThirdPhaseActionProcessor aiRandomThirdPhaseActionProcessor, Network2ThirdPhaseActionProcessor network2ThirdPhaseActionProcessor, PolicyActionProcessor policyActionProcessor) {
         this.aiTurnService = aiTurnService;
         this.cardService = cardService;
         this.aiPaymentHelper = aiPaymentHelper;
@@ -67,27 +69,34 @@ public class AiThirdPhaseActionProcessor {
         this.aiEndgameService = aiEndgameService;
         this.aiRandomThirdPhaseActionProcessor = aiRandomThirdPhaseActionProcessor;
         this.network2ThirdPhaseActionProcessor = network2ThirdPhaseActionProcessor;
+        this.policyActionProcessor = policyActionProcessor;
     }
 
-    public boolean processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
+    public void processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
+        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.POLICY) {
+            policyActionProcessor.processTurn(game, player, possibleTurns);
+            return;
+        }
         if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
-            return network2ThirdPhaseActionProcessor.processTurn(game, player, possibleTurns);
+            network2ThirdPhaseActionProcessor.processTurn(game, player, possibleTurns);
+            return;
         }
         if (player.getDifficulty().THIRD_PHASE_ACTION == AiTurnChoice.RANDOM) {
-            return aiRandomThirdPhaseActionProcessor.processTurn(game, player, possibleTurns);
+            aiRandomThirdPhaseActionProcessor.processTurn(game, player, possibleTurns);
+            return;
         }
         boolean played = playBlueCards(possibleTurns, game, player);
         if (played) {
-            return true;
+            return;
         } else if (doMandatoryResourceIntoTerraformingActions(possibleTurns, game, player)) {
-            return true;
+            return;
         }
 
         if (player.getSelectedCorporationCard() == 10000 || player.getSelectedCorporationCard() == 10100) {
             if (game.getPlanetAtTheStartOfThePhase().isTemperatureMax() && player.getHeat() > 0) {
                 player.setMc(player.getMc() + player.getHeat());
                 player.setHeat(0);
-                return true;
+                return;
             }
         }
 
@@ -110,16 +119,15 @@ public class AiThirdPhaseActionProcessor {
                     }).orElse(false);
 
             if (madeTurn) {
-                return true;
+                return;
             }
         }
 
         if (aiEndgameService.doFinalActionsIfGameFinished(game, player)) {
-            return true;
+            return;
         }
 
         aiTurnService.skipTurn(player);
-        return true;
     }
 
 

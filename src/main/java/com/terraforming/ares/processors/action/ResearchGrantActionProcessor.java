@@ -37,22 +37,25 @@ public class ResearchGrantActionProcessor implements BlueActionCardProcessor<Res
 
         assert inputTag != null;
 
+        final MarsContext marsContext = marsContextProvider.provide(game, player);
+
+        Map<Integer, List<Integer>> researchGrantInputParameters = new HashMap<>(inputParameters);
+        researchGrantInputParameters.put(InputFlag.RESEARCH_GRANT.getId(), List.of());
+
+        for (Integer playedCardId : player.getPlayed().getCards()) {
+            Card playedCard = cardService.getCard(playedCardId);
+            if (!playedCard.onBuiltEffectApplicableToOther()) {
+                continue;
+            }
+            playedCard.postProjectBuiltEffect(marsContext, new DummyCard(), researchGrantInputParameters);
+        }
+
         for (int i = 0; i < cardTags.size(); i++) {
             if (cardTags.get(i) == Tag.DYNAMIC) {
                 cardTags.set(i, inputTag);
                 break;
             }
         }
-
-        final MarsContext marsContext = marsContextProvider.provide(game, player);
-
-        Map<Integer, List<Integer>> researchGrantInputParameters = new HashMap<>(inputParameters);
-        researchGrantInputParameters.put(InputFlag.RESEARCH_GRANT.getId(), List.of());
-
-        player.getPlayed().getCards().stream()
-                .map(cardService::getCard)
-                .filter(Card::onBuiltEffectApplicableToOther)
-                .forEach(card -> card.postProjectBuiltEffect(marsContext, new DummyCard(), researchGrantInputParameters));
 
         if (game.isCrysis()) {
             new ArrayList<>(game.getCrysisData()

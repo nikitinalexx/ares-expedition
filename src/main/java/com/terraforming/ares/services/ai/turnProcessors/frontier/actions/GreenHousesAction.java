@@ -23,4 +23,8 @@ public class GreenHousesAction extends BlueAction {
         state.plants += exchangeRate;
     }
 
+    @Override
+    public Object getContext(StateContext stateContext) {
+        return exchangeRate;
+    }
 }

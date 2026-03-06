@@ -13,6 +13,7 @@ import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.ICardValueService;
 import com.terraforming.ares.services.ai.network2.Network2DiscardCardsProcessor;
 import com.terraforming.ares.services.policyai.PolicyCollectService;
+import com.terraforming.ares.services.policyai.service.PolicyDecisionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -34,6 +35,7 @@ public class AiDiscardCardsTurn implements AiTurnProcessor {
     private final AiPickCardProjectionService aiPickCardProjectionService;
     private final Network2DiscardCardsProcessor network2DiscardCardsProcessor;
     private final PolicyCollectService policyCollectService;
+    private final PolicyDecisionService policyDecisionService;
 
 
     @Override
@@ -45,36 +47,27 @@ public class AiDiscardCardsTurn implements AiTurnProcessor {
     public boolean processTurn(MarsGame game, Player player) {
         DiscardCardsTurn nextTurn = (DiscardCardsTurn) player.getNextTurn();
 
-        List<Integer> cardsToDiscardFromm;
+        List<Integer> discarding;
         if (nextTurn.isOnlyFromSelectedCards()) {
-            cardsToDiscardFromm = new ArrayList<>(nextTurn.getCards());
+            discarding = new ArrayList<>(nextTurn.getCards());
         } else {
-            cardsToDiscardFromm = new ArrayList<>(player.getHand().getCards());
+            discarding = new ArrayList<>(player.getHand().getCards());
         }
 
-        int cardsToKeepCount = cardsToDiscardFromm.size() - nextTurn.getSize();
+        int cardsToKeepCount = discarding.size() - nextTurn.getSize();
 
-        if (player.getDifficulty().CARDS_PICK == AiCardsChoice.NETWORK_PROJECTION) {
-            List<Integer> cardsToKeep = aiPickCardProjectionService.getBestCards(game, player, cardsToDiscardFromm, cardsToKeepCount);
-            cardsToDiscardFromm.removeAll(cardsToKeep);
-        } else if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
-            List<Integer> cardsToKeep = network2DiscardCardsProcessor.getBestCards(game, player, cardsToDiscardFromm, cardsToKeepCount);
-            cardsToDiscardFromm.removeAll(cardsToKeep);
-
-            if ((game.getStateType() == StateType.PICK_CORPORATIONS || game.getStateType() == StateType.BUILD_GREEN_PROJECTS || game.getStateType() == StateType.BUILD_BLUE_RED_PROJECTS || game.getStateType() == StateType.PERFORM_BLUE_ACTION || game.getStateType() == StateType.DRAFT_CARDS)) {
-
-                if (nextTurn.isOnlyFromSelectedCards()) {
-                    policyCollectService.discardingFromSelected(
-                            game,
-                            player,
-                            nextTurn.getCards(),
-                            cardsToDiscardFromm
-                    );
-                } else {
-                    policyCollectService.discardingFromHandPostBuild(game, player, cardsToDiscardFromm);
-                }
+        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.POLICY) {
+            if (nextTurn.isOnlyFromSelectedCards()) {
+                discarding = policyDecisionService.discardingFromSelected(game, player, discarding, nextTurn.getSize());
+            } else {
+                discarding = policyDecisionService.discardingFromHandPostBuild(game, player, nextTurn.getSize());
             }
-
+        } else if (player.getDifficulty().CARDS_PICK == AiCardsChoice.NETWORK_PROJECTION) {
+            List<Integer> cardsToKeep = aiPickCardProjectionService.getBestCards(game, player, discarding, cardsToKeepCount);
+            discarding.removeAll(cardsToKeep);
+        } else if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
+            List<Integer> cardsToKeep = network2DiscardCardsProcessor.getBestCards(game, player, discarding, cardsToKeepCount);
+            discarding.removeAll(cardsToKeep);
         } else {
             for (int i = 0; i < cardsToKeepCount; i++) {
                 //keep best card
@@ -82,31 +75,31 @@ public class AiDiscardCardsTurn implements AiTurnProcessor {
 
                 switch (player.getDifficulty().CARDS_PICK) {
                     case FILE_VALUE:
-                        bestCard = cardValueService.getBestCard(game, player, cardsToDiscardFromm, game.getTurns());
+                        bestCard = cardValueService.getBestCard(game, player, discarding, game.getTurns());
                         if (bestCard != null && Constants.LOG_NET_COMPARISON) {
                             System.out.println("Keeping statistics " + cardService.getCard(bestCard).getClass().getSimpleName());
                         }
                         break;
                     case RANDOM:
-                        bestCard = cardsToDiscardFromm.get(ThreadLocalRandom.current().nextInt(cardsToDiscardFromm.size()));
+                        bestCard = discarding.get(ThreadLocalRandom.current().nextInt(discarding.size()));
                         break;
                 }
 
-                cardsToDiscardFromm.remove(bestCard);
+                discarding.remove(bestCard);
             }
         }
 
 
         if (Constants.LOG_NET_COMPARISON) {
-            System.out.println("Discarding " + cardsToDiscardFromm.stream().map(cardService::getCard).map(card -> card.getClass().getSimpleName()).collect(Collectors.joining(",")));
+            System.out.println("Discarding " + discarding.stream().map(cardService::getCard).map(card -> card.getClass().getSimpleName()).collect(Collectors.joining(",")));
             System.out.println();
         }
 
         aiTurnService.discardCards(
                 game,
                 player,
-                new DiscardCardsTurn(player.getUuid(), cardsToDiscardFromm, cardsToDiscardFromm.size(), false, false, List.of()),
-                cardsToDiscardFromm
+                new DiscardCardsTurn(player.getUuid(), discarding, discarding.size(), false, false, List.of()),
+                discarding
         );
 
         return true;

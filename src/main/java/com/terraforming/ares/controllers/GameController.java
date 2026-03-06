@@ -31,6 +31,7 @@ import com.terraforming.ares.services.policyai.GameArenaContext;
 import com.terraforming.ares.services.policyai.analyzer.PolicyRecordAnalyzer;
 import com.terraforming.ares.services.policyai.dto.GameRecordArena;
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
+import com.terraforming.ares.services.policyai.writer.PolicyDatasetWriter;
 import com.terraforming.ares.services.simulations.*;
 import lombok.RequiredArgsConstructor;
 import org.nd4j.common.primitives.AtomicDouble;
@@ -113,7 +114,7 @@ public class GameController {
                 throw new IllegalArgumentException("Discovery expansion is a default mode for this game");
             }
 
-            gameParameters.setComputers(List.of(PlayerDifficulty.NONE, PlayerDifficulty.NETWORK_V2));
+            gameParameters.setComputers(List.of(PlayerDifficulty.NONE, PlayerDifficulty.POLICY_NETWORK));
 
             int aiPlayerCount = (int) gameParameters.getComputers().stream().filter(item -> item != PlayerDifficulty.NONE).count();
             int playersCount = gameParameters.getPlayerNames().size();
@@ -597,8 +598,8 @@ public class GameController {
     }
 
     @GetMapping("/simulations/v4/collect")
-    public void collectSimulationsDataV4(@RequestBody CollectDataRequest request) throws InterruptedException {
-        List<PlayerDifficulty> difficulties = List.of(PlayerDifficulty.NETWORK_V2, PlayerDifficulty.NETWORK_V2);
+    public void collectSimulationsDataV4(@RequestBody CollectDataRequest request) {
+        List<PlayerDifficulty> difficulties = List.of(PlayerDifficulty.POLICY_NETWORK, PlayerDifficulty.POLICY_NETWORK);
 
         List<String> playerNames = new ArrayList<>();
         int counter = 1;
@@ -621,7 +622,7 @@ public class GameController {
         LongAdder completedCount = new LongAdder(); // Счетчик завершенных игр
         long startTime = System.currentTimeMillis();
 
-        int MAX_CONCURRENT_GAMES = 2000;
+        int MAX_CONCURRENT_GAMES = 500;
         Semaphore semaphore = new Semaphore(MAX_CONCURRENT_GAMES);
 
         BlockingQueue<GameRecordArena> finishedGames = new ArrayBlockingQueue<>(1000); // backpressure
@@ -655,7 +656,7 @@ public class GameController {
                         semaphore.acquire();
 
                         MarsGame game = gameService.createNewSimulation(gameParameters);
-                        GameRecordArena gameArena = new GameRecordArena();
+                        GameRecordArena gameArena = null;
 
                         ScopedValue.where(
                                 GameArenaContext.ARENA,
@@ -674,7 +675,7 @@ public class GameController {
                         // lock-free добавление в очередь
                         finishedAnalyzers.add(localAnalyzer);
 
-//                        finishedGames.add(gameArena);
+                        finishedGames.add(gameArena);
 
                         sumOfRecords.addAndGet(gameArena.size());
 

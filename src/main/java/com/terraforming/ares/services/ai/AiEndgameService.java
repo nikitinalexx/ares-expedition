@@ -16,7 +16,6 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -80,7 +79,6 @@ public class AiEndgameService {
     public boolean isFinishingGame(MarsGame game, Player player) {
         if (!game.gameEndCondition() && canFinishGame(game, player)) {
             if (!player.getHand().isEmpty()) {
-                policyCollectService.sellCards(game, player, player.getHand().getCards().stream().map(cardService::getCard).collect(Collectors.toList()));
                 aiTurnService.sellCards(player, game, new ArrayList<>(player.getHand().getCards()));
             }
             while (game.getPlanet().temperatureLeft() > 0) {

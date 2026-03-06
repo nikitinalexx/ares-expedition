@@ -8,6 +8,7 @@ import com.terraforming.ares.services.policyai.dto.PolicyRecord;
 import com.terraforming.ares.services.policyai.encoder.PolicyTableAndHandEncoder;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -24,7 +25,7 @@ public class EffectChainProcessor {
             MarsGame game,
             Player player,
             Player anotherPlayer,
-            Card selectedCard) {
+            Card playedCard) {
 
         List<TagEffect> active = effects.stream()
                 .filter(TagEffect::isPresent)
@@ -32,66 +33,54 @@ public class EffectChainProcessor {
 
         if (active.isEmpty()) return;
 
-        PolicyRecord pendingRecord = null;
-        boolean addedToArena = false;
+        PolicyRecord current = null;
 
         for (int ei = 0; ei < active.size(); ei++) {
             TagEffect effect = active.get(ei);
 
-            EffectStateReader stateReader = pendingRecord != null
-                    ? new RecordStateReader(pendingRecord)
+            EffectStateReader stateReader = current != null
+                    ? new RecordStateReader(current)
                     : new PlayerStateReader(player);
 
             List<EffectDecision> decisions = effect.resolveDecisions(stateReader);
 
-            // Encode один раз лениво при первом любом эффекте
-            if (pendingRecord == null) {
-                pendingRecord = new PolicyRecord();
-                encoder.encode(game, player, anotherPlayer, pendingRecord);
-                if (selectedCard != null) {
-                    pendingRecord.selectCard(selectedCard);
+            if (current == null) {//TODO optimize if last
+                current = new PolicyRecord();
+                if (playedCard != null) {
+                    current.selectCard(playedCard);
                 }
+                encoder.encode(game, player, anotherPlayer, current);
             }
 
-            if (decisions.isEmpty()) {
-                effect.applySideEffect(pendingRecord);
+            if (decisions.isEmpty()) {//TODO optimize if last
+                effect.applySideEffect(current);
                 continue;
             }
 
-            // Есть решения — выставляем контекст этого эффекта
-            effect.prepareContext(pendingRecord);
+            effect.prepareContext(current);
 
-            // Если ещё не в арене — добавляем
-            if (!addedToArena) {
-                GameArenaContext.current().add(pendingRecord);
-                addedToArena = true;
-            }
+            boolean isLastEffect = ei == active.size() - 1;
 
             for (int di = 0; di < decisions.size(); di++) {
                 EffectDecision decision = decisions.get(di);
-                boolean lastDecisionInEffect = di == decisions.size() - 1;
-                boolean lastEffectOverall = ei == active.size() - 1;
-                // Есть ли ещё что-то после этого решения
-                boolean hasMore = !lastDecisionInEffect || !lastEffectOverall;
+                boolean lastInEffect = di == decisions.size() - 1;
+                boolean lastOverall = lastInEffect && isLastEffect;
 
-                pendingRecord.chosenAction = decision.getChosenAction();
+                current.setAction(decision.getChosenAction());
+                GameArenaContext.current().add(current);
 
-                if (hasMore) {
-                    PolicyRecord next = new PolicyRecord();
-                    next.copyFrom(pendingRecord);
-                    decision.applyRollout(next);
+                if (lastOverall) return;
 
-                    // Если это последнее решение этого эффекта — сбрасываем его контекст
-                    if (lastDecisionInEffect) {
-                        effect.clearContext(next);
-                    }
+                PolicyRecord next = new PolicyRecord();
+                next.copyFrom(current);
+                decision.applyRollout(next);
 
-                    GameArenaContext.current().add(next);
-                    pendingRecord = next;
+                if (lastInEffect) {
+                    effect.clearContext(next);
                 }
+
+                current = next;
             }
         }
-
-        // Если не было ни одного решения — в арену ничего не попало, всё верно
     }
 }

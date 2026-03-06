@@ -16,6 +16,7 @@ import com.terraforming.ares.services.ai.turnFlow.AvailableTurnFlow;
 import com.terraforming.ares.services.ai.turnFlow.BestTurnType;
 import com.terraforming.ares.services.ai.network2.Network2FirstSecondPhaseActionProcessor;
 import com.terraforming.ares.services.ai.turnProcessors.random.AiRandomFirstPhaseActionProcessor;
+import com.terraforming.ares.services.policyai.service.PolicyFirstSecondPhaseActionProcessor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -33,8 +34,13 @@ public class AiFirstPhaseActionProcessor {
     private final AiTurnService aiTurnService;
     private final AiCardBuildParamsService aiCardBuildParamsService;
     private final AiPaymentService aiPaymentHelper;
+    private final PolicyFirstSecondPhaseActionProcessor policyFirstSecondPhaseActionProcessor;
 
     public void processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
+        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.POLICY) {
+            policyFirstSecondPhaseActionProcessor.processTurn(possibleTurns, game, player);
+            return;
+        }
         if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
             network2FirstSecondPhaseActionProcessor.processTurn(possibleTurns, game, player);
             return;

@@ -3,6 +3,7 @@ package com.terraforming.ares.services.policyai.rollout;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.services.policyai.action.ActionInputService;
+import com.terraforming.ares.services.policyai.action.HeadAction;
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
 import org.apache.commons.collections4.CollectionUtils;
 
@@ -38,7 +39,7 @@ public class DynamicTagEffect extends AbstractTagEffect {
 
         return List.of(new EffectDecision() {
             @Override
-            public int getChosenAction() {
+            public HeadAction getChosenAction() {
                 return ActionInputService.chooseTag(tagIndex);
             }
 

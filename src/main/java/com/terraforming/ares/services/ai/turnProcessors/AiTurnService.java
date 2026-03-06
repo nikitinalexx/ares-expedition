@@ -152,11 +152,11 @@ public class AiTurnService {
         }
     }
 
-    public void pickExtraCardTurnAsync(Player player) {
+    public void pickExtraBonusTurnAsync(Player player) {
         makeAsyncTurn(player, new PickExtraBonusSecondPhase(player.getUuid()));
     }
 
-    public void pickExtraCardTurnSync(Player player, MarsGame game) {
+    public void pickExtraBonusTurnSync(Player player, MarsGame game) {
         makeSyncTurn(player, game, new PickExtraBonusSecondPhase(player.getUuid()));
     }
 

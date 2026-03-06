@@ -9,6 +9,7 @@ import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.ICardValueService;
 import com.terraforming.ares.services.ai.network2.Network2DiscardCardsProcessor;
 import com.terraforming.ares.services.policyai.PolicyCollectService;
+import com.terraforming.ares.services.policyai.service.PolicyDecisionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -28,6 +29,7 @@ public class AiSellCardsLastRoundTurn implements AiTurnProcessor {
     private final AiPickCardProjectionService aiPickCardProjectionService;
     private final Network2DiscardCardsProcessor network2DiscardCardsProcessor;
     private final PolicyCollectService policyCollectService;
+    private final PolicyDecisionService policyDecisionService;
 
     @Override
     public TurnType getType() {
@@ -42,13 +44,12 @@ public class AiSellCardsLastRoundTurn implements AiTurnProcessor {
 
         List<Integer> cardsToSell = new ArrayList<>();
 
-        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
+        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.POLICY) {
+            cardsToSell = policyDecisionService.sellCardsAfterGenerationEnd(game, player, cardsToSellCount);
+        } else if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
             List<Integer> cardsToKeep = network2DiscardCardsProcessor.getBestCards(game, player, allCards, 10);
             cardsToSell.addAll(allCards);
             cardsToSell.removeAll(cardsToKeep);
-
-            policyCollectService.sellCardsAfterGenerationEnd(game, player, cardsToSell);
-
         } else if (player.getDifficulty().CARDS_PICK == AiCardsChoice.NETWORK_PROJECTION) {
             cardsToSell = aiPickCardProjectionService.getCardsToSell(game, player, allCards, cardsToSellCount);
         } else {

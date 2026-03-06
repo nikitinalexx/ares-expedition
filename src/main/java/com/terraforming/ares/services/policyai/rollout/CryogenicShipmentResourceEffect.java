@@ -6,6 +6,7 @@ import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.policyai.action.ActionInputService;
+import com.terraforming.ares.services.policyai.action.HeadAction;
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
 import org.apache.commons.collections4.CollectionUtils;
 
@@ -51,11 +52,11 @@ public class CryogenicShipmentResourceEffect extends AbstractTagEffect {
 
         return List.of(new EffectDecision() {
             @Override
-            public int getChosenAction() {
+            public HeadAction getChosenAction() {
                 if (target.getCollectableResource() == CardCollectableResource.ANIMAL) {
-                    return ActionInputService.getAnimalTargetActionIndex(target);
+                    return ActionInputService.getAnimalTargetAction(target);
                 } else {
-                    return ActionInputService.getMicrobeTargetActionIndex(target);
+                    return ActionInputService.getMicrobeTargetAction(target);
                 }
             }
 

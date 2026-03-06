@@ -3,10 +3,13 @@ package com.terraforming.ares.services.policyai.dto;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.awards.AwardType;
 import com.terraforming.ares.services.ai.AiConstants;
+import com.terraforming.ares.services.policyai.action.HeadAction;
 import com.terraforming.ares.services.policyai.annotations.BitMask;
 import com.terraforming.ares.services.policyai.annotations.DataField;
 import com.terraforming.ares.services.policyai.annotations.Feature;
 import lombok.Data;
+
+import java.util.Arrays;
 
 import static com.terraforming.ares.services.ai.AiConstants.BLUE_CARDS_INDEX_BY_CLASS;
 import static com.terraforming.ares.services.policyai.annotations.Feature.FeatureScope.TABLE;
@@ -36,102 +39,141 @@ public class PolicyRecord {
     // Global params — состояние планеты
     // =========================================================================
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte oxygenLeft;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte temperatureLeft;
 
-    /** Битовая маска 9 океанов. */
-    @Feature(scope = TABLE) @BitMask(validBits = 9)
+    /**
+     * Битовая маска 9 океанов.
+     */
+    @Feature(scope = TABLE_AND_HAND)
+    @BitMask(validBits = 9)
     public short openOceans;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte lastOceanCards;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte lastOceanPlants;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte lastOceanMc;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public boolean stillCanDoOxygen;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public boolean stillCanDoTemperature;
 
     // =========================================================================
     // Phase masks
     // =========================================================================
 
-    /** 5 бит состояния dummy. */
-    @Feature(scope = TABLE) @BitMask(validBits = 5)
+    /**
+     * 5 бит состояния dummy.
+     */
+    @Feature(scope = TABLE)
+    @BitMask(validBits = 5)
     public byte dummyStateMask;
 
-    /** 5 бит на игрока — фазы предыдущего хода. */
-    @Feature(scope = TABLE) @BitMask(validBits = 5)
+    /**
+     * 5 бит на игрока — фазы предыдущего хода.
+     */
+    @Feature(scope = TABLE)
+    @BitMask(validBits = 5)
     public byte[] previousPhaseMask = new byte[2];
 
-    /** 5 бит на игрока — выбранные фазы. */
-    @Feature(scope = TABLE) @BitMask(validBits = 5)
+    /**
+     * 5 бит на игрока — выбранные фазы.
+     */
+    @Feature(scope = TABLE)
+    @BitMask(validBits = 5)
     public byte[] chosenPhaseMask = new byte[2];
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean isFirstPlayer;
 
     // =========================================================================
-    // Milestones — 10 штук, НЕ битовые маски
+    // Milestones — 11 штук, НЕ битовые маски
     // =========================================================================
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte[] milestoneInGame = new byte[AiConstants.MILESTONE_TYPES.size()];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public float[] milestoneMyProgress = new float[AiConstants.MILESTONE_TYPES.size()];
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public float[] milestoneOpponentProgress = new float[AiConstants.MILESTONE_TYPES.size()];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte[] austellarMilestoneOwner = new byte[AiConstants.MILESTONE_TYPES.size()]; // 1, 0, -1
 
     // =========================================================================
     // Awards — 6 штук, НЕ битовые маски
     // =========================================================================
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte[] awardInGame = new byte[AiConstants.AWARD_TYPES.size()];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public float[] awardMyProgress = new float[AiConstants.AWARD_TYPES.size()];
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public float[] awardOpponentProgress = new float[AiConstants.AWARD_TYPES.size()];
 
     // =========================================================================
     // Blue actions
     // =========================================================================
 
-    /** Маска синих действий, биты 0–36 (37 карт). */
-    @Feature(scope = TABLE) @BitMask(validBits = 37)
+    /**
+     * Маска синих действий, биты 0–36 (37 карт).
+     */
+    @Feature(scope = TABLE)
+    @BitMask(validBits = 37)
     public long blueActionFirstMask;
 
-    /** Маска синих действий, биты 0–36 (37 карт). */
-    @Feature(scope = TABLE) @BitMask(validBits = 37)
+    /**
+     * Маска синих действий, биты 0–36 (37 карт).
+     */
+    @Feature(scope = TABLE)
+    @BitMask(validBits = 37)
     public long blueActionSecondMask;
 
-    /** Маска синих одиночных действий, биты 0–11 (12 карт). */
-    @Feature(scope = TABLE) @BitMask(validBits = 12)
+    /**
+     * Маска синих одиночных действий, биты 0–11 (12 карт).
+     */
+    @Feature(scope = TABLE)
+    @BitMask(validBits = 12)
     public int blueActionSingleMask;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public byte blueExtraActivationsLeft;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean builtSpecialDesignLastTurn;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean unmiTurnAvailable;
 
     // =========================================================================
@@ -139,349 +181,454 @@ public class PolicyRecord {
     // Не участвуют в анализе нормализации, но идут в вектор стола.
     // =========================================================================
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean initialSetup;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean doingMulligan;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean pickingCorporation;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean payingForTheBuild;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public byte mulliganToDraw;
 
-    /** 5-битная маска текущей фазы. */
-    @Feature(scope = TABLE) @BitMask(validBits = 5)
-    public int currentPhaseMask;
+    /**
+     * 5-битная маска текущей фазы.
+     */
+    @Feature(scope = TABLE)
+    @BitMask(validBits = 5)
+    public byte currentPhaseMask;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean choosingPhase1Upgrade;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean choosingPhase2Upgrade;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean choosingPhase3Upgrade;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean choosingPhase4Upgrade;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean choosingPhase5Upgrade;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean choosingTag;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public byte universalPhaseUpgradeCount;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean choosingPhase;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean sellingCards;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean helionExchanging;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public byte cardsLeftToDiscard;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public byte marsUniversityDiscardsLeft;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public byte decomposersActivationsLeft;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public byte viralEnhancersActivationsLeft;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public byte animalPutCount;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public byte microbePutCount;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean postBuildDiscarding;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean discardingFromSelected;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean discardingLastTurn;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean ceosFavoriteProjectEffect;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean syntheticCatastropheEffect;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean importedHydrogenEffect;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean largeConvoyEffect;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean localHeatTrappingEffect;
 
-    @Feature(scope = TABLE) @DataField
-    public boolean astrofarmEffect;
-
-    @Feature(scope = TABLE) @DataField
-    public boolean eosChasmaEffect;
-
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean cryogenicShipmentEffect;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean biomedicalImportsEffect;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean austellarChoosing;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean conservedBiomeAction;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean decomposingFungus;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean extremeColdFungus;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean farmingCoops;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean ghgProduction;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean regolithEaters;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean nitriteReductingBacteria;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean selfReplicatingBacteria;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean greenHouses;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean matterGenerator;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean powerInfrastructure;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean redraftedContracts;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public boolean fibrousComposite;
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public byte redraftedDiscarded;
 
     // =========================================================================
     // Builds
     // =========================================================================
 
-    /** 11 бит доступных построек. */
-    @Feature(scope = TABLE) @BitMask(validBits = 13)
+    /**
+     * 11 бит доступных построек.
+     */
+    @Feature(scope = TABLE)
+    @BitMask(validBits = 13)
     public short ownedBuildsMask;
 
     // =========================================================================
     // Phase upgrades — 5 бит на игрока
     // =========================================================================
 
-    /** 2 бита на каждую из 5 фаз => 10 бит на игрока. */
-    @Feature(scope = TABLE_AND_HAND) @BitMask(validBits = 10)
+    /**
+     * 2 бита на каждую из 5 фаз => 10 бит на игрока.
+     */
+    @Feature(scope = TABLE_AND_HAND)
+    @BitMask(validBits = 10)
     public int[] phaseUpgrades = new int[2];
 
     // =========================================================================
     // Victory / board
     // =========================================================================
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public short[] winPointsNoForests = new short[2];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public short[] forests = new short[2];
 
     // =========================================================================
     // Incomes
     // =========================================================================
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public short[] mcIncomeTotal = new short[2];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte[] steelIncome = new byte[2];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte[] titaniumIncome = new byte[2];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte[] plantsIncome = new byte[2];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte[] heatIncome = new byte[2];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte[] cardIncome = new byte[2];
 
     // =========================================================================
     // Resources
     // =========================================================================
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
-    public float[] mc = new float[2];
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
+    public short[] mc = new short[2];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public short[] plants = new short[2];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public short[] heat = new short[2];
 
     // =========================================================================
     // Cards counts
     // =========================================================================
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public short[] playedCards = new short[2];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public short[] blueCards = new short[2];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public short[] greenCards = new short[2];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte[] handSize = new byte[2];
 
     // =========================================================================
     // Tags
     // =========================================================================
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte[] spaceTags = new byte[2];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte[] earthTags = new byte[2];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte[] eventTags = new byte[2];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte[] scienceTags = new byte[2];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte[] plantTags = new byte[2];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte[] energyTags = new byte[2];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte[] buildingTags = new byte[2];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte[] animalTags = new byte[2];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte[] jupiterTags = new byte[2];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte[] microbeTags = new byte[2];
 
     // =========================================================================
     // Engine actions — 2 * ENGINE_ACTIONS, НЕ маски
     // =========================================================================
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte[] engineActionCount = new byte[2 * ENGINE_ACTIONS];
 
     // =========================================================================
-    // Corporation masks — 24 бита на игрока
+    // Corporation masks — 25 бита на игрока
     // =========================================================================
 
-    @Feature(scope = TABLE_AND_HAND) @BitMask(validBits = 25)
+    @Feature(scope = TABLE_AND_HAND)
+    @BitMask(validBits = 25)
     public int[] corporationMask = new int[2];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte[] arclightResources = new byte[2];
 
     // =========================================================================
     // Played cards — битовые маски карт
     // =========================================================================
 
-    /** 82 флага синих карт, packed в 2 longs на игрока: [64, 18, 64, 18] бит. */
-    @Feature(scope = TABLE_AND_HAND) @BitMask(bitsPerElement = {64, 18, 64, 18})
+    /**
+     * 82 флага синих карт, packed в 2 longs на игрока: [64, 19, 64, 19] бит.
+     */
+    @Feature(scope = TABLE_AND_HAND)
+    @BitMask(bitsPerElement = {64, 19, 64, 19})
     public long[][] playedBlueCards = new long[2][2];
 
-    /** 17 бит зелёных карт. */
-    @Feature(scope = TABLE_AND_HAND) @BitMask(validBits = 17)
+    /**
+     * 17 бит зелёных карт.
+     */
+    @Feature(scope = TABLE_AND_HAND)
+    @BitMask(validBits = 17)
     public int[] playedGreenCards = new int[2];
 
-    /** 49 бит красных карт. */
-    @Feature(scope = TABLE) @BitMask(validBits = 49)
+    /**
+     * 49 бит красных карт.
+     */
+    @Feature(scope = TABLE)
+    @BitMask(validBits = 49)
     public long playedRedCardsMask;
 
     // =========================================================================
     // Max incomes — лучшая карта на столе
     // =========================================================================
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public short[] maxMcIncome = new short[2];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public short[] maxHeatIncome = new short[2];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte[] maxPlantsIncome = new byte[2];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public float[] maxCardsIncome = new float[2];
 
     // =========================================================================
     // Research grant
     // =========================================================================
 
-    @Feature(scope = TABLE) @DataField
+    @Feature(scope = TABLE)
+    @DataField
     public byte[] researchGrantDynamicTags = new byte[2];
 
     // =========================================================================
     // Animals / Microbes
     // =========================================================================
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte[][] animalResources = new byte[2][8];
 
-    @Feature(scope = TABLE_AND_HAND) @DataField
+    @Feature(scope = TABLE_AND_HAND)
+    @DataField
     public byte[][] microbeResources = new byte[2][9];
 
     // =========================================================================
     // Hand & selectable card masks — только рука (TABLE_AND_HAND, но это HAND-only данные)
     // =========================================================================
 
-    /** 268 бит карт в руке: 4 * 64 + 12 = 268. */
-    @Feature(scope = TABLE_AND_HAND) @BitMask(validBits = 64, lastElementBits = 12)
+    /**
+     * 268 бит карт в руке: 4 * 64 + 12 = 268.
+     */
+    @Feature(scope = TABLE_AND_HAND)
+    @BitMask(validBits = 64, lastElementBits = 12)
     public long[] handCardMask = new long[5];
 
-    /** 268 бит выбираемых карт: 4 * 64 + 12 = 268. */
-    @Feature(scope = TABLE_AND_HAND) @BitMask(validBits = 64, lastElementBits = 12)
+    /**
+     * 268 бит выбираемых карт: 4 * 64 + 12 = 268.
+     */
+    @Feature(scope = TABLE_AND_HAND)
+    @BitMask(validBits = 64, lastElementBits = 12)
     public long[] selectableCardMask = new long[5];
 
     // =========================================================================
     // Train targets — служебные поля, не участвуют в анализе и трансформации
     // =========================================================================
 
-    public int chosenAction = -1;
+    public byte chosenHead = -1;
+    public short chosenLocalIndex = -1;
     public float outcome;
+
+    public void setAction(HeadAction action) {
+        chosenHead = (byte) action.head().ordinal();
+        chosenLocalIndex = (short) action.localIndex();
+    }
 
     // =========================================================================
     // Methods (без изменений)
@@ -545,8 +692,6 @@ public class PolicyRecord {
         importedHydrogenEffect = s.importedHydrogenEffect;
         largeConvoyEffect = s.largeConvoyEffect;
         localHeatTrappingEffect = s.localHeatTrappingEffect;
-        astrofarmEffect = s.astrofarmEffect;
-        eosChasmaEffect = s.eosChasmaEffect;
         cryogenicShipmentEffect = s.cryogenicShipmentEffect;
         biomedicalImportsEffect = s.biomedicalImportsEffect;
         animalPutCount = s.animalPutCount;
@@ -623,13 +768,14 @@ public class PolicyRecord {
         System.arraycopy(s.playedGreenCards, 0, playedGreenCards, 0, 2);
 
         playedRedCardsMask = s.playedRedCardsMask;
-        chosenAction = s.chosenAction;
-        outcome = s.outcome;
+
+        reset();
     }
 
     public void reset() {
-        outcome = 0f;
-        chosenAction = -1;
+        outcome = -1;
+        chosenHead = -1;
+        chosenLocalIndex = -1;
     }
 
     public void removeCardFromHand(Card card) {
@@ -693,4 +839,17 @@ public class PolicyRecord {
         mask |= (upgradeType << shift);
         phaseUpgrades[0] = mask;
     }
+
+    public int[] getPhaseUpgrades() {
+        int[] result = new int[5];
+        int mask = phaseUpgrades[0];
+
+        for (int phase = 0; phase < 5; phase++) {
+            int shift = phase * 2;
+            result[phase] = (mask >> shift) & 0b11;
+        }
+
+        return result;
+    }
+
 }

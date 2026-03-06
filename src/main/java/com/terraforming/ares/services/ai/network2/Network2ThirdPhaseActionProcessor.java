@@ -91,10 +91,6 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
     }
 
     public boolean processTurn(MarsGame game, Player player, List<TurnType> possibleTurns) {
-        if (AiConstants.ENABLE_SELL_AND_HEAT_EXPLORATION && ThreadLocalRandom.current().nextInt(30) == 0) {
-            network2DraftCardsProjectionService.performProactiveSale(game, player);
-        }
-
         Deck activatedBlueCards = player.getActivatedBlueCards();
 
         Map<Class<?>, Card> neverActivatedBlueCards = player.getPlayed().getCards().stream()
@@ -469,6 +465,9 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
                     finalizeUnmiTurn(game, player);
                     return true;
                 }
+                case Frontier.GREEN_HOUSES_ACTION_ID -> {
+                    return perform(allPlayedCards.get(GreenHouses.class), InputFlag.DISCARD_HEAT, (int) context, game, player);
+                }
 
                 default -> {
                     convertHeatIfPossible(game, player, context);
@@ -508,7 +507,6 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
         if (isCardConversion && !player.getActivatedBlueCards().containsCard(Constants.POWER_INFRASTRUCTURE_CARD_ID)) {
             finalizeBlueAction(game, player, cardService.getCard(Constants.POWER_INFRASTRUCTURE_CARD_ID), Map.of(InputFlag.DISCARD_HEAT.getId(), List.of(howMuchHeatToConvert)));
         } else {
-            policyCollectService.helionExchangeHeat(game, player, howMuchHeatToConvert);
             player.setMc(player.getMc() + howMuchHeatToConvert);
             player.setHeat(player.getHeat() - howMuchHeatToConvert);
         }

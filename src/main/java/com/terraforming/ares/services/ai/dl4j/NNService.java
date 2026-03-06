@@ -156,13 +156,14 @@ public class NNService {
             long usedMb = (total.get() - free.get()) / 1024 / 1024;
             long totalMb = total.get() / 1024 / 1024;
             long freeMb = free.get() / 1024 / 1024;
-            System.out.printf("GPU: %d/%d MB (free=%d MB)%n",usedMb, totalMb, freeMb);
+            System.out.printf("GPU: %d/%d MB (free=%d MB)%n", usedMb, totalMb, freeMb);
         } catch (Throwable t) {
             System.out.println("GPU mem log failed: " + t.getMessage());
         }
     }
 
     private void processInference(List<BatchRequest> batch, ComputationGraph net, int totalStates) {
+//        System.out.println("Total states " + totalStates);
         // 1. Определяем размеры из твоих констант (подставь свои имена констант)
         int tableSize = AiConstants.TABLE_VECTOR_SIZE;
         int handSize = AiConstants.HAND_VECTOR_SIZE;
@@ -190,7 +191,9 @@ public class NNService {
              INDArray handInput = Nd4j.create(handFlat, new int[]{totalStates, handSize}, 'c')) {
 
             try {
+//                long startTime = System.currentTimeMillis();
                 INDArray[] output = net.output(false, tableInput, handInput);
+//                System.out.println("Spent " + (System.currentTimeMillis() - startTime) + " ms");
 
                 try {
                     float[] outputData = output[0].data().asFloat();
