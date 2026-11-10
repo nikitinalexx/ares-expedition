@@ -14,5 +14,11 @@ public record Decision(DecisionType type, String playerUuid, float[] observation
         if (candidates.isEmpty()) {
             throw new IllegalArgumentException("A decision needs at least one candidate");
         }
+        int features = candidates.getFirst().features().length;
+        for (Candidate candidate : candidates) {
+            if (candidate.features().length != features) {
+                throw new IllegalArgumentException("Candidates of one decision must share a feature size");
+            }
+        }
     }
 }

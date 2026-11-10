@@ -264,15 +264,18 @@ class PickPhaseDecisionsTest extends EngineTestBase {
             assertEquals(com.terraforming.ares.model.StateType.GAME_END, game.getStateType());
         }
 
+        List<Decision> phases = capturingAgent.decisions.stream()
+                .filter(d -> d.type() == com.terraforming.ares.services.agent.DecisionType.PICK_PHASE)
+                .toList();
         Map<Integer, Integer> chosenPhases = new TreeMap<>();
-        for (Decision decision : capturingAgent.decisions) {
+        for (Decision decision : phases) {
             assertTrue(decision.candidates().size() == 4 || decision.candidates().size() == 5, "candidates: " + decision.candidates().size());
             decision.candidates().forEach(c -> assertTrue(c.id() >= 1 && c.id() <= 5));
         }
-        assertTrue(capturingAgent.decisions.size() > games * 15, "the agent decides about a phase every round: " + capturingAgent.decisions.size());
+        assertTrue(phases.size() > games * 15, "the agent decides about a phase every round: " + phases.size());
         // uniformly random agent must use all phases
         Set<Integer> offered = new TreeSet<>();
-        capturingAgent.decisions.forEach(d -> d.candidates().forEach(c -> offered.add(c.id())));
+        phases.forEach(d -> d.candidates().forEach(c -> offered.add(c.id())));
         assertEquals(Set.of(1, 2, 3, 4, 5), offered);
         chosenPhases.size();
     }

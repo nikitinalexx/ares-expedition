@@ -30,6 +30,7 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
     private final MarsContextProvider marsContextProvider;
     private final DeepNetwork deepNetwork;
     private final Network2CorporationAndMulliganService network2CorporationAndMulliganService;
+    private final com.terraforming.ares.services.agent.AgentDecisionService agentDecisionService;
 
 
     @Override
@@ -39,6 +40,10 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
 
     @Override
     public boolean processTurn(MarsGame game, Player player) {
+        if (player.getDifficulty().isAgent()) {
+            aiTurnService.mulliganCards(game, player, agentDecisionService.mulligan(game, player));
+            return true;
+        }
         List<Integer> cardsToDiscardSmart = getCardsToDiscardSmart(game, player, player.getHand().getCards().size());
         aiTurnService.mulliganCards(game, player, cardsToDiscardSmart);
         return true;

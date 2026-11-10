@@ -12,6 +12,7 @@ import com.terraforming.ares.model.action.ActionInputDataType;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.*;
+import com.terraforming.ares.services.agent.AgentDecisionService;
 import com.terraforming.ares.services.ai.AiConstants;
 import com.terraforming.ares.services.ai.AiDiscoveryDecisionService;
 import com.terraforming.ares.services.ai.AiEndgameService;
@@ -45,6 +46,7 @@ public class AiRandomThirdPhaseActionProcessor {
     private final CardValidationService cardValidationService;
     private final AiRandomSellCardsService aiRandomSellCardsService;
     private final SpecialEffectsService specialEffectsService;
+    private final AgentDecisionService agentDecisionService;
 
     public AiRandomThirdPhaseActionProcessor(List<ActionValidator<?>> validators,
                                              CardService cardService,
@@ -55,7 +57,8 @@ public class AiRandomThirdPhaseActionProcessor {
                                              TerraformingService terraformingService,
                                              AiRandomCardBuildParamsService aiRandomCardBuildParamsService,
                                              AiRandomPaymentService aiRandomPaymentService,
-                                             CardValidationService cardValidationService, AiRandomSellCardsService aiRandomSellCardsService, SpecialEffectsService specialEffectsService) {
+                                             CardValidationService cardValidationService, AiRandomSellCardsService aiRandomSellCardsService, SpecialEffectsService specialEffectsService,
+                                             AgentDecisionService agentDecisionService) {
         blueActionValidators = validators.stream().collect(
                 Collectors.toMap(
                         ActionValidator::getType,
@@ -73,9 +76,36 @@ public class AiRandomThirdPhaseActionProcessor {
         this.cardValidationService = cardValidationService;
         this.aiRandomSellCardsService = aiRandomSellCardsService;
         this.specialEffectsService = specialEffectsService;
+        this.agentDecisionService = agentDecisionService;
     }
 
     public boolean processTurn(MarsGame game, Player player, List<TurnType> possibleTurns) {
+        if (player.getDifficulty().isAgent()) {
+            if (agentDecisionService.unmiRt(game, player, possibleTurns).isPresent()) {
+                agentDecisionService.playUnmiRt(game, player);
+                return true;
+            }
+            var spend = agentDecisionService.standardAction(game, player, possibleTurns);
+            if (spend.isPresent()) {
+                agentDecisionService.playStandardAction(game, player, spend.get());
+                return true;
+            }
+            var blue = agentDecisionService.blueAction(game, player);
+            if (blue.isPresent()) {
+                agentDecisionService.playBlueAction(game, player, blue.get());
+                return true;
+            }
+            // stop: leftover builds and endgame only — blues/conversions were offered and declined
+            if (buildProjectIfPossible(game, player)) {
+                return true;
+            }
+            if (agentDecisionService.endgame(game, player, possibleTurns)) {
+                return true;
+            }
+            aiTurnService.skipTurn(player);
+            return true;
+        }
+
         aiRandomSellCardsService.sellCardsAsyncByChance(player);
 
         boolean builtAProject = buildProjectIfPossible(game, player);

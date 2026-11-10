@@ -7,6 +7,7 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ai.AiExperimentalTurn;
 import com.terraforming.ares.model.ai.AiTurnChoice;
 import com.terraforming.ares.model.turn.TurnType;
+import com.terraforming.ares.services.agent.AgentDecisionService;
 import com.terraforming.ares.services.ai.DeepNetwork;
 import com.terraforming.ares.services.ai.ICardValueService;
 import com.terraforming.ares.services.ai.ProjectionStrategy;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -39,8 +41,13 @@ public class AiSecondPhaseActionProcessor {
     private final ICardValueService cardValueService;
     private final AiRandomSecondPhaseActionProcessor aiRandomSecondPhaseActionProcessor;
     private final Network2FirstSecondPhaseActionProcessor network2FirstSecondPhaseActionProcessor;
+    private final AgentDecisionService agentDecisionService;
 
     public void processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
+        if (player.getDifficulty().isAgent()) {
+            processAgentTurn(possibleTurns, game, player);
+            return;
+        }
         if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
             network2FirstSecondPhaseActionProcessor.processTurn(possibleTurns, game, player);
             return;
@@ -109,6 +116,25 @@ public class AiSecondPhaseActionProcessor {
         } else {
             throw new IllegalStateException("Not reachable");
         }
+    }
+
+    private void processAgentTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
+        if (!player.cantBuildAnything()) {
+            Optional<Integer> cardId = agentDecisionService.buildCard(game, player);
+            if (cardId.isPresent()) {
+                agentDecisionService.playBuildCard(game, player, cardId.get());
+                return;
+            }
+        }
+        if (agentDecisionService.unmiRt(game, player, possibleTurns).isPresent()) {
+            agentDecisionService.playUnmiRt(game, player);
+            return;
+        }
+        if (possibleTurns.contains(TurnType.PICK_EXTRA_BONUS_SECOND_PHASE)) {
+            aiTurnService.pickExtraCardTurnAsync(player);
+            return;
+        }
+        aiTurnService.skipTurn(player);
     }
 
     private void logComputerCardSelection(BuildProjectPrediction bestProjectToBuild, MarsGame game, Player player) {

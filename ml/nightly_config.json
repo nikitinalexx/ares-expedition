@@ -67,6 +67,21 @@
       "matchups": "AGENT_R:AGENT_R:1"
     }
   ],
+  "train": {
+    "command": [
+      "{python}",
+      "ml/train_all.py",
+      "--data",
+      "{data}",
+      "--out",
+      "{model_dir}",
+      "--prev",
+      "{prev_model}",
+      "--epochs",
+      "3"
+    ],
+    "timeout_seconds": 7200
+  },
   "maven": {
     "command": "mvn",
     "args": [

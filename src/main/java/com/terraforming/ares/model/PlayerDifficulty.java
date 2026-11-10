@@ -39,7 +39,9 @@ public enum PlayerDifficulty {
             AiExperimentalTurn.EXPERIMENT
     ),
     /**
-     * Learnable agent. Decisions it already handles (see DecisionType) go to the agent, everything else is played like SMART.
+     * Learnable agent. All non-crisis {@link com.terraforming.ares.services.agent.DecisionType}s go to the agent;
+     * until a model is loaded the choice is uniform random. Forced engine turns (skip, game-end confirm, free phase-2
+     * bonus) stay outside that set.
      */
     AGENT(
             AiCardsChoice.FILE_VALUE,

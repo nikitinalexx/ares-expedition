@@ -7,6 +7,7 @@ import com.terraforming.ares.model.ai.AiExperimentalTurn;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.agent.AgentDecisionService;
 import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.ICardValueService;
 import com.terraforming.ares.services.ai.network2.Network2DiscardCardsProcessor;
@@ -29,6 +30,7 @@ public class AiDiscardCardsTurn implements AiTurnProcessor {
     private final CardService cardService;
     private final AiPickCardProjectionService aiPickCardProjectionService;
     private final Network2DiscardCardsProcessor network2DiscardCardsProcessor;
+    private final AgentDecisionService agentDecisionService;
 
 
 
@@ -40,6 +42,17 @@ public class AiDiscardCardsTurn implements AiTurnProcessor {
     @Override
     public boolean processTurn(MarsGame game, Player player) {
         DiscardCardsTurn nextTurn = (DiscardCardsTurn) player.getNextTurn();
+
+        if (player.getDifficulty().isAgent()) {
+            List<Integer> cardsToDiscard = agentDecisionService.discard(game, player);
+            aiTurnService.discardCards(
+                    game,
+                    player,
+                    new DiscardCardsTurn(player.getUuid(), cardsToDiscard, cardsToDiscard.size(), false, false, List.of()),
+                    cardsToDiscard
+            );
+            return true;
+        }
 
         List<Integer> cardsToDiscard;
         if (nextTurn.isOnlyFromSelectedCards()) {

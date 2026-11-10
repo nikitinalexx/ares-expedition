@@ -33,9 +33,27 @@ class SelfPlayRunnerTest extends EngineTestBase {
     }
 
     private List<Path> chunks() throws IOException {
+        return finishedChunks("PICK_PHASE");
+    }
+
+    private List<Path> finishedChunks(String type) throws IOException {
         try (var files = Files.list(out)) {
-            return files.filter(f -> f.getFileName().toString().matches("PICK_PHASE\\.\\d+\\.ares")).sorted().toList();
+            return files.filter(f -> f.getFileName().toString().matches(type + "\\.\\d+\\.ares")).sorted().toList();
         }
+    }
+
+    private List<Path> finishedChunks() throws IOException {
+        try (var files = Files.list(out)) {
+            return files.filter(f -> f.getFileName().toString().endsWith(".ares")).sorted().toList();
+        }
+    }
+
+    private static long rows(List<Path> files) throws IOException {
+        long rows = 0;
+        for (Path file : files) {
+            rows += DecisionFile.read(file).rows().size();
+        }
+        return rows;
     }
 
     @Test
@@ -47,16 +65,16 @@ class SelfPlayRunnerTest extends EngineTestBase {
         assertEquals(0, summary.gamesFailed());
         assertEquals(3, chunks().size(), "10 games per chunk");
 
-        long rows = 0;
         Set<Long> games = new HashSet<>();
         for (Path chunk : chunks()) {
             for (DecisionFile.Row row : DecisionFile.read(chunk).rows()) {
-                rows++;
                 games.add(row.gameId());
             }
         }
-        assertEquals(summary.rows(), rows);
         assertEquals(30, games.size(), "every game has its own id");
+        assertEquals(summary.rows(), rows(finishedChunks()), "rows of every decision type, not only the phase");
+        assertEquals(3, finishedChunks("PICK_CORPORATION").size());
+        assertEquals(3, finishedChunks("MULLIGAN").size());
         try (var files = Files.list(out)) {
             assertTrue(files.noneMatch(f -> f.getFileName().toString().endsWith(".tmp")), "no temporary files left behind");
         }
@@ -79,11 +97,7 @@ class SelfPlayRunnerTest extends EngineTestBase {
         assertEquals("TIME_LIMIT", summary.stoppedReason());
         assertTrue(summary.gamesPlayed() > 0 && summary.gamesPlayed() < 1_000_000, "games: " + summary.gamesPlayed());
         // the last, incomplete chunk is finished too: nothing that was played is lost
-        long rowsInFiles = 0;
-        for (Path chunk : chunks()) {
-            rowsInFiles += DecisionFile.read(chunk).rows().size();
-        }
-        assertEquals(summary.rows(), rowsInFiles);
+        assertEquals(summary.rows(), rows(finishedChunks()));
     }
 
     @Test

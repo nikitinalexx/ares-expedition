@@ -428,15 +428,19 @@ class ModelsInThePipeline(Base):
         selfplay = [c for c in calls if c.get("mode") == "play"]
         compare = [c for c in calls if c.get("mode") == "compare"]
         self.assertEqual(2, len(selfplay))
-        self.assertNotIn("model", selfplay[0], "the first iteration has no model yet: random phases")
-        self.assertTrue(selfplay[1]["model"].replace("\\", "/").endswith("it_0001/model"), selfplay[1])
+        self.assertFalse("model" in selfplay[0] or "models" in selfplay[0], "the first iteration has no model yet")
+        # train_stub writes model.json at the root → --model; train_all would use --models
+        path_key = "models" if "models" in selfplay[1] else "model"
+        self.assertTrue(selfplay[1][path_key].replace("\\", "/").endswith("it_0001/model"), selfplay[1])
         self.assertEqual("0.5", selfplay[1]["temperature"], "self-play explores")
-        with_model = [c for c in compare if "model" in c]
+        with_model = [c for c in compare if "model" in c or "models" in c]
         self.assertEqual(2, len(with_model))
-        self.assertTrue(with_model[0]["model"].replace("\\", "/").endswith("it_0001/model"))
-        self.assertTrue(with_model[1]["model"].replace("\\", "/").endswith("it_0002/model"))
+        for i, it in enumerate((1, 2)):
+            key = "models" if "models" in with_model[i] else "model"
+            self.assertTrue(with_model[i][key].replace("\\", "/").endswith(f"it_{it:04d}/model"))
         self.assertTrue(all(c["temperature"] == "0" for c in with_model), "evaluation is greedy")
-        self.assertEqual(1, len([c for c in compare if "model" not in c]), "the baseline (agent without a model) is played once per run and opponent")
+        self.assertEqual(1, len([c for c in compare if "model" not in c and "models" not in c]),
+                         "the baseline (agent without a model) is played once per run and opponent")
 
     def test_a_restarted_selfplay_stage_keeps_using_the_same_model(self):
         p = self.pipeline(make_cfg(max_iterations_per_experiment=1))
@@ -449,7 +453,7 @@ class ModelsInThePipeline(Base):
         os.environ["FAKE_ARGS_LOG"] = str(log)
         p.stage_selfplay("a", p.exp_cfg("a"), 1, 60)  # 30 games are in the chunks already, 30 are missing
         call = self.calls(log)[0]
-        self.assertEqual("D:/some/model", call["model"])
+        self.assertEqual(Path("D:/some/model"), Path(call.get("models") or call.get("model")))
         self.assertEqual("0.3", call["temperature"])
 
     def alarm_cfg(self):

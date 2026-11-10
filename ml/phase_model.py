@@ -67,8 +67,11 @@ def atomic_write(path, data, mode="wb"):
     os.replace(tmp, path)
 
 
-def export_from_arrays(out_dir, schema_hash, obs_size, cand_features, hidden, clip, params, reference=None):
-    """Writes model.json / weights.bin from numpy arrays (names as in weight_layout)."""
+def export_from_arrays(out_dir, schema_hash, obs_size, cand_features, hidden, clip, params, reference=None, decision_type="PICK_PHASE"):
+    """Writes model.json / weights.bin from numpy arrays (names as in weight_layout).
+
+    The same files describe every decision type: only decisionType, the schema hash and the candidate width differ.
+    """
     os.makedirs(out_dir, exist_ok=True)
     layout = weight_layout(obs_size, cand_features, hidden)
     chunks = []
@@ -80,7 +83,7 @@ def export_from_arrays(out_dir, schema_hash, obs_size, cand_features, hidden, cl
             raise ValueError(f"{name} contains NaN/Inf: the training diverged, the model is not exported")
         chunks.append(arr.reshape(-1).tobytes())
     raw = b"".join(chunks)
-    meta = {"kind": KIND, "version": FORMAT_VERSION, "decisionType": "PICK_PHASE", "schemaHash": schema_hash, "obsSize": obs_size,
+    meta = {"kind": KIND, "version": FORMAT_VERSION, "decisionType": decision_type, "schemaHash": schema_hash, "obsSize": obs_size,
             "candFeatures": cand_features, "hidden": list(hidden), "clip": clip, "weightsCount": len(raw) // 4,
             "weightsSha256": hashlib.sha256(raw).hexdigest()}
     atomic_write(os.path.join(out_dir, "weights.bin"), raw)

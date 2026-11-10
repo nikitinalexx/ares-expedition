@@ -6,6 +6,7 @@ import com.terraforming.ares.model.ai.AiCardsChoice;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.ICardValueService;
+import com.terraforming.ares.services.agent.AgentDecisionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -23,6 +24,7 @@ public class AiSellCardsLastRoundTurn implements AiTurnProcessor {
     private final AiTurnService aiTurnService;
     private final ICardValueService cardValueService;
     private final AiPickCardProjectionService aiPickCardProjectionService;
+    private final AgentDecisionService agentDecisionService;
 
     @Override
     public TurnType getType() {
@@ -31,6 +33,10 @@ public class AiSellCardsLastRoundTurn implements AiTurnProcessor {
 
     @Override
     public boolean processTurn(MarsGame game, Player player) {
+        if (player.getDifficulty().isAgent()) {
+            aiTurnService.sellCardsLastRoundTurn(player, agentDecisionService.sellLastRound(game, player));
+            return true;
+        }
         List<Integer> allCards = new ArrayList<>(player.getHand().getCards());
 
         int cardsToSellCount = allCards.size() - 10;

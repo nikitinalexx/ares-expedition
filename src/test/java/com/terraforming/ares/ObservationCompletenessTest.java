@@ -143,18 +143,18 @@ class ObservationCompletenessTest extends EngineTestBase {
         facts.put("a build available (e.g. 2nd green build)", (g, p) -> p.getBuilds().add(new BuildDto(BuildType.GREEN)));
         facts.put("extra activations of blue cards left", (g, p) -> p.setBlueActionExtraActivationsLeft(p.getBlueActionExtraActivationsLeft() + 1));
         facts.put("a card is in the hand", (g, p) -> p.getHand().addCard(unusedCard(g, CardColor.GREEN)));
-        facts.put("a green card is on the table", (g, p) -> p.getPlayed().addCard(unusedCard(g, CardColor.GREEN)));
-        facts.put("a blue card is on the table", (g, p) -> p.getPlayed().addCard(unusedCard(g, CardColor.BLUE)));
-        facts.put("a red card is on the table", (g, p) -> p.getPlayed().addCard(unusedCard(g, CardColor.RED)));
+        facts.put("a green card is on the table", (g, p) -> putOnTable(p, unusedCard(g, CardColor.GREEN)));
+        facts.put("a blue card is on the table", (g, p) -> putOnTable(p, unusedCard(g, CardColor.BLUE)));
+        facts.put("a red card is on the table", (g, p) -> putOnTable(p, unusedCard(g, CardColor.RED)));
         facts.put("a blue card was activated this round", (g, p) -> {
             int blue = unusedCard(g, CardColor.BLUE);
-            p.getPlayed().addCard(blue);
+            putOnTable(p, blue);
             p.getActivatedBlueCards().addCard(blue);
         });
         facts.put("resources (animals/microbes) on a played card", (g, p) -> {
             // a card that really keeps animals or microbes: put it on the table and add resources to it
             int id = unusedCardWithTag(g, com.terraforming.ares.model.Tag.ANIMAL);
-            p.getPlayed().addCard(id);
+            putOnTable(p, id);
             p.getCardResourcesCount().merge(cardService.getCard(id).getClass(), 3, Integer::sum);
         });
         facts.put("lunaProjectOffice", (g, p) -> p.setLunaProjectOffice(p.getLunaProjectOffice() + 1));
@@ -165,6 +165,25 @@ class ObservationCompletenessTest extends EngineTestBase {
     /**
      * A card of the colour that nobody holds or has played (the first one that is a good example: it has tags and a price).
      */
+    /**
+     * Mimic post-build bookkeeping the V2 encoder assumes (Research Grant tags, resource maps, …).
+     */
+    private void putOnTable(Player player, int cardId) {
+        Card card = cardService.getCard(cardId);
+        player.getPlayed().addCard(cardId);
+        if (card.getCardMetadata() != null
+                && card.getCardMetadata().getCardAction() == com.terraforming.ares.model.CardAction.RESEARCH_GRANT) {
+            player.getCardToTag().putIfAbsent(card.getClass(),
+                    new java.util.ArrayList<>(java.util.List.of(
+                            com.terraforming.ares.model.Tag.DYNAMIC,
+                            com.terraforming.ares.model.Tag.DYNAMIC,
+                            com.terraforming.ares.model.Tag.DYNAMIC)));
+        }
+        if (card.getCollectableResource() != null) {
+            player.getCardResourcesCount().putIfAbsent(card.getClass(), 0);
+        }
+    }
+
     private int unusedCard(MarsGame game, CardColor color) {
         java.util.Set<Integer> taken = new java.util.HashSet<>();
         game.getPlayerUuidToPlayer().values().forEach(p -> {

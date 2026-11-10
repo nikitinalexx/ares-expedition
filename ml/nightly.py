@@ -344,7 +344,7 @@ DEFAULT_CONFIG = {
     "retry_backoff_seconds": [10, 60, 300],
     "max_consecutive_failures": 3,
     "selfplay": {"temperature": 0.5, "games_per_chunk": 500, "stage_max_seconds": 3600, "grace_seconds": 90, "max_failure_ratio": 0.05},
-    "train": {"command": ["{python}", "ml/train_phase.py", "--data", "{data}", "--out", "{model_dir}", "--prev", "{prev_model}", "--epochs", "3"], "timeout_seconds": 7200},
+    "train": {"command": ["{python}", "ml/train_all.py", "--data", "{data}", "--out", "{model_dir}", "--prev", "{prev_model}", "--epochs", "3"], "timeout_seconds": 7200},
     "eval": {"games": 200, "references": ["SMART", "RANDOM"], "agent": "AGENT", "concurrency": 32, "timeout_seconds": 1800, "bias_alarm_gap": 0.10},
     # successive halving: each rung gets a fraction of the night; only `keep` best experiments continue to the next rung
     "rungs": [{"fraction": 0.3, "keep": 2, "games_factor": 0.25}, {"fraction": 0.7, "keep": 1, "games_factor": 1.0}],
@@ -623,8 +623,8 @@ class Pipeline:
         if chosen is None:
             best = self.best_model_dir(exp)
             chosen = {"model": str(best) if best else None, "temperature": sp["temperature"]}
-            write_json(self.it_dir(exp, it) / "selfplay_model.json", chosen)  # the data of one iteration comes from ONE model
-        model_args = ["--model", chosen["model"], "--temperature", str(chosen["temperature"])] if chosen["model"] else []
+            write_json(self.it_dir(exp, it) / "selfplay_model.json", chosen)  # the data of one iteration comes from ONE model bundle
+        model_args = java_model_args(chosen["model"], chosen["temperature"]) if chosen["model"] else []
 
         def attempt():
             self.check_disk()
@@ -725,7 +725,7 @@ class Pipeline:
                     self.write_status()
                     cmd = self.java_cmd("--mode", "compare", "--a", ev["agent"], "--b", ref, "--games", str(ev["games"]),
                                         "--concurrency", str(ev["concurrency"]), "--out", path.as_posix(),
-                                        "--model", str(model_dir), "--temperature", "0")
+                                        *java_model_args(str(model_dir), "0"))
                     result = run_command(cmd, log_path, ev["timeout_seconds"], self.stop, env=self.storage.child_env(),
                                          guard=self.storage.guard, guard_interval=self.storage.interval, tick=self.tick,
                                          low_priority=self.cfg["low_priority"])
@@ -937,6 +937,21 @@ class Pipeline:
 
 
 # ------------------------------------------------------------------------------------------------ data helpers
+
+def java_model_args(model_dir, temperature):
+    """CLI flags for SelfPlayMain: multi-type bundle (--models) or a single exported folder (--model)."""
+    root = Path(model_dir)
+    temp = str(temperature)
+    if root.exists():
+        has_typed = any((p / "model.json").exists() for p in root.iterdir() if p.is_dir())
+        if has_typed:
+            return ["--models", str(root), "--temperature", temp]
+        if (root / "model.json").exists():
+            return ["--model", str(root), "--temperature", temp]
+        return []
+    # path not on disk (tests / just-written path): default to the train_all layout
+    return ["--models", str(root), "--temperature", temp]
+
 
 def chunk_files(directory):
     return sorted(Path(directory).glob("*.[0-9]*.ares"))

@@ -34,6 +34,7 @@ public class AiPickCorporationTurn implements AiTurnProcessor {
     private final AiDiscoveryDecisionService aiDiscoveryDecisionService;
     private final Network2CorporationAndMulliganService network2CorporationAndMulliganService;
     private final Network2CorporationInputService network2CorporationInputService;
+    private final com.terraforming.ares.services.agent.AgentDecisionService agentDecisionService;
 
 
     @Override
@@ -43,6 +44,15 @@ public class AiPickCorporationTurn implements AiTurnProcessor {
 
     @Override
     public boolean processTurn(MarsGame game, Player player) {
+        if (player.getDifficulty().isAgent()) {
+            com.terraforming.ares.services.agent.CorporationChoice choice = agentDecisionService.pickCorporation(game, player);
+            aiTurnService.chooseCorporationTurn(game, ChooseCorporationRequest.builder()
+                    .playerUuid(player.getUuid())
+                    .corporationId(choice.corporationId())
+                    .inputParams(choice.input())
+                    .build());
+            return true;
+        }
         List<Integer> corporations = player.getCorporations().getCards();
         int selectedCorporationId = corporations.get(0);
 

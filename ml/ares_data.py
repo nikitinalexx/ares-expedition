@@ -4,7 +4,8 @@ Usage:
     schema, rows = read_decisions("run1/PICK_PHASE.ares")
     rows["obs"]      float16 [n, obsSize]   what the player saw (convert to float32 per batch)
     rows["count"]    uint8   [n]            number of legal candidates
-    rows["ids"]      uint8   [n, maxCand]   candidate ids (padded with 0)
+    rows["ids"]      uint8 (version 2) or uint16 (version 3) [n, maxCand]   candidate ids, padded with 0.
+                                    Version 3 exists because a card id does not fit in one byte.
     rows["feat"]     float32 [n, maxCand, candFeatures]
     rows["chosen"]   uint8   [n]            index of the chosen candidate
     rows["seat"]     uint8   [n]            0/1: player index in the game (by name)
@@ -21,15 +22,18 @@ import struct
 import numpy as np
 
 MAGIC = b"ARES"
-VERSION = 2
+VERSIONS = (2, 3)
 
 
-def record_dtype(schema):
+def record_dtype(schema, version=2):
+    """version 2 stores candidate ids in one byte, version 3 in two (card ids are larger than 255)."""
+    if version not in VERSIONS:
+        raise ValueError(f"unsupported version {version}")
     obs, cand, feat = schema["obsSize"], schema["maxCandidates"], schema["candidateFeatures"]
     return np.dtype([
         ("obs", "<f2", (obs,)),
         ("count", "u1"),
-        ("ids", "u1", (cand,)),
+        ("ids", "u1" if version < 3 else "<u2", (cand,)),
         ("feat", "<f4", (cand, feat)),
         ("chosen", "u1"),
         ("seat", "u1"),
@@ -49,14 +53,14 @@ def read_decisions(path, expected_hash=None):
     if raw[:4] != MAGIC:
         raise ValueError(f"{path} is not an ARES decision file")
     version, json_length = struct.unpack_from("<HI", raw, 4)
-    if version != VERSION:
+    if version not in VERSIONS:
         raise ValueError(f"unsupported version {version}")
     offset = 10 + json_length
     schema = json.loads(raw[10:offset].decode("utf-8"))
     if expected_hash is not None and schema["hash"] != expected_hash:
         raise ValueError(f"schema hash {schema['hash']} != expected {expected_hash}: the data was produced by a different encoder")
 
-    dtype = record_dtype(schema)
+    dtype = record_dtype(schema, version)
     body = len(raw) - offset
     if body % dtype.itemsize != 0:
         raise ValueError(f"file is truncated or corrupt: {body} bytes is not a multiple of the record size {dtype.itemsize}")
@@ -74,12 +78,12 @@ def open_memmap(path, expected_hash=None):
         if head[:4] != MAGIC:
             raise ValueError(f"{path} is not an ARES decision file")
         version, json_length = struct.unpack("<HI", head[4:])
-        if version != VERSION:
+        if version not in VERSIONS:
             raise ValueError(f"unsupported version {version}")
         schema = json.loads(f.read(json_length).decode("utf-8"))
     if expected_hash is not None and schema["hash"] != expected_hash:
         raise ValueError(f"schema hash {schema['hash']} != expected {expected_hash}: the data was produced by a different encoder")
-    dtype = record_dtype(schema)
+    dtype = record_dtype(schema, version)
     offset = 10 + json_length
     import os
     body = os.path.getsize(path) - offset
@@ -95,6 +99,23 @@ def chunk_paths(directory, decision_type):
     """Finished chunks of a decision type in the order they were written (unfinished .tmp files are never listed)."""
     from pathlib import Path
     return sorted(Path(directory).glob(f"{decision_type}.[0-9]*.ares"))
+
+
+def discover_decisions(data_dirs):
+    """Decision type names that have at least one finished chunk in any of the comma-separated directories.
+
+    Names come from the file prefix (`PICK_PHASE.000001.ares` → `PICK_PHASE`), sorted for stable training order.
+    """
+    from pathlib import Path
+    found = set()
+    for directory in [d for d in (data_dirs.split(",") if isinstance(data_dirs, str) else data_dirs) if d]:
+        for path in Path(directory).glob("*.[0-9][0-9][0-9][0-9][0-9][0-9].ares"):
+            name = path.name
+            # TYPE.NNNNNN.ares — drop the two trailing dotted parts
+            parts = name.rsplit(".", 2)
+            if len(parts) == 3 and parts[1].isdigit() and parts[2] == "ares":
+                found.add(parts[0])
+    return sorted(found)
 
 
 def validate(schema, rows):

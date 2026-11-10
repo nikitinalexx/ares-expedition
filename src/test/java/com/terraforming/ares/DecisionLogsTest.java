@@ -156,12 +156,11 @@ class DecisionLogsTest extends EngineTestBase {
             String key = row.gameId() + "/" + row.seat();
             DecisionFile.Row before = previous.get(key);
             if (before == null) {
-                assertEquals(0, row.step(), "the first decision of a player in a game has step 0");
                 for (int phase = 0; phase < 5; phase++) {
-                    assertEquals(0f, row.observation()[extras + 1 + phase], "no previous phase in the first round");
+                    assertEquals(0f, row.observation()[extras + 1 + phase], "no previous phase before the first phase decision");
                 }
             } else {
-                assertEquals(before.step() + 1, row.step(), "steps are consecutive");
+                assertTrue(row.step() > before.step(), "phase decisions of one player stay in order; sales and drafts may sit between them");
                 assertTrue(row.round() >= before.round(), "rounds do not go back");
                 int phaseChosenBefore = before.candidateIds()[before.chosen()];
                 for (int phase = 1; phase <= 5; phase++) {
@@ -284,9 +283,14 @@ class DecisionLogsTest extends EngineTestBase {
         decisionLogs.finish(playOneAgentGame()); // chunk 2 is open ...
         decisionLogs.abort(); // ... and the process dies here
 
-        assertEquals(1, chunks(dir).size(), "only the finished chunk is visible to readers");
+        assertEquals(1, chunks(dir).size(), "only the finished phase chunk is visible to readers");
         try (var files = java.nio.file.Files.list(dir)) {
-            assertEquals(1, files.filter(f -> f.getFileName().toString().endsWith(".tmp")).count());
+            List<String> open = files.map(f -> f.getFileName().toString()).filter(n -> n.endsWith(".tmp")).sorted().toList();
+            assertTrue(open.containsAll(List.of(
+                    "MULLIGAN.000002.ares.tmp", "PICK_CORPORATION.000002.ares.tmp", "PICK_PHASE.000002.ares.tmp")), open.toString());
+            assertTrue(open.stream().allMatch(name -> name.matches(
+                    "(MULLIGAN|PICK_CORPORATION|PICK_PHASE|DRAFT_CARDS|DISCARD_CARDS|SELL_CARDS|SELL_CARDS_LAST_ROUND|STANDARD_ACTION|BUILD_CARD|BUILD_PAYMENT|BUILD_INPUT|PERFORM_BLUE_ACTION|BLUE_INPUT|UNMI_RT|COLLECT_INCOME)\\.000002\\.ares\\.tmp")),
+                    open.toString());
         }
         byte[] chunkOne = java.nio.file.Files.readAllBytes(chunks(dir).getFirst());
 

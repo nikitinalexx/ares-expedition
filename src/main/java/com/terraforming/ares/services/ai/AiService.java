@@ -11,10 +11,12 @@ import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.GameService;
 import com.terraforming.ares.services.StateContextProvider;
 import com.terraforming.ares.services.TurnTypeService;
+import com.terraforming.ares.services.agent.AgentDecisionService;
 import com.terraforming.ares.services.ai.turnProcessors.AiFirstPhaseActionProcessor;
 import com.terraforming.ares.services.ai.turnProcessors.AiSecondPhaseActionProcessor;
 import com.terraforming.ares.services.ai.turnProcessors.AiThirdPhaseActionProcessor;
 import com.terraforming.ares.services.ai.turnProcessors.AiTurnProcessor;
+import com.terraforming.ares.services.ai.turnProcessors.AiTurnService;
 import com.terraforming.ares.states.Action;
 import com.terraforming.ares.states.State;
 import org.springframework.stereotype.Service;
@@ -38,6 +40,8 @@ public class AiService {
     private final AiFirstPhaseActionProcessor aiFirstPhaseActionProcessor;
     private final AiSecondPhaseActionProcessor aiSecondPhaseActionProcessor;
     private final AiThirdPhaseActionProcessor aiThirdPhaseActionProcessor;
+    private final AgentDecisionService agentDecisionService;
+    private final AiTurnService aiTurnService;
 
     private final Map<TurnType, AiTurnProcessor> turnProcessors;
 
@@ -45,7 +49,8 @@ public class AiService {
                      TurnTypeService turnTypeService,
                      StateFactory stateFactory,
                      StateContextProvider stateContextProvider,
-                     GameService gameService, AiFirstPhaseActionProcessor aiFirstPhaseActionProcessor, AiSecondPhaseActionProcessor aiSecondPhaseActionProcessor, AiThirdPhaseActionProcessor aiThirdPhaseActionProcessor) {
+                     GameService gameService, AiFirstPhaseActionProcessor aiFirstPhaseActionProcessor, AiSecondPhaseActionProcessor aiSecondPhaseActionProcessor, AiThirdPhaseActionProcessor aiThirdPhaseActionProcessor,
+                     AgentDecisionService agentDecisionService, AiTurnService aiTurnService) {
         this.turnTypeService = turnTypeService;
         this.stateFactory = stateFactory;
         this.stateContextProvider = stateContextProvider;
@@ -57,6 +62,8 @@ public class AiService {
         this.aiFirstPhaseActionProcessor = aiFirstPhaseActionProcessor;
         this.aiSecondPhaseActionProcessor = aiSecondPhaseActionProcessor;
         this.aiThirdPhaseActionProcessor = aiThirdPhaseActionProcessor;
+        this.agentDecisionService = agentDecisionService;
+        this.aiTurnService = aiTurnService;
     }
 
     public void makeAiTurns(MarsGame game) {
@@ -123,6 +130,20 @@ public class AiService {
         }
 
         List<TurnType> possibleTurns = gameService.getPossibleTurns(game, player.getUuid());
+
+        // Selling a card for its price (3, or more with an effect) is offered beside the real action and does not
+        // spend it. The agent either sells now, so the next step can build or act with the money, or declines and
+        // the baseline plays the other action. It is not offered when selling is the only turn.
+        if (player.getDifficulty().isAgent()
+                && possibleTurns.contains(TurnType.SELL_CARDS)
+                && possibleTurns.stream().anyMatch(turn -> turn != TurnType.SELL_CARDS)
+                && !player.getHand().getCards().isEmpty()) {
+            List<Integer> sold = agentDecisionService.sell(game, player);
+            if (!sold.isEmpty()) {
+                aiTurnService.sellCards(player, game, sold);
+                return;
+            }
+        }
 
         if (possibleTurns.size() == 1 && possibleTurns.getFirst() == TurnType.DISCARD_CARDS) {
             turnProcessors.get(possibleTurns.getFirst()).processTurn(game, player);

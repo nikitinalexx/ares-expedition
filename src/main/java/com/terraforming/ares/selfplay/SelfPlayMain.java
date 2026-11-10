@@ -21,9 +21,12 @@ import java.util.Map;
  * <pre>
  * play:    --mode play --out DIR --games N [--threads T] [--matchups AGENT:AGENT:0.5,AGENT_R:AGENT:0.5]
  *                      [--games-per-chunk C] [--max-seconds S] [--stop-file FILE] [--max-failure-ratio 0.05] [--min-free-gb 30]
- *                      [--model MODEL_DIR] [--temperature 0.5]
- * compare: --mode compare --out FILE.json --a AGENT --b SMART --games N [--concurrency C] [--model MODEL_DIR] [--temperature 0]
+ *                      [--model MODEL_DIR | --models MODELS_DIR] [--temperature 0.5]
+ * compare: --mode compare --out FILE.json --a AGENT --b SMART --games N [--concurrency C]
+ *                      [--model MODEL_DIR | --models MODELS_DIR] [--temperature 0]
  * </pre>
+ * {@code --model} is one exported folder (legacy / single decision). {@code --models} is a directory of such folders
+ * (one per decision type), as written by {@code ml/train_all.py}.
  * Exit codes: 0 completed, 3 stopped on request (stop file / time limit), 4 too many failed games, 5 disk almost full (stopped by itself), 2 bad arguments, 1 crash.
  * Everything unexpected is written to stderr with the stack trace (the pipeline keeps it in the stage log).
  */
@@ -66,6 +69,10 @@ public final class SelfPlayMain {
             return 0;
         }
         // the agent model is read by NeuralPolicy when the context starts
+        if (arguments.containsKey("models")) {
+            System.setProperty("ares.agent.models", arguments.get("models"));
+            System.setProperty("ares.agent.temperature", arguments.getOrDefault("temperature", "0"));
+        }
         if (arguments.containsKey("model")) {
             System.setProperty("ares.agent.model", arguments.get("model"));
             System.setProperty("ares.agent.temperature", arguments.getOrDefault("temperature", "0"));

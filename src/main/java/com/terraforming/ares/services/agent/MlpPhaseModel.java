@@ -13,7 +13,9 @@ import java.util.HexFormat;
 import java.util.List;
 
 /**
- * Pure Java forward pass of the PICK_PHASE model written by {@code ml/phase_model.py} (format: see that file).
+ * Pure Java forward pass of a candidate Q-model written by {@code ml/phase_model.py} (format: see that file).
+ * The file kind is still {@code phase_mlp}: every decision type uses this shape, with its own observation hash and its
+ * own candidate-feature width. The decision type is stored in the file and checked by {@link NeuralPolicy}.
  * <pre>
  *   z = clip((obs - mean) / std)       a = W_obs z + b_obs   (once per decision)
  *   h1_k = relu(a + W_cand c_k)        h2_k = relu(W_mid h1_k + b_mid)       logit_k = w_out . h2_k + b_out
@@ -21,6 +23,7 @@ import java.util.List;
  * Immutable and thread safe. A model refuses to load when its files are damaged (hash of weights.bin) or inconsistent.
  */
 public final class MlpPhaseModel {
+    private final DecisionType decisionType;
     private final String schemaHash;
     private final int obsSize;
     private final int candFeatures;
@@ -38,6 +41,11 @@ public final class MlpPhaseModel {
     private final float bOut;
 
     private MlpPhaseModel(JsonNode meta, ByteBuffer weights) {
+        try {
+            this.decisionType = DecisionType.valueOf(meta.path("decisionType").asText());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Unknown decision type in model.json: " + meta.path("decisionType").asText());
+        }
         this.schemaHash = meta.get("schemaHash").asText();
         this.obsSize = meta.get("obsSize").asInt();
         this.candFeatures = meta.get("candFeatures").asInt();
@@ -68,9 +76,6 @@ public final class MlpPhaseModel {
         if (!"phase_mlp".equals(meta.path("kind").asText()) || meta.path("version").asInt() != 1) {
             throw new IOException("Unsupported model: " + meta.path("kind").asText() + " v" + meta.path("version").asInt());
         }
-        if (!"PICK_PHASE".equals(meta.path("decisionType").asText())) {
-            throw new IOException("This model is for " + meta.path("decisionType").asText() + ", not PICK_PHASE");
-        }
         byte[] raw = Files.readAllBytes(dir.resolve("weights.bin"));
         try {
             String sha = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(raw));
@@ -94,6 +99,10 @@ public final class MlpPhaseModel {
         buffer.asFloatBuffer().get(result);
         buffer.position(buffer.position() + 4 * count);
         return result;
+    }
+
+    public DecisionType decisionType() {
+        return decisionType;
     }
 
     public String schemaHash() {

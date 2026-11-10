@@ -9,6 +9,7 @@ import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.CardValidationService;
 import com.terraforming.ares.services.StandardProjectService;
+import com.terraforming.ares.services.agent.AgentDecisionService;
 import com.terraforming.ares.services.ai.*;
 import com.terraforming.ares.services.ai.dto.ActionInputParamsResponse;
 import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
@@ -42,6 +43,7 @@ public class AiThirdPhaseActionProcessor {
     private final AiEndgameService aiEndgameService;
     private final AiRandomThirdPhaseActionProcessor aiRandomThirdPhaseActionProcessor;
     private final Network2ThirdPhaseActionProcessor network2ThirdPhaseActionProcessor;
+    private final AgentDecisionService agentDecisionService;
 
     public AiThirdPhaseActionProcessor(AiTurnService aiTurnService,
                                        CardService cardService,
@@ -52,7 +54,8 @@ public class AiThirdPhaseActionProcessor {
                                        TestAiService testAiService,
                                        AiCardValidationService aiCardValidationService, AiBuildProjectService aiBuildProjectService, DeepNetwork deepNetwork, CardValidationService cardValidationService,
                                        AiEndgameService aiEndgameService,
-                                       AiRandomThirdPhaseActionProcessor aiRandomThirdPhaseActionProcessor, Network2ThirdPhaseActionProcessor network2ThirdPhaseActionProcessor) {
+                                       AiRandomThirdPhaseActionProcessor aiRandomThirdPhaseActionProcessor, Network2ThirdPhaseActionProcessor network2ThirdPhaseActionProcessor,
+                                       AgentDecisionService agentDecisionService) {
         this.aiTurnService = aiTurnService;
         this.cardService = cardService;
         this.aiPaymentHelper = aiPaymentHelper;
@@ -67,9 +70,13 @@ public class AiThirdPhaseActionProcessor {
         this.aiEndgameService = aiEndgameService;
         this.aiRandomThirdPhaseActionProcessor = aiRandomThirdPhaseActionProcessor;
         this.network2ThirdPhaseActionProcessor = network2ThirdPhaseActionProcessor;
+        this.agentDecisionService = agentDecisionService;
     }
 
     public boolean processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
+        if (player.getDifficulty().isAgent()) {
+            return processAgentTurn(possibleTurns, game, player);
+        }
         if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
             return network2ThirdPhaseActionProcessor.processTurn(game, player, possibleTurns);
         }
@@ -122,6 +129,35 @@ public class AiThirdPhaseActionProcessor {
         return true;
     }
 
+    /**
+     * Agent spends (standard project / conversion / Helion heat), then activates blues one at a time, or stops.
+     * After a standard-action stop the agent still chooses blues; after a blue stop it must not fall back to SMART
+     * blue heuristics, but may still finish leftover builds and endgame.
+     */
+    private boolean processAgentTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
+        if (agentDecisionService.unmiRt(game, player, possibleTurns).isPresent()) {
+            agentDecisionService.playUnmiRt(game, player);
+            return true;
+        }
+        var spend = agentDecisionService.standardAction(game, player, possibleTurns);
+        if (spend.isPresent()) {
+            agentDecisionService.playStandardAction(game, player, spend.get());
+            return true;
+        }
+        var blue = agentDecisionService.blueAction(game, player);
+        if (blue.isPresent()) {
+            agentDecisionService.playBlueAction(game, player, blue.get());
+            return true;
+        }
+        if (buildProjectsIfPossible(game, player, possibleTurns)) {
+            return true;
+        }
+        if (agentDecisionService.endgame(game, player, possibleTurns)) {
+            return true;
+        }
+        aiTurnService.skipTurn(player);
+        return true;
+    }
 
     private boolean playBlueCards(List<TurnType> possibleTurns, MarsGame game, Player player) {
         Deck activatedBlueCards = player.getActivatedBlueCards();

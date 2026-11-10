@@ -15,7 +15,7 @@ import numpy as np
 ML = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ML))
 
-from ares_data import record_dtype  # noqa: E402
+from ares_data import read_decisions, record_dtype  # noqa: E402
 from phase_model import load_exported, numpy_forward  # noqa: E402
 
 try:
@@ -176,6 +176,30 @@ class TrainPhase(unittest.TestCase):
         rows_of_games = np.repeat(games[:1000], 6)
         row_side = is_validation_game(rows_of_games, 0.1).reshape(1000, 6)
         self.assertTrue((row_side == row_side[:, :1]).all(), "all rows of a game are on the same side")
+
+
+class DecisionFileFormat(unittest.TestCase):
+    """Version 3 stores candidate ids in 16 bits. A card id does not fit in the byte used by version 2."""
+
+    def test_version3_keeps_card_ids(self):
+        schema = {"type": "PICK_CORPORATION", "obsSize": 2, "maxCandidates": 3, "candidateFeatures": 1,
+                  "obsDtype": "f2", "hash": "wide", "observationLayout": "wide"}
+        dtype = record_dtype(schema, 3)
+        rows = np.zeros(1, dtype=dtype)
+        rows["obs"] = np.array([[0.5, 1.0]], dtype=np.float16)
+        rows["count"] = 3
+        rows["ids"] = np.array([[10000, 10204, 65535]], dtype=np.uint16)
+        rows["chosen"] = 1
+        rows["outcome"] = 1.0
+        rows["margin"] = 2.0
+        header = json.dumps(schema).encode()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "PICK_CORPORATION.000001.ares"
+            path.write_bytes(b"ARES" + struct.pack("<HI", 3, len(header)) + header + rows.tobytes())
+            loaded, back = read_decisions(path)
+            self.assertEqual(3, struct.unpack_from("<H", path.read_bytes(), 4)[0])
+            self.assertEqual([10000, 10204, 65535], back["ids"][0].tolist())
+            self.assertEqual("PICK_CORPORATION", loaded["type"])
 
 
 if __name__ == "__main__":

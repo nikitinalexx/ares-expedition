@@ -1,8 +1,9 @@
 """Trainer of the PICK_PHASE model for the night pipeline (follows the trainer contract of docs/NIGHTLY.md).
 
-    python ml/train_phase.py --data DIR1,DIR2 --out MODEL_DIR [--prev PREVIOUS_MODEL_DIR] [--epochs 3] [--hidden 256,128]
+    python ml/train_phase.py --data DIR1,DIR2 --out MODEL_DIR [--decision PICK_PHASE] [--prev PREVIOUS_MODEL_DIR] [--epochs 3] [--hidden 256,128]
 
-What is learned: the probability that the player WINS the game given what it saw and the phase it picked
+What is learned: the probability that the player WINS the game given what it saw and the candidate it picked.
+The same trainer serves every decision type (--decision names the chunks); each type has its own candidate features.
 (binary cross entropy against the result of the game: 1 win, 0.5 draw, 0 loss). Only the chosen candidate of every
 row is a training example. Rows are streamed chunk by chunk from the disk (memmap): the RAM holds one block, not the data.
 
@@ -37,10 +38,10 @@ def is_validation_game(game_ids, fraction):
     return (mixed % np.uint64(1000)) < np.uint64(int(fraction * 1000))
 
 
-def list_chunks(data_dirs):
+def list_chunks(data_dirs, decision):
     files = []
     for directory in [d for d in data_dirs.split(",") if d]:
-        files += chunk_paths(directory, "PICK_PHASE")
+        files += chunk_paths(directory, decision)
     return files
 
 
@@ -85,6 +86,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", required=True)
     parser.add_argument("--out", required=True)
+    parser.add_argument("--decision", default="PICK_PHASE", help="which decision type to train; the chunks are named <decision>.NNNNNN.ares")
     parser.add_argument("--prev", default="")
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--hidden", default="256,128")
@@ -100,7 +102,7 @@ def main():
     from torch import nn
 
     started = time.time()
-    files = list_chunks(args.data)
+    files = list_chunks(args.data, args.decision)
     if not files:
         print("no finished chunks in " + args.data, file=sys.stderr)
         return 2
@@ -226,7 +228,7 @@ def main():
     with torch.no_grad():
         torch_logits = model(torch.from_numpy(sample_obs).to(device), torch.from_numpy(sample_cands).to(device)).cpu().numpy()
     reference = [{"obs": o.tolist(), "cands": [c.tolist()], "logits": [float(l)]} for o, c, l in zip(sample_obs, sample_cands, torch_logits)]
-    export_from_arrays(args.out, schema["hash"], obs_size, cand_features, hidden, CLIP, params, reference)
+    export_from_arrays(args.out, schema["hash"], obs_size, cand_features, hidden, CLIP, params, reference, decision_type=schema["type"])
 
     meta, loaded = load_exported(args.out)
     worst = 0.0
@@ -246,7 +248,7 @@ def main():
         f.write("done")
     if last:
         print(f"done: val loss {last['val_loss']:.4f} vs baseline {last['val_baseline_loss']:.4f}; action effect {last['action_effect']:.4f} "
-              f"(loss growth when the chosen phase is swapped between rows; ~0 means the model ignores the action); export check {worst:.2e}")
+              f"(loss growth when the chosen candidate is swapped between rows; ~0 means the model ignores the action); export check {worst:.2e}")
     return 0
 
 

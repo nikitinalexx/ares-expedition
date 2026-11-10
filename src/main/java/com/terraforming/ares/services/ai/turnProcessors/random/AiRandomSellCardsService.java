@@ -13,6 +13,9 @@ public class AiRandomSellCardsService {
     private final SpecialEffectsService specialEffectsService;
 
     public void sellCardsAsyncByChance(Player player) {
+        if (player.getDifficulty().isAgent()) {
+            return;
+        }
         ThreadLocalRandom random = ThreadLocalRandom.current();
         if (!player.isAiSoldCards()) {
             player.setAiSoldCards(true);

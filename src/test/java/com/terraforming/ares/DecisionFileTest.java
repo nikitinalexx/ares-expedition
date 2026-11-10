@@ -98,6 +98,49 @@ class DecisionFileTest {
     }
 
     @Test
+    void cardIdsDoNotFitInAByteAndStillRoundTrip() throws IOException {
+        Path file = dir.resolve("wide.ares");
+        DecisionFile.Schema schema = new DecisionFile.Schema(DecisionType.PICK_CORPORATION, 4, 3, 2, "wide");
+        int[] ids = {10000, 10204, 65535};
+        float[][] features = {{1f, 0f}, {0f, 1f}, {0.5f, 0.5f}};
+        DecisionFile.Row written = new DecisionFile.Row(new float[]{0.25f, 0.5f, 1f, 1.5f}, 3, ids, features, 2, 1, 0, 0, 1f, 4f, 7L, 1);
+        try (DecisionFile.Writer writer = new DecisionFile.Writer(file, schema)) {
+            writer.write(written);
+        }
+        DecisionFile.Row read = DecisionFile.read(file).rows().getFirst();
+        assertArrayEquals(ids, java.util.Arrays.copyOf(read.candidateIds(), 3));
+        assertEquals(2, read.chosen());
+        assertEquals(DecisionFile.VERSION, java.nio.ByteBuffer.wrap(Files.readAllBytes(file)).order(java.nio.ByteOrder.LITTLE_ENDIAN).getShort(4));
+    }
+
+    @Test
+    void version2FilesWithByteIdsAreStillRead() throws IOException {
+        DecisionFile.Schema schema = schema("legacy");
+        byte[] json = schema.toJson().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        java.nio.ByteBuffer header = java.nio.ByteBuffer.allocate(10 + json.length).order(java.nio.ByteOrder.LITTLE_ENDIAN);
+        header.put("ARES".getBytes(java.nio.charset.StandardCharsets.US_ASCII)).putShort((short) 2).putInt(json.length).put(json);
+        java.nio.ByteBuffer record = java.nio.ByteBuffer.allocate(DecisionFile.bytesPerRecord(schema, 2)).order(java.nio.ByteOrder.LITTLE_ENDIAN);
+        for (int i = 0; i < 7; i++) {
+            record.putShort(Float.floatToFloat16(0.5f));
+        }
+        record.put((byte) 2).put((byte) 4).put((byte) 5).put((byte) 0).put((byte) 0).put((byte) 0);
+        for (int i = 0; i < 15; i++) {
+            record.putFloat(i == 0 ? 1f : 0f);
+        }
+        record.put((byte) 1).put((byte) 0).put((byte) 1).putShort((short) 3).putFloat(0.5f).putFloat(0f).putLong(99L).putShort((short) 2);
+        Path file = dir.resolve("v2.ares");
+        try (var out = Files.newOutputStream(file)) {
+            out.write(header.array());
+            out.write(record.array());
+        }
+        DecisionFile.Row read = DecisionFile.read(file).rows().getFirst();
+        assertArrayEquals(new int[]{4, 5, 0, 0, 0}, read.candidateIds());
+        assertEquals(1, read.chosen());
+        assertEquals(0.5f, read.outcome());
+        assertEquals(99L, read.gameId());
+    }
+
+    @Test
     void aTruncatedFileIsDetected() throws IOException {
         Path file = dir.resolve("cut.ares");
         try (DecisionFile.Writer writer = new DecisionFile.Writer(file, schema("x"))) {

@@ -21,10 +21,12 @@ import java.util.List;
  * Binary file with the decisions of ONE decision type (little endian, fixed size records).
  * <pre>
  *   header:  "ARES" | u16 version | u32 schemaLength | schema (UTF-8 JSON)
- *   record:  float16 observation[obsSize] | u8 candidateCount | u8 candidateIds[maxCandidates]
+ *   record:  float16 observation[obsSize] | u8 candidateCount | u16 candidateIds[maxCandidates]
  *            | float32 candidateFeatures[maxCandidates * candidateFeatures] | u8 chosen | u8 seat | u8 context | u16 round
  *            | float32 outcome | float32 margin | u64 gameId | u16 step
  * </pre>
+ * Version 2 stored candidate ids as u8 (enough for a phase number). Version 3 stores them as u16, because a card id does not
+ * fit in a byte. Readers still accept version 2. The chosen index stays a byte, so a decision type has at most 255 candidates.
  * {@code context} says who played everything the agent does not decide yet (0 = SMART, 1 = RANDOM): the learned decision must not
  * be trusted blindly if it was only ever seen in one context.
  * {@code outcome} is from the point of view of the player who made the decision: 1 win, 0.5 draw, 0 loss;
@@ -35,7 +37,8 @@ import java.util.List;
  * The schema contains a hash of the observation layout so that a trainer can refuse files produced by a different encoder.
  */
 public final class DecisionFile {
-    public static final int VERSION = 2;
+    public static final int VERSION = 3;
+    private static final int LEGACY_VERSION = 2;
     private static final byte[] MAGIC = "ARES".getBytes(StandardCharsets.US_ASCII);
 
     /**
@@ -61,8 +64,17 @@ public final class DecisionFile {
         }
 
         public int recordSize() {
-            return 2 * obsSize + 1 + maxCandidates + 4 * maxCandidates * candidateFeatures + 1 + 1 + 1 + 2 + 4 + 4 + 8 + 2;
+            return bytesPerRecord(this, VERSION);
         }
+    }
+
+    /**
+     * Version 2 keeps candidate ids in one byte; version 3 keeps them in two. Everything else is the same size.
+     */
+    public static int bytesPerRecord(Schema schema, int version) {
+        int idBytes = version >= VERSION ? 2 : 1;
+        return 2 * schema.obsSize() + 1 + idBytes * schema.maxCandidates()
+                + 4 * schema.maxCandidates() * schema.candidateFeatures() + 1 + 1 + 1 + 2 + 4 + 4 + 8 + 2;
     }
 
     /**
@@ -81,6 +93,9 @@ public final class DecisionFile {
         private final ByteBuffer buffer;
 
         public Writer(Path path, Schema schema) throws IOException {
+            if (schema.maxCandidates() > 255) {
+                throw new IllegalArgumentException("The chosen index is one byte, maxCandidates is " + schema.maxCandidates());
+            }
             this.schema = schema;
             if (path.getParent() != null) {
                 Files.createDirectories(path.getParent());
@@ -110,7 +125,11 @@ public final class DecisionFile {
             }
             buffer.put((byte) row.candidateCount());
             for (int i = 0; i < schema.maxCandidates(); i++) {
-                buffer.put((byte) (i < row.candidateCount() ? row.candidateIds()[i] : 0));
+                int id = i < row.candidateCount() ? row.candidateIds()[i] : 0;
+                if (id < 0 || id > 0xFFFF) {
+                    throw new IllegalArgumentException("Candidate id " + id + " does not fit into 16 bits");
+                }
+                buffer.putShort((short) id);
             }
             for (int i = 0; i < schema.maxCandidates(); i++) {
                 for (int f = 0; f < schema.candidateFeatures(); f++) {
@@ -142,14 +161,14 @@ public final class DecisionFile {
             ByteBuffer small = ByteBuffer.wrap(data.readNBytes(6)).order(ByteOrder.LITTLE_ENDIAN);
             int version = small.getShort();
             int jsonLength = small.getInt();
-            if (version != VERSION) {
+            if (version != VERSION && version != LEGACY_VERSION) {
                 throw new IOException("Unsupported version " + version);
             }
             String json = new String(data.readNBytes(jsonLength), StandardCharsets.UTF_8);
             Schema schema = parseSchema(json);
 
             List<Row> rows = new ArrayList<>();
-            byte[] raw = new byte[schema.recordSize()];
+            byte[] raw = new byte[bytesPerRecord(schema, version)];
             while (true) {
                 int read = data.readNBytes(raw, 0, raw.length);
                 if (read == 0) {
@@ -158,7 +177,7 @@ public final class DecisionFile {
                 if (read != raw.length) {
                     throw new IOException("Truncated record: " + read + " of " + raw.length + " bytes");
                 }
-                rows.add(parseRow(ByteBuffer.wrap(raw).order(ByteOrder.LITTLE_ENDIAN), schema));
+                rows.add(parseRow(ByteBuffer.wrap(raw).order(ByteOrder.LITTLE_ENDIAN), schema, version));
             }
             return new Content(schema, json, rows);
         }
@@ -174,7 +193,7 @@ public final class DecisionFile {
         return Float.floatToFloat16(v);
     }
 
-    private static Row parseRow(ByteBuffer b, Schema schema) {
+    private static Row parseRow(ByteBuffer b, Schema schema, int version) {
         float[] observation = new float[schema.obsSize()];
         for (int i = 0; i < observation.length; i++) {
             observation[i] = Float.float16ToFloat(b.getShort());
@@ -182,7 +201,7 @@ public final class DecisionFile {
         int count = b.get() & 0xFF;
         int[] ids = new int[schema.maxCandidates()];
         for (int i = 0; i < ids.length; i++) {
-            ids[i] = b.get() & 0xFF;
+            ids[i] = version >= VERSION ? (b.getShort() & 0xFFFF) : (b.get() & 0xFF);
         }
         float[][] features = new float[schema.maxCandidates()][schema.candidateFeatures()];
         for (int i = 0; i < features.length; i++) {

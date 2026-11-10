@@ -161,7 +161,7 @@ public class AiTurnService {
             throw new IllegalStateException("Not allowed to collect income twice");
         }
 
-        makeAsyncTurn(player, new CollectIncomeTurn(player.getUuid(), null));
+        makeAsyncTurn(player, new CollectIncomeTurn(player.getUuid(), doubleCollectCardId));
     }
 
     public void skipTurn(Player player) {
@@ -186,6 +186,25 @@ public class AiTurnService {
         }
 
         makeSyncTurn(player, game, new IncreaseTemperatureTurn(player.getUuid()));
+    }
+
+    public void exchangeHeat(MarsGame game, Player player, int value) {
+        if (value <= 0) {
+            throw new IllegalStateException("Incorrect heat value provided");
+        }
+        if (player.getHeat() < value) {
+            throw new IllegalStateException("Not enough heat to exchange");
+        }
+        Integer corporationId = player.getSelectedCorporationCard();
+        if (corporationId == null) {
+            throw new IllegalStateException("Only Helion may perform heat exchange");
+        }
+        Card corporation = cardService.getCard(corporationId);
+        if (corporation.getCardMetadata() == null
+                || corporation.getCardMetadata().getCardAction() != CardAction.HELION_CORPORATION) {
+            throw new IllegalStateException("Only Helion may perform heat exchange");
+        }
+        makeSyncTurn(player, game, new ExchangeHeatTurn(player.getUuid(), value));
     }
 
     public void discardCards(MarsGame game, Player player, Turn turn, List<Integer> cards) {
