@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.DoubleAdder;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * Value-network inference (win probability) for NETWORK_V2 computers.
@@ -55,6 +56,9 @@ public class NNService {
     // verify mode checks only every Nth predictBatch call: the DL4J reference is much slower (esp. on CPU)
     private final int verifyEvery = Integer.getInteger("ares.nn.verify.every", 20);
     private final AtomicLong verifyCounter = new AtomicLong();
+    // inference volume since start (calls of predictBatch and states in them); read by the benchmark
+    private final LongAdder totalCalls = new LongAdder();
+    private final LongAdder totalStates = new LongAdder();
 
     public NNService() throws Exception {
         backend = Backend.valueOf(System.getProperty("ares.nn.backend", "java").trim().toUpperCase());
@@ -95,6 +99,8 @@ public class NNService {
     public List<Prediction> predictBatch(List<float[]> featuresBatch, ModelType modelType) {
         if (featuresBatch.isEmpty()) return List.of();
 
+        totalCalls.increment();
+        totalStates.add(featuresBatch.size());
         float[][] features = featuresBatch.toArray(new float[0][]);
         float[] probs = primary.get(modelType).predictBatch(features);
 
@@ -125,6 +131,11 @@ public class NNService {
                 AiConstants.TABLE_VECTOR_SIZE, AiConstants.HAND_VECTOR_SIZE, DENSE_TABLE, DENSE_HAND, DENSE_HIDDEN);
         primary.put(ModelType.FIRST, network);
         primary.put(ModelType.SECOND, network);
+    }
+
+    /** @return {calls of predictBatch, evaluated states} since the application started */
+    public long[] inferenceCounters() {
+        return new long[]{totalCalls.sum(), totalStates.sum()};
     }
 
     public void printVerifyStats() {

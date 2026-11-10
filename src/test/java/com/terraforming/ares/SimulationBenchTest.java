@@ -37,4 +37,15 @@ class SimulationBenchTest extends EngineTestBase {
         // 2 players are encoded after every step
         assertEquals(2 * result.stepsPerSecond(), result.encodesPerSecond(), 1e-6 * result.encodesPerSecond());
     }
+
+    @Test
+    void benchReportsNeuralNetworkInferenceVolume() throws Exception {
+        SimulationBenchController.BenchResult random = controller.bench(6, 2, PlayerDifficulty.RANDOM, PlayerDifficulty.RANDOM, 1, false);
+        assertEquals(0.0, random.nnStatesPerGame(), "random players never call the network");
+
+        SimulationBenchController.BenchResult network = controller.bench(2, 2, PlayerDifficulty.NETWORK_V2, PlayerDifficulty.NETWORK_V2, 0, false);
+        assertTrue(network.nnCallsPerGame() > 10, "NETWORK_V2 evaluates states with the network: " + network.nnCallsPerGame());
+        assertTrue(network.nnStatesPerGame() >= network.nnCallsPerGame(), "a call evaluates at least one state");
+        assertEquals(network.nnStatesPerGame() * network.games() / network.seconds(), network.nnStatesPerSecond(), 1e-6 * network.nnStatesPerSecond());
+    }
 }

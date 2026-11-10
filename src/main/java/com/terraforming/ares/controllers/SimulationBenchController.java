@@ -7,6 +7,7 @@ import com.terraforming.ares.model.PlayerDifficulty;
 import com.terraforming.ares.services.GameService;
 import com.terraforming.ares.services.SimulationProcessorService;
 import com.terraforming.ares.services.ai.advanced.AdvancedAiDataCollectionService;
+import com.terraforming.ares.services.ai.dl4j.NNService;
 import com.terraforming.ares.model.Player;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -34,11 +35,13 @@ public class SimulationBenchController {
     private final GameService gameService;
     private final SimulationProcessorService simulationProcessorService;
     private final AdvancedAiDataCollectionService dataCollectionService;
+    private final NNService nnService;
 
     public record BenchResult(String a, String b, int threads, int games, int warmupGames, double seconds,
                               double gamesPerSecond, double stepsPerSecond, double avgStepsPerGame,
                               double avgRounds, int failedGames, int availableProcessors,
-                              boolean encode, double encodesPerSecond) {
+                              boolean encode, double encodesPerSecond,
+                              double nnCallsPerGame, double nnStatesPerGame, double nnStatesPerSecond) {
     }
 
     @GetMapping("/simulations/bench")
@@ -53,16 +56,21 @@ public class SimulationBenchController {
         runGames(warmup, poolSize, a, b, encode, new LongAdder(), new LongAdder(), new LongAdder(), new LongAdder(), new LongAdder());
 
         LongAdder steps = new LongAdder(), rounds = new LongAdder(), done = new LongAdder(), failed = new LongAdder(), encodes = new LongAdder();
+        long[] nnBefore = nnService.inferenceCounters();
         long start = System.nanoTime();
         runGames(games, poolSize, a, b, encode, steps, rounds, done, failed, encodes);
         double seconds = (System.nanoTime() - start) / 1e9;
+        long[] nnAfter = nnService.inferenceCounters();
+        double nnCalls = nnAfter[0] - nnBefore[0];
+        double nnStates = nnAfter[1] - nnBefore[1];
 
         long played = done.sum();
         BenchResult result = new BenchResult(a.name(), b.name(), poolSize, (int) played, warmup, seconds,
                 played / seconds, steps.sum() / seconds,
                 played == 0 ? 0 : (double) steps.sum() / played,
                 played == 0 ? 0 : (double) rounds.sum() / played,
-                (int) failed.sum(), Runtime.getRuntime().availableProcessors(), encode, encodes.sum() / seconds);
+                (int) failed.sum(), Runtime.getRuntime().availableProcessors(), encode, encodes.sum() / seconds,
+                played == 0 ? 0 : nnCalls / played, played == 0 ? 0 : nnStates / played, nnStates / seconds);
         System.out.println("[BENCH] " + result);
         return result;
     }
