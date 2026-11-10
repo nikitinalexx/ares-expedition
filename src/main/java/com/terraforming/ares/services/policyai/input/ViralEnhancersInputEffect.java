@@ -11,7 +11,6 @@ import com.terraforming.ares.services.policyai.action.ActionInputService;
 import com.terraforming.ares.services.policyai.action.ActionRegistry;
 import com.terraforming.ares.services.policyai.action.HeadAction;
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
-import com.terraforming.ares.services.policyai.rollout.EffectStateReader;
 import com.terraforming.ares.services.policyai.service.AbstractPolicyProcessor;
 import org.springframework.stereotype.Component;
 
@@ -56,7 +55,7 @@ public class ViralEnhancersInputEffect extends AbstractPolicyProcessor implement
             List<HeadAction> validActions = new ArrayList<>(resourceActionToCard.keySet());
             validActions.add(ActionInputService.takePlantTargetAction());
 
-            HeadAction best = predict(record, validActions);
+            HeadAction best = predict(record, validActions, null);
             record.viralEnhancersActivationsLeft--;
 
             if (best == ActionInputService.takePlantTargetAction()) {

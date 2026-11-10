@@ -1,5 +1,7 @@
 package com.terraforming.ares.processors.turn;
 
+import com.terraforming.ares.cards.blue.Decomposers;
+import com.terraforming.ares.cards.blue.ViralEnhancers;
 import com.terraforming.ares.cards.corporations.DummyCard;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
@@ -45,11 +47,24 @@ public abstract class GenericBuildProjectProcessor<T extends GenericBuildProject
 
         TurnResponse response = card.buildProject(marsContext);
 
+        Card viralEnhancers = null;
+        Card decomposers = null;
+
         for (Integer previouslyPlayedCardId : player.getPlayed().getCards()) {
             Card previouslyPlayedCard = cardService.getCard(previouslyPlayedCardId);
-            if (previouslyPlayedCard.onBuiltEffectApplicableToOther()) {
+            if (previouslyPlayedCard.getClass() == ViralEnhancers.class) {
+                viralEnhancers = previouslyPlayedCard;
+            } else if (previouslyPlayedCard.getClass() == Decomposers.class) {
+                decomposers = previouslyPlayedCard;
+            } else if (previouslyPlayedCard.onBuiltEffectApplicableToOther()) {
                 previouslyPlayedCard.postProjectBuiltEffect(marsContext, card, turn.getInputParams());
             }
+        }
+        if (viralEnhancers != null) {
+            viralEnhancers.postProjectBuiltEffect(marsContext, card, turn.getInputParams());
+        }
+        if (decomposers != null) {
+            decomposers.postProjectBuiltEffect(marsContext, card, turn.getInputParams());
         }
 
         for (Player anotherPlayer : game.getPlayerUuidToPlayer().values()) {

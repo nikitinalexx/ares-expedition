@@ -12,6 +12,7 @@ import java.io.File;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.LongAdder;
 
 import static org.bytedeco.cuda.global.cudart.cudaMemGetInfo;
 
@@ -30,8 +31,8 @@ import static org.bytedeco.cuda.global.cudart.cudaMemGetInfo;
 @Service
 public class NNService {
     public static final int MAX_REQUESTS_PER_TICK = 256;//64
-    public static final int MAX_STATES_PER_BATCH = 8192;//512
-    public static final int CHUNK_SIZE = 4096;//512
+    public static final int MAX_STATES_PER_BATCH = 16384;//512
+    public static final int CHUNK_SIZE = 8192;//512
 
     // Перечисление для выбора модели
     public enum ModelType {
@@ -47,26 +48,28 @@ public class NNService {
     public NNService() throws Exception {
         networks.put(
                 ModelType.FIRST,
-                ComputationGraph.load(new File("iter4_epoch_2_93.zip"), false)
+                ComputationGraph.load(new File("epoch_2_14_13_03.zip"), false)
 
         );
 
         networks.put(
                 ModelType.SECOND,
-                ComputationGraph.load(new File("iter4_epoch_2_93.zip"), false)
+                ComputationGraph.load(new File("epoch_2_14_13_03.zip"), false)
 
         );
 
-        // Инициализируем очереди и батчеры
-        for (ModelType type : ModelType.values()) {
-            Queue<BatchRequest> queue = new ConcurrentLinkedQueue<>();
-            queues.put(type, queue);
+        if (AiConstants.VALUE_PLAYING) {
+            // Инициализируем очереди и батчеры
+            for (ModelType type : ModelType.values()) {
+                Queue<BatchRequest> queue = new ConcurrentLinkedQueue<>();
+                queues.put(type, queue);
 
-            ComputationGraph net = networks.get(type);
+                ComputationGraph net = networks.get(type);
 
-            Thread.ofVirtual()
-                    .name("Batcher-" + type)
-                    .start(() -> batchLoop(type, queue, net));
+                Thread.ofVirtual()
+                        .name("Batcher-" + type)
+                        .start(() -> batchLoop(type, queue, net));
+            }
         }
     }
 
@@ -161,9 +164,25 @@ public class NNService {
             System.out.println("GPU mem log failed: " + t.getMessage());
         }
     }
+//    private static final LongAdder statesProcessed = new LongAdder();
+//    private static volatile long windowStart = System.currentTimeMillis();
 
     private void processInference(List<BatchRequest> batch, ComputationGraph net, int totalStates) {
-//        System.out.println("Total states " + totalStates);
+//        statesProcessed.add(totalStates);
+//
+//        long now = System.currentTimeMillis();
+//        long start = windowStart;
+//
+//        if (now - start >= 60_000) {
+//            synchronized (NNService.class) {   // любой общий lock
+//                if (windowStart == start) { // второй поток уже мог обновить
+//                    long states = statesProcessed.sumThenReset();
+//                    System.out.println("States per minute: " + states);
+//
+//                    windowStart = now;
+//                }
+//            }
+//        }
         // 1. Определяем размеры из твоих констант (подставь свои имена констант)
         int tableSize = AiConstants.TABLE_VECTOR_SIZE;
         int handSize = AiConstants.HAND_VECTOR_SIZE;

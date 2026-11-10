@@ -68,7 +68,7 @@ public class Birds implements BlueCard {
 
     @Override
     public List<ParameterColor> getOxygenRequirement() {
-        return Collections.singletonList(ParameterColor.W);
+        return List.of(ParameterColor.Y, ParameterColor.W);
     }
 
     @Override

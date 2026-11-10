@@ -8,6 +8,8 @@ import com.terraforming.ares.model.turn.Turn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.processors.turn.TurnProcessor;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -45,7 +47,10 @@ public abstract class BaseProcessorService {
             return false;
         }
 
-        game.getPlayerUuidToPlayer().values().forEach(player -> processNextTurn(player, game));
+        List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
+        Collections.shuffle(players);
+
+        players.forEach(p -> processNextTurn(p, game));
 
         return true;
     }

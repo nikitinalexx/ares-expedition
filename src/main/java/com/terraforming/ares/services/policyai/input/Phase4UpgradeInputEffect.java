@@ -4,7 +4,6 @@ import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.services.ai.advanced.TableContext;
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
-import com.terraforming.ares.services.policyai.rollout.EffectStateReader;
 import com.terraforming.ares.services.policyai.service.AbstractPolicyProcessor;
 import org.springframework.stereotype.Component;
 

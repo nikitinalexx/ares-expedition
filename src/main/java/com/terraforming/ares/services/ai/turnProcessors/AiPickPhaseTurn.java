@@ -19,15 +19,11 @@ import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.dto.PhaseChoiceProjection;
 import com.terraforming.ares.services.ai.helpers.AiCardActionHelper;
 import com.terraforming.ares.services.ai.network2.Network2PickPhaseService;
-import com.terraforming.ares.services.policyai.PolicyCollectService;
 import com.terraforming.ares.services.policyai.service.PolicyDecisionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
@@ -49,7 +45,6 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
     private final AiThirdPhaseProjectionService aiThirdPhaseProjectionService;
     private final AiCardValidationService aiCardValidationService;
     private final Network2PickPhaseService network2PickPhaseService;
-    private final PolicyCollectService policyCollectService;
     private final PolicyDecisionService policyDecisionService;
 
     @Override
@@ -60,10 +55,28 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
     @Override
     public boolean processTurn(MarsGame game, Player player) {
         if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.POLICY) {
-            aiTurnService.choosePhaseTurn(player, policyDecisionService.choosePhase(game, player));
+            int phaseId = policyDecisionService.choosePhase(game, player);
+            if (player.isFirstBot()) {
+                Constants.FIRST_PLAYER_PHASES.compute(phaseId, (key, value) -> {
+                    if (value == null) {
+                        value = 0;
+                    }
+                    return value + 1;
+                });
+            }
+            if (player.isSecondBot()) {
+                Constants.SECOND_PLAYER_PHASES.compute(phaseId, (key, value) -> {
+                    if (value == null) {
+                        value = 0;
+                    }
+                    return value + 1;
+                });
+            }
+            aiTurnService.choosePhaseTurn(player, phaseId);
             return true;
         } else if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
             int phaseId = network2PickPhaseService.pickPhase(game, player);
+
             if (player.isFirstBot()) {
                 Constants.FIRST_PLAYER_PHASES.compute(phaseId, (key, value) -> {
                     if (value == null) {

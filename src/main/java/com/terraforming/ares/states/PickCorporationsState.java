@@ -64,7 +64,7 @@ public class PickCorporationsState extends AbstractState {
             if (game.isCrysis()) {
                 stateTransitionService.performStateTransferIntoResolveDetrimentTokens(game);
             } else {
-                game.setStateType(StateType.PICK_PHASE, context);
+                stateTransitionService.transferToPickPhase(game);
             }
         }
     }

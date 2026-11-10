@@ -17,7 +17,10 @@ import com.terraforming.ares.services.ai.turnFlow.AvailableTurnFlow;
 import com.terraforming.ares.services.ai.turnFlow.BestTurnType;
 import com.terraforming.ares.services.ai.network2.Network2FirstSecondPhaseActionProcessor;
 import com.terraforming.ares.services.ai.turnProcessors.random.AiRandomSecondPhaseActionProcessor;
+import com.terraforming.ares.services.policyai.service.PolicyFirstSecondPhaseActionProcessor;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -39,9 +42,14 @@ public class AiSecondPhaseActionProcessor {
     private final ICardValueService cardValueService;
     private final AiRandomSecondPhaseActionProcessor aiRandomSecondPhaseActionProcessor;
     private final Network2FirstSecondPhaseActionProcessor network2FirstSecondPhaseActionProcessor;
+    private final PolicyFirstSecondPhaseActionProcessor policyFirstSecondPhaseActionProcessor;
 
     public void processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
-        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT || player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.POLICY) {
+        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.POLICY) {
+            policyFirstSecondPhaseActionProcessor.processTurn(possibleTurns, game, player);
+            return;
+        }
+        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
             network2FirstSecondPhaseActionProcessor.processTurn(possibleTurns, game, player);
             return;
         }

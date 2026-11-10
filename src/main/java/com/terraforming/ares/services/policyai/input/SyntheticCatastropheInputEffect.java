@@ -36,7 +36,7 @@ public class SyntheticCatastropheInputEffect extends AbstractPolicyProcessor imp
             builtRedCards.forEach(c -> actionToCard.put(ActionInputService.getRedCardTargetAction(c), c));
 
             record.syntheticCatastropheEffect = true;
-            HeadAction best = predict(record, new ArrayList<>(actionToCard.keySet()));
+            HeadAction best = predict(record, new ArrayList<>(actionToCard.keySet()), null);
             record.syntheticCatastropheEffect = false;
 
             target = actionToCard.get(best);

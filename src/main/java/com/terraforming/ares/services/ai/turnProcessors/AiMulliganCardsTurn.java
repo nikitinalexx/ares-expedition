@@ -1,16 +1,16 @@
 package com.terraforming.ares.services.ai.turnProcessors;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.*;
+import com.terraforming.ares.model.Card;
+import com.terraforming.ares.model.MarsContext;
+import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.ai.AiExperimentalTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.MarsContextProvider;
 import com.terraforming.ares.services.ai.*;
-import com.terraforming.ares.services.ai.advanced.IDataCollect;
 import com.terraforming.ares.services.ai.dto.CardValueResponse;
 import com.terraforming.ares.services.ai.network2.Network2CorporationAndMulliganService;
-import com.terraforming.ares.services.policyai.PolicyCollectService;
 import com.terraforming.ares.services.policyai.service.PolicyDecisionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -33,7 +33,6 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
     private final MarsContextProvider marsContextProvider;
     private final DeepNetwork deepNetwork;
     private final Network2CorporationAndMulliganService network2CorporationAndMulliganService;
-    private final PolicyCollectService policyCollectService;
     private final PolicyDecisionService policyDecisionService;
 
 
@@ -51,7 +50,6 @@ public class AiMulliganCardsTurn implements AiTurnProcessor {
 
     public List<Integer> getCardsToDiscardSmart(MarsGame game, Player player, int max) {
         List<Integer> cards = new ArrayList<>(player.getHand().getCards());
-
 
 
         if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.POLICY) {

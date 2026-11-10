@@ -9,7 +9,6 @@ import com.terraforming.ares.services.policyai.ResourceHelper;
 import com.terraforming.ares.services.policyai.action.ActionInputService;
 import com.terraforming.ares.services.policyai.action.HeadAction;
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
-import com.terraforming.ares.services.policyai.rollout.EffectStateReader;
 import com.terraforming.ares.services.policyai.service.AbstractPolicyProcessor;
 import org.springframework.stereotype.Component;
 
@@ -46,7 +45,7 @@ public class LocalHeatTrappingInputEffect extends AbstractPolicyProcessor implem
         );
 
         record.localHeatTrappingEffect = true;
-        HeadAction best = predict(record, new ArrayList<>(actionToCard.keySet()));
+        HeadAction best = predict(record, new ArrayList<>(actionToCard.keySet()), null);
         record.localHeatTrappingEffect = false;
         Card target = actionToCard.get(best);
 

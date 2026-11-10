@@ -15,10 +15,14 @@ public final class BlueAction {
 
     public static final int NO_PAY_COUNT   = AiConstants.NO_PAYMENT_BLUE_ACTIONS.size();
     public static final int WITH_PAY_COUNT = AiConstants.WITH_PAY_BLUE_ACTIONS.size();
-    public static final int COUNT          = NO_PAY_COUNT + WITH_PAY_COUNT;
+    public static final int POWER_INFRASTRUCTURE_PASS_COUNT = 1;
+    public static final int REDRAFTED_CONTRACTS_PASS_COUNT = 1;
+    public static final int COUNT          = NO_PAY_COUNT + WITH_PAY_COUNT + POWER_INFRASTRUCTURE_PASS_COUNT + REDRAFTED_CONTRACTS_PASS_COUNT;
 
     private static final int OFFSET_NO_PAY   = 0;
     private static final int OFFSET_WITH_PAY = NO_PAY_COUNT;
+    private static final int OFFSET_POWER_INFRASTRUCTURE_PASS = OFFSET_WITH_PAY + WITH_PAY_COUNT;
+    private static final int OFFSET_REDRAFTED_CONTRACT_PASS = OFFSET_POWER_INFRASTRUCTURE_PASS + POWER_INFRASTRUCTURE_PASS_COUNT;
 
     private static final HeadAction[] CACHE = new HeadAction[COUNT];
 
@@ -32,6 +36,9 @@ public final class BlueAction {
             };
         }
     }
+
+    public static final HeadAction POWER_INFRASTRUCTURE_PASS = CACHE[OFFSET_POWER_INFRASTRUCTURE_PASS];
+    public static final HeadAction REDRAFTED_CONTRACTS_PASS    = CACHE[OFFSET_REDRAFTED_CONTRACT_PASS];
 
     public static HeadAction forNoPayIndex(int index) {
         if (index < 0 || index >= NO_PAY_COUNT)

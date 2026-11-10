@@ -99,21 +99,36 @@ public class SimulationProcessorService extends BaseProcessorService {
         cardPickStatistics.collectFromGame(firstPlayerPoints == secondPlayerPoints ? 0 : (firstPlayerPoints > secondPlayerPoints ? 1 : 2), players);
     }
 
+    public void runSimulation(MarsGame game) {
+        while (game.getStateType() != StateType.GAME_END) {
+            while (aiService.waitingAiTurns(game)) {
+                aiService.makeAiTurns(game);
+            }
+
+            while (processFinalTurns(game)) {
+                stateFactory.getCurrentState(game).updateState();
+            }
+        }
+    }
+
     public void finalizeGame(GameRecordArena arena, int winner) {
+        if (arena == null) {
+            return;
+        }
+
         float p1;
         float p2;
 
         if (winner == 0) {
-            p1 = 0.5f;
-            p2 = 0.5f;
+            p1 = 0f;
+            p2 = 0f;
         } else {
-            p1 = (byte) ((winner == 1) ? 1 : 0);
-            p2 = (byte) ((winner == 2) ? 1 : 0);
+            p1 = (winner == 1) ? 1f : -1f;
+            p2 = (winner == 2) ? 1f : -1f;
         }
 
         for (int i = 0; i < arena.size(); i++) {
             PolicyRecord r = arena.records()[i];
-
             r.outcome = r.isFirstPlayer ? p1 : p2;
         }
     }

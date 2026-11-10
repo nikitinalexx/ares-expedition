@@ -2,9 +2,11 @@ package com.terraforming.ares.validation.input;
 
 import com.terraforming.ares.cards.blue.Decomposers;
 import com.terraforming.ares.model.Card;
+import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.ai.AiConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -51,6 +53,22 @@ public class DecomposersOnBuiltEffectValidator implements OnBuiltEffectValidator
         }
 
         int microbesTotal = player.getCardResourcesCount().getOrDefault(Decomposers.class, 0) + takeMicrobes;
+        if (input.containsKey(InputFlag.VIRAL_ENHANCERS_PUT_RESOURCE.getId())) {
+            List<Integer> resourceInput = input.get(InputFlag.VIRAL_ENHANCERS_PUT_RESOURCE.getId());
+            for (Integer resourceInputCard : resourceInput) {
+                if (resourceInputCard == AiConstants.DECOMPOSERS_CARD_ID) {
+                    microbesTotal++;
+                }
+            }
+        }
+        if (input.containsKey(InputFlag.CRYOGENIC_SHIPMENT_PUT_RESOURCE.getId())) {
+            List<Integer> resourceInput = input.get(InputFlag.CRYOGENIC_SHIPMENT_PUT_RESOURCE.getId());
+            for (Integer resourceInputCard : resourceInput) {
+                if (resourceInputCard == AiConstants.DECOMPOSERS_CARD_ID) {
+                    microbesTotal += 3;
+                }
+            }
+        }
 
         if (microbesTotal < takeCards) {
             return "You can't pick Cards more than Microbes you have";

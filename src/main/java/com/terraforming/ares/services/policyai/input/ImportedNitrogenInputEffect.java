@@ -9,11 +9,13 @@ import com.terraforming.ares.services.policyai.action.ActionInputService;
 import com.terraforming.ares.services.policyai.action.ActionRegistry;
 import com.terraforming.ares.services.policyai.action.HeadAction;
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
-import com.terraforming.ares.services.policyai.rollout.EffectStateReader;
 import com.terraforming.ares.services.policyai.service.AbstractPolicyProcessor;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Component
 public class ImportedNitrogenInputEffect extends AbstractPolicyProcessor implements InputGeneratorEffect {
@@ -40,7 +42,7 @@ public class ImportedNitrogenInputEffect extends AbstractPolicyProcessor impleme
                 Map<HeadAction, Card> actionToCard = new HashMap<>();
                 microbeCards.forEach(c -> actionToCard.put(ActionInputService.getMicrobeTargetAction(c), c));
 
-                HeadAction best = predict(record, new ArrayList<>(actionToCard.keySet()));
+                HeadAction best = predict(record, new ArrayList<>(actionToCard.keySet()), null);
                 target = actionToCard.get(best);
             }
             input.put(InputFlag.IMPORTED_NITROGEN_ADD_MICROBES.getId(), List.of(target.getId()));
@@ -59,7 +61,7 @@ public class ImportedNitrogenInputEffect extends AbstractPolicyProcessor impleme
                 Map<HeadAction, Card> actionToCard = new HashMap<>();
                 animalCards.forEach(c -> actionToCard.put(ActionInputService.getAnimalTargetAction(c), c));
 
-                HeadAction best = predict(record, new ArrayList<>(actionToCard.keySet()));
+                HeadAction best = predict(record, new ArrayList<>(actionToCard.keySet()), null);
                 target = actionToCard.get(best);
             }
 

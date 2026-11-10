@@ -3,37 +3,27 @@ package com.terraforming.ares.services.ai.network2;
 import com.terraforming.ares.cards.blue.*;
 import com.terraforming.ares.cards.buffedCorporations.BuffedArclightCorporation;
 import com.terraforming.ares.cards.corporations.ArclightCorporation;
-import com.terraforming.ares.cards.red.ImportedHydrogen;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.payments.PaymentType;
-import com.terraforming.ares.services.ai.advanced.TableContext;
 import com.terraforming.ares.services.ai.network2.buildParams.AiMarsUniversityInputHandler;
 import com.terraforming.ares.services.ai.network2.dto.CardWithChanceAndInput;
 import com.terraforming.ares.services.ai.turnProcessors.AiTurnService;
 import com.terraforming.ares.services.ai.turnProcessors.frontier.State;
-import com.terraforming.ares.services.policyai.PolicyActionCollectService;
-import com.terraforming.ares.services.policyai.PolicyCollectService;
 
 import java.util.List;
 import java.util.Map;
 
 public abstract class AbstractPhaseProcessor {
-    private final PolicyCollectService policyCollectService;
     private final AiTurnService aiTurnService;
-    private final PolicyActionCollectService policyActionCollectService;
     private final AiMarsUniversityInputHandler aiMarsUniversityInputHandler;
-    private final Network2PaymentService network2PaymentService;
 
-    protected AbstractPhaseProcessor(PolicyCollectService policyCollectService, PolicyActionCollectService policyActionCollectService, AiTurnService aiTurnService, AiMarsUniversityInputHandler aiMarsUniversityInputHandler, Network2PaymentService network2PaymentService) {
-        this.policyCollectService = policyCollectService;
+    protected AbstractPhaseProcessor(AiTurnService aiTurnService, AiMarsUniversityInputHandler aiMarsUniversityInputHandler) {
         this.aiTurnService = aiTurnService;
-        this.policyActionCollectService = policyActionCollectService;
         this.aiMarsUniversityInputHandler = aiMarsUniversityInputHandler;
-        this.network2PaymentService = network2PaymentService;
     }
 
     protected void finalizeBuildProject(MarsGame game, Player player, CardWithChanceAndInput bestCard, boolean isSimulation) {
@@ -44,45 +34,7 @@ public abstract class AbstractPhaseProcessor {
             aiMarsUniversityInputHandler.updateMarsUniversityInput(game, player, bestCard.getCard().getId(), params);
         }
 
-        if (!isSimulation) {
-            TableContext buildPlayerContext = policyCollectService.build(game, player, bestCard.getCard());
-            if (network2PaymentService.getAllPossibleCardPayments(game, player, bestCard.getCard(), params).size() > 1) {
-                int type = getPaymentType(bestCard.getPayments());
-
-                policyCollectService.payForTheBuild(game, player, type, bestCard.getCard());
-            }
-
-            if (!params.isEmpty() && buildPlayerContext != null) {
-                //can be a separate step
-                if (params.containsKey(InputFlag.CEOS_FAVORITE_PUT_RESOURCES.getId())) {
-                    policyCollectService.ceosFavoriteProject(game, player, params, buildPlayerContext, bestCard.getCard());
-                } else if (params.containsKey(InputFlag.SYNTHETIC_CATASTROPHE_CARD.getId())) {//can be a separate step
-                    policyCollectService.syntheticCatastrophe(game, player, params, bestCard.getCard());
-                } else if (bestCard.getCard().getClass() == ImportedHydrogen.class) {//can be a separate step
-                    policyCollectService.importedHydrogen(game, player, params, bestCard.getCard());
-                } else {
-                    policyCollectService.onTagPlayedMixIn(game, player, bestCard.getCard(), params);
-                }
-            }
-        }
-
         aiTurnService.buildProject(game, player, bestCard.getCard().getId(), bestCard.getPayments(), params);
-    }
-
-    protected int getPaymentType(List<Payment> payments) {
-        int type = 0;
-        if (payments.size() == 3) {
-            type = 3;
-        } else if (payments.size() == 2) {
-            if (payments.getFirst().getType() == PaymentType.RESTRUCTURED_RESOURCES) {
-                type = 1;
-            } else if (payments.getFirst().getType() == PaymentType.ANAEROBIC_MICROORGANISMS) {
-                type = 2;
-            } else {
-                throw new IllegalStateException("Invalid payment");
-            }
-        }
-        return type;
     }
 
     protected void finalizeUnmiTurn(MarsGame game, Player player, boolean isSimulation) {
@@ -94,7 +46,6 @@ public abstract class AbstractPhaseProcessor {
     }
 
     protected void finalizeUnmiTurn(MarsGame game, Player player) {
-        policyCollectService.unmiTurn(game, player);
         aiTurnService.unmiRtCorporationTurn(game, player);
     }
 
@@ -107,7 +58,6 @@ public abstract class AbstractPhaseProcessor {
     }
 
     protected void finalizeDoExtraAction(MarsGame game, Player player) {
-        policyCollectService.takeBonusTurn(game, player);
         aiTurnService.pickExtraBonusTurnAsync(player);
     }
 

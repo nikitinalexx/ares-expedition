@@ -73,6 +73,11 @@ public class MilestonesAwardsFeature implements FeatureBlock {
             "milestone_GARDENER_opponentProgress",
             "milestone_GARDENER_isAustellarPick",
 
+            "milestone_BUILDER_isInGame",
+            "milestone_BUILDER_myProgress",
+            "milestone_BUILDER_opponentProgress",
+            "milestone_BUILDER_isAustellarPick",
+
             // Awards (each: isInGame, myProgress_log, opponentProgress_log)
             "award_CELEBRITY_isInGame",
             "award_CELEBRITY_myProgress_log",
@@ -107,7 +112,7 @@ public class MilestonesAwardsFeature implements FeatureBlock {
 
     @Override
     public int size() {
-        return 58;
+        return 62;
     }
 
     private static final List<MilestoneType> MILESTONE_TYPES = List.of(
@@ -120,7 +125,8 @@ public class MilestonesAwardsFeature implements FeatureBlock {
             MilestoneType.SPACE_BARON,
             MilestoneType.TERRAFORMER,
             MilestoneType.TYCOON,
-            MilestoneType.GARDENER
+            MilestoneType.GARDENER,
+            MilestoneType.BUILDER
     );
 
     @Override

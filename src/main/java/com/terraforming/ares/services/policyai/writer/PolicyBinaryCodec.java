@@ -2,9 +2,9 @@ package com.terraforming.ares.services.policyai.writer;
 
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
 
-import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.Arrays;
 
 public final class PolicyBinaryCodec {
 
@@ -55,6 +55,7 @@ public final class PolicyBinaryCodec {
         out.writeBoolean(r.doingMulligan);
         out.writeBoolean(r.pickingCorporation);
         out.writeBoolean(r.payingForTheBuild);
+        out.writeBoolean(r.building);
         out.writeByte(r.mulliganToDraw);
 
         out.writeByte(r.currentPhaseMask);
@@ -71,6 +72,7 @@ public final class PolicyBinaryCodec {
         out.writeBoolean(r.helionExchanging);
 
         out.writeByte(r.cardsLeftToDiscard);
+        out.writeByte(r.opponentLeftToDiscard);
         out.writeByte(r.marsUniversityDiscardsLeft);
         out.writeByte(r.decomposersActivationsLeft);
         out.writeByte(r.viralEnhancersActivationsLeft);
@@ -104,6 +106,7 @@ public final class PolicyBinaryCodec {
         out.writeByte(r.redraftedDiscarded);
 
         out.writeShort(r.ownedBuildsMask);
+        out.writeByte(r.paymentChoiceContext);
 
         writeIntArray(out, r.phaseUpgrades);
 
@@ -162,10 +165,23 @@ public final class PolicyBinaryCodec {
 
         writeLongArray(out, r.handCardMask);
         writeLongArray(out, r.selectableCardMask);
+        out.writeInt(r.selectedTagMask);
 
         out.writeFloat(r.outcome);
+        out.writeFloat(r.policyDelta);
         out.writeByte(r.chosenHead);
         out.writeShort(r.chosenLocalIndex);
+        writeLongArray(out, r.legalActionMask);
+        out.writeShort(r.legalHeadMask);
+
+        out.writeBoolean(r.hasDistribution);
+        if (r.hasDistribution) {
+            out.writeByte(r.distIndices.length);
+            for (int i = 0; i < r.distIndices.length; i++) {
+                out.writeShort(r.distIndices[i]);
+                out.writeFloat(r.distProbs[i]);
+            }
+        }
     }
 
     private static void writeByteArray(DataOutput out, byte[] a) throws IOException {

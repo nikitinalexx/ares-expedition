@@ -73,7 +73,7 @@ public class CardProjectionService {
                 inputParameters.put(InputFlag.MARS_UNIVERSITY_CARD.getId(), List.of(InputFlag.SKIP_ACTION.getId()));
             }
 
-            return cardValidationService.validateCard(player, game, cardWithChanceAndInput.getCard().getId(), cardWithChanceAndInput.getPayments(), inputParameters) == null;
+            return cardValidationService.validateCard(player, game, cardWithChanceAndInput.getCard(), cardWithChanceAndInput.getPayments(), inputParameters) == null;
         }).toList();
     }
 

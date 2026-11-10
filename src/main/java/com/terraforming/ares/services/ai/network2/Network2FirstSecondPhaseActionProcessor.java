@@ -1,48 +1,48 @@
 package com.terraforming.ares.services.ai.network2;
 
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.TurnType;
-import com.terraforming.ares.services.CardService;
-import com.terraforming.ares.services.ai.AiConstants;
 import com.terraforming.ares.services.ai.network2.buildParams.AiMarsUniversityInputHandler;
 import com.terraforming.ares.services.ai.network2.projection.*;
 import com.terraforming.ares.services.ai.turnProcessors.AiTurnService;
-import com.terraforming.ares.services.policyai.PolicyActionCollectService;
-import com.terraforming.ares.services.policyai.PolicyCollectService;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 @Component
 public class Network2FirstSecondPhaseActionProcessor extends AbstractPhaseProcessor {
     private final AiTurnService aiTurnService;
     private final BatchProjectionService batchProjectionService;
     private final ScenarioEngine scenarioEngine;
-    private final Network2DraftCardsProjectionService network2DraftCardsProjectionService;
+    private final TopkScenarioEngine topkScenarioEngine;
     private final BaseChanceProjectionService baseChanceProjectionService;
-    private final PolicyCollectService policyCollectService;
-    private final CardService cardService;
 
-    public Network2FirstSecondPhaseActionProcessor(Network2PaymentService network2PaymentService, AiTurnService aiTurnService, BatchProjectionService batchProjectionService, ScenarioEngine scenarioEngine, AiMarsUniversityInputHandler aiMarsUniversityInputHandler, Network2DraftCardsProjectionService network2DraftCardsProjectionService, BaseChanceProjectionService baseChanceProjectionService, PolicyCollectService policyCollectService, CardService cardService, PolicyActionCollectService policyActionCollectService) {
-        super(policyCollectService, policyActionCollectService, aiTurnService, aiMarsUniversityInputHandler, network2PaymentService);
+    public Network2FirstSecondPhaseActionProcessor(AiTurnService aiTurnService, BatchProjectionService batchProjectionService, ScenarioEngine scenarioEngine, AiMarsUniversityInputHandler aiMarsUniversityInputHandler, TopkScenarioEngine topkScenarioEngine, BaseChanceProjectionService baseChanceProjectionService) {
+        super(aiTurnService, aiMarsUniversityInputHandler);
         this.aiTurnService = aiTurnService;
         this.batchProjectionService = batchProjectionService;
         this.scenarioEngine = scenarioEngine;
-        this.network2DraftCardsProjectionService = network2DraftCardsProjectionService;
+        this.topkScenarioEngine = topkScenarioEngine;
         this.baseChanceProjectionService = baseChanceProjectionService;
-        this.policyCollectService = policyCollectService;
-        this.cardService = cardService;
     }
 
     public void processTurn(List<TurnType> possibleTurns, MarsGame game, Player player) {
         // 1. Генерируем все возможные цепочки действий (сценарии)
         // Внутри этого метода происходит вся рекурсия и симуляция стейтов
-        List<Scenario> scenarios = scenarioEngine.generateAllScenarios(game, player);
+//        List<Scenario> firstScenarios = topkScenarioEngine.generateAllScenarios(game, player);
+//        List<Scenario> secondScenarios = scenarioEngine.generateAllScenarios(game, player);
+//        List<Scenario> scenarios = player.isFirstBot() ? firstScenarios : secondScenarios;
+//        if (firstScenarios.size() != secondScenarios.size()) {
+//            System.out.println("WTF");
+//            firstScenarios = topkScenarioEngine.generateAllScenarios(game, player);
+//            secondScenarios = scenarioEngine.generateAllScenarios(game, player);
+//        }
+        List<Scenario> scenarios = topkScenarioEngine.generateAllScenarios(game, player);
+
+//        List<Scenario> scenarios = topkScenarioEngine.generateAllScenarios(game, player);
         if (scenarios.isEmpty()) {
             skipTurn(game, player);
             return;
@@ -85,7 +85,6 @@ public class Network2FirstSecondPhaseActionProcessor extends AbstractPhaseProces
     }
 
     private void skipTurn(MarsGame game, Player player) {
-        policyCollectService.skipTurn(game, player);
         // Если ни один сценарий не улучшил позицию — пасуем
         aiTurnService.skipTurn(player);
     }
@@ -98,7 +97,6 @@ public class Network2FirstSecondPhaseActionProcessor extends AbstractPhaseProces
             case SKIP -> skipTurn(game, player);
         }
     }
-
 
 
 }

@@ -40,7 +40,6 @@ public class AiCardBuildParamsService {
     private final ResourcePriorityService resourcePriorityService;
 
     private AiPickCardProjectionService aiPickCardProjectionService;
-    private final AiRandomCardBuildParamsService aiRandomCardBuildParamsService;
 
     @Lazy
     @Autowired

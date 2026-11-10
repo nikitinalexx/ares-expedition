@@ -74,7 +74,7 @@ public class GhgProductionBacteria implements BlueCard {
 
     @Override
     public int getPrice() {
-        return 10;
+        return 5;
     }
 
     @Override

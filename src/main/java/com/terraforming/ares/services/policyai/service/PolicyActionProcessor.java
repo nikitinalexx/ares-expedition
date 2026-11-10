@@ -23,6 +23,7 @@ import com.terraforming.ares.validation.action.ActionValidator;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -59,8 +60,8 @@ public class PolicyActionProcessor extends AbstractPolicyProcessor {
         inputGeneratorEffects.add(biomedicalImportsInputEffect);
         inputGeneratorEffects.add(cryogenicShipmentInputEffect);
         inputGeneratorEffects.add(eosChasmaNationalParkInputEffect);
-        inputGeneratorEffects.add(viralEnhancersInputEffect);
         inputGeneratorEffects.add(decomposersInputEffect);
+        inputGeneratorEffects.add(viralEnhancersInputEffect);
         inputGeneratorEffects.add(marsUniversityInputEffect);
         inputGeneratorEffects.add(importedNitrogenInputEffect);
         inputGeneratorEffects.add(largeConvoyInputEffect);
@@ -94,9 +95,6 @@ public class PolicyActionProcessor extends AbstractPolicyProcessor {
                 && cardService.getCard(player.getSelectedCorporationCard()).getCardMetadata().getCardAction() == CardAction.HELION_CORPORATION;
 
 
-        boolean soldCards = false;
-        boolean exchangedHelion = false;
-
         while (true) {
             List<HeadAction> validActions = new ArrayList<>();
 
@@ -116,15 +114,15 @@ public class PolicyActionProcessor extends AbstractPolicyProcessor {
                 actionToBlueCard.put(action, playableBlueCard);
             }
 
-            if (possibleTurns.contains(TurnType.UNMI_RT)) {
+            if (possibleTurns.contains(TurnType.UNMI_RT) && player.getMc() >= 6) {
                 validActions.add(ActionInputService.unmiAction());
             }
 
-            if (!player.getHand().isEmpty() && (!soldCards || possibleTurns.contains(TurnType.GAME_END_CONFIRM))) {
+            if (!player.getHand().isEmpty() && (possibleTurns.contains(TurnType.GAME_END_CONFIRM) || ThreadLocalRandom.current().nextInt(20) == 1) ) {
                 validActions.add(ActionInputService.enterSellingModeAction());
             }
 
-            if (isHelion && player.getHeat() > 0 && !exchangedHelion) {
+            if (isHelion && player.getHeat() > 0) {
                 validActions.add(ActionInputService.enterHelionModeAction());
             }
 
@@ -139,7 +137,7 @@ public class PolicyActionProcessor extends AbstractPolicyProcessor {
                 validActions.add(standardAction);
             }
 
-            if (possibleTurns.contains(TurnType.INCREASE_TEMPERATURE)) {
+            if (possibleTurns.contains(TurnType.INCREASE_TEMPERATURE) && player.getHeat() >= 8) {
                 validActions.add(ActionInputService.convertHeatToTemperature());
             }
 
@@ -153,23 +151,19 @@ public class PolicyActionProcessor extends AbstractPolicyProcessor {
 
             if (possibleTurns.contains(TurnType.SKIP_TURN)
                     || possibleTurns.contains(TurnType.GAME_END_CONFIRM) && !possibleTurns.contains(TurnType.INCREASE_TEMPERATURE) && !possibleTurns.contains(TurnType.PLANT_FOREST) && actionToStandardProject.isEmpty() && player.getHand().isEmpty()) {
-                validActions.add(ActionInputService.passAction());
+                validActions.add(ActionInputService.passThirdPhase());
             }
 
-            HeadAction bestTurn = predict(record, validActions);
+            HeadAction bestTurn = predict(record, validActions, game);
 
             if (bestTurn == ActionInputService.enterSellingModeAction()) {
-                doCardExchange(record, game, player);
-                soldCards = true;
-                exchangedHelion = false;
-                continue;
+                sellingCardsMode(record, game, player);
+                return;
             }
 
             if (bestTurn == ActionInputService.enterHelionModeAction()) {
                 doHelionExchange(record, player);
-                exchangedHelion = true;
-                soldCards = false;
-                continue;
+                return;
             }
 
             if (bestTurn == ActionInputService.takeBonusAction()) {
@@ -192,7 +186,7 @@ public class PolicyActionProcessor extends AbstractPolicyProcessor {
                 return;
             }
 
-            if (bestTurn == ActionInputService.passAction()) {
+            if (bestTurn == ActionInputService.passThirdPhase()) {
                 if (possibleTurns.contains(TurnType.GAME_END_CONFIRM)) {
                     aiTurnService.confirmGameEnd(game, player);
                     return;
@@ -247,7 +241,7 @@ public class PolicyActionProcessor extends AbstractPolicyProcessor {
                 }
             });
             record.conservedBiomeAction = true;
-            HeadAction best = predict(record, new ArrayList<>(actionToCard.keySet()));
+            HeadAction best = predict(record, new ArrayList<>(actionToCard.keySet()), null);
             record.conservedBiomeAction = false;
             input.put(InputFlag.CARD_CHOICE.getId(), List.of(actionToCard.get(best).getId()));
         } else if (card.getClass() == DecomposingFungus.class) {
@@ -261,7 +255,7 @@ public class PolicyActionProcessor extends AbstractPolicyProcessor {
                 }
             });
             record.decomposingFungus = true;
-            HeadAction best = predict(record, new ArrayList<>(actionToCard.keySet()));
+            HeadAction best = predict(record, new ArrayList<>(actionToCard.keySet()), null);
             record.decomposingFungus = false;
             input.put(InputFlag.CARD_CHOICE.getId(), List.of(actionToCard.get(best).getId()));
         } else if (card.getClass() == ExtremeColdFungus.class) {
@@ -276,7 +270,7 @@ public class PolicyActionProcessor extends AbstractPolicyProcessor {
             List<HeadAction> validActions = new ArrayList<>(actionToCard.keySet());
             validActions.add(ActionInputService.takePlantTargetAction());
             record.extremeColdFungus = true;
-            HeadAction best = predict(record, validActions);
+            HeadAction best = predict(record, validActions, null);
             record.extremeColdFungus = false;
             if (best == ActionInputService.takePlantTargetAction()) {
                 input.put(InputFlag.EXTEME_COLD_FUNGUS_PICK_PLANT.getId(), List.of(0));
@@ -288,7 +282,7 @@ public class PolicyActionProcessor extends AbstractPolicyProcessor {
             Map<HeadAction, Card> actionToCard = new LinkedHashMap<>();
             microbeCards.forEach(c -> actionToCard.put(ActionInputService.getMicrobeTargetAction(c), c));
             record.microbePutCount = 1;
-            HeadAction best = predict(record, new ArrayList<>(actionToCard.keySet()));
+            HeadAction best = predict(record, new ArrayList<>(actionToCard.keySet()), null);
             record.microbePutCount = 0;
             input.put(InputFlag.CARD_CHOICE.getId(), List.of(actionToCard.get(best).getId()));
         } else if (card.getClass() == FarmingCoops.class || card.getClass() == MatterGenerator.class) {
@@ -306,7 +300,7 @@ public class PolicyActionProcessor extends AbstractPolicyProcessor {
                 if (card.getClass() == MatterGenerator.class) {
                     record.matterGenerator = true;
                 }
-                HeadAction best = predict(record, new ArrayList<>(actionToCard.keySet()));
+                HeadAction best = predict(record, new ArrayList<>(actionToCard.keySet()), null);
 
                 record.farmingCoops = false;
                 record.matterGenerator = false;
@@ -322,7 +316,7 @@ public class PolicyActionProcessor extends AbstractPolicyProcessor {
                     actionToCount.put(ActionInputService.action1To4Count(i), i);
                 }
                 record.greenHouses = true;
-                HeadAction best = predict(record, new ArrayList<>(actionToCount.keySet()));
+                HeadAction best = predict(record, new ArrayList<>(actionToCount.keySet()), null);
                 record.greenHouses = false;
                 input.put(InputFlag.DISCARD_HEAT.getId(), List.of(actionToCount.get(best)));
             }
@@ -332,7 +326,10 @@ public class PolicyActionProcessor extends AbstractPolicyProcessor {
                 || card.getClass() == SelfReplicatingBacteria.class) {
             int microbesOnCard = player.getCardResourcesCount().get(card.getClass());
             int max = card.getCardMetadata().getActionsInputData().getFirst().getMax();
-            if (microbesOnCard < max) {
+            if (microbesOnCard < max
+                    || card.getClass() == GhgProductionBacteria.class && game.getPlanetAtTheStartOfThePhase().isTemperatureMax()
+                    || card.getClass() == NitriteReductingBacteria.class && game.getPlanetAtTheStartOfThePhase().allOceansRevealed()
+                    || card.getClass() == RegolithEaters.class && game.getPlanetAtTheStartOfThePhase().isOxygenMax()) {
                 input.put(InputFlag.ADD_DISCARD_MICROBE.getId(), List.of(1));
             } else {
                 if (card.getClass() == GhgProductionBacteria.class) record.ghgProduction = true;
@@ -342,7 +339,7 @@ public class PolicyActionProcessor extends AbstractPolicyProcessor {
                 HeadAction best = predict(record, List.of(
                         ActionInputService.actionTakeMicrobe(),
                         ActionInputService.actionUseMicrobe()
-                ));
+                ), null);
                 record.ghgProduction = false;
                 record.nitriteReductingBacteria = false;
                 record.regolithEaters = false;
@@ -358,9 +355,9 @@ public class PolicyActionProcessor extends AbstractPolicyProcessor {
                 while (record.heat[0] > 0) {
                     HeadAction best = predict(record, List.of(
                             ActionInputService.exchange1Heat(),
-                            ActionInputService.passAction()
-                    ));
-                    if (best == ActionInputService.passAction()) break;
+                            ActionInputService.powerInfrastrcuturePass()
+                    ), null);
+                    if (best == ActionInputService.powerInfrastrcuturePass()) break;
                     record.mc[0]++;
                     record.heat[0]--;
                     count++;
@@ -385,11 +382,11 @@ public class PolicyActionProcessor extends AbstractPolicyProcessor {
 
                 while (record.handSize[0] > 0 && record.redraftedDiscarded < 3) {
                     if (record.redraftedDiscarded == 1) {
-                        validActions.add(ActionInputService.passAction());
+                        validActions.add(ActionInputService.redraftedContractsPass());
                     }
 
-                    HeadAction best = predict(record, validActions);
-                    if (best == ActionInputService.passAction()) break;
+                    HeadAction best = predict(record, validActions, null);
+                    if (best == ActionInputService.redraftedContractsPass()) break;
 
                     Card toDiscard = actionToCard.get(best);
                     cardsToDiscard.add(toDiscard.getId());
@@ -417,7 +414,7 @@ public class PolicyActionProcessor extends AbstractPolicyProcessor {
                 HeadAction best = predict(record, List.of(
                         ActionInputService.actionTakeMicrobe(),
                         ActionInputService.actionUseMicrobe()
-                ));
+                ), null);
                 record.fibrousComposite = false;
                 if (best == ActionInputService.actionTakeMicrobe()) {
                     input.put(InputFlag.ADD_DISCARD_MICROBE.getId(), List.of(1));
@@ -453,8 +450,24 @@ public class PolicyActionProcessor extends AbstractPolicyProcessor {
             actionToTag.put(possibleAction, i);
         }
         record.choosingTag = true;
-        HeadAction bestTagAction = predict(record, new ArrayList<>(actionToTag.keySet()));
+        HeadAction bestTagAction = predict(record, new ArrayList<>(actionToTag.keySet()), null);
         record.choosingTag = false;
+
+        Tag bestTagChoice = Tag.values()[actionToTag.get(bestTagAction)];
+
+        switch (bestTagChoice) {
+            case SPACE -> record.spaceTags[0]++;
+            case EARTH -> record.earthTags[0]++;
+            case EVENT -> record.eventTags[0]++;
+            case SCIENCE -> record.scienceTags[0]++;
+            case PLANT -> record.plantTags[0]++;
+            case ENERGY -> record.energyTags[0]++;
+            case BUILDING -> record.buildingTags[0]++;
+            case ANIMAL -> record.animalTags[0]++;
+            case JUPITER -> record.jupiterTags[0]++;
+            case MICROBE -> record.microbeTags[0]++;
+        }
+        record.selectTag(bestTagChoice.ordinal());
 
         return Map.of(InputFlag.TAG_INPUT.getId(), List.of(actionToTag.get(bestTagAction)));
     }

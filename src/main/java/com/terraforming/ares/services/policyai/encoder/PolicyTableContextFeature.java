@@ -114,14 +114,20 @@ public class PolicyTableContextFeature implements PolicyFeatureBlock {
                 BuildDto dto = ALL_BUILD_DTOS.get(i);
                 long count = counts.getOrDefault(dto, 0L);
 
-                if (i == 0 && count >= 1)
-                    ownedBuildMask |= (1 << i);
+                if (i == 0) {
+                    if (count >= 1)
+                        ownedBuildMask |= (1 << i);
+                }
 
-                else if (i == 1 && count >= 2)
-                    ownedBuildMask |= (1 << i);
+                else if (i == 1) {
+                    if (count >= 2)
+                        ownedBuildMask |= (1 << i);
+                }
 
-                else if (count > 0)
-                    ownedBuildMask |= (1 << i);
+                else {
+                    if (count > 0)
+                        ownedBuildMask |= (1 << i);
+                }
             }
             out.ownedBuildsMask = (short) ownedBuildMask;
         }

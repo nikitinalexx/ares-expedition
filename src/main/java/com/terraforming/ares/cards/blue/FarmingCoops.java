@@ -65,6 +65,6 @@ public class FarmingCoops implements BlueCard {
 
     @Override
     public int getPrice() {
-        return 15;
+        return 9;
     }
 }

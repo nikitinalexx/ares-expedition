@@ -1,11 +1,15 @@
 package com.terraforming.ares.services;
 
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.GlobalParameter;
 import com.terraforming.ares.model.MarsContext;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.model.parameters.Ocean;
-import com.terraforming.ares.model.parameters.ParameterColor;
+import com.terraforming.ares.services.ai.AiConstants;
+import com.terraforming.ares.services.policyai.GameArenaContext;
+import com.terraforming.ares.services.policyai.dto.GameRecordArena;
+import com.terraforming.ares.services.policyai.dto.PolicyRecord;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -63,6 +67,8 @@ public class TerraformingService {
             }
         }
 
+        onParameterRaised(player, null);
+
         player.setTerraformingRating(player.getTerraformingRating() + 1);
 
         player.getPlayed().getCards().stream().map(cardService::getCard).forEach(
@@ -95,6 +101,8 @@ public class TerraformingService {
 
         game.getPlanet().increaseOxygen();
 
+        onParameterRaised(player, GlobalParameter.OXYGEN);
+
         player.setTerraformingRating(player.getTerraformingRating() + 1);
 
         onOxygenChangedEffect(context);
@@ -118,6 +126,9 @@ public class TerraformingService {
         }
 
         game.getPlanet().increaseTemperature();
+
+        onParameterRaised(player, GlobalParameter.TEMPERATURE);
+
 
         player.setTerraformingRating(player.getTerraformingRating() + 1);
 
@@ -173,6 +184,8 @@ public class TerraformingService {
         if (canIncreaseOxygen(game)) {
             game.getPlanet().increaseOxygen();
 
+            onParameterRaised(player, GlobalParameter.OXYGEN);
+
             player.setTerraformingRating(player.getTerraformingRating() + 1);
 
             onOxygenChangedEffect(context);
@@ -202,6 +215,45 @@ public class TerraformingService {
                     .stream()
                     .map(cardService::getCrysisCard)
                     .forEach(card -> card.onOxygenChangedEffect(context));
+        }
+    }
+
+    private void onParameterRaised(Player player, GlobalParameter globalParameter) {
+        if (!GameArenaContext.isArenaAvailable()) {
+            return;
+        }
+
+        if (!AiConstants.POLICY_AVAILABLE) {
+            return;
+        }
+
+        GameRecordArena arena = GameArenaContext.current();
+
+        for (int i = arena.size() - 1; i >= 0; i--) {
+            PolicyRecord record = arena.records()[i];
+
+            if (player.isFirstBot() && record.isFirstPlayer || !player.isFirstBot() && !record.isFirstPlayer) {
+                continue;
+            }
+
+            if (record.finalizedDelta) {
+                return;
+            }
+
+            if (record.marsReference == null) {
+                continue;
+            }
+
+
+            switch (globalParameter) {
+                case OXYGEN -> record.opponentDidOxygen++;
+                case TEMPERATURE -> record.opponentDidTemperature++;
+                case null -> {
+                    record.opponentOpenedOceans++;
+                }
+                case INFRASTRUCTURE -> {
+                }
+            }
         }
     }
 

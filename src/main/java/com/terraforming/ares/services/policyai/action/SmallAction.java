@@ -7,7 +7,7 @@ import com.terraforming.ares.model.StandardProjectType;
  *
  * <p>Структура:
  * <pre>
- *   [0..10]  Phase upgrade / Austellar milestone (11) / Phase turn
+ *   [0..10]  Phase upgrade / Austellar milestone (11)
  *   [11..20] Tag choice (10)
  *   [21]     Biomedical imports — oxygen
  *   [22]     Biomedical imports — phase upgrade
@@ -19,6 +19,9 @@ import com.terraforming.ares.model.StandardProjectType;
  *   [31..34] Pay for the build (4)
  *   [35..37] Standard projects (3)
  *   [38..39] Heat/Plants conversion (2)
+ *   [40] Finish Mulligan (1)
+ *   [41] Skip phase upgrade (1)
+ *   [42-46] Phase choice
  * </pre>
  */
 public final class SmallAction {
@@ -35,6 +38,9 @@ public final class SmallAction {
     public static final int OFFSET_PAY_FOR_BUILD           = OFFSET_COUNT_1_4   + ActionRegistry.SMALL_ACTION_COUNT_1_4_COUNT;
     public static final int OFFSET_STANDARD_PROJECT        = OFFSET_PAY_FOR_BUILD + ActionRegistry.SMALL_PAY_FOR_THE_BUILD_COUNT;
     public static final int OFFSET_HEAT_PLANTS_CONVERSION  = OFFSET_STANDARD_PROJECT + ActionRegistry.SMALL_ACTION_STANDARD_PROJECT_COUNT;
+    public static final int OFFSET_FINISH_MULLIGAN         = OFFSET_HEAT_PLANTS_CONVERSION + ActionRegistry.SMALL_ACTION_HEAT_PLANTS_CONVERSION_COUNT;
+    public static final int OFFSET_SKIP_PHASE_UPGRADE      = OFFSET_FINISH_MULLIGAN + ActionRegistry.FINISH_MULLIGAN_COUNT;
+    public static final int OFFSET_PHASE_CHOICE      = OFFSET_SKIP_PHASE_UPGRADE + ActionRegistry.SKIP_PHASE_UPGRADE_COUNT;
 
     public static final int COUNT =
             ActionRegistry.SMALL_CHOICE_PHASE_OR_MILESTONE_CHOICE +
@@ -45,7 +51,10 @@ public final class SmallAction {
             ActionRegistry.SMALL_ACTION_COUNT_1_4_COUNT +
             ActionRegistry.SMALL_PAY_FOR_THE_BUILD_COUNT +
             ActionRegistry.SMALL_ACTION_STANDARD_PROJECT_COUNT +
-            ActionRegistry.SMALL_ACTION_HEAT_PLANTS_CONVERSION_COUNT;
+            ActionRegistry.SMALL_ACTION_HEAT_PLANTS_CONVERSION_COUNT +
+            ActionRegistry.FINISH_MULLIGAN_COUNT +
+            ActionRegistry.SKIP_PHASE_UPGRADE_COUNT +
+            ActionRegistry.PHASE_CHOICE_COUNT;
 
     private static final HeadAction[] CACHE = new HeadAction[COUNT];
 
@@ -72,9 +81,8 @@ public final class SmallAction {
     public static final HeadAction CONVERT_PLANTS_TO_FOREST   = CACHE[OFFSET_HEAT_PLANTS_CONVERSION + 1];
 
     // Standard projects — именованные т.к. StandardProjectType.ordinal() используем
-    public static final HeadAction STANDARD_PROJECT_POWER_PLANT = CACHE[OFFSET_STANDARD_PROJECT + 0];
-    public static final HeadAction STANDARD_PROJECT_ASTEROID    = CACHE[OFFSET_STANDARD_PROJECT + 1];
-    public static final HeadAction STANDARD_PROJECT_AQUIFER     = CACHE[OFFSET_STANDARD_PROJECT + 2];
+    public static final HeadAction FINISH_MULLIGAN = CACHE[OFFSET_FINISH_MULLIGAN];
+    public static final HeadAction SKIP_PHASE_UPGRADE    = CACHE[OFFSET_SKIP_PHASE_UPGRADE];
 
     // ---- Фабрики ----
 
@@ -83,6 +91,14 @@ public final class SmallAction {
         if (upgradeId < 0 || upgradeId >= ActionRegistry.SMALL_CHOICE_PHASE_OR_MILESTONE_CHOICE)
             throw new IllegalArgumentException("SmallAction.phaseUpgrade: upgradeId " + upgradeId + " out of range");
         return CACHE[OFFSET_PHASE_UPGRADE + upgradeId];
+    }
+
+    /** upgradeId 42-46 */
+    public static HeadAction forPhaseChoice(int phaseId) {
+        phaseId--;
+        if (phaseId < 0 || phaseId >= ActionRegistry.PHASE_CHOICE_COUNT)
+            throw new IllegalArgumentException("SmallAction.phaseChoice: phaseId " + phaseId + " out of range");
+        return CACHE[OFFSET_PHASE_CHOICE + phaseId];
     }
 
     public static HeadAction forAustellarMilestone(int milestoneIndex) {

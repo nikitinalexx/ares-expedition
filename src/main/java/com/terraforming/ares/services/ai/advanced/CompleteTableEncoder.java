@@ -25,7 +25,7 @@ public class CompleteTableEncoder {
     private static final List<FeatureBlock> GENERIC_TABLE_FEATURES = List.of(
             new TerraformingFeature(),
             new MilestonesAwardsFeature()
-            //total 61
+            //total 78
     );
 
     private static final List<FeatureBlock> PLAYER_TABLE_FEATURES = List.of(
@@ -37,7 +37,6 @@ public class CompleteTableEncoder {
             new TableCardEffectsFeature(),
             new TableResourcesFeature()
             //total=178
-
     );
 
     public void encodeTable(MarsGame game, Player player, Player opponent, FeatureWriter featureWriter) {

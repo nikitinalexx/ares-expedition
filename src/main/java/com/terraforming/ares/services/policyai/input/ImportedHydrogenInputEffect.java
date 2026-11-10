@@ -1,7 +1,6 @@
 package com.terraforming.ares.services.policyai.input;
 
 import com.terraforming.ares.cards.red.ImportedHydrogen;
-import com.terraforming.ares.cards.red.SyntheticCatastrophe;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardCollectableResource;
 import com.terraforming.ares.model.InputFlag;
@@ -48,7 +47,7 @@ public class ImportedHydrogenInputEffect extends AbstractPolicyProcessor impleme
         validActions.add(ActionInputService.takePlantTargetAction());
 
         record.importedHydrogenEffect = true;
-        HeadAction best = predict(record, validActions);
+        HeadAction best = predict(record, validActions, null);
         record.importedHydrogenEffect = false;
 
         if (best == ActionInputService.takePlantTargetAction()) {

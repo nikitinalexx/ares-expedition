@@ -44,6 +44,9 @@ public final class ActionRegistry {
     public static final int SMALL_PAY_FOR_THE_BUILD_COUNT           = 4;
     public static final int SMALL_ACTION_STANDARD_PROJECT_COUNT     = 3;
     public static final int SMALL_ACTION_HEAT_PLANTS_CONVERSION_COUNT = 2;
+    public static final int FINISH_MULLIGAN_COUNT = 1;
+    public static final int SKIP_PHASE_UPGRADE_COUNT = 1;
+    public static final int PHASE_CHOICE_COUNT = 5;
 
     // =========================================================================
     // Маппинги карт → локальный индекс внутри TARGET головы
@@ -57,7 +60,6 @@ public final class ActionRegistry {
 
     static {
         ANIMAL_TARGET_TO_OFFSET.put(Birds.class, 0);
-        ANIMAL_TARGET_TO_OFFSET.put(BuffedBirds.class, 0);
         ANIMAL_TARGET_TO_OFFSET.put(FilterFeeders.class, 1);
         ANIMAL_TARGET_TO_OFFSET.put(Fish.class, 2);
         ANIMAL_TARGET_TO_OFFSET.put(Livestock.class, 3);
@@ -72,10 +74,8 @@ public final class ActionRegistry {
         MICROBE_TARGET_TO_OFFSET.put(Decomposers.class, 1);
         MICROBE_TARGET_TO_OFFSET.put(DecomposingFungus.class, 2);
         MICROBE_TARGET_TO_OFFSET.put(GhgProductionBacteria.class, 3);
-        MICROBE_TARGET_TO_OFFSET.put(BuffedGhgProductionBacteria.class, 3);
         MICROBE_TARGET_TO_OFFSET.put(NitriteReductingBacteria.class, 4);
         MICROBE_TARGET_TO_OFFSET.put(RegolithEaters.class, 5);
-        MICROBE_TARGET_TO_OFFSET.put(BuffedRegolithEaters.class, 5);
         MICROBE_TARGET_TO_OFFSET.put(SelfReplicatingBacteria.class, 6);
         MICROBE_TARGET_TO_OFFSET.put(Tardigrades.class, 7);
         MICROBE_TARGET_TO_OFFSET.put(BacterialAggregates.class, 8);

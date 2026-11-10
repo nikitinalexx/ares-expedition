@@ -25,13 +25,10 @@ import com.terraforming.ares.services.ai.turnProcessors.frontier.RequiresMcPayme
 import com.terraforming.ares.services.ai.turnProcessors.frontier.State;
 import com.terraforming.ares.services.ai.turnProcessors.frontier.actions.ConsumeResourceEffect;
 import com.terraforming.ares.services.ai.turnProcessors.frontier.actions.PutMicrobeEffect;
-import com.terraforming.ares.services.policyai.PolicyActionCollectService;
-import com.terraforming.ares.services.policyai.PolicyCollectService;
 import org.nd4j.common.io.CollectionUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -52,7 +49,6 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
     private final StandardProjectService standardProjectService;
     private final Frontier frontier;
     private final AiEndgameService aiEndgameService;
-    private final PolicyCollectService policyCollectService;
 
     private final Set<Class<?>> DO_IMMEDIATELY_UNCONDITIONALLY = Set.of(
             AiCentral.class,
@@ -71,8 +67,8 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
     );
     private final SelfReplicatingBacteriaService selfReplicatingBacteriaService;
 
-    protected Network2ThirdPhaseActionProcessor(Network2PaymentService network2PaymentService, PolicyCollectService policyCollectService, AiTurnService aiTurnService, CardService cardService, AiTurnService aiTurnService1, AiInputOptimizer aiInputOptimizer, ActionProjectionDataCollector actionProjectionDataCollector, IDataCollect iDataCollect, NNService nnService, AiOptimalBuildService aiOptimalBuildService, AiCardBuildInputAnalyzer aiCardBuildInputAnalyzer, Network2DraftCardsProjectionService network2DraftCardsProjectionService, AiMarsUniversityInputHandler aiMarsUniversityInputHandler, StandardProjectService standardProjectService, Frontier frontier, AiEndgameService aiEndgameService, PolicyCollectService policyCollectService1, PolicyActionCollectService actionPolicyCollectService, SelfReplicatingBacteriaService selfReplicatingBacteriaService) {
-        super(policyCollectService, actionPolicyCollectService, aiTurnService, aiMarsUniversityInputHandler, network2PaymentService);
+    protected Network2ThirdPhaseActionProcessor(AiTurnService aiTurnService, CardService cardService, AiTurnService aiTurnService1, AiInputOptimizer aiInputOptimizer, ActionProjectionDataCollector actionProjectionDataCollector, IDataCollect iDataCollect, NNService nnService, AiOptimalBuildService aiOptimalBuildService, AiCardBuildInputAnalyzer aiCardBuildInputAnalyzer, Network2DraftCardsProjectionService network2DraftCardsProjectionService, AiMarsUniversityInputHandler aiMarsUniversityInputHandler, StandardProjectService standardProjectService, Frontier frontier, AiEndgameService aiEndgameService, SelfReplicatingBacteriaService selfReplicatingBacteriaService) {
+        super(aiTurnService, aiMarsUniversityInputHandler);
         this.cardService = cardService;
         this.aiTurnService = aiTurnService1;
         this.aiInputOptimizer = aiInputOptimizer;
@@ -86,7 +82,6 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
         this.standardProjectService = standardProjectService;
         this.frontier = frontier;
         this.aiEndgameService = aiEndgameService;
-        this.policyCollectService = policyCollectService1;
         this.selfReplicatingBacteriaService = selfReplicatingBacteriaService;
     }
 
@@ -205,8 +200,8 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
 
         for (Card card : blueCards.values()) {
             if (card.getClass() == NitriteReductingBacteria.class || card.getClass() == SelfReplicatingBacteria.class
-                    || card.getClass() == RegolithEaters.class || card.getClass() == BuffedRegolithEaters.class
-                    || card.getClass() == GhgProductionBacteria.class || card.getClass() == BuffedGhgProductionBacteria.class) {
+                    || card.getClass() == RegolithEaters.class
+                    || card.getClass() == GhgProductionBacteria.class) {
                 perform(card, InputFlag.ADD_DISCARD_MICROBE, 1, game, player);
                 return true;
             }
@@ -242,7 +237,6 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
                 if (corporation.getCardMetadata().getCardAction() == CardAction.HELION_CORPORATION && player.getHeat() > 0) {
                     convertHeat(game, player, player.getHeat());
                 }
-                policyCollectService.sellCards(game, player, player.getHand().getCards().stream().map(cardService::getCard).collect(Collectors.toList()));
                 aiTurnService.sellCards(player, game, new ArrayList<>(player.getHand().getCards()));
             }
 
@@ -263,7 +257,6 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
             }
         }
 
-        policyCollectService.skipTurn(game, player);
         aiTurnService.skipTurn(player);
         return true;
     }
@@ -318,7 +311,6 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
     }
 
     private void finalizeStandardProject(MarsGame game, Player player, StandardProjectType standardProjectType) {
-        policyCollectService.standardProjectTurn(game, player, standardProjectType);
         aiTurnService.standardProjectTurn(game, player, standardProjectType);
     }
 
@@ -633,7 +625,6 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
         if (badCards.isEmpty()) {
             return false;
         }
-        policyCollectService.sellCards(game, player, badCards.stream().map(cardService::getCard).collect(Collectors.toList()));
         aiTurnService.sellCards(player, game, badCards);
         finalizeBlueAction(game, player, (matterManufactoring != null ? matterManufactoring : thinkTank), Map.of());
         return true;
@@ -954,11 +945,7 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
             return true;
         if (performMicrobeAction(game, player, availableCards, GhgProductionBacteria.class, game.getPlanetAtTheStartOfThePhase().isTemperatureMax()))
             return true;
-        if (performMicrobeAction(game, player, availableCards, BuffedGhgProductionBacteria.class, game.getPlanetAtTheStartOfThePhase().isTemperatureMax()))
-            return true;
         if (performMicrobeAction(game, player, availableCards, RegolithEaters.class, game.getPlanetAtTheStartOfThePhase().isOxygenMax()))
-            return true;
-        if (performMicrobeAction(game, player, availableCards, BuffedRegolithEaters.class, game.getPlanetAtTheStartOfThePhase().isOxygenMax()))
             return true;
 
         // 5. Fibrous Composite Material
@@ -998,12 +985,10 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
             return true;
         }
         if (possibleTurns.contains(TurnType.INCREASE_TEMPERATURE)) {
-            policyCollectService.mandatoryHeatPlantsConversion(game, player, TurnType.INCREASE_TEMPERATURE);
             aiTurnService.increaseTemperature(game, player);
             return true;
         }
         if (possibleTurns.contains(TurnType.PLANT_FOREST)) {
-            policyCollectService.mandatoryHeatPlantsConversion(game, player, TurnType.PLANT_FOREST);
             aiTurnService.plantForest(game, player);
             return true;
         }

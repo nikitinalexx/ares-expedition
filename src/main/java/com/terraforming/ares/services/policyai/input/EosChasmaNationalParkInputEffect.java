@@ -8,7 +8,6 @@ import com.terraforming.ares.services.policyai.ResourceHelper;
 import com.terraforming.ares.services.policyai.action.ActionInputService;
 import com.terraforming.ares.services.policyai.action.HeadAction;
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
-import com.terraforming.ares.services.policyai.rollout.EffectStateReader;
 import com.terraforming.ares.services.policyai.service.AbstractPolicyProcessor;
 import org.springframework.stereotype.Component;
 
@@ -44,7 +43,7 @@ public class EosChasmaNationalParkInputEffect extends AbstractPolicyProcessor im
         List<HeadAction> validActions = new ArrayList<>(actionToCard.keySet());
 
         record.animalPutCount = 1;
-        HeadAction best = predict(record, validActions);
+        HeadAction best = predict(record, validActions, null);
         record.animalPutCount = 0;
 
         Card target = actionToCard.get(best);

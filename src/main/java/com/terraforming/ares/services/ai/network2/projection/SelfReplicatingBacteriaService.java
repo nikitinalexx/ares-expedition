@@ -10,11 +10,8 @@ import com.terraforming.ares.model.InputFlag;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.ai.AiConstants;
 import com.terraforming.ares.services.ai.network2.AbstractPhaseProcessor;
-import com.terraforming.ares.services.ai.network2.Network2PaymentService;
 import com.terraforming.ares.services.ai.network2.buildParams.AiMarsUniversityInputHandler;
 import com.terraforming.ares.services.ai.turnProcessors.AiTurnService;
-import com.terraforming.ares.services.policyai.PolicyActionCollectService;
-import com.terraforming.ares.services.policyai.PolicyCollectService;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -25,6 +22,7 @@ import java.util.Map;
 @Service
 public class SelfReplicatingBacteriaService extends AbstractPhaseProcessor {
     private final ScenarioEngine scenarioEngine;
+    private final TopkScenarioEngine topkScenarioEngine;
     private final BatchProjectionService batchProjectionService;
 
     private final Map<Class<?>, Integer> CARD_TO_INPUT_FLAG = Map.of(
@@ -34,10 +32,11 @@ public class SelfReplicatingBacteriaService extends AbstractPhaseProcessor {
             SelfReplicatingBacteria.class, InputFlag.ADD_DISCARD_MICROBE.getId()
     );
 
-    public SelfReplicatingBacteriaService(Network2PaymentService network2PaymentService, AiTurnService aiTurnService, ScenarioEngine scenarioEngine, BatchProjectionService batchProjectionService, AiMarsUniversityInputHandler aiMarsUniversityInputHandler, PolicyCollectService policyCollectService, PolicyActionCollectService policyActionCollectService) {
-        super(policyCollectService, policyActionCollectService, aiTurnService, aiMarsUniversityInputHandler, network2PaymentService);
+    public SelfReplicatingBacteriaService(AiTurnService aiTurnService, ScenarioEngine scenarioEngine, BatchProjectionService batchProjectionService, AiMarsUniversityInputHandler aiMarsUniversityInputHandler, TopkScenarioEngine topkScenarioEngine) {
+        super(aiTurnService, aiMarsUniversityInputHandler);
         this.scenarioEngine = scenarioEngine;
         this.batchProjectionService = batchProjectionService;
+        this.topkScenarioEngine = topkScenarioEngine;
     }
 
     public MarsGame simulateSelfReplicatingBacteriaFinalActions(Map<Class<?>, Card> blueCards, MarsGame game, Player player) {
@@ -109,7 +108,7 @@ public class SelfReplicatingBacteriaService extends AbstractPhaseProcessor {
         boolean builtSomething = false;
 
         while (true) {
-            List<Scenario> scenarios = scenarioEngine.generateAllScenarios(game, player);
+            List<Scenario> scenarios = topkScenarioEngine.generateAllScenarios(game, player);
             if (scenarios.isEmpty()) {
                 break;
             }

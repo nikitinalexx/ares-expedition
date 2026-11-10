@@ -99,7 +99,7 @@ public class CardFactory {
                 new CommunityGardens(16),
                 new CompostingFactory(17),
                 new ConservedBiome(18),
-                new Decomposers(19),
+                new Decomposers(AiConstants.DECOMPOSERS_CARD_ID),
                 new DecomposingFungus(20),
                 new DevelopedInfrastructure(21),
                 new DevelopmentCenter(22),
@@ -539,16 +539,9 @@ public class CardFactory {
         buffedProjectsMapping = new HashMap<>(Map.of(
                 27, new BuffedExtremeColdFungus(5027),
                 29, new BuffedFarmingCoops(5029),
-                31, new BuffedGhgProductionBacteria(5031),
                 32, new BuffedGreenHouses(5032),
-                34, new BuffedHydroElectricEnergy(5034),
-                50, new BuffedRegolithEaters(5050),
-                64, new BuffedWoodBurningStoves(5064),
-                217, new BuffedFilterFeeders(5217),
-                306, new BuffedDroneAssistedConstruction(5306),
-                12, new BuffedBirds(5012)
+                306, new BuffedDroneAssistedConstruction(5306)
         ));
-        buffedProjectsMapping.put(16, new BuffedCommunityGardens(5016));
 
         crysisExcludedCards = Set.of(
                 1, 18, 97,

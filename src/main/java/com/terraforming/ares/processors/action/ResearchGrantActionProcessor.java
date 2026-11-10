@@ -1,6 +1,8 @@
 package com.terraforming.ares.processors.action;
 
+import com.terraforming.ares.cards.blue.Decomposers;
 import com.terraforming.ares.cards.blue.ResearchGrant;
+import com.terraforming.ares.cards.blue.ViralEnhancers;
 import com.terraforming.ares.cards.corporations.DummyCard;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
@@ -42,12 +44,27 @@ public class ResearchGrantActionProcessor implements BlueActionCardProcessor<Res
         Map<Integer, List<Integer>> researchGrantInputParameters = new HashMap<>(inputParameters);
         researchGrantInputParameters.put(InputFlag.RESEARCH_GRANT.getId(), List.of());
 
+        Card viralEnhancers = null;
+        Card decomposers = null;
         for (Integer playedCardId : player.getPlayed().getCards()) {
             Card playedCard = cardService.getCard(playedCardId);
             if (!playedCard.onBuiltEffectApplicableToOther()) {
                 continue;
             }
-            playedCard.postProjectBuiltEffect(marsContext, new DummyCard(), researchGrantInputParameters);
+            if (playedCard.getClass() == ViralEnhancers.class) {
+                viralEnhancers = playedCard;
+            } else if (playedCard.getClass() == Decomposers.class) {
+                decomposers = playedCard;
+            } else {
+                playedCard.postProjectBuiltEffect(marsContext, new DummyCard(), researchGrantInputParameters);
+
+            }
+        }
+        if (viralEnhancers != null) {
+            viralEnhancers.postProjectBuiltEffect(marsContext, new DummyCard(), researchGrantInputParameters);
+        }
+        if (decomposers != null) {
+            decomposers.postProjectBuiltEffect(marsContext, new DummyCard(), researchGrantInputParameters);
         }
 
         for (int i = 0; i < cardTags.size(); i++) {

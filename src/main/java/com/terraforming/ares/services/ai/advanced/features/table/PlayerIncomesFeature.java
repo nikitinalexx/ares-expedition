@@ -2,6 +2,7 @@ package com.terraforming.ares.services.ai.advanced.features.table;
 
 import com.terraforming.ares.dto.DraftCardsDto;
 import com.terraforming.ares.mars.MarsGame;
+import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardColor;
 import com.terraforming.ares.model.Planet;
 import com.terraforming.ares.model.Player;
@@ -66,8 +67,17 @@ public class PlayerIncomesFeature implements FeatureBlock {
         out.write(player.getHeat());
 
         out.write(player.getPlayed().size() - 1);
-        out.write(player.getPlayed().getCards().stream().map(cardService::getCard).filter(card -> card.getColor() == CardColor.BLUE).count());
-        out.write(player.getPlayed().getCards().stream().map(cardService::getCard).filter(card -> card.getColor() == CardColor.GREEN).count());
+
+        int blueCards = 0;
+        int greenCards = 0;
+
+        for (Card card : ctx.getPlayedCards()) {
+            CardColor color = card.getColor();
+            if (color == CardColor.BLUE) blueCards++;
+            else if (color == CardColor.GREEN) greenCards++;
+        }
+        out.write(blueCards);
+        out.write(greenCards);
         out.write(player.getHand().size());
     }
 

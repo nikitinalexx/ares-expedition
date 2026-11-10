@@ -22,7 +22,7 @@ public class AiCardValidationService {
     public boolean isValid(MarsGame game, Player player, Card card) {
         Map<Integer, List<Integer>> inputParameters = aiCardParamsHelper.getInputParamsForValidation(player, card);
         String errorMessage = cardValidationService.validateCard(
-                player, game, card.getId(),
+                player, game, card,
                 aiPaymentService.getCardPayments(game, player, card, inputParameters),
                 inputParameters
         );

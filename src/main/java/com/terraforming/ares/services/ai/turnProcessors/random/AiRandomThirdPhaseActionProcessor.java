@@ -251,7 +251,7 @@ public class AiRandomThirdPhaseActionProcessor {
                 }
                 List<Payment> payments = aiRandomPaymentService.getCardPayments(game, player, card, inputParams);
 
-                String errorMessage = cardValidationService.validateCard(player, game, card.getId(), payments, inputParams);
+                String errorMessage = cardValidationService.validateCard(player, game, card, payments, inputParams);
                 if (errorMessage != null) {
                     return false;
                 }
@@ -614,7 +614,7 @@ public class AiRandomThirdPhaseActionProcessor {
             }
             List<Payment> payments = aiRandomPaymentService.getCardPayments(game, player, card, inputParams);
 
-            String errorMessage = cardValidationService.validateCard(player, game, card.getId(), payments, inputParams);
+            String errorMessage = cardValidationService.validateCard(player, game, card, payments, inputParams);
             if (errorMessage == null) {
                 return new BuildContext(payments, inputParams, card.getId());
             } else {

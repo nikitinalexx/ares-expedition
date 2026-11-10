@@ -14,7 +14,8 @@ public enum ActionHead {
     BLUE        (BlueAction.COUNT),
     CORPORATION (CorporationAction.COUNT),
     SMALL       (SmallAction.COUNT),
-    SYSTEM      (SystemAction.COUNT);
+    SYSTEM      (SystemAction.COUNT),
+    HEAD_SELECTION (HeadSelectionAction.COUNT), ;
 
     private final int count;
     private int start;

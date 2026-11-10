@@ -23,7 +23,7 @@ public class HydroElectricEnergy implements BlueCard {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
                 .name("Hydro-Electric Energy")
-                .description("Spend 1 MC to get 2 heat.  *if you chose the action phase this round, gain 1 additional heat.")
+                .description("Spend 1 MC to get 2 heat.  *if you chose the action phase this round, gain 2 additional heat.")
                 .cardAction(CardAction.HYDRO_ELECTRIC)
                 .build();
     }

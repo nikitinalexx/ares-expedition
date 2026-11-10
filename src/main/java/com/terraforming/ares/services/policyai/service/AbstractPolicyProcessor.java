@@ -9,16 +9,18 @@ import com.terraforming.ares.model.awards.AwardType;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.payments.PaymentType;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.SpecialEffectsService;
+import com.terraforming.ares.services.ai.AiConstants;
 import com.terraforming.ares.services.ai.advanced.TableContext;
-import com.terraforming.ares.services.ai.dl4j.PolicyNNService;
 import com.terraforming.ares.services.ai.dl4j.PolicyPrediction;
 import com.terraforming.ares.services.ai.network2.Network2PaymentService;
 import com.terraforming.ares.services.ai.turnProcessors.AiTurnService;
+import com.terraforming.ares.services.policyai.GameArenaContext;
 import com.terraforming.ares.services.policyai.action.ActionInputService;
 import com.terraforming.ares.services.policyai.action.ActionRegistry;
 import com.terraforming.ares.services.policyai.action.HeadAction;
+import com.terraforming.ares.services.policyai.dto.GameRecordArena;
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
-import com.terraforming.ares.services.policyai.encoder.PolicyRecordFeatureConverter;
 import com.terraforming.ares.services.policyai.input.InputGeneratorEffect;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -28,12 +30,6 @@ import java.util.List;
 import java.util.Map;
 
 public abstract class AbstractPolicyProcessor {
-
-    @Autowired
-    private PolicyNNService policyNNService;
-
-    @Autowired
-    private PolicyRecordFeatureConverter policyRecordFeatureConverter;
 
     @Autowired
     private PolicyActionSelector actionSelector;
@@ -50,21 +46,25 @@ public abstract class AbstractPolicyProcessor {
     @Autowired
     private Network2PaymentService network2PaymentService;
 
+    @Autowired
+    private SpecialEffectsService specialEffectsService;
+
     protected void doBuild(Card cardToBuild, PolicyRecord record, List<InputGeneratorEffect> inputGeneratorEffects, TableContext tableContext) {
         MarsGame game = tableContext.getGame();
         Player player = tableContext.getPlayer();
         record.selectCard(cardToBuild);
+        record.building = true;
 
         //dynamic tag affects payment discount, should decide first
         Map<Integer, List<Integer>> inputParams = generateDynamicTagInput(record, cardToBuild, tableContext);
 
-        List<List<Payment>> allPossibleCardPayments = network2PaymentService.getAllPossibleCardPayments(game, player, cardToBuild, Map.of());
+        List<List<Payment>> allPossibleCardPayments = network2PaymentService.getAllPossibleCardPayments(game, player, cardToBuild, inputParams);
         List<Payment> bestPayment = chooseBuildPaymentPolicy(record, allPossibleCardPayments);
+        record.setPaymentChoiceContextByType(getPaymentType(bestPayment));
 
         addNonDynamicTagInput(inputGeneratorEffects, record, cardToBuild, tableContext, inputParams);
 
         aiTurnService.buildProject(game, player, cardToBuild.getId(), bestPayment, inputParams);
-        return;
     }
 
     private List<Payment> chooseBuildPaymentPolicy(PolicyRecord record, List<List<Payment>> paymentsList) {
@@ -93,7 +93,7 @@ public abstract class AbstractPolicyProcessor {
             validActions.add(action);
         }
 
-        HeadAction bestAction = predict(record, validActions);
+        HeadAction bestAction = predict(record, validActions, null);
 
         record.payingForTheBuild = false;
 
@@ -156,7 +156,7 @@ public abstract class AbstractPolicyProcessor {
         }
         record.choosingTag = true;
 
-        HeadAction bestTagAction = predict(record, legalTagChoiceAction);
+        HeadAction bestTagAction = predict(record, legalTagChoiceAction, null);
 
         record.choosingTag = false;
 
@@ -174,6 +174,7 @@ public abstract class AbstractPolicyProcessor {
             case JUPITER -> record.jupiterTags[0]++;
             case MICROBE -> record.microbeTags[0]++;
         }
+        record.selectTag(bestTagChoice.ordinal());
 
         return bestTagChoice.ordinal();
     }
@@ -202,17 +203,12 @@ public abstract class AbstractPolicyProcessor {
                 ).toList();
     }
 
-    protected HeadAction predict(PolicyRecord record, List<HeadAction> validActions) {
-        if (validActions.isEmpty()) {
-            throw new IllegalArgumentException("No valid actions were provided");
-        }
-        if (validActions.size() == 1) {
-            return validActions.getFirst();
-        }
+    protected HeadAction predict(PolicyRecord record, List<HeadAction> validActions, MarsGame game) {
+        return actionSelector.chooseBestAction(record, validActions, game);
+    }
 
-        PolicyPrediction prediction = policyNNService.predictBatch(List.of(policyRecordFeatureConverter.convert(record)), PolicyNNService.ModelType.FIRST).getFirst();
-
-        return actionSelector.chooseBestAction(prediction, validActions);
+    protected PolicyPrediction predict(PolicyRecord record) {
+        return actionSelector.predict(record);
     }
 
     protected void doHelionExchange(PolicyRecord record, Player player) {
@@ -220,14 +216,23 @@ public abstract class AbstractPolicyProcessor {
 
         int exchangeCount = 0;
 
+        // 1. Обязательный первый обмен
+        if (record.heat[0] > 0) {
+            record.mc[0]++;
+            record.heat[0]--;
+            exchangeCount++;
+        }
+
+        // 2. Дальше уже можно выбирать
         while (record.heat[0] > 0) {
-            List<HeadAction> helionValidActions = exchangeCount > 0
-                    ? List.of(ActionInputService.exchange1Heat(), ActionInputService.passAction())
-                    : List.of(ActionInputService.exchange1Heat());
+            List<HeadAction> helionValidActions = List.of(
+                    ActionInputService.exchange1Heat(),
+                    ActionInputService.exitHelionMode()
+            );
 
-            HeadAction bestHelionAction = predict(record, helionValidActions);
+            HeadAction bestHelionAction = predict(record, helionValidActions, null);
 
-            if (bestHelionAction == ActionInputService.passAction()) {
+            if (bestHelionAction == ActionInputService.exitHelionMode()) {
                 break;
             }
 
@@ -238,12 +243,11 @@ public abstract class AbstractPolicyProcessor {
 
         record.helionExchanging = false;
 
-
         player.setMc(player.getMc() + exchangeCount);
         player.setHeat(player.getHeat() - exchangeCount);
     }
 
-    protected void doCardExchange(PolicyRecord record, MarsGame game, Player player) {
+    protected void sellingCardsMode(PolicyRecord record, MarsGame game, Player player) {
         record.sellingCards = true;
 
         List<Integer> cardsToSell = new ArrayList<>();
@@ -257,26 +261,40 @@ public abstract class AbstractPolicyProcessor {
             actionToSellCard.put(sellAction, cardToSell);
         }
 
-        while (!sellCardsValidActions.isEmpty()) {
-            HeadAction bestSellTurn = predict(record, sellCardsValidActions);
+        int cardPrice = specialEffectsService.getCardPrice(player);
 
-            if (bestSellTurn == ActionInputService.passAction()) {
+        // 1. Обязательная продажа первой карты
+        if (!sellCardsValidActions.isEmpty()) {
+            HeadAction firstSell = predict(record, sellCardsValidActions, null);
+            Card cardToSell = actionToSellCard.get(firstSell);
+
+            cardsToSell.add(cardToSell.getId());
+
+            sellCardsValidActions.remove(firstSell);
+            actionToSellCard.remove(firstSell);
+
+            record.removeCardFromHand(cardToSell);
+            record.mc[0] += (short) cardPrice;
+        }
+
+        // 2. Дальше уже можно выйти
+        sellCardsValidActions.add(ActionInputService.exitSellMode());
+
+        while (!sellCardsValidActions.isEmpty()) {
+            HeadAction bestSellTurn = predict(record, sellCardsValidActions, null);
+
+            if (bestSellTurn == ActionInputService.exitSellMode()) {
                 break;
             }
 
             Card cardToSell = actionToSellCard.get(bestSellTurn);
             cardsToSell.add(cardToSell.getId());
 
-            // убираем проданную карту из доступных действий
             sellCardsValidActions.remove(bestSellTurn);
             actionToSellCard.remove(bestSellTurn);
 
-            // rollout — карта ушла из руки
             record.removeCardFromHand(cardToSell);
-
-            if (cardsToSell.size() == 1) {
-                sellCardsValidActions.add(ActionInputService.passAction());
-            }
+            record.mc[0] += (short) cardPrice;
         }
 
         record.sellingCards = false;
@@ -326,7 +344,7 @@ public abstract class AbstractPolicyProcessor {
         validActions.add(firstUpgrade);
         validActions.add(secondUpgrade);
 
-        HeadAction best = predict(record, validActions);
+        HeadAction best = predict(record, validActions, null);
 
         input.put(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(firstUpgrade == best ? (phaseIndex * 2) : (phaseIndex * 2 + 1)));
         record.setPhaseUpgrade(phaseIndex);
@@ -358,13 +376,14 @@ public abstract class AbstractPolicyProcessor {
                 choiceToPhaseUpgrade.put(firstUpgrade, i * 2);
             }
         }
+
         if (validActions.size() == phaseUpgrades.length) {
-            validActions.add(ActionInputService.passAction());
+            validActions.add(ActionInputService.passPhaseUpgrade());
         }
 
-        HeadAction best = predict(record, validActions);
+        HeadAction best = predict(record, validActions, null);
 
-        if (best == ActionInputService.passAction()) {
+        if (best == ActionInputService.passPhaseUpgrade()) {
             //game doesn't actually allow the pass, so we simulate no action through taking the upgrade we already have
             input.put(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(phaseUpgrades[0]));
         } else {

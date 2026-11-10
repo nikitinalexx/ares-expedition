@@ -5,6 +5,7 @@ import com.terraforming.ares.model.CardAction;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.income.Gain;
+import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.services.ai.advanced.TableContext;
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
 
@@ -212,6 +213,96 @@ public class PolicyTableGreenCardsFeature implements PlayerPolicyFeatureBlock {
         if (max == heat) return IncomeCategory.HEAT;
         if (max == plant) return IncomeCategory.PLANT;
         return IncomeCategory.CARD;
+    }
+
+    public static Card findBestCardByIncomeCategory(
+            List<Card> cards,
+            IncomeCategory category,
+            PolicyRecord policyRecord
+    ) {
+
+        int earth = policyRecord.earthTags[0];
+        int animal = policyRecord.animalTags[0];
+        int plantTag = policyRecord.plantTags[0];
+        int science = policyRecord.scienceTags[0];
+        int building = policyRecord.buildingTags[0];
+        int energy = policyRecord.energyTags[0];
+        int space = policyRecord.spaceTags[0];
+        int event = policyRecord.eventTags[0];
+        int microbe = policyRecord.microbeTags[0];
+        short forests = policyRecord.forests[0];
+
+        Card bestCard = null;
+        float bestValue = 0;
+
+        for (Card card : cards) {
+
+            float value = 0;
+
+            // direct incomes
+            for (Gain income : card.getCardMetadata().getIncomes()) {
+                if (category == IncomeCategory.MC && income.getType() == GainType.MC)
+                    value += income.getValue();
+
+                else if (category == IncomeCategory.HEAT && income.getType() == GainType.HEAT)
+                    value += income.getValue();
+
+                else if (category == IncomeCategory.PLANT && income.getType() == GainType.PLANT)
+                    value += income.getValue();
+
+                else if (category == IncomeCategory.CARD && income.getType() == GainType.CARD)
+                    value += income.getValue();
+            }
+
+            // tag engines
+            CardAction action = card.getCardMetadata().getCardAction();
+
+            if (action != null) {
+
+                switch (category) {
+
+                    case MC:
+                        switch (action) {
+                            case MC_ANIMAL_PLANT_INCOME: value += animal + plantTag; break;
+                            case MC_SCIENCE_INCOME: value += science; break;
+                            case MC_2_BUILDING_INCOME: value += building * 0.5f; break;
+                            case MC_ENERGY_INCOME: value += energy; break;
+                            case MC_SPACE_INCOME: value += space; break;
+                            case MC_EVENT_INCOME: value += event; break;
+                            case MC_FOREST_INCOME: value += forests; break;
+                            case MC_EARTH_INCOME: value += earth; break;
+                        }
+                        break;
+
+                    case HEAT:
+                        switch (action) {
+                            case HEAT_EARTH_INCOME: value += earth; break;
+                            case HEAT_SPACE_INCOME: value += space; break;
+                            case HEAT_ENERGY_INCOME: value += energy; break;
+                        }
+                        break;
+
+                    case PLANT:
+                        switch (action) {
+                            case PLANT_PLANT_INCOME: value += plantTag; break;
+                            case PLANT_MICROBE_INCOME: value += microbe; break;
+                        }
+                        break;
+
+                    case CARD:
+                        if (action == CardAction.CARD_SCIENCE_INCOME)
+                            value += science / 3f;
+                        break;
+                }
+            }
+
+            if (value > bestValue) {
+                bestValue = value;
+                bestCard = card;
+            }
+        }
+
+        return bestCard;
     }
 
 }

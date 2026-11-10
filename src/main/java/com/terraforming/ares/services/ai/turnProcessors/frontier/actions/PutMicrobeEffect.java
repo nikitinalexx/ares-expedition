@@ -14,9 +14,9 @@ import java.util.function.Function;
 
 public enum PutMicrobeEffect implements StateEffect {
 
-    GHG(s -> s.ghgBacteriaCount++, List.of(GhgProductionBacteria.class, BuffedGhgProductionBacteria.class)),
+    GHG(s -> s.ghgBacteriaCount++, List.of(GhgProductionBacteria.class)),
     NITRITE(s -> s.nitriteReductingBacteria++, List.of(NitriteReductingBacteria.class)),
-    REGOLITH(s -> s.regolithEaters++, List.of(RegolithEaters.class, BuffedRegolithEaters.class)),
+    REGOLITH(s -> s.regolithEaters++, List.of(RegolithEaters.class)),
     SELF_REPLICATING(s -> s.selfReplicatingBacteria++, List.of(SelfReplicatingBacteria.class)),
     ANAEROBIC(s -> s.anaerobicMicroorganisms++, List.of(AnaerobicMicroorganisms.class)),
     AGGREGATES(s -> s.bacterialAggregates++, List.of(BacterialAggregates.class),

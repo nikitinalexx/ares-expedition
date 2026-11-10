@@ -5,4 +5,6 @@ import lombok.Data;
 @Data
 public class CollectDataRequest {
     int totalSimulations;
+    int startFileIndex;
+    String newPolicy;
 }

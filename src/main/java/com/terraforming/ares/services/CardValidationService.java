@@ -75,7 +75,15 @@ public class CardValidationService {
             return "Card doesn't exist " + cardId;
         }
 
-        if (!player.getHand().getCards().contains(cardId)) {
+        return validateCard(player, game, card, payments, inputParameters);
+    }
+
+    public String validateCard(Player player, MarsGame game, Card card, List<Payment> payments, Map<Integer, List<Integer>> inputParameters) {
+        if (card == null) {
+            throw new IllegalArgumentException("Card doesn't exist [null]");
+        }
+
+        if (!player.getHand().getCards().contains(card.getId())) {
             return "Can't build a project that you don't have";
         }
 

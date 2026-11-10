@@ -76,13 +76,13 @@ public class MarsAndPlayerIncomesFeature implements FeatureBlock {
         out.write(player.getPlayed().getCards().stream().map(cardService::getCard).filter(card -> card.getColor() == CardColor.BLUE).count());
         out.write(player.getPlayed().getCards().stream().map(cardService::getCard).filter(card -> card.getColor() == CardColor.GREEN).count());
 
-        out.write((float) Math.log1p(player.getMcIncome()));
+        out.write(player.getMcIncome());
 
-        out.write((float) player.getPlants());
-        out.write((float) player.getPlantsIncome());
+        out.write(player.getPlants()) ;
+        out.write(player.getPlantsIncome());
 
-        out.write((float) Math.log1p(player.getHeat()));
-        out.write((float) Math.log1p(player.getHeatIncome()));
+        out.write(player.getHeat());
+        out.write(player.getHeatIncome());
 
         out.write((float) player.getCardIncome());
 

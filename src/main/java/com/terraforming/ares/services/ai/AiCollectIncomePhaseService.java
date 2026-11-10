@@ -10,6 +10,7 @@ import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.TerraformingService;
 import com.terraforming.ares.services.ai.advanced.IDataCollect;
 import com.terraforming.ares.services.ai.dl4j.NNService;
+import com.terraforming.ares.services.policyai.service.PolicyDecisionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +25,7 @@ public class AiCollectIncomePhaseService {
     private final TerraformingService terraformingService;
     private final IDataCollect iDataCollect;
     private final NNService nnService;
+    private final PolicyDecisionService policyDecisionService;
 
     public Integer getDoubleIncomeCard(MarsGame game, Player player) {
         Integer doubleIncomeCard = null;
@@ -32,6 +34,10 @@ public class AiCollectIncomePhaseService {
 
         if (greenCards.isEmpty()) {
             return null;
+        }
+
+        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.POLICY) {
+            return policyDecisionService.chooseCardForDoubleIncome(game, player, greenCards);
         }
 
         if (player.getDifficulty().PICK_PHASE == AiTurnChoice.RANDOM && player.getDifficulty().EXPERIMENTAL_TURN != AiExperimentalTurn.EXPERIMENT) {
@@ -45,7 +51,7 @@ public class AiCollectIncomePhaseService {
 
         float initialState = 0;
 
-        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT || player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.POLICY) {
+        if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
             initialState = (float) nnService.predictBatch(List.of(iDataCollect.collectData(game, player.getUuid())), player).getFirst().baseProb;
         } else if (player.getDifficulty().PICK_PHASE == AiTurnChoice.NETWORK) {
             initialState = deepNetwork.testState(game, player);

@@ -9,11 +9,12 @@ public enum SystemAction implements HeadAction {
     ENTER_SELL_MODE  (0),
     ENTER_HELION_MODE(1),
     HEAT_EXCHANGE    (2),
-    PASS             (3),
-    UNMI_RT_FOR_6_MC (4),
-    TAKE_BONUS       (5);
+    UNMI_RT_FOR_6_MC (3),
+    TAKE_BONUS       (4),
+    EXIT_SELL_MODE(5),
+    EXIT_HELION_MODE(6);
 
-    public static final int COUNT = 6;
+    public static final int COUNT = 7;
 
     private final int localIndex;
 

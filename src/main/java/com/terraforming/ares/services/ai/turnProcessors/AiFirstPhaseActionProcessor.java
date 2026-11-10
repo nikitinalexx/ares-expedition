@@ -12,12 +12,14 @@ import com.terraforming.ares.services.ai.ProjectionStrategy;
 import com.terraforming.ares.services.ai.dto.BuildProjectPrediction;
 import com.terraforming.ares.services.ai.helpers.AiCardBuildParamsService;
 import com.terraforming.ares.services.ai.helpers.AiPaymentService;
+import com.terraforming.ares.services.ai.network2.Network2FirstSecondPhaseActionProcessor;
 import com.terraforming.ares.services.ai.turnFlow.AvailableTurnFlow;
 import com.terraforming.ares.services.ai.turnFlow.BestTurnType;
-import com.terraforming.ares.services.ai.network2.Network2FirstSecondPhaseActionProcessor;
 import com.terraforming.ares.services.ai.turnProcessors.random.AiRandomFirstPhaseActionProcessor;
 import com.terraforming.ares.services.policyai.service.PolicyFirstSecondPhaseActionProcessor;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

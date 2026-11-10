@@ -72,14 +72,10 @@ public class PolicyTableResourcesFeature implements PlayerPolicyFeatureBlock {
                 dto.animalResources[playerIndex];
 
         animals[BIRDS] =
-                (byte)(
-                        resources.getOrDefault(Birds.class,0)
-                                + resources.getOrDefault(BuffedBirds.class,0));
+                resources.getOrDefault(Birds.class,0).byteValue();
 
         animals[FILTER_FEEDERS] =
-                (byte)(
-                        resources.getOrDefault(FilterFeeders.class,0)
-                                + resources.getOrDefault(BuffedFilterFeeders.class,0));
+                resources.getOrDefault(FilterFeeders.class,0).byteValue();
 
         animals[FISH] =
                 resources.getOrDefault(Fish.class,0).byteValue();
@@ -116,17 +112,13 @@ public class PolicyTableResourcesFeature implements PlayerPolicyFeatureBlock {
                 resources.getOrDefault(DecomposingFungus.class,0).byteValue();
 
         microbes[GHG] =
-                (byte)(
-                        resources.getOrDefault(GhgProductionBacteria.class,0)
-                                + resources.getOrDefault(BuffedGhgProductionBacteria.class,0));
+                resources.getOrDefault(GhgProductionBacteria.class,0).byteValue();
 
         microbes[NITRITE] =
                 resources.getOrDefault(NitriteReductingBacteria.class,0).byteValue();
 
         microbes[REGOLITH] =
-                (byte)(
-                        resources.getOrDefault(RegolithEaters.class,0)
-                                + resources.getOrDefault(BuffedRegolithEaters.class,0));
+                resources.getOrDefault(RegolithEaters.class,0).byteValue();
 
         microbes[SELF_REPLICATING] =
                 resources.getOrDefault(SelfReplicatingBacteria.class,0).byteValue();

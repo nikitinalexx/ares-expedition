@@ -71,8 +71,8 @@ public class TableResourcesFeature implements FeatureBlock {
 
         //ANIMALS BLOCK
         {
-            out.write(player.getCardResourcesCount().getOrDefault(Birds.class, 0) + player.getCardResourcesCount().getOrDefault(BuffedBirds.class, 0));
-            out.write(player.getCardResourcesCount().getOrDefault(FilterFeeders.class, 0) + player.getCardResourcesCount().getOrDefault(BuffedFilterFeeders.class, 0));
+            out.write(player.getCardResourcesCount().getOrDefault(Birds.class, 0));
+            out.write(player.getCardResourcesCount().getOrDefault(FilterFeeders.class, 0));
             out.write(player.getCardResourcesCount().getOrDefault(Fish.class, 0));
             out.write(player.getCardResourcesCount().getOrDefault(Livestock.class, 0));
             out.write(player.getCardResourcesCount().getOrDefault(Zoos.class, 0));
@@ -86,9 +86,9 @@ public class TableResourcesFeature implements FeatureBlock {
             out.write(player.getCardResourcesCount().getOrDefault(AnaerobicMicroorganisms.class, 0));
             out.write(player.getCardResourcesCount().getOrDefault(Decomposers.class, 0));
             out.write(player.getCardResourcesCount().getOrDefault(DecomposingFungus.class, 0));
-            out.write(player.getCardResourcesCount().getOrDefault(GhgProductionBacteria.class, 0) + player.getCardResourcesCount().getOrDefault(BuffedGhgProductionBacteria.class, 0));
+            out.write(player.getCardResourcesCount().getOrDefault(GhgProductionBacteria.class, 0));
             out.write(player.getCardResourcesCount().getOrDefault(NitriteReductingBacteria.class, 0));
-            out.write(player.getCardResourcesCount().getOrDefault(RegolithEaters.class, 0) + player.getCardResourcesCount().getOrDefault(BuffedRegolithEaters.class, 0));
+            out.write(player.getCardResourcesCount().getOrDefault(RegolithEaters.class, 0));
             out.write(player.getCardResourcesCount().getOrDefault(SelfReplicatingBacteria.class, 0));
             out.write(player.getCardResourcesCount().getOrDefault(Tardigrades.class, 0));
             out.write(player.getCardResourcesCount().getOrDefault(BacterialAggregates.class, 0));

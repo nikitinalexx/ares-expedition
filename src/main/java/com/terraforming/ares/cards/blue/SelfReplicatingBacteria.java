@@ -58,6 +58,7 @@ public class SelfReplicatingBacteria implements BlueCard {
     @Override
     public TurnResponse buildProject(MarsContext marsContext) {
         marsContext.getPlayer().initResources(this);
+
         return null;
     }
 
@@ -68,7 +69,7 @@ public class SelfReplicatingBacteria implements BlueCard {
 
     @Override
     public int getPrice() {
-        return 8;
+        return 5;
     }
 
     @Override

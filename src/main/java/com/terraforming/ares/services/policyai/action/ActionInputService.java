@@ -42,6 +42,10 @@ public class ActionInputService {
         return SellDiscardAction.forCardIndex(AiConstants.ALL_CARDS_INDEX_BY_CLASS.get(card.getClass()));
     }
 
+    public static HeadAction marsUniversityPass() {
+        return SellDiscardAction.MARS_UNIVERSITY_PASS;
+    }
+
     // =========================================================================
     // CORPORATION
     // =========================================================================
@@ -101,6 +105,14 @@ public class ActionInputService {
         }
     }
 
+    public static HeadAction powerInfrastrcuturePass() {
+        return BlueAction.POWER_INFRASTRUCTURE_PASS;
+    }
+
+    public static HeadAction redraftedContractsPass() {
+        return BlueAction.REDRAFTED_CONTRACTS_PASS;
+    }
+
     // =========================================================================
     // SMALL
     // =========================================================================
@@ -113,7 +125,7 @@ public class ActionInputService {
         if (phaseId < 1 || phaseId > 5) {
             throw new  IllegalArgumentException("Invalid phase id: " + phaseId);
         }
-        return SmallAction.forPhaseUpgrade(phaseId);
+        return SmallAction.forPhaseChoice(phaseId);
     }
 
     public static HeadAction austellarMilestoneChoice(int milestoneIndex) {
@@ -169,14 +181,26 @@ public class ActionInputService {
         return SmallAction.CONVERT_PLANTS_TO_FOREST;
     }
 
+    public static HeadAction passMulligan() {
+        return SmallAction.FINISH_MULLIGAN;
+    }
+
+    public static HeadAction passPhaseUpgrade() {
+        return SmallAction.SKIP_PHASE_UPGRADE;
+    }
+
     // =========================================================================
     // SYSTEM
     // =========================================================================
 
-    public static HeadAction passAction()            { return SystemAction.PASS; }
+    public static HeadAction passFirstPhase()        { return HeadSelectionAction.PASS_PHASE_1; }
+    public static HeadAction passSecondPhase()       { return HeadSelectionAction.PASS_PHASE_2; }
+    public static HeadAction passThirdPhase()        { return HeadSelectionAction.PASS_PHASE_3; }
     public static HeadAction unmiAction()            { return SystemAction.UNMI_RT_FOR_6_MC; }
     public static HeadAction enterSellingModeAction(){ return SystemAction.ENTER_SELL_MODE; }
     public static HeadAction enterHelionModeAction() { return SystemAction.ENTER_HELION_MODE; }
     public static HeadAction exchange1Heat()         { return SystemAction.HEAT_EXCHANGE; }
     public static HeadAction takeBonusAction()       { return SystemAction.TAKE_BONUS; }
+    public static HeadAction exitHelionMode()       { return SystemAction.EXIT_HELION_MODE; }
+    public static HeadAction exitSellMode()       { return SystemAction.EXIT_SELL_MODE; }
 }

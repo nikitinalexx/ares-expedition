@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Component
 public class PolicyFirstSecondPhaseActionProcessor extends AbstractPolicyProcessor {
@@ -44,8 +45,8 @@ public class PolicyFirstSecondPhaseActionProcessor extends AbstractPolicyProcess
         inputGeneratorEffects.add(biomedicalImportsInputEffect);
         inputGeneratorEffects.add(cryogenicShipmentInputEffect);
         inputGeneratorEffects.add(eosChasmaNationalParkInputEffect);
-        inputGeneratorEffects.add(viralEnhancersInputEffect);
         inputGeneratorEffects.add(decomposersInputEffect);
+        inputGeneratorEffects.add(viralEnhancersInputEffect);
         inputGeneratorEffects.add(marsUniversityInputEffect);
         inputGeneratorEffects.add(importedNitrogenInputEffect);
         inputGeneratorEffects.add(largeConvoyInputEffect);
@@ -60,12 +61,9 @@ public class PolicyFirstSecondPhaseActionProcessor extends AbstractPolicyProcess
         final List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
         Player anotherPlayer = players.get(0) == player ? players.get(1) : players.get(0);
 
-
         boolean isHelion = player.getSelectedCorporationCard() != null
-                && cardService.getCard(player.getSelectedCorporationCard()).getCardMetadata().getCardAction() == CardAction.HELION_CORPORATION;
-
-        boolean soldCards = false;
-        boolean exchangedHelion = false;
+                && cardService.getCard(player.getSelectedCorporationCard())
+                .getCardMetadata().getCardAction() == CardAction.HELION_CORPORATION;
 
         while (true) {
             PolicyRecord record = new PolicyRecord();
@@ -74,30 +72,29 @@ public class PolicyFirstSecondPhaseActionProcessor extends AbstractPolicyProcess
             List<Card> possibleBuilds = getAvailableProjects(game, player);
 
             Map<HeadAction, Card> actionToBuildCard = new HashMap<>();
-
             List<HeadAction> validActions = new ArrayList<>();
+
             for (Card possibleBuild : possibleBuilds) {
                 HeadAction action = ActionInputService.buildProjectAction(possibleBuild);
                 validActions.add(action);
                 actionToBuildCard.put(action, possibleBuild);
             }
-            validActions.add(ActionInputService.passAction());
-            if (!player.getHand().isEmpty() && !soldCards) {
+            validActions.add(game.getCurrentPhase() == 2 ? ActionInputService.passSecondPhase() : ActionInputService.passFirstPhase());
+            if (!player.getHand().isEmpty() && ThreadLocalRandom.current().nextInt(20) == 1) {
                 validActions.add(ActionInputService.enterSellingModeAction());
             }
-            if (possibleTurns.contains(TurnType.UNMI_RT)) {
+            if (possibleTurns.contains(TurnType.UNMI_RT) && player.getMc() >= 6) {
                 validActions.add(ActionInputService.unmiAction());
             }
             if (player.canBuildAny(List.of(BuildType.BLUE_RED_OR_MC, BuildType.BLUE_RED_OR_CARD))) {
                 validActions.add(ActionInputService.takeBonusAction());
             }
-
-            if (isHelion && player.getHeat() > 0 && !exchangedHelion) {
+            if (isHelion && player.getHeat() > 0) {
                 validActions.add(ActionInputService.enterHelionModeAction());
             }
 
-            HeadAction bestTurn = predict(record, validActions);
-            if (bestTurn == ActionInputService.passAction()) {
+            HeadAction bestTurn = predict(record, validActions, game);
+            if (bestTurn == ActionInputService.passFirstPhase() || bestTurn == ActionInputService.passSecondPhase()) {
                 skipTurn(player);
                 return;
             }
@@ -114,16 +111,12 @@ public class PolicyFirstSecondPhaseActionProcessor extends AbstractPolicyProcess
 
             if (bestTurn == ActionInputService.enterHelionModeAction()) {
                 doHelionExchange(record, player);
-                exchangedHelion = true;
-                soldCards = false;
-                continue;
+                return;
             }
 
             if (bestTurn == ActionInputService.enterSellingModeAction()) {
-                doCardExchange(record, game, player);
-                soldCards = true;
-                exchangedHelion = false;
-                continue;
+                sellingCardsMode(record, game, player);
+                return;
             }
 
             if (bestTurn.head() == ActionHead.BUILD) {
@@ -141,6 +134,5 @@ public class PolicyFirstSecondPhaseActionProcessor extends AbstractPolicyProcess
     private void skipTurn(Player player) {
         aiTurnService.skipTurn(player);
     }
-
 
 }

@@ -1,6 +1,5 @@
 package com.terraforming.ares.services.policyai.input;
 
-import com.terraforming.ares.cards.blue.Decomposers;
 import com.terraforming.ares.cards.blue.MarsUniversity;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.InputFlag;
@@ -8,10 +7,8 @@ import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.ai.advanced.TableContext;
 import com.terraforming.ares.services.policyai.action.ActionInputService;
-import com.terraforming.ares.services.policyai.action.ActionRegistry;
 import com.terraforming.ares.services.policyai.action.HeadAction;
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
-import com.terraforming.ares.services.policyai.rollout.EffectStateReader;
 import com.terraforming.ares.services.policyai.service.AbstractPolicyProcessor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -28,8 +25,9 @@ public class MarsUniversityInputEffect extends AbstractPolicyProcessor implement
 
     @Override
     public boolean isPresent(PolicyRecord record, TableContext tableContext, Card card, Map<Integer, List<Integer>> input) {
-        return (record.hasPlayedBlueCard(MarsUniversity.class) || card.getClass() == MarsUniversity.class)
-                && countScienceTags(card, input) > 0;
+        boolean playedMarsUniversity = record.hasPlayedBlueCard(MarsUniversity.class);
+        boolean isMarsUniversity = card.getClass() == MarsUniversity.class;
+        return (playedMarsUniversity || isMarsUniversity) && countScienceTags(card, input) > 0;
     }
 
     @Override
@@ -39,6 +37,7 @@ public class MarsUniversityInputEffect extends AbstractPolicyProcessor implement
         for (Integer handCardId : tableContext.getPlayer().getHand().getCards()) {
             handCards.add(cardService.getCard(handCardId));
         }
+        handCards.remove(card);
 
         if (handCards.isEmpty()) {
             input.put(InputFlag.MARS_UNIVERSITY_CARD.getId(), List.of(InputFlag.SKIP_ACTION.getId()));
@@ -52,7 +51,7 @@ public class MarsUniversityInputEffect extends AbstractPolicyProcessor implement
             if (handCards.isEmpty()) break;
 
             List<HeadAction> validActions = new ArrayList<>();
-            validActions.add(ActionInputService.passAction());
+            validActions.add(ActionInputService.marsUniversityPass());
 
             Map<HeadAction, Card> actionToCard = new HashMap<>();
             // добавляем действия для каждой карты в руке
@@ -62,10 +61,10 @@ public class MarsUniversityInputEffect extends AbstractPolicyProcessor implement
                 actionToCard.put(action, handCard);
             }
 
-            HeadAction best = predict(record, validActions);
+            HeadAction best = predict(record, validActions, null);
             record.marsUniversityDiscardsLeft--;
 
-            if (best == ActionInputService.passAction()) {
+            if (best == ActionInputService.marsUniversityPass()) {
                 break;
             }
 

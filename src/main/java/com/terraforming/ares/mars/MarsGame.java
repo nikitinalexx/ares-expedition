@@ -1,7 +1,6 @@
 package com.terraforming.ares.mars;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.terraforming.ares.cards.blue.SelfReplicatingBacteria;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.awards.*;
 import com.terraforming.ares.model.milestones.*;
@@ -30,9 +29,12 @@ public class MarsGame {
 
     private Long id;
     private Map<String, Player> playerUuidToPlayer;
+    @Setter
     private Deck projectsDeck;
     private Deck corporationsDeck;
+    @Setter
     private Planet planet;
+    @Setter
     private Planet planetAtTheStartOfThePhase;
     private StateType stateType;
     @Setter
@@ -235,10 +237,15 @@ public class MarsGame {
 
     public void setStateType(StateType stateType, MarsContext context, String stateReason) {
         this.stateReason = stateReason;
-        setStateType(stateType, context);
+        setStateTypeWithFinalize(stateType, context);
     }
 
-    public void setStateType(StateType stateType, MarsContext context) {
+    public void setStateTypeWithFinalize(StateType stateType, MarsContext context) {
+        finalizePhase(stateType, context);
+        setStateType(stateType);
+    }
+
+    public void finalizePhase(StateType stateType, MarsContext context) {
         final CardService cardService = context.getCardService();
 
         playerUuidToPlayer.values().forEach(Player::clearPhaseResults);
@@ -247,7 +254,9 @@ public class MarsGame {
         if (stateType == StateType.GAME_END) {
             assignAwards(cardService);
         }
+    }
 
+    public void setStateType(StateType stateType) {
         this.stateType = stateType;
         switch (stateType) {
             case PICK_CORPORATIONS:

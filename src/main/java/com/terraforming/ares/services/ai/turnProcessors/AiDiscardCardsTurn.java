@@ -3,7 +3,6 @@ package com.terraforming.ares.services.ai.turnProcessors;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.model.ai.AiCardsChoice;
 import com.terraforming.ares.model.ai.AiExperimentalTurn;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
@@ -12,7 +11,6 @@ import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.ICardValueService;
 import com.terraforming.ares.services.ai.network2.Network2DiscardCardsProcessor;
-import com.terraforming.ares.services.policyai.PolicyCollectService;
 import com.terraforming.ares.services.policyai.service.PolicyDecisionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -34,7 +32,6 @@ public class AiDiscardCardsTurn implements AiTurnProcessor {
     private final CardService cardService;
     private final AiPickCardProjectionService aiPickCardProjectionService;
     private final Network2DiscardCardsProcessor network2DiscardCardsProcessor;
-    private final PolicyCollectService policyCollectService;
     private final PolicyDecisionService policyDecisionService;
 
 

@@ -8,7 +8,6 @@ import com.terraforming.ares.services.ai.advanced.TableContext;
 import com.terraforming.ares.services.policyai.action.ActionInputService;
 import com.terraforming.ares.services.policyai.action.HeadAction;
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
-import com.terraforming.ares.services.policyai.rollout.EffectStateReader;
 import com.terraforming.ares.services.policyai.service.AbstractPolicyProcessor;
 import org.springframework.stereotype.Component;
 
@@ -28,6 +27,7 @@ public class BiomedicalImportsInputEffect extends AbstractPolicyProcessor implem
         boolean canRaiseOxygen = !tableContext.getGame().getPlanetAtTheStartOfThePhase().isOxygenMax();
 
         if (!canRaiseOxygen) {
+            input.put(InputFlag.BIOMEDICAL_IMPORTS_UPGRADE_PHASE.getId(), List.of(0));
             record.universalPhaseUpgradeCount = 1;
             generatePhaseUpgrade(record, input);
             record.universalPhaseUpgradeCount = 0;
@@ -40,11 +40,11 @@ public class BiomedicalImportsInputEffect extends AbstractPolicyProcessor implem
         );
 
         record.biomedicalImportsEffect = true;
-        HeadAction best = predict(record, validActions);
+        HeadAction best = predict(record, validActions, null);
         record.biomedicalImportsEffect = false;
 
         if (best == ActionInputService.biomedicalImportsUpgradeOxygen()) {
-            input.put(InputFlag.BIOMEDICAL_IMPORTS_RAISE_OXYGEN.getId(), List.of());
+            input.put(InputFlag.BIOMEDICAL_IMPORTS_RAISE_OXYGEN.getId(), List.of(0));
             // rollout кислорода
             record.winPointsNoForests[0]++;
             record.mcIncomeTotal[0]++;
@@ -58,13 +58,13 @@ public class BiomedicalImportsInputEffect extends AbstractPolicyProcessor implem
                 rolloutAnimal(Herbivores.class, record, 1);
             }
         } else {
+            input.put(InputFlag.BIOMEDICAL_IMPORTS_UPGRADE_PHASE.getId(), List.of(0));
+
             record.universalPhaseUpgradeCount = 1;
             generatePhaseUpgrade(record, input);
             record.universalPhaseUpgradeCount = 0;
         }
     }
-
-
 
 
 }

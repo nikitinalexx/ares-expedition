@@ -9,7 +9,6 @@ import com.terraforming.ares.services.policyai.action.ActionInputService;
 import com.terraforming.ares.services.policyai.action.ActionRegistry;
 import com.terraforming.ares.services.policyai.action.HeadAction;
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
-import com.terraforming.ares.services.policyai.rollout.EffectStateReader;
 import com.terraforming.ares.services.policyai.service.AbstractPolicyProcessor;
 import org.springframework.stereotype.Component;
 
@@ -47,7 +46,7 @@ public class AstrofarmInputEffect extends AbstractPolicyProcessor implements Inp
         });
 
         record.microbePutCount = 2;
-        HeadAction best = predict(record, validActions);
+        HeadAction best = predict(record, validActions, null);
         record.microbePutCount = 0;
 
         Card target = actionToCard.get(best);

@@ -43,6 +43,7 @@ public class PolicyTableAndHandEncoder {
 
     public TableContext encode(MarsGame game, Player player, Player opponent, PolicyRecord policyRecord) {
         policyRecord.isFirstPlayer = player.isFirstBot();
+        policyRecord.gameId = game.getId();
 
         TableContext playerContext = new TableContext(
                 game, player, opponent, cardService, winPointsService, draftCardsService, specialEffectsService

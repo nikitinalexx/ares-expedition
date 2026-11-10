@@ -238,27 +238,6 @@ public class AiBuildProjectService extends BaseProcessorService {
         return game;
     }
 
-    public MarsGame assumeProjectIsBuiltFromPickPhase(MarsGame game, Player player, Card card) {
-        projectPhasePick(game, player, card.getColor() == CardColor.GREEN ? Phase.FIRST : Phase.SECOND, ProjectionStrategy.FROM_PICK_PHASE);
-
-        if (!aiCardValidationService.isValid(game, player, card)) {
-            System.out.println(card);
-            throw new IllegalStateException("Card is not valid");
-        }
-
-        game = new MarsGame(game);
-        player = game.getPlayerByUuid(player.getUuid());
-
-        Map<Integer, List<Integer>> inputParams = aiCardBuildParamsService.getInputParamsForBuild(game, player, card);
-        List<Payment> payments = aiPaymentService.getCardPayments(game, player, card, inputParams);
-        if (card.getColor() == CardColor.GREEN) {
-            aiTurnService.buildGreenProjectSync(game, player, card.getId(), payments, inputParams);
-        } else {
-            aiTurnService.buildBlueRedProjectSync(game, player, card.getId(), payments, inputParams);
-        }
-
-        return game;
-    }
 
     //new method
     private void projectPhasePick(MarsGame game, Player player, Phase phase, ProjectionStrategy projectionStrategy) {
@@ -269,7 +248,7 @@ public class AiBuildProjectService extends BaseProcessorService {
 
             player.setPreviousChosenPhase(null);
             getAnotherPlayer(game, player).setPreviousChosenPhase(null);
-            game.setStateType(StateType.PICK_PHASE, context);
+            game.setStateTypeWithFinalize(StateType.PICK_PHASE, context);
             game.getPlayerUuidToPlayer().values().stream().filter(p -> !p.getUuid().equals(player.getUuid())).forEach(
                     anotherPlayer -> aiTurnService.choosePhaseTurn(anotherPlayer, phase == Phase.SECOND_BY_ANOTHER ? 2 : COLLECT_INCOME_PHASE)
             );

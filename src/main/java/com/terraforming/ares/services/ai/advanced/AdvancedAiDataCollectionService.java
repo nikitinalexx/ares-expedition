@@ -14,10 +14,10 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class AdvancedAiDataCollectionService implements IDataCollect {
-    private static final int HAND_SIZE_INDEX_OFFSET = 89;
-    private static final int OPPONENT_HAND_SIZE_INDEX_OFFSET = 267;
-    private static final int PLAYED_TAG_OFFSET = 90;
-    private static final int OPPONENT_PLAYED_TAG_OFFSET = 268;
+    private static final int HAND_SIZE_INDEX_OFFSET = 106;
+    private static final int OPPONENT_HAND_SIZE_INDEX_OFFSET = 284;
+    private static final int PLAYED_TAG_OFFSET = 107;
+    private static final int OPPONENT_PLAYED_TAG_OFFSET = 285;
 
     private final CompleteTableEncoder tableEncoder;
     private final CompleteHandEncoder handEncoder;

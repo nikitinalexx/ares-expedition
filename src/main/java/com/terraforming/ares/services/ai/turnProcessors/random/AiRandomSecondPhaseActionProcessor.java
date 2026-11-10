@@ -75,7 +75,7 @@ public class AiRandomSecondPhaseActionProcessor {
                                 aiRandomPaymentService.getCardPayments(game, player, card, inputParams);
 
                         if (cardValidationService.validateCard(
-                                player, game, card.getId(), payments, inputParams) != null) {
+                                player, game, card, payments, inputParams) != null) {
                             return false;
                         }
 

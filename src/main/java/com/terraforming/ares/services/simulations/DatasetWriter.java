@@ -1,9 +1,13 @@
 package com.terraforming.ares.services.simulations;
 
+import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.channels.FileChannel;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -13,30 +17,24 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class DatasetWriter implements Runnable {
-    public static final SampleBatch POISON = new SampleBatch(List.of(), List.of());
-
+    public static final SampleBatch POISON = new SampleBatch(List.of(), new FloatArrayList());
 
     static final int TARGET_FILE_ROWS = 200_000;
     static final DataType DTYPE = DataType.FLOAT16;
 
     private final BlockingQueue<SampleBatch> queue;
 
-    private final List<float[]> featureBuffer = new ArrayList<>(TARGET_FILE_ROWS);
-    private final List<Float> labelBuffer = new ArrayList<>(TARGET_FILE_ROWS);
+    private List<float[]> featureBuffer = new ArrayList<>(TARGET_FILE_ROWS + 1000);
+    private FloatArrayList labelBuffer = new FloatArrayList(TARGET_FILE_ROWS + 1000);
 
     private final Random rnd = new Random();
-    private static final AtomicInteger FILE_INDEX = new AtomicInteger(158);
-
+    private static final AtomicInteger FILE_INDEX = new AtomicInteger(211);
     private static final String FULL_DATA_DIR;
-
 
     static {
         Nd4j.setDefaultDataTypes(DTYPE, DTYPE);
-
         String ts = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
-
         FULL_DATA_DIR = "sim/full/" + ts;
-
         new File(FULL_DATA_DIR).mkdirs();
     }
 
@@ -49,11 +47,10 @@ public class DatasetWriter implements Runnable {
         try {
             while (true) {
                 SampleBatch batch = queue.take();
-                if (batch == POISON) {
-                    break;
-                }
+                if (batch == POISON) break;
+
                 featureBuffer.addAll(batch.features());
-                labelBuffer.addAll(batch.labels());
+                labelBuffer.addAll(batch.labels()); // FloatArrayList.addAll — нативный, без боксинга
 
                 if (featureBuffer.size() >= TARGET_FILE_ROWS) {
                     flush();
@@ -65,55 +62,67 @@ public class DatasetWriter implements Runnable {
     }
 
     private void flush() {
-        shuffleInUnison(featureBuffer, labelBuffer);
-
         int usableSize = TARGET_FILE_ROWS;
-        int totalFeatureSize = featureBuffer.getFirst().length;
+        int totalFeatureSize = featureBuffer.get(0).length;
+
+        shuffleInUnison(featureBuffer, labelBuffer, usableSize);
 
         int idx = FILE_INDEX.getAndIncrement();
         File outputFile = new File(FULL_DATA_DIR, "dataset_" + idx + ".bin");
 
-        try (DataOutputStream dos = new DataOutputStream(
-                new BufferedOutputStream(new FileOutputStream(outputFile), 1 << 20))) {
+        // Размер буфера: header(8) + каждая строка = (features + 1 label) * 2 байта
+        int rowBytes = (totalFeatureSize + 1) * 2;
+        ByteBuffer bb = ByteBuffer.allocateDirect(8 + usableSize * rowBytes)
+                .order(ByteOrder.BIG_ENDIAN);
 
-            // Заголовок чтобы знать размеры при чтении
-            dos.writeInt(usableSize);
-            dos.writeInt(totalFeatureSize);
+        bb.putInt(usableSize);
+        bb.putInt(totalFeatureSize);
 
-            for (int i = 0; i < usableSize; i++) {
-                float[] features = featureBuffer.get(i);
-                for (float f : features) {
-                    dos.writeShort(Float.floatToFloat16(f));
-                }
-                dos.writeShort(Float.floatToFloat16(labelBuffer.get(i)));
+        for (int i = 0; i < usableSize; i++) {
+            for (float f : featureBuffer.get(i)) {
+                bb.putShort(Float.floatToFloat16(f));
             }
+            bb.putShort(Float.floatToFloat16(labelBuffer.getFloat(i)));
+        }
 
+        try (FileOutputStream fos = new FileOutputStream(outputFile);
+             FileChannel ch = fos.getChannel()) {
+            bb.flip();
+            ch.write(bb);
         } catch (IOException e) {
             throw new RuntimeException("Failed to write dataset", e);
         }
 
-        featureBuffer.subList(0, usableSize).clear();
-        labelBuffer.subList(0, usableSize).clear();
+        // Swap вместо subList.clear() — O(1) вместо O(n)
+        int remaining = featureBuffer.size() - usableSize;
+        List<float[]> newFeatures = new ArrayList<>(TARGET_FILE_ROWS + 1000);
+        FloatArrayList newLabels = new FloatArrayList(TARGET_FILE_ROWS + 1000);
 
-        System.out.println(
-                "Flushed dataset_" + idx +
-                        " | rows=" + usableSize +
-                        " | features=" + totalFeatureSize +
-                        " | target=" + outputFile.getAbsolutePath()
-        );
+        if (remaining > 0) {
+            newFeatures.addAll(featureBuffer.subList(usableSize, featureBuffer.size()));
+            newLabels.addAll(labelBuffer.subList(usableSize, labelBuffer.size()));
+        }
+
+        featureBuffer = newFeatures;
+        labelBuffer = newLabels;
+
+        System.out.println("Flushed dataset_" + idx +
+                " | rows=" + usableSize +
+                " | features=" + totalFeatureSize +
+                " | target=" + outputFile.getAbsolutePath());
     }
 
-
-    private void shuffleInUnison(List<float[]> features, List<Float> labels) {
-        for (int i = features.size() - 1; i > 0; i--) {
+    private void shuffleInUnison(List<float[]> features, FloatArrayList labels, int size) {
+        for (int i = size - 1; i > 0; i--) {
             int j = rnd.nextInt(i + 1);
 
             float[] tf = features.get(i);
             features.set(i, features.get(j));
             features.set(j, tf);
 
-            float tl = labels.get(i);
-            labels.set(i, labels.get(j));
+            // getFloat/set — примитивы, без боксинга
+            float tl = labels.getFloat(i);
+            labels.set(i, labels.getFloat(j));
             labels.set(j, tl);
         }
     }

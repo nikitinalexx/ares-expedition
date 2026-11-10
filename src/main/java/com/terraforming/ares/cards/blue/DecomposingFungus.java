@@ -76,7 +76,7 @@ public class DecomposingFungus implements BlueCard {
 
     @Override
     public int getPrice() {
-        return 10;
+        return 8;
     }
 
     @Override

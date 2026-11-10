@@ -28,7 +28,7 @@ public class FilterFeeders implements BlueCard {
                 .cardAction(CardAction.FILTER_FEEDERS)
                 .winPointsInfo(WinPointsInfo.builder()
                         .type(CardCollectableResource.ANIMAL)
-                        .resources(3)
+                        .resources(2)
                         .points(1)
                         .build()
                 )
@@ -68,7 +68,7 @@ public class FilterFeeders implements BlueCard {
 
     @Override
     public OceanRequirement getOceanRequirement() {
-        return OceanRequirement.builder().minValue(2).maxValue(Constants.MAX_OCEANS).build();
+        return OceanRequirement.builder().minValue(1).maxValue(Constants.MAX_OCEANS).build();
     }
 
     @Override

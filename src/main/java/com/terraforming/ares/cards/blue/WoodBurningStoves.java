@@ -59,6 +59,6 @@ public class WoodBurningStoves implements BlueCard {
 
     @Override
     public int getPrice() {
-        return 13;
+        return 8;
     }
 }

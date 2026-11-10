@@ -3,17 +3,14 @@ package com.terraforming.ares.services.policyai.service;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.turn.DiscardCardsTurn;
+import com.terraforming.ares.model.turn.SellCardsLastRoundTurn;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.ai.AiConstants;
-import com.terraforming.ares.services.ai.dl4j.PolicyNNService;
-import com.terraforming.ares.services.ai.dl4j.PolicyPrediction;
-import com.terraforming.ares.services.policyai.GameArenaContext;
 import com.terraforming.ares.services.policyai.action.ActionHead;
 import com.terraforming.ares.services.policyai.action.ActionInputService;
 import com.terraforming.ares.services.policyai.action.HeadAction;
-import com.terraforming.ares.services.policyai.dto.GameRecordArena;
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
-import com.terraforming.ares.services.policyai.encoder.PolicyRecordFeatureConverter;
 import com.terraforming.ares.services.policyai.encoder.PolicyTableAndHandEncoder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,11 +23,13 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Service
 public class PolicyCardsDecisionService {
-    private final PolicyNNService policyNNService;
-    private final PolicyRecordFeatureConverter policyRecordFeatureConverter;
     private final PolicyTableAndHandEncoder encoder;
     private final CardService cardService;
     private final PolicyActionSelector actionSelector;
+
+    private HeadAction predict(PolicyRecord record, List<HeadAction> validActions) {
+        return actionSelector.chooseBestAction(record, validActions, null);
+    }
 
     public List<Integer> mulliganCards(MarsGame game, Player currentPlayer) {
         if (!AiConstants.POLICY_PLAYING) {
@@ -55,13 +54,12 @@ public class PolicyCardsDecisionService {
             actionToCard.put(action, card);
         }
 
-        validActions.add(ActionInputService.passAction());
+        validActions.add(ActionInputService.passMulligan());
 
         List<Integer> cardsToDiscard = new ArrayList<>();
 
         while (validActions.size() > 1) {
-            PolicyPrediction prediction = policyNNService.predictBatch(List.of(policyRecordFeatureConverter.convert(record)), PolicyNNService.ModelType.FIRST).getFirst();
-            HeadAction nextAction = actionSelector.chooseBestAction(prediction, validActions);
+            HeadAction nextAction = predict(record, validActions);
 
             if (nextAction.head() == ActionHead.SELL_DISCARD) {
 
@@ -81,22 +79,6 @@ public class PolicyCardsDecisionService {
         return cardsToDiscard;
     }
 
-    public List<Integer> discardingFromHandPostBuild(MarsGame game, Player player, int count) {
-        if (!AiConstants.POLICY_PLAYING) {
-            return List.of();
-        }
-
-        return discardingCardsFromHand(game, player, count, true);
-    }
-
-    public List<Integer> sellCardsAfterGenerationEnd(MarsGame game, Player player, int count) {
-        if (!AiConstants.POLICY_PLAYING) {
-            return List.of();
-        }
-
-        return discardingCardsFromHand(game, player, count, false);
-    }
-
     public List<Integer> discardingCardsFromHand(
             MarsGame game,
             Player player,
@@ -114,8 +96,16 @@ public class PolicyCardsDecisionService {
 
         if (isPostBuild) {
             record.postBuildDiscarding = true;
+            if (anotherPlayer.getNextTurn() instanceof DiscardCardsTurn opponentTurn) {
+                record.opponentLeftToDiscard = (byte) opponentTurn.getSize();
+            }
         } else {
             record.discardingLastTurn = true;
+            if (anotherPlayer.getNextTurn() instanceof SellCardsLastRoundTurn opponentTurn) {
+                record.opponentLeftToDiscard = (byte) opponentTurn.getCards().size();
+            } else if (anotherPlayer.getHand().size() > 10) {
+                record.opponentLeftToDiscard = (byte) (anotherPlayer.getHand().size() - 10);
+            }
         }
 
         Map<HeadAction, Card> actionToCard = new HashMap<>();
@@ -132,14 +122,7 @@ public class PolicyCardsDecisionService {
 
         while (record.cardsLeftToDiscard > 0 && validActions.size() > 1) {
 
-            PolicyPrediction prediction = policyNNService
-                    .predictBatch(
-                            List.of(policyRecordFeatureConverter.convert(record)),
-                            PolicyNNService.ModelType.FIRST
-                    )
-                    .getFirst();
-
-            HeadAction chosen = actionSelector.chooseBestAction(prediction, validActions);
+            HeadAction chosen = predict(record, validActions);
 
 
             Card card = actionToCard.get(chosen);
@@ -180,6 +163,10 @@ public class PolicyCardsDecisionService {
         encoder.encode(game, player, anotherPlayer, record);
         record.cardsLeftToDiscard = (byte) cardsToDiscardCount;
         record.discardingFromSelected = true;
+        if (anotherPlayer.getNextTurn() instanceof DiscardCardsTurn opponentTurn) {
+            record.opponentLeftToDiscard = (byte) opponentTurn.getSize();
+        }
+
         for (Integer cardId : discardingFrom) {
             record.selectCard(cardService.getCard(cardId));
         }
@@ -198,15 +185,7 @@ public class PolicyCardsDecisionService {
 
         while (record.cardsLeftToDiscard > 0 && validActions.size() > 1) {
 
-            PolicyPrediction prediction = policyNNService
-                    .predictBatch(
-                            List.of(policyRecordFeatureConverter.convert(record)),
-                            PolicyNNService.ModelType.FIRST
-                    )
-                    .getFirst();
-
-            HeadAction chosen = actionSelector.chooseBestAction(prediction, validActions);
-
+            HeadAction chosen = predict(record, validActions);
 
             Card card = actionToCard.get(chosen);
 

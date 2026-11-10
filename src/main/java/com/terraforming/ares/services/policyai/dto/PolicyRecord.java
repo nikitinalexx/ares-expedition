@@ -1,5 +1,6 @@
 package com.terraforming.ares.services.policyai.dto;
 
+import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.awards.AwardType;
 import com.terraforming.ares.services.ai.AiConstants;
@@ -10,6 +11,8 @@ import com.terraforming.ares.services.policyai.annotations.Feature;
 import lombok.Data;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 import static com.terraforming.ares.services.ai.AiConstants.BLUE_CARDS_INDEX_BY_CLASS;
 import static com.terraforming.ares.services.policyai.annotations.Feature.FeatureScope.TABLE;
@@ -102,6 +105,8 @@ public class PolicyRecord {
     @Feature(scope = TABLE)
     @DataField
     public boolean isFirstPlayer;
+
+    public long gameId;
 
     // =========================================================================
     // Milestones — 11 штук, НЕ битовые маски
@@ -199,6 +204,10 @@ public class PolicyRecord {
 
     @Feature(scope = TABLE)
     @DataField
+    public boolean building;
+
+    @Feature(scope = TABLE)
+    @DataField
     public byte mulliganToDraw;
 
     /**
@@ -251,6 +260,10 @@ public class PolicyRecord {
     @Feature(scope = TABLE)
     @DataField
     public byte cardsLeftToDiscard;
+
+    @Feature(scope = TABLE)
+    @DataField
+    public byte opponentLeftToDiscard;
 
     @Feature(scope = TABLE)
     @DataField
@@ -382,6 +395,10 @@ public class PolicyRecord {
     @Feature(scope = TABLE)
     @BitMask(validBits = 13)
     public short ownedBuildsMask;
+
+    @Feature(scope = TABLE)
+    @BitMask(validBits = 4)
+    public byte paymentChoiceContext;
 
     // =========================================================================
     // Phase upgrades — 5 бит на игрока
@@ -617,6 +634,10 @@ public class PolicyRecord {
     @BitMask(validBits = 64, lastElementBits = 12)
     public long[] selectableCardMask = new long[5];
 
+    @Feature(scope = TABLE)
+    @BitMask(validBits = 10)
+    public int selectedTagMask;
+
     // =========================================================================
     // Train targets — служебные поля, не участвуют в анализе и трансформации
     // =========================================================================
@@ -625,9 +646,65 @@ public class PolicyRecord {
     public short chosenLocalIndex = -1;
     public float outcome;
 
+    public float policyDelta;
+    public boolean finalizedDelta;
+    public boolean isBackwardPropagationStop;
+    public MarsGame marsReference;
+    public byte opponentDidTemperature;
+    public byte opponentDidOxygen;
+    public byte opponentOpenedOceans;
+
+    public long[] legalActionMask = new long[5];
+    public short legalHeadMask;
+
+    public boolean hasDistribution = false;
+    public short[] distIndices;   // локальные индексы легальных ходов
+    public float[] distProbs;     // вероятности (сумма = 1.0)
+
+    public void setDistribution(short[] localIndices, float[] probs) {//
+        this.hasDistribution = true;
+        this.distIndices = localIndices;
+        this.distProbs = probs;
+    }
+
     public void setAction(HeadAction action) {
         chosenHead = (byte) action.head().ordinal();
         chosenLocalIndex = (short) action.localIndex();
+    }
+
+    public void setLegalActionsMask(List<HeadAction> legalActions, byte chosenHead) {
+        Arrays.fill(legalActionMask, 0L);
+
+        for (HeadAction action : legalActions) {
+            if (action.head().ordinal() != chosenHead) {
+                continue;
+            }
+
+            int index = action.localIndex();
+
+            int bucket = index >>> 6;     // /64
+            int bit = index & 63;         // %64
+
+            legalActionMask[bucket] |= (1L << bit);
+        }
+    }
+
+    public void setLegalHeadMask(List<HeadAction> legalActions) {
+        // Сбрасываем маску (short занимает 16 бит, нам хватит для 10+ индексов)
+        this.legalHeadMask = 0;
+
+        for (HeadAction action : legalActions) {
+            // Получаем ординал головы (0-6 для рабочих голов, 7-9 для спец. пассов)
+            int headIdx = action.head().ordinal();
+
+            // Устанавливаем бит, соответствующий этой голове/пассу
+            // Например, если headIdx = 0 (BUILD), установится 1-й бит.
+            // Если headIdx = 7 (PASS_BUILD), установится 8-й бит.
+            this.legalHeadMask |= (1 << headIdx);
+        }
+        if (this.legalHeadMask == 0) {
+            System.out.println("WTF");
+        }
     }
 
     // =========================================================================
@@ -649,6 +726,7 @@ public class PolicyRecord {
         System.arraycopy(s.chosenPhaseMask, 0, chosenPhaseMask, 0, 2);
 
         isFirstPlayer = s.isFirstPlayer;
+        gameId = s.gameId;
 
         System.arraycopy(s.milestoneInGame, 0, milestoneInGame, 0, milestoneInGame.length);
         System.arraycopy(s.milestoneMyProgress, 0, milestoneMyProgress, 0, milestoneMyProgress.length);
@@ -670,6 +748,7 @@ public class PolicyRecord {
         doingMulligan = s.doingMulligan;
         pickingCorporation = s.pickingCorporation;
         payingForTheBuild = s.payingForTheBuild;
+        building = s.building;
         mulliganToDraw = s.mulliganToDraw;
         currentPhaseMask = s.currentPhaseMask;
 
@@ -682,6 +761,7 @@ public class PolicyRecord {
         universalPhaseUpgradeCount = s.universalPhaseUpgradeCount;
         choosingTag = s.choosingTag;
         cardsLeftToDiscard = s.cardsLeftToDiscard;
+        opponentLeftToDiscard = s.opponentLeftToDiscard;
         postBuildDiscarding = s.postBuildDiscarding;
         discardingFromSelected = s.discardingFromSelected;
         marsUniversityDiscardsLeft = s.marsUniversityDiscardsLeft;
@@ -719,6 +799,9 @@ public class PolicyRecord {
         fibrousComposite = s.fibrousComposite;
 
         ownedBuildsMask = s.ownedBuildsMask;
+        paymentChoiceContext = s.paymentChoiceContext;
+
+        selectedTagMask = s.selectedTagMask;
 
         System.arraycopy(s.phaseUpgrades, 0, phaseUpgrades, 0, 2);
         System.arraycopy(s.maxMcIncome, 0, maxMcIncome, 0, 2);
@@ -776,6 +859,18 @@ public class PolicyRecord {
         outcome = -1;
         chosenHead = -1;
         chosenLocalIndex = -1;
+        legalActionMask = new long[5];
+        legalHeadMask = 0;
+        policyDelta = 0;
+        finalizedDelta = false;
+        isBackwardPropagationStop = false;
+        marsReference = null;
+        opponentDidTemperature = 0;
+        opponentDidOxygen = 0;
+        opponentOpenedOceans = 0;
+        hasDistribution = false;
+        distIndices = null;
+        distProbs = null;
     }
 
     public void removeCardFromHand(Card card) {
@@ -822,6 +917,10 @@ public class PolicyRecord {
         selectableCardMask[wordIndex] |= bitMask;
     }
 
+    public void selectTag(int bitIndex) {
+        selectedTagMask = (1 << bitIndex);
+    }
+
     public void removeCardFromSelected(Card card) {
         if (card == null) return;
         int index = AiConstants.ALL_CARDS_INDEX_BY_CLASS.get(card.getClass());
@@ -838,6 +937,10 @@ public class PolicyRecord {
         mask &= ~(0b11 << shift);
         mask |= (upgradeType << shift);
         phaseUpgrades[0] = mask;
+    }
+
+    public void setPaymentChoiceContextByType(int type) {
+        paymentChoiceContext = (byte) (1 << type);
     }
 
     public int[] getPhaseUpgrades() {

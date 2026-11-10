@@ -2,6 +2,11 @@ package com.terraforming.ares.services.policyai.service;
 
 import com.terraforming.ares.cards.CardMetadata;
 import com.terraforming.ares.cards.blue.BacterialAggregates;
+import com.terraforming.ares.cards.blue.Decomposers;
+import com.terraforming.ares.cards.blue.MarsUniversity;
+import com.terraforming.ares.cards.blue.ViralEnhancers;
+import com.terraforming.ares.cards.green.BiomedicalImports;
+import com.terraforming.ares.cards.green.ImportedConstructionCrews;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.payments.Payment;
@@ -34,7 +39,7 @@ public class PolicyCardBuildParamsService {
         boolean decomposers;
     }
 
-    public List<Card> getMinimalBuildParamVariations(MarsGame game, Player player, List<Card> cards) {
+    public List<Card>  getMinimalBuildParamVariations(MarsGame game, Player player, List<Card> cards) {
         TagEffectContext tagEffectContext = new TagEffectContext();
         List<Card> playedCards = new ArrayList<>();
 
@@ -76,7 +81,7 @@ public class PolicyCardBuildParamsService {
 
                 for (List<Payment> possiblePayments : allPossibleCardPayments) {
 
-                    if (cardValidationService.validateCard(player, game, card.getId(), possiblePayments, inputParamsVariation) == null) {
+                    if (cardValidationService.validateCard(player, game, card, possiblePayments, inputParamsVariation) == null) {
 
                         result.add(card);
 
@@ -162,6 +167,9 @@ public class PolicyCardBuildParamsService {
         }
         if (cardAction == CardAction.BIOMEDICAL_IMPORTS || cardAction != null && AiConstants.CARD_ACTIONS_WITH_PHASE_UPGRADE_EFFECT.contains(cardAction)) {
             Map<Integer, List<Integer>> input = new HashMap<>();
+            if (cardAction == CardAction.BIOMEDICAL_IMPORTS) {
+                input.put(InputFlag.BIOMEDICAL_IMPORTS_UPGRADE_PHASE.getId(), List.of(0));
+            }
             input.put(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(Constants.PHASE_1_UPGRADE_DISCOUNT));
             input.putAll(getActiveInputFromCards(player, tagEffectContext, card, input));
             return List.of(input);
@@ -225,6 +233,12 @@ public class PolicyCardBuildParamsService {
             return List.of(Map.of(InputFlag.SYNTHETIC_CATASTROPHE_CARD.getId(), List.of(playedRedCards.getFirst().getId())));
         }
 
+        if (card.getClass() == MarsUniversity.class || card.getClass() == Decomposers.class || card.getClass() == ViralEnhancers.class) {
+            Map<Integer, List<Integer>> input = new HashMap<>();
+            input.putAll(getActiveInputFromCards(player, tagEffectContext, card, input));
+            return List.of(input);
+        }
+
         return List.of(Map.of());
     }
 
@@ -239,7 +253,7 @@ public class PolicyCardBuildParamsService {
 
     private Map<Integer, List<Integer>> getMarsUniversityInputIfApplicable(Player player, TagEffectContext tagEffectContext,
                                                                            Card card, Map<Integer, List<Integer>> input) {
-        if (!tagEffectContext.marsUniversity) {
+        if (!tagEffectContext.marsUniversity && card.getClass() != MarsUniversity.class) {
             return Map.of();
         }
 
@@ -253,7 +267,7 @@ public class PolicyCardBuildParamsService {
 
     private Map<Integer, List<Integer>> getDecomposersInputIfApplicable(Player player, TagEffectContext tagEffectContext,
                                                                         Card card, Map<Integer, List<Integer>> input) {
-        if (!tagEffectContext.decomposers) {
+        if (!tagEffectContext.decomposers && card.getClass() != Decomposers.class) {
             return Map.of();
         }
         int tagsCount = cardService.countCardTags(card, Set.of(Tag.ANIMAL, Tag.MICROBE, Tag.PLANT), input);
@@ -266,7 +280,7 @@ public class PolicyCardBuildParamsService {
 
     private Map<Integer, List<Integer>> getViralEnhancersInputIfApplicable(TagEffectContext tagEffectContext, Card card,
                                                                            Map<Integer, List<Integer>> input) {
-        if (!tagEffectContext.viralEnhancers) {
+        if (!tagEffectContext.viralEnhancers && card.getClass() != ViralEnhancers.class) {
             return Map.of();
         }
         int tagsCount = cardService.countCardTags(card, Set.of(Tag.ANIMAL, Tag.MICROBE, Tag.PLANT), input);

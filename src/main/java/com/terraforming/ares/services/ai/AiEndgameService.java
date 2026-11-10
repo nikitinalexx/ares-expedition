@@ -9,7 +9,6 @@ import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.SpecialEffectsService;
 import com.terraforming.ares.services.StandardProjectService;
 import com.terraforming.ares.services.ai.turnProcessors.AiTurnService;
-import com.terraforming.ares.services.policyai.PolicyCollectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -25,7 +24,6 @@ public class AiEndgameService {
     private final TestAiService testAiService;
     private final CardService cardService;
     private final SpecialEffectsService specialEffectsService;
-    private final PolicyCollectService policyCollectService;
 
     public boolean doFinalActionsIfGameFinished(MarsGame game, Player player) {
         if (!game.gameEndCondition()) {
@@ -99,7 +97,6 @@ public class AiEndgameService {
     }
 
     private void finalizeStandardProject(MarsGame game, Player player, StandardProjectType standardProjectType) {
-        policyCollectService.standardProjectTurn(game, player, standardProjectType);
         aiTurnService.standardProjectTurn(game, player, standardProjectType);
     }
 

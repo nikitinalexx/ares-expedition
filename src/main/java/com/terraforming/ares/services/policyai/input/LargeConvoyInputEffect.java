@@ -8,7 +8,6 @@ import com.terraforming.ares.services.policyai.ResourceHelper;
 import com.terraforming.ares.services.policyai.action.ActionInputService;
 import com.terraforming.ares.services.policyai.action.HeadAction;
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
-import com.terraforming.ares.services.policyai.rollout.EffectStateReader;
 import com.terraforming.ares.services.policyai.service.AbstractPolicyProcessor;
 import org.springframework.stereotype.Component;
 
@@ -45,7 +44,7 @@ public class LargeConvoyInputEffect extends AbstractPolicyProcessor implements I
         validActions.add(ActionInputService.takePlantTargetAction());
 
         record.largeConvoyEffect = true;
-        HeadAction best = predict(record, validActions);
+        HeadAction best = predict(record, validActions, null);
 
         if (best == ActionInputService.takePlantTargetAction()) {
             input.put(InputFlag.LARGE_CONVOY_PICK_PLANT.getId(), List.of());

@@ -84,7 +84,7 @@ public class StateContext {
         if (cardsPlayed.containsKey(ConservedBiome.class)) {
             conservedBiome = true;
         }
-        if (cardsPlayed.containsKey(FilterFeeders.class) || cardsPlayed.containsKey(BuffedFilterFeeders.class)) {
+        if (cardsPlayed.containsKey(FilterFeeders.class)) {
             filterFeeders = true;
         }
         if (cardsPlayed.containsKey(Fish.class)) {
@@ -211,9 +211,9 @@ public class StateContext {
         state.tr = (short) player.getTerraformingRating();
         state.forests = (short) player.getForests();
 
-        state.ghgBacteriaCount = (short) (player.getCardResourcesCount().getOrDefault(GhgProductionBacteria.class, 0).shortValue() + player.getCardResourcesCount().getOrDefault(BuffedGhgProductionBacteria.class, 0).shortValue());
+        state.ghgBacteriaCount = player.getCardResourcesCount().getOrDefault(GhgProductionBacteria.class, 0).shortValue();
         state.nitriteReductingBacteria = player.getCardResourcesCount().getOrDefault(NitriteReductingBacteria.class, 0).shortValue();
-        state.regolithEaters = (short) (player.getCardResourcesCount().getOrDefault(RegolithEaters.class, 0).shortValue() + player.getCardResourcesCount().getOrDefault(BuffedRegolithEaters.class, 0).shortValue());
+        state.regolithEaters = player.getCardResourcesCount().getOrDefault(RegolithEaters.class, 0).shortValue();
         state.selfReplicatingBacteria = player.getCardResourcesCount().getOrDefault(SelfReplicatingBacteria.class, 0).shortValue();
 
         state.anaerobicMicroorganisms = player.getCardResourcesCount().getOrDefault(AnaerobicMicroorganisms.class, 0).shortValue();

@@ -8,18 +8,18 @@ import static com.terraforming.ares.services.policyai.encoder.PolicyTableTagInco
 
 /**
  * Конвертирует PolicyRecord в float[1559]:
- *   [0..698]    = table  (699 элементов)
- *   [699..1290] = hand   (592 элемента)
- *   [1291..1558]= selectableCards (268 элементов)
+ *   [0..704]    = table  (700 элементов)
+ *   [705..1295] = hand   (592 элемента)
+ *   [1296..1564]= selectableCards (278 элементов)
  *
  * Порядок полей строго соответствует PolicyBatchLoader (чтение в INDArray).
  */
 @Service
 public class PolicyRecordFeatureConverter {
 
-    public static final int TABLE_SIZE    = 699;
+    public static final int TABLE_SIZE    = 705;
     public static final int HAND_SIZE     = 592;
-    public static final int SEL_SIZE      = 268;
+    public static final int SEL_SIZE      = 278;
     public static final int TOTAL_SIZE    = TABLE_SIZE + HAND_SIZE + SEL_SIZE; // 1559
 
     private static final int MILESTONE_COUNT = AiConstants.MILESTONE_TYPES.size();
@@ -153,6 +153,7 @@ public class PolicyRecordFeatureConverter {
         out[tc++] = r.doingMulligan      ? 1f : 0f;
         out[tc++] = r.pickingCorporation ? 1f : 0f;
         out[tc++] = r.payingForTheBuild  ? 1f : 0f;
+        out[tc++] = r.building           ? 1f : 0f;
         out[tc++] = (r.mulliganToDraw & 0xFF) / NormalizerConstants.mulliganToDraw;
 
         tc = putBits(out, tc, r.currentPhaseMask, 5);
@@ -168,6 +169,7 @@ public class PolicyRecordFeatureConverter {
         out[tc++] = r.sellingCards                    ? 1f : 0f;
         out[tc++] = r.helionExchanging                ? 1f : 0f;
         out[tc++] = (r.cardsLeftToDiscard & 0xFF)           / NormalizerConstants.cardsLeftToDiscard;
+        out[tc++] = (r.opponentLeftToDiscard & 0xFF)        / NormalizerConstants.cardsLeftToDiscard;
         out[tc++] = (r.marsUniversityDiscardsLeft & 0xFF)   / NormalizerConstants.marsUniversityDiscardsLeft;
         out[tc++] = (r.decomposersActivationsLeft & 0xFF)   / NormalizerConstants.decomposersActivationsLeft;
         out[tc++] = (r.viralEnhancersActivationsLeft & 0xFF)/ NormalizerConstants.viralEnhancersActivationsLeft;
@@ -201,6 +203,7 @@ public class PolicyRecordFeatureConverter {
 
         // ownedBuildsMask — 13 бит
         tc = putBits(out, tc, r.ownedBuildsMask, 13);
+        tc = putBits(out, tc, r.paymentChoiceContext, 4);
 
         // =====================================================================
         // TABLE_AND_HAND — phaseUpgrades[2] — 10 бит каждый
@@ -236,7 +239,7 @@ public class PolicyRecordFeatureConverter {
         // TABLE_AND_HAND — resources
         // =====================================================================
 
-        for (int i = 0; i < 2; i++) { short v = (short) (r.mc[i]     / NormalizerConstants.mc);     out[tc++] = v; out[hc++] = v; }
+        for (int i = 0; i < 2; i++) { float v = r.mc[i]     / NormalizerConstants.mc;     out[tc++] = v; out[hc++] = v; }
         for (int i = 0; i < 2; i++) { float v = r.plants[i] / NormalizerConstants.plants;  out[tc++] = v; out[hc++] = v; }
         for (int i = 0; i < 2; i++) { float v = r.heat[i]   / NormalizerConstants.heat;    out[tc++] = v; out[hc++] = v; }
 
@@ -377,6 +380,9 @@ public class PolicyRecordFeatureConverter {
 
         for (int word = 0; word < 4; word++) sc = putBits(out, sc, r.selectableCardMask[word], 64);
         sc = putBits(out, sc, r.selectableCardMask[4], 12);
+
+        // Записываем 10 бит из этого значения в sbuf, начиная с текущего sc
+        sc = putBits(out, sc, r.selectedTagMask, 10);
 
         // =====================================================================
         // Assertions (можно убрать в prod)

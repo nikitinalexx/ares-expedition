@@ -154,6 +154,7 @@ public class AiOptimalBuildService {
             Prediction oxygenPrediction = decisions.getOxygenPrediction();
 
             if (oxygenPrediction == null || oxygenPrediction.baseProb < bestPhaseUpgradeOverall.prediction.baseProb) {
+                result.put(InputFlag.BIOMEDICAL_IMPORTS_UPGRADE_PHASE.getId(), List.of(0));
                 result.put(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(decisions.getBestPhaseUpgradeOverall().value));
             } else {
                 result.put(InputFlag.BIOMEDICAL_IMPORTS_RAISE_OXYGEN.getId(), List.of(0));

@@ -4,13 +4,10 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Deck;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardService;
-import com.terraforming.ares.services.SpecialEffectsService;
 import com.terraforming.ares.services.ai.advanced.AdvancedAiDataCollectionService;
 import com.terraforming.ares.services.ai.dl4j.NNService;
 import com.terraforming.ares.services.ai.dl4j.Prediction;
 import com.terraforming.ares.services.ai.network2.dto.CardWithChanceModifier;
-import com.terraforming.ares.services.ai.turnProcessors.AiTurnService;
-import com.terraforming.ares.services.policyai.PolicyCollectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

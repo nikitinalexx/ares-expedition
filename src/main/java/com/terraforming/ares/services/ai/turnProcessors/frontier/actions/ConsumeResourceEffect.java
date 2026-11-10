@@ -15,9 +15,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 public enum ConsumeResourceEffect implements StateEffect {
-    GHG(s -> s.ghgBacteriaCount--, List.of(GhgProductionBacteria.class, BuffedGhgProductionBacteria.class), s -> s.ghgBacteriaCount > 0),
+    GHG(s -> s.ghgBacteriaCount--, List.of(GhgProductionBacteria.class), s -> s.ghgBacteriaCount > 0),
     NITRITE(s -> s.nitriteReductingBacteria--, List.of(NitriteReductingBacteria.class), s -> s.nitriteReductingBacteria > 0),
-    REGOLITH(s -> s.regolithEaters--, List.of(RegolithEaters.class, BuffedRegolithEaters.class), s -> s.regolithEaters > 0),
+    REGOLITH(s -> s.regolithEaters--, List.of(RegolithEaters.class), s -> s.regolithEaters > 0),
     SELF_REPLICATING(s -> s.selfReplicatingBacteria--, List.of(SelfReplicatingBacteria.class), s -> s.selfReplicatingBacteria > 0),
     ANAEROBIC(s -> s.anaerobicMicroorganisms--, List.of(AnaerobicMicroorganisms.class), s -> s.anaerobicMicroorganisms > 0),
     AGGREGATES(s -> s.bacterialAggregates--, List.of(BacterialAggregates.class), s -> s.bacterialAggregates > 0),

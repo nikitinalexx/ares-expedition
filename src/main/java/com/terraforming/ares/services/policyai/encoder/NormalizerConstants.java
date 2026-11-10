@@ -30,7 +30,7 @@ public class NormalizerConstants {
     public static float maxHeatIncome = 24f;
     public static float maxMcIncome = 38f;
     public static float maxPlantsIncome = 10f;
-    public static short mc = 589;
+    public static float mc = 589;
     public static float mcIncomeTotal = 158f;
     public static float microbePutCount = 3f;
     public static float microbeResources = 24f;

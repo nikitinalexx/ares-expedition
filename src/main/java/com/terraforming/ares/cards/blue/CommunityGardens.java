@@ -51,6 +51,6 @@ public class CommunityGardens implements BlueCard {
 
     @Override
     public int getPrice() {
-        return 20;
+        return 12;
     }
 }

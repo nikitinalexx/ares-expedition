@@ -10,7 +10,6 @@ import com.terraforming.ares.services.policyai.action.ActionInputService;
 import com.terraforming.ares.services.policyai.action.ActionRegistry;
 import com.terraforming.ares.services.policyai.action.HeadAction;
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
-import com.terraforming.ares.services.policyai.rollout.EffectStateReader;
 import com.terraforming.ares.services.policyai.service.AbstractPolicyProcessor;
 import org.springframework.stereotype.Component;
 
@@ -44,7 +43,7 @@ public class CryogenicShipmentInputEffect extends AbstractPolicyProcessor implem
             target = actionToCard.values().iterator().next();
         } else {
             record.cryogenicShipmentEffect = true;
-            HeadAction best = predict(record, new ArrayList<>(actionToCard.keySet()));
+            HeadAction best = predict(record, new ArrayList<>(actionToCard.keySet()), null);
             record.cryogenicShipmentEffect = false;
             target = actionToCard.get(best);
         }

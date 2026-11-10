@@ -8,7 +8,6 @@ import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.ai.AiPickCardProjectionService;
 import com.terraforming.ares.services.ai.ICardValueService;
 import com.terraforming.ares.services.ai.network2.Network2DiscardCardsProcessor;
-import com.terraforming.ares.services.policyai.PolicyCollectService;
 import com.terraforming.ares.services.policyai.service.PolicyDecisionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -28,7 +27,6 @@ public class AiSellCardsLastRoundTurn implements AiTurnProcessor {
     private final ICardValueService cardValueService;
     private final AiPickCardProjectionService aiPickCardProjectionService;
     private final Network2DiscardCardsProcessor network2DiscardCardsProcessor;
-    private final PolicyCollectService policyCollectService;
     private final PolicyDecisionService policyDecisionService;
 
     @Override

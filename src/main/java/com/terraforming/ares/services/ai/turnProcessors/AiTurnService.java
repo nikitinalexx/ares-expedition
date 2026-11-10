@@ -7,8 +7,6 @@ import com.terraforming.ares.model.request.ChooseCorporationRequest;
 import com.terraforming.ares.model.turn.*;
 import com.terraforming.ares.processors.turn.TurnProcessor;
 import com.terraforming.ares.services.*;
-import com.terraforming.ares.services.ai.AiCardValidationService;
-import com.terraforming.ares.services.policyai.PolicyCollectService;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -29,8 +27,6 @@ public class AiTurnService {
     private final TurnTypeService turnTypeService;
     private final StandardProjectService standardProjectService;
     private final CardService cardService;
-    private final AiCardValidationService aiCardValidationService;
-    private final PolicyCollectService policyCollectService;
 
     public AiTurnService(List<TurnProcessor<?>> turnProcessor,
                          CardValidationService cardValidationService,
@@ -38,9 +34,7 @@ public class AiTurnService {
                          TerraformingService terraformingService,
                          TurnTypeService turnTypeService,
                          StandardProjectService standardProjectService,
-                         CardService cardService,
-                         AiCardValidationService aiCardValidationService,
-                         PolicyCollectService policyCollectService) {
+                         CardService cardService) {
         this.cardValidationService = cardValidationService;
         this.paymentValidationService = paymentValidationService;
 
@@ -51,8 +45,6 @@ public class AiTurnService {
         this.turnTypeService = turnTypeService;
         this.standardProjectService = standardProjectService;
         this.cardService = cardService;
-        this.aiCardValidationService = aiCardValidationService;
-        this.policyCollectService = policyCollectService;
     }
 
     public void chooseCorporationTurn(MarsGame game, ChooseCorporationRequest chooseCorporationRequest) {

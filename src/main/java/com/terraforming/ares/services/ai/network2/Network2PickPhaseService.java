@@ -5,7 +5,6 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.DraftCardsService;
-import com.terraforming.ares.services.SpecialEffectsService;
 import com.terraforming.ares.services.ai.AiConstants;
 import com.terraforming.ares.services.ai.advanced.IDataCollect;
 import com.terraforming.ares.services.ai.dl4j.NNService;
@@ -27,6 +26,8 @@ public class Network2PickPhaseService {
     private static final int PHASE_5_ITERATIONS = 10;
 
     private final ScenarioEngine scenarioEngine;
+    private final TopkScenarioEngine topkScenarioEngine;
+
     private final BatchProjectionService batchProjectionService;
     private final NNService nnService;
     private final IDataCollect iDataCollect;
@@ -261,7 +262,7 @@ public class Network2PickPhaseService {
     }
 
     private Double getBestPhaseScenarioFinalChance(MarsGame game, Player player) {
-        List<Scenario> scenarios = scenarioEngine.generateAllScenarios(game, player);
+        List<Scenario> scenarios = topkScenarioEngine.generateAllScenarios(game, player);
         if (scenarios.isEmpty()) {
             return 0d;
         }
@@ -509,15 +510,36 @@ public class Network2PickPhaseService {
         }
     }
 
+    //    public <T> List<T> randomSubset(List<T> list, int count, Random rnd) {
+//        int size = list.size();
+//        if (count >= size) return list;
+//
+//        return rnd.ints(0, size)
+//                .distinct()
+//                .limit(count)
+//                .mapToObj(list::get)
+//                .collect(Collectors.toList());
+//    }
     public <T> List<T> randomSubset(List<T> list, int count, Random rnd) {
         int size = list.size();
         if (count >= size) return list;
 
-        return rnd.ints(0, size)
-                .distinct()
-                .limit(count)
-                .mapToObj(list::get)
-                .collect(Collectors.toList());
+        int[] indices = new int[size];
+        for (int i = 0; i < size; i++) indices[i] = i;
+
+        for (int i = 0; i < count; i++) {
+            int j = i + rnd.nextInt(size - i);
+            int tmp = indices[i];
+            indices[i] = indices[j];
+            indices[j] = tmp;
+        }
+
+        List<T> result = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) {
+            result.add(list.get(indices[i]));
+        }
+
+        return result;
     }
 
     public double getExpectedDeckValue(List<Double> deckDeltas, int cardsSeen, int cardsTaken) {

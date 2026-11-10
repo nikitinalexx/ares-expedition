@@ -3,14 +3,15 @@ package com.terraforming.ares.services.ai.dl4j;
 import com.terraforming.ares.services.policyai.action.ActionHead;
 
 public class PolicyPrediction {
-    public float value;             // Оценка позиции (0...1)
-    public float[] buildLogits;     // 268
-    public float[] sellLogits;      // 268
-    public float[] targetLogits;    // 90
-    public float[] blueLogits;      // 49
-    public float[] corpLogits;      // 25
-    public float[] smallLogits;     // 40
-    public float[] systemLogits;    // 6
+    public float outcome;             // Оценка позиции (0...1)
+    public float[] buildArgmax;     // 268
+    public float[] sellArgmax;      // 268
+    public float[] targetArgmax;    // 90
+    public float[] blueActionsArgmax;      // 49
+    public float[] corporationArgmax;      // 25
+    public float[] smallActionsArgmax;     // 40
+    public float[] systemActionsArgmax;    // 6
+    public float[] headSelArgmax; //7
 
     public PolicyPrediction() {
     }
@@ -19,19 +20,21 @@ public class PolicyPrediction {
     public float getActionProbability(ActionHead head, int actionId) {
         switch (head) {
             case BUILD:
-                return buildLogits[actionId];
+                return buildArgmax[actionId];
             case SELL_DISCARD:
-                return sellLogits[actionId];
+                return sellArgmax[actionId];
             case TARGET:
-                return targetLogits[actionId];
+                return targetArgmax[actionId];
             case BLUE:
-                return blueLogits[actionId];
+                return blueActionsArgmax[actionId];
             case CORPORATION:
-                return corpLogits[actionId];
+                return corporationArgmax[actionId];
             case SMALL:
-                return smallLogits[actionId];
+                return smallActionsArgmax[actionId];
             case SYSTEM:
-                return systemLogits[actionId];
+                return systemActionsArgmax[actionId];
+            case HEAD_SELECTION:
+                return headSelArgmax[actionId];
             default:
                 return 0f;
         }

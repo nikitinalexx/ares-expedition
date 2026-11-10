@@ -45,7 +45,7 @@ public class CeosFavoriteProjectInputEffect extends AbstractPolicyProcessor impl
             });
 
             record.ceosFavoriteProjectEffect = true;
-            HeadAction best = predict(record, new ArrayList<>(actionToCard.keySet()));
+            HeadAction best = predict(record, new ArrayList<>(actionToCard.keySet()), null);
             record.ceosFavoriteProjectEffect = false;
 
             target = actionToCard.get(best);

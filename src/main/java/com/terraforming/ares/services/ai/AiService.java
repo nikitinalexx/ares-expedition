@@ -3,10 +3,8 @@ package com.terraforming.ares.services.ai;
 import com.terraforming.ares.dto.ActionsDto;
 import com.terraforming.ares.factories.StateFactory;
 import com.terraforming.ares.mars.MarsGame;
-import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StateType;
-import com.terraforming.ares.model.ai.AiExperimentalTurn;
 import com.terraforming.ares.model.turn.TurnType;
 import com.terraforming.ares.services.GameService;
 import com.terraforming.ares.services.StateContextProvider;
@@ -15,6 +13,7 @@ import com.terraforming.ares.services.ai.turnProcessors.AiFirstPhaseActionProces
 import com.terraforming.ares.services.ai.turnProcessors.AiSecondPhaseActionProcessor;
 import com.terraforming.ares.services.ai.turnProcessors.AiThirdPhaseActionProcessor;
 import com.terraforming.ares.services.ai.turnProcessors.AiTurnProcessor;
+import com.terraforming.ares.services.policyai.GameArenaContext;
 import com.terraforming.ares.states.Action;
 import com.terraforming.ares.states.State;
 import org.springframework.stereotype.Service;
@@ -62,10 +61,12 @@ public class AiService {
     public void makeAiTurns(MarsGame game) {
         List<Player> filteredPlayers = game.getPlayerUuidToPlayer().values()
                 .stream()
-                .filter(Player::isComputer)
-                .filter(player -> !passTurnToRealPlayer(player, game)).collect(Collectors.toList());
+                .filter(player -> player.isComputer() || GameArenaContext.isSimulation())
+                .collect(Collectors.toList());
         Collections.shuffle(filteredPlayers);
-        filteredPlayers.forEach(player -> processAiTurn(game, player));
+        for (Player filteredPlayer : filteredPlayers) {
+            processAiTurn(game, filteredPlayer);
+        }
     }
 
     public boolean waitingAiTurns(MarsGame game) {
@@ -75,43 +76,15 @@ public class AiService {
 
         return !game.getPlayerUuidToPlayer().values()
                 .stream()
-                .filter(Player::isComputer)
+                .filter(player -> player.isComputer() || GameArenaContext.isSimulation())
                 .allMatch(player -> {
                             State currentState = stateFactory.getCurrentState(game);
                             boolean alreadyMadeATurn = player.getNextTurn() != null && turnTypeService.isTerminal(player.getNextTurn().getType(), game) && !player.getNextTurn().expectedAsNextTurn();
                             boolean noTurnsInCurrentPhase = player.getNextTurn() == null && currentState.getPossibleTurns(stateContextProvider.createStateContext(player.getUuid())).isEmpty();
-                            if (passTurnToRealPlayer(player, game)) {
-                                alreadyMadeATurn = true;//pass it to real player
-                            }
+
                             return alreadyMadeATurn || noTurnsInCurrentPhase;
                         }
                 );
-    }
-
-    private boolean passTurnToRealPlayer(Player player, MarsGame game) {
-        if (!player.isFirstBot() || !Constants.PLAYER_CHOOSES_CARDS_FOR_FIRST_PLAYER) {
-            return false;
-        }
-        State currentState = stateFactory.getCurrentState(game);
-
-        if (player.getNextTurn() == null) {
-            List<TurnType> possibleTurns = currentState.getPossibleTurns(stateContextProvider.createStateContext(player.getUuid()));
-            if (possibleTurns.contains(TurnType.MULLIGAN) || possibleTurns.contains(TurnType.SELL_CARDS_LAST_ROUND)) {
-                return true;
-            }
-        } else {
-            if (player.getNextTurn().getType() != TurnType.DISCARD_CARDS) {
-                return false;
-            }
-
-            if (game.getCurrentPhase() != Constants.PICK_CORPORATIONS_PHASE && game.getCurrentPhase() != Constants.DRAFT_CARDS_PHASE) {
-                return false;
-            }
-
-            return true;
-        }
-
-        return false;
     }
 
     private void processAiTurn(MarsGame game, Player player) {
@@ -137,7 +110,7 @@ public class AiService {
 
             if (turnProcessors.containsKey(turnToProcess)) {
                 turnProcessors.get(turnToProcess).processTurn(game, player);
-            } else if (turnToProcess == TurnType.BUILD_GREEN_PROJECT){
+            } else if (turnToProcess == TurnType.BUILD_GREEN_PROJECT) {
                 aiFirstPhaseActionProcessor.processTurn(possibleTurns, game, player);
             } else {
                 throw new IllegalArgumentException("Could not process the turn " + turnToProcess);

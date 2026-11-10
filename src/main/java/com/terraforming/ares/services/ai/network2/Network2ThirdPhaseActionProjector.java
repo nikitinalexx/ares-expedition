@@ -19,8 +19,6 @@ import com.terraforming.ares.services.ai.turnProcessors.frontier.Frontier;
 import com.terraforming.ares.services.ai.turnProcessors.frontier.Node;
 import com.terraforming.ares.services.ai.turnProcessors.frontier.State;
 import com.terraforming.ares.services.ai.turnProcessors.frontier.StateContext;
-import com.terraforming.ares.services.policyai.PolicyActionCollectService;
-import com.terraforming.ares.services.policyai.PolicyCollectService;
 import org.nd4j.common.io.CollectionUtils;
 import org.springframework.stereotype.Component;
 
@@ -57,8 +55,8 @@ public class Network2ThirdPhaseActionProjector extends AbstractPhaseProcessor {
             DroneAssistedConstruction.class
     );
 
-    protected Network2ThirdPhaseActionProjector(Network2PaymentService network2PaymentService, PolicyCollectService policyCollectService, PolicyActionCollectService policyActionCollectService, AiTurnService aiTurnService, CardService cardService, AiInputOptimizer aiInputOptimizer, ActionProjectionDataCollector actionProjectionDataCollector, IDataCollect iDataCollect, NNService nnService, AiOptimalBuildService aiOptimalBuildService, AiCardBuildInputAnalyzer aiCardBuildInputAnalyzer, StandardProjectService standardProjectService, Frontier frontier, SelfReplicatingBacteriaService selfReplicatingBacteriaService, AiMarsUniversityInputHandler aiMarsUniversityInputHandler) {
-        super(policyCollectService, policyActionCollectService, aiTurnService, aiMarsUniversityInputHandler, network2PaymentService);
+    protected Network2ThirdPhaseActionProjector(Network2PaymentService network2PaymentService, AiTurnService aiTurnService, CardService cardService, AiInputOptimizer aiInputOptimizer, ActionProjectionDataCollector actionProjectionDataCollector, IDataCollect iDataCollect, NNService nnService, AiOptimalBuildService aiOptimalBuildService, AiCardBuildInputAnalyzer aiCardBuildInputAnalyzer, StandardProjectService standardProjectService, Frontier frontier, SelfReplicatingBacteriaService selfReplicatingBacteriaService, AiMarsUniversityInputHandler aiMarsUniversityInputHandler) {
+        super(aiTurnService, aiMarsUniversityInputHandler);
         this.cardService = cardService;
         this.aiTurnService = aiTurnService;
         this.aiInputOptimizer = aiInputOptimizer;
@@ -783,9 +781,7 @@ public class Network2ThirdPhaseActionProjector extends AbstractPhaseProcessor {
         // 4. Bacteria & Microbe management
         performMicrobeAction(game, player, availableCards, NitriteReductingBacteria.class, game.getPlanetAtTheStartOfThePhase().isOceansMax());
         performMicrobeAction(game, player, availableCards, GhgProductionBacteria.class, game.getPlanetAtTheStartOfThePhase().isTemperatureMax());
-        performMicrobeAction(game, player, availableCards, BuffedGhgProductionBacteria.class, game.getPlanetAtTheStartOfThePhase().isTemperatureMax());
         performMicrobeAction(game, player, availableCards, RegolithEaters.class, game.getPlanetAtTheStartOfThePhase().isOxygenMax());
-        performMicrobeAction(game, player, availableCards, BuffedRegolithEaters.class, game.getPlanetAtTheStartOfThePhase().isOxygenMax());
 
         // 5. Fibrous Composite Material
         Card fibrous = availableCards.get(FibrousCompositeMaterial.class);

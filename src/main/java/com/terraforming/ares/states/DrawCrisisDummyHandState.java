@@ -39,7 +39,7 @@ public class DrawCrisisDummyHandState extends AbstractState {
         if (game.getPlayerUuidToPlayer().values().stream().allMatch(
                 player -> player.getNextTurn() == null
         )) {
-            game.setStateType(StateType.PICK_PHASE, context);
+            game.setStateTypeWithFinalize(StateType.PICK_PHASE, context);
         }
     }
 }

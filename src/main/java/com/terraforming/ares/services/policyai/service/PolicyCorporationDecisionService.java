@@ -5,12 +5,9 @@ import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.milestones.MilestoneType;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.ai.AiConstants;
-import com.terraforming.ares.services.ai.dl4j.PolicyNNService;
-import com.terraforming.ares.services.ai.dl4j.PolicyPrediction;
 import com.terraforming.ares.services.policyai.action.ActionInputService;
 import com.terraforming.ares.services.policyai.action.HeadAction;
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
-import com.terraforming.ares.services.policyai.encoder.PolicyRecordFeatureConverter;
 import com.terraforming.ares.services.policyai.encoder.PolicyTableAndHandEncoder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,8 +21,6 @@ import java.util.function.Consumer;
 @Service
 @RequiredArgsConstructor
 public class PolicyCorporationDecisionService {
-    private final PolicyNNService policyNNService;
-    private final PolicyRecordFeatureConverter policyRecordFeatureConverter;
     private final PolicyTableAndHandEncoder encoder;
     private final CardService cardService;
     private final PolicyActionSelector actionSelector;
@@ -298,11 +293,7 @@ public class PolicyCorporationDecisionService {
             legalTagChoiceAction.add(ActionInputService.chooseTag(i));
         }
 
-        PolicyPrediction tagPrediction = policyNNService
-                .predictBatch(List.of(policyRecordFeatureConverter.convert(mainRecord)), PolicyNNService.ModelType.FIRST)
-                .getFirst();
-
-        HeadAction bestTagAction = actionSelector.chooseBestAction(tagPrediction, legalTagChoiceAction);
+        HeadAction bestTagAction = actionSelector.chooseBestAction(mainRecord, legalTagChoiceAction, null);
         Tag bestTagChoice = Tag.values()[legalTagChoiceAction.indexOf(bestTagAction)];
 
         Map<Integer, List<Integer>> corporationInput = new HashMap<>();
@@ -323,6 +314,7 @@ public class PolicyCorporationDecisionService {
             case JUPITER -> mainRecord.jupiterTags[0]++;
             case MICROBE -> mainRecord.microbeTags[0]++;
         }
+        mainRecord.selectTag(bestTagChoice.ordinal());
 
         List<HeadAction> legalMilestoneChoiceActions = new ArrayList<>(game.getMilestones().size());
 
@@ -331,11 +323,7 @@ public class PolicyCorporationDecisionService {
             legalMilestoneChoiceActions.add(ActionInputService.austellarMilestoneChoice(AiConstants.MILESTONE_TYPES.indexOf(chosenMilestone)));
         }
 
-        PolicyPrediction milestonePrediction = policyNNService
-                .predictBatch(List.of(policyRecordFeatureConverter.convert(mainRecord)), PolicyNNService.ModelType.FIRST)
-                .getFirst();
-
-        HeadAction bestMilestoneAction = actionSelector.chooseBestAction(milestonePrediction, legalMilestoneChoiceActions);
+        HeadAction bestMilestoneAction = actionSelector.chooseBestAction(mainRecord, legalMilestoneChoiceActions, null);
         corporationInput.put(InputFlag.AUSTELLAR_CORPORATION_MILESTONE.getId(), List.of(legalMilestoneChoiceActions.indexOf(bestMilestoneAction)));
 
         return corporationInput;
@@ -356,13 +344,6 @@ public class PolicyCorporationDecisionService {
 
         recordCustomizer.accept(record);
 
-        PolicyPrediction prediction = policyNNService
-                .predictBatch(
-                        List.of(policyRecordFeatureConverter.convert(record)),
-                        PolicyNNService.ModelType.FIRST
-                )
-                .getFirst();
-
-        return actionSelector.chooseBestAction(prediction, legalActions);
+        return actionSelector.chooseBestAction(record, legalActions, null);
     }
 }

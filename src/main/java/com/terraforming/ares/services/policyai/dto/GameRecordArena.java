@@ -4,11 +4,14 @@ import java.util.Arrays;
 
 public final class GameRecordArena {
 
-    private PolicyRecord[] records = new PolicyRecord[512];
+    private PolicyRecord[] records;
     private int size;
 
-    public PolicyRecord next() {
+    public GameRecordArena(int initialCapacity) {
+        records = new PolicyRecord[initialCapacity];
+    }
 
+    public PolicyRecord next() {
         if (size == records.length) {
             records = Arrays.copyOf(
                     records,
@@ -44,5 +47,9 @@ public final class GameRecordArena {
 
     public int size() {
         return size;
+    }
+
+    public void setSize(int size) {
+        this.size = size;
     }
 }

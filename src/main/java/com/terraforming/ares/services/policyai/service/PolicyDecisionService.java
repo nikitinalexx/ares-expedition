@@ -4,36 +4,46 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.ai.AiConstants;
-import com.terraforming.ares.services.ai.dl4j.PolicyNNService;
 import com.terraforming.ares.services.ai.dl4j.PolicyPrediction;
+import com.terraforming.ares.services.ai.dto.MctsDecision;
+import com.terraforming.ares.services.policyai.GameArenaContext;
 import com.terraforming.ares.services.policyai.action.ActionInputService;
 import com.terraforming.ares.services.policyai.action.HeadAction;
 import com.terraforming.ares.services.policyai.dto.PolicyRecord;
-import com.terraforming.ares.services.policyai.encoder.PolicyRecordFeatureConverter;
+import com.terraforming.ares.services.policyai.encoder.IncomeCategory;
 import com.terraforming.ares.services.policyai.encoder.PolicyTableAndHandEncoder;
+import com.terraforming.ares.services.policyai.encoder.PolicyTableGreenCardsFeature;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 @RequiredArgsConstructor
 public class PolicyDecisionService {
+
     private final PolicyCorporationDecisionService policyCorporationDecisionService;
     private final PolicyCardsDecisionService policyCardsDecisionService;
     private final PolicyTableAndHandEncoder encoder;
-    private final PolicyNNService policyNNService;
-    private final PolicyRecordFeatureConverter policyRecordFeatureConverter;
     private final PolicyActionSelector actionSelector;
 
+    private PolicyMctsService policyMctsService;
+
+    @Lazy
+    @Autowired
+    public void setPolicyMctsService(PolicyMctsService policyMctsService) {
+        this.policyMctsService = policyMctsService;
+    }
 
     public List<Integer> mulliganCards(MarsGame game, Player currentPlayer) {
         return policyCardsDecisionService.mulliganCards(game, currentPlayer);
     }
-
 
     public int pickCorporation(MarsGame game, Player player) {
         return policyCorporationDecisionService.pickCorporation(game, player);
@@ -141,12 +151,100 @@ public class PolicyDecisionService {
             actionToPhase.put(action, phaseId);
         }
 
-        PolicyPrediction prediction = policyNNService.predictBatch(List.of(policyRecordFeatureConverter.convert(record)), PolicyNNService.ModelType.FIRST).getFirst();
+        if (GameArenaContext.isSimulation()) {
+            HeadAction chosen = actionSelector.chooseBestPhaseAction(record, validActions);
+            return actionToPhase.get(chosen);
+        }
 
-        HeadAction chosen = actionSelector.chooseBestAction(prediction, validActions);
+        PolicyPrediction policyPrediction = actionSelector.predict(record);
+        Map<Integer, Float> policyProbs = new HashMap<>();
+        actionToPhase.forEach((action, phaseId) -> {
+            policyProbs.put(phaseId, policyPrediction.getActionProbability(action.head(), action.localIndex()));
+        });
 
 
-        return actionToPhase.get(chosen);
+        MctsDecision mctsDecision = policyMctsService.runMctsPhaseSelection(policyProbs, game, player.getUuid(), anotherPlayer.getUuid());
+        int chosenPhase = mctsDecision.chosenPhase();
+        if (GameArenaContext.isArenaAvailable()) {
+            HeadAction bestAction = ActionInputService.choosePhaseTurn(chosenPhase);
+
+            record.setAction(bestAction);
+            record.setLegalActionsMask(validActions, record.chosenHead);
+            record.setLegalHeadMask(validActions);
+            if (AiConstants.POLICY_AVAILABLE) {
+                record.policyDelta = PolicyLogitDeltaHelper.calculateLogitAdvantage(mctsDecision.winnerAvgQ(), policyPrediction.outcome);
+                record.finalizedDelta = true;
+                record.isBackwardPropagationStop = true;
+
+                short[] localIndices = new short[validActions.size()];
+                float[] probs =  new float[validActions.size()];
+
+                for (int i = 0; i < validActions.size(); i++) {
+                    HeadAction action = validActions.get(i);
+                    localIndices[i] = (short) action.localIndex();
+                    probs[i] = mctsDecision.policyTarget().get(actionToPhase.get(action));
+                }
+
+                record.setDistribution(localIndices, probs);
+            }
+
+            GameArenaContext.current().add(record);
+        }
+        return chosenPhase;
     }
+
+    public Integer chooseCardForDoubleIncome(MarsGame game, Player player, List<Card> greenCards) {
+        if (!AiConstants.POLICY_PLAYING) {
+            return 0;
+        }
+
+        final List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
+        Player anotherPlayer = players.get(0) == player ? players.get(1) : players.get(0);
+
+        PolicyRecord record = new PolicyRecord();
+        encoder.encode(game, player, anotherPlayer, record);
+
+        Map<HeadAction, IncomeCategory> actionToCategory = new HashMap<>();
+        Map<HeadAction, Integer> actionToGreenCard = new HashMap<>();
+
+        if (record.maxMcIncome[0] > 0) {
+            actionToCategory.put(ActionInputService.specialPhasePaymentByIncomeType(IncomeCategory.MC), IncomeCategory.MC);
+        }
+        if (record.maxHeatIncome[0] > 0) {
+            actionToCategory.put(ActionInputService.specialPhasePaymentByIncomeType(IncomeCategory.HEAT), IncomeCategory.HEAT);
+        }
+        if (record.maxPlantsIncome[0] > 0) {
+            actionToCategory.put(ActionInputService.specialPhasePaymentByIncomeType(IncomeCategory.PLANT), IncomeCategory.PLANT);
+        }
+        if (record.maxCardsIncome[0] >= 1.0f) {
+            actionToCategory.put(ActionInputService.specialPhasePaymentByIncomeType(IncomeCategory.CARD), IncomeCategory.CARD);
+        }
+        for (Card greenCard : greenCards) {
+            Integer specialGreenCardIndex = AiConstants.GREEN_CARDS_INDEX_BY_CLASS.get(greenCard.getClass());
+            if (specialGreenCardIndex != null) {
+                actionToGreenCard.put(ActionInputService.specialGreenCardThatPays(specialGreenCardIndex), greenCard.getId());
+            }
+        }
+
+        if (actionToCategory.isEmpty() && actionToGreenCard.isEmpty()) {
+            return null;
+        }
+
+        List<HeadAction> validActions = new ArrayList<>(actionToCategory.keySet());
+        validActions.addAll(actionToGreenCard.keySet());
+
+        HeadAction chosen = actionSelector.chooseBestAction(record, validActions, null);
+
+        if (actionToCategory.containsKey(chosen)) {
+            Card bestCardByIncomeCategory = PolicyTableGreenCardsFeature.findBestCardByIncomeCategory(greenCards, actionToCategory.get(chosen), record);
+            if (bestCardByIncomeCategory == null) {
+                throw new IllegalStateException("No Card found for " + actionToCategory.get(chosen));
+            }
+            return bestCardByIncomeCategory.getId();
+        } else {
+            return actionToGreenCard.get(chosen);
+        }
+    }
+
 
 }

@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 public class Planet {
     @Singular
     private Map<GlobalParameter, MeasurableGlobalParameter> measurableGlobalParameters;
+    @Getter
     private List<Ocean> oceans;
     @Getter
     private int lastOpenedOceanIndex;
@@ -131,10 +132,6 @@ public class Planet {
             return measurableGlobalParameters.get(GlobalParameter.INFRASTRUCTURE).getCurrentColor();
         }
         return null;
-    }
-
-    public List<Ocean> getOceans() {
-        return oceans;
     }
 
     @JsonIgnore

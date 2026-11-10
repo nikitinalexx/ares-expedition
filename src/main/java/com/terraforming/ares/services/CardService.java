@@ -29,6 +29,8 @@ public class CardService {
     private final Map<Integer, CrysisCard> crysisCards;
     private final Map<Integer, Card> specialDummyCards;
 
+    private final Map<Integer, Card> allCardsIndex;
+
     private final Set<Integer> crysisCardsTier1;
     private final Set<Integer> crysisCardsTier2;
     private final Set<Integer> crysisCardsTier3;
@@ -56,6 +58,19 @@ public class CardService {
         this.crysisCardsTier3 = getCrysisCardsByTier(cardFactory, CardTier.T3);
         this.crysisCardsTier4 = getCrysisCardsByTier(cardFactory, CardTier.T4);
         this.crysisCardsTier5 = getCrysisCardsByTier(cardFactory, CardTier.T5);
+
+        // Единый индекс всех карт для O(1) поиска в getCard().
+        // Диапазоны id не пересекаются между источниками, порядок putAll не важен.
+        // buffedCorporationsMapping сюда не входит — это маппинг замены для createCorporationsDeck,
+        // а не самостоятельный источник карт: бафнутые корпорации уже есть в buffedCorporations.
+        Map<Integer, Card> index = new HashMap<>();
+        projects.values().forEach(index::putAll);   // 1–~500
+        index.putAll(baseCorporations);             // 10000–10017
+        index.putAll(discoveryCorporations);        // 10200–10206
+        index.putAll(buffedProjects);               // 5xxx
+        index.putAll(buffedCorporations);           // 10100–10108
+        index.putAll(specialDummyCards);            // AiConstants special ids
+        this.allCardsIndex = Collections.unmodifiableMap(index);
     }
 
     private Set<Integer> getCrysisCardsByTier(CardFactory cardFactory, CardTier tier) {
@@ -187,34 +202,7 @@ public class CardService {
     }
 
     public Card getCard(int id) {
-        Card card;
-
-        for (Map.Entry<Expansion, Map<Integer, Card>> expansionEntry : projects.entrySet()) {
-            card = expansionEntry.getValue().get(id);
-            if (card != null) {
-                return card;
-            }
-        }
-
-        card = discoveryCorporations.get(id);
-        if (card != null) {
-            return card;
-        }
-
-        card = baseCorporations.get(id);
-        if (card != null) {
-            return card;
-        }
-
-        if (buffedProjects.containsKey(id)) {
-            return buffedProjects.get(id);
-        }
-
-        if (specialDummyCards.containsKey(id)) {
-            return specialDummyCards.get(id);
-        }
-
-        return buffedCorporations.get(id);
+        return allCardsIndex.get(id);
     }
 
     public CrysisCard getCrysisCard(int id) {
