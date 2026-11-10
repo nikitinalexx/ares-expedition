@@ -16,8 +16,7 @@
     <description>Terraforming Mars</description>
 
     <properties>
-        <java.version>25</java.version>
-        <dl4j.version>1.0.0-M2.1</dl4j.version>
+        <java.version>21</java.version>
     </properties>
 
     <dependencies>
@@ -59,22 +58,11 @@
             <version>2.15.3</version>
         </dependency>
 
+        <!-- NETWORK_V2 inference is pure Java (see PureJavaValueNetwork): no DL4J / ND4J / CUDA needed at runtime -->
         <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-cuda-11.6-platform</artifactId>
-            <version>${dl4j.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-core</artifactId>
-            <version>${dl4j.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.datavec</groupId>
-            <artifactId>datavec-api</artifactId>
-            <version>${dl4j.version}</version>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+            <version>4.4</version>
         </dependency>
 
     </dependencies>

@@ -55,6 +55,45 @@ export class NewGameComponent implements OnInit {
       difficulty3: '',
       difficulty4: ''
     });
+
+    this.parentForm.valueChanges.subscribe(() => this.applyAiV2Rules());
+  }
+
+  /** True when some enabled computer slot uses AI v2 (NETWORK_V2). */
+  v2Selected(): boolean {
+    for (let i = 1; i <= this.parentForm.value.playerCount; i++) {
+      if (this.parentForm.get('computer' + i)?.value && this.parentForm.get('difficulty' + i)?.value === 'ai2') {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * AI (v1 and v2) is available only in a 2 player game. AI v2 was trained in one fixed configuration, so while it is
+   * selected the flags it requires are checked and locked (see the template) and the ones it can't play are unchecked.
+   */
+  private applyAiV2Rules(): void {
+    if (this.parentForm.value.playerCount !== '2') {
+      for (let i = 1; i <= 4; i++) {
+        const difficulty = this.parentForm.get('difficulty' + i)?.value;
+        if (difficulty === 'ai' || difficulty === 'ai2') {
+          this.parentForm.patchValue({['difficulty' + i]: ''}, {emitEvent: false});
+        }
+      }
+    }
+    if (this.v2Selected()) {
+      const v = this.parentForm.value;
+      if (!v.dummyHand || !v.mulligan || !v.improveWeakCorp || v.infrastructure || v.experimental) {
+        this.parentForm.patchValue({
+          dummyHand: true,
+          mulligan: true,
+          improveWeakCorp: true,
+          infrastructure: false,
+          experimental: false
+        }, {emitEvent: false});
+      }
+    }
   }
 
   anyDifficultyIsAi(): boolean {
@@ -68,6 +107,7 @@ export class NewGameComponent implements OnInit {
   }
 
   submitForm(formGroup: FormGroup) {
+    this.applyAiV2Rules();
     if (formGroup.valid) {
       const names = [];
       const computers = [];
@@ -112,6 +152,9 @@ export class NewGameComponent implements OnInit {
               break;
             case 'ai':
               computers.push('NETWORK');
+              break;
+            case 'ai2':
+              computers.push('NETWORK_V2');
               break;
           }
         } else {

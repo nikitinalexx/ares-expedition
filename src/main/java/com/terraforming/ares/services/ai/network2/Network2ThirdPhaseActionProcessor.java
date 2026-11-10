@@ -26,7 +26,7 @@ import com.terraforming.ares.services.ai.turnProcessors.frontier.State;
 import com.terraforming.ares.services.ai.turnProcessors.frontier.actions.ConsumeResourceEffect;
 import com.terraforming.ares.services.ai.turnProcessors.frontier.actions.PutMicrobeEffect;
 import lombok.RequiredArgsConstructor;
-import org.nd4j.common.io.CollectionUtils;
+import org.springframework.util.CollectionUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.*;

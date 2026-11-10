@@ -13,7 +13,7 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.ai.turnProcessors.frontier.actions.*;
 import lombok.RequiredArgsConstructor;
-import org.nd4j.common.io.CollectionUtils;
+import org.springframework.util.CollectionUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.*;

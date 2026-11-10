@@ -32,7 +32,7 @@ import com.terraforming.ares.services.simulations.DatasetWriter;
 import com.terraforming.ares.services.simulations.GameResultProducer;
 import com.terraforming.ares.services.simulations.SampleBatch;
 import lombok.RequiredArgsConstructor;
-import org.nd4j.common.primitives.AtomicDouble;
+import java.util.concurrent.atomic.DoubleAdder;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
@@ -105,14 +105,12 @@ public class GameController {
             }
 
             if (gameParameters.getComputers().stream().anyMatch(computer -> !Constants.AVAILABLE_DIFFICULTIES.contains(computer))) {
-                throw new IllegalArgumentException("Only Random/Smart/Network computers are supported");
+                throw new IllegalArgumentException("Unsupported computer difficulty");
             }
 
             if (!gameParameters.getExpansions().contains(Expansion.DISCOVERY)) {
                 throw new IllegalArgumentException("Discovery expansion is a default mode for this game");
             }
-
-            gameParameters.setComputers(List.of(PlayerDifficulty.NONE, PlayerDifficulty.NETWORK_V2));
 
             int aiPlayerCount = (int) gameParameters.getComputers().stream().filter(item -> item != PlayerDifficulty.NONE).count();
             int playersCount = gameParameters.getPlayerNames().size();
@@ -126,6 +124,31 @@ public class GameController {
 
             if (gameParameters.getComputers().contains(PlayerDifficulty.NETWORK) && gameParameters.getExpansions().contains(Expansion.INFRASTRUCTURE)) {
                 throw new IllegalArgumentException("AI computer doesn't know how to play Infrastructure");
+            }
+
+            if (gameParameters.getComputers().contains(PlayerDifficulty.NETWORK_V2)) {
+                // NETWORK_V2 was trained only on this exact configuration, any other mode makes it play badly or fail
+                if (playersCount != 2) {
+                    throw new IllegalArgumentException("AI v2 computer available only for 2 player game");
+                }
+                if (gameParameters.getExpansions().contains(Expansion.INFRASTRUCTURE)) {
+                    throw new IllegalArgumentException("AI v2 computer doesn't know how to play Infrastructure");
+                }
+                if (gameParameters.getExpansions().contains(Expansion.EXPERIMENTAL)) {
+                    throw new IllegalArgumentException("AI v2 computer doesn't support Experimental mode");
+                }
+                if (gameParameters.getExpansions().contains(Expansion.CRYSIS)) {
+                    throw new IllegalArgumentException("AI v2 computer doesn't support Crisis mode");
+                }
+                if (!gameParameters.isDummyHand()) {
+                    throw new IllegalArgumentException("AI v2 computer requires Dummy hand");
+                }
+                if (!gameParameters.isMulligan()) {
+                    throw new IllegalArgumentException("AI v2 computer requires Mulligan");
+                }
+                if (!gameParameters.getExpansions().contains(Expansion.BUFFED_CORPORATION)) {
+                    throw new IllegalArgumentException("AI v2 computer requires Improved corporations");
+                }
             }
 
             if (gameParameters.getPlayerNames().stream().anyMatch(name -> name.length() > 10)) {
@@ -260,8 +283,8 @@ public class GameController {
 
         Semaphore permits = new Semaphore(1000);
 
-        AtomicDouble defaultAtomic = new AtomicDouble(0);
-        AtomicDouble projectedAtomic = new AtomicDouble(0);
+        DoubleAdder defaultAtomic = new DoubleAdder();
+        DoubleAdder projectedAtomic = new DoubleAdder();
 
         int cardToTest = cardId;
 
@@ -325,8 +348,8 @@ public class GameController {
 
                         System.out.println("Default " + defaultRawValue + " proj " + projectedRawValue);
 
-                        defaultAtomic.addAndGet(defaultRawValue);
-                        projectedAtomic.addAndGet(projectedRawValue);
+                        defaultAtomic.add(defaultRawValue);
+                        projectedAtomic.add(projectedRawValue);
 
                     } catch (Throwable t) {
                         t.printStackTrace();
@@ -337,8 +360,8 @@ public class GameController {
             }
         }
 
-        System.out.println(defaultAtomic.get());
-        System.out.println(projectedAtomic.get());
+        System.out.println(defaultAtomic.sum());
+        System.out.println(projectedAtomic.sum());
     }
 
     @GetMapping("/simulations/v2")

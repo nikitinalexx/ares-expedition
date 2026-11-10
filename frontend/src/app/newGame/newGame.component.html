@@ -1,6 +1,9 @@
 <div class="bg-success mt-2 p-2 text-center text-white">
   AI Computer available in a 2 player game. Dummy hand will be enabled by default. For better performance enable Mulligan and Improved Corporations. Doesn't play ideally. Still a lot of work to do.
 </div>
+<div class="bg-info mt-2 p-2 text-center text-dark" *ngIf="v2Selected()">
+  AI v2 plays only a 2 player game with Mulligan, Improved corporations and Dummy hand (enabled automatically), without Infrastructure and Experimental.
+</div>
 <div class="bg-danger mt-2 p-2 text-center text-white"
      *ngIf="errorMessage != null">
   {{errorMessage}}
@@ -11,32 +14,32 @@
     <div class="bg-warning text-dark new-game-label" style="width: 260px; border-radius: 5px;">
       <label title="Improves certain corporations that from developer point of view are weak" for="improveWeakCorp"
              class="form-label">Improve weak corporations</label>
-      <input type="checkbox" class="form-check-input" id="improveWeakCorp" style="margin-left: 10px; float: right"
+      <input type="checkbox" class="form-check-input" id="improveWeakCorp" style="margin-left: 10px; float: right" [attr.disabled]="v2Selected() ? '' : null"
              formControlName="improveWeakCorp">
     </div>
     <div class="bg-warning text-dark new-game-label" style="width: 260px; border-radius: 5px; margin-top: 10px;">
       <label title="You may discard any number of initial cards to get the same amount of cards" for="mulliganChoice"
              class="form-label">Mulligan</label>
-      <input type="checkbox" class="form-check-input" id="mulliganChoice" style="margin-left: 10px; float: right"
+      <input type="checkbox" class="form-check-input" id="mulliganChoice" style="margin-left: 10px; float: right" [attr.disabled]="v2Selected() ? '' : null"
              formControlName="mulligan">
     </div>
 
     <div class="bg-warning text-dark new-game-label" style="width: 260px; border-radius: 5px; margin-top: 10px;" >
       <label for="dummyHand"
              class="form-label">Dummy hand <span class="bg-danger text-white">(plays 5 phases)</span></label>
-      <input type="checkbox" class="form-check-input" id="dummyHand" style="margin-left: 10px; float: right"
+      <input type="checkbox" class="form-check-input" id="dummyHand" style="margin-left: 10px; float: right" [attr.disabled]="v2Selected() ? '' : null"
              formControlName="dummyHand">
     </div>
     <div class="bg-warning text-dark new-game-label" style="width: 260px; border-radius: 5px; margin-top: 10px;">
       <label for="infrastructure"
              class="form-label">Infrastructure <span class="bg-danger text-white">(new!)</span></label>
-      <input type="checkbox" class="form-check-input" id="infrastructure" style="margin-left: 10px; float: right"
+      <input type="checkbox" class="form-check-input" id="infrastructure" style="margin-left: 10px; float: right" [attr.disabled]="v2Selected() ? '' : null"
              formControlName="infrastructure">
     </div>
     <div class="bg-warning text-dark new-game-label" style="width: 260px; border-radius: 5px; margin-top: 10px;">
       <label for="experimental"
              class="form-label">Experimental (list in menu)</label>
-      <input type="checkbox" class="form-check-input" id="experimental" style="margin-left: 10px; float: right"
+      <input type="checkbox" class="form-check-input" id="experimental" style="margin-left: 10px; float: right" [attr.disabled]="v2Selected() ? '' : null"
              formControlName="experimental">
     </div>
     <br/>
@@ -85,6 +88,10 @@
       <label *ngIf="parentForm.get('computer' + item)?.value && this.parentForm.value.playerCount === '2' && !this.parentForm.value.infrastructure && !this.parentForm.value.experimental" class="form-label p-1 mb-2 bg-warning text-dark "
              style="margin-left: 5px; border-radius: 5px;">Hard <span class="bg-success text-white">(AI)</span>
         <input type="radio" value="ai" style=" width: 30px" [formControlName]="'difficulty' + item" (click)="clickAiComputer()"></label>
+
+      <label *ngIf="parentForm.get('computer' + item)?.value && this.parentForm.value.playerCount === '2' && !this.parentForm.value.infrastructure && !this.parentForm.value.experimental" class="form-label p-1 mb-2 bg-warning text-dark "
+             style="margin-left: 5px; border-radius: 5px;">Expert <span class="bg-success text-white">(AI v2)</span>
+        <input type="radio" value="ai2" style=" width: 30px" [formControlName]="'difficulty' + item"></label>
 
       <label *ngIf="this.parentForm.value.playerCount !== '1'" class="form-label p-1 mb-2 bg-warning text-dark"
              style="margin-left: 5px; border-radius: 5px;">Advantage <input type="checkbox"
