@@ -17,7 +17,7 @@ class SimulationBenchTest extends EngineTestBase {
 
     @Test
     void benchPlaysAllRequestedGamesAndCountsThem() throws Exception {
-        SimulationBenchController.BenchResult result = controller.bench(24, 2, PlayerDifficulty.RANDOM, PlayerDifficulty.RANDOM, 4);
+        SimulationBenchController.BenchResult result = controller.bench(24, 2, PlayerDifficulty.RANDOM, PlayerDifficulty.RANDOM, 4, false);
 
         assertEquals(24, result.games());
         assertEquals(0, result.failedGames());
@@ -26,5 +26,15 @@ class SimulationBenchTest extends EngineTestBase {
         assertTrue(result.avgStepsPerGame() > 10, "a game has many steps: " + result.avgStepsPerGame());
         assertTrue(result.avgRounds() > 5 && result.avgRounds() < 100, "rounds per game: " + result.avgRounds());
         assertEquals(result.avgStepsPerGame() * result.games() / result.seconds(), result.stepsPerSecond(), 1e-6 * result.stepsPerSecond());
+    }
+
+    @Test
+    void benchWithEncodingCountsTwoEncodesPerStep() throws Exception {
+        SimulationBenchController.BenchResult result = controller.bench(10, 2, PlayerDifficulty.RANDOM, PlayerDifficulty.RANDOM, 2, true);
+
+        assertEquals(10, result.games());
+        assertEquals(0, result.failedGames());
+        // 2 players are encoded after every step
+        assertEquals(2 * result.stepsPerSecond(), result.encodesPerSecond(), 1e-6 * result.encodesPerSecond());
     }
 }

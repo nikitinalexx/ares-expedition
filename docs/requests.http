@@ -1,0 +1,17 @@
+### Замер скорости движка без ИИ (секунды). Запускать на ночной машине.
+GET http://localhost:8080/simulations/bench?games=3000&a=RANDOM&b=RANDOM
+
+### Стоимость кодирования состояния (минимум на одно решение агента без проекций): те же случайные игроки + кодирование обоих игроков на каждом шаге
+GET http://localhost:8080/simulations/bench?games=2000&a=RANDOM&b=RANDOM&encode=true
+
+### Эвристические игроки (до минуты)
+GET http://localhost:8080/simulations/bench?games=1000&a=SMART&b=SMART
+
+### V2 против V2. Для backend=java: games=100 (несколько минут); для backend=dl4j (GPU): games=300
+GET http://localhost:8080/simulations/bench?games=100&a=NETWORK_V2&b=NETWORK_V2
+
+### Сила: NETWORK (a) против NETWORK_V2 (b), места чередуются, с доверительным интервалом
+GET http://localhost:8080/simulations/compare?games=200&a=NETWORK&b=NETWORK_V2&concurrency=64
+
+### Все чекпоинты из папки candidates против NETWORK (100 партий на модель). Только backend=java
+GET http://localhost:8080/simulations/compare/models?dir=candidates&games=100&opponent=NETWORK&concurrency=64
