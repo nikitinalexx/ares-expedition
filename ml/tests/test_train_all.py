@@ -67,8 +67,11 @@ class TrainAllShared(unittest.TestCase):
         self.data = self.tmp / "data"
         self.data.mkdir()
         for i in range(2):
-            write_typed_chunk(self.data / f"PICK_PHASE.{i + 1:06d}.ares", "PICK_PHASE", 6, 80, i + 1)
-            write_typed_chunk(self.data / f"MULLIGAN.{i + 1:06d}.ares", "MULLIGAN", 10, 80, i + 10)
+            # Different schema hashes per type (as in real DecisionFile: candidate layout is part of the hash).
+            write_typed_chunk(self.data / f"PICK_PHASE.{i + 1:06d}.ares", "PICK_PHASE", 6, 80, i + 1,
+                              schema_hash="phasehash00000000")
+            write_typed_chunk(self.data / f"MULLIGAN.{i + 1:06d}.ares", "MULLIGAN", 10, 80, i + 10,
+                              schema_hash="mulliganhash00000")
 
     def tearDown(self):
         self._tmp.cleanup()

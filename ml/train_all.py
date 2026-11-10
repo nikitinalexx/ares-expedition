@@ -86,12 +86,12 @@ def train_shared(args, type_files):
     decisions = list(type_files.keys())
     schemas = {d: type_files[d][0] for d in decisions}
     files_by = {d: type_files[d][1] for d in decisions}
+    # Each DecisionType has its own schema hash (candidate layout is part of the hash). The shared trunk only
+    # requires the same observation vector width; per-type hashes are kept when exporting each head.
     obs_size = schemas[decisions[0]]["obsSize"]
     for d in decisions:
         if schemas[d]["obsSize"] != obs_size:
             raise SystemExit(f"{d} has obsSize {schemas[d]['obsSize']}, expected {obs_size}")
-        if schemas[d]["hash"] != schemas[decisions[0]]["hash"]:
-            raise SystemExit("all decision types must share the same observation schema hash")
 
     # pooled standardisation over every type's training rows
     all_files = [f for d in decisions for f in files_by[d]]
@@ -100,8 +100,9 @@ def train_shared(args, type_files):
     resumed = None
     if os.path.exists(checkpoint_path):
         resumed = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
-        if resumed.get("schema_hash") != schemas[decisions[0]]["hash"] or resumed.get("hidden") != hidden or set(resumed.get("decisions", [])) != set(decisions):
-            print("shared checkpoint ignored (schema/architecture/types differ)", file=sys.stderr)
+        if (resumed.get("obs_size") != obs_size or resumed.get("hidden") != hidden
+                or set(resumed.get("decisions", [])) != set(decisions)):
+            print("shared checkpoint ignored (obs size / architecture / types differ)", file=sys.stderr)
             resumed = None
     if resumed is not None:
         mean, std = resumed["mean"], resumed["std"]
@@ -222,7 +223,7 @@ def train_shared(args, type_files):
         print(json.dumps(history[-1]), flush=True)
         tmp = checkpoint_path + ".tmp"
         torch.save({"model": model.state_dict(), "optimizer": optimizer.state_dict(), "epoch": epoch + 1,
-                    "schema_hash": schemas[decisions[0]]["hash"], "hidden": hidden, "mean": mean, "std": std,
+                    "obs_size": obs_size, "hidden": hidden, "mean": mean, "std": std,
                     "decisions": decisions}, tmp)
         os.replace(tmp, checkpoint_path)
 
