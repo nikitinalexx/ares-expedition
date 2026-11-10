@@ -21,10 +21,10 @@
   "java": {
     "bin": "auto",
     "xmx": "10g",
-    "threads": 0
+    "threads": 1000
   },
   "selfplay": {
-    "games_per_chunk": 500,
+    "games_per_chunk": 2000,
     "stage_max_seconds": 3600,
     "temperature": 0.5
   },

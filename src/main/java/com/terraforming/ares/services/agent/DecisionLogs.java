@@ -17,9 +17,9 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -28,19 +28,19 @@ import java.util.concurrent.atomic.AtomicLong;
  * Off by default; {@link #startRecording(Path)} turns it on.
  * <p>
  * Files are written in <b>chunks</b>: {@code <dir>/<TYPE>.<chunk>.ares.tmp} while a chunk is open and renamed to
- * {@code <TYPE>.<chunk>.ares} (atomically) by {@link #rotate()} / {@link #stopRecording()}. A process that dies in the middle
- * leaves only {@code .tmp} files, which readers ignore - every finished chunk is complete and valid. All rows of one game
- * always land in the same chunk.
+ * {@code <TYPE>.<chunk>.ares} (atomically) by auto-rotate / {@link #rotate()} / {@link #stopRecording()}. A process that
+ * dies in the middle leaves only {@code .tmp} files, which readers ignore - every finished chunk is complete and valid.
+ * All rows of one game always land in the same chunk.
  * <p>
- * A decision can only be labelled after the game ends, so decisions wait in memory per game until {@link #finish(MarsGame)}.
- * Games that are never finished leak their buffers: always call finish (or {@link #discard(MarsGame)}).
- * <p>
- * Disk I/O runs on a dedicated writer thread: play threads only enqueue finished rows, so self-play is not serialized on
- * one global write lock (that used to keep a 20+ core machine at ~15% CPU while the disk spiked).
+ * Encoding (float16 pack) runs on the caller thread; a dedicated writer only appends bytes and rotates. The write queue
+ * is bounded (backpressure), matching the policy_ai DatasetWriter pattern so RAM does not explode when the disk lags.
  */
 @Service
 @RequiredArgsConstructor
 public class DecisionLogs {
+    private static final int WRITE_QUEUE_CAPACITY = 256;
+    private static final Object STOP = new Object();
+
     private record Pending(String playerUuid, Decision decision, int chosen, int round, int step) {
     }
 
@@ -49,18 +49,18 @@ public class DecisionLogs {
         final Map<String, Integer> steps = new HashMap<>();
     }
 
-    private record WriteItem(DecisionType type, int obsSize, int maxCandidates, int candidateFeatures,
-                             String observationLayout, DecisionFile.Row row) {
+    private record EncodedGame(List<EncodedRow> rows) {
+    }
+
+    private record EncodedRow(DecisionType type, int obsSize, int maxCandidates, int candidateFeatures,
+                              String observationLayout, byte[] bytes) {
     }
 
     private record RotateSignal(java.util.concurrent.CountDownLatch done) {
     }
 
-    private static final Object STOP = new Object();
-
     private final WinPointsService winPointsService;
 
-    // MarsGame uses identity equals/hashCode; ConcurrentHashMap avoids a global lock on every decision.
     private final Map<MarsGame, Buffer> pending = new ConcurrentHashMap<>();
     private final Object lock = new Object();
     private final Map<DecisionType, DecisionFile.Writer> writers = new EnumMap<>(DecisionType.class);
@@ -68,12 +68,15 @@ public class DecisionLogs {
     private final AtomicLong gameCounter = new AtomicLong();
     private final AtomicLong rowsWritten = new AtomicLong();
     private final AtomicLong chunksFinished = new AtomicLong();
-    private final BlockingQueue<Object> writeQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<Object> writeQueue = new ArrayBlockingQueue<>(WRITE_QUEUE_CAPACITY);
     private volatile Path directory;
     private volatile Thread writerThread;
     private volatile UncheckedIOException writeFailure;
     private int chunk = 1;
     private long gameIdBase;
+    /** 0 = only manual {@link #rotate()}; self-play sets this so workers never wait on disk. */
+    private int gamesPerChunk;
+    private int gamesInChunk;
 
     public boolean isRecording() {
         return directory != null;
@@ -88,6 +91,10 @@ public class DecisionLogs {
     }
 
     public void startRecording(Path dir) {
+        startRecording(dir, 0);
+    }
+
+    public void startRecording(Path dir, int gamesPerChunk) {
         stopRecording();
         synchronized (lock) {
             this.directory = dir;
@@ -96,6 +103,8 @@ public class DecisionLogs {
             this.rowsWritten.set(0);
             this.chunksFinished.set(0);
             this.chunk = 1;
+            this.gamesPerChunk = Math.max(0, gamesPerChunk);
+            this.gamesInChunk = 0;
             this.writeFailure = null;
             writeQueue.clear();
             try {
@@ -111,9 +120,12 @@ public class DecisionLogs {
      * Continue numbering chunks after the ones already in the directory (a restarted run must never overwrite finished chunks).
      */
     public void startRecordingAfterExisting(Path dir) {
-        startRecording(dir);
+        startRecordingAfterExisting(dir, 0);
+    }
+
+    public void startRecordingAfterExisting(Path dir, int gamesPerChunk) {
+        startRecording(dir, gamesPerChunk);
         synchronized (lock) {
-            // ids must stay unique over the whole run although every restart begins counting from zero
             this.gameIdBase = java.util.concurrent.ThreadLocalRandom.current().nextLong() & 0xFFFFFFFF00000000L;
             try (var files = Files.list(dir)) {
                 this.chunk = files.map(f -> f.getFileName().toString())
@@ -209,6 +221,7 @@ public class DecisionLogs {
             }
             writers.clear();
             openFiles.clear();
+            gamesInChunk = 0;
             if (any) {
                 chunk++;
                 chunksFinished.incrementAndGet();
@@ -234,7 +247,7 @@ public class DecisionLogs {
     }
 
     /**
-     * Labels the decisions of a finished game with its result and enqueues them for the writer thread.
+     * Labels the decisions of a finished game, encodes them on this thread, and enqueues bytes for the writer.
      */
     public void finish(MarsGame game) {
         rethrowWriteFailure();
@@ -260,7 +273,7 @@ public class DecisionLogs {
         }
 
         long gameId = gameIdBase + gameCounter.getAndIncrement();
-        List<WriteItem> batch = new ArrayList<>(list.size());
+        List<EncodedRow> encoded = new ArrayList<>(list.size());
         for (Pending p : list) {
             Player me = game.getPlayerByUuid(p.playerUuid());
             int myPoints = points.get(me.getUuid());
@@ -274,13 +287,15 @@ public class DecisionLogs {
                 ids[i] = d.candidates().get(i).id();
                 features[i] = d.candidates().get(i).features();
             }
+            DecisionFile.Schema schema = new DecisionFile.Schema(d.type(), d.observation().length,
+                    d.type().maxCandidates(), d.candidates().getFirst().features().length, d.type().observationLayout());
             DecisionFile.Row row = new DecisionFile.Row(d.observation(), ids.length, ids, features, p.chosen(),
                     players.indexOf(me), me.getDifficulty().agentContext(), p.round(), outcome, myPoints - otherPoints, gameId, p.step());
-            batch.add(new WriteItem(d.type(), d.observation().length, d.type().maxCandidates(),
-                    d.candidates().getFirst().features().length, d.type().observationLayout(), row));
+            encoded.add(new EncodedRow(d.type(), schema.obsSize(), schema.maxCandidates(), schema.candidateFeatures(),
+                    schema.observationLayout(), DecisionFile.encodeRow(schema, row)));
         }
         try {
-            writeQueue.put(batch);
+            writeQueue.put(new EncodedGame(encoded));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("interrupted while enqueueing decision rows", e);
@@ -319,15 +334,18 @@ public class DecisionLogs {
                     }
                     continue;
                 }
-                @SuppressWarnings("unchecked")
-                List<WriteItem> batch = (List<WriteItem>) item;
+                EncodedGame game = (EncodedGame) item;
                 synchronized (lock) {
                     if (directory == null) {
                         continue;
                     }
-                    for (WriteItem w : batch) {
-                        writerFor(w).write(w.row());
+                    for (EncodedRow row : game.rows()) {
+                        writerFor(row).writeEncoded(row.bytes());
                         rowsWritten.incrementAndGet();
+                    }
+                    gamesInChunk++;
+                    if (gamesPerChunk > 0 && gamesInChunk >= gamesPerChunk) {
+                        closeCurrentChunk();
                     }
                 }
             }
@@ -342,7 +360,7 @@ public class DecisionLogs {
         }
     }
 
-    private DecisionFile.Writer writerFor(WriteItem item) throws IOException {
+    private DecisionFile.Writer writerFor(EncodedRow item) throws IOException {
         DecisionFile.Writer writer = writers.get(item.type());
         if (writer == null) {
             DecisionFile.Schema schema = new DecisionFile.Schema(item.type(), item.obsSize(), item.maxCandidates(),

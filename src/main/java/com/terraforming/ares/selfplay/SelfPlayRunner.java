@@ -28,7 +28,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -50,6 +49,10 @@ public class SelfPlayRunner {
     public record Matchup(PlayerDifficulty a, PlayerDifficulty b, double weight) {
     }
 
+    /**
+     * @param threads in-flight games (virtual threads + semaphore), not platform-thread pool size — same idea as
+     *                {@code policy_ai} / {@code SimulationCompareController}
+     */
     public record Options(Path out, int games, int threads, List<Matchup> matchups, int gamesPerChunk,
                           long maxSeconds, Path stopFile, double maxFailureRatio, double minFreeGb) {
     }
@@ -65,7 +68,8 @@ public class SelfPlayRunner {
     public Summary run(Options options) throws IOException, InterruptedException {
         Files.createDirectories(options.out());
         deleteStaleTemporaryFiles(options.out());
-        decisionLogs.startRecordingAfterExisting(options.out());
+        // Writer auto-rotates every gamesPerChunk — workers never block on disk rename (policy_ai pattern).
+        decisionLogs.startRecordingAfterExisting(options.out(), options.gamesPerChunk());
         AgentPerfStats.reset();
 
         long start = System.nanoTime();
@@ -78,12 +82,12 @@ public class SelfPlayRunner {
         }
         AtomicLong lastLog = new AtomicLong(System.currentTimeMillis());
         String stoppedReason = "COMPLETED";
+        int cpuThreads = Math.max(1, Runtime.getRuntime().availableProcessors());
 
-        System.out.printf("[SELFPLAY] starting %d games on %d threads (chunk every %d)%n",
-                options.games(), options.threads(), options.gamesPerChunk());
-        ExecutorService pool = Executors.newFixedThreadPool(options.threads());
-        Semaphore inFlight = new Semaphore(options.threads() * 2);
-        try {
+        System.out.printf(Locale.ROOT, "[SELFPLAY] starting %d games, concurrency=%d virtual, cpus=%d, chunk every %d%n",
+                options.games(), options.threads(), cpuThreads, options.gamesPerChunk());
+        Semaphore inFlight = new Semaphore(Math.max(1, options.threads()));
+        try (ExecutorService pool = Executors.newVirtualThreadPerTaskExecutor()) {
             for (int i = 0; i < options.games(); i++) {
                 String reason = stopReason(options, start, failed.get(), attempted.get());
                 if (reason != null) {
@@ -109,10 +113,7 @@ public class SelfPlayRunner {
                         simulationProcessorService.processSimulation(game);
                         decisionLogs.finish(game);
                         perMatchup.get(label(matchup)).incrementAndGet();
-                        int done = played.incrementAndGet();
-                        if (done % options.gamesPerChunk() == 0) {
-                            decisionLogs.rotate();
-                        }
+                        played.incrementAndGet();
                     } catch (Throwable t) {
                         failed.incrementAndGet();
                         if (game != null) {
@@ -131,16 +132,11 @@ public class SelfPlayRunner {
                         System.out.printf(Locale.ROOT,
                                 "[SELFPLAY] %d/%d games, %d failed, %d rows, %d chunks | %s%n",
                                 played.get(), options.games(), failed.get(), decisionLogs.rowsWritten(), decisionLogs.chunksFinished(),
-                                perf.progressLine(seconds, options.threads(), gamesPerSecond));
+                                perf.progressLine(seconds, cpuThreads, gamesPerSecond));
                     }
                 });
             }
         } finally {
-            pool.shutdown();
-            if (!pool.awaitTermination(300, TimeUnit.SECONDS)) {
-                logError(options.out(), "games still running 300 s after the stop, they are abandoned", null);
-                pool.shutdownNow();
-            }
             decisionLogs.stopRecording(); // finishes the last chunk
         }
         if (stoppedReason.equals("COMPLETED") && failed.get() > 0 && failureRatioTooHigh(options, failed.get(), attempted.get())) {
@@ -155,7 +151,7 @@ public class SelfPlayRunner {
         writeSummary(options.out(), summary);
         double gamesPerSecond = summary.gamesPlayed() / Math.max(seconds, 1e-9);
         System.out.printf(Locale.ROOT, "[SELFPLAY] done: %s | %s%n", summary.stoppedReason(),
-                summary.perf().progressLine(seconds, options.threads(), gamesPerSecond));
+                summary.perf().progressLine(seconds, cpuThreads, gamesPerSecond));
         return summary;
     }
 
@@ -228,7 +224,9 @@ public class SelfPlayRunner {
 
     private static void writeSummary(Path out, Summary summary) throws IOException {
         double gamesPerSecond = summary.gamesPlayed() / Math.max(summary.seconds(), 1e-9);
-        Map<String, Object> perf = summary.perf().toMap(summary.seconds(), summary.threads(), gamesPerSecond);
+        int cpus = Math.max(1, Runtime.getRuntime().availableProcessors());
+        Map<String, Object> perf = summary.perf().toMap(summary.seconds(), cpus, gamesPerSecond);
+        perf.put("concurrency", summary.threads());
         StringBuilder json = new StringBuilder("{");
         json.append("\"stoppedReason\":\"").append(summary.stoppedReason()).append("\",");
         json.append("\"gamesRequested\":").append(summary.gamesRequested()).append(',');

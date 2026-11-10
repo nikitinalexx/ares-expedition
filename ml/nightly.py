@@ -646,7 +646,7 @@ class Pipeline:
                                 "--max-failure-ratio", str(sp["max_failure_ratio"]),
                                 # the Java process also guards itself, in case this supervisor dies
                                 "--min-free-gb", str(max((r for p, r in self.storage.reserves if volume_key(p) == volume_key(out)), default=0)),
-                                "--threads", str(self.cfg["java"]["threads"] or os.cpu_count()), *model_args)
+                                "--threads", str(self.cfg["java"]["threads"] or max(256, (os.cpu_count() or 8) * 32)), *model_args)
             result = run_command(cmd, log_path, sp["stage_max_seconds"] + 600, self.stop, graceful_file=stop_file, grace=sp["grace_seconds"],
                                  env=self.storage.child_env(), guard=self.storage.guard, guard_interval=self.storage.interval, tick=self.tick,
                                  low_priority=self.cfg["low_priority"])
@@ -755,8 +755,9 @@ class Pipeline:
         delta = {ref: scores[ref]["aScore"] - baselines[ref]["aScore"] for ref in refs}
         # a gain against an opponent the baseline already beats 85% of the time can not be big: measure it against the room that was left
         relative = {ref: delta[ref] / max(0.1, 1.0 - baselines[ref]["aScore"]) for ref in refs}
-        # the model is judged against ALL references (not only against SMART, whose heuristics it may have got used to)
-        score = sum(scores[ref]["aScore"] for ref in refs) / len(refs)
+        # Absolute win-rate vs SMART/NETWORK is near 0 early on; promotion uses mean gain over the no-model baseline.
+        win_rate = sum(scores[ref]["aScore"] for ref in refs) / len(refs)
+        score = sum(delta[ref] for ref in refs) / len(refs)
         alarm = None
         if "SMART" in refs and len(refs) > 1:
             others = [relative[r] for r in refs if r != "SMART"]
@@ -765,6 +766,7 @@ class Pipeline:
                      "meaning": "the model gained much more of the room it had against SMART than against the other opponents: it may have adapted to SMART's heuristics (noisy with few games)"}
         summary = {
             "score": score,
+            "win_rate": win_rate,
             "vs": {ref: {"score": s["aScore"], "low": s["aScoreCi95Low"], "high": s["aScoreCi95High"], "games": s["games"],
                          "baseline": baselines[ref]["aScore"], "gain": round(delta[ref], 4),
                          "gain_of_room": round(relative[ref], 4)} for ref, s in scores.items()},
@@ -825,13 +827,16 @@ class Pipeline:
         e["scores"].append(round(summary["score"], 4))
         e["last_iteration_seconds"] = round(now() - started, 1)
         best = e.get("best_score")
+        wr = summary.get("win_rate")
+        wr_txt = f", win_rate={wr:.3f}" if isinstance(wr, (int, float)) else ""
         if best is None or summary["score"] > best + self.cfg["promote_margin"]:
             e["best_score"] = round(summary["score"], 4)
             e["best_model"] = str(self.it_dir(exp, it) / "model")
             e["best_iteration"] = it
-            self.log(f"{exp} it{it}: score {summary['score']:.3f} -> PROMOTED to best")
+            why = "first scored model" if best is None else f"beat best {best:+.3f}"
+            self.log(f"{exp} it{it}: gain {summary['score']:+.3f}{wr_txt} -> PROMOTED ({why})")
         else:
-            self.log(f"{exp} it{it}: score {summary['score']:.3f} (best stays {best:.3f}, it{e.get('best_iteration')})")
+            self.log(f"{exp} it{it}: gain {summary['score']:+.3f}{wr_txt} (best stays {best:+.3f}, it{e.get('best_iteration')})")
         self.save_state()
         self.prune_old_data(protect_exp=exp, protect_it=it)
         return True

@@ -102,7 +102,9 @@ public final class SelfPlayMain {
     private static int play(ConfigurableApplicationContext context, Map<String, String> a) throws Exception {
         Path out = Path.of(required(a, "out"));
         int games = Integer.parseInt(required(a, "games"));
-        int threads = Integer.parseInt(a.getOrDefault("threads", String.valueOf(Runtime.getRuntime().availableProcessors())));
+        // In-flight virtual-thread games (policy_ai style). Default ≈ 32 per CPU — enough to hide disk backpressure.
+        int threads = Integer.parseInt(a.getOrDefault("threads",
+                String.valueOf(Math.max(256, Runtime.getRuntime().availableProcessors() * 32))));
         if (games < 1 || threads < 1) {
             throw new IllegalArgumentException("games and threads must be positive");
         }

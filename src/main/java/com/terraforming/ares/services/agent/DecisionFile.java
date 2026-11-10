@@ -90,7 +90,6 @@ public final class DecisionFile {
     public static final class Writer implements Closeable {
         private final Schema schema;
         private final OutputStream out;
-        private final ByteBuffer buffer;
 
         public Writer(Path path, Schema schema) throws IOException {
             if (schema.maxCandidates() > 255) {
@@ -101,7 +100,6 @@ public final class DecisionFile {
                 Files.createDirectories(path.getParent());
             }
             this.out = new BufferedOutputStream(Files.newOutputStream(path), 1 << 20);
-            this.buffer = ByteBuffer.allocate(schema.recordSize()).order(ByteOrder.LITTLE_ENDIAN);
 
             byte[] json = schema.toJson().getBytes(StandardCharsets.UTF_8);
             ByteBuffer header = ByteBuffer.allocate(4 + 2 + 4 + json.length).order(ByteOrder.LITTLE_ENDIAN);
@@ -110,36 +108,12 @@ public final class DecisionFile {
         }
 
         public synchronized void write(Row row) throws IOException {
-            if (row.observation().length != schema.obsSize()) {
-                throw new IllegalArgumentException("Observation has " + row.observation().length + " values, schema says " + schema.obsSize());
-            }
-            if (row.candidateCount() < 1 || row.candidateCount() > schema.maxCandidates()) {
-                throw new IllegalArgumentException("Candidate count " + row.candidateCount() + " is out of 1.." + schema.maxCandidates());
-            }
-            if (row.chosen() < 0 || row.chosen() >= row.candidateCount()) {
-                throw new IllegalArgumentException("Chosen " + row.chosen() + " is not one of " + row.candidateCount() + " candidates");
-            }
-            buffer.clear();
-            for (float v : row.observation()) {
-                buffer.putShort(toHalf(v));
-            }
-            buffer.put((byte) row.candidateCount());
-            for (int i = 0; i < schema.maxCandidates(); i++) {
-                int id = i < row.candidateCount() ? row.candidateIds()[i] : 0;
-                if (id < 0 || id > 0xFFFF) {
-                    throw new IllegalArgumentException("Candidate id " + id + " does not fit into 16 bits");
-                }
-                buffer.putShort((short) id);
-            }
-            for (int i = 0; i < schema.maxCandidates(); i++) {
-                for (int f = 0; f < schema.candidateFeatures(); f++) {
-                    buffer.putFloat(i < row.candidateCount() ? row.candidateFeatures()[i][f] : 0f);
-                }
-            }
-            buffer.put((byte) row.chosen()).put((byte) row.seat()).put((byte) row.context()).putShort((short) row.round());
-            buffer.putFloat(row.outcome()).putFloat(row.margin());
-            buffer.putLong(row.gameId()).putShort((short) row.step());
-            out.write(buffer.array(), 0, buffer.position());
+            writeEncoded(encodeRow(schema, row));
+        }
+
+        /** Already packed by {@link DecisionFile#encodeRow} — the writer thread only pushes bytes to disk. */
+        public synchronized void writeEncoded(byte[] encoded) throws IOException {
+            out.write(encoded);
         }
 
         @Override
@@ -181,6 +155,45 @@ public final class DecisionFile {
             }
             return new Content(schema, json, rows);
         }
+    }
+
+    /**
+     * Packs one row on the caller thread (virtual threads in self-play). The dedicated writer only appends the bytes.
+     */
+    public static byte[] encodeRow(Schema schema, Row row) {
+        if (row.observation().length != schema.obsSize()) {
+            throw new IllegalArgumentException("Observation has " + row.observation().length + " values, schema says " + schema.obsSize());
+        }
+        if (row.candidateCount() < 1 || row.candidateCount() > schema.maxCandidates()) {
+            throw new IllegalArgumentException("Candidate count " + row.candidateCount() + " is out of 1.." + schema.maxCandidates());
+        }
+        if (row.chosen() < 0 || row.chosen() >= row.candidateCount()) {
+            throw new IllegalArgumentException("Chosen " + row.chosen() + " is not one of " + row.candidateCount() + " candidates");
+        }
+        ByteBuffer packed = ByteBuffer.allocate(schema.recordSize()).order(ByteOrder.LITTLE_ENDIAN);
+        for (float v : row.observation()) {
+            packed.putShort(toHalf(v));
+        }
+        packed.put((byte) row.candidateCount());
+        for (int i = 0; i < schema.maxCandidates(); i++) {
+            int id = i < row.candidateCount() ? row.candidateIds()[i] : 0;
+            if (id < 0 || id > 0xFFFF) {
+                throw new IllegalArgumentException("Candidate id " + id + " does not fit into 16 bits");
+            }
+            packed.putShort((short) id);
+        }
+        for (int i = 0; i < schema.maxCandidates(); i++) {
+            for (int f = 0; f < schema.candidateFeatures(); f++) {
+                packed.putFloat(i < row.candidateCount() ? row.candidateFeatures()[i][f] : 0f);
+            }
+        }
+        packed.put((byte) row.chosen()).put((byte) row.seat()).put((byte) row.context()).putShort((short) row.round());
+        packed.putFloat(row.outcome()).putFloat(row.margin());
+        packed.putLong(row.gameId()).putShort((short) row.step());
+        byte[] bytes = new byte[packed.position()];
+        packed.flip();
+        packed.get(bytes);
+        return bytes;
     }
 
     /**
