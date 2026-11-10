@@ -6,6 +6,7 @@ import com.terraforming.ares.model.GameParameters;
 import com.terraforming.ares.model.PlayerDifficulty;
 import com.terraforming.ares.services.GameService;
 import com.terraforming.ares.services.SimulationProcessorService;
+import com.terraforming.ares.services.agent.AgentPerfStats;
 import com.terraforming.ares.services.agent.DecisionLogs;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -20,6 +21,7 @@ import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
@@ -53,7 +55,7 @@ public class SelfPlayRunner {
     }
 
     public record Summary(String stoppedReason, int gamesRequested, int gamesPlayed, int gamesFailed, long rows, long chunks,
-                          double seconds, Map<String, Integer> matchups) {
+                          double seconds, int threads, Map<String, Integer> matchups, AgentPerfStats.Snapshot perf) {
     }
 
     private final GameService gameService;
@@ -64,6 +66,7 @@ public class SelfPlayRunner {
         Files.createDirectories(options.out());
         deleteStaleTemporaryFiles(options.out());
         decisionLogs.startRecordingAfterExisting(options.out());
+        AgentPerfStats.reset();
 
         long start = System.nanoTime();
         AtomicInteger played = new AtomicInteger();
@@ -76,6 +79,8 @@ public class SelfPlayRunner {
         AtomicLong lastLog = new AtomicLong(System.currentTimeMillis());
         String stoppedReason = "COMPLETED";
 
+        System.out.printf("[SELFPLAY] starting %d games on %d threads (chunk every %d)%n",
+                options.games(), options.threads(), options.gamesPerChunk());
         ExecutorService pool = Executors.newFixedThreadPool(options.threads());
         Semaphore inFlight = new Semaphore(options.threads() * 2);
         try {
@@ -121,8 +126,12 @@ public class SelfPlayRunner {
                     long last = lastLog.get();
                     if (now - last >= 15_000 && lastLog.compareAndSet(last, now)) {
                         double seconds = (System.nanoTime() - start) / 1e9;
-                        System.out.printf("[SELFPLAY] %d/%d games, %d failed, %.1f games/s, %d rows, %d chunks%n",
-                                played.get(), options.games(), failed.get(), played.get() / seconds, decisionLogs.rowsWritten(), decisionLogs.chunksFinished());
+                        double gamesPerSecond = played.get() / seconds;
+                        AgentPerfStats.Snapshot perf = AgentPerfStats.snapshot();
+                        System.out.printf(Locale.ROOT,
+                                "[SELFPLAY] %d/%d games, %d failed, %d rows, %d chunks | %s%n",
+                                played.get(), options.games(), failed.get(), decisionLogs.rowsWritten(), decisionLogs.chunksFinished(),
+                                perf.progressLine(seconds, options.threads(), gamesPerSecond));
                     }
                 });
             }
@@ -140,9 +149,13 @@ public class SelfPlayRunner {
 
         Map<String, Integer> counts = new TreeMap<>();
         perMatchup.forEach((k, v) -> counts.put(k, v.get()));
+        double seconds = (System.nanoTime() - start) / 1e9;
         Summary summary = new Summary(stoppedReason, options.games(), played.get(), failed.get(), decisionLogs.rowsWritten(),
-                decisionLogs.chunksFinished(), (System.nanoTime() - start) / 1e9, counts);
+                decisionLogs.chunksFinished(), seconds, options.threads(), counts, AgentPerfStats.snapshot());
         writeSummary(options.out(), summary);
+        double gamesPerSecond = summary.gamesPlayed() / Math.max(seconds, 1e-9);
+        System.out.printf(Locale.ROOT, "[SELFPLAY] done: %s | %s%n", summary.stoppedReason(),
+                summary.perf().progressLine(seconds, options.threads(), gamesPerSecond));
         return summary;
     }
 
@@ -214,6 +227,8 @@ public class SelfPlayRunner {
     }
 
     private static void writeSummary(Path out, Summary summary) throws IOException {
+        double gamesPerSecond = summary.gamesPlayed() / Math.max(summary.seconds(), 1e-9);
+        Map<String, Object> perf = summary.perf().toMap(summary.seconds(), summary.threads(), gamesPerSecond);
         StringBuilder json = new StringBuilder("{");
         json.append("\"stoppedReason\":\"").append(summary.stoppedReason()).append("\",");
         json.append("\"gamesRequested\":").append(summary.gamesRequested()).append(',');
@@ -221,17 +236,39 @@ public class SelfPlayRunner {
         json.append("\"gamesFailed\":").append(summary.gamesFailed()).append(',');
         json.append("\"rows\":").append(summary.rows()).append(',');
         json.append("\"chunks\":").append(summary.chunks()).append(',');
-        json.append("\"seconds\":").append(String.format(java.util.Locale.ROOT, "%.1f", summary.seconds())).append(',');
+        json.append("\"seconds\":").append(String.format(Locale.ROOT, "%.1f", summary.seconds())).append(',');
+        json.append("\"threads\":").append(summary.threads()).append(',');
+        json.append("\"gamesPerSecond\":").append(String.format(Locale.ROOT, "%.2f", gamesPerSecond)).append(',');
         json.append("\"matchups\":{");
         boolean first = true;
         for (var e : summary.matchups().entrySet()) {
             json.append(first ? "" : ",").append('"').append(e.getKey()).append("\":").append(e.getValue());
             first = false;
         }
+        json.append("},\"perf\":{");
+        first = true;
+        for (var e : perf.entrySet()) {
+            json.append(first ? "" : ",");
+            first = false;
+            json.append('"').append(e.getKey()).append("\":");
+            Object v = e.getValue();
+            if (v instanceof String s) {
+                json.append('"').append(s.replace("\\", "\\\\").replace("\"", "\\\"")).append('"');
+            } else if (v instanceof Double d) {
+                json.append(String.format(Locale.ROOT, "%.4f", d).replaceAll("0+$", "").replaceAll("\\.$", ".0"));
+            } else {
+                json.append(v);
+            }
+        }
         json.append("}}");
+        String body = json.toString();
         Path tmp = out.resolve("summary.json.tmp");
-        Files.writeString(tmp, json.toString());
+        Files.writeString(tmp, body);
         Files.move(tmp, out.resolve("summary-" + Instant.now().toEpochMilli() + ".json"), StandardCopyOption.ATOMIC_MOVE);
+        // Stable name for nightly / handoff: last completed attempt of this process.
+        Path latestTmp = out.resolve("summary.latest.tmp");
+        Files.writeString(latestTmp, body);
+        Files.move(latestTmp, out.resolve("summary.json"), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
     }
 
     /**

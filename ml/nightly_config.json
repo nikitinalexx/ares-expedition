@@ -1,5 +1,6 @@
 {
   "hours": 8.0,
+  "low_priority": false,
   "storage": {
     "run_root": "D:/ares/runs",
     "data_root": "D:/ares/data",

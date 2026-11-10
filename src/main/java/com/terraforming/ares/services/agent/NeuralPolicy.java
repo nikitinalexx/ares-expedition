@@ -75,10 +75,14 @@ public class NeuralPolicy {
     public int choose(Decision decision) {
         MlpPhaseModel current = models.get(decision.type());
         if (current == null) {
+            AgentPerfStats.recordFallback();
             return -1;
         }
+        long started = System.nanoTime();
         float[] logits = current.logits(decision.observation(), decision.candidates());
-        return pick(logits, temperature);
+        int chosen = pick(logits, temperature);
+        AgentPerfStats.recordNeural(System.nanoTime() - started, decision.candidates().size());
+        return chosen;
     }
 
     private static DecisionFile.Schema schema(DecisionType type) {

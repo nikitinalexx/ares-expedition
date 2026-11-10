@@ -12,13 +12,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -32,6 +34,9 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p>
  * A decision can only be labelled after the game ends, so decisions wait in memory per game until {@link #finish(MarsGame)}.
  * Games that are never finished leak their buffers: always call finish (or {@link #discard(MarsGame)}).
+ * <p>
+ * Disk I/O runs on a dedicated writer thread: play threads only enqueue finished rows, so self-play is not serialized on
+ * one global write lock (that used to keep a 20+ core machine at ~15% CPU while the disk spiked).
  */
 @Service
 @RequiredArgsConstructor
@@ -39,16 +44,34 @@ public class DecisionLogs {
     private record Pending(String playerUuid, Decision decision, int chosen, int round, int step) {
     }
 
+    private static final class Buffer {
+        final List<Pending> list = new ArrayList<>();
+        final Map<String, Integer> steps = new HashMap<>();
+    }
+
+    private record WriteItem(DecisionType type, int obsSize, int maxCandidates, int candidateFeatures,
+                             String observationLayout, DecisionFile.Row row) {
+    }
+
+    private record RotateSignal(java.util.concurrent.CountDownLatch done) {
+    }
+
+    private static final Object STOP = new Object();
+
     private final WinPointsService winPointsService;
 
-    private final Map<MarsGame, List<Pending>> pending = Collections.synchronizedMap(new IdentityHashMap<>());
+    // MarsGame uses identity equals/hashCode; ConcurrentHashMap avoids a global lock on every decision.
+    private final Map<MarsGame, Buffer> pending = new ConcurrentHashMap<>();
     private final Object lock = new Object();
     private final Map<DecisionType, DecisionFile.Writer> writers = new EnumMap<>(DecisionType.class);
     private final Map<DecisionType, Path> openFiles = new EnumMap<>(DecisionType.class);
     private final AtomicLong gameCounter = new AtomicLong();
     private final AtomicLong rowsWritten = new AtomicLong();
     private final AtomicLong chunksFinished = new AtomicLong();
+    private final BlockingQueue<Object> writeQueue = new LinkedBlockingQueue<>();
     private volatile Path directory;
+    private volatile Thread writerThread;
+    private volatile UncheckedIOException writeFailure;
     private int chunk = 1;
     private long gameIdBase;
 
@@ -65,19 +88,22 @@ public class DecisionLogs {
     }
 
     public void startRecording(Path dir) {
+        stopRecording();
         synchronized (lock) {
-            stopRecording();
             this.directory = dir;
             this.gameCounter.set(0);
             this.gameIdBase = 0;
             this.rowsWritten.set(0);
             this.chunksFinished.set(0);
             this.chunk = 1;
+            this.writeFailure = null;
+            writeQueue.clear();
             try {
                 Files.createDirectories(dir);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
+            startWriterThread();
         }
     }
 
@@ -101,13 +127,25 @@ public class DecisionLogs {
     }
 
     public void stopRecording() {
+        Thread thread = writerThread;
+        if (thread != null && thread.isAlive()) {
+            try {
+                writeQueue.put(STOP);
+                thread.join(TimeUnit.MINUTES.toMillis(5));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                thread.interrupt();
+            }
+        }
         synchronized (lock) {
             if (directory != null) {
                 closeCurrentChunk();
             }
             directory = null;
+            writerThread = null;
         }
         pending.clear();
+        rethrowWriteFailure();
     }
 
     /**
@@ -115,6 +153,16 @@ public class DecisionLogs {
      * {@code .tmp} file that readers ignore.
      */
     public void abort() {
+        Thread thread = writerThread;
+        if (thread != null) {
+            thread.interrupt();
+            try {
+                thread.join(TimeUnit.SECONDS.toMillis(5));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        writeQueue.clear();
         synchronized (lock) {
             for (DecisionFile.Writer writer : writers.values()) {
                 try {
@@ -125,6 +173,7 @@ public class DecisionLogs {
             writers.clear();
             openFiles.clear();
             directory = null;
+            writerThread = null;
         }
         pending.clear();
     }
@@ -133,11 +182,21 @@ public class DecisionLogs {
      * Finishes the current chunk (all its files become visible to readers) and starts the next one.
      */
     public void rotate() {
-        synchronized (lock) {
-            if (directory != null) {
-                closeCurrentChunk();
-            }
+        rethrowWriteFailure();
+        if (directory == null) {
+            return;
         }
+        java.util.concurrent.CountDownLatch done = new java.util.concurrent.CountDownLatch(1);
+        try {
+            writeQueue.put(new RotateSignal(done));
+            if (!done.await(5, TimeUnit.MINUTES)) {
+                throw new IllegalStateException("decision-logs writer did not rotate within 5 minutes");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("interrupted while rotating decision logs", e);
+        }
+        rethrowWriteFailure();
     }
 
     private void closeCurrentChunk() {
@@ -163,10 +222,10 @@ public class DecisionLogs {
         if (directory == null) {
             return;
         }
-        List<Pending> list = pending.computeIfAbsent(game, g -> new ArrayList<>());
-        synchronized (list) {
-            int step = (int) list.stream().filter(p -> p.playerUuid().equals(player.getUuid())).count();
-            list.add(new Pending(player.getUuid(), decision, chosen, game.getTurns(), step));
+        Buffer buffer = pending.computeIfAbsent(game, g -> new Buffer());
+        synchronized (buffer) {
+            int step = buffer.steps.merge(player.getUuid(), 1, Integer::sum) - 1;
+            buffer.list.add(new Pending(player.getUuid(), decision, chosen, game.getTurns(), step));
         }
     }
 
@@ -175,11 +234,19 @@ public class DecisionLogs {
     }
 
     /**
-     * Labels the decisions of a finished game with its result and writes them.
+     * Labels the decisions of a finished game with its result and enqueues them for the writer thread.
      */
     public void finish(MarsGame game) {
-        List<Pending> list = pending.remove(game);
-        if (list == null || list.isEmpty() || directory == null) {
+        rethrowWriteFailure();
+        Buffer buffer = pending.remove(game);
+        if (buffer == null || directory == null) {
+            return;
+        }
+        List<Pending> list;
+        synchronized (buffer) {
+            list = buffer.list;
+        }
+        if (list.isEmpty()) {
             return;
         }
         List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
@@ -192,46 +259,106 @@ public class DecisionLogs {
             points.put(player.getUuid(), winPointsService.countWinPoints(player, game));
         }
 
-        synchronized (lock) {
-            if (directory == null) {
-                return;
-            }
-            long gameId = gameIdBase + gameCounter.getAndIncrement();
-            try {
-                for (Pending p : list) {
-                    Player me = game.getPlayerByUuid(p.playerUuid());
-                    int myPoints = points.get(me.getUuid());
-                    int otherPoints = points.entrySet().stream().filter(e -> !e.getKey().equals(me.getUuid())).findFirst().orElseThrow().getValue();
-                    float outcome = myPoints > otherPoints ? 1f : (myPoints == otherPoints ? 0.5f : 0f);
-                    Decision d = p.decision();
+        long gameId = gameIdBase + gameCounter.getAndIncrement();
+        List<WriteItem> batch = new ArrayList<>(list.size());
+        for (Pending p : list) {
+            Player me = game.getPlayerByUuid(p.playerUuid());
+            int myPoints = points.get(me.getUuid());
+            int otherPoints = points.entrySet().stream().filter(e -> !e.getKey().equals(me.getUuid())).findFirst().orElseThrow().getValue();
+            float outcome = myPoints > otherPoints ? 1f : (myPoints == otherPoints ? 0.5f : 0f);
+            Decision d = p.decision();
 
-                    float[][] features = new float[d.candidates().size()][];
-                    int[] ids = new int[d.candidates().size()];
-                    for (int i = 0; i < ids.length; i++) {
-                        ids[i] = d.candidates().get(i).id();
-                        features[i] = d.candidates().get(i).features();
-                    }
-                    writerFor(d).write(new DecisionFile.Row(d.observation(), ids.length, ids, features, p.chosen(),
-                            players.indexOf(me), me.getDifficulty().agentContext(), p.round(), outcome, myPoints - otherPoints, gameId, p.step()));
-                    rowsWritten.incrementAndGet();
-                }
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
+            float[][] features = new float[d.candidates().size()][];
+            int[] ids = new int[d.candidates().size()];
+            for (int i = 0; i < ids.length; i++) {
+                ids[i] = d.candidates().get(i).id();
+                features[i] = d.candidates().get(i).features();
             }
+            DecisionFile.Row row = new DecisionFile.Row(d.observation(), ids.length, ids, features, p.chosen(),
+                    players.indexOf(me), me.getDifficulty().agentContext(), p.round(), outcome, myPoints - otherPoints, gameId, p.step());
+            batch.add(new WriteItem(d.type(), d.observation().length, d.type().maxCandidates(),
+                    d.candidates().getFirst().features().length, d.type().observationLayout(), row));
+        }
+        try {
+            writeQueue.put(batch);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("interrupted while enqueueing decision rows", e);
         }
     }
 
-    private DecisionFile.Writer writerFor(Decision decision) throws IOException {
-        DecisionFile.Writer writer = writers.get(decision.type());
+    private void startWriterThread() {
+        Thread thread = new Thread(this::writeLoop, "decision-logs-writer");
+        thread.setDaemon(true);
+        writerThread = thread;
+        thread.start();
+    }
+
+    private void writeLoop() {
+        try {
+            while (true) {
+                Object item = writeQueue.take();
+                if (item == STOP) {
+                    synchronized (lock) {
+                        if (directory != null) {
+                            closeCurrentChunk();
+                        }
+                        directory = null;
+                    }
+                    return;
+                }
+                if (item instanceof RotateSignal signal) {
+                    try {
+                        synchronized (lock) {
+                            if (directory != null) {
+                                closeCurrentChunk();
+                            }
+                        }
+                    } finally {
+                        signal.done().countDown();
+                    }
+                    continue;
+                }
+                @SuppressWarnings("unchecked")
+                List<WriteItem> batch = (List<WriteItem>) item;
+                synchronized (lock) {
+                    if (directory == null) {
+                        continue;
+                    }
+                    for (WriteItem w : batch) {
+                        writerFor(w).write(w.row());
+                        rowsWritten.incrementAndGet();
+                    }
+                }
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (IOException e) {
+            writeFailure = new UncheckedIOException(e);
+        } catch (UncheckedIOException e) {
+            writeFailure = e;
+        } catch (RuntimeException e) {
+            writeFailure = new UncheckedIOException(new IOException(e));
+        }
+    }
+
+    private DecisionFile.Writer writerFor(WriteItem item) throws IOException {
+        DecisionFile.Writer writer = writers.get(item.type());
         if (writer == null) {
-            DecisionFile.Schema schema = new DecisionFile.Schema(decision.type(), decision.observation().length,
-                    decision.type().maxCandidates(), decision.candidates().getFirst().features().length,
-                    decision.type().observationLayout());
-            Path file = directory.resolve(String.format("%s.%06d.ares.tmp", decision.type(), chunk));
+            DecisionFile.Schema schema = new DecisionFile.Schema(item.type(), item.obsSize(), item.maxCandidates(),
+                    item.candidateFeatures(), item.observationLayout());
+            Path file = directory.resolve(String.format("%s.%06d.ares.tmp", item.type(), chunk));
             writer = new DecisionFile.Writer(file, schema);
-            writers.put(decision.type(), writer);
-            openFiles.put(decision.type(), file);
+            writers.put(item.type(), writer);
+            openFiles.put(item.type(), file);
         }
         return writer;
+    }
+
+    private void rethrowWriteFailure() {
+        UncheckedIOException failure = writeFailure;
+        if (failure != null) {
+            throw failure;
+        }
     }
 }

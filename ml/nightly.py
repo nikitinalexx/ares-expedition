@@ -658,7 +658,18 @@ class Pipeline:
 
         ok = self.with_retries(exp, it, "selfplay", attempt)
         if ok:
-            write_json(done_marker, {"games": count_games(out), "time": stamp()})
+            perf = read_json(out / "summary.json", {})
+            payload = {"games": count_games(out), "time": stamp()}
+            if perf:
+                payload["gamesPerSecond"] = perf.get("gamesPerSecond")
+                payload["seconds"] = perf.get("seconds")
+                payload["threads"] = perf.get("threads")
+                payload["perf"] = perf.get("perf")
+                hint = (perf.get("perf") or {}).get("hint")
+                gps = perf.get("gamesPerSecond")
+                share = (perf.get("perf") or {}).get("neuralCpuShare")
+                self.log(f"{exp} it{it} selfplay: {gps} games/s, neuralCpuShare={share}, {hint}")
+            write_json(done_marker, payload)
         return ok
 
     def stage_train(self, exp, exp_cfg, it):
@@ -1018,6 +1029,18 @@ def pack(run_dir, handoff_root=None):
     lines += ["| experiment | state | iterations | best score | scores per iteration |", "|---|---|---|---|---|"]
     for n, e in exps.items():
         lines.append(f"| {n} | {e['state']} | {e['iterations_done']} | {e.get('best_score')} | {e.get('scores')} |")
+    lines.append("")
+    lines += ["## Self-play throughput", "",
+              "| experiment | it | games/s | neural µs | inf/s | cpuShare | hint |",
+              "|---|---:|---:|---:|---:|---:|---|"]
+    for n in exps:
+        for i in range(1, exps[n]["iterations_done"] + 1):
+            sp = read_json(run_dir / "exp" / n / f"it_{i:04d}" / "selfplay.done", {}) or {}
+            perf = sp.get("perf") or {}
+            lines.append(
+                f"| {n} | {i} | {sp.get('gamesPerSecond', '-')} | {perf.get('neuralUsMean', '-')} | "
+                f"{perf.get('neuralInferencesPerSecond', '-')} | {perf.get('neuralCpuShare', '-')} | {perf.get('hint', '')} |"
+            )
     lines.append("")
     if best_name and exps[best_name].get("best_model") and Path(exps[best_name]["best_model"]).exists():
         shutil.copytree(exps[best_name]["best_model"], work / "best_model")

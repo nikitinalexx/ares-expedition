@@ -153,6 +153,7 @@ public class ObservationBuilder {
     }
 
     public float[] build(MarsGame game, Player player) {
+        long started = System.nanoTime();
         Player opponent = game.getPlayerUuidToPlayer().values().stream().filter(p -> !p.getUuid().equals(player.getUuid())).findFirst().orElseThrow();
 
         float[] v2 = baseEncoder.collectData(game, player.getUuid());
@@ -209,6 +210,7 @@ public class ObservationBuilder {
         if (pos != observation.length) {
             throw new IllegalStateException("The observation layout is inconsistent: wrote " + pos + " of " + observation.length);
         }
+        AgentPerfStats.recordObservation(System.nanoTime() - started);
         return observation;
     }
 
