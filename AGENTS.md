@@ -61,3 +61,13 @@
 - `docs/GAME_RULES.md` — правила, восстановленные по коду; `docs/AI_PLAN.md` — план нового ИИ; `docs/BUGS.md` — найденные баги.
 - Сравнение сил: `GET /simulations/compare?games=...&a=NETWORK&b=NETWORK_V2` и `GET /simulations/compare/models?dir=candidates&games=100` (чередуют места, дают доверительный интервал).
 - Режим инференса: `-Dares.nn.backend=java|dl4j|verify` (`dl4j`/`verify` требуют сборки `-Pdl4j-reference,dl4j-cuda` или `dl4j-cpu`).
+
+## Агент (новый ИИ, `services/agent`)
+- `PlayerDifficulty.AGENT`: решения, которые уже передали агенту (`DecisionType`), принимает `DecisionAgent`, остальные играются как SMART. Так можно вводить решения по одному и измерять вклад каждого.
+- Решение = `Decision` (наблюдение + список допустимых кандидатов). Наблюдение не должно содержать скрытую информацию (рука соперника, порядок колоды, порядок фаз dummy) — это проверяет тест.
+- Сейчас реализовано `PICK_PHASE` (`PickPhaseDecisions`, `PickPhaseDecisionsTest`); агент по умолчанию — `UniformRandomAgent`.
+- Запись решений: `DecisionLogs` + `DecisionFile` (формат `ARES`, фиксированные записи, схема с хэшем раскладки наблюдения). Включение: `GET /simulations/bench?...&a=AGENT&b=AGENT&record=<папка>`.
+  Читать из Python: `ml/ares_data.py` (`read_decisions`, `validate`), быстрая проверка файла: `python ml/check_decision_file.py <файл>`. Меняя энкодер/наблюдение, меняйте `observationLayout` типа решения — он входит в хэш схемы.
+- Ночной пайплайн: `ml/nightly.py` (+ `nightly.cmd`), подробности и команды — `docs/NIGHTLY.md`. Self-play в отдельном процессе без БД: `com.terraforming.ares.selfplay.SelfPlayMain` (профиль `selfplay`).
+  Тесты: `python -m unittest discover -s ml/tests -v` (быстрые), `RUN_E2E=1 python -m unittest ml.tests.test_e2e_real` (с настоящей Java).
+  Правила пайплайна: на диске C: ничего значимого не писать; резервы свободного места по томам; бюджет считается по рабочему времени; модели и оценки не удалять.

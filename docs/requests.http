@@ -15,3 +15,6 @@ GET http://localhost:8080/simulations/compare?games=200&a=NETWORK&b=NETWORK_V2&c
 
 ### Все чекпоинты из папки candidates против NETWORK (100 партий на модель). Только backend=java
 GET http://localhost:8080/simulations/compare/models?dir=candidates&games=100&opponent=NETWORK&concurrency=64
+
+### Запись решений агента для обучения: AGENT против AGENT/SMART, файлы <папка>/PICK_PHASE.ares (читаются ml/ares_data.py)
+GET http://localhost:8080/simulations/bench?games=2000&a=AGENT&b=AGENT&record=C:/data/run1

@@ -27,8 +27,7 @@ class GameInvariantsTest extends EngineTestBase {
      * Open findings (see docs/BUGS.md). They are still printed in the report, but do not fail the build; any NEW kind does.
      */
     static final List<String> KNOWN_ISSUES = List.of(
-            "FREE_TERRAFORMING",                       // global parameter raised without TR for anybody - root cause not found yet
-            "EXCEPTION_AssertionError:Negative plants" // FoodFactory / BiomassCombustors push plants below zero despite the validator
+            "FREE_TERRAFORMING" // global parameter raised without TR for anybody - root cause not found yet
     );
 
     static final int GAMES_PER_CONFIG = Integer.getInteger("invariants.games", 15);

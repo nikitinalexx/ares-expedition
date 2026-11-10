@@ -1,0 +1,239 @@
+package com.terraforming.ares.services.agent;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.Closeable;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.HexFormat;
+import java.util.List;
+
+/**
+ * Binary file with the decisions of ONE decision type (little endian, fixed size records).
+ * <pre>
+ *   header:  "ARES" | u16 version | u32 schemaLength | schema (UTF-8 JSON)
+ *   record:  float16 observation[obsSize] | u8 candidateCount | u8 candidateIds[maxCandidates]
+ *            | float32 candidateFeatures[maxCandidates * candidateFeatures] | u8 chosen | u8 seat | u8 context | u16 round
+ *            | float32 outcome | float32 margin | u64 gameId | u16 step
+ * </pre>
+ * {@code context} says who played everything the agent does not decide yet (0 = SMART, 1 = RANDOM): the learned decision must not
+ * be trusted blindly if it was only ever seen in one context.
+ * {@code outcome} is from the point of view of the player who made the decision: 1 win, 0.5 draw, 0 loss;
+ * {@code margin} is (win points of the player) - (win points of the opponent) at the end of the game.
+ * The observation is stored as float16 (halves the size of the files, the features are normalized to about [0, 2]);
+ * values that do not fit are rejected by the writer instead of silently becoming infinity.
+ * Candidates are padded with zeros up to {@code maxCandidates}; only the first {@code candidateCount} are real.
+ * The schema contains a hash of the observation layout so that a trainer can refuse files produced by a different encoder.
+ */
+public final class DecisionFile {
+    public static final int VERSION = 2;
+    private static final byte[] MAGIC = "ARES".getBytes(StandardCharsets.US_ASCII);
+
+    /**
+     * Describes the content of a file.
+     *
+     * @param observationLayout human readable description of the observation, part of the schema hash
+     */
+    public record Schema(DecisionType type, int obsSize, int maxCandidates, int candidateFeatures, String observationLayout) {
+        public String hash() {
+            try {
+                MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                String text = type + "|" + obsSize + "|" + maxCandidates + "|" + candidateFeatures + "|" + observationLayout;
+                return HexFormat.of().formatHex(digest.digest(text.getBytes(StandardCharsets.UTF_8))).substring(0, 16);
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
+        public String toJson() {
+            return "{\"type\":\"" + type + "\",\"obsSize\":" + obsSize + ",\"maxCandidates\":" + maxCandidates
+                    + ",\"candidateFeatures\":" + candidateFeatures + ",\"obsDtype\":\"f2\",\"hash\":\"" + hash()
+                    + "\",\"observationLayout\":\"" + observationLayout.replace("\\", "\\\\").replace("\"", "\\\"") + "\"}";
+        }
+
+        public int recordSize() {
+            return 2 * obsSize + 1 + maxCandidates + 4 * maxCandidates * candidateFeatures + 1 + 1 + 1 + 2 + 4 + 4 + 8 + 2;
+        }
+    }
+
+    /**
+     * One decision with its final result.
+     */
+    public record Row(float[] observation, int candidateCount, int[] candidateIds, float[][] candidateFeatures, int chosen,
+                      int seat, int context, int round, float outcome, float margin, long gameId, int step) {
+    }
+
+    private DecisionFile() {
+    }
+
+    public static final class Writer implements Closeable {
+        private final Schema schema;
+        private final OutputStream out;
+        private final ByteBuffer buffer;
+
+        public Writer(Path path, Schema schema) throws IOException {
+            this.schema = schema;
+            if (path.getParent() != null) {
+                Files.createDirectories(path.getParent());
+            }
+            this.out = new BufferedOutputStream(Files.newOutputStream(path), 1 << 20);
+            this.buffer = ByteBuffer.allocate(schema.recordSize()).order(ByteOrder.LITTLE_ENDIAN);
+
+            byte[] json = schema.toJson().getBytes(StandardCharsets.UTF_8);
+            ByteBuffer header = ByteBuffer.allocate(4 + 2 + 4 + json.length).order(ByteOrder.LITTLE_ENDIAN);
+            header.put(MAGIC).putShort((short) VERSION).putInt(json.length).put(json);
+            out.write(header.array());
+        }
+
+        public synchronized void write(Row row) throws IOException {
+            if (row.observation().length != schema.obsSize()) {
+                throw new IllegalArgumentException("Observation has " + row.observation().length + " values, schema says " + schema.obsSize());
+            }
+            if (row.candidateCount() < 1 || row.candidateCount() > schema.maxCandidates()) {
+                throw new IllegalArgumentException("Candidate count " + row.candidateCount() + " is out of 1.." + schema.maxCandidates());
+            }
+            if (row.chosen() < 0 || row.chosen() >= row.candidateCount()) {
+                throw new IllegalArgumentException("Chosen " + row.chosen() + " is not one of " + row.candidateCount() + " candidates");
+            }
+            buffer.clear();
+            for (float v : row.observation()) {
+                buffer.putShort(toHalf(v));
+            }
+            buffer.put((byte) row.candidateCount());
+            for (int i = 0; i < schema.maxCandidates(); i++) {
+                buffer.put((byte) (i < row.candidateCount() ? row.candidateIds()[i] : 0));
+            }
+            for (int i = 0; i < schema.maxCandidates(); i++) {
+                for (int f = 0; f < schema.candidateFeatures(); f++) {
+                    buffer.putFloat(i < row.candidateCount() ? row.candidateFeatures()[i][f] : 0f);
+                }
+            }
+            buffer.put((byte) row.chosen()).put((byte) row.seat()).put((byte) row.context()).putShort((short) row.round());
+            buffer.putFloat(row.outcome()).putFloat(row.margin());
+            buffer.putLong(row.gameId()).putShort((short) row.step());
+            out.write(buffer.array(), 0, buffer.position());
+        }
+
+        @Override
+        public synchronized void close() throws IOException {
+            out.close();
+        }
+    }
+
+    public record Content(Schema schema, String schemaJson, List<Row> rows) {
+    }
+
+    public static Content read(Path path) throws IOException {
+        try (InputStream in = new BufferedInputStream(Files.newInputStream(path), 1 << 20)) {
+            DataInputStream data = new DataInputStream(in);
+            byte[] magic = data.readNBytes(4);
+            if (!java.util.Arrays.equals(magic, MAGIC)) {
+                throw new IOException("Not an ARES decision file: " + path);
+            }
+            ByteBuffer small = ByteBuffer.wrap(data.readNBytes(6)).order(ByteOrder.LITTLE_ENDIAN);
+            int version = small.getShort();
+            int jsonLength = small.getInt();
+            if (version != VERSION) {
+                throw new IOException("Unsupported version " + version);
+            }
+            String json = new String(data.readNBytes(jsonLength), StandardCharsets.UTF_8);
+            Schema schema = parseSchema(json);
+
+            List<Row> rows = new ArrayList<>();
+            byte[] raw = new byte[schema.recordSize()];
+            while (true) {
+                int read = data.readNBytes(raw, 0, raw.length);
+                if (read == 0) {
+                    break;
+                }
+                if (read != raw.length) {
+                    throw new IOException("Truncated record: " + read + " of " + raw.length + " bytes");
+                }
+                rows.add(parseRow(ByteBuffer.wrap(raw).order(ByteOrder.LITTLE_ENDIAN), schema));
+            }
+            return new Content(schema, json, rows);
+        }
+    }
+
+    /**
+     * float16 can hold up to 65504; the normalized features are around [0, 2], anything huge or not finite is a bug in the encoder.
+     */
+    private static short toHalf(float v) {
+        if (!Float.isFinite(v) || Math.abs(v) > 60000f) {
+            throw new IllegalArgumentException("Observation value " + v + " can not be stored as float16");
+        }
+        return Float.floatToFloat16(v);
+    }
+
+    private static Row parseRow(ByteBuffer b, Schema schema) {
+        float[] observation = new float[schema.obsSize()];
+        for (int i = 0; i < observation.length; i++) {
+            observation[i] = Float.float16ToFloat(b.getShort());
+        }
+        int count = b.get() & 0xFF;
+        int[] ids = new int[schema.maxCandidates()];
+        for (int i = 0; i < ids.length; i++) {
+            ids[i] = b.get() & 0xFF;
+        }
+        float[][] features = new float[schema.maxCandidates()][schema.candidateFeatures()];
+        for (int i = 0; i < features.length; i++) {
+            for (int f = 0; f < schema.candidateFeatures(); f++) {
+                features[i][f] = b.getFloat();
+            }
+        }
+        int chosen = b.get() & 0xFF;
+        int seat = b.get() & 0xFF;
+        int context = b.get() & 0xFF;
+        int round = b.getShort() & 0xFFFF;
+        float outcome = b.getFloat();
+        float margin = b.getFloat();
+        long gameId = b.getLong();
+        int step = b.getShort() & 0xFFFF;
+        return new Row(observation, count, ids, features, chosen, seat, context, round, outcome, margin, gameId, step);
+    }
+
+    private static Schema parseSchema(String json) {
+        return new Schema(
+                DecisionType.valueOf(string(json, "type")),
+                (int) number(json, "obsSize"),
+                (int) number(json, "maxCandidates"),
+                (int) number(json, "candidateFeatures"),
+                string(json, "observationLayout").replace("\\\"", "\"").replace("\\\\", "\\"));
+    }
+
+    private static String string(String json, String key) {
+        String marker = "\"" + key + "\":\"";
+        int start = json.indexOf(marker) + marker.length();
+        StringBuilder value = new StringBuilder();
+        for (int i = start; i < json.length(); i++) {
+            char c = json.charAt(i);
+            if (c == '\\') {
+                value.append(c).append(json.charAt(++i));
+            } else if (c == '"') {
+                break;
+            } else {
+                value.append(c);
+            }
+        }
+        return value.toString();
+    }
+
+    private static double number(String json, String key) {
+        String marker = "\"" + key + "\":";
+        int start = json.indexOf(marker) + marker.length();
+        int end = start;
+        while (end < json.length() && (Character.isDigit(json.charAt(end)) || json.charAt(end) == '.')) {
+            end++;
+        }
+        return Double.parseDouble(json.substring(start, end));
+    }
+}

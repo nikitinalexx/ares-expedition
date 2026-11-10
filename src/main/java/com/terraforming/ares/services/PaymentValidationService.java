@@ -4,6 +4,7 @@ import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.*;
 import com.terraforming.ares.model.payments.Payment;
 import com.terraforming.ares.model.payments.PaymentType;
+import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.validation.payment.PaymentValidator;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -60,6 +61,19 @@ public class PaymentValidationService {
             String validationResult = paymentValidator.validate(card, player, payment);
             if (StringUtils.hasLength(validationResult)) {
                 return validationResult;
+            }
+        }
+
+        // Plants paid as a payment (Restructured Resources) and plants the card spends by itself come out of the same stock.
+        // Each of them is validated separately (payment validator / on built effect validator), so the sum must be checked here.
+        long plantPayments = payments.stream().filter(payment -> payment.getType() == PaymentType.RESTRUCTURED_RESOURCES).count();
+        if (plantPayments > 0) {
+            int cardPlantCost = card.getCardMetadata() == null ? 0 : card.getCardMetadata().getBonuses().stream()
+                    .filter(gain -> gain.getType() == GainType.PLANT && gain.getValue() < 0)
+                    .mapToInt(gain -> -gain.getValue())
+                    .sum();
+            if (player.getPlants() < plantPayments + cardPlantCost) {
+                return "Not enough Plants to perform payment";
             }
         }
 

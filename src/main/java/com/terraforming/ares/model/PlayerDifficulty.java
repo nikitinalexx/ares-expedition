@@ -38,6 +38,29 @@ public enum PlayerDifficulty {
             AiTurnChoice.NETWORK,
             AiExperimentalTurn.EXPERIMENT
     ),
+    /**
+     * Learnable agent. Decisions it already handles (see DecisionType) go to the agent, everything else is played like SMART.
+     */
+    AGENT(
+            AiCardsChoice.FILE_VALUE,
+            AiTurnChoice.SMART,
+            AiTurnChoice.SMART,
+            AiTurnChoice.SMART,
+            AiTurnChoice.SMART,
+            AiExperimentalTurn.REGULAR
+    ),
+    /**
+     * Same learnable agent, but everything it does not decide yet is played RANDOMLY instead of by SMART. Mixing it with AGENT in the
+     * data keeps the learned decisions from adapting to the hand written SMART heuristics only.
+     */
+    AGENT_R(
+            AiCardsChoice.RANDOM,
+            AiTurnChoice.RANDOM,
+            AiTurnChoice.RANDOM,
+            AiTurnChoice.RANDOM,
+            AiTurnChoice.RANDOM,
+            AiExperimentalTurn.REGULAR
+    ),
     NETWORK_V2(
             AiCardsChoice.RANDOM,
             AiTurnChoice.RANDOM,
@@ -62,6 +85,17 @@ public enum PlayerDifficulty {
         this.THIRD_PHASE_ACTION = THIRD_PHASE_ACTION;
         this.PHASE_TAG_UPGRADE = PHASE_TAG_UPGRADE;
         this.EXPERIMENTAL_TURN = EXPERIMENTAL_TURN;
+    }
+
+    public boolean isAgent() {
+        return this == AGENT || this == AGENT_R;
+    }
+
+    /**
+     * Who plays the decisions the agent does not take yet: 0 = SMART heuristics, 1 = RANDOM.
+     */
+    public int agentContext() {
+        return this == AGENT_R ? 1 : 0;
     }
 
     PlayerDifficulty() {

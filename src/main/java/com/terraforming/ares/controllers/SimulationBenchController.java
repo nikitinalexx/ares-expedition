@@ -8,6 +8,7 @@ import com.terraforming.ares.services.GameService;
 import com.terraforming.ares.services.SimulationProcessorService;
 import com.terraforming.ares.services.ai.advanced.AdvancedAiDataCollectionService;
 import com.terraforming.ares.services.ai.dl4j.NNService;
+import com.terraforming.ares.services.agent.DecisionLogs;
 import com.terraforming.ares.model.Player;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -36,12 +37,15 @@ public class SimulationBenchController {
     private final SimulationProcessorService simulationProcessorService;
     private final AdvancedAiDataCollectionService dataCollectionService;
     private final NNService nnService;
+    private final DecisionLogs decisionLogs;
 
     public record BenchResult(String a, String b, int threads, int games, int warmupGames, double seconds,
                               double gamesPerSecond, double stepsPerSecond, double avgStepsPerGame,
                               double avgRounds, int failedGames, int availableProcessors,
                               boolean encode, double encodesPerSecond,
-                              double nnCallsPerGame, double nnStatesPerGame, double nnStatesPerSecond) {
+                              double nnCallsPerGame, double nnStatesPerGame, double nnStatesPerSecond,
+                              long nnLargestBatchSinceStart, double nnCallsOver1000PerGame, double nnCallsOver10000PerGame,
+                              double nnShareOfStatesInBatchesOver1000) {
     }
 
     @GetMapping("/simulations/bench")
@@ -50,17 +54,33 @@ public class SimulationBenchController {
                              @RequestParam(defaultValue = "RANDOM") PlayerDifficulty a,
                              @RequestParam(defaultValue = "RANDOM") PlayerDifficulty b,
                              @RequestParam(defaultValue = "50") int warmup,
-                             @RequestParam(defaultValue = "false") boolean encode) throws InterruptedException {
+                             @RequestParam(defaultValue = "false") boolean encode,
+                             @RequestParam(defaultValue = "") String record) throws InterruptedException {
+        if (!record.isBlank()) {
+            decisionLogs.startRecording(java.nio.file.Path.of(record));
+        }
+        try {
+            return benchInternal(games, threads, a, b, warmup, encode);
+        } finally {
+            if (!record.isBlank()) {
+                decisionLogs.stopRecording();
+            }
+        }
+    }
+
+    private BenchResult benchInternal(int games, int threads, PlayerDifficulty a, PlayerDifficulty b, int warmup, boolean encode) throws InterruptedException {
         int poolSize = threads > 0 ? threads : Runtime.getRuntime().availableProcessors();
 
         runGames(warmup, poolSize, a, b, encode, new LongAdder(), new LongAdder(), new LongAdder(), new LongAdder(), new LongAdder());
 
         LongAdder steps = new LongAdder(), rounds = new LongAdder(), done = new LongAdder(), failed = new LongAdder(), encodes = new LongAdder();
         long[] nnBefore = nnService.inferenceCounters();
+        long[] tailBefore = nnService.inferenceTail();
         long start = System.nanoTime();
         runGames(games, poolSize, a, b, encode, steps, rounds, done, failed, encodes);
         double seconds = (System.nanoTime() - start) / 1e9;
         long[] nnAfter = nnService.inferenceCounters();
+        long[] tailAfter = nnService.inferenceTail();
         double nnCalls = nnAfter[0] - nnBefore[0];
         double nnStates = nnAfter[1] - nnBefore[1];
 
@@ -70,7 +90,11 @@ public class SimulationBenchController {
                 played == 0 ? 0 : (double) steps.sum() / played,
                 played == 0 ? 0 : (double) rounds.sum() / played,
                 (int) failed.sum(), Runtime.getRuntime().availableProcessors(), encode, encodes.sum() / seconds,
-                played == 0 ? 0 : nnCalls / played, played == 0 ? 0 : nnStates / played, nnStates / seconds);
+                played == 0 ? 0 : nnCalls / played, played == 0 ? 0 : nnStates / played, nnStates / seconds,
+                tailAfter[0],
+                played == 0 ? 0 : (double) (tailAfter[1] - tailBefore[1]) / played,
+                played == 0 ? 0 : (double) (tailAfter[2] - tailBefore[2]) / played,
+                nnStates == 0 ? 0 : (double) (tailAfter[3] - tailBefore[3]) / nnStates);
         System.out.println("[BENCH] " + result);
         return result;
     }
@@ -105,6 +129,7 @@ public class SimulationBenchController {
                     steps.add(stepCount[0]);
                     rounds.add(game.getTurns());
                     done.increment();
+                    decisionLogs.finish(game);
                 } catch (Throwable t) {
                     failed.increment();
                     t.printStackTrace();

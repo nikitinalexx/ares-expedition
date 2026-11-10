@@ -47,6 +47,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
     private final AiThirdPhaseProjectionService aiThirdPhaseProjectionService;
     private final AiCardValidationService aiCardValidationService;
     private final Network2PickPhaseService network2PickPhaseService;
+    private final com.terraforming.ares.services.agent.AgentDecisionService agentDecisionService;
 
     @Override
     public TurnType getType() {
@@ -55,6 +56,10 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
 
     @Override
     public boolean processTurn(MarsGame game, Player player) {
+        if (player.getDifficulty().isAgent()) {
+            aiTurnService.choosePhaseTurn(player, agentDecisionService.pickPhase(game, player));
+            return true;
+        }
         if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
             int phaseId = network2PickPhaseService.pickPhase(game, player);
             if (player.isFirstBot()) {

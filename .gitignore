@@ -49,3 +49,9 @@ build/
 
 # model checkpoints for strength sweeps (local only)
 candidates/
+
+# night pipeline (local config, runs, data)
+ml/nightly_config.json
+ml/__pycache__/
+ml/tests/__pycache__/
+runs/

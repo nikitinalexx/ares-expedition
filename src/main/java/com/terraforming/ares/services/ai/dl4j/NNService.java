@@ -59,6 +59,10 @@ public class NNService {
     // inference volume since start (calls of predictBatch and states in them); read by the benchmark
     private final LongAdder totalCalls = new LongAdder();
     private final LongAdder totalStates = new LongAdder();
+    private final AtomicLong maxBatch = new AtomicLong();
+    private final LongAdder calls1000 = new LongAdder();
+    private final LongAdder calls10000 = new LongAdder();
+    private final LongAdder states1000 = new LongAdder();
 
     public NNService() throws Exception {
         backend = Backend.valueOf(System.getProperty("ares.nn.backend", "java").trim().toUpperCase());
@@ -101,6 +105,14 @@ public class NNService {
 
         totalCalls.increment();
         totalStates.add(featuresBatch.size());
+        maxBatch.accumulateAndGet(featuresBatch.size(), Math::max);
+        if (featuresBatch.size() >= 1000) {
+            calls1000.increment();
+            states1000.add(featuresBatch.size());
+            if (featuresBatch.size() >= 10000) {
+                calls10000.increment();
+            }
+        }
         float[][] features = featuresBatch.toArray(new float[0][]);
         float[] probs = primary.get(modelType).predictBatch(features);
 
@@ -136,6 +148,11 @@ public class NNService {
     /** @return {calls of predictBatch, evaluated states} since the application started */
     public long[] inferenceCounters() {
         return new long[]{totalCalls.sum(), totalStates.sum()};
+    }
+
+    /** @return {largest batch, calls with >=1000 states, calls with >=10000 states, states inside calls with >=1000 states} */
+    public long[] inferenceTail() {
+        return new long[]{maxBatch.get(), calls1000.sum(), calls10000.sum(), states1000.sum()};
     }
 
     public void printVerifyStats() {

@@ -17,7 +17,7 @@ class SimulationBenchTest extends EngineTestBase {
 
     @Test
     void benchPlaysAllRequestedGamesAndCountsThem() throws Exception {
-        SimulationBenchController.BenchResult result = controller.bench(24, 2, PlayerDifficulty.RANDOM, PlayerDifficulty.RANDOM, 4, false);
+        SimulationBenchController.BenchResult result = controller.bench(24, 2, PlayerDifficulty.RANDOM, PlayerDifficulty.RANDOM, 4, false, "");
 
         assertEquals(24, result.games());
         assertEquals(0, result.failedGames());
@@ -30,7 +30,7 @@ class SimulationBenchTest extends EngineTestBase {
 
     @Test
     void benchWithEncodingCountsTwoEncodesPerStep() throws Exception {
-        SimulationBenchController.BenchResult result = controller.bench(10, 2, PlayerDifficulty.RANDOM, PlayerDifficulty.RANDOM, 2, true);
+        SimulationBenchController.BenchResult result = controller.bench(10, 2, PlayerDifficulty.RANDOM, PlayerDifficulty.RANDOM, 2, true, "");
 
         assertEquals(10, result.games());
         assertEquals(0, result.failedGames());
@@ -40,10 +40,10 @@ class SimulationBenchTest extends EngineTestBase {
 
     @Test
     void benchReportsNeuralNetworkInferenceVolume() throws Exception {
-        SimulationBenchController.BenchResult random = controller.bench(6, 2, PlayerDifficulty.RANDOM, PlayerDifficulty.RANDOM, 1, false);
+        SimulationBenchController.BenchResult random = controller.bench(6, 2, PlayerDifficulty.RANDOM, PlayerDifficulty.RANDOM, 1, false, "");
         assertEquals(0.0, random.nnStatesPerGame(), "random players never call the network");
 
-        SimulationBenchController.BenchResult network = controller.bench(2, 2, PlayerDifficulty.NETWORK_V2, PlayerDifficulty.NETWORK_V2, 0, false);
+        SimulationBenchController.BenchResult network = controller.bench(2, 2, PlayerDifficulty.NETWORK_V2, PlayerDifficulty.NETWORK_V2, 0, false, "");
         assertTrue(network.nnCallsPerGame() > 10, "NETWORK_V2 evaluates states with the network: " + network.nnCallsPerGame());
         assertTrue(network.nnStatesPerGame() >= network.nnCallsPerGame(), "a call evaluates at least one state");
         assertEquals(network.nnStatesPerGame() * network.games() / network.seconds(), network.nnStatesPerSecond(), 1e-6 * network.nnStatesPerSecond());
