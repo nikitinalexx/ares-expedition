@@ -21,6 +21,7 @@ import json
 import math
 import os
 import platform
+import re
 import shutil
 import signal
 import subprocess
@@ -268,12 +269,63 @@ def run_command(cmd, log_path, timeout, stop, cwd=ROOT, env=None, graceful_file=
             time.sleep(poll)
 
 
+# ------------------------------------------------------------------------------------------------ Java discovery
+
+def java_major(java_bin):
+    """Major version of a java executable or None if it does not run."""
+    try:
+        out = subprocess.run([str(java_bin), "-version"], capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    match = re.search(r'version "(\d+)', (out.stderr or "") + (out.stdout or ""))
+    return int(match.group(1)) if match else None
+
+
+def find_java(configured="auto", minimum=21):
+    """The first java >= minimum: the configured one, JAVA_HOME, PATH, then the usual JDK folders (IntelliJ keeps its JDKs in ~/.jdks).
+
+    Returns (path, major) or (None, None). A Java 11 on PATH (common) is skipped instead of failing later with a confusing error."""
+    exe = "java.exe" if platform.system() == "Windows" else "java"
+    candidates = []
+    if configured and configured != "auto":
+        candidates.append(configured)
+    if os.environ.get("JAVA_HOME"):
+        candidates.append(Path(os.environ["JAVA_HOME"]) / "bin" / exe)
+    on_path = shutil.which("java")
+    if on_path:
+        candidates.append(on_path)
+    roots = [Path.home() / ".jdks"]
+    for env in ("ProgramFiles", "ProgramFiles(x86)"):
+        base = os.environ.get(env)
+        if base:
+            roots += [Path(base) / "Java", Path(base) / "Eclipse Adoptium", Path(base) / "Microsoft", Path(base) / "Amazon Corretto",
+                      Path(base) / "BellSoft", Path(base) / "Zulu"]
+    for root in roots:
+        if root.exists():
+            candidates += sorted(root.glob(f"*/bin/{exe}"), reverse=True)
+    seen = set()
+    for candidate in candidates:
+        key = str(candidate)
+        if key in seen:
+            continue
+        seen.add(key)
+        major = java_major(candidate)
+        if major and major >= minimum:
+            return str(candidate), major
+    return None, None
+
+
+def java_home_of(java_bin):
+    """JAVA_HOME for Maven: the folder above bin/."""
+    return str(Path(java_bin).resolve().parent.parent)
+
+
 # ------------------------------------------------------------------------------------------------ configuration
 
 DEFAULT_CONFIG = {
     "hours": 8.0,                              # budget of ACTIVE working time (stopped time does not count); raise it to continue a finished run
     "python": sys.executable,
-    "java": {"bin": "java", "xmx": "8g", "threads": 0, "classes": "target/classes", "classpath_file": "target/cp.txt"},
+    "java": {"bin": "auto", "xmx": "8g", "threads": 0, "classes": "target/classes", "classpath_file": "target/cp.txt"},
     "maven": {"command": "mvn", "args": []},
     # Where things go and how much disk may never be touched. Put run_root/data_root/temp_root on the big disk (D:);
     # `reserves` are checked on EVERY listed volume (also the ones we do not write to, e.g. the system SSD C:) before each
@@ -487,6 +539,11 @@ class Pipeline:
 
     def prepare_java(self):
         j = self.cfg["java"]
+        if j["bin"] == "auto" or not Path(j["bin"]).exists() and not shutil.which(j["bin"]):
+            found, _ = find_java(j["bin"])
+            if not found:
+                raise RuntimeError("no Java 21 or newer found (looked in java.bin, JAVA_HOME, PATH, ~/.jdks, Program Files); set java.bin in the config")
+            j["bin"] = found
         cp_file = ROOT / j["classpath_file"]
         if not cp_file.exists():
             raise RuntimeError(f"classpath file {cp_file} not found; run `python ml/nightly.py check` (it builds it)")
@@ -1038,14 +1095,12 @@ def preflight(cfg, run_dir, data_root, temp_root, smoke=True):
         check.add("numpy", False, "pip install numpy")
         return check
 
-    java = shutil.which(cfg["java"]["bin"])
+    java, major = find_java(cfg["java"]["bin"])
     if java:
-        out = subprocess.run([java, "-version"], capture_output=True, text=True)
-        version = (out.stderr or out.stdout).splitlines()[0] if (out.stderr or out.stdout) else "?"
-        ok = any(f'"{v}' in version for v in ("21", "22", "23", "24", "25", "26"))
-        check.add("java >= 21", ok, version)
+        cfg["java"]["bin"] = java
+        check.add("java >= 21", True, f"{java} (version {major})")
     else:
-        check.add("java", False, f"'{cfg['java']['bin']}' not found")
+        check.add("java >= 21", False, "none found (tried java.bin, JAVA_HOME, PATH, ~/.jdks, Program Files); install a JDK 21+ or set java.bin in the config")
         return check
 
     # ---- storage: where everything goes and that the reserves are respected right now
@@ -1071,7 +1126,8 @@ def preflight(cfg, run_dir, data_root, temp_root, smoke=True):
     if mvn:
         for label, args in (("compile the project", ["-q", "-DskipTests", "compile"]),
                             ("build the classpath", ["-q", "dependency:build-classpath", f"-Dmdep.outputFile={cp_file.as_posix()}"])):
-            r = subprocess.run([mvn, *cfg["maven"]["args"], *args], cwd=ROOT, capture_output=True, text=True)
+            env = dict(os.environ, JAVA_HOME=java_home_of(java))  # compile with the same JDK that will run
+            r = subprocess.run([mvn, *cfg["maven"]["args"], *args], cwd=ROOT, capture_output=True, text=True, env=env)
             check.add(f"maven: {label}", r.returncode == 0, "" if r.returncode == 0 else (r.stdout + r.stderr)[-600:])
             if r.returncode != 0:
                 return check

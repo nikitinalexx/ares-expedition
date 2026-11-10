@@ -51,7 +51,6 @@ build/
 candidates/
 
 # night pipeline (local config, runs, data)
-ml/nightly_config.json
 ml/__pycache__/
 ml/tests/__pycache__/
 runs/

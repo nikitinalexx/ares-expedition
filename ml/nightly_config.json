@@ -1,0 +1,73 @@
+{
+  "hours": 8.0,
+  "storage": {
+    "run_root": "D:/ares/runs",
+    "data_root": "D:/ares/data",
+    "temp_root": "D:/ares/tmp",
+    "reserves": [
+      {
+        "path": "C:/",
+        "gb": 20
+      },
+      {
+        "path": "D:/",
+        "gb": 30
+      }
+    ],
+    "data_budget_gb": 150,
+    "keep_data_iterations": 3
+  },
+  "java": {
+    "bin": "auto",
+    "xmx": "10g",
+    "threads": 0
+  },
+  "selfplay": {
+    "games_per_chunk": 500,
+    "stage_max_seconds": 3600
+  },
+  "eval": {
+    "games": 200,
+    "references": [
+      "SMART",
+      "RANDOM"
+    ],
+    "agent": "AGENT"
+  },
+  "rungs": [
+    {
+      "fraction": 0.3,
+      "keep": 2,
+      "games_factor": 0.25
+    },
+    {
+      "fraction": 0.7,
+      "keep": 1,
+      "games_factor": 1.0
+    }
+  ],
+  "experiments": [
+    {
+      "name": "smart_context",
+      "games_per_iteration": 4000,
+      "matchups": "AGENT:AGENT:1"
+    },
+    {
+      "name": "mixed_contexts",
+      "games_per_iteration": 4000,
+      "matchups": "AGENT:AGENT:1,AGENT_R:AGENT_R:1,AGENT:AGENT_R:1"
+    },
+    {
+      "name": "random_context",
+      "games_per_iteration": 4000,
+      "matchups": "AGENT_R:AGENT_R:1"
+    }
+  ],
+  "maven": {
+    "command": "mvn",
+    "args": [
+      "-s",
+      ".mvn/settings.xml"
+    ]
+  }
+}
