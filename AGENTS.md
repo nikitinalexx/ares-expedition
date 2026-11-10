@@ -9,7 +9,7 @@
 - Если глобальный `~/.m2/settings.xml` указывает на сторонний репозиторий, используй проектный `.mvn/settings.xml`
   (только Maven Central): `mvn -s .mvn/settings.xml compile`.
 - БД: PostgreSQL (docker-команда в `README.md`), Spring-профиль `local` (`application-local.properties`). Heroku — `application-prod.properties`.
-- Heroku берёт Java из `system.properties` (сейчас 21).
+- Heroku берёт Java из `system.properties` (сейчас 21). Прод/Heroku сейчас вне объёма работ — сначала сильный локальный ИИ.
 - Фронтенд: `cd frontend && ng serve`.
 
 ## Структура кода (`src/main/java/com/terraforming/ares`)
@@ -54,3 +54,10 @@
 - Не добавляй ND4J/DL4J/CUDA обратно в `pom.xml` приложения: Heroku без GPU, а инференс уже не требует этих библиотек.
 - Тестов в репозитории практически нет; проверяй правки компиляцией (JDK 21) и, для AI, симуляциями/партиями.
 - Секреты (`.mvn/settings.xml`, application-*.properties) не светить в выводе и коммитах.
+
+## Тесты и документы
+- `mvn test` — тесты движка без БД (`EngineTestBase` поднимает контекст с заглушками репозиториев): `GameInvariantsTest` (инварианты правил на каждом шаге случайных партий),
+  `CopyFidelityTest` (копия игры = оригинал и не делит изменяемые объекты), `ShuffleServiceTest`. Известные открытые проблемы перечислены в `GameInvariantsTest.KNOWN_ISSUES` и `docs/BUGS.md`.
+- `docs/GAME_RULES.md` — правила, восстановленные по коду; `docs/AI_PLAN.md` — план нового ИИ; `docs/BUGS.md` — найденные баги.
+- Сравнение сил: `GET /simulations/compare?games=...&a=NETWORK&b=NETWORK_V2` и `GET /simulations/compare/models?dir=candidates&games=100` (чередуют места, дают доверительный интервал).
+- Режим инференса: `-Dares.nn.backend=java|dl4j|verify` (`dl4j`/`verify` требуют сборки `-Pdl4j-reference,dl4j-cuda` или `dl4j-cpu`).

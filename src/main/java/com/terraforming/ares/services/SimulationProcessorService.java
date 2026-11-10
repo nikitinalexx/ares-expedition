@@ -72,6 +72,13 @@ public class SimulationProcessorService extends BaseProcessorService {
     }
 
     public void processSimulation(MarsGame game) {
+        processSimulation(game, null);
+    }
+
+    /**
+     * @param afterStep optional callback invoked after every processed step (used by invariant tests)
+     */
+    public void processSimulation(MarsGame game, java.util.function.Consumer<MarsGame> afterStep) {
         while (game.getStateType() != StateType.GAME_END) {
             while (aiService.waitingAiTurns(game)) {
                 aiService.makeAiTurns(game);
@@ -79,6 +86,9 @@ public class SimulationProcessorService extends BaseProcessorService {
 
             while (processFinalTurns(game)) {
                 stateFactory.getCurrentState(game).updateState();
+            }
+            if (afterStep != null) {
+                afterStep.accept(game);
             }
         }
 

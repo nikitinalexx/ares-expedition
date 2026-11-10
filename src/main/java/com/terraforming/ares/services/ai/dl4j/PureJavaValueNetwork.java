@@ -28,7 +28,7 @@ import java.util.stream.IntStream;
  * <p>
  * Thread-safe: instances are immutable after construction.
  */
-public final class PureJavaValueNetwork {
+public final class PureJavaValueNetwork implements ValueNetwork {
     private static final float LEAKY_ALPHA = 0.01f;
     /**
      * The trained weights contain ~4% subnormal floats (and ~70% below 1e-6, an effect of L2 regularisation).
@@ -192,6 +192,7 @@ public final class PureJavaValueNetwork {
     /**
      * Batch prediction, parallelised across states (each state is independent).
      */
+    @Override
     public float[] predictBatch(float[][] features) {
         float[] result = new float[features.length];
         if (features.length < 4) {

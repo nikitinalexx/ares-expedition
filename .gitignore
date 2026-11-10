@@ -46,3 +46,6 @@ build/
 /lib/license3j-2.0.0-JVM8.jar
 /lib/visrec-api-1.0.5.jar
 /lib/visrec-ri-1.0.3.jar
+
+# model checkpoints for strength sweeps (local only)
+candidates/

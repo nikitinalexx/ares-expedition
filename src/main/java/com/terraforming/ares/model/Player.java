@@ -162,6 +162,22 @@ public class Player {
         this.terraformingRating = terraformingRating;
     }
 
+    // checked only with -ea (tests); a negative stockpile means a card or payment spent more than the player had
+    public void setPlants(int plants) {
+        assert plants >= 0 : "Negative plants: " + plants;
+        this.plants = plants;
+    }
+
+    public void setHeat(int heat) {
+        assert heat >= 0 : "Negative heat: " + heat;
+        this.heat = heat;
+    }
+
+    public void setMc(int mc) {
+        assert mc >= 0 : "Negative mc: " + mc;
+        this.mc = mc;
+    }
+
     public void setCardIncome(int cardIncome) {
         if (cardIncome < 0) {
             System.out.println("CARD INCOME NEGATIVE");

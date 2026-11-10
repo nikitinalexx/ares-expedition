@@ -86,4 +86,83 @@
         </plugins>
     </build>
 
+
+    <profiles>
+        <!--
+            DL4J reference for verifying / benchmarking the pure Java NETWORK_V2 inference.
+            NOT part of the normal (Heroku) build. Usage:
+              mvn -Pdl4j-reference,dl4j-cuda ...   (GPU)    or   mvn -Pdl4j-reference,dl4j-cpu ...
+            and run with -Dares.nn.backend=verify (or dl4j).
+        -->
+        <profile>
+            <id>dl4j-reference</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.deeplearning4j</groupId>
+                    <artifactId>deeplearning4j-core</artifactId>
+                    <version>1.0.0-M2.1</version>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>3.5.0</version>
+                        <executions>
+                            <execution>
+                                <id>add-dl4j-reference-source</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>add-source</goal>
+                                </goals>
+                                <configuration>
+                                    <sources>
+                                        <source>src/dl4j-reference/java</source>
+                                    </sources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>dl4j-cuda</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-cuda-11.6-platform</artifactId>
+                    <version>1.0.0-M2.1</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <!--
+            Optional: CUDA 11.6 runtime libraries bundled in a jar (~1.8 GB download, Windows only), so that a separately
+            installed CUDA Toolkit is NOT required - only the NVIDIA driver. Use together with dl4j-cuda:
+              mvn -Pdl4j-reference,dl4j-cuda,cuda-redist-windows ...
+        -->
+        <profile>
+            <id>cuda-redist-windows</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>cuda</artifactId>
+                    <version>11.6-8.3-1.5.7</version>
+                    <classifier>windows-x86_64-redist</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>dl4j-cpu</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-native-platform</artifactId>
+                    <version>1.0.0-M2.1</version>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
+
 </project>
