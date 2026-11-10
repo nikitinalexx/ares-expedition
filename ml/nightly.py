@@ -343,9 +343,9 @@ DEFAULT_CONFIG = {
     "retries": 3,
     "retry_backoff_seconds": [10, 60, 300],
     "max_consecutive_failures": 3,
-    "selfplay": {"games_per_chunk": 500, "stage_max_seconds": 3600, "grace_seconds": 90, "max_failure_ratio": 0.05},
-    "train": {"command": ["{python}", "ml/train_stub.py", "--data", "{data}", "--out", "{model_dir}", "--prev", "{prev_model}"], "timeout_seconds": 3600},
-    "eval": {"games": 200, "references": ["SMART", "RANDOM"], "agent": "AGENT", "concurrency": 32, "timeout_seconds": 1800},
+    "selfplay": {"temperature": 0.5, "games_per_chunk": 500, "stage_max_seconds": 3600, "grace_seconds": 90, "max_failure_ratio": 0.05},
+    "train": {"command": ["{python}", "ml/train_phase.py", "--data", "{data}", "--out", "{model_dir}", "--prev", "{prev_model}", "--epochs", "3"], "timeout_seconds": 7200},
+    "eval": {"games": 200, "references": ["SMART", "RANDOM"], "agent": "AGENT", "concurrency": 32, "timeout_seconds": 1800, "bias_alarm_gap": 0.10},
     # successive halving: each rung gets a fraction of the night; only `keep` best experiments continue to the next rung
     "rungs": [{"fraction": 0.3, "keep": 2, "games_factor": 0.25}, {"fraction": 0.7, "keep": 1, "games_factor": 1.0}],
     "experiments": [{"name": "default", "games_per_iteration": 2000, "matchups": "AGENT:AGENT:1"}],
@@ -619,6 +619,12 @@ class Pipeline:
         log_path = self.it_dir(exp, it) / "selfplay.log"
         self.it_dir(exp, it).mkdir(parents=True, exist_ok=True)
         sp = self.cfg["selfplay"]
+        chosen = read_json(self.it_dir(exp, it) / "selfplay_model.json", None)
+        if chosen is None:
+            best = self.best_model_dir(exp)
+            chosen = {"model": str(best) if best else None, "temperature": sp["temperature"]}
+            write_json(self.it_dir(exp, it) / "selfplay_model.json", chosen)  # the data of one iteration comes from ONE model
+        model_args = ["--model", chosen["model"], "--temperature", str(chosen["temperature"])] if chosen["model"] else []
 
         def attempt():
             self.check_disk()
@@ -640,7 +646,7 @@ class Pipeline:
                                 "--max-failure-ratio", str(sp["max_failure_ratio"]),
                                 # the Java process also guards itself, in case this supervisor dies
                                 "--min-free-gb", str(max((r for p, r in self.storage.reserves if volume_key(p) == volume_key(out)), default=0)),
-                                "--threads", str(self.cfg["java"]["threads"] or os.cpu_count()))
+                                "--threads", str(self.cfg["java"]["threads"] or os.cpu_count()), *model_args)
             result = run_command(cmd, log_path, sp["stage_max_seconds"] + 600, self.stop, graceful_file=stop_file, grace=sp["grace_seconds"],
                                  env=self.storage.child_env(), guard=self.storage.guard, guard_interval=self.storage.interval, tick=self.tick,
                                  low_priority=self.cfg["low_priority"])
@@ -687,38 +693,71 @@ class Pipeline:
             write_json(done_marker, {"time": stamp()})
         return ok
 
+    def baseline_score(self, ref):
+        """The same agent WITHOUT a model (it picks phases at random) against `ref`: what the model has to beat. Played once per run."""
+        ev = self.cfg["eval"]
+        path = self.run_dir / "baseline" / f"vs_{ref}.json"
+        if not path.exists():
+            cmd = self.java_cmd("--mode", "compare", "--a", ev["agent"], "--b", ref, "--games", str(ev["games"]),
+                                "--concurrency", str(ev["concurrency"]), "--out", path.as_posix())
+            result = run_command(cmd, self.run_dir / "baseline" / "baseline.log", ev["timeout_seconds"], self.stop, env=self.storage.child_env(),
+                                 guard=self.storage.guard, guard_interval=self.storage.interval, tick=self.tick, low_priority=self.cfg["low_priority"])
+            if not (result.ok and path.exists()):
+                return None
+        return read_json(path)
+
     def stage_eval(self, exp, it):
         done_marker = self.it_dir(exp, it) / "eval.done"
         if done_marker.exists():
             return read_json(self.it_dir(exp, it) / "eval.json")
         ev = self.cfg["eval"]
         log_path = self.it_dir(exp, it) / "eval.log"
+        model_dir = self.it_dir(exp, it) / "model"
         scores = {}
+        baselines = {}
 
         def attempt():
             self.check_disk()
             for ref in ev["references"]:
                 path = self.it_dir(exp, it) / f"eval_vs_{ref}.json"
-                if path.exists():
-                    scores[ref] = read_json(path)
-                    continue
-                self.current = {"exp": exp, "iteration": it, "stage": f"eval vs {ref}"}
-                self.write_status()
-                cmd = self.java_cmd("--mode", "compare", "--a", ev["agent"], "--b", ref, "--games", str(ev["games"]),
-                                    "--concurrency", str(ev["concurrency"]), "--out", path.as_posix())
-                result = run_command(cmd, log_path, ev["timeout_seconds"], self.stop, env=self.storage.child_env(),
-                                     guard=self.storage.guard, guard_interval=self.storage.interval, tick=self.tick,
-                                 low_priority=self.cfg["low_priority"])
-                if not (result.ok and path.exists()):
-                    return False, result, log_path
+                if not path.exists():
+                    self.current = {"exp": exp, "iteration": it, "stage": f"eval vs {ref}"}
+                    self.write_status()
+                    cmd = self.java_cmd("--mode", "compare", "--a", ev["agent"], "--b", ref, "--games", str(ev["games"]),
+                                        "--concurrency", str(ev["concurrency"]), "--out", path.as_posix(),
+                                        "--model", str(model_dir), "--temperature", "0")
+                    result = run_command(cmd, log_path, ev["timeout_seconds"], self.stop, env=self.storage.child_env(),
+                                         guard=self.storage.guard, guard_interval=self.storage.interval, tick=self.tick,
+                                         low_priority=self.cfg["low_priority"])
+                    if not (result.ok and path.exists()):
+                        return False, result, log_path
                 scores[ref] = read_json(path)
+                baseline = self.baseline_score(ref)
+                if baseline is None:
+                    return False, Result(1, "exit", 0), self.run_dir / "baseline" / "baseline.log"
+                baselines[ref] = baseline
             return True, Result(0, "exit", 0), log_path
 
         if not self.with_retries(exp, it, "eval", attempt):
             return None
+        refs = ev["references"]
+        delta = {ref: scores[ref]["aScore"] - baselines[ref]["aScore"] for ref in refs}
+        # a gain against an opponent the baseline already beats 85% of the time can not be big: measure it against the room that was left
+        relative = {ref: delta[ref] / max(0.1, 1.0 - baselines[ref]["aScore"]) for ref in refs}
+        # the model is judged against ALL references (not only against SMART, whose heuristics it may have got used to)
+        score = sum(scores[ref]["aScore"] for ref in refs) / len(refs)
+        alarm = None
+        if "SMART" in refs and len(refs) > 1:
+            others = [relative[r] for r in refs if r != "SMART"]
+            gap = relative["SMART"] - sum(others) / len(others)
+            alarm = {"gap": round(gap, 4), "triggered": bool(gap > ev["bias_alarm_gap"]),
+                     "meaning": "the model gained much more of the room it had against SMART than against the other opponents: it may have adapted to SMART's heuristics (noisy with few games)"}
         summary = {
-            "score": scores[ev["references"][0]]["aScore"],
-            "vs": {ref: {"score": s["aScore"], "low": s["aScoreCi95Low"], "high": s["aScoreCi95High"], "games": s["games"]} for ref, s in scores.items()},
+            "score": score,
+            "vs": {ref: {"score": s["aScore"], "low": s["aScoreCi95Low"], "high": s["aScoreCi95High"], "games": s["games"],
+                         "baseline": baselines[ref]["aScore"], "gain": round(delta[ref], 4),
+                         "gain_of_room": round(relative[ref], 4)} for ref, s in scores.items()},
+            "bias_alarm": alarm,
         }
         write_json(self.it_dir(exp, it) / "eval.json", summary)
         write_json(done_marker, {"time": stamp()})
@@ -993,7 +1032,10 @@ def pack(run_dir, handoff_root=None):
             ev = read_json(run_dir / "exp" / n / f"it_{i:04d}" / "eval.json")
             if ev:
                 rows.append(f"{n},{i},{ev['score']},\"{ev['vs']}\"")
+                if (ev.get("bias_alarm") or {}).get("triggered"):
+                    lines.append(f"- BIAS ALARM {n} it{i}: {ev['bias_alarm']['meaning']} (gap {ev['bias_alarm']['gap']})")
     (work / "metrics.csv").write_text("\n".join(rows) + "\n", encoding="utf-8")
+    (work / "REPORT.md").write_text("\n".join(lines) + "\n", encoding="utf-8")  # again: now with the bias alarms found above
 
     # logs: tails only, errors in full
     logs = work / "logs"

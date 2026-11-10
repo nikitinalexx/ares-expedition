@@ -1,5 +1,7 @@
 # AGENTS.md — ares-expedition
 
+> **Продолжаешь работу над новым ИИ? Сначала прочитай `docs/HANDOFF.md`** — там состояние, правила владельца, карта файлов, команды и очередь задач.
+
 Онлайн-реализация настольной игры *Terraforming Mars: Expedition Ares* (Spring Boot 3 + PostgreSQL, фронтенд на Angular в `frontend/`),
 с компьютерными игроками разной силы. Продакшен — Heroku, автодеплой при пуше ветки `main`.
 
@@ -68,6 +70,9 @@
 - Сейчас реализовано `PICK_PHASE` (`PickPhaseDecisions`, `PickPhaseDecisionsTest`); агент по умолчанию — `UniformRandomAgent`.
 - Запись решений: `DecisionLogs` + `DecisionFile` (формат `ARES`, фиксированные записи, схема с хэшем раскладки наблюдения). Включение: `GET /simulations/bench?...&a=AGENT&b=AGENT&record=<папка>`.
   Читать из Python: `ml/ares_data.py` (`read_decisions`, `validate`), быстрая проверка файла: `python ml/check_decision_file.py <файл>`. Меняя энкодер/наблюдение, меняйте `observationLayout` типа решения — он входит в хэш схемы.
+- Обучаемое решение «выбор фазы»: `ml/phase_model.py` (формат модели), `ml/train_phase.py` (тренер), Java: `MlpPhaseModel`, `NeuralPolicy` (параметры `--model`/`--temperature` у `SelfPlayMain`). Эталон для теста эквивалентности Python↔Java: `src/test/resources/phase_model_fixture` (пересоздать: `python ml/make_test_fixture.py`, когда меняется энкодер — тест подскажет команду).
+- Наблюдение агента: `ObservationBuilder` (v3 = V2-энкодер без 210 точных копий + контекст раунда + история фаз); ревизия признаков — `docs/ENCODER_REVIEW.md`, пересоздание маски — `python ml/audit_features.py ... --write-mask`.
+- Проверка полноты наблюдения: `ObservationCompletenessTest` (список известных слепых зон `KNOWN_BLIND_SPOTS` — это to-do энкодера; новая слепая зона или исправленная требуют правки списка). Обучение — только когда готов весь ИИ (см. `docs/AI_PLAN.md`, раздел 0).
 - Ночной пайплайн: `ml/nightly.py` (+ `nightly.cmd`), подробности и команды — `docs/NIGHTLY.md`. Self-play в отдельном процессе без БД: `com.terraforming.ares.selfplay.SelfPlayMain` (профиль `selfplay`).
   Тесты: `python -m unittest discover -s ml/tests -v` (быстрые), `RUN_E2E=1 python -m unittest ml.tests.test_e2e_real` (с настоящей Java).
   Правила пайплайна: на диске C: ничего значимого не писать; резервы свободного места по томам; бюджет считается по рабочему времени; модели и оценки не удалять.

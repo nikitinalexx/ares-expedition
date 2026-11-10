@@ -155,6 +155,17 @@ class PickPhaseDecisionsTest extends EngineTestBase {
         }
     }
 
+    @Test
+    void everyValueOfTheObservationHasAName() {
+        List<String> names = PickPhaseDecisions.featureNames();
+        assertEquals(PickPhaseDecisions.schema().obsSize(), names.size(), "names and values must be the same length, in the same order");
+        assertEquals(names.size(), new java.util.HashSet<>(names).size() + countDuplicateNames(names), "sanity");
+    }
+
+    private static int countDuplicateNames(List<String> names) {
+        return names.size() - new java.util.HashSet<>(names).size();
+    }
+
     // ---------------------------------------------------------------- hidden information
 
     @Test

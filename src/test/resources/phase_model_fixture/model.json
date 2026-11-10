@@ -1,0 +1,15 @@
+{
+ "kind": "phase_mlp",
+ "version": 1,
+ "decisionType": "PICK_PHASE",
+ "schemaHash": "fbf1f802c289634d",
+ "obsSize": 760,
+ "candFeatures": 6,
+ "hidden": [
+  8,
+  4
+ ],
+ "clip": 5.0,
+ "weightsCount": 7697,
+ "weightsSha256": "099698289cd64acc99914f00879eb888cb6272eb7c5ef257a750a7fe47564d89"
+}

@@ -2,7 +2,6 @@ package com.terraforming.ares.services.agent;
 
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Player;
-import com.terraforming.ares.services.ai.advanced.AdvancedAiDataCollectionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -23,30 +22,29 @@ import java.util.TreeSet;
 @RequiredArgsConstructor
 public class PickPhaseDecisions {
     public static final int PHASES = 5;
-    public static final int EXTRAS_SIZE = 1 + PHASES + PHASES + PHASES + 1;
+    public static final int EXTRAS_SIZE = ObservationBuilder.EXTRAS_SIZE;
     public static final int CANDIDATE_FEATURES = PHASES + 1;
-    public static final String OBSERVATION_LAYOUT = "AdvancedAiDataCollectionService.collectData(table 417 + hand 481, normalized by AiConstants.NORMALIZATION_VECTOR)"
-            + " + extras[round/40, myPreviousPhase(5), opponentPreviousPhase(5), dummyPoolMembership(5), dummyPoolSize/5]"
-            + "; candidate=[phaseOneHot(5), phaseUpgradedForMe]";
+    public static final String OBSERVATION_LAYOUT = ObservationBuilder.LAYOUT + "; candidate=[phaseOneHot(5), phaseUpgradedForMe]";
 
-    private final AdvancedAiDataCollectionService dataCollectionService;
+    /**
+     * Schema of the data/models of this decision as the current encoder produces it (its hash identifies the encoder version).
+     */
+    public static DecisionFile.Schema schema() {
+        return new DecisionFile.Schema(DecisionType.PICK_PHASE, ObservationBuilder.size(),
+                DecisionType.PICK_PHASE.maxCandidates(), CANDIDATE_FEATURES, OBSERVATION_LAYOUT);
+    }
+
+    /**
+     * Name of every value of the observation, in order: table (with the "op_" copies of the opponent), hand, extras.
+     */
+    public static List<String> featureNames() {
+        return ObservationBuilder.names();
+    }
+
+    private final ObservationBuilder observationBuilder;
 
     public Decision build(MarsGame game, Player player) {
-        Player opponent = opponentOf(game, player);
-
-        float[] state = dataCollectionService.collectData(game, player.getUuid());
-        float[] observation = new float[state.length + EXTRAS_SIZE];
-        System.arraycopy(state, 0, observation, 0, state.length);
-
-        int pos = state.length;
-        observation[pos++] = game.getTurns() / 40f;
-        pos = oneHot(observation, pos, player.getPreviousChosenPhase());
-        pos = oneHot(observation, pos, opponent.getPreviousChosenPhase());
-        Set<Integer> pool = dummyPhasePool(game);
-        for (int phase = 1; phase <= PHASES; phase++) {
-            observation[pos++] = pool.contains(phase) ? 1f : 0f;
-        }
-        observation[pos] = pool.isEmpty() ? 0f : pool.size() / (float) PHASES;
+        float[] observation = observationBuilder.build(game, player);
 
         List<Candidate> candidates = new ArrayList<>();
         for (int phase : legalPhases(player)) {

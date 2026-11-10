@@ -13,11 +13,12 @@ import org.springframework.stereotype.Service;
 public class AgentDecisionService {
     private final PickPhaseDecisions pickPhaseDecisions;
     private final DecisionAgent agent;
+    private final NeuralPolicy neuralPolicy;
     private final DecisionLogs decisionLogs;
 
     public int pickPhase(MarsGame game, Player player) {
         Decision decision = pickPhaseDecisions.build(game, player);
-        int index = agent.choose(decision);
+        int index = neuralPolicy.hasModel() ? neuralPolicy.choose(decision) : agent.choose(decision);
         if (index < 0 || index >= decision.candidates().size()) {
             throw new IllegalStateException("Agent chose " + index + " out of " + decision.candidates().size() + " candidates");
         }

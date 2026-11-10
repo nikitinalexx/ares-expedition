@@ -24,15 +24,19 @@
   },
   "selfplay": {
     "games_per_chunk": 500,
-    "stage_max_seconds": 3600
+    "stage_max_seconds": 3600,
+    "temperature": 0.5
   },
   "eval": {
-    "games": 200,
+    "games": 150,
     "references": [
       "SMART",
-      "RANDOM"
+      "NETWORK"
     ],
-    "agent": "AGENT"
+    "agent": "AGENT",
+    "concurrency": 32,
+    "timeout_seconds": 3600,
+    "bias_alarm_gap": 0.15
   },
   "rungs": [
     {

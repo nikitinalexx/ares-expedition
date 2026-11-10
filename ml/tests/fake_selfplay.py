@@ -8,6 +8,8 @@ Behaviour is controlled with environment variables:
   FAKE_MODE=hang        never finishes (killed by the pipeline timeout / stop)
   FAKE_MODE=corrupt     write a chunk that is truncated, as a damaged file would be
   FAKE_SCORE=0.7        score reported in --mode compare (default: derived from the output path, so experiments differ)
+  FAKE_SCORES=SMART:0.8,RANDOM:0.55  scores of an agent WITH a model per opponent;  FAKE_BASELINE=0.5  score of the agent without a model
+  FAKE_ARGS_LOG=file    every call is appended there as JSON
   FAKE_GAME_SECONDS=0.05  time per game (default 0)
 """
 import json
@@ -60,6 +62,9 @@ def write_chunk(path, games, first_game, rows_per_game=6, truncate=False):
 
 def main():
     a = args_of(sys.argv[1:])
+    if os.environ.get("FAKE_ARGS_LOG"):  # lets the tests see exactly how the pipeline called the Java process
+        with open(os.environ["FAKE_ARGS_LOG"], "a") as log:
+            log.write(json.dumps(a) + chr(10))
     mode = os.environ.get("FAKE_MODE", "ok")
     out = Path(a["out"])
     if mode == "crash":
@@ -80,6 +85,10 @@ def main():
 
     if a.get("mode") == "compare":
         score = float(os.environ.get("FAKE_SCORE", (zlib.crc32(str(out).encode()) % 1000) / 1000.0))
+        if "model" not in a:  # the agent without a model: the baseline
+            score = float(os.environ.get("FAKE_BASELINE", score))
+        elif os.environ.get("FAKE_SCORES"):  # "SMART:0.8,RANDOM:0.55"
+            score = float(dict(x.split(":") for x in os.environ["FAKE_SCORES"].split(","))[a["b"]])
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps({"aScore": score, "aScoreCi95Low": score - 0.1, "aScoreCi95High": score + 0.1, "games": int(a["games"]), "failedGames": 0}))
         return 0

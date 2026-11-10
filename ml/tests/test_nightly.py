@@ -37,7 +37,7 @@ def make_cfg(**override):
         "storage": {"default_reserve_gb": 0.001, "data_budget_gb": 50, "keep_data_iterations": 2, "guard_interval_seconds": 0.2},
         "retries": 2, "retry_backoff_seconds": [0.01],
         "selfplay": {"games_per_chunk": 10, "stage_max_seconds": 60, "grace_seconds": 10},
-        "train": {"timeout_seconds": 60},
+        "train": {"timeout_seconds": 60, "command": ["{python}", "ml/train_stub.py", "--data", "{data}", "--out", "{model_dir}", "--prev", "{prev_model}"]},
         "eval": {"games": 10, "references": ["SMART"], "timeout_seconds": 60},
         "rungs": [{"fraction": 0.5, "keep": 1, "games_factor": 1.0}, {"fraction": 0.5, "keep": 1, "games_factor": 1.0}],
         "experiments": [{"name": "a", "games_per_iteration": 30, "matchups": "AGENT:AGENT:1"}],
@@ -52,7 +52,7 @@ class Base(unittest.TestCase):
         self.tmp = Path(self._tmp.name)
         self.env = mock.patch.dict(os.environ, {}, clear=False)
         self.env.start()
-        for key in ("FAKE_MODE", "FAKE_SCORE", "FAKE_GAME_SECONDS"):
+        for key in ("FAKE_MODE", "FAKE_SCORE", "FAKE_GAME_SECONDS", "FAKE_SCORES", "FAKE_BASELINE", "FAKE_ARGS_LOG"):
             os.environ.pop(key, None)
 
     def tearDown(self):
@@ -166,9 +166,10 @@ class PipelineRuns(Base):
         p = self.pipeline()
         self.assertEqual("finished", p.run())
         self.assertEqual(1, p.state["experiments"]["a"]["iterations_done"])
-        # the fake also fails its first evaluation: both stages were retried
+        # the fake also fails its first evaluation calls (the model's and the baseline's): every stage was retried
         stages = sorted(f.name.rsplit("_", 1)[1] for f in (p.run_dir / "errors").glob("*.txt"))
-        self.assertEqual(["eval.txt", "selfplay.txt"], stages)
+        self.assertEqual(1, stages.count("selfplay.txt"))
+        self.assertEqual({"eval.txt", "selfplay.txt"}, set(stages))
         errors = list((p.run_dir / "errors").glob("*_selfplay.txt"))
         text = errors[0].read_text()
         self.assertIn("exit_code=1", text)
@@ -412,6 +413,70 @@ class ResumeAnyTime(Base):
         r = run_command([sys.executable, "-c", "print('ok')"], self.tmp / "l.log", 30, Stop(self.tmp / "STOP"), low_priority=True)
         self.assertTrue(r.ok)
         self.assertIn("ok", (self.tmp / "l.log").read_text())
+
+
+class ModelsInThePipeline(Base):
+    def calls(self, log):
+        return [json.loads(line) for line in Path(log).read_text().splitlines()]
+
+    def test_the_best_model_plays_the_next_selfplay_and_the_new_model_is_evaluated(self):
+        log = self.tmp / "calls.log"
+        os.environ["FAKE_ARGS_LOG"] = str(log)
+        p = self.pipeline(make_cfg(max_iterations_per_experiment=2, rungs=[{"fraction": 1.0, "keep": 1, "games_factor": 1.0}]))
+        self.assertEqual("finished", p.run())
+        calls = self.calls(log)
+        selfplay = [c for c in calls if c.get("mode") == "play"]
+        compare = [c for c in calls if c.get("mode") == "compare"]
+        self.assertEqual(2, len(selfplay))
+        self.assertNotIn("model", selfplay[0], "the first iteration has no model yet: random phases")
+        self.assertTrue(selfplay[1]["model"].replace("\\", "/").endswith("it_0001/model"), selfplay[1])
+        self.assertEqual("0.5", selfplay[1]["temperature"], "self-play explores")
+        with_model = [c for c in compare if "model" in c]
+        self.assertEqual(2, len(with_model))
+        self.assertTrue(with_model[0]["model"].replace("\\", "/").endswith("it_0001/model"))
+        self.assertTrue(with_model[1]["model"].replace("\\", "/").endswith("it_0002/model"))
+        self.assertTrue(all(c["temperature"] == "0" for c in with_model), "evaluation is greedy")
+        self.assertEqual(1, len([c for c in compare if "model" not in c]), "the baseline (agent without a model) is played once per run and opponent")
+
+    def test_a_restarted_selfplay_stage_keeps_using_the_same_model(self):
+        p = self.pipeline(make_cfg(max_iterations_per_experiment=1))
+        p.run()
+        marker = p.it_dir("a", 1) / "selfplay_model.json"
+        self.assertTrue(marker.exists())
+        write_json(marker, {"model": "D:/some/model", "temperature": 0.3})
+        (p.it_dir("a", 1) / "selfplay.done").unlink()
+        log = self.tmp / "calls2.log"
+        os.environ["FAKE_ARGS_LOG"] = str(log)
+        p.stage_selfplay("a", p.exp_cfg("a"), 1, 60)  # 30 games are in the chunks already, 30 are missing
+        call = self.calls(log)[0]
+        self.assertEqual("D:/some/model", call["model"])
+        self.assertEqual("0.3", call["temperature"])
+
+    def alarm_cfg(self):
+        return make_cfg(eval={"games": 10, "references": ["SMART", "RANDOM"], "timeout_seconds": 60, "bias_alarm_gap": 0.10})
+
+    def test_improving_only_against_smart_raises_the_bias_alarm(self):
+        os.environ["FAKE_SCORES"] = "SMART:0.80,RANDOM:0.55"
+        os.environ["FAKE_BASELINE"] = "0.50"
+        p = self.pipeline(self.alarm_cfg())
+        p.run()
+        ev = read_json(p.it_dir("a", 1) / "eval.json")
+        self.assertTrue(ev["bias_alarm"]["triggered"])
+        self.assertAlmostEqual(0.5, ev["bias_alarm"]["gap"], places=3, msg="0.3 of the 0.5 room against SMART vs 0.05 of 0.5 against the others")
+        self.assertAlmostEqual(0.675, ev["score"], places=3, msg="the score is the mean over ALL opponents")
+        self.assertAlmostEqual(0.30, ev["vs"]["SMART"]["gain"], places=3)
+        final, _ = pack(p.run_dir)
+        self.assertIn("BIAS ALARM", (final / "REPORT.md").read_text())
+
+    def test_improving_against_everybody_does_not(self):
+        os.environ["FAKE_SCORES"] = "SMART:0.70,RANDOM:0.68"
+        os.environ["FAKE_BASELINE"] = "0.50"
+        p = self.pipeline(self.alarm_cfg())
+        p.run()
+        ev = read_json(p.it_dir("a", 1) / "eval.json")
+        self.assertFalse(ev["bias_alarm"]["triggered"])
+        final, _ = pack(p.run_dir)
+        self.assertNotIn("BIAS ALARM", (final / "REPORT.md").read_text())
 
 
 if __name__ == "__main__":

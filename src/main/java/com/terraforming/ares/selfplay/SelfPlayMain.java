@@ -21,7 +21,8 @@ import java.util.Map;
  * <pre>
  * play:    --mode play --out DIR --games N [--threads T] [--matchups AGENT:AGENT:0.5,AGENT_R:AGENT:0.5]
  *                      [--games-per-chunk C] [--max-seconds S] [--stop-file FILE] [--max-failure-ratio 0.05] [--min-free-gb 30]
- * compare: --mode compare --out FILE.json --a AGENT --b SMART --games N [--concurrency C]
+ *                      [--model MODEL_DIR] [--temperature 0.5]
+ * compare: --mode compare --out FILE.json --a AGENT --b SMART --games N [--concurrency C] [--model MODEL_DIR] [--temperature 0]
  * </pre>
  * Exit codes: 0 completed, 3 stopped on request (stop file / time limit), 4 too many failed games, 5 disk almost full (stopped by itself), 2 bad arguments, 1 crash.
  * Everything unexpected is written to stderr with the stack trace (the pipeline keeps it in the stage log).
@@ -54,6 +55,21 @@ public final class SelfPlayMain {
     static int run(String[] args) throws Exception {
         Map<String, String> arguments = parse(args);
         String mode = arguments.getOrDefault("mode", "play");
+        if (mode.equals("names")) {  // no game and no Spring context needed
+            List<String> names = com.terraforming.ares.services.agent.PickPhaseDecisions.featureNames();
+            Path file = Path.of(required(arguments, "out"));
+            if (file.getParent() != null) {
+                Files.createDirectories(file.getParent());
+            }
+            new ObjectMapper().writeValue(file.toFile(), names);
+            System.out.println("[NAMES] " + names.size() + " feature names written to " + file);
+            return 0;
+        }
+        // the agent model is read by NeuralPolicy when the context starts
+        if (arguments.containsKey("model")) {
+            System.setProperty("ares.agent.model", arguments.get("model"));
+            System.setProperty("ares.agent.temperature", arguments.getOrDefault("temperature", "0"));
+        }
 
         try (ConfigurableApplicationContext context = new SpringApplicationBuilder(TerraformingAresApplication.class)
                 .profiles("selfplay")
