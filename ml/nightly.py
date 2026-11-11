@@ -303,6 +303,7 @@ def find_java(configured="auto", minimum=21):
         candidates.append(configured)
     if os.environ.get("JAVA_HOME"):
         candidates.append(Path(os.environ["JAVA_HOME"]) / "bin" / exe)
+        candidates.append(Path(os.environ["JAVA_HOME"]) / exe)  # a common mistake: JAVA_HOME set to ...\bin
     on_path = shutil.which("java")
     if on_path:
         candidates.append(on_path)
@@ -328,8 +329,23 @@ def find_java(configured="auto", minimum=21):
 
 
 def java_home_of(java_bin):
-    """JAVA_HOME for Maven: the folder above bin/."""
+    """JAVA_HOME for Maven, as the JVM itself reports it. The folder above bin/ is wrong for launcher stubs such as
+    C:\\Program Files\\Common Files\\Oracle\\Java\\javapath\\java.exe, which Oracle's installer puts on PATH."""
+    try:
+        r = subprocess.run([str(java_bin), "-XshowSettings:properties", "-version"], capture_output=True, text=True, timeout=60)
+        for line in (r.stderr + r.stdout).splitlines():
+            if line.strip().startswith("java.home ="):
+                home = line.split("=", 1)[1].strip()
+                if is_java_home(home):
+                    return home
+    except (OSError, subprocess.SubprocessError):
+        pass
     return str(Path(java_bin).resolve().parent.parent)
+
+
+def is_java_home(path):
+    exe = "java.exe" if platform.system() == "Windows" else "java"
+    return bool(path) and (Path(path) / "bin" / exe).exists()
 
 
 # ------------------------------------------------------------------------------------------------ configuration
@@ -1461,7 +1477,12 @@ def preflight(cfg, run_dir, data_root, temp_root, smoke=True):
     java, major = find_java(cfg["java"]["bin"])
     if java:
         cfg["java"]["bin"] = java
-        check.add("java >= 21", True, f"{java} (version {major})")
+        check.add("java >= 21", True, f"{java} (version {major}, JDK folder {java_home_of(java)})")
+        env_home = os.environ.get("JAVA_HOME")
+        if env_home and not is_java_home(env_home):
+            check.add("JAVA_HOME", False, f"'{env_home}' is not a JDK folder (it must be the folder that CONTAINS bin, e.g. "
+                      f"{Path(env_home).parent if Path(env_home).name.lower() == 'bin' else 'C:/Program Files/Java/jdk-21'}); "
+                      "the pipeline gives Maven the right one itself, but other tools (mvn by hand, IDE) will fail", fatal=False)
     else:
         check.add("java >= 21", False, "none found (tried java.bin, JAVA_HOME, PATH, ~/.jdks, Program Files); install a JDK 21+ or set java.bin in the config")
         return check
