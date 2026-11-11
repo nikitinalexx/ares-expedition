@@ -21,6 +21,7 @@ import java.util.Map;
  * <pre>
  * play:    --mode play --out DIR --games N [--threads T] [--matchups AGENT:AGENT:0.5,AGENT_R:AGENT:0.5]
  *                      [--games-per-chunk C] [--max-seconds S] [--stop-file FILE] [--max-failure-ratio 0.05] [--min-free-gb 30]
+ *                      [--max-rows-per-game-type K]   (write at most K random decisions of a game per type; 0 = all)
  *                      [--model MODEL_DIR | --models MODELS_DIR] [--temperature 0.5]
  * compare: --mode compare --out FILE.json --a AGENT --b SMART --games N [--concurrency C]
  *                      [--model MODEL_DIR | --models MODELS_DIR] [--temperature 0]
@@ -122,6 +123,8 @@ public final class SelfPlayMain {
                 Double.parseDouble(a.getOrDefault("max-failure-ratio", "0.05")),
                 Double.parseDouble(a.getOrDefault("min-free-gb", "0")));
 
+        context.getBean(com.terraforming.ares.services.agent.DecisionLogs.class)
+                .setMaxRowsPerGameType(Integer.parseInt(a.getOrDefault("max-rows-per-game-type", "0")));
         SelfPlayRunner.Summary summary = context.getBean(SelfPlayRunner.class).run(options);
         System.out.println("[SELFPLAY] done: " + new ObjectMapper().writeValueAsString(summary));
         return switch (summary.stoppedReason()) {

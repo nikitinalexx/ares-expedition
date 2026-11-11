@@ -26,18 +26,28 @@
   "selfplay": {
     "games_per_chunk": 250,
     "stage_max_seconds": 3600,
-    "temperature": 0.5
+    "temperature": 0.5,
+    "max_rows_per_game_type": 32
   },
   "eval": {
-    "games": 150,
+    "games": 300,
     "references": [
-      "SMART",
-      "NETWORK"
+      "RANDOM",
+      "SMART"
     ],
     "agent": "AGENT",
     "concurrency": 32,
     "timeout_seconds": 3600,
     "bias_alarm_gap": 0.15
+  },
+  "benchmark": {
+    "references": [
+      "NETWORK",
+      "NETWORK_V2"
+    ],
+    "games": 100,
+    "concurrency": 16,
+    "timeout_seconds": 3600
   },
   "rungs": [
     {
@@ -53,19 +63,24 @@
   ],
   "experiments": [
     {
-      "name": "smart_context",
-      "games_per_iteration": 4000,
+      "name": "fine_es",
+      "hypothesis": "H2-1 (baseline of the night): batches mixed over ~24k games (<=32 rows of a game per type) + early stopping every 100 batches get val_loss below the constant predictor, and the gain against RANDOM grows from iteration to iteration",
+      "games_per_iteration": 8000,
       "matchups": "AGENT:AGENT:1"
     },
     {
-      "name": "mixed_contexts",
-      "games_per_iteration": 4000,
-      "matchups": "AGENT:AGENT:1,AGENT_R:AGENT_R:1,AGENT:AGENT_R:1"
+      "name": "sequential_feed",
+      "hypothesis": "H-D1 (owner's experience, untested): feeding the rows of a game in a row (as night 1 did) instead of batches mixed over all games gives a clearly higher val_loss - constant and a lower gain than fine_es",
+      "games_per_iteration": 8000,
+      "matchups": "AGENT:AGENT:1",
+      "train_args": ["--feed", "sequential"]
     },
     {
-      "name": "random_context",
-      "games_per_iteration": 4000,
-      "matchups": "AGENT_R:AGENT_R:1"
+      "name": "strong_wd",
+      "hypothesis": "H2-2: weight decay 1e-3 instead of 1e-5 gives a lower val_loss and a higher gain than fine_es (night 1 memorised games: train 0.03, val worse than constant)",
+      "games_per_iteration": 8000,
+      "matchups": "AGENT:AGENT:1",
+      "train_args": ["--weight-decay", "1e-3"]
     }
   ],
   "train": {
@@ -79,7 +94,13 @@
       "--prev",
       "{prev_model}",
       "--epochs",
-      "3"
+      "50",
+      "--steps",
+      "100",
+      "--patience",
+      "5",
+      "--rows-per-game",
+      "32"
     ],
     "timeout_seconds": 7200
   },

@@ -263,6 +263,32 @@ class DecisionLogsTest extends EngineTestBase {
     }
 
     @Test
+    void aCapKeepsAtMostThatManyDecisionsOfAGamePerType() throws IOException {
+        decisionLogs.setMaxRowsPerGameType(3);
+        try {
+            decisionLogs.startRecording(dir);
+            for (int i = 0; i < 4; i++) {
+                decisionLogs.finish(playOneAgentGame());
+            }
+            decisionLogs.stopRecording();
+        } finally {
+            decisionLogs.setMaxRowsPerGameType(0);
+        }
+        Map<Long, Integer> perGame = new HashMap<>();
+        for (DecisionFile.Row row : readAll(dir).rows()) {
+            perGame.merge(row.gameId(), 1, Integer::sum);
+        }
+        assertEquals(4, perGame.size());
+        assertTrue(perGame.values().stream().allMatch(n -> n == 3), "a game has ~20 phase picks, 3 are kept: " + perGame);
+
+        Path uncapped = dir.resolve("uncapped");
+        decisionLogs.startRecording(uncapped);
+        decisionLogs.finish(playOneAgentGame());
+        decisionLogs.stopRecording();
+        assertTrue(readAll(uncapped).rows().size() > 3, "without the cap every decision is written");
+    }
+
+    @Test
     void contextOfTheRowIsTheContextOfTheDecisionMaker() throws IOException {
         decisionLogs.startRecording(dir);
         for (int i = 0; i < 6; i++) {

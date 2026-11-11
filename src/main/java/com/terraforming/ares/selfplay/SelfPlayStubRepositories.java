@@ -48,6 +48,10 @@ public class SelfPlayStubRepositories {
                 case "equals":
                     return proxy == args[0];
                 default:
+                    if (method.getName().startsWith("clear") && method.getName().endsWith("Memory")
+                            && method.getReturnType() == void.class) {
+                        return null;  // the scheduled memory cleanup of GameProcessorService: nothing to clear without a database
+                    }
                     throw new UnsupportedOperationException(type.getSimpleName() + "." + method.getName()
                             + " was called in the self-play process, which has no database");
             }

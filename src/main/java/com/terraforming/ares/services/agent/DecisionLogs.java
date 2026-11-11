@@ -77,6 +77,8 @@ public class DecisionLogs {
     /** 0 = only manual {@link #rotate()}; self-play sets this so workers never wait on disk. */
     private int gamesPerChunk;
     private int gamesInChunk;
+    /** 0 = every decision; otherwise at most this many random decisions of one game per type are written. */
+    private volatile int maxRowsPerGameType;
 
     public boolean isRecording() {
         return directory != null;
@@ -88,6 +90,14 @@ public class DecisionLogs {
 
     public long chunksFinished() {
         return chunksFinished.get();
+    }
+
+    /**
+     * The decisions of one game share one label and are often near-duplicates; whether more than a few dozen per type add
+     * information is hypothesis H-D3 (docs/EXPERIMENTS.md). Rows above the cap are not even encoded, which saves disk and CPU.
+     */
+    public void setMaxRowsPerGameType(int max) {
+        this.maxRowsPerGameType = Math.max(0, max);
     }
 
     public void startRecording(Path dir) {
@@ -273,6 +283,7 @@ public class DecisionLogs {
         }
 
         long gameId = gameIdBase + gameCounter.getAndIncrement();
+        list = sampled(list, maxRowsPerGameType);
         List<EncodedRow> encoded = new ArrayList<>(list.size());
         for (Pending p : list) {
             Player me = game.getPlayerByUuid(p.playerUuid());
@@ -307,6 +318,35 @@ public class DecisionLogs {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("interrupted while enqueueing decision rows", e);
         }
+    }
+
+    /** At most {@code max} random decisions per type, in their original order. */
+    static List<Pending> sampled(List<Pending> list, int max) {
+        if (max <= 0) {
+            return list;
+        }
+        Map<DecisionType, List<Integer>> byType = new EnumMap<>(DecisionType.class);
+        for (int i = 0; i < list.size(); i++) {
+            byType.computeIfAbsent(list.get(i).decision().type(), t -> new ArrayList<>()).add(i);
+        }
+        if (byType.values().stream().allMatch(positions -> positions.size() <= max)) {
+            return list;
+        }
+        boolean[] keep = new boolean[list.size()];
+        java.util.concurrent.ThreadLocalRandom random = java.util.concurrent.ThreadLocalRandom.current();
+        for (List<Integer> positions : byType.values()) {
+            java.util.Collections.shuffle(positions, random);
+            for (int i = 0; i < Math.min(max, positions.size()); i++) {
+                keep[positions.get(i)] = true;
+            }
+        }
+        List<Pending> result = new ArrayList<>();
+        for (int i = 0; i < keep.length; i++) {
+            if (keep[i]) {
+                result.add(list.get(i));
+            }
+        }
+        return result;
     }
 
     private void startWriterThread() {

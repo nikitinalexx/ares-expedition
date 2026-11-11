@@ -59,6 +59,37 @@ class Discover(unittest.TestCase):
             self.assertEqual(["BUILD_CARD", "PICK_PHASE"], discover_decisions(str(root)))
 
 
+class Pool(unittest.TestCase):
+    def test_cap_keeps_at_most_k_random_rows_of_every_game(self):
+        from train_all import cap_per_game
+        games = np.repeat(np.arange(50), 30)  # the rows of a game come in a row, as the writer stores them
+        rng = np.random.default_rng(0)
+        kept = cap_per_game(games, 5, rng)
+        self.assertTrue(np.all(np.diff(kept) > 0), "sorted: the memmap is read forward")
+        self.assertEqual([5] * 50, np.bincount(games[kept]).tolist())
+        self.assertNotEqual(kept.tolist(), cap_per_game(games, 5, rng).tolist(), "a random subset, not the first k rows")
+        self.assertEqual(list(range(len(games))), cap_per_game(games, 100, rng).tolist())
+
+    def test_pool_holds_every_training_game_of_every_file_capped(self):
+        from train_all import build_pool
+        from train_phase import is_validation_game
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            files = []
+            for i in range(3):
+                path = Path(tmp) / f"PICK_PHASE.{i + 1:06d}.ares"
+                write_typed_chunk(path, "PICK_PHASE", 6, 40, i + 1, rows_per_game=20)
+                files.append(str(path))
+            all_games = np.concatenate([np.repeat(np.arange(s * 10_000, s * 10_000 + 40), 20) for s in (1, 2, 3)])
+            expected = set(np.unique(all_games[~is_validation_game(all_games, 0.2)]).tolist())
+            obs, cand, outcome, game = build_pool(files, False, 0.2, np.random.default_rng(1), 3)
+            self.assertEqual(expected, set(np.unique(game).tolist()))
+            self.assertLessEqual(np.bincount(game - game.min()).max(), 3)
+            self.assertEqual(len(obs), len(cand))
+            self.assertEqual(np.float16, obs.dtype)
+            val = build_pool(files, True, 0.2, np.random.default_rng(1), 3)
+            self.assertFalse(set(np.unique(val[3]).tolist()) & expected, "validation games never appear in training")
+
+
 @unittest.skipUnless(HAVE_TORCH, "torch is not installed")
 class TrainAllShared(unittest.TestCase):
     def setUp(self):
@@ -93,6 +124,30 @@ class TrainAllShared(unittest.TestCase):
             self.assertTrue(np.allclose(params["mean"], load_exported(out / "PICK_PHASE")[1]["mean"]))
             logits = numpy_forward(params, meta["clip"], np.zeros(OBS), np.eye(meta["candFeatures"], dtype=np.float64)[:1])
             self.assertEqual(1, len(logits))
+
+    def test_exports_the_epoch_with_the_best_val_loss_and_stops_early(self):
+        out = self.tmp / "early"
+        cmd = [sys.executable, str(ML / "train_all.py"), "--data", str(self.data), "--out", str(out),
+               "--epochs", "12", "--patience", "1", "--hidden", "64,32", "--batch", "16", "--device", "cpu", "--lr", "3e-2"]
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        self.assertEqual(0, r.returncode, r.stderr + r.stdout)
+        metrics = json.loads((out / "PICK_PHASE" / "train_metrics.json").read_text(encoding="utf-8"))
+        history = metrics["history"]
+        losses = [h["val_loss"] for h in history]
+        self.assertEqual(1 + int(np.argmin(losses)), metrics["best_epoch"])
+        self.assertAlmostEqual(min(losses), metrics["best_val_loss"])
+        self.assertLessEqual(len(history), metrics["best_epoch"] + 1)
+        self.assertIn(f"exporting epoch {metrics['best_epoch']}", r.stdout)
+
+    def test_sequential_feed_ablation_trains_and_is_recorded(self):
+        out = self.tmp / "seq"
+        cmd = [sys.executable, str(ML / "train_all.py"), "--data", str(self.data), "--out", str(out), "--feed", "sequential",
+               "--epochs", "2", "--hidden", "16,8", "--batch", "64", "--device", "cpu"]
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        self.assertEqual(0, r.returncode, r.stderr + r.stdout)
+        metrics = json.loads((out / "PICK_PHASE" / "train_metrics.json").read_text(encoding="utf-8"))
+        self.assertEqual("sequential", metrics["pool"]["feed"])
+        self.assertGreater(metrics["pool"]["train_games"], 0)
 
     def test_independent_mode(self):
         out = self.tmp / "ind"

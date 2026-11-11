@@ -28,7 +28,7 @@ def main():
     parser.add_argument("--data", required=True, help="comma separated data directories")
     parser.add_argument("--out", required=True)
     parser.add_argument("--prev", default="")
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()  # per-experiment trainer flags (--hidden ...) are for the real trainer
 
     started = time.time()
     files = []

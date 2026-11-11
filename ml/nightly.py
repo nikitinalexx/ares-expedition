@@ -60,7 +60,19 @@ def write_json(path, obj):
         json.dump(obj, f, indent=2, sort_keys=True)
         f.flush()
         os.fsync(f.fileno())
-    os.replace(tmp, path)
+    replace(tmp, path)
+
+
+def replace(src, dst, attempts=20, pause=0.5):
+    """os.replace that survives Windows: an antivirus / indexer / reader may hold the target for a moment (WinError 5)."""
+    for attempt in range(attempts):
+        try:
+            os.replace(src, dst)
+            return
+        except PermissionError:
+            if attempt == attempts - 1:
+                raise
+            time.sleep(pause)
 
 
 def read_json(path, default=None):
@@ -346,9 +358,13 @@ DEFAULT_CONFIG = {
     "retry_backoff_seconds": [10, 60, 300],
     "oom_restarts": 20,                       # Java exit 6 (out of memory) = restart the stage at once, not a failure
     "max_consecutive_failures": 3,
-    "selfplay": {"temperature": 0.5, "games_per_chunk": 500, "stage_max_seconds": 3600, "grace_seconds": 90, "max_failure_ratio": 0.05},
+    # max_rows_per_game_type: decisions of one game written per type (0 = all); how many are useful is hypothesis H-D3
+    "selfplay": {"temperature": 0.5, "games_per_chunk": 500, "stage_max_seconds": 3600, "grace_seconds": 90, "max_failure_ratio": 0.05,
+                 "max_rows_per_game_type": 64},
     "train": {"command": ["{python}", "ml/train_all.py", "--data", "{data}", "--out", "{model_dir}", "--prev", "{prev_model}", "--epochs", "3"], "timeout_seconds": 7200},
     "eval": {"games": 200, "references": ["SMART", "RANDOM"], "agent": "AGENT", "concurrency": 32, "timeout_seconds": 1800, "bias_alarm_gap": 0.10},
+    # slow opponents: once per run, best model only (see stage_benchmark); never in self-play or the per-iteration eval
+    "benchmark": {"references": [], "games": 100, "concurrency": 16, "timeout_seconds": 3600},
     # successive halving: each rung gets a fraction of the night; only `keep` best experiments continue to the next rung
     "rungs": [{"fraction": 0.3, "keep": 2, "games_factor": 0.25}, {"fraction": 0.7, "keep": 1, "games_factor": 1.0}],
     "experiments": [{"name": "default", "games_per_iteration": 2000, "matchups": "AGENT:AGENT:1"}],
@@ -670,6 +686,7 @@ class Pipeline:
                                 "--games-per-chunk", str(sp["games_per_chunk"]), "--matchups", exp_cfg["matchups"],
                                 "--max-seconds", str(sp["stage_max_seconds"]), "--stop-file", stop_file.as_posix(),
                                 "--max-failure-ratio", str(sp["max_failure_ratio"]),
+                                "--max-rows-per-game-type", str(sp["max_rows_per_game_type"]),
                                 # the Java process also guards itself, in case this supervisor dies
                                 "--min-free-gb", str(max((r for p, r in self.storage.reserves if volume_key(p) == volume_key(out)), default=0)),
                                 "--threads", str(self.cfg["java"]["threads"] or (os.cpu_count() or 8) * 4), *model_args)
@@ -713,7 +730,9 @@ class Pipeline:
             self.current = {"exp": exp, "iteration": it, "stage": "train"}
             self.write_status()
             model_dir.mkdir(parents=True, exist_ok=True)
-            cmd = self.template(tr["command"], data=",".join(str(w) for w in window), model_dir=str(model_dir),
+            # per-experiment trainer flags (architecture, lr, ...) go last, so they override the common ones
+            cmd = self.template(list(tr["command"]) + list(exp_cfg.get("train_args", [])),
+                                data=",".join(str(w) for w in window), model_dir=str(model_dir),
                                 prev_model=str(prev) if prev else "", exp=exp, iteration=it)
             result = run_command(cmd, log_path, tr["timeout_seconds"], self.stop, env=self.storage.child_env(),
                                  guard=self.storage.guard, guard_interval=self.storage.interval, tick=self.tick,
@@ -734,19 +753,60 @@ class Pipeline:
         """The same agent WITHOUT a model (it picks phases at random) against `ref`: what the model has to beat. Played once per run."""
         ev = self.cfg["eval"]
         path = self.run_dir / "baseline" / f"vs_{ref}.json"
+        result = self.compare_once(path, self.run_dir / "baseline" / "baseline.log", ev["agent"], ref, ev["games"],
+                                   ev["concurrency"], ev["timeout_seconds"], [], ("baseline", 0, f"baseline vs {ref}"))
+        return read_json(path) if result.ok else None
+
+    def compare_once(self, path, log_path, a, b, games, concurrency, timeout, model_args, where):
+        """One SelfPlayMain compare outside with_retries (baseline, benchmark); an out-of-memory exit is recorded and restarted."""
         restarts = 0
         while not path.exists():
-            cmd = self.java_cmd("--mode", "compare", "--a", ev["agent"], "--b", ref, "--games", str(ev["games"]),
-                                "--concurrency", str(ev["concurrency"]), "--out", path.as_posix())
-            result = run_command(cmd, self.run_dir / "baseline" / "baseline.log", ev["timeout_seconds"], self.stop, env=self.storage.child_env(),
+            cmd = self.java_cmd("--mode", "compare", "--a", a, "--b", b, "--games", str(games),
+                                "--concurrency", str(concurrency), "--out", path.as_posix(), *model_args)
+            result = run_command(cmd, log_path, timeout, self.stop, env=self.storage.child_env(),
                                  guard=self.storage.guard, guard_interval=self.storage.interval, tick=self.tick, low_priority=self.cfg["low_priority"])
             if result.code == JAVA_EXIT_OUT_OF_MEMORY and result.reason == "exit" and restarts < self.cfg["oom_restarts"]:
                 restarts += 1
-                self.record_oom("baseline", 0, f"baseline vs {ref}", self.run_dir / "baseline" / "baseline.log")
+                self.record_oom(*where, log_path)
                 continue
             if not (result.ok and path.exists()):
-                return None
-        return read_json(path)
+                return result if not result.ok else Result(1, "exit", result.seconds)
+        return Result(0, "exit", 0)
+
+    def stage_benchmark(self):
+        """Rare and slow opponents (NETWORK_V2 ...): only the best model of the run, once, at the end. Never training data.
+        A failed benchmark is a warning in the report, not a failed run."""
+        bm = self.cfg.get("benchmark") or {}
+        exps = self.state["experiments"]
+        candidates = [n for n, e in exps.items() if e.get("best_score") is not None and e.get("best_model")]
+        if not bm.get("references") or not candidates:
+            return
+        exp = max(candidates, key=lambda n: exps[n]["best_score"])
+        it = exps[exp]["best_iteration"]
+        model_dir = exps[exp]["best_model"]
+        results = self.state.setdefault("benchmark", {})
+        out = self.run_dir / "benchmark"
+        out.mkdir(parents=True, exist_ok=True)
+        for ref in bm["references"]:
+            key = f"{exp}/it{it}/{ref}"
+            if key in results:
+                continue
+            self.current = {"exp": exp, "iteration": it, "stage": f"benchmark vs {ref}"}
+            self.write_status()
+            path = out / f"{exp}_it{it}_vs_{ref}.json"
+            self.log(f"benchmark: best model ({exp} it{it}) vs {ref}, {bm['games']} games")
+            started = now()
+            result = self.compare_once(path, out / "benchmark.log", self.cfg["eval"]["agent"], ref, bm["games"], bm["concurrency"],
+                                       bm["timeout_seconds"], java_model_args(model_dir, "0"), (exp, it, f"benchmark vs {ref}"))
+            if result.ok:
+                r = read_json(path)
+                results[key] = {"exp": exp, "iteration": it, "ref": ref, "score": r["aScore"], "low": r["aScoreCi95Low"],
+                                "high": r["aScoreCi95High"], "games": r["games"], "seconds": round(now() - started, 1)}
+                self.log(f"benchmark vs {ref}: {r['aScore']:.3f} [{r['aScoreCi95Low']:.3f}, {r['aScoreCi95High']:.3f}]")
+            else:
+                results[key] = {"exp": exp, "iteration": it, "ref": ref, "failed": f"exit {result.code} ({result.reason})"}
+                self.log(f"benchmark vs {ref} failed: exit {result.code} ({result.reason}), see benchmark/benchmark.log")
+            self.save_state()
 
     def stage_eval(self, exp, it):
         done_marker = self.it_dir(exp, it) / "eval.done"
@@ -820,7 +880,9 @@ class Pipeline:
         """Deletes the data of iterations that fell out of the window. Models, evaluations and logs are never deleted."""
         removed = 0
         for exp, e in (self.state.get("experiments") or {}).items():
-            for i in range(1, e.get("iterations_done", 0) - self.storage.keep + 1):
+            # an eliminated experiment never trains again: its whole window is free space for the survivors
+            last = e.get("iterations_done", 0) + (1 if e.get("state") == "eliminated" else -self.storage.keep + 1)
+            for i in range(1, last):
                 d = self.data_dir(exp, i)
                 if d.exists() and not (exp == protect_exp and i == protect_it):
                     self.storage.delete_data_dir(d)
@@ -891,6 +953,29 @@ class Pipeline:
             "experiments": {e["name"]: {"state": "active", "iterations_done": 0, "scores": [], "failures": 0, "best_score": None}
                             for e in self.cfg["experiments"]},
         }
+        for e_cfg in self.cfg["experiments"]:
+            if e_cfg.get("start_model"):
+                # the model of an earlier night becomes iteration 0: it plays the first self-play, warm-starts the trainer and is
+                # evaluated like any iteration, so a new model replaces it only by being better. Copied: this run stays self-contained.
+                source = resolve_start_model(e_cfg["start_model"], self.run_dir.parent)
+                target = self.it_dir(e_cfg["name"], 0) / "model"
+                if target.exists():
+                    shutil.rmtree(target)
+                shutil.copytree(source, target)
+                e = self.state["experiments"][e_cfg["name"]]
+                e.update({"start_model": str(source), "best_model": str(target), "best_iteration": 0, "start_pending_eval": True})
+        self.save_state()
+
+    def score_start_model(self, exp):
+        e = self.state["experiments"][exp]
+        summary = self.stage_eval(exp, 0)
+        e.pop("start_pending_eval", None)
+        if summary is None:
+            self.log(f"{exp}: the start model {e['start_model']} could not be evaluated; the first trained model replaces it")
+            e["best_model"], e["best_iteration"] = None, None
+        else:
+            e["best_score"] = round(summary["score"], 4)
+            self.log(f"{exp}: start model {e['start_model']} has gain {summary['score']:+.3f}; new models must beat it")
         self.save_state()
 
     def exp_cfg(self, name):
@@ -941,6 +1026,9 @@ class Pipeline:
                     self.log(f"experiment {loser} eliminated after rung {rung_index} (best score {st['experiments'][loser].get('best_score')})")
                 st["rung"] = rung_index + 1
                 self.save_state()
+                if losers:
+                    self.log(f"freed the data of eliminated experiments: {self.prune_old_data()} folders (their models stay)")
+            self.stage_benchmark()
             st["status"] = "finished"
         except StopRequested:
             st["status"] = "stopped"
@@ -971,6 +1059,8 @@ class Pipeline:
         e = self.state["experiments"][name]
         hard_end = self.budget()
         limit = self.cfg.get("max_iterations_per_experiment")
+        if e.get("start_pending_eval"):
+            self.score_start_model(name)
         while e["state"] == "active":
             self.stop.check()
             if limit and e["iterations_done"] >= limit:
@@ -984,6 +1074,22 @@ class Pipeline:
 
 
 # ------------------------------------------------------------------------------------------------ data helpers
+
+def resolve_start_model(spec, run_root):
+    """`spec` is a model folder (with DONE) or a run (name inside run_root, or its folder): then the best model of that run."""
+    path = Path(spec)
+    if not path.is_absolute() and (Path(run_root) / spec / "state.json").exists():
+        path = Path(run_root) / spec
+    if (path / "state.json").exists():
+        exps = (read_json(path / "state.json", {}) or {}).get("experiments", {})
+        scored = [e for e in exps.values() if e.get("best_score") is not None and e.get("best_model")]
+        if not scored:
+            raise ValueError(f"run {path} has no evaluated model to start from")
+        path = Path(max(scored, key=lambda e: e["best_score"])["best_model"])
+    if not (path / "DONE").exists():
+        raise ValueError(f"{spec}: not a finished model folder (no DONE) and not a run folder")
+    return path
+
 
 def java_model_args(model_dir, temperature):
     """CLI flags for SelfPlayMain: multi-type bundle (--models) or a single exported folder (--model)."""
@@ -1041,7 +1147,113 @@ def quarantine_bad_chunks(directory, quarantine, log):
 
 # ------------------------------------------------------------------------------------------------ pack (hand over)
 
-def pack(run_dir, handoff_root=None):
+def journal_entry(run_dir, state, cfg):
+    """What this run tried and what came out: one record per run, so the next nights do not test the same idea again."""
+    run_dir = Path(run_dir)
+    exps = state.get("experiments", {})
+    entry = {"run": state.get("name", run_dir.name), "status": state.get("status"),
+             "started": stamp(state["started"]) if state.get("started") else None, "packed": stamp(),
+             "active_hours": round((state.get("active_seconds") or 0) / 3600, 2),
+             "train_command": (cfg.get("train") or {}).get("command"),
+             "eval_references": (cfg.get("eval") or {}).get("references"),
+             "oom_restarts": len(state.get("oom_restarts") or []),
+             "errors": len(list((run_dir / "errors").glob("*.txt"))) if (run_dir / "errors").exists() else 0,
+             "benchmark": list((state.get("benchmark") or {}).values()),
+             "experiments": []}
+    for e_cfg in cfg.get("experiments", []):
+        n = e_cfg["name"]
+        e = exps.get(n, {})
+        record = {"name": n, "hypothesis": e_cfg.get("hypothesis", ""), "matchups": e_cfg.get("matchups"),
+                  "games_per_iteration": e_cfg.get("games_per_iteration"), "train_args": e_cfg.get("train_args", []),
+                  "start_model": e.get("start_model"),
+                  "state": e.get("state"), "iterations_done": e.get("iterations_done", 0), "scores": e.get("scores", []),
+                  "best_score": e.get("best_score"), "best_iteration": e.get("best_iteration"), "iterations": []}
+        for i in range(1, e.get("iterations_done", 0) + 1):
+            i_dir = run_dir / "exp" / n / f"it_{i:04d}"
+            m_path = next(iter(sorted((i_dir / "model").glob("*/train_metrics.json"))), None) if (i_dir / "model").exists() else None
+            m = read_json(m_path, {}) if m_path else {}
+            pool = m.get("pool") or {}
+            val, const = m.get("best_val_loss"), m.get("constant_val_loss")
+            record["iterations"].append({
+                "iteration": i, "score": (read_json(i_dir / "eval.json") or {}).get("score"),
+                "train_games": pool.get("train_games"), "rows_per_game_mean": pool.get("rows_per_game_mean"),
+                "rows_per_game_cap": pool.get("rows_per_game_cap"), "feed": pool.get("feed"), "best_epoch": m.get("best_epoch"),
+                "val_gap": round(val - const, 4) if isinstance(val, (int, float)) and isinstance(const, (int, float)) else None})
+        it = e.get("best_iteration")
+        if it:
+            it_dir = run_dir / "exp" / n / f"it_{it:04d}"
+            ev = read_json(it_dir / "eval.json") or {}
+            record["best_eval"] = {ref: {k: v.get(k) for k in ("score", "low", "high", "baseline", "gain")}
+                                   for ref, v in (ev.get("vs") or {}).items()}
+            metrics = next(iter(sorted((it_dir / "model").glob("*/train_metrics.json"))), None) if (it_dir / "model").exists() else None
+            if metrics:
+                m = read_json(metrics, {})
+                record["best_training"] = {"best_epoch": m.get("best_epoch"), "best_val_loss": m.get("best_val_loss"),
+                                           "constant_val_loss": m.get("constant_val_loss"), "pool": m.get("pool"),
+                                           "history": m.get("history")}
+        speeds = [(read_json(run_dir / "exp" / n / f"it_{i:04d}" / "selfplay.done", {}) or {}).get("gamesPerSecond")
+                  for i in range(1, e.get("iterations_done", 0) + 1)]
+        speeds = [s for s in speeds if isinstance(s, (int, float))]
+        record["games_per_second"] = round(sum(speeds) / len(speeds), 2) if speeds else None
+        entry["experiments"].append(record)
+    return entry
+
+
+def data_quality_lines(journal, cfg):
+    """Point 1 of the basics (docs/EXPERIMENTS.md): what the best model of every experiment was trained on.
+    Only facts and plain defects are flagged here; how many games are "enough" is a hypothesis that the per-iteration table tests."""
+    lines = ["## Data quality (training pool of the best model)", "",
+             "| experiment | matchups | train games | val games | rows/game (cap) | label win share | pool GB | warnings |",
+             "|---|---|---:|---:|---|---:|---:|---|"]
+    selfplay_cap = (cfg.get("selfplay") or {}).get("max_rows_per_game_type")
+    for r in journal["experiments"]:
+        pool = (r.get("best_training") or {}).get("pool")
+        if not pool:
+            lines.append(f"| {r['name']} | {r['matchups']} | - | - | - | - | - | no trained model / no pool stats |")
+            continue
+        warnings = []
+        if not 0.3 <= pool["label_mean"] <= 0.7:
+            warnings.append(f"labels unbalanced ({pool['label_mean']:.2f} wins)")
+        if not pool.get("rows_per_game_cap"):
+            warnings.append("no cap on rows per game")
+        if not pool.get("val_games"):
+            warnings.append("no validation games")
+        lines.append(f"| {r['name']} | {r['matchups']} | {pool['train_games']} | {pool.get('val_games', '-')} | "
+                     f"{pool['rows_per_game_mean']} ({pool.get('rows_per_game_cap')}) | {pool['label_mean']:.3f} | {pool['pool_gb']} | "
+                     f"{'; '.join(warnings) or 'ok'} |")
+    lines += ["", f"self-play writes at most {selfplay_cap or 'all'} decisions of a game per type; "
+              "if a warning is shown, fix the data before drawing conclusions about the training.", ""]
+    # evidence for the theory: does the overfitting gap shrink with more games / mixing / caps? (every iteration, not only the best)
+    lines += ["## Evidence per iteration (data -> generalisation -> strength)", "",
+              "| experiment | it | train games | rows/game | feed | best epoch | val_loss − constant | gain |", "|---|---:|---:|---:|---|---:|---:|---:|"]
+    for r in journal["experiments"]:
+        for row in r.get("iterations", []):
+            gap = "-" if row.get("val_gap") is None else format(row["val_gap"], "+.4f")
+            score = "-" if row.get("score") is None else format(row["score"], "+.3f")
+            lines.append(f"| {r['name']} | {row['iteration']} | {row.get('train_games', '-')} | {row.get('rows_per_game_mean', '-')} | "
+                         f"{row.get('feed', '-')} | {row.get('best_epoch', '-')} | {gap} | {score} |")
+    lines += ["", "val_loss − constant < 0: the model generalises beyond predicting the win rate; > 0: it memorised games.", ""]
+    return lines
+
+
+def upsert_journal(journal_path, entry):
+    """JOURNAL.jsonl next to all runs: one line per run, the latest pack of a run replaces its line."""
+    journal_path = Path(journal_path)
+    lines = []
+    if journal_path.exists():
+        for line in journal_path.read_text(encoding="utf-8").splitlines():
+            try:
+                if json.loads(line).get("run") != entry["run"]:
+                    lines.append(line)
+            except ValueError:
+                lines.append(line)
+    lines.append(json.dumps(entry, ensure_ascii=False))
+    tmp = journal_path.with_name(journal_path.name + ".tmp")
+    tmp.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    replace(tmp, journal_path)
+
+
+def pack(run_dir, handoff_root=None, update_journal=True):
     run_dir = Path(run_dir)
     state = read_json(run_dir / "state.json", {})
     status = read_json(run_dir / "status.json", {})
@@ -1088,6 +1300,30 @@ def pack(run_dir, handoff_root=None):
     else:
         lines.append("**no model has been evaluated yet** (see the logs below)")
     lines.append("")
+
+    cfg = read_json(run_dir / "config.json", {}) or {}
+    journal = journal_entry(run_dir, state, cfg)
+    lines += ["## Hypotheses of this run", "",
+              "| experiment | hypothesis | train args | best gain | best epoch / val_loss (constant predictor) |", "|---|---|---|---:|---|"]
+    for r in journal["experiments"]:
+        tr = r.get("best_training") or {}
+        loss = f"{tr.get('best_epoch')} / {tr['best_val_loss']:.4f}" if isinstance(tr.get("best_val_loss"), (int, float)) else "-"
+        if isinstance(tr.get("constant_val_loss"), (int, float)) and isinstance(tr.get("best_val_loss"), (int, float)):
+            loss += f" ({tr['constant_val_loss']:.4f}{', WORSE than constant' if tr['best_val_loss'] >= tr['constant_val_loss'] else ''})"
+        lines.append(f"| {r['name']} | {r['hypothesis'] or '**no hypothesis written**'} | {' '.join(r['train_args']) or '-'} | "
+                     f"{r['best_score']} | {loss} |")
+    lines += ["", "Conclusions go to `docs/EXPERIMENTS.md` (what was ruled out, what to try next); the raw record is `journal.json`.", ""]
+    lines += data_quality_lines(journal, cfg)
+    if journal["benchmark"]:
+        lines += ["## Benchmark (slow opponents, best model only)", ""]
+        for b in journal["benchmark"]:
+            result = b.get("failed") or f"{b['score']:.3f} [{b['low']:.3f}, {b['high']:.3f}] in {b['games']} games, {b['seconds']:.0f} s"
+            lines.append(f"- {b['exp']} it{b['iteration']} vs {b['ref']}: {result}")
+        lines.append("")
+    write_json(work / "journal.json", journal)
+    if update_journal:
+        upsert_journal(run_dir.parent / "JOURNAL.jsonl", journal)
+        shutil.copyfile(run_dir.parent / "JOURNAL.jsonl", work / "JOURNAL_all_runs.jsonl")
 
     errors = sorted((run_dir / "errors").glob("*.txt")) if (run_dir / "errors").exists() else []
     lines.append(f"errors: {len(errors)} (files in `logs/`; each has the command, the exit code and the end of the process output)" + (f"; last: {status.get('last_error')}" if status.get("last_error") else ""))
@@ -1144,7 +1380,7 @@ def pack(run_dir, handoff_root=None):
         pass
     write_json(work / "versions.json", versions)
 
-    os.replace(work, final)
+    replace(work, final)
     archive = shutil.make_archive(str(final), "zip", str(final))
     return final, Path(archive)
 
@@ -1275,6 +1511,16 @@ def preflight(cfg, run_dir, data_root, temp_root, smoke=True):
     else:
         check.add("GPU", False, "nvidia-smi not found (the training will run on the CPU)", fatal=False)
     check.add("train command", bool(cfg["train"]["command"]), " ".join(cfg["train"]["command"]))
+    for e in cfg["experiments"]:
+        if e.get("start_model"):
+            try:
+                check.add(f"start model of '{e['name']}'", True, str(resolve_start_model(e["start_model"], Path(run_dir).parent)))
+            except ValueError as ex:
+                check.add(f"start model of '{e['name']}'", False, str(ex))
+    missing = [e["name"] for e in cfg["experiments"] if not str(e.get("hypothesis", "")).strip()]
+    check.add("every experiment states its hypothesis", not missing,
+              f"no hypothesis: {missing} (a night must confirm or rule out something, see docs/EXPERIMENTS.md)" if missing
+              else f"{len(cfg['experiments'])} experiments", fatal=False)
 
     if smoke and check.ok:
         smoke_ok, detail, bytes_per_game = smoke_run(cfg, run_dir, data_root, temp_root)
@@ -1306,6 +1552,9 @@ def smoke_run(cfg, run_dir, data_root, temp_root):
     smoke_cfg["rungs"] = [{"fraction": 1.0, "keep": 1, "games_factor": 1.0}]
     smoke_cfg["hours"] = 0.5
     smoke_cfg["max_iterations_per_experiment"] = 1
+    # two games per slow opponent: proves it starts in the self-play process before the night relies on it
+    smoke_cfg["benchmark"]["games"] = 2
+    smoke_cfg["benchmark"]["concurrency"] = 2
     smoke_dir = Path(run_dir) / "_smoke"
     smoke_data = Path(data_root) / "_smoke_data"
     for d in (smoke_dir, smoke_data):
@@ -1324,9 +1573,13 @@ def smoke_run(cfg, run_dir, data_root, temp_root):
             size = sum(f.stat().st_size for f in chunk_files(data)) if data.exists() else 0
             bytes_per_game = size / games if games else 0
             # the result of the smoke run is also the sample of what the morning pack looks like
-            final, archive = pack(smoke_dir)
+            final, archive = pack(smoke_dir, update_journal=False)
             ok = (final / "best_model").exists() and (final / "REPORT.md").exists()
         detail = f"status={status}, iterations={e['iterations_done']}, score={e.get('best_score')}"
+        failed_benchmarks = [b["ref"] for b in (pipeline.state.get("benchmark") or {}).values() if b.get("failed")]
+        if failed_benchmarks:
+            ok = False
+            detail += f"; benchmark opponents do not start: {failed_benchmarks} (see {smoke_dir / 'benchmark'})"
         if not ok:
             detail += f"; see {smoke_dir / 'errors'} and {smoke_dir / 'exp'}"
         return bool(ok), detail, bytes_per_game
@@ -1359,8 +1612,18 @@ def cmd_run(args):
         cfg["hours"] = args.hours
     run_dir, data_root, temp_root = storage_paths(cfg, args.name)
     run_dir.mkdir(parents=True, exist_ok=True)
+    existing = read_json(run_dir / "state.json", None)
+    if getattr(args, "start_from", None):
+        if existing is not None:
+            print(f"--start-from ignored: run {args.name} already exists and continues with its own models")
+        else:
+            for e in cfg["experiments"]:
+                e.setdefault("start_model", args.start_from)
+    if existing is not None:
+        # a continued run keeps the start models it began with (they are its iteration 0)
+        for e in cfg["experiments"]:
+            e.pop("start_model", None)
     if not args.skip_check:
-        existing = read_json(run_dir / "state.json", None)
         check = preflight(cfg, run_dir, data_root, temp_root, smoke=existing is None)
         if not check.ok:
             print("\nNOT STARTED: the check failed (use --skip-check only if you know why)")
@@ -1455,6 +1718,9 @@ def main(argv=None):
         if name == "run":
             p.add_argument("--skip-check", action="store_true")
             p.add_argument("--hours", type=float, default=None, help="working time budget (overrides the config; raise it to continue a finished run)")
+            p.add_argument("--start-from", default=None,
+                           help="NEW run only: experiments without their own start_model start from this model folder or from "
+                                "the best model of this earlier run (name or folder)")
     args = parser.parse_args(argv)
     return args.fn(args)
 

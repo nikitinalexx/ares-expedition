@@ -346,6 +346,20 @@ class DiskSafety(Base):
             self.assertTrue((p.it_dir("a", it) / "model" / "DONE").exists(), f"model of it{it}")
             self.assertTrue((p.it_dir("a", it) / "eval.json").exists(), f"evaluation of it{it}")
 
+    def test_an_eliminated_experiment_frees_all_its_data_but_keeps_its_models(self):
+        cfg = make_cfg(max_iterations_per_experiment=1, storage={"keep_data_iterations": 3},
+                       experiments=[{"name": "a", "games_per_iteration": 30, "matchups": "AGENT:AGENT:1"},
+                                    {"name": "b", "games_per_iteration": 30, "matchups": "AGENT:AGENT:1"}],
+                       rungs=[{"fraction": 0.5, "keep": 1, "games_factor": 1.0}, {"fraction": 0.5, "keep": 1, "games_factor": 1.0}])
+        p = self.pipeline(cfg)
+        self.assertEqual("finished", p.run())
+        loser = next(n for n, e in p.state["experiments"].items() if e["state"] == "eliminated")
+        winner = next(n for n in p.state["experiments"] if n != loser)
+        self.assertFalse(p.data_dir(loser, 1).exists())
+        self.assertTrue(p.data_dir(winner, 1).exists(), "the survivor keeps its window")
+        self.assertTrue((p.it_dir(loser, 1) / "model" / "DONE").exists())
+        self.assertTrue((p.it_dir(loser, 1) / "eval.json").exists())
+
     def test_deleting_outside_the_data_folder_is_refused(self):
         p = self.pipeline()
         victim = self.tmp / "precious" / "it_0001"
@@ -500,6 +514,119 @@ class ModelsInThePipeline(Base):
         self.assertFalse(ev["bias_alarm"]["triggered"])
         final, _ = pack(p.run_dir)
         self.assertNotIn("BIAS ALARM", (final / "REPORT.md").read_text())
+
+
+class BenchmarkAndJournal(Base):
+    def cfg(self, **override):
+        return make_cfg(
+            experiments=[{"name": "a", "games_per_iteration": 30, "matchups": "AGENT:AGENT:1",
+                          "hypothesis": "H-test: a wider net learns better", "train_args": ["--hidden", "64,32"]}],
+            rungs=[{"fraction": 1.0, "keep": 1, "games_factor": 1.0}],
+            benchmark={"references": ["NETWORK_V2"], "games": 4, "concurrency": 2, "timeout_seconds": 60}, **override)
+
+    def test_slow_opponents_play_only_the_best_model_once_at_the_end(self):
+        log = self.tmp / "calls.log"
+        os.environ["FAKE_ARGS_LOG"] = str(log)
+        p = self.pipeline(self.cfg(max_iterations_per_experiment=2))
+        self.assertEqual("finished", p.run())
+        calls = [json.loads(line) for line in log.read_text().splitlines()]
+        self.assertFalse(any("NETWORK_V2" in c.get("matchups", "") for c in calls), "never a source of training data")
+        v2 = [c for c in calls if c.get("b") == "NETWORK_V2"]
+        self.assertEqual(1, len(v2), "once per run, not per iteration")
+        best = p.state["experiments"]["a"]["best_model"]
+        self.assertEqual(Path(best), Path(v2[0].get("model") or v2[0].get("models")))
+        self.assertEqual("4", v2[0]["games"])
+        (result,) = p.state["benchmark"].values()
+        self.assertNotIn("failed", result)
+        final, _ = pack(p.run_dir)
+        self.assertIn("vs NETWORK_V2", (final / "REPORT.md").read_text(encoding="utf-8"))
+
+    def test_a_failing_benchmark_is_reported_but_does_not_fail_the_run(self):
+        p = self.pipeline(self.cfg())
+        p.cfg["benchmark"]["references"] = ["NETWORK_V2"]
+        real = p.compare_once
+
+        def broken(path, log_path, a, b, *rest):
+            return nightly.Result(1, "exit", 0) if b == "NETWORK_V2" else real(path, log_path, a, b, *rest)
+        p.compare_once = broken
+        self.assertEqual("finished", p.run())
+        (result,) = p.state["benchmark"].values()
+        self.assertEqual("exit 1 (exit)", result["failed"])
+
+    def test_every_run_leaves_its_hypotheses_and_results_in_the_journal(self):
+        p = self.pipeline(self.cfg())
+        write_json(p.run_dir / "config.json", p.cfg)
+        self.assertEqual("finished", p.run())
+        self.assertIn("--hidden 64,32", (p.it_dir("a", 1) / "train.log").read_text(), "experiment flags reach the trainer")
+        final, _ = pack(p.run_dir)
+        entry = read_json(final / "journal.json")
+        (exp,) = entry["experiments"]
+        self.assertEqual("H-test: a wider net learns better", exp["hypothesis"])
+        self.assertEqual(["--hidden", "64,32"], exp["train_args"])
+        self.assertIsNotNone(exp["best_score"])
+        self.assertIn("SMART", exp["best_eval"])
+        self.assertIn("H-test: a wider net learns better", (final / "REPORT.md").read_text(encoding="utf-8"))
+        # the journal next to all runs keeps one line per run: packing again replaces it
+        pack(p.run_dir)
+        journal = (p.run_dir.parent / "JOURNAL.jsonl").read_text(encoding="utf-8").splitlines()
+        self.assertEqual(["t"], [json.loads(line)["run"] for line in journal])
+
+
+class DataQualityReport(unittest.TestCase):
+    def entry(self, **pool):
+        base = {"train_games": 24000, "val_games": 2600, "rows_per_game_mean": 140.0, "rows_per_game_cap": 32,
+                "label_mean": 0.5, "pool_gb": 5.1}
+        base.update(pool)
+        return {"experiments": [{"name": "a", "matchups": "AGENT:AGENT:1", "best_training": {"pool": base}},
+                                {"name": "b", "matchups": "AGENT:AGENT:1"}]}
+
+    def test_good_data_has_no_warnings(self):
+        text = "\n".join(nightly.data_quality_lines(self.entry(), {"selfplay": {"max_rows_per_game_type": 32}}))
+        self.assertIn("| a | AGENT:AGENT:1 | 24000 | 2600 | 140.0 (32) | 0.500 | 5.1 | ok |", text)
+        self.assertIn("no trained model", text)
+
+    def test_plain_defects_are_flagged_but_the_number_of_games_is_left_to_the_evidence(self):
+        text = "\n".join(nightly.data_quality_lines(self.entry(train_games=4000, label_mean=0.1, rows_per_game_cap=0), {}))
+        self.assertIn("labels unbalanced", text)
+        self.assertIn("no cap on rows per game", text)
+        self.assertNotIn("4000 games", text, "how many games are enough is a hypothesis, not a rule")
+
+    def test_every_iteration_is_evidence(self):
+        entry = self.entry()
+        entry["experiments"][0]["iterations"] = [
+            {"iteration": 1, "train_games": 1800, "rows_per_game_mean": 150.0, "feed": "mixed", "best_epoch": 2, "val_gap": 0.031, "score": 0.01},
+            {"iteration": 2, "train_games": 9000, "rows_per_game_mean": 140.0, "feed": "mixed", "best_epoch": 6, "val_gap": -0.012, "score": 0.08}]
+        text = "\n".join(nightly.data_quality_lines(entry, {}))
+        self.assertIn("| a | 1 | 1800 | 150.0 | mixed | 2 | +0.0310 | +0.010 |", text)
+        self.assertIn("| a | 2 | 9000 | 140.0 | mixed | 6 | -0.0120 | +0.080 |", text)
+
+
+class StartFromAnEarlierRun(Base):
+    def test_the_best_model_of_the_previous_night_is_iteration_zero_of_the_next(self):
+        first = self.pipeline(name="night1")
+        self.assertEqual("finished", first.run())
+        previous_best = Path(first.state["experiments"]["a"]["best_model"])
+
+        log = self.tmp / "calls.log"
+        os.environ["FAKE_ARGS_LOG"] = str(log)
+        cfg = make_cfg(experiments=[{"name": "a", "games_per_iteration": 30, "matchups": "AGENT:AGENT:1", "start_model": "night1"}],
+                       rungs=[{"fraction": 1.0, "keep": 1, "games_factor": 1.0}])
+        second = self.pipeline(cfg, name="night2")
+        e = second.state["experiments"]["a"]
+        self.assertEqual(previous_best, Path(e["start_model"]))
+        start_copy = second.it_dir("a", 0) / "model"
+        self.assertTrue((start_copy / "DONE").exists(), "copied: the new run does not depend on the old folder")
+        self.assertEqual("finished", second.run())
+
+        calls = [json.loads(line) for line in log.read_text().splitlines()]
+        first_play = next(c for c in calls if c.get("mode") == "play")
+        self.assertEqual(start_copy, Path(first_play.get("model") or first_play.get("models")), "the first self-play uses it")
+        self.assertTrue((second.it_dir("a", 0) / "eval.json").exists(), "it is evaluated, so new models have to beat it")
+        self.assertNotIn("start_pending_eval", e)
+
+    def test_an_unknown_start_model_is_refused(self):
+        with self.assertRaises(ValueError):
+            nightly.resolve_start_model("no_such_night", self.tmp / "runs")
 
 
 if __name__ == "__main__":

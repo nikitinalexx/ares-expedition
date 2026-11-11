@@ -9,6 +9,9 @@ Layout written to MODEL_DIR (Java loads it with -Dares.agent.models=MODEL_DIR):
     MODEL_DIR/train_metrics.json
 
 Shared trunk (default): one mean/std and W_obs for every type; each type keeps its own candidate head.
+Data: one sequential pass builds an in-RAM pool (at most --rows-per-game rows of a game per type); every batch is drawn at random
+from the whole pool, so it mixes thousands of games (hypothesis H-D1 in docs/EXPERIMENTS.md: the rows of one game in a row are
+memorised; --feed sequential is the ablation that tests it).
 Independent mode: each type is a full separate network (same as repeated train_phase.py).
 """
 from __future__ import annotations
@@ -25,7 +28,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ares_data import chunk_paths, discover_decisions, open_memmap, validate  # noqa: E402
 from phase_model import export_from_arrays, load_exported, numpy_forward  # noqa: E402
-from train_phase import CLIP, iterate_blocks, list_chunks, standardisation  # noqa: E402
+from train_phase import BLOCK_ROWS, CLIP, is_validation_game, list_chunks  # noqa: E402
 
 
 def load_type_schemas(data, decisions):
@@ -47,6 +50,47 @@ def load_type_schemas(data, decisions):
                 raise SystemExit(f"{path} declares type {other['type']}, expected {decision}")
         result[decision] = (schema, files)
     return result
+
+
+SEQUENTIAL_RUN = 25  # night 1: a 100k-row block of ~250 games = ~25 batches of 4096 in a row
+
+
+def cap_per_game(games, k, rng):
+    """Positions of at most k randomly chosen rows of every game (sorted, so a memmap is read forward)."""
+    order = np.lexsort((rng.random(len(games)), games))
+    g = games[order]
+    first = np.r_[True, g[1:] != g[:-1]]
+    group_start = np.maximum.accumulate(np.where(first, np.arange(len(g)), 0))
+    return np.sort(order[(np.arange(len(g)) - group_start) < k])
+
+
+def build_pool(files, validation, fraction, rng, rows_per_game):
+    """The rows of one decision type for training (or validation) in RAM: (obs f16, chosen candidate f32, outcome f32, game).
+
+    The files are read once, in order (fine for a hard disk). The rows of a game are near-duplicates with the same label, so at most
+    `rows_per_game` random rows of each game are kept: batches drawn from the pool then mix thousands of games instead of feeding
+    hundreds of steps of the same few games in a row (which is memorised, not learned)."""
+    obs, cand, outcome, game = [], [], [], []
+    for path in files:
+        _, rows = open_memmap(path)
+        for start in range(0, len(rows), BLOCK_ROWS):
+            block = rows[start:start + BLOCK_ROWS]
+            games = np.asarray(block["game"])
+            side = is_validation_game(games, fraction)
+            positions = np.nonzero(side if validation else ~side)[0]
+            if rows_per_game:
+                positions = positions[cap_per_game(games[positions], rows_per_game, rng)]
+            if not len(positions):
+                continue
+            picked = np.asarray(block[positions])
+            chosen = picked["chosen"].astype(np.int64)
+            obs.append(picked["obs"].astype(np.float16))
+            cand.append(picked["feat"][np.arange(len(picked)), chosen].astype(np.float32))
+            outcome.append(picked["outcome"].astype(np.float32))
+            game.append(games[positions])
+    if not obs:
+        return None
+    return np.concatenate(obs), np.concatenate(cand), np.concatenate(outcome), np.concatenate(game)
 
 
 def train_independent(args, type_files):
@@ -93,8 +137,26 @@ def train_shared(args, type_files):
         if schemas[d]["obsSize"] != obs_size:
             raise SystemExit(f"{d} has obsSize {schemas[d]['obsSize']}, expected {obs_size}")
 
-    # pooled standardisation over every type's training rows
-    all_files = [f for d in decisions for f in files_by[d]]
+    pool_rng = np.random.default_rng(args.seed)  # the same pools after a resume
+    train_pool, val_pool = {}, {}
+    for d in decisions:
+        train_pool[d] = build_pool(files_by[d], False, args.val_fraction, pool_rng, args.rows_per_game)
+        val_pool[d] = build_pool(files_by[d], True, args.val_fraction, pool_rng, args.rows_per_game)
+    sizes = {d: (0 if train_pool[d] is None else len(train_pool[d][0]), 0 if val_pool[d] is None else len(val_pool[d][0])) for d in decisions}
+    n_train = sum(s[0] for s in sizes.values())
+    if n_train == 0:
+        raise SystemExit("no training rows (are there finished chunks and more than one game?)")
+    games = len(np.unique(np.concatenate([train_pool[d][3] for d in decisions if train_pool[d] is not None])))
+    gb = sum(p[0].nbytes + p[1].nbytes for pools in (train_pool, val_pool) for p in pools.values() if p is not None) / 1e9
+    val_games = [val_pool[d][3] for d in decisions if val_pool[d] is not None]
+    label_sum = sum(float(train_pool[d][2].sum()) for d in decisions if train_pool[d] is not None)
+    pool_info = {"pool_train_rows": n_train, "pool_val_rows": sum(s[1] for s in sizes.values()), "train_games": games,
+                 "val_games": len(np.unique(np.concatenate(val_games))) if val_games else 0,
+                 "rows_per_game_mean": round(n_train / games, 1), "rows_per_game_cap": args.rows_per_game,
+                 "label_mean": round(label_sum / n_train, 4), "pool_gb": round(gb, 2), "feed": args.feed,
+                 "train_rows_by_type": {d: s[0] for d, s in sizes.items()}}
+    print(json.dumps(pool_info), flush=True)
+
     checkpoint_path = os.path.join(args.out, "checkpoint_shared.pt")
     start_epoch = 0
     resumed = None
@@ -109,7 +171,19 @@ def train_shared(args, type_files):
         start_epoch = resumed["epoch"]
         print(f"resuming shared trunk from epoch {start_epoch}")
     else:
-        mean, std, _ = standardisation(all_files, args.val_fraction)
+        total, total_sq = np.zeros(obs_size), np.zeros(obs_size)
+        for p in train_pool.values():
+            if p is None:
+                continue
+            for s in range(0, len(p[0]), BLOCK_ROWS):
+                o = p[0][s:s + BLOCK_ROWS].astype(np.float64)
+                total += o.sum(0)
+                total_sq += (o * o).sum(0)
+        mean = total / n_train
+        std = np.sqrt(np.maximum(total_sq / n_train - mean * mean, 0.0))
+        # a feature that never changes carries no information: std 1 turns it into a constant zero instead of a division by ~0
+        std = np.where(std < 1e-3, 1.0, std)
+        mean, std = mean.astype(np.float32), std.astype(np.float32)
 
     class Head(nn.Module):
         def __init__(self, cand_features):
@@ -171,63 +245,108 @@ def train_shared(args, type_files):
             print("warm start of shared trunk / heads from " + args.prev)
 
     loss_fn = nn.BCEWithLogitsLoss()
-    # sampling weights ~ rows so rare types (UNMI) still appear but common types dominate
-    type_weights = []
-    for d in decisions:
-        n = sum(len(open_memmap(f)[1]) for f in files_by[d])
-        type_weights.append(max(n, 1))
-    type_weights = np.asarray(type_weights, dtype=np.float64)
-    type_weights /= type_weights.sum()
 
-    history = []
+    def batches():
+        """Endless batches. mixed: each pass permutes every type's pool and interleaves the batches of all types at random.
+        sequential (ablation, how night 1 fed the data): rows in recording order, so the rows of a game come in a row, in runs of
+        SEQUENTIAL_RUN batches of one type; only the order of the runs is random."""
+        while True:
+            if args.feed == "mixed":
+                plan = []
+                for d in decisions:
+                    if train_pool[d] is None:
+                        continue
+                    permutation = rng.permutation(len(train_pool[d][0]))
+                    plan += [(d, permutation[s:s + args.batch]) for s in range(0, len(permutation), args.batch)]
+                for i in rng.permutation(len(plan)):
+                    yield plan[i]
+            else:
+                runs = []
+                for d in decisions:
+                    if train_pool[d] is None:
+                        continue
+                    n = len(train_pool[d][0])
+                    in_order = [(d, np.arange(s, min(n, s + args.batch))) for s in range(0, n, args.batch)]
+                    runs += [in_order[s:s + SEQUENTIAL_RUN] for s in range(0, len(in_order), SEQUENTIAL_RUN)]
+                for i in rng.permutation(len(runs)):
+                    yield from runs[i]
+
+    def tensor(array, idx=None):
+        return torch.from_numpy((array if idx is None else array[idx]).astype(np.float32)).to(device)
+
+    batches_per_pass = sum(-(-s[0] // args.batch) for s in sizes.values())
+    steps = args.steps or batches_per_pass  # batches between two validations ("epoch")
+    stream = batches()
+    for _ in range(start_epoch * steps):  # a resumed run continues the same stream
+        next(stream)
+
+    history = list(resumed.get("history", [])) if resumed is not None else []
+    best_val = resumed.get("best_val", float("inf")) if resumed is not None else float("inf")
+    best_state = resumed.get("best_state") if resumed is not None else None
+    best_epoch = resumed.get("best_epoch", 0) if resumed is not None else 0
     for epoch in range(start_epoch, args.epochs):
+        if best_epoch and epoch - best_epoch >= args.patience:
+            print(f"early stop: no val_loss improvement for {args.patience} epochs (best epoch {best_epoch})", flush=True)
+            break
         model.train()
         running, seen = 0.0, 0
-        # one pass: draw types by weight, stream one training block each time until ~all types covered several times
-        steps = max(8, len(decisions) * 4)
         for _ in range(steps):
-            d = decisions[int(rng.choice(len(decisions), p=type_weights))]
-            for obs, cand, outcome in iterate_blocks(files_by[d], False, args.val_fraction, rng, True):
-                permutation = rng.permutation(len(obs))
-                for s in range(0, len(obs), args.batch):
-                    idx = permutation[s:s + args.batch]
-                    logits = model(d, torch.from_numpy(obs[idx]).to(device), torch.from_numpy(cand[idx]).to(device))
-                    loss = loss_fn(logits, torch.from_numpy(outcome[idx]).to(device))
-                    if not torch.isfinite(loss):
-                        print(f"loss diverged on {d} in epoch {epoch}", file=sys.stderr)
-                        return 4, {}
-                    optimizer.zero_grad()
-                    loss.backward()
-                    nn.utils.clip_grad_norm_(model.parameters(), 5.0)
-                    optimizer.step()
-                    running += float(loss) * len(idx)
-                    seen += len(idx)
-                break  # one block per drawn type per step keeps an epoch bounded
+            d, idx = next(stream)
+            obs, cand, outcome, _ = train_pool[d]
+            logits = model(d, tensor(obs, idx), tensor(cand, idx))
+            loss = loss_fn(logits, tensor(outcome, idx))
+            if not torch.isfinite(loss):
+                print(f"loss diverged on {d} in epoch {epoch}", file=sys.stderr)
+                return 4, {}
+            optimizer.zero_grad()
+            loss.backward()
+            nn.utils.clip_grad_norm_(model.parameters(), 5.0)
+            optimizer.step()
+            running += float(loss) * len(idx)
+            seen += len(idx)
 
         # validation: mean loss over types that have val rows
         model.eval()
-        val_parts = []
+        val_parts, constant_parts = [], []
         with torch.no_grad():
             for d in decisions:
-                total, n = 0.0, 0
-                for obs, cand, outcome in iterate_blocks(files_by[d], True, args.val_fraction, None, False):
-                    logits = model(d, torch.from_numpy(obs).to(device), torch.from_numpy(cand).to(device))
+                total, n, wins = 0.0, 0, 0.0
+                if val_pool[d] is None:
+                    continue
+                v_obs, v_cand, v_out, _ = val_pool[d]
+                for s in range(0, len(v_obs), 65536):
+                    outcome = v_out[s:s + 65536]
+                    logits = model(d, tensor(v_obs[s:s + 65536]), tensor(v_cand[s:s + 65536]))
                     total += float(nn.functional.binary_cross_entropy_with_logits(
-                        logits, torch.from_numpy(outcome).to(device), reduction="sum"))
+                        logits, tensor(outcome), reduction="sum"))
                     n += len(outcome)
+                    wins += float(outcome.sum())
                 if n:
                     val_parts.append(total / n)
+                    p = min(max(wins / n, 1e-6), 1 - 1e-6)
+                    constant_parts.append(-(p * np.log(p) + (1 - p) * np.log(1 - p)))
         model.train()
         val_loss = float(np.mean(val_parts)) if val_parts else float("nan")
-        history.append({"epoch": epoch + 1, "train_loss": running / max(seen, 1), "val_loss": val_loss, "rows_seen": seen})
+        # the loss of always predicting the val win rate: a model above it has learned nothing that generalises
+        constant_loss = float(np.mean(constant_parts)) if constant_parts else float("nan")
+        history.append({"epoch": epoch + 1, "train_loss": running / max(seen, 1), "val_loss": val_loss,
+                        "constant_val_loss": constant_loss, "rows_seen": seen})
         print(json.dumps(history[-1]), flush=True)
+        # no val rows (tiny data) -> every epoch counts as the best, i.e. the last one is exported
+        if not (val_loss >= best_val):
+            best_val, best_epoch = val_loss, epoch + 1
+            best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
         tmp = checkpoint_path + ".tmp"
         torch.save({"model": model.state_dict(), "optimizer": optimizer.state_dict(), "epoch": epoch + 1,
                     "obs_size": obs_size, "hidden": hidden, "mean": mean, "std": std,
-                    "decisions": decisions}, tmp)
+                    "decisions": decisions, "history": history,
+                    "best_val": best_val, "best_epoch": best_epoch, "best_state": best_state}, tmp)
         os.replace(tmp, checkpoint_path)
 
-    # export one Java-readable folder per type (shared trunk baked into each)
+    # export the epoch with the lowest validation loss, not the last (later epochs overfit)
+    if best_state is not None:
+        model.load_state_dict(best_state)
+        print(f"exporting epoch {best_epoch} (val_loss {best_val:.4f})", flush=True)
     model.eval()
     sd = {k: v.detach().cpu().numpy() for k, v in model.state_dict().items()}
     results = {}
@@ -243,9 +362,9 @@ def train_shared(args, type_files):
         out = os.path.join(args.out, d)
         os.makedirs(out, exist_ok=True)
         sample_obs, sample_cands = None, None
-        for obs, cand, _ in iterate_blocks(files_by[d], True, args.val_fraction, None, False):
-            sample_obs, sample_cands = obs[:16], cand[:16]
-            break
+        sample_pool = val_pool[d] if val_pool[d] is not None else train_pool[d]
+        if sample_pool is not None:
+            sample_obs, sample_cands = sample_pool[0][:16].astype(np.float32), sample_pool[1][:16].astype(np.float32)
         if sample_obs is None:
             _, first = open_memmap(files_by[d][0])
             sample_obs = first["obs"][:16].astype(np.float32)
@@ -272,7 +391,9 @@ def train_shared(args, type_files):
         torch.save({"model": head_sd, "schema_hash": schema["hash"], "hidden": hidden, "shared_trunk": True},
                    os.path.join(out, "model.pt"))
         metrics = {"decision": d, "chunks": len(files_by[d]), "export_max_abs_diff": worst, "shared_trunk": True,
-                   "history": history, "seconds": round(time.time() - started, 1)}
+                   "history": history, "best_epoch": best_epoch, "best_val_loss": best_val,
+                   "constant_val_loss": history[-1]["constant_val_loss"] if history else None, "pool": pool_info,
+                   "seconds": round(time.time() - started, 1)}
         with open(os.path.join(out, "train_metrics.json"), "w", encoding="utf-8") as f:
             json.dump(metrics, f, indent=1)
         with open(os.path.join(out, "DONE"), "w", encoding="utf-8") as f:
@@ -288,6 +409,14 @@ def main():
     parser.add_argument("--out", required=True)
     parser.add_argument("--prev", default="")
     parser.add_argument("--epochs", type=int, default=3)
+    parser.add_argument("--steps", type=int, default=0,
+                        help="batches between two validations, i.e. one 'epoch' (0 = one pass over the pool); smaller = finer early stopping")
+    parser.add_argument("--feed", choices=("mixed", "sequential"), default="mixed",
+                        help="mixed: every batch drawn from the whole pool; sequential: the rows of a game in a row (ablation)")
+    parser.add_argument("--rows-per-game", type=int, default=32,
+                        help="at most this many random rows of each game per decision type go into the pool (0 = all)")
+    parser.add_argument("--patience", type=int, default=2,
+                        help="stop after this many epochs without a better val_loss; the best epoch is exported")
     parser.add_argument("--hidden", default="256,128")
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--weight-decay", type=float, default=1e-5)
