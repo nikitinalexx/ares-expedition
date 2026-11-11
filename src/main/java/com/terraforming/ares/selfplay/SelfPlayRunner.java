@@ -115,6 +115,7 @@ public class SelfPlayRunner {
                         perMatchup.get(label(matchup)).incrementAndGet();
                         played.incrementAndGet();
                     } catch (Throwable t) {
+                        FatalErrors.haltIfOutOfMemory(t);
                         failed.incrementAndGet();
                         if (game != null) {
                             decisionLogs.discard(game);

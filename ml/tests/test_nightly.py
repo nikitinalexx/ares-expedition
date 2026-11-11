@@ -176,6 +176,24 @@ class PipelineRuns(Base):
         self.assertIn("FAKE first attempt fails", text, "the output of the failed process is in the error file")
         self.assertIn("stage=selfplay", text)
 
+    def test_java_out_of_memory_restarts_the_stage_without_counting_a_failure(self):
+        os.environ["FAKE_MODE"] = "oom_once"
+        cfg = make_cfg(retries=1)  # an ordinary failure would end the iteration: the restart must not use up a retry
+        p = self.pipeline(cfg)
+        self.assertEqual("finished", p.run())
+        self.assertEqual(1, p.state["experiments"]["a"]["iterations_done"])
+        self.assertEqual([], list((p.run_dir / "errors").glob("*.txt")), "an out-of-memory restart is not an error")
+        self.assertEqual(30, count_games(p.data_dir("a", 1)), "the chunk written before the crash is kept, the rest is played after it")
+        # ... but it is written down, so the morning report shows that memory still runs out
+        events = p.state["oom_restarts"]
+        self.assertEqual({"selfplay", "eval", "baseline vs SMART"}, {e["stage"] for e in events})
+        self.assertEqual(len(events), len(list((p.run_dir / "warnings").glob("*_oom.txt"))))
+        self.assertIn("OUT OF MEMORY", (p.run_dir / "log.txt").read_text(encoding="utf-8"))
+        final, _ = pack(p.run_dir)
+        report = (final / "REPORT.md").read_text(encoding="utf-8")
+        self.assertIn(f"Java was restarted {len(events)} times", report)
+        self.assertEqual(len(events), len(list((final / "logs" / "warnings").glob("*_oom.txt"))))
+
     def test_a_hopeless_experiment_is_dropped_and_the_others_continue(self):
         cfg = make_cfg(experiments=[{"name": "bad", "games_per_iteration": 30, "matchups": "CRASH:CRASH:1"},
                                     {"name": "good", "games_per_iteration": 30, "matchups": "AGENT:AGENT:1"}], max_iterations_per_experiment=1)

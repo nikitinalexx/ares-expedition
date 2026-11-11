@@ -7,6 +7,7 @@ Behaviour is controlled with environment variables:
   FAKE_MODE=diskfull    exit 5 (the Java process found the disk almost full)
   FAKE_MODE=hang        never finishes (killed by the pipeline timeout / stop)
   FAKE_MODE=corrupt     write a chunk that is truncated, as a damaged file would be
+  FAKE_MODE=oom_once    self-play: write one chunk, then exit 6 (out of memory) the first time; compare: exit 6 the first time
   FAKE_SCORE=0.7        score reported in --mode compare (default: derived from the output path, so experiments differ)
   FAKE_SCORES=SMART:0.8,RANDOM:0.55  scores of an agent WITH a model per opponent;  FAKE_BASELINE=0.5  score of the agent without a model
   FAKE_ARGS_LOG=file    every call is appended there as JSON
@@ -82,6 +83,14 @@ def main():
             return 1
     if mode == "hang":
         time.sleep(3600)
+    oom_marker = out.parent / (out.name + ".oom_once")
+    oom_now = mode == "oom_once" and not oom_marker.exists()
+    if oom_now:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        oom_marker.write_text("x")
+        if a.get("mode") == "compare":
+            print("FAKE: OUT OF MEMORY", file=sys.stderr)
+            return 6
 
     if a.get("mode") == "compare":
         score = float(os.environ.get("FAKE_SCORE", (zlib.crc32(str(out).encode()) % 1000) / 1000.0))
@@ -113,6 +122,9 @@ def main():
         write_chunk(out / f"PICK_PHASE.{chunk:06d}.ares", n, first_game + played, truncate=(mode == "corrupt" and chunk == 1))
         chunk += 1
         played += n
+        if oom_now and played < games:
+            print("FAKE: OUT OF MEMORY", file=sys.stderr)
+            return 6
     print(f"FAKE played {played}")
     return 0
 

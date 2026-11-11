@@ -162,6 +162,7 @@ public class SimulationCompareController {
                             draws.increment();
                         }
                     } catch (Throwable t) {
+                        com.terraforming.ares.selfplay.FatalErrors.haltIfOutOfMemory(t);
                         failed.increment();
                         t.printStackTrace();
                     } finally {

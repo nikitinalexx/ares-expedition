@@ -322,6 +322,8 @@ def java_home_of(java_bin):
 
 # ------------------------------------------------------------------------------------------------ configuration
 
+JAVA_EXIT_OUT_OF_MEMORY = 6  # SelfPlayMain / FatalErrors
+
 DEFAULT_CONFIG = {
     "hours": 8.0,                              # budget of ACTIVE working time (stopped time does not count); raise it to continue a finished run
     "python": sys.executable,
@@ -342,6 +344,7 @@ DEFAULT_CONFIG = {
     },
     "retries": 3,
     "retry_backoff_seconds": [10, 60, 300],
+    "oom_restarts": 20,                       # Java exit 6 (out of memory) = restart the stage at once, not a failure
     "max_consecutive_failures": 3,
     "selfplay": {"temperature": 0.5, "games_per_chunk": 500, "stage_max_seconds": 3600, "grace_seconds": 90, "max_failure_ratio": 0.05},
     "train": {"command": ["{python}", "ml/train_all.py", "--data", "{data}", "--out", "{model_dir}", "--prev", "{prev_model}", "--epochs", "3"], "timeout_seconds": 7200},
@@ -515,6 +518,7 @@ class Pipeline:
             "free_disk_gb": {str(p): round(free_gb(p), 1) for p, _ in self.storage.reserves},
             "data_gb": round(self.storage.data_gb(), 1),
             "last_error": self.last_error,
+            "oom_restarts": len(st.get("oom_restarts") or []),
             "experiments": {
                 name: {k: e.get(k) for k in ("state", "iterations_done", "best_score", "scores", "failures")}
                 for name, e in (st.get("experiments") or {}).items()
@@ -581,20 +585,41 @@ class Pipeline:
             raise EnvironmentBroken(f"{limit} failed attempts in a row without a single success - the environment is broken "
                                     f"(java, python, disk, GPU?). Last: {self.last_error}")
 
+    def record_oom(self, exp, it, stage, log_path):
+        """An out-of-memory restart does not fail the run, but it is a bug to fix: keep it visible in the morning report."""
+        (self.run_dir / "warnings").mkdir(parents=True, exist_ok=True)
+        name = f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_{exp}_it{it}_{stage.replace(' ', '_')}_oom.txt"
+        (self.run_dir / "warnings" / name).write_text(
+            f"experiment={exp} iteration={it} stage={stage}\ntime={stamp()} Java ran out of memory and was restarted\n"
+            f"java.xmx={self.cfg['java']['xmx']} java.threads={self.cfg['java']['threads']}\n"
+            f"----- last 200 lines of {log_path} -----\n{tail(log_path, 200)}\n", encoding="utf-8")
+        events = self.state.setdefault("oom_restarts", [])
+        events.append({"time": stamp(), "exp": exp, "iteration": it, "stage": stage, "file": f"warnings/{name}"})
+        self.save_state()
+        self.log(f"OUT OF MEMORY {exp}/it{it}/{stage}: Java restarted ({len(events)} in this run) -> warnings/{name}")
+
     def with_retries(self, exp, it, stage, attempt):
         """attempt() -> (ok, Result, log_path). Retries with a backoff; raises StopRequested on stop."""
         retries = self.cfg["retries"]
         backoff = self.cfg["retry_backoff_seconds"]
-        for n in range(retries):
+        oom_restarts = 0
+        n = 0
+        while n < retries:
             self.stop.check()
             ok, result, log_path = attempt()
             if ok:
                 self.failed_attempts_in_a_row = 0
                 return True
+            if result.code == JAVA_EXIT_OUT_OF_MEMORY and result.reason == "exit" and oom_restarts < self.cfg["oom_restarts"]:
+                # finished chunks survive; the stage simply continues in a fresh JVM, it is not a failure
+                oom_restarts += 1
+                self.record_oom(exp, it, stage, log_path)
+                continue
             if result.reason == "disk" or result.code == 5:
                 self.record_failure(exp, it, stage, result, log_path, extra="not enough disk space")
                 if self.prune_old_data() and not self.storage.violations():
                     self.log("freed space by deleting old training data, trying again")
+                    n += 1
                     continue
                 raise DiskLow(self.storage.guard() or "the disk is almost full")
             if result.reason == "stopped" or self.stop.is_set():
@@ -607,6 +632,7 @@ class Pipeline:
                 while now() < end:
                     self.stop.check()
                     time.sleep(min(1, max(0.0, end - now())))
+            n += 1
         return False
 
     # ---- stages
@@ -646,7 +672,7 @@ class Pipeline:
                                 "--max-failure-ratio", str(sp["max_failure_ratio"]),
                                 # the Java process also guards itself, in case this supervisor dies
                                 "--min-free-gb", str(max((r for p, r in self.storage.reserves if volume_key(p) == volume_key(out)), default=0)),
-                                "--threads", str(self.cfg["java"]["threads"] or max(256, (os.cpu_count() or 8) * 32)), *model_args)
+                                "--threads", str(self.cfg["java"]["threads"] or (os.cpu_count() or 8) * 4), *model_args)
             result = run_command(cmd, log_path, sp["stage_max_seconds"] + 600, self.stop, graceful_file=stop_file, grace=sp["grace_seconds"],
                                  env=self.storage.child_env(), guard=self.storage.guard, guard_interval=self.storage.interval, tick=self.tick,
                                  low_priority=self.cfg["low_priority"])
@@ -708,11 +734,16 @@ class Pipeline:
         """The same agent WITHOUT a model (it picks phases at random) against `ref`: what the model has to beat. Played once per run."""
         ev = self.cfg["eval"]
         path = self.run_dir / "baseline" / f"vs_{ref}.json"
-        if not path.exists():
+        restarts = 0
+        while not path.exists():
             cmd = self.java_cmd("--mode", "compare", "--a", ev["agent"], "--b", ref, "--games", str(ev["games"]),
                                 "--concurrency", str(ev["concurrency"]), "--out", path.as_posix())
             result = run_command(cmd, self.run_dir / "baseline" / "baseline.log", ev["timeout_seconds"], self.stop, env=self.storage.child_env(),
                                  guard=self.storage.guard, guard_interval=self.storage.interval, tick=self.tick, low_priority=self.cfg["low_priority"])
+            if result.code == JAVA_EXIT_OUT_OF_MEMORY and result.reason == "exit" and restarts < self.cfg["oom_restarts"]:
+                restarts += 1
+                self.record_oom("baseline", 0, f"baseline vs {ref}", self.run_dir / "baseline" / "baseline.log")
+                continue
             if not (result.ok and path.exists()):
                 return None
         return read_json(path)
@@ -1063,6 +1094,13 @@ def pack(run_dir, handoff_root=None):
     for f in errors[-15:]:
         head = f.read_text(encoding="utf-8", errors="replace").splitlines()[:2]
         lines.append(f"- `{f.name}`: " + " | ".join(h.strip() for h in head))
+    ooms = state.get("oom_restarts") or []
+    if ooms:
+        lines.append("")
+        lines.append(f"**OUT OF MEMORY: Java was restarted {len(ooms)} times** (the run continued, but memory must be fixed; "
+                     f"stage logs in `logs/warnings/`)")
+        for o in ooms[-15:]:
+            lines.append(f"- {o['time']} {o['exp']} it{o['iteration']} {o['stage']} -> `{o['file']}`")
     q = list((run_dir / "quarantine").glob("*")) if (run_dir / "quarantine").exists() else []
     if q:
         lines.append(f"quarantined chunks: {len(q)}")
@@ -1087,6 +1125,10 @@ def pack(run_dir, handoff_root=None):
         (logs / "pipeline_log_tail.txt").write_text(tail(run_dir / "log.txt", 500), encoding="utf-8")
     for f in errors:
         shutil.copyfile(f, logs / f.name)
+    if (run_dir / "warnings").exists():
+        (logs / "warnings").mkdir()
+        for f in sorted((run_dir / "warnings").glob("*.txt")):
+            shutil.copyfile(f, logs / "warnings" / f.name)
     for log_file in sorted((run_dir / "exp").glob("*/it_*/*.log")):
         target = logs / f"{log_file.parent.parent.name}_{log_file.parent.name}_{log_file.name}"
         target.write_text(tail(log_file, 150), encoding="utf-8")

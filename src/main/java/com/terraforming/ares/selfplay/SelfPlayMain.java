@@ -27,7 +27,8 @@ import java.util.Map;
  * </pre>
  * {@code --model} is one exported folder (legacy / single decision). {@code --models} is a directory of such folders
  * (one per decision type), as written by {@code ml/train_all.py}.
- * Exit codes: 0 completed, 3 stopped on request (stop file / time limit), 4 too many failed games, 5 disk almost full (stopped by itself), 2 bad arguments, 1 crash.
+ * Exit codes: 0 completed, 3 stopped on request (stop file / time limit), 4 too many failed games, 5 disk almost full (stopped by itself),
+ * 6 out of memory (restart me), 2 bad arguments, 1 crash.
  * Everything unexpected is written to stderr with the stack trace (the pipeline keeps it in the stage log).
  */
 public final class SelfPlayMain {
@@ -35,7 +36,9 @@ public final class SelfPlayMain {
     }
 
     public static void main(String[] args) {
+        System.setProperty(FatalErrors.PROPERTY, "true");
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+            FatalErrors.haltIfOutOfMemory(throwable);
             System.err.println("UNCAUGHT in thread " + thread.getName());
             throwable.printStackTrace();
         });
@@ -43,9 +46,11 @@ public final class SelfPlayMain {
         try {
             code = run(args);
         } catch (IllegalArgumentException e) {
+            FatalErrors.haltIfOutOfMemory(e);
             System.err.println("BAD ARGUMENTS: " + e.getMessage());
             code = 2;
         } catch (Throwable t) {
+            FatalErrors.haltIfOutOfMemory(t);
             System.err.println("SELF-PLAY CRASHED: " + t);
             t.printStackTrace();
             code = 1;
@@ -102,9 +107,9 @@ public final class SelfPlayMain {
     private static int play(ConfigurableApplicationContext context, Map<String, String> a) throws Exception {
         Path out = Path.of(required(a, "out"));
         int games = Integer.parseInt(required(a, "games"));
-        // In-flight virtual-thread games (policy_ai style). Default ≈ 32 per CPU — enough to hide disk backpressure.
+        // In-flight games. Every game keeps all its decisions in memory until it ends, so this bounds the heap.
         int threads = Integer.parseInt(a.getOrDefault("threads",
-                String.valueOf(Math.max(256, Runtime.getRuntime().availableProcessors() * 32))));
+                String.valueOf(Runtime.getRuntime().availableProcessors() * 4)));
         if (games < 1 || threads < 1) {
             throw new IllegalArgumentException("games and threads must be positive");
         }

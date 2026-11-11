@@ -294,8 +294,15 @@ public class DecisionLogs {
             encoded.add(new EncodedRow(d.type(), schema.obsSize(), schema.maxCandidates(), schema.candidateFeatures(),
                     schema.observationLayout(), DecisionFile.encodeRow(schema, row)));
         }
+        EncodedGame item = new EncodedGame(encoded);
         try {
-            writeQueue.put(new EncodedGame(encoded));
+            while (!writeQueue.offer(item, 1, TimeUnit.SECONDS)) {
+                rethrowWriteFailure();
+                Thread writer = writerThread;
+                if (writer == null || !writer.isAlive()) {
+                    throw new IllegalStateException("the decision-logs writer is not running");
+                }
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("interrupted while enqueueing decision rows", e);
@@ -355,8 +362,9 @@ public class DecisionLogs {
             writeFailure = new UncheckedIOException(e);
         } catch (UncheckedIOException e) {
             writeFailure = e;
-        } catch (RuntimeException e) {
+        } catch (Throwable e) {
             writeFailure = new UncheckedIOException(new IOException(e));
+            com.terraforming.ares.selfplay.FatalErrors.haltIfOutOfMemory(e);
         }
     }
 
