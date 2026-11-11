@@ -379,6 +379,8 @@ DEFAULT_CONFIG = {
         "default_reserve_gb": 30,    # for run_root, data_root and temp_root when they are not listed
         "data_budget_gb": 150,       # this run never keeps more than this much training data
         "keep_data_iterations": 3,   # training window: the data of older iterations is deleted (models never)
+        # a NEW run deletes the self-play data of earlier runs (not running ones); their models, evaluations, logs stay
+        "delete_data_of_other_runs": True,
         "guard_interval_seconds": 5,
     },
     "retries": 3,
@@ -455,6 +457,7 @@ class Storage:
         for path in (run_dir, data_root, temp_root):
             reserves.setdefault(str(path), s["default_reserve_gb"])
         self.reserves = [(Path(p), gb) for p, gb in reserves.items()]
+        self.rotate = None
 
     def violations(self):
         found = []
@@ -475,7 +478,10 @@ class Storage:
         return self.data_gb() > self.budget_gb
 
     def guard(self):
-        """Cheap check used while a command runs. Returns a message when the command must stop."""
+        """Cheap check used while a command runs. Returns a message when the command must stop.
+        While self-play writes (and only then: a trainer may be reading the window), `rotate` frees space instead of stopping."""
+        if self.rotate is not None and (self.violations() or self.over_budget()):
+            self.rotate()
         found = self.violations()
         if found:
             return "disk reserve: " + "; ".join(found)
@@ -562,6 +568,7 @@ class Pipeline:
             "data_gb": round(self.storage.data_gb(), 1),
             "last_error": self.last_error,
             "oom_restarts": len(st.get("oom_restarts") or []),
+            "window_shrinks": len(st.get("window_shrinks") or []),
             "experiments": {
                 name: {k: e.get(k) for k in ("state", "iterations_done", "best_score", "scores", "failures")}
                 for name, e in (st.get("experiments") or {}).items()
@@ -660,7 +667,7 @@ class Pipeline:
                 continue
             if result.reason == "disk" or result.code == 5:
                 self.record_failure(exp, it, stage, result, log_path, extra="not enough disk space")
-                if self.prune_old_data() and not self.storage.violations():
+                if self.make_room(exp, it) and not self.short_of_space():
                     self.log("freed space by deleting old training data, trying again")
                     n += 1
                     continue
@@ -691,7 +698,7 @@ class Pipeline:
         chosen = read_json(self.it_dir(exp, it) / "selfplay_model.json", None)
         if chosen is None:
             best = self.best_model_dir(exp)
-            chosen = {"model": str(best) if best else None, "temperature": sp["temperature"]}
+            chosen = {"model": str(best) if best else None, "temperature": exp_cfg.get("temperature", sp["temperature"])}
             write_json(self.it_dir(exp, it) / "selfplay_model.json", chosen)  # the data of one iteration comes from ONE model bundle
         model_args = java_model_args(chosen["model"], chosen["temperature"]) if chosen["model"] else []
 
@@ -717,9 +724,13 @@ class Pipeline:
                                 # the Java process also guards itself, in case this supervisor dies
                                 "--min-free-gb", str(max((r for p, r in self.storage.reserves if volume_key(p) == volume_key(out)), default=0)),
                                 "--threads", str(self.cfg["java"]["threads"] or (os.cpu_count() or 8) * 4), *model_args)
-            result = run_command(cmd, log_path, sp["stage_max_seconds"] + 600, self.stop, graceful_file=stop_file, grace=sp["grace_seconds"],
-                                 env=self.storage.child_env(), guard=self.storage.guard, guard_interval=self.storage.interval, tick=self.tick,
-                                 low_priority=self.cfg["low_priority"])
+            self.storage.rotate = lambda: self.make_room(exp, it)
+            try:
+                result = run_command(cmd, log_path, sp["stage_max_seconds"] + 600, self.stop, graceful_file=stop_file, grace=sp["grace_seconds"],
+                                     env=self.storage.child_env(), guard=self.storage.guard, guard_interval=self.storage.interval,
+                                     tick=self.tick, low_priority=self.cfg["low_priority"])
+            finally:
+                self.storage.rotate = None
             quarantine_bad_chunks(out, self.run_dir / "quarantine", self.log)
             have = count_games(out)
             # exit 3 = the time limit of the stage: fewer games than planned is a legitimate result, exit 4/1/2 are failures
@@ -916,12 +927,39 @@ class Pipeline:
                     removed += 1
         return removed
 
+    def short_of_space(self):
+        return bool(self.storage.violations()) or self.storage.over_budget()
+
+    def make_room(self, protect_exp=None, protect_it=None):
+        """Rotation: first the data outside the training windows; if that is not enough, the OLDEST data of this run (the windows
+        shrink), never the iteration being written and never the latest finished iteration of an active experiment.
+        Models and evaluations are never touched. Returns the number of deleted folders."""
+        removed = self.prune_old_data(protect_exp, protect_it)
+        while self.short_of_space():
+            exps = self.state.get("experiments") or {}
+            keep = {(n, e.get("iterations_done", 0)) for n, e in exps.items() if e.get("state") == "active"}
+            keep.add((protect_exp, protect_it))
+            candidates = [(self.data_dir(n, i).stat().st_mtime, n, i) for n, e in exps.items()
+                          for i in range(1, e.get("iterations_done", 0) + 2)
+                          if (n, i) not in keep and self.data_dir(n, i).exists()]
+            if not candidates:
+                break
+            _, n, i = min(candidates)
+            self.storage.delete_data_dir(self.data_dir(n, i))
+            removed += 1
+            shrinks = self.state.setdefault("window_shrinks", [])
+            shrinks.append({"time": stamp(), "exp": n, "iteration": i, "data_gb_after": round(self.storage.data_gb(), 1)})
+            self.save_state()
+            self.log(f"DATA WINDOW SHRUNK: deleted the data of {n} it{i} to stay within the budget / reserves "
+                     f"({self.storage.data_gb():.1f} GB of {self.storage.budget_gb} GB now)")
+        return removed
+
     def check_disk(self):
-        """Before every stage: below a reserve -> delete old data once, still below -> stop the run (nothing is lost)."""
-        problems = self.storage.violations()
-        if problems or self.storage.over_budget():
-            removed = self.prune_old_data()
-            self.log(f"disk: {problems or 'over the data budget'}; deleted {removed} old data folders")
+        """Before every stage: short of space -> rotate the data of this run; still short -> stop the run (nothing is lost)."""
+        if self.short_of_space():
+            cur = self.current or {}
+            removed = self.make_room(cur.get("exp"), cur.get("iteration"))
+            self.log(f"disk: {self.storage.violations() or 'data budget'}; deleted {removed} old data folders")
             problems = self.storage.violations()
             if problems:
                 raise DiskLow("; ".join(problems))
@@ -1184,6 +1222,7 @@ def journal_entry(run_dir, state, cfg):
              "train_command": (cfg.get("train") or {}).get("command"),
              "eval_references": (cfg.get("eval") or {}).get("references"),
              "oom_restarts": len(state.get("oom_restarts") or []),
+             "window_shrinks": len(state.get("window_shrinks") or []),
              "errors": len(list((run_dir / "errors").glob("*.txt"))) if (run_dir / "errors").exists() else 0,
              "benchmark": list((state.get("benchmark") or {}).values()),
              "experiments": []}
@@ -1192,6 +1231,7 @@ def journal_entry(run_dir, state, cfg):
         e = exps.get(n, {})
         record = {"name": n, "hypothesis": e_cfg.get("hypothesis", ""), "matchups": e_cfg.get("matchups"),
                   "games_per_iteration": e_cfg.get("games_per_iteration"), "train_args": e_cfg.get("train_args", []),
+                  "temperature": e_cfg.get("temperature", (cfg.get("selfplay") or {}).get("temperature")),
                   "start_model": e.get("start_model"),
                   "state": e.get("state"), "iterations_done": e.get("iterations_done", 0), "scores": e.get("scores", []),
                   "best_score": e.get("best_score"), "best_iteration": e.get("best_iteration"), "iterations": []}
@@ -1364,6 +1404,14 @@ def pack(run_dir, handoff_root=None, update_journal=True):
                      f"stage logs in `logs/warnings/`)")
         for o in ooms[-15:]:
             lines.append(f"- {o['time']} {o['exp']} it{o['iteration']} {o['stage']} -> `{o['file']}`")
+    shrinks = state.get("window_shrinks") or []
+    if shrinks:
+        lines.append("")
+        lines.append(f"**DATA WINDOW SHRUNK {len(shrinks)} times**: the data budget / disk reserves did not hold the configured "
+                     f"windows, the oldest data of the run was deleted (later iterations trained on fewer games than "
+                     f"`keep_data_iterations` promises; raise the budget or lower games / keep)")
+        for s in shrinks[-15:]:
+            lines.append(f"- {s['time']} deleted {s['exp']} it{s['iteration']} -> {s['data_gb_after']} GB")
     q = list((run_dir / "quarantine").glob("*")) if (run_dir / "quarantine").exists() else []
     if q:
         lines.append(f"quarantined chunks: {len(q)}")
@@ -1461,6 +1509,35 @@ def storage_paths(cfg, name):
     data_root = resolve(s["data_root"]) / name if s["data_root"] else run_dir
     temp_root = resolve(s["temp_root"]) / name if s["temp_root"] else run_dir / "tmp"
     return run_dir, data_root, temp_root
+
+
+def run_is_alive(run_dir):
+    info = read_json(Path(run_dir) / "run.lock", None) if (Path(run_dir) / "run.lock").exists() else None
+    return bool(info) and pid_alive(info.get("pid", 0)) and now() - info.get("time", 0) < 6 * 3600
+
+
+def delete_data_of_other_runs(cfg, name, log=print):
+    """Self-play data of a finished night is only the raw material of its models: a new night frees that space.
+    Deletes only `<data_root of the other run>/data/<experiment>/it_*`; never models, evaluations, logs or a running run.
+    Returns GB freed."""
+    s = cfg["storage"]
+    roots = {Path(p) if Path(p).is_absolute() else ROOT / p for p in (s["run_root"], s["data_root"]) if p}
+    freed = 0.0
+    for other in sorted({d.name for r in roots if r.is_dir() for d in r.iterdir() if d.is_dir()} - {name}):
+        other_run, other_data_root, _ = storage_paths(cfg, other)
+        data = other_data_root / "data"
+        if not data.is_dir():
+            continue
+        if run_is_alive(other_run):
+            log(f"data of run {other} kept: it is running")
+            continue
+        for d in sorted(data.glob("*/it_*")):
+            if d.is_dir():
+                gb = dir_size_gb(d)
+                shutil.rmtree(d, ignore_errors=True)
+                freed += gb - (dir_size_gb(d) if d.exists() else 0.0)
+        log(f"deleted the self-play data of the earlier run {other} ({data}); its models and reports are kept")
+    return freed
 
 
 def write_test(directory):
@@ -1563,15 +1640,35 @@ def preflight(cfg, run_dir, data_root, temp_root, smoke=True):
         check.add("smoke run (selfplay -> train -> eval, tiny)", smoke_ok, detail)
         if smoke_ok and bytes_per_game:
             budget = cfg["storage"]["data_budget_gb"]
-            for e in cfg["experiments"]:
-                per_iteration = e["games_per_iteration"] * bytes_per_game / 1e9
-                window = per_iteration * cfg["storage"]["keep_data_iterations"]
-                free_for_data = min(free_gb(data_root) - r for p, r in storage.reserves if volume_key(p) == volume_key(data_root))
-                fits = window <= budget and window <= free_for_data
-                check.add(f"data plan '{e['name']}'", fits,
-                          f"{bytes_per_game / 1e3:.0f} KB/game -> {per_iteration:.1f} GB per iteration, {window:.1f} GB for the window of "
-                          f"{cfg['storage']['keep_data_iterations']} (budget {budget} GB, usable now {free_for_data:.0f} GB)")
+            free_for_data = min(free_gb(data_root) - r for p, r in storage.reserves if volume_key(p) == volume_key(data_root))
+            peak, minimum, detail = data_plan(cfg, bytes_per_game)
+            check.add("data plan: the minimum fits", minimum <= min(budget, free_for_data),
+                      f"{bytes_per_game / 1e3:.0f} KB/game; {minimum:.1f} GB = the running experiment's full window + the iteration "
+                      f"it writes + the latest iteration of every other one (budget {budget} GB, usable now {free_for_data:.0f} GB)")
+            check.add("data plan: full windows fit", peak <= min(budget, free_for_data),
+                      f"peak {peak:.1f} GB ({detail}); budget {budget} GB, usable now {free_for_data:.0f} GB"
+                      + ("" if peak <= min(budget, free_for_data) else
+                         " -> the windows will shrink (oldest data deleted, see REPORT); lower games / keep or raise the budget"),
+                      fatal=False)
     return check
+
+
+def data_plan(cfg, bytes_per_game):
+    """(peak GB, minimum GB, explanation). Peak of a rung: all its experiments keep full windows and one of them writes one more
+    iteration (the window covers finished iterations only). Minimum: what rotation cannot delete - the running experiment's
+    window + the iteration it writes + the latest iteration of every other experiment."""
+    keep = cfg["storage"]["keep_data_iterations"]
+    games = max(e["games_per_iteration"] for e in cfg["experiments"])
+    alive = len(cfg["experiments"])
+    peak, minimum, parts = 0.0, 0.0, []
+    for i, rung in enumerate(cfg["rungs"]):
+        per_iteration = games * rung["games_factor"] * bytes_per_game / 1e9
+        rung_peak = alive * keep * per_iteration + per_iteration
+        rung_min = (keep + 1) * per_iteration + (alive - 1) * per_iteration
+        parts.append(f"rung {i}: {alive} exp x {keep} x {per_iteration:.1f} GB + {per_iteration:.1f} = {rung_peak:.1f} GB")
+        peak, minimum = max(peak, rung_peak), max(minimum, rung_min)
+        alive = min(alive, rung["keep"])
+    return peak, minimum, "; ".join(parts)
 
 
 def smoke_run(cfg, run_dir, data_root, temp_root):
@@ -1659,6 +1756,10 @@ def cmd_run(args):
         # a continued run keeps the start models it began with (they are its iteration 0)
         for e in cfg["experiments"]:
             e.pop("start_model", None)
+    elif cfg["storage"].get("delete_data_of_other_runs", True):
+        freed = delete_data_of_other_runs(cfg, args.name)
+        if freed:
+            print(f"freed {freed:.1f} GB of self-play data of earlier runs (models and reports kept)")
     if not args.skip_check:
         check = preflight(cfg, run_dir, data_root, temp_root, smoke=existing is None)
         if not check.ok:

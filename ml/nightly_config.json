@@ -16,7 +16,8 @@
       }
     ],
     "data_budget_gb": 150,
-    "keep_data_iterations": 3
+    "keep_data_iterations": 3,
+    "delete_data_of_other_runs": true
   },
   "java": {
     "bin": "auto",
@@ -30,7 +31,7 @@
     "max_rows_per_game_type": 32
   },
   "eval": {
-    "games": 300,
+    "games": 2000,
     "references": [
       "RANDOM",
       "SMART"
@@ -51,36 +52,31 @@
   },
   "rungs": [
     {
-      "fraction": 0.3,
-      "keep": 2,
-      "games_factor": 0.25
-    },
-    {
-      "fraction": 0.7,
-      "keep": 1,
+      "fraction": 1.0,
+      "keep": 3,
       "games_factor": 1.0
     }
   ],
   "experiments": [
     {
-      "name": "fine_es",
-      "hypothesis": "H2-1 (baseline of the night): batches mixed over ~24k games (<=32 rows of a game per type) + early stopping every 100 batches get val_loss below the constant predictor, and the gain against RANDOM grows from iteration to iteration",
-      "games_per_iteration": 8000,
+      "name": "control",
+      "hypothesis": "N3-0 (control of the night, settings of night 2 fine_es): continuing from the best model of night 2, self-play of the best own model raises the gain above night 2 (RANDOM 0.355, SMART 0.043) from iteration to iteration",
+      "games_per_iteration": 7000,
       "matchups": "AGENT:AGENT:1"
     },
     {
-      "name": "sequential_feed",
-      "hypothesis": "H-D1 (owner's experience, untested): feeding the rows of a game in a row (as night 1 did) instead of batches mixed over all games gives a clearly higher val_loss - constant and a lower gain than fine_es",
-      "games_per_iteration": 8000,
+      "name": "temp_low",
+      "hypothesis": "H-D5: self-play temperature 0.2 instead of 0.5 (less exploration noise in the recorded player's own moves) gives a higher gain than control; risk: less variety. val_loss is NOT comparable with control here (other data)",
+      "games_per_iteration": 7000,
       "matchups": "AGENT:AGENT:1",
-      "train_args": ["--feed", "sequential"]
+      "temperature": 0.2
     },
     {
-      "name": "strong_wd",
-      "hypothesis": "H2-2: weight decay 1e-3 instead of 1e-5 gives a lower val_loss and a higher gain than fine_es (night 1 memorised games: train 0.03, val worse than constant)",
-      "games_per_iteration": 8000,
+      "name": "cap8",
+      "hypothesis": "H-D3: at most 8 rows of a game per decision type in the training pool (instead of 32) loses nothing: val_loss - constant and gain not worse than control (the rows of a game are near-duplicates)",
+      "games_per_iteration": 7000,
       "matchups": "AGENT:AGENT:1",
-      "train_args": ["--weight-decay", "1e-3"]
+      "train_args": ["--rows-per-game", "8"]
     }
   ],
   "train": {

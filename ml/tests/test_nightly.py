@@ -360,6 +360,80 @@ class DiskSafety(Base):
         self.assertTrue((p.it_dir(loser, 1) / "model" / "DONE").exists())
         self.assertTrue((p.it_dir(loser, 1) / "eval.json").exists())
 
+    def two_experiments_with_data(self):
+        p = self.pipeline(make_cfg(storage={"keep_data_iterations": 2}))
+        p.state["experiments"] = {n: {"state": "active", "iterations_done": 3} for n in ("a", "b")}
+        stamp = time.time() - 1000
+        for i in (1, 2, 3):
+            for n in ("b", "a"):  # within an iteration b is older
+                d = p.data_dir(n, i)
+                d.mkdir(parents=True)
+                stamp += 10
+                os.utime(d, (stamp, stamp))
+        p.data_dir("a", 4).mkdir(parents=True)  # being written
+        (p.it_dir("a", 2) / "model").mkdir(parents=True)
+        (p.it_dir("a", 2) / "model" / "DONE").write_text("x")
+        return p
+
+    def existing(self, p):
+        return {(n, i) for n in ("a", "b") for i in range(1, 5) if p.data_dir(n, i).exists()}
+
+    def test_over_the_budget_the_oldest_data_of_the_run_is_deleted_instead_of_stopping(self):
+        p = self.two_experiments_with_data()
+        p.storage.violations = lambda: []
+        p.storage.over_budget = lambda: len(self.existing(p)) > 3
+        p.make_room("a", 4)
+        self.assertEqual({("a", 3), ("a", 4), ("b", 3)}, self.existing(p))
+        self.assertEqual([("b", 2), ("a", 2)], [(s["exp"], s["iteration"]) for s in p.state["window_shrinks"]], "oldest first")
+        self.assertTrue((p.it_dir("a", 2) / "model" / "DONE").exists(), "models are never deleted")
+        p.write_status()
+        self.assertEqual(2, read_json(p.run_dir / "status.json")["window_shrinks"])
+
+    def test_rotation_never_deletes_the_iteration_being_written_nor_the_latest_finished_one(self):
+        p = self.two_experiments_with_data()
+        p.storage.violations = lambda: []
+        p.storage.over_budget = lambda: True
+        p.make_room("a", 4)
+        self.assertEqual({("a", 3), ("a", 4), ("b", 3)}, self.existing(p))
+
+    def test_the_guard_rotates_while_selfplay_writes_and_stops_only_if_that_is_not_enough(self):
+        storage = Storage(make_cfg(), self.tmp / "r", self.tmp / "d", self.tmp / "t")
+        storage.violations = lambda: []
+        full = [True]
+        storage.over_budget = lambda: full[0]
+        self.assertIsNotNone(storage.guard(), "no rotation outside self-play: stop")
+        storage.rotate = lambda: full.__setitem__(0, False)
+        self.assertIsNone(storage.guard(), "rotation freed the space: the command goes on")
+
+    def test_a_new_run_deletes_only_the_data_of_earlier_runs_that_do_not_run(self):
+        cfg = make_cfg(storage={"run_root": str(self.tmp / "runs"), "data_root": str(self.tmp / "data")})
+        for run in ("old", "live"):
+            (self.tmp / "data" / run / "data" / "x" / "it_0001").mkdir(parents=True)
+            (self.tmp / "data" / run / "data" / "x" / "it_0001" / "c.ares").write_bytes(b"0" * 1000)
+            (self.tmp / "runs" / run / "exp" / "x" / "it_0001" / "model").mkdir(parents=True)
+            (self.tmp / "runs" / run / "exp" / "x" / "it_0001" / "model" / "DONE").write_text("x")
+        write_json(self.tmp / "runs" / "live" / "run.lock", {"pid": os.getpid(), "started": time.time(), "time": time.time()})
+        nightly.delete_data_of_other_runs(cfg, "new", log=lambda *_: None)
+        self.assertFalse((self.tmp / "data" / "old" / "data" / "x" / "it_0001").exists())
+        self.assertTrue((self.tmp / "data" / "live" / "data" / "x" / "it_0001" / "c.ares").exists(), "a running run keeps its data")
+        for run in ("old", "live"):
+            self.assertTrue((self.tmp / "runs" / run / "exp" / "x" / "it_0001" / "model" / "DONE").exists(), "models are kept")
+
+    def test_the_data_plan_counts_all_survivors_of_a_rung(self):
+        cfg = make_cfg(storage={"keep_data_iterations": 3},
+                       experiments=[{"name": n, "games_per_iteration": 8000, "matchups": "AGENT:AGENT:1"} for n in "abc"],
+                       rungs=[{"fraction": 0.3, "keep": 2, "games_factor": 0.25}, {"fraction": 0.7, "keep": 1, "games_factor": 1.0}])
+        peak, minimum, _ = nightly.data_plan(cfg, 3.3e6)
+        self.assertAlmostEqual(2 * 3 * 26.4 + 26.4, peak, places=1, msg="night2: two survivors with full windows + the iteration being written")
+        self.assertAlmostEqual(4 * 26.4 + 26.4, minimum, places=1, msg="own window + the iteration written + the latest of the other")
+
+    def test_an_experiment_can_have_its_own_selfplay_temperature(self):
+        cfg = make_cfg(experiments=[{"name": "a", "games_per_iteration": 30, "matchups": "AGENT:AGENT:1", "temperature": 0.2}])
+        p = self.pipeline(cfg)
+        self.assertEqual("finished", p.run())
+        self.assertEqual(0.2, read_json(p.it_dir("a", 1) / "selfplay_model.json")["temperature"])
+        self.assertEqual(0.2, nightly.journal_entry(p.run_dir, p.state, cfg)["experiments"][0]["temperature"])
+
     def test_deleting_outside_the_data_folder_is_refused(self):
         p = self.pipeline()
         victim = self.tmp / "precious" / "it_0001"
