@@ -572,6 +572,21 @@ class BenchmarkAndJournal(Base):
         self.assertEqual(["t"], [json.loads(line)["run"] for line in journal])
 
 
+class MavenFailure(unittest.TestCase):
+    def test_the_real_error_is_shown_not_the_jdk_warnings_after_it(self):
+        output = "\n".join(["[INFO] Scanning", "[ERROR] COMPILATION ERROR :",
+                            "[ERROR] /x/Foo.java:[3,1] cannot find symbol",
+                            "[ERROR] Failed to execute goal maven-compiler-plugin"]
+                           + ["WARNING: sun.misc.Unsafe::objectFieldOffset will be removed"] * 30)
+        summary = nightly.maven_failure_summary(output)
+        self.assertIn("cannot find symbol", summary)
+        self.assertNotIn("Unsafe", summary)
+
+    def test_without_error_lines_the_tail_without_warnings_is_shown(self):
+        summary = nightly.maven_failure_summary("something broke\nWARNING: noise\nWARNING: noise")
+        self.assertEqual("something broke", summary)
+
+
 class DataQualityReport(unittest.TestCase):
     def entry(self, **pool):
         base = {"train_games": 24000, "val_games": 2600, "rows_per_game_mean": 140.0, "rows_per_game_cap": 32,

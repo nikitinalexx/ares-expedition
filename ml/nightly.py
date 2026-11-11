@@ -343,6 +343,17 @@ def java_home_of(java_bin):
     return str(Path(java_bin).resolve().parent.parent)
 
 
+def maven_failure_summary(output, limit=15):
+    """The [ERROR] lines of a failed Maven run. New JDKs print pages of WARNINGs about Maven's own libraries (Unsafe, final field
+    mutation) that would push the real error out of a tail."""
+    lines = [l.rstrip() for l in output.splitlines() if l.strip()]
+    errors = [l for l in lines if l.lstrip().startswith(("[ERROR]", "ERROR", "Error:", "Exception", "Caused by"))
+              or ("error:" in l and ".java" in l)]
+    if not errors:
+        errors = [l for l in lines if not l.lstrip().startswith("WARNING")][-limit:]
+    return "\n      ".join(errors[:limit]) or "(no output)"
+
+
 def is_java_home(path):
     exe = "java.exe" if platform.system() == "Windows" else "java"
     return bool(path) and (Path(path) / "bin" / exe).exists()
@@ -1512,9 +1523,13 @@ def preflight(cfg, run_dir, data_root, temp_root, smoke=True):
                             ("build the classpath", ["-q", "dependency:build-classpath", f"-Dmdep.outputFile={cp_file.as_posix()}"])):
             env = dict(os.environ, JAVA_HOME=java_home_of(java))  # compile with the same JDK that will run
             r = subprocess.run([mvn, *cfg["maven"]["args"], *args], cwd=ROOT, capture_output=True, text=True, env=env)
-            check.add(f"maven: {label}", r.returncode == 0, "" if r.returncode == 0 else (r.stdout + r.stderr)[-600:])
             if r.returncode != 0:
+                log = Path(run_dir) / "maven_check.log"
+                log.parent.mkdir(parents=True, exist_ok=True)
+                log.write_text(r.stdout + "\n" + r.stderr, encoding="utf-8", errors="replace")
+                check.add(f"maven: {label}", False, maven_failure_summary(r.stdout + "\n" + r.stderr) + f"\n      full output: {log}")
                 return check
+            check.add(f"maven: {label}", True)
     else:
         check.add("maven", cp_file.exists() and classes.exists(), "mvn not found; using the existing build" if cp_file.exists() else "mvn not found and no build")
     check.add("compiled classes", classes.exists(), str(classes))
