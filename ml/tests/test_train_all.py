@@ -71,7 +71,7 @@ class Pool(unittest.TestCase):
         self.assertEqual(list(range(len(games))), cap_per_game(games, 100, rng).tolist())
 
     def test_pool_holds_every_training_game_of_every_file_capped(self):
-        from train_all import build_pool
+        from train_all import build_pools
         from train_phase import is_validation_game
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             files = []
@@ -81,12 +81,13 @@ class Pool(unittest.TestCase):
                 files.append(str(path))
             all_games = np.concatenate([np.repeat(np.arange(s * 10_000, s * 10_000 + 40), 20) for s in (1, 2, 3)])
             expected = set(np.unique(all_games[~is_validation_game(all_games, 0.2)]).tolist())
-            obs, cand, outcome, game = build_pool(files, False, 0.2, np.random.default_rng(1), 3)
+            # one call builds both pools in one pass over the files (the fix for the HDD-bound double read)
+            train, val = build_pools(files, 0.2, np.random.default_rng(1), 3)
+            obs, cand, outcome, game = train
             self.assertEqual(expected, set(np.unique(game).tolist()))
             self.assertLessEqual(np.bincount(game - game.min()).max(), 3)
             self.assertEqual(len(obs), len(cand))
             self.assertEqual(np.float16, obs.dtype)
-            val = build_pool(files, True, 0.2, np.random.default_rng(1), 3)
             self.assertFalse(set(np.unique(val[3]).tolist()) & expected, "validation games never appear in training")
 
 

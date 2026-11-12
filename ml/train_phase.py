@@ -5,7 +5,12 @@
 What is learned: the probability that the player WINS the game given what it saw and the candidate it picked.
 The same trainer serves every decision type (--decision names the chunks); each type has its own candidate features.
 (binary cross entropy against the result of the game: 1 win, 0.5 draw, 0 loss). Only the chosen candidate of every
-row is a training example. Rows are streamed chunk by chunk from the disk (memmap): the RAM holds one block, not the data.
+row is a training example. Every chunk file is read ONCE, sequentially, with a single buffered `file.read()`
+(ares_data.read_decisions) straight into an in-RAM pool split into train/val; every epoch then trains from RAM, with no
+further disk access. This is deliberate: on a hard disk, `np.memmap`-based re-reading (the previous design, and still how
+`train_all.py`'s multi-type pools used to work before the same fix) services a sequential scan as many small page faults
+instead of one buffered read with normal OS read-ahead, and re-reading per epoch (as this file used to) turns one disk
+pass into `epochs` of them. See docs/EXPERIMENTS.md, "I/O", for the numbers that motivated this.
 
 Safety:
   * the validation split is by GAME (a hash of the game id), never by row: rows of one game must not be on both sides;
@@ -25,7 +30,7 @@ import time
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from ares_data import chunk_paths, open_memmap, validate  # noqa: E402
+from ares_data import chunk_paths, open_memmap, read_decisions, validate  # noqa: E402
 from phase_model import export_from_arrays, load_exported, numpy_forward  # noqa: E402
 
 BLOCK_ROWS = 100_000
@@ -45,41 +50,56 @@ def list_chunks(data_dirs, decision):
     return files
 
 
-def iterate_blocks(files, validation, fraction, rng, shuffle_files):
-    """Yields (obs float32 [n, obs], cand float32 [n, F], outcome float32 [n]) of the chosen candidates of one side of the split."""
-    order = list(range(len(files)))
-    if shuffle_files:
-        rng.shuffle(order)
-    for index in order:
-        _, rows = open_memmap(files[index])
+def build_pool(files, fraction):
+    """ONE sequential buffered read of every chunk file (read_decisions — a single `file.read()`, not `np.memmap`;
+    see the module docstring), split by game into a train and a validation pool.
+
+    Returns (train_pool, val_pool); either is (obs float32 [n,obs], cand float32 [n,F], outcome float32 [n], game uint64 [n])
+    or None if that side has no rows."""
+    collected = {False: ([], [], [], []), True: ([], [], [], [])}
+    for path in files:
+        _, rows = read_decisions(path)
         for start in range(0, len(rows), BLOCK_ROWS):
-            block = np.asarray(rows[start:start + BLOCK_ROWS])
-            mask = is_validation_game(block["game"], fraction)
-            if not validation:
-                mask = ~mask
-            if not mask.any():
-                continue
-            block = block[mask]
-            chosen = block["chosen"].astype(np.int64)
-            yield (block["obs"].astype(np.float32), block["feat"][np.arange(len(block)), chosen].astype(np.float32),
-                   block["outcome"].astype(np.float32))
+            block = rows[start:start + BLOCK_ROWS]
+            games = np.asarray(block["game"])
+            side = is_validation_game(games, fraction)
+            for validation, mask in ((False, ~side), (True, side)):
+                if not mask.any():
+                    continue
+                picked = np.asarray(block[mask])
+                chosen = picked["chosen"].astype(np.int64)
+                obs, cand, outcome, game = collected[validation]
+                obs.append(picked["obs"].astype(np.float32))
+                cand.append(picked["feat"][np.arange(len(picked)), chosen].astype(np.float32))
+                outcome.append(picked["outcome"].astype(np.float32))
+                game.append(games[mask])
+
+    def finish(parts):
+        obs, cand, outcome, game = parts
+        if not obs:
+            return None
+        return np.concatenate(obs), np.concatenate(cand), np.concatenate(outcome), np.concatenate(game)
+
+    return finish(collected[False]), finish(collected[True])
 
 
-def standardisation(files, fraction):
-    """Mean and std of every observation feature over the TRAINING games (streamed, float64 accumulators)."""
-    count, total, total_sq = 0, None, None
-    for obs, _, _ in iterate_blocks(files, False, fraction, None, False):
-        o = obs.astype(np.float64)
-        total = o.sum(0) if total is None else total + o.sum(0)
-        total_sq = (o * o).sum(0) if total_sq is None else total_sq + (o * o).sum(0)
-        count += len(o)
-    if count == 0:
+def standardisation_from_pool(obs):
+    """Mean and std of every observation feature over the TRAINING pool (already in RAM; chunked float64 accumulation
+    so a huge pool is not doubled in memory by one big float64 cast)."""
+    n = len(obs)
+    if n == 0:
         raise SystemExit("no training rows (are there finished chunks and more than one game?)")
-    mean = total / count
-    std = np.sqrt(np.maximum(total_sq / count - mean * mean, 0.0))
+    total = np.zeros(obs.shape[1], dtype=np.float64)
+    total_sq = np.zeros(obs.shape[1], dtype=np.float64)
+    for start in range(0, n, BLOCK_ROWS):
+        chunk = obs[start:start + BLOCK_ROWS].astype(np.float64)
+        total += chunk.sum(0)
+        total_sq += (chunk * chunk).sum(0)
+    mean = total / n
+    std = np.sqrt(np.maximum(total_sq / n - mean * mean, 0.0))
     # a feature that never changes carries no information: std 1 turns it into a constant zero instead of a division by ~0
     std = np.where(std < 1e-3, 1.0, std)
-    return mean.astype(np.float32), std.astype(np.float32), count
+    return mean.astype(np.float32), std.astype(np.float32), n
 
 
 def main():
@@ -123,6 +143,12 @@ def main():
     rng = np.random.default_rng(args.seed)
     os.makedirs(args.out, exist_ok=True)
 
+    train_data, val_data = build_pool(files, args.val_fraction)  # one disk pass, total, regardless of --epochs
+    if train_data is None:
+        raise SystemExit("no training rows (are there finished chunks and more than one game?)")
+    train_obs, train_cand, train_outcome, _train_game = train_data
+    val_obs, val_cand, val_outcome, _val_game = val_data if val_data is not None else (None, None, None, None)
+
     class PhaseNet(nn.Module):
         def __init__(self, mean, std):
             super().__init__()
@@ -151,7 +177,7 @@ def main():
         start_epoch = resumed["epoch"]
         print(f"resuming from the checkpoint after epoch {start_epoch}")
     else:
-        mean, std, rows_train = standardisation(files, args.val_fraction)
+        mean, std, rows_train = standardisation_from_pool(train_obs)
     model = PhaseNet(mean, std).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     if resumed is not None:
@@ -169,20 +195,21 @@ def main():
 
     def evaluate():
         model.eval()
-        total, n, base_total, outcome_sum, shuffled_total = 0.0, 0, 0.0, 0.0, 0.0
-        batches = list(iterate_blocks(files, True, args.val_fraction, None, False))
-        mean_outcome = float(np.concatenate([b[2] for b in batches]).mean()) if batches else 0.5
+        total, n, base_total, shuffled_total = 0.0, 0, 0.0, 0.0
+        mean_outcome = float(val_outcome.mean()) if val_outcome is not None and len(val_outcome) else 0.5
+        p = min(max(mean_outcome, 1e-4), 1 - 1e-4)
         with torch.no_grad():
-            for obs, cand, outcome in batches:
-                logits = model(torch.from_numpy(obs).to(device), torch.from_numpy(cand).to(device))
-                target = torch.from_numpy(outcome).to(device)
-                total += float(nn.functional.binary_cross_entropy_with_logits(logits, target, reduction="sum"))
-                # the same rows with the candidates swapped between the rows: how much does the model really use WHAT was chosen?
-                swapped = torch.from_numpy(cand).to(device)[torch.randperm(len(cand), device=device)]
-                shuffled_total += float(nn.functional.binary_cross_entropy_with_logits(model(torch.from_numpy(obs).to(device), swapped), target, reduction="sum"))
-                p = min(max(mean_outcome, 1e-4), 1 - 1e-4)
-                base_total += float(-(outcome * math.log(p) + (1 - outcome) * math.log(1 - p)).sum())
-                n += len(outcome)
+            if val_obs is not None:
+                for s in range(0, len(val_obs), BLOCK_ROWS):
+                    obs, cand, outcome = val_obs[s:s + BLOCK_ROWS], val_cand[s:s + BLOCK_ROWS], val_outcome[s:s + BLOCK_ROWS]
+                    logits = model(torch.from_numpy(obs).to(device), torch.from_numpy(cand).to(device))
+                    target = torch.from_numpy(outcome).to(device)
+                    total += float(nn.functional.binary_cross_entropy_with_logits(logits, target, reduction="sum"))
+                    # the same rows with the candidates swapped between the rows: how much does the model really use WHAT was chosen?
+                    swapped = torch.from_numpy(cand).to(device)[torch.randperm(len(cand), device=device)]
+                    shuffled_total += float(nn.functional.binary_cross_entropy_with_logits(model(torch.from_numpy(obs).to(device), swapped), target, reduction="sum"))
+                    base_total += float(-(outcome * math.log(p) + (1 - outcome) * math.log(1 - p)).sum())
+                    n += len(outcome)
         model.train()
         return (total / n, base_total / n, n, shuffled_total / n) if n else (float("nan"), float("nan"), 0, float("nan"))
 
@@ -190,21 +217,22 @@ def main():
     for epoch in range(start_epoch, args.epochs):
         model.train()
         running, seen = 0.0, 0
-        for obs, cand, outcome in iterate_blocks(files, False, args.val_fraction, rng, True):
-            permutation = rng.permutation(len(obs))
-            for s in range(0, len(obs), args.batch):
-                idx = permutation[s:s + args.batch]
-                logits = model(torch.from_numpy(obs[idx]).to(device), torch.from_numpy(cand[idx]).to(device))
-                loss = loss_fn(logits, torch.from_numpy(outcome[idx]).to(device))
-                if not torch.isfinite(loss):
-                    print(f"the loss is {float(loss)} in epoch {epoch}: the training diverged", file=sys.stderr)
-                    return 4
-                optimizer.zero_grad()
-                loss.backward()
-                nn.utils.clip_grad_norm_(model.parameters(), 5.0)
-                optimizer.step()
-                running += float(loss) * len(idx)
-                seen += len(idx)
+        # one global shuffle of the whole in-RAM pool per epoch (strictly more mixing than the old per-block shuffle,
+        # since there is no disk-sized block to stay within any more)
+        permutation = rng.permutation(len(train_obs))
+        for s in range(0, len(permutation), args.batch):
+            idx = permutation[s:s + args.batch]
+            logits = model(torch.from_numpy(train_obs[idx]).to(device), torch.from_numpy(train_cand[idx]).to(device))
+            loss = loss_fn(logits, torch.from_numpy(train_outcome[idx]).to(device))
+            if not torch.isfinite(loss):
+                print(f"the loss is {float(loss)} in epoch {epoch}: the training diverged", file=sys.stderr)
+                return 4
+            optimizer.zero_grad()
+            loss.backward()
+            nn.utils.clip_grad_norm_(model.parameters(), 5.0)
+            optimizer.step()
+            running += float(loss) * len(idx)
+            seen += len(idx)
         val_loss, base_loss, val_rows, shuffled_loss = evaluate()
         history.append({"epoch": epoch + 1, "train_loss": running / max(seen, 1), "val_loss": val_loss, "val_baseline_loss": base_loss, "val_rows": val_rows,
                         "val_loss_with_swapped_candidates": shuffled_loss, "action_effect": shuffled_loss - val_loss})
@@ -220,10 +248,11 @@ def main():
     params = {"mean": sd["mean"], "std": sd["std"], "w_obs": sd["obs_layer.weight"], "b_obs": sd["obs_layer.bias"], "w_cand": sd["cand_layer.weight"],
               "w_mid": sd["mid.weight"], "b_mid": sd["mid.bias"], "w_out": sd["out.weight"].reshape(-1), "b_out": sd["out.bias"].reshape(-1)}
     sample_obs, sample_cands = None, None
-    for obs, cand, _ in iterate_blocks(files, True, args.val_fraction, None, False):
-        sample_obs, sample_cands = obs[:16], cand[:16]
-        break
-    if sample_obs is None:
+    if val_obs is not None and len(val_obs):
+        sample_obs, sample_cands = val_obs[:16], val_cand[:16]
+    elif len(train_obs):
+        sample_obs, sample_cands = train_obs[:16], train_cand[:16]
+    else:
         sample_obs, sample_cands = first["obs"][:16].astype(np.float32), first["feat"][np.arange(min(16, len(first))), first["chosen"][:16].astype(int)].astype(np.float32)
     with torch.no_grad():
         torch_logits = model(torch.from_numpy(sample_obs).to(device), torch.from_numpy(sample_cands).to(device)).cpu().numpy()

@@ -30,7 +30,7 @@ Engine / tests: mvn test (no DB). Fixes: biased shuffle, negative plants on some
 
 Agent: all non-crisis DecisionTypes; observation v3 (ObservationBuilder); DecisionFile / DecisionLogs; SelfPlayMain; MlpPhaseModel / NeuralPolicy; ml/train_all.py (shared trunk).
 
-Nightly: ml/nightly.py -- selfplay -> train -> eval, successive halving, disk rotation, OOM restart logging, window shrink, delete data of earlier runs on new start, round-robin time sharing, continue survivors while budget remains. Details: docs/NIGHTLY.md. Hypotheses log: docs/EXPERIMENTS.md.
+Nightly: ml/nightly.py -- selfplay -> train -> eval, successive halving PLUS a per-experiment plateau guard (stops an experiment that is no longer beating its own best score, independent of rung timing -- this is what makes scheduling more experiments per night reasonable), disk rotation (shrink messages now name the actual violated constraint, not just the data budget), OOM restart logging, delete data of earlier runs on new start, round-robin time sharing, continue survivors while budget remains. Trainers (train_all.py / train_phase.py) read every chunk file ONCE with a buffered read, build train+val together in that pass, then train from RAM only -- an earlier version re-read from disk (train_phase.py: every epoch) via np.memmap, which on a hard disk is the gap between seconds and most of a quarter hour with the disk pegged and the GPU idle. Details: docs/NIGHTLY.md. Hypotheses log: docs/EXPERIMENTS.md ("I/O" section has the night5 incident this came from).
 
 External players as yardsticks only: RANDOM / SMART (fast eval), NETWORK / NETWORK_V2 (slow benchmark at end of night). Not training teachers.
 
@@ -40,12 +40,17 @@ Nights 1-3: outcome self-play (AGENT:AGENT) gives a signal; best result ~44% vs 
 Night 4: rows8 (max 8 rows/game/type) it7 reached 45.7% vs RANDOM -- best so far; adopted as default.
 Root diagnosis: AGENT:AGENT self-play is a neutral signal loop when both agents are ~50% vs each other (which is always -- zero-sum). The 'winner' is noise, not skill. Need an external reference to anchor the signal.
 
-## Night 5 -- running
+## Night 5 -- stopped early by the owner at it7, H-N1 still open
 
 Hypothesis H-N1: AGENT:RANDOM gives cleaner outcome labels than AGENT:AGENT at current skill level.
 Config: single experiment vs_random, AGENT:RANDOM:1, 30000 games/it, rows8, start-from night4 (rows8 it7).
-Command: nightly run night5 --start-from night4
+Command: nightly run night5 --start-from night4 (same command resumes)
 Success: win rate vs RANDOM >50% within 20 iterations. Else: H-N1 rejected, revisit strategy.
+
+Stopped not because of H-N1's numbers but because of real pipeline bugs the owner caught by watching it run (confusing
+logs, a disk-bound train stage, a confusing disk-shrink message, no guard against running a dead experiment out its
+full time) -- all fixed; see docs/EXPERIMENTS.md, "Night 5 -- 2026-11-12", for exactly what was wrong and what changed.
+Resuming the same command is the natural next step before judging H-N1.
 
 ## Next if H-N1 fails
 

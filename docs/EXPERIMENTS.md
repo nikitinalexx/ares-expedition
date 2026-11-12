@@ -17,6 +17,11 @@ Speed (planning): eval AGENT+model vs RANDOM ≈ 75 games/s (2×2000 ≈ 1–2 m
 
 **2. Training quality** — architecture, regularisation, early stopping — on top of good data.
 
+**3. I/O** — the train stage must be CPU/GPU-bound, not disk-bound: every chunk file is read once, buffered, into an
+in-RAM pool; nothing re-reads from disk per epoch (night5 found and fixed a case where it did — see "Night 5" below).
+Watch for the symptom even after this: high disk, near-idle CPU/GPU, for roughly the same wall time regardless of model
+size — that is I/O, not training.
+
 Owner/AI statements are **hypotheses** until a night measures them.
 
 ## Rules of evidence
@@ -127,3 +132,16 @@ Goal: test H-N1.
 - If not: H-N1 rejected; revisit strategy (filtered imitation / curriculum / auxiliary signals).
 
 Command: nightly run night5 --start-from night4
+
+## Night 5 -- 2026-11-12 (stopped early by the owner, pipeline issues found)
+
+**H-N1 is still open, not rejected** — the owner stopped the run after it7 because the pipeline itself had real problems, not because H-N1 looked bad. The fixes below are now in; resuming the same run (`nightly run night5 --start-from night4`, or fresh) is the natural next step before drawing any conclusion about H-N1.
+
+What the owner reported, and what each one was:
+
+1. **Train stage looked silent and HDD-bound** — log showed a selfplay commit at 17:23:19 and the next line (iteration promoted) at 17:41:47, an 18-minute gap with no progress lines in between; separately observed via Task Manager: disk ~99%, GPU ~2%, RAM only ~49% used on a 32 GB machine despite the pool fitting comfortably in RAM. Root cause (found by code reading, not by a fresh measurement on the night machine — confirming the exact before/after numbers there is the first thing to check on resume): `train_all.py`'s `build_pool` read every chunk file **twice** (once for the train split, once for validation) via `np.memmap`. For a one-time *sequential* scan of the whole file — which this is, nothing in it is random access — `np.memmap` on Windows services the scan as a stream of small page faults instead of one buffered read with normal OS read-ahead; `train_phase.py` (the `--independent` fallback) had the same problem but far worse, re-scanning the disk on **every epoch**, not just once. Fixed: both trainers now do ONE buffered `file.read()` per file (`ares_data.read_decisions`) and build train+val together in that single pass; everything after that is RAM-only. See `docs/NIGHTLY.md`, "Training I/O".
+2. **Log numbers unreadable**: `gain +0.258, win_rate=0.262` — `win_rate` is the mean raw win rate averaged across *all* `eval.references` (RANDOM and SMART together here), not "vs RANDOM" as read; with SMART far harder than RANDOM, the blended number undersells (or oversells) progress against either one specifically. Fixed: the log line now prints the per-reference breakdown (`vs RANDOM=.. vs SMART=..`) next to the score, and `docs/NIGHTLY.md` spells out that `win_rate` is never to be read as a single opponent's rate.
+3. **"DATA WINDOW SHRUNK ... (15.3 GB of 300 GB now)"** while ~400 GB was free on `D:` — read (reasonably) as nonsensical. `300 GB` is **our own self-imposed cap** on this run's data, never disk free space, and the message always printed that number regardless of what actually triggered the shrink. The real trigger here was almost certainly the `C:` reserve (the owner separately found `C:` nearly full and freed it to ~200 GB) — a volume `stage_root`/the pipeline writes to, unrelated to the 300 GB/400 GB numbers the owner was looking at. Fixed: the shrink message and the `REPORT.md` entry now name the actual violated constraint (a specific volume's free space vs its reserve, or the data budget) instead of always showing the budget pair. Also bumped the `C:` reserve 20→30 GB in the committed config as a small safety margin, since it is the OS drive.
+4. **"Run three experiments for a fixed third of the night each, then just analyse"** — fair complaint about the *process*, not only this config (night5 itself only had one experiment). Successive halving (rungs) only compares experiments against each other at fixed checkpoints; nothing previously let an experiment that is *not even beating its own best score any more* stop itself early. Added: a **plateau guard**, independent of the rung schedule — `plateau_patience` consecutive non-improving iterations (after `plateau_min_iterations`, default 5/3, per-experiment override) marks an experiment "plateaued": it stops immediately, its data window is freed at once, and in a multi-experiment night its round-robin turns go to the others right away instead of waiting for a rung boundary. This is what makes scheduling *more* experiments by default reasonable — losers free their slice as soon as they are one, rather than every experiment getting a fixed fraction regardless of outcome. Tests: `ml/tests/test_nightly.py::PlateauGuard`.
+
+None of this touches H-N1's actual mechanics (the AGENT:RANDOM matchup, the reward, the model). The 7 completed iterations of night5 (whatever their file-system state holds) are real data under the OLD, slower pipeline; resuming continues training the same model, now faster per iteration and with clearer logs, so a verdict on H-N1 is still pending.

@@ -407,6 +407,13 @@ DEFAULT_CONFIG = {
     "experiments": [{"name": "default", "games_per_iteration": 2000, "matchups": "AGENT:AGENT:1"}],
     "low_priority": True,                    # child processes run below normal priority: you can work on the machine meanwhile
     "promote_margin": 0.0,
+    # Per-experiment early stop, independent of the rung schedule: an experiment that has not beaten its own best score
+    # for this many of its OWN iterations in a row is marked "plateaued" and stops (its slot/data go to the others
+    # straight away, instead of occupying a fixed time share for a result that is already in). 0/None disables it.
+    # Needs at least plateau_min_iterations finished first (score at 1-2 iterations is too noisy to call a plateau).
+    # Per-experiment override: put the same two keys inside that experiment's entry.
+    "plateau_patience": 5,
+    "plateau_min_iterations": 3,
     "max_failures_in_a_row": 8,              # that many failed attempts without any success = the environment is broken, stop
     "max_iterations_per_experiment": None,   # for tests / the smoke run: stop an experiment after this many iterations
 }
@@ -602,7 +609,7 @@ class Pipeline:
             "oom_restarts": len(st.get("oom_restarts") or []),
             "window_shrinks": len(st.get("window_shrinks") or []),
             "experiments": {
-                name: {k: e.get(k) for k in ("state", "iterations_done", "best_score", "scores", "failures")}
+                name: {k: e.get(k) for k in ("state", "iterations_done", "best_score", "scores", "failures", "iterations_since_best")}
                 for name, e in (st.get("experiments") or {}).items()
             },
         }
@@ -983,8 +990,8 @@ class Pipeline:
         """Deletes the data of iterations that fell out of the window. Models, evaluations and logs are never deleted."""
         removed = 0
         for exp, e in (self.state.get("experiments") or {}).items():
-            # an eliminated experiment never trains again: its whole window is free space for the survivors
-            last = e.get("iterations_done", 0) + (1 if e.get("state") == "eliminated" else -self.storage.keep + 1)
+            # an experiment that will never train again (halving loser or plateaued) frees its whole window at once
+            last = e.get("iterations_done", 0) + (1 if e.get("state") in ("eliminated", "plateaued") else -self.storage.keep + 1)
             for i in range(1, last):
                 d = self.data_dir(exp, i)
                 if d.exists() and not (exp == protect_exp and i == protect_it):
@@ -1001,6 +1008,10 @@ class Pipeline:
         Models and evaluations are never touched. Returns the number of deleted folders."""
         removed = self.prune_old_data(protect_exp, protect_it)
         while self.short_of_space():
+            # WHY, specifically: a named volume below its reserve, or our own data budget — never just "300 GB" with
+            # no indication that 300 GB is OUR cap, not how much free space triggered this (see docs/NIGHTLY.md).
+            violations = self.storage.violations()
+            reason = "; ".join(violations) if violations else f"data budget {self.storage.budget_gb} GB exceeded ({self.storage.data_gb():.1f} GB used)"
             exps = self.state.get("experiments") or {}
             keep = {(n, e.get("iterations_done", 0)) for n, e in exps.items() if e.get("state") == "active"}
             keep.add((protect_exp, protect_it))
@@ -1008,15 +1019,16 @@ class Pipeline:
                           for i in range(1, e.get("iterations_done", 0) + 2)
                           if (n, i) not in keep and self.data_dir(n, i).exists()]
             if not candidates:
+                self.log(f"DATA WINDOW SHRUNK: {reason}, but there is no more of this run's data left to delete")
                 break
             _, n, i = min(candidates)
             self.storage.delete_data_dir(self.data_dir(n, i))
             removed += 1
             shrinks = self.state.setdefault("window_shrinks", [])
-            shrinks.append({"time": stamp(), "exp": n, "iteration": i, "data_gb_after": round(self.storage.data_gb(), 1)})
+            shrinks.append({"time": stamp(), "exp": n, "iteration": i, "reason": reason, "data_gb_after": round(self.storage.data_gb(), 1)})
             self.save_state()
-            self.log(f"DATA WINDOW SHRUNK: deleted the data of {n} it{i} to stay within the budget / reserves "
-                     f"({self.storage.data_gb():.1f} GB of {self.storage.budget_gb} GB now)")
+            self.log(f"DATA WINDOW SHRUNK: deleted the data of {n} it{i} because {reason} "
+                     f"(this run's data is now {self.storage.data_gb():.1f} GB)")
         return removed
 
     def check_disk(self):
@@ -1050,19 +1062,43 @@ class Pipeline:
         e["scores"].append(round(summary["score"], 4))
         e["last_iteration_seconds"] = round(now() - started, 1)
         best = e.get("best_score")
-        wr = summary.get("win_rate")
-        wr_txt = f", win_rate={wr:.3f}" if isinstance(wr, (int, float)) else ""
+        # "win_rate" in eval.json is the MEAN raw win rate across eval.references, not any single opponent's — spell
+        # out the per-reference breakdown here so the log line cannot be misread as "win rate vs RANDOM".
+        vs_txt = ", ".join(f"{ref}={v['score']:.1%}" for ref, v in (summary.get("vs") or {}).items())
+        wr_txt = f" | win rate {vs_txt}" if vs_txt else ""
         if best is None or summary["score"] > best + self.cfg["promote_margin"]:
             e["best_score"] = round(summary["score"], 4)
             e["best_model"] = str(self.it_dir(exp, it) / "model")
             e["best_iteration"] = it
+            e["iterations_since_best"] = 0
             why = "first scored model" if best is None else f"beat best {best:+.3f}"
-            self.log(f"{exp} it{it}: gain {summary['score']:+.3f}{wr_txt} -> PROMOTED ({why})")
+            self.log(f"{exp} it{it}: score(mean gain vs no-model baseline)={summary['score']:+.3f}{wr_txt} -> PROMOTED ({why})")
         else:
-            self.log(f"{exp} it{it}: gain {summary['score']:+.3f}{wr_txt} (best stays {best:+.3f}, it{e.get('best_iteration')})")
+            e["iterations_since_best"] = e.get("iterations_since_best", 0) + 1
+            self.log(f"{exp} it{it}: score(mean gain vs no-model baseline)={summary['score']:+.3f}{wr_txt} "
+                     f"(best stays {best:+.3f} at it{e.get('best_iteration')}, {e['iterations_since_best']} iteration(s) since)")
         self.save_state()
+        self.check_plateau(exp, exp_cfg)
         self.prune_old_data(protect_exp=exp, protect_it=it)
         return True
+
+    def check_plateau(self, exp, exp_cfg):
+        """Independent of the rung schedule: this experiment's own iterations have stopped improving it, so it stops
+        now instead of occupying a time share or a data window for the rest of the night. Successive halving (rungs)
+        still compares experiments against EACH OTHER at fixed points; this catches "not even improving against
+        itself" as soon as the evidence is in, whatever the rung timing is - which is what lets more experiments run
+        per night without each one needing a smaller guaranteed slice: a loser frees its slice as soon as it is one."""
+        e = self.state["experiments"][exp]
+        patience = exp_cfg.get("plateau_patience", self.cfg.get("plateau_patience"))
+        min_its = exp_cfg.get("plateau_min_iterations", self.cfg.get("plateau_min_iterations", 1))
+        if not patience or e["state"] != "active" or e["iterations_done"] < max(1, min_its):
+            return
+        if e.get("iterations_since_best", 0) >= patience:
+            e["state"] = "plateaued"
+            self.save_state()
+            self.log(f"experiment {exp} PLATEAUED: no better score for {patience} of its own iterations in a row "
+                     f"(best {e.get('best_score')} at it{e.get('best_iteration')}); stopping it now and freeing its "
+                     f"time/data for the others instead of running it out its full share")
 
     def iteration_failed(self, exp, it):
         e = self.state["experiments"][exp]
@@ -1080,7 +1116,8 @@ class Pipeline:
         self.state = {
             "name": name, "status": "running", "started": started, "budget_seconds": budget_seconds(self.cfg), "active_seconds": 0.0,
             "rung": 0, "rung_windows": {},
-            "experiments": {e["name"]: {"state": "active", "iterations_done": 0, "scores": [], "failures": 0, "best_score": None}
+            "experiments": {e["name"]: {"state": "active", "iterations_done": 0, "scores": [], "failures": 0,
+                                        "best_score": None, "iterations_since_best": 0}
                             for e in self.cfg["experiments"]},
         }
         for e_cfg in self.cfg["experiments"]:
@@ -1580,7 +1617,8 @@ def pack(run_dir, handoff_root=None, update_journal=True):
                      f"windows, the oldest data of the run was deleted (later iterations trained on fewer games than "
                      f"`keep_data_iterations` promises; raise the budget or lower games / keep)")
         for s in shrinks[-15:]:
-            lines.append(f"- {s['time']} deleted {s['exp']} it{s['iteration']} -> {s['data_gb_after']} GB")
+            why = f" ({s['reason']})" if s.get("reason") else ""
+            lines.append(f"- {s['time']} deleted {s['exp']} it{s['iteration']}{why} -> {s['data_gb_after']} GB")
     q = list((run_dir / "quarantine").glob("*")) if (run_dir / "quarantine").exists() else []
     if q:
         lines.append(f"quarantined chunks: {len(q)}")

@@ -9,9 +9,14 @@ Layout written to MODEL_DIR (Java loads it with -Dares.agent.models=MODEL_DIR):
     MODEL_DIR/train_metrics.json
 
 Shared trunk (default): one mean/std and W_obs for every type; each type keeps its own candidate head.
-Data: one sequential pass builds an in-RAM pool (at most --rows-per-game rows of a game per type); every batch is drawn at random
-from the whole pool, so it mixes thousands of games (hypothesis H-D1 in docs/EXPERIMENTS.md: the rows of one game in a row are
-memorised; --feed sequential is the ablation that tests it).
+Data: ONE sequential buffered read of every chunk file builds the in-RAM train AND validation pool together (at most
+--rows-per-game rows of a game per type); every batch is then drawn at random from the whole pool, so it mixes thousands
+of games (hypothesis H-D1 in docs/EXPERIMENTS.md: the rows of one game in a row are memorised; --feed sequential is the
+ablation that tests it). The read uses a single `file.read()` per chunk (ares_data.read_decisions), not `np.memmap`: for a
+once-through sequential scan — which this is — a plain buffered read lets the OS do normal read-ahead, while `np.memmap`
+services the same scan as a stream of small page faults; on a spinning disk the difference is the gap between a few
+seconds and several minutes (see docs/EXPERIMENTS.md, "I/O"). Building train and val in the same pass (not two separate
+passes) also halves the bytes read.
 Independent mode: each type is a full separate network (same as repeated train_phase.py).
 """
 from __future__ import annotations
@@ -26,7 +31,7 @@ import time
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from ares_data import chunk_paths, discover_decisions, open_memmap, validate  # noqa: E402
+from ares_data import chunk_paths, discover_decisions, open_memmap, read_decisions, validate  # noqa: E402
 from phase_model import export_from_arrays, load_exported, numpy_forward  # noqa: E402
 from train_phase import BLOCK_ROWS, CLIP, is_validation_game, list_chunks  # noqa: E402
 
@@ -64,33 +69,43 @@ def cap_per_game(games, k, rng):
     return np.sort(order[(np.arange(len(g)) - group_start) < k])
 
 
-def build_pool(files, validation, fraction, rng, rows_per_game):
-    """The rows of one decision type for training (or validation) in RAM: (obs f16, chosen candidate f32, outcome f32, game).
+def build_pools(files, fraction, rng, rows_per_game):
+    """The rows of one decision type for training AND validation in RAM: {(obs f16, chosen candidate f32, outcome f32, game)}.
 
-    The files are read once, in order (fine for a hard disk). The rows of a game are near-duplicates with the same label, so at most
-    `rows_per_game` random rows of each game are kept: batches drawn from the pool then mix thousands of games instead of feeding
-    hundreds of steps of the same few games in a row (which is memorised, not learned)."""
-    obs, cand, outcome, game = [], [], [], []
+    ONE sequential buffered read per file (ares_data.read_decisions — a single `file.read()`, not `np.memmap`: see the
+    module docstring for why that matters on a hard disk). The rows of a game are near-duplicates with the same label, so
+    at most `rows_per_game` random rows of each game are kept: batches drawn from the pool then mix thousands of games
+    instead of feeding hundreds of steps of the same few games in a row (which is memorised, not learned).
+
+    Returns (train_pool, val_pool); either is None if that side has no rows."""
+    collected = {False: ([], [], [], []), True: ([], [], [], [])}
     for path in files:
-        _, rows = open_memmap(path)
+        _, rows = read_decisions(path)
         for start in range(0, len(rows), BLOCK_ROWS):
             block = rows[start:start + BLOCK_ROWS]
             games = np.asarray(block["game"])
             side = is_validation_game(games, fraction)
-            positions = np.nonzero(side if validation else ~side)[0]
-            if rows_per_game:
-                positions = positions[cap_per_game(games[positions], rows_per_game, rng)]
-            if not len(positions):
-                continue
-            picked = np.asarray(block[positions])
-            chosen = picked["chosen"].astype(np.int64)
-            obs.append(picked["obs"].astype(np.float16))
-            cand.append(picked["feat"][np.arange(len(picked)), chosen].astype(np.float32))
-            outcome.append(picked["outcome"].astype(np.float32))
-            game.append(games[positions])
-    if not obs:
-        return None
-    return np.concatenate(obs), np.concatenate(cand), np.concatenate(outcome), np.concatenate(game)
+            for validation, mask in ((False, ~side), (True, side)):
+                positions = np.nonzero(mask)[0]
+                if rows_per_game:
+                    positions = positions[cap_per_game(games[positions], rows_per_game, rng)]
+                if not len(positions):
+                    continue
+                picked = np.asarray(block[positions])
+                chosen = picked["chosen"].astype(np.int64)
+                obs, cand, outcome, game = collected[validation]
+                obs.append(picked["obs"].astype(np.float16))
+                cand.append(picked["feat"][np.arange(len(picked)), chosen].astype(np.float32))
+                outcome.append(picked["outcome"].astype(np.float32))
+                game.append(games[positions])
+
+    def finish(parts):
+        obs, cand, outcome, game = parts
+        if not obs:
+            return None
+        return np.concatenate(obs), np.concatenate(cand), np.concatenate(outcome), np.concatenate(game)
+
+    return finish(collected[False]), finish(collected[True])
 
 
 def train_independent(args, type_files):
@@ -140,8 +155,7 @@ def train_shared(args, type_files):
     pool_rng = np.random.default_rng(args.seed)  # the same pools after a resume
     train_pool, val_pool = {}, {}
     for d in decisions:
-        train_pool[d] = build_pool(files_by[d], False, args.val_fraction, pool_rng, args.rows_per_game)
-        val_pool[d] = build_pool(files_by[d], True, args.val_fraction, pool_rng, args.rows_per_game)
+        train_pool[d], val_pool[d] = build_pools(files_by[d], args.val_fraction, pool_rng, args.rows_per_game)
     sizes = {d: (0 if train_pool[d] is None else len(train_pool[d][0]), 0 if val_pool[d] is None else len(val_pool[d][0])) for d in decisions}
     n_train = sum(s[0] for s in sizes.values())
     if n_train == 0:

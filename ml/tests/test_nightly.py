@@ -386,8 +386,26 @@ class DiskSafety(Base):
         self.assertEqual({("a", 3), ("a", 4), ("b", 3)}, self.existing(p))
         self.assertEqual([("b", 2), ("a", 2)], [(s["exp"], s["iteration"]) for s in p.state["window_shrinks"]], "oldest first")
         self.assertTrue((p.it_dir("a", 2) / "model" / "DONE").exists(), "models are never deleted")
+        # the reason must name OUR OWN budget explicitly (never implies "disk is full": see the reserve-triggered test below)
+        for s in p.state["window_shrinks"]:
+            self.assertIn("budget", s["reason"])
+            self.assertIn(str(p.storage.budget_gb), s["reason"])
         p.write_status()
         self.assertEqual(2, read_json(p.run_dir / "status.json")["window_shrinks"])
+
+    def test_a_shrink_caused_by_a_volume_reserve_says_so_not_just_the_budget(self):
+        """A past bug: the log always said "X of BUDGET GB" even when the real trigger was a volume (e.g. the system
+        drive) dropping below its OWN reserve, nowhere near the data budget — unreadable ("why shrink at 15 GB of a
+        300 GB budget?"). The reason must name the actual volume and its free/reserve numbers."""
+        p = self.two_experiments_with_data()
+        p.storage.over_budget = lambda: False
+        p.storage.violations = lambda: ["C:\\: 5.0 GB free, the reserve is 30 GB"]
+        p.make_room("a", 4)
+        self.assertTrue(p.state["window_shrinks"], "a reserve violation must still trigger a shrink")
+        for s in p.state["window_shrinks"]:
+            self.assertIn("C:", s["reason"])
+            self.assertIn("reserve", s["reason"])
+            self.assertNotIn("budget", s["reason"], "must not blame the data budget for a volume reserve violation")
 
     def test_rotation_never_deletes_the_iteration_being_written_nor_the_latest_finished_one(self):
         p = self.two_experiments_with_data()
@@ -480,6 +498,7 @@ class Staging(Base):
 class TimeBudget(Base):
     def test_unlimited_keeps_going_until_stop(self):
         cfg = make_cfg(hours=None,
+                       plateau_patience=0,  # this test is about "until stop", not about the plateau guard
                        experiments=[{"name": "a", "games_per_iteration": 20, "matchups": "AGENT:AGENT:1"}],
                        rungs=[{"fraction": 1.0, "keep": 1, "games_factor": 1.0}],
                        selfplay={"games_per_chunk": 10, "stage_max_seconds": 60, "grace_seconds": 5})
@@ -494,6 +513,7 @@ class TimeBudget(Base):
         """Night3 bug: fixed per-experiment slots left ~40 min unused and then finished the night."""
         os.environ["FAKE_GAME_SECONDS"] = "0.02"
         cfg = make_cfg(hours=0.04,  # ~144 s: enough for several shared iterations, stopped by time not by a cap
+                       plateau_patience=0,  # this test is about fair time-sharing, not about the plateau guard
                        experiments=[{"name": n, "games_per_iteration": 40, "matchups": "AGENT:AGENT:1"} for n in ("a", "b")],
                        rungs=[{"fraction": 1.0, "keep": 2, "games_factor": 1.0}],
                        selfplay={"games_per_chunk": 10, "stage_max_seconds": 60, "grace_seconds": 5})
@@ -512,6 +532,7 @@ class TimeBudget(Base):
 
     def test_raising_hours_continues_after_planned_rungs(self):
         cfg = make_cfg(hours=0.01, max_iterations_per_experiment=50,
+                       plateau_patience=0,  # this test is about the time budget, not about the plateau guard
                        rungs=[{"fraction": 1.0, "keep": 1, "games_factor": 1.0}],
                        experiments=[{"name": "a", "games_per_iteration": 20, "matchups": "AGENT:AGENT:1"}],
                        selfplay={"games_per_chunk": 10, "stage_max_seconds": 60, "grace_seconds": 5})
@@ -524,6 +545,100 @@ class TimeBudget(Base):
         self.assertEqual("finished", p.run())
         self.assertGreater(p.state["experiments"]["a"]["iterations_done"], first,
                            "extra hours must buy more iterations of the survivors")
+
+
+class PlateauGuard(Base):
+    """An experiment that stops improving must stop itself well before its planned time/iterations are used up —
+    independent of rungs/halving, which only compare experiments against each other at fixed points."""
+
+    def test_a_flat_score_plateaus_after_patience_iterations_and_frees_its_data(self):
+        os.environ["FAKE_SCORE"] = "0.3"  # identical every iteration: never a NEW best after the first
+        cfg = make_cfg(hours=None, max_iterations_per_experiment=20, plateau_patience=2, plateau_min_iterations=1,
+                       rungs=[{"fraction": 1.0, "keep": 1, "games_factor": 1.0}],
+                       experiments=[{"name": "a", "games_per_iteration": 20, "matchups": "AGENT:AGENT:1"}])
+        p = self.pipeline(cfg)
+        self.assertEqual("finished", p.run())
+        e = p.state["experiments"]["a"]
+        self.assertEqual("plateaued", e["state"])
+        # iteration 1 sets the only best score there will ever be; 2 more non-improving iterations trip plateau_patience=2
+        self.assertEqual(3, e["iterations_done"], "must stop right after patience is used up, not run out the budget")
+        self.assertEqual(1, e["best_iteration"])
+        # it will never train again: prune_old_data must free its data immediately, the same as an eliminated experiment
+        self.assertFalse(p.data_dir("a", 1).exists())
+        self.assertFalse(p.data_dir("a", 2).exists())
+        final, _ = pack(p.run_dir)
+        self.assertIn("plateaued", (final / "REPORT.md").read_text())
+
+    def test_an_improving_score_is_never_plateaued(self):
+        calls = {"n": 0}
+        original = nightly.Pipeline.stage_eval
+
+        def increasing_eval(self, exp, it):
+            summary = original(self, exp, it)
+            if summary is not None:
+                calls["n"] += 1
+                summary["score"] = calls["n"] * 0.01  # strictly improves every single iteration
+                write_json(self.it_dir(exp, it) / "eval.json", summary)
+            return summary
+
+        cfg = make_cfg(hours=None, max_iterations_per_experiment=6, plateau_patience=2, plateau_min_iterations=1,
+                       rungs=[{"fraction": 1.0, "keep": 1, "games_factor": 1.0}],
+                       experiments=[{"name": "a", "games_per_iteration": 20, "matchups": "AGENT:AGENT:1"}])
+        with mock.patch.object(FakePipeline, "stage_eval", increasing_eval):
+            p = self.pipeline(cfg)
+            self.assertEqual("finished", p.run())
+        self.assertEqual("active", p.state["experiments"]["a"]["state"])
+        self.assertEqual(6, p.state["experiments"]["a"]["iterations_done"], "a real climb must run to its iteration cap, not stop early")
+
+    def test_plateau_needs_at_least_plateau_min_iterations_first(self):
+        os.environ["FAKE_SCORE"] = "0.3"
+        cfg = make_cfg(hours=None, max_iterations_per_experiment=20, plateau_patience=1, plateau_min_iterations=5,
+                       rungs=[{"fraction": 1.0, "keep": 1, "games_factor": 1.0}],
+                       experiments=[{"name": "a", "games_per_iteration": 20, "matchups": "AGENT:AGENT:1"}])
+        p = self.pipeline(cfg)
+        self.assertEqual("finished", p.run())
+        # patience=1 alone would plateau at it2; plateau_min_iterations=5 holds it back until it5, where it fires at once
+        self.assertEqual(5, p.state["experiments"]["a"]["iterations_done"])
+        self.assertEqual("plateaued", p.state["experiments"]["a"]["state"])
+
+    def test_plateau_patience_zero_disables_the_guard(self):
+        os.environ["FAKE_SCORE"] = "0.3"
+        cfg = make_cfg(hours=None, max_iterations_per_experiment=4, plateau_patience=0,
+                       rungs=[{"fraction": 1.0, "keep": 1, "games_factor": 1.0}],
+                       experiments=[{"name": "a", "games_per_iteration": 20, "matchups": "AGENT:AGENT:1"}])
+        p = self.pipeline(cfg)
+        self.assertEqual("finished", p.run())
+        self.assertEqual("active", p.state["experiments"]["a"]["state"])
+        self.assertEqual(4, p.state["experiments"]["a"]["iterations_done"], "no guard: runs to the iteration cap")
+
+    def test_a_plateaued_experiment_frees_its_slot_for_an_active_sibling(self):
+        os.environ["FAKE_ARGS_LOG"] = str(self.tmp / "calls.log")
+        calls = {"n": 0}
+        original = nightly.Pipeline.stage_eval
+
+        def scores(self, exp, it):
+            summary = original(self, exp, it)
+            if summary is not None:
+                if exp == "flat":
+                    summary["score"] = 0.3
+                else:
+                    calls["n"] += 1
+                    summary["score"] = calls["n"] * 0.01
+                write_json(self.it_dir(exp, it) / "eval.json", summary)
+            return summary
+
+        cfg = make_cfg(hours=None, max_iterations_per_experiment=10, plateau_patience=2, plateau_min_iterations=1,
+                       rungs=[{"fraction": 1.0, "keep": 2, "games_factor": 1.0}],
+                       experiments=[{"name": "flat", "games_per_iteration": 20, "matchups": "AGENT:AGENT:1"},
+                                    {"name": "climbing", "games_per_iteration": 20, "matchups": "AGENT:AGENT:1"}])
+        with mock.patch.object(FakePipeline, "stage_eval", scores):
+            p = self.pipeline(cfg)
+            self.assertEqual("finished", p.run())
+        self.assertEqual("plateaued", p.state["experiments"]["flat"]["state"])
+        self.assertEqual("active", p.state["experiments"]["climbing"]["state"])
+        # once flat plateaus (at it3), the round robin must keep giving its turns to climbing instead of idling
+        self.assertEqual(10, p.state["experiments"]["climbing"]["iterations_done"])
+        self.assertEqual(3, p.state["experiments"]["flat"]["iterations_done"])
 
 
 class ResumeAnyTime(Base):
