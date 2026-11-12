@@ -451,6 +451,32 @@ class DiskSafety(Base):
         self.assertTrue(storage.violations())
 
 
+class Staging(Base):
+    def test_finished_chunks_move_from_ssd_stage_to_data_root(self):
+        stage = self.tmp / "ssd" / "t" / "a" / "it_0001"
+        dest = self.tmp / "hdd" / "data" / "a" / "it_0001"
+        stage.mkdir(parents=True)
+        dest.mkdir(parents=True)
+        (stage / "PICK_PHASE.000001.ares").write_bytes(b"x" * 100)
+        (stage / "PICK_PHASE.000002.ares.tmp").write_bytes(b"partial")
+        (stage / "summary.json").write_text("{}")
+        moved = nightly.commit_staged_chunks(stage, dest)
+        self.assertEqual(1, moved)
+        self.assertTrue((dest / "PICK_PHASE.000001.ares").exists())
+        self.assertFalse((stage / "PICK_PHASE.000001.ares").exists())
+        self.assertFalse((stage / "PICK_PHASE.000002.ares.tmp").exists())
+        self.assertTrue((dest / "summary.json").exists())
+
+    def test_selfplay_writes_to_stage_and_trains_from_data_root(self):
+        cfg = make_cfg(storage={"stage_root": str(self.tmp / "ssd"), "default_reserve_gb": 0.001, "data_budget_gb": 50,
+                                "keep_data_iterations": 2, "guard_interval_seconds": 0.2})
+        p = self.pipeline(cfg)
+        self.assertEqual("finished", p.run())
+        self.assertTrue(list(p.data_dir("a", 1).glob("*.ares")), "trainer reads durable data_root")
+        stage = p.stage_dir("a", 1)
+        self.assertFalse(list(stage.glob("*.ares")), "stage is drained after self-play")
+
+
 class TimeBudget(Base):
     def test_unlimited_keeps_going_until_stop(self):
         cfg = make_cfg(hours=None,
@@ -645,7 +671,8 @@ class BenchmarkAndJournal(Base):
             experiments=[{"name": "a", "games_per_iteration": 30, "matchups": "AGENT:AGENT:1",
                           "hypothesis": "H-test: a wider net learns better", "train_args": ["--hidden", "64,32"]}],
             rungs=[{"fraction": 1.0, "keep": 1, "games_factor": 1.0}],
-            benchmark={"references": ["NETWORK_V2"], "games": 4, "concurrency": 2, "timeout_seconds": 60}, **override)
+            benchmark={"references": ["NETWORK_V2"], "games": 4, "concurrency": 2, "timeout_seconds": 60,
+                       "min_win_rate": 0}, **override)
 
     def test_slow_opponents_play_only_the_best_model_once_at_the_end(self):
         log = self.tmp / "calls.log"
@@ -663,6 +690,19 @@ class BenchmarkAndJournal(Base):
         self.assertNotIn("failed", result)
         final, _ = pack(p.run_dir)
         self.assertIn("vs NETWORK_V2", (final / "REPORT.md").read_text(encoding="utf-8"))
+
+    def test_benchmark_is_skipped_until_a_fast_yardstick_is_beaten(self):
+        log = self.tmp / "calls.log"
+        os.environ["FAKE_ARGS_LOG"] = str(log)
+        os.environ["FAKE_SCORES"] = "RANDOM:0.40,SMART:0.05"
+        cfg = self.cfg()
+        cfg["benchmark"] = {"references": ["NETWORK"], "games": 4, "concurrency": 2, "timeout_seconds": 60,
+                            "gate_refs": ["RANDOM", "SMART"], "min_win_rate": 0.5}
+        p = self.pipeline(cfg)
+        self.assertEqual("finished", p.run())
+        self.assertFalse(any(c.get("b") == "NETWORK" for c in (json.loads(l) for l in log.read_text().splitlines())))
+        self.assertIn("skipped", p.state["benchmark"])
+        self.assertIn("need ≥50%", p.state["benchmark"]["skipped"]["reason"])
 
     def test_a_failing_benchmark_is_reported_but_does_not_fail_the_run(self):
         p = self.pipeline(self.cfg())

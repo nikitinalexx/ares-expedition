@@ -4,6 +4,7 @@
     "run_root": "D:/ares/runs",
     "data_root": "D:/ares/data",
     "temp_root": "D:/ares/tmp",
+    "stage_root": "C:/ares/stage",
     "reserves": [
       {
         "path": "C:/",
@@ -42,12 +43,13 @@
   },
   "benchmark": {
     "references": [
-      "NETWORK",
-      "NETWORK_V2"
+      "NETWORK"
     ],
     "games": 100,
     "concurrency": 16,
-    "timeout_seconds": 3600
+    "timeout_seconds": 3600,
+    "gate_refs": ["RANDOM", "SMART"],
+    "min_win_rate": 0.5
   },
   "rungs": [
     {
@@ -59,7 +61,7 @@
   "experiments": [
     {
       "name": "control",
-      "hypothesis": "N4-0: with a shared full-night budget (round-robin, no wasted slots), continuing from night3 best raises gain over iterations and improves benchmark vs NETWORK",
+      "hypothesis": "N4-0: continuing from night3 best with round-robin until stop raises win rate vs RANDOM/SMART over iterations (NETWORK gated until ≥50% vs RANDOM or SMART)",
       "games_per_iteration": 7000,
       "matchups": "AGENT:AGENT:1"
     },

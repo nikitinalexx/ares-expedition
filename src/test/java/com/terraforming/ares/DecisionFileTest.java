@@ -141,6 +141,14 @@ class DecisionFileTest {
     }
 
     @Test
+    void version4CandidateFeaturesUseHalfTheBytesOfVersion3() {
+        DecisionFile.Schema schema = schema("size");
+        int featCells = schema.maxCandidates() * schema.candidateFeatures();
+        assertEquals(2 * featCells, DecisionFile.bytesPerRecord(schema, 3) - DecisionFile.bytesPerRecord(schema, 4));
+        org.junit.jupiter.api.Assertions.assertTrue(DecisionFile.bytesPerRecord(schema, 4) < DecisionFile.bytesPerRecord(schema, 3));
+    }
+
+    @Test
     void aTruncatedFileIsDetected() throws IOException {
         Path file = dir.resolve("cut.ares");
         try (DecisionFile.Writer writer = new DecisionFile.Writer(file, schema("x"))) {

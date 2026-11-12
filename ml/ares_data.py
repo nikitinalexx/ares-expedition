@@ -4,9 +4,8 @@ Usage:
     schema, rows = read_decisions("run1/PICK_PHASE.ares")
     rows["obs"]      float16 [n, obsSize]   what the player saw (convert to float32 per batch)
     rows["count"]    uint8   [n]            number of legal candidates
-    rows["ids"]      uint8 (version 2) or uint16 (version 3) [n, maxCand]   candidate ids, padded with 0.
-                                    Version 3 exists because a card id does not fit in one byte.
-    rows["feat"]     float32 [n, maxCand, candFeatures]
+    rows["ids"]      uint8 (v2) or uint16 (v3+) [n, maxCand]   candidate ids, padded with 0
+    rows["feat"]     float32 (v2/v3) or float16 (v4+) [n, maxCand, candFeatures]
     rows["chosen"]   uint8   [n]            index of the chosen candidate
     rows["seat"]     uint8   [n]            0/1: player index in the game (by name)
     rows["context"]  uint8   [n]            who played everything the agent does not decide yet: 0 SMART, 1 RANDOM
@@ -22,11 +21,12 @@ import struct
 import numpy as np
 
 MAGIC = b"ARES"
-VERSIONS = (2, 3)
+VERSIONS = (2, 3, 4)
+CURRENT_VERSION = 4
 
 
-def record_dtype(schema, version=2):
-    """version 2 stores candidate ids in one byte, version 3 in two (card ids are larger than 255)."""
+def record_dtype(schema, version=CURRENT_VERSION):
+    """v2: ids u8, feat f32. v3: ids u16, feat f32. v4: ids u16, feat f16 (candidates are normalized like observations)."""
     if version not in VERSIONS:
         raise ValueError(f"unsupported version {version}")
     obs, cand, feat = schema["obsSize"], schema["maxCandidates"], schema["candidateFeatures"]
@@ -34,7 +34,7 @@ def record_dtype(schema, version=2):
         ("obs", "<f2", (obs,)),
         ("count", "u1"),
         ("ids", "u1" if version < 3 else "<u2", (cand,)),
-        ("feat", "<f4", (cand, feat)),
+        ("feat", "<f4" if version < 4 else "<f2", (cand, feat)),
         ("chosen", "u1"),
         ("seat", "u1"),
         ("context", "u1"),

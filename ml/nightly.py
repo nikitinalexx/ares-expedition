@@ -376,6 +376,9 @@ DEFAULT_CONFIG = {
         "run_root": "runs",          # state, logs, models, hand-over folder (small)
         "data_root": None,           # decision chunks (big); default: inside the run folder
         "temp_root": None,           # TMP/TEMP of the child processes; default: inside the run folder
+        # Optional SSD stage: self-play writes here, finished .ares are moved to data_root (HDD). Keeps the write path
+        # off a slow disk; respects the volume reserve of stage_root. None = write directly to data_root.
+        "stage_root": None,
         "reserves": [],              # [{"path": "C:/", "gb": 20}, {"path": "D:/", "gb": 30}]
         "default_reserve_gb": 30,    # for run_root, data_root and temp_root when they are not listed
         "data_budget_gb": 150,       # this run never keeps more than this much training data
@@ -393,8 +396,10 @@ DEFAULT_CONFIG = {
                  "max_rows_per_game_type": 64},
     "train": {"command": ["{python}", "ml/train_all.py", "--data", "{data}", "--out", "{model_dir}", "--prev", "{prev_model}", "--epochs", "3"], "timeout_seconds": 7200},
     "eval": {"games": 200, "references": ["SMART", "RANDOM"], "agent": "AGENT", "concurrency": 32, "timeout_seconds": 1800, "bias_alarm_gap": 0.10},
-    # slow opponents: once per run, best model only (see stage_benchmark); never in self-play or the per-iteration eval
-    "benchmark": {"references": [], "games": 100, "concurrency": 16, "timeout_seconds": 3600},
+    # slow opponents (NETWORK…): once at end, best model only; never training data. Skipped until the best model’s
+    # win rate vs a gate_ref reaches min_win_rate (skill gap is huge — 40% vs RANDOM still means ~0% vs NETWORK).
+    "benchmark": {"references": [], "games": 100, "concurrency": 16, "timeout_seconds": 3600,
+                  "gate_refs": ["RANDOM", "SMART"], "min_win_rate": 0.5},
     # successive halving. With a timed budget, `fraction` splits active time. With unlimited time, early rungs advance after
     # `min_iterations` each (default 1); the last rung runs until stop. `keep` best continue.
     "rungs": [{"fraction": 0.3, "keep": 2, "games_factor": 0.25, "min_iterations": 1},
@@ -469,10 +474,12 @@ class Storage:
         self.interval = s["guard_interval_seconds"]
         self.data_path = Path(data_root) / "data"
         self.temp_root = Path(temp_root)
+        stage = s.get("stage_root")
+        self.stage_root = (Path(stage) if Path(stage).is_absolute() else ROOT / stage) if stage else None
         reserves = {}
         for entry in s["reserves"]:
             reserves[str(entry["path"])] = max(entry["gb"], reserves.get(str(entry["path"]), 0))
-        for path in (run_dir, data_root, temp_root):
+        for path in (run_dir, data_root, temp_root, *((self.stage_root,) if self.stage_root else ())):
             reserves.setdefault(str(path), s["default_reserve_gb"])
         self.reserves = [(Path(p), gb) for p, gb in reserves.items()]
         self.rotate = None
@@ -612,6 +619,12 @@ class Pipeline:
     def data_dir(self, exp, it):
         return self.data_root / "data" / exp / f"it_{it:04d}"
 
+    def stage_dir(self, exp, it):
+        """Where Java writes during self-play (SSD stage if configured, else the final data dir)."""
+        if not self.storage.stage_root:
+            return self.data_dir(exp, it)
+        return self.storage.stage_root / self.state["name"] / exp / f"it_{it:04d}"
+
     # ---- commands
     def java_args_file(self):
         return self.run_dir / "java.args"
@@ -715,8 +728,10 @@ class Pipeline:
         done_marker = self.it_dir(exp, it) / "selfplay.done"
         if done_marker.exists():
             return True
-        out = self.data_dir(exp, it)
+        out = self.data_dir(exp, it)          # durable (HDD)
+        stage = self.stage_dir(exp, it)      # write path (SSD if stage_root set)
         out.mkdir(parents=True, exist_ok=True)
+        stage.mkdir(parents=True, exist_ok=True)
         log_path = self.it_dir(exp, it) / "selfplay.log"
         self.it_dir(exp, it).mkdir(parents=True, exist_ok=True)
         sp = self.cfg["selfplay"]
@@ -729,8 +744,8 @@ class Pipeline:
 
         def attempt():
             self.check_disk()
-            # chunks of a previous attempt count: only the missing games are played
-            for tmp in out.glob("*.tmp"):
+            commit_staged_chunks(stage, out, self.log)  # leftovers of a crashed attempt
+            for tmp in list(stage.glob("*.tmp")) + list(out.glob("*.tmp")):
                 tmp.unlink()
             have = count_games(out)
             remaining = games_target - have
@@ -741,14 +756,16 @@ class Pipeline:
             stop_file = self.run_dir / f"java_stop_{exp}"
             if stop_file.exists():
                 stop_file.unlink()
-            cmd = self.java_cmd("--mode", "play", "--out", out.as_posix(), "--games", str(remaining),
+            write_vol = volume_key(stage)
+            cmd = self.java_cmd("--mode", "play", "--out", stage.as_posix(), "--games", str(remaining),
                                 "--games-per-chunk", str(sp["games_per_chunk"]), "--matchups", exp_cfg["matchups"],
                                 "--max-seconds", str(sp["stage_max_seconds"]), "--stop-file", stop_file.as_posix(),
                                 "--max-failure-ratio", str(sp["max_failure_ratio"]),
                                 "--max-rows-per-game-type", str(exp_cfg.get("max_rows_per_game_type", sp["max_rows_per_game_type"])),
-                                # the Java process also guards itself, in case this supervisor dies
-                                "--min-free-gb", str(max((r for p, r in self.storage.reserves if volume_key(p) == volume_key(out)), default=0)),
+                                "--min-free-gb", str(max((r for p, r in self.storage.reserves if volume_key(p) == write_vol), default=0)),
                                 "--threads", str(self.cfg["java"]["threads"] or (os.cpu_count() or 8) * 4), *model_args)
+            if stage.resolve() != out.resolve():
+                cmd += ["--count-chunks-from", out.as_posix()]
             self.storage.rotate = lambda: self.make_room(exp, it)
             try:
                 result = run_command(cmd, log_path, sp["stage_max_seconds"] + 600, self.stop, graceful_file=stop_file, grace=sp["grace_seconds"],
@@ -756,6 +773,7 @@ class Pipeline:
                                      tick=self.tick, low_priority=self.cfg["low_priority"])
             finally:
                 self.storage.rotate = None
+                commit_staged_chunks(stage, out, self.log)
             quarantine_bad_chunks(out, self.run_dir / "quarantine", self.log)
             have = count_games(out)
             # exit 3 = the time limit of the stage: fewer games than planned is a legitimate result, exit 4/1/2 are failures
@@ -836,9 +854,24 @@ class Pipeline:
                 return result if not result.ok else Result(1, "exit", result.seconds)
         return Result(0, "exit", 0)
 
+    def benchmark_gate(self, exp, it, bm):
+        """(ok, detail). Slow refs are only worth time after the agent clearly beats a fast yardstick."""
+        min_wr = float(bm.get("min_win_rate") or 0)
+        if min_wr <= 0:
+            return True, "gate off"
+        gate_refs = bm.get("gate_refs") or list(self.cfg.get("eval", {}).get("references") or [])
+        ev = read_json(self.it_dir(exp, it) / "eval.json", {}) or {}
+        vs = ev.get("vs") or {}
+        rates = {ref: (vs.get(ref) or {}).get("score") for ref in gate_refs}
+        cleared = [ref for ref, wr in rates.items() if isinstance(wr, (int, float)) and wr >= min_wr]
+        detail = ", ".join(f"{ref}={rates[ref]}" if rates.get(ref) is not None else f"{ref}=?" for ref in gate_refs)
+        if cleared:
+            return True, f"{cleared[0]} win rate clears {min_wr:.0%} ({detail})"
+        return False, f"need ≥{min_wr:.0%} win rate vs any of {gate_refs} ({detail})"
+
     def stage_benchmark(self):
-        """Rare and slow opponents (NETWORK_V2 ...): only the best model of the run, once, at the end. Never training data.
-        A failed benchmark is a warning in the report, not a failed run."""
+        """Rare slow opponents (NETWORK…): best model once at the end, only if the RANDOM/SMART gate clears.
+        Never training data. A failed compare is a warning, not a failed run."""
         bm = self.cfg.get("benchmark") or {}
         exps = self.state["experiments"]
         candidates = [n for n, e in exps.items() if e.get("best_score") is not None and e.get("best_model")]
@@ -848,8 +881,15 @@ class Pipeline:
         it = exps[exp]["best_iteration"]
         model_dir = exps[exp]["best_model"]
         results = self.state.setdefault("benchmark", {})
+        ok, reason = self.benchmark_gate(exp, it, bm)
+        if not ok:
+            results["skipped"] = {"exp": exp, "iteration": it, "reason": reason}
+            self.save_state()
+            self.log(f"benchmark skipped: {reason}")
+            return
         out = self.run_dir / "benchmark"
         out.mkdir(parents=True, exist_ok=True)
+        self.log(f"benchmark gate open: {reason}")
         for ref in bm["references"]:
             key = f"{exp}/it{it}/{ref}"
             if key in results:
@@ -1268,6 +1308,39 @@ def chunk_files(directory):
     return sorted(Path(directory).glob("*.[0-9]*.ares"))
 
 
+def commit_staged_chunks(stage, dest, log=None):
+    """Move finished .ares from an SSD stage to the durable data dir (copy+delete; cross-volume safe)."""
+    stage, dest = Path(stage), Path(dest)
+    if not stage.exists() or stage.resolve() == dest.resolve():
+        return 0
+    dest.mkdir(parents=True, exist_ok=True)
+    moved = 0
+    for f in chunk_files(stage):
+        target = dest / f.name
+        if target.exists():
+            f.unlink(missing_ok=True)
+            continue
+        shutil.copy2(f, target)
+        f.unlink()
+        moved += 1
+    for name in ("summary.json", "errors.log"):
+        src = stage / name
+        if src.exists():
+            if name == "errors.log" and (dest / name).exists():
+                with open(dest / name, "ab") as out, open(src, "rb") as inp:
+                    out.write(inp.read())
+                src.unlink(missing_ok=True)
+            else:
+                shutil.copy2(src, dest / name)
+                if name == "summary.json":
+                    src.unlink(missing_ok=True)
+    for tmp in stage.glob("*.tmp"):
+        tmp.unlink(missing_ok=True)
+    if log and moved:
+        log(f"committed {moved} chunks from stage -> {dest}")
+    return moved
+
+
 def count_games(directory):
     """Number of different games in the finished chunks (cheap: only the game column is read)."""
     try:
@@ -1477,6 +1550,9 @@ def pack(run_dir, handoff_root=None, update_journal=True):
     if journal["benchmark"]:
         lines += ["## Benchmark (slow opponents, best model only)", ""]
         for b in journal["benchmark"]:
+            if b.get("reason") and "ref" not in b:
+                lines.append(f"- skipped: {b['reason']}")
+                continue
             result = b.get("failed") or f"{b['score']:.3f} [{b['low']:.3f}, {b['high']:.3f}] in {b['games']} games, {b['seconds']:.0f} s"
             lines.append(f"- {b['exp']} it{b['iteration']} vs {b['ref']}: {result}")
         lines.append("")
@@ -1670,7 +1746,10 @@ def preflight(cfg, run_dir, data_root, temp_root, smoke=True):
 
     # ---- storage: where everything goes and that the reserves are respected right now
     storage = Storage(cfg, run_dir, data_root, temp_root)
-    for label, path in (("run state, models, logs", run_dir), ("training data", data_root), ("temp files of the children", temp_root)):
+    write_targets = [("run state, models, logs", run_dir), ("training data", data_root), ("temp files of the children", temp_root)]
+    if storage.stage_root:
+        write_targets.append(("SSD self-play stage", storage.stage_root))
+    for label, path in write_targets:
         try:
             write_test(path)
             check.add(f"write test: {label}", True, str(path))
@@ -1781,6 +1860,7 @@ def smoke_run(cfg, run_dir, data_root, temp_root):
     # two games per slow opponent: proves it starts in the self-play process before the night relies on it
     smoke_cfg["benchmark"]["games"] = 2
     smoke_cfg["benchmark"]["concurrency"] = 2
+    smoke_cfg["benchmark"]["min_win_rate"] = 0  # smoke only checks that the opponent process starts
     smoke_dir = Path(run_dir) / "_smoke"
     smoke_data = Path(data_root) / "_smoke_data"
     for d in (smoke_dir, smoke_data):

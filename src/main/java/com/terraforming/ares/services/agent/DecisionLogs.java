@@ -134,17 +134,32 @@ public class DecisionLogs {
     }
 
     public void startRecordingAfterExisting(Path dir, int gamesPerChunk) {
-        startRecording(dir, gamesPerChunk);
+        startRecordingAfterExisting(dir, gamesPerChunk, dir);
+    }
+
+    /**
+     * Writes new chunks into {@code writeDir}, numbering them after the highest finished chunk in any of
+     * {@code countDirs} (e.g. write on an SSD stage, count also the HDD commit folder so a restart never clobbers).
+     */
+    public void startRecordingAfterExisting(Path writeDir, int gamesPerChunk, Path... countDirs) {
+        startRecording(writeDir, gamesPerChunk);
         synchronized (lock) {
             this.gameIdBase = java.util.concurrent.ThreadLocalRandom.current().nextLong() & 0xFFFFFFFF00000000L;
-            try (var files = Files.list(dir)) {
-                this.chunk = files.map(f -> f.getFileName().toString())
-                        .filter(n -> n.endsWith(".ares"))
-                        .mapToInt(n -> Integer.parseInt(n.split("\\.")[1]))
-                        .max().orElse(0) + 1;
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
+            int next = 1;
+            for (Path dir : countDirs) {
+                if (dir == null || !Files.isDirectory(dir)) {
+                    continue;
+                }
+                try (var files = Files.list(dir)) {
+                    next = Math.max(next, files.map(f -> f.getFileName().toString())
+                            .filter(n -> n.endsWith(".ares"))
+                            .mapToInt(n -> Integer.parseInt(n.split("\\.")[1]))
+                            .max().orElse(0) + 1);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
             }
+            this.chunk = next;
         }
     }
 

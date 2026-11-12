@@ -26,8 +26,8 @@ OBS = 12
 
 def write_typed_chunk(path, decision, cand_features, n_games, seed, schema_hash="synthetic0000hash", rows_per_game=4):
     schema = {"type": decision, "obsSize": OBS, "maxCandidates": 5, "candidateFeatures": cand_features,
-              "obsDtype": "f2", "hash": schema_hash, "observationLayout": "synthetic"}
-    dtype = record_dtype(schema)
+              "obsDtype": "f2", "candDtype": "f2", "hash": schema_hash, "observationLayout": "synthetic"}
+    dtype = record_dtype(schema, 4)
     n = n_games * rows_per_game
     rng = np.random.default_rng(seed)
     rows = np.zeros(n, dtype=dtype)
@@ -46,7 +46,7 @@ def write_typed_chunk(path, decision, cand_features, n_games, seed, schema_hash=
     rows["margin"] = np.where(rows["outcome"] > 0.5, 2.0, -2.0)
     header = json.dumps(schema).encode()
     with open(path, "wb") as f:
-        f.write(b"ARES" + struct.pack("<HI", 2, len(header)) + header + rows.tobytes())
+        f.write(b"ARES" + struct.pack("<HI", 4, len(header)) + header + rows.tobytes())
 
 
 class Discover(unittest.TestCase):

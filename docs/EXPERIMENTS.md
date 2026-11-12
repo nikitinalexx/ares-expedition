@@ -5,8 +5,9 @@ One variable per experiment. Raw numbers live in the morning pack (`journal.json
 
 Metrics:
 - `gain` / `score` — improvement over AGENT without a model (mean over `eval.references`).
+- Per-ref **win rate** (`aScore`) vs RANDOM/SMART — the real climb ladder.
 - `val_loss` vs `constant_val_loss` — below constant ⇒ generalises.
-- NETWORK / NETWORK_V2 — end-of-night `benchmark` only, never a training source.
+- NETWORK — rare `benchmark` only, never a training source. **Do not run it until win rate vs RANDOM or SMART is ≥50%** (config: `benchmark.min_win_rate`). 40% vs RANDOM with 0% vs NETWORK is normal: the skill gap is enormous; a strong player beats random ~always. If NETWORK is still ~0 after the gate opens, raise the bar (60%, 70%…) and ignore NETWORK until the fast yardsticks move again.
 
 Speed (planning): eval AGENT+model vs RANDOM ≈ 75 games/s (2×2000 ≈ 1–2 min); self-play ≈ 7–20 games/s (disk-bound); train on ~16k games ≈ 30 min.
 
@@ -55,9 +56,9 @@ Only AGENT decisions are recorded. External players are **yardsticks**, not teac
 
 Generalisation appears with few rows/game/type + early stop; game count in the window helps val. Strong weight decay does not. Lower self-play temperature did not help (night3).
 
-**Climbing is stuck:** night3 best was control it1 (warm-start from night2); later iterations did not beat it. vs NETWORK **0%**, vs NETWORK_V2 **5.5%**. Beating RANDOM is not enough. Leading open question: H-P1 (passivity / tempo), not architecture.
+**Climbing is stuck:** night3 best was control it1 (warm-start from night2); later iterations did not beat it. ~44% vs RANDOM is progress but far from “beats random”; NETWORK 0% at that level is expected, not a crisis. Focus eval on RANDOM/SMART win rate; NETWORK only after the 50% gate.
 
-Disk (~12 KB/row, padded candidates) caps windows and slows self-play when full — compact format is the big infra lever. Scheduler (pre-fix): fixed slots wasted budget; fixed to round-robin + continue survivors while hours remain.
+Disk was the self-play bottleneck (~12 KB/row): observation already float16, but **padded candidate features were float32**. ARES **v4** stores candidates as float16 too (~half the dominant payload). Optional `stage_root` on SSD writes during self-play, then commits `.ares` to HDD. Scheduler: round-robin until stop (no hours guessing).
 
 ---
 

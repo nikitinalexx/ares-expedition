@@ -5,7 +5,9 @@ Default trainer: `ml/train_all.py` (shared observation trunk, one head per `Deci
 
 ## Config (`ml/nightly_config.json`)
 
-- `storage.run_root / data_root / temp_root` — on `D:` (state/models/logs; big chunks; child TMP). Nothing heavy on `C:`.
+- `storage.run_root / data_root / temp_root` — durable store on `D:` (state/models/logs; finished chunks; child TMP).
+- `storage.stage_root` — optional **SSD** path (e.g. `C:/ares/stage`): self-play writes here, finished `.ares` are moved to `data_root`. Respects the `C:` reserve. Omit to write straight to `data_root`.
+- Decision files are ARES **v4**: observation and candidate features are float16 (v3 candidate float32 still readable). Halves the dominant part of each row so the disk is less often the bottleneck.
 - `storage.reserves` — free space never to touch per volume; checked before stages and during self-play.
 - `data_budget_gb` / `keep_data_iterations` — data cap and training window. **Models and evals are never deleted.**
   Rotation deletes data outside the window; if still over budget/reserve, deletes the **oldest** data of this run (window shrinks), never the iteration being written or the latest finished iteration of an active experiment. Shrinks appear in `REPORT.md` as **DATA WINDOW SHRUNK**. `stopped_disk_low` only if even the minimum does not fit.
@@ -14,7 +16,7 @@ Default trainer: `ml/train_all.py` (shared observation trunk, one head per `Deci
 - `hours` — **optional**. Default / omit / `null` / `0` = **run until you stop** (`nightly stop` or Ctrl+C) or the disk guard trips. No need to guess how long the machine is free; extra time is used automatically. A positive number is only if you want a timed budget. Experiments share a rung by **round-robin**. Early rungs without a timed budget advance after `min_iterations` each (default 1); the last rung runs until stop.
 - `low_priority: false` on a dedicated night machine.
 - Each experiment: `hypothesis`, optional `train_args`, optional `temperature` (else `selfplay.temperature`).
-- `benchmark.references` — slow opponents once at the end, best model only.
+- `benchmark.references` — slow opponents (NETWORK…) once at the end, best model only. Gated by `min_win_rate` vs `gate_refs` (default: skip until ≥50% wins vs RANDOM or SMART). Until then every NETWORK game is wasted time — the skill gap is huge.
 
 ## Commands (repo root)
 

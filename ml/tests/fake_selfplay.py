@@ -35,12 +35,12 @@ def args_of(argv):
 
 def write_chunk(path, games, first_game, rows_per_game=6, truncate=False):
     schema = {"type": "PICK_PHASE", "obsSize": OBS, "maxCandidates": 5, "candidateFeatures": 6, "obsDtype": "f2",
-              "hash": "fake0000fake0000", "observationLayout": "fake"}
-    dtype = record_dtype(schema)
+              "candDtype": "f2", "hash": "fake0000fake0000", "observationLayout": "fake"}
+    dtype = record_dtype(schema, 4)
     n = games * rows_per_game
     rows = np.zeros(n, dtype=dtype)
     rng = np.random.default_rng(first_game)
-    rows["obs"] = rng.random((n, OBS), dtype=np.float32)
+    rows["obs"] = rng.random((n, OBS)).astype(np.float16)
     rows["count"] = 4
     rows["ids"][:, :4] = np.arange(1, 5)
     rows["chosen"] = rng.integers(0, 4, n)
@@ -52,7 +52,7 @@ def write_chunk(path, games, first_game, rows_per_game=6, truncate=False):
     rows["margin"] = np.where(outcome > 0.5, 5.0, np.where(outcome < 0.5, -5.0, 0.0))
     rows["step"] = np.tile(np.arange(rows_per_game), games)
     header = json.dumps(schema).encode()
-    data = b"ARES" + struct.pack("<HI", 2, len(header)) + header + rows.tobytes()
+    data = b"ARES" + struct.pack("<HI", 4, len(header)) + header + rows.tobytes()
     if truncate:
         data = data[:-7]
     tmp = str(path) + ".tmp"

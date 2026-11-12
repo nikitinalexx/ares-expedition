@@ -54,7 +54,12 @@ public class SelfPlayRunner {
      *                {@code policy_ai} / {@code SimulationCompareController}
      */
     public record Options(Path out, int games, int threads, List<Matchup> matchups, int gamesPerChunk,
-                          long maxSeconds, Path stopFile, double maxFailureRatio, double minFreeGb) {
+                          long maxSeconds, Path stopFile, double maxFailureRatio, double minFreeGb,
+                          Path countChunksFrom) {
+        public Options(Path out, int games, int threads, List<Matchup> matchups, int gamesPerChunk,
+                       long maxSeconds, Path stopFile, double maxFailureRatio, double minFreeGb) {
+            this(out, games, threads, matchups, gamesPerChunk, maxSeconds, stopFile, maxFailureRatio, minFreeGb, null);
+        }
     }
 
     public record Summary(String stoppedReason, int gamesRequested, int gamesPlayed, int gamesFailed, long rows, long chunks,
@@ -69,7 +74,11 @@ public class SelfPlayRunner {
         Files.createDirectories(options.out());
         deleteStaleTemporaryFiles(options.out());
         // Writer auto-rotates every gamesPerChunk — workers never block on disk rename (policy_ai pattern).
-        decisionLogs.startRecordingAfterExisting(options.out(), options.gamesPerChunk());
+        if (options.countChunksFrom() != null) {
+            decisionLogs.startRecordingAfterExisting(options.out(), options.gamesPerChunk(), options.out(), options.countChunksFrom());
+        } else {
+            decisionLogs.startRecordingAfterExisting(options.out(), options.gamesPerChunk());
+        }
         AgentPerfStats.reset();
 
         long start = System.nanoTime();

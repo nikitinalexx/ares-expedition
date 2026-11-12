@@ -22,22 +22,25 @@ import java.util.List;
  * <pre>
  *   header:  "ARES" | u16 version | u32 schemaLength | schema (UTF-8 JSON)
  *   record:  float16 observation[obsSize] | u8 candidateCount | u16 candidateIds[maxCandidates]
- *            | float32 candidateFeatures[maxCandidates * candidateFeatures] | u8 chosen | u8 seat | u8 context | u16 round
+ *            | float16 candidateFeatures[maxCandidates * candidateFeatures] | u8 chosen | u8 seat | u8 context | u16 round
  *            | float32 outcome | float32 margin | u64 gameId | u16 step
  * </pre>
- * Version 2 stored candidate ids as u8 (enough for a phase number). Version 3 stores them as u16, because a card id does not
- * fit in a byte. Readers still accept version 2. The chosen index stays a byte, so a decision type has at most 255 candidates.
- * {@code context} says who played everything the agent does not decide yet (0 = SMART, 1 = RANDOM): the learned decision must not
- * be trusted blindly if it was only ever seen in one context.
- * {@code outcome} is from the point of view of the player who made the decision: 1 win, 0.5 draw, 0 loss;
- * {@code margin} is (win points of the player) - (win points of the opponent) at the end of the game.
- * The observation is stored as float16 (halves the size of the files, the features are normalized to about [0, 2]);
- * values that do not fit are rejected by the writer instead of silently becoming infinity.
- * Candidates are padded with zeros up to {@code maxCandidates}; only the first {@code candidateCount} are real.
- * The schema contains a hash of the observation layout so that a trainer can refuse files produced by a different encoder.
+ * Version history:
+ * <ul>
+ *   <li>2 — candidate ids as u8, candidate features as float32</li>
+ *   <li>3 — candidate ids as u16 (card ids), features still float32</li>
+ *   <li>4 — candidate features as float16 (same range as observations; halves the dominant part of each row)</li>
+ * </ul>
+ * Readers accept 2–4. Writers always emit the current {@link #VERSION}. The chosen index stays a byte
+ * (at most 255 candidates). {@code context}: who played everything the agent does not decide (0 SMART, 1 RANDOM).
+ * Observation and candidate features are float16 (normalized ~[0, 2]); values that do not fit are rejected.
+ * Candidates are zero-padded to {@code maxCandidates}. Schema hash covers the observation layout so a trainer
+ * can refuse files from a different encoder.
  */
 public final class DecisionFile {
-    public static final int VERSION = 3;
+    public static final int VERSION = 4;
+    public static final int VERSION_CAND_F16 = 4;
+    public static final int VERSION_IDS_U16 = 3;
     private static final int LEGACY_VERSION = 2;
     private static final byte[] MAGIC = "ARES".getBytes(StandardCharsets.US_ASCII);
 
@@ -59,7 +62,7 @@ public final class DecisionFile {
 
         public String toJson() {
             return "{\"type\":\"" + type + "\",\"obsSize\":" + obsSize + ",\"maxCandidates\":" + maxCandidates
-                    + ",\"candidateFeatures\":" + candidateFeatures + ",\"obsDtype\":\"f2\",\"hash\":\"" + hash()
+                    + ",\"candidateFeatures\":" + candidateFeatures + ",\"obsDtype\":\"f2\",\"candDtype\":\"f2\",\"hash\":\"" + hash()
                     + "\",\"observationLayout\":\"" + observationLayout.replace("\\", "\\\\").replace("\"", "\\\"") + "\"}";
         }
 
@@ -68,13 +71,12 @@ public final class DecisionFile {
         }
     }
 
-    /**
-     * Version 2 keeps candidate ids in one byte; version 3 keeps them in two. Everything else is the same size.
-     */
     public static int bytesPerRecord(Schema schema, int version) {
-        int idBytes = version >= VERSION ? 2 : 1;
+        int idBytes = version >= VERSION_IDS_U16 ? 2 : 1;
+        int featBytes = version >= VERSION_CAND_F16 ? 2 : 4;
         return 2 * schema.obsSize() + 1 + idBytes * schema.maxCandidates()
-                + 4 * schema.maxCandidates() * schema.candidateFeatures() + 1 + 1 + 1 + 2 + 4 + 4 + 8 + 2;
+                + featBytes * schema.maxCandidates() * schema.candidateFeatures()
+                + 1 + 1 + 1 + 2 + 4 + 4 + 8 + 2;
     }
 
     /**
@@ -135,7 +137,7 @@ public final class DecisionFile {
             ByteBuffer small = ByteBuffer.wrap(data.readNBytes(6)).order(ByteOrder.LITTLE_ENDIAN);
             int version = small.getShort();
             int jsonLength = small.getInt();
-            if (version != VERSION && version != LEGACY_VERSION) {
+            if (version < LEGACY_VERSION || version > VERSION) {
                 throw new IOException("Unsupported version " + version);
             }
             String json = new String(data.readNBytes(jsonLength), StandardCharsets.UTF_8);
@@ -172,7 +174,7 @@ public final class DecisionFile {
         }
         ByteBuffer packed = ByteBuffer.allocate(schema.recordSize()).order(ByteOrder.LITTLE_ENDIAN);
         for (float v : row.observation()) {
-            packed.putShort(toHalf(v));
+            packed.putShort(toHalf(v, "observation"));
         }
         packed.put((byte) row.candidateCount());
         for (int i = 0; i < schema.maxCandidates(); i++) {
@@ -184,7 +186,8 @@ public final class DecisionFile {
         }
         for (int i = 0; i < schema.maxCandidates(); i++) {
             for (int f = 0; f < schema.candidateFeatures(); f++) {
-                packed.putFloat(i < row.candidateCount() ? row.candidateFeatures()[i][f] : 0f);
+                float v = i < row.candidateCount() ? row.candidateFeatures()[i][f] : 0f;
+                packed.putShort(toHalf(v, "candidate feature"));
             }
         }
         packed.put((byte) row.chosen()).put((byte) row.seat()).put((byte) row.context()).putShort((short) row.round());
@@ -197,11 +200,11 @@ public final class DecisionFile {
     }
 
     /**
-     * float16 can hold up to 65504; the normalized features are around [0, 2], anything huge or not finite is a bug in the encoder.
+     * float16 can hold up to 65504; normalized features are around [0, 2], anything huge or not finite is a bug in the encoder.
      */
-    private static short toHalf(float v) {
+    private static short toHalf(float v, String what) {
         if (!Float.isFinite(v) || Math.abs(v) > 60000f) {
-            throw new IllegalArgumentException("Observation value " + v + " can not be stored as float16");
+            throw new IllegalArgumentException(what + " value " + v + " can not be stored as float16");
         }
         return Float.floatToFloat16(v);
     }
@@ -214,12 +217,12 @@ public final class DecisionFile {
         int count = b.get() & 0xFF;
         int[] ids = new int[schema.maxCandidates()];
         for (int i = 0; i < ids.length; i++) {
-            ids[i] = version >= VERSION ? (b.getShort() & 0xFFFF) : (b.get() & 0xFF);
+            ids[i] = version >= VERSION_IDS_U16 ? (b.getShort() & 0xFFFF) : (b.get() & 0xFF);
         }
         float[][] features = new float[schema.maxCandidates()][schema.candidateFeatures()];
         for (int i = 0; i < features.length; i++) {
             for (int f = 0; f < schema.candidateFeatures(); f++) {
-                features[i][f] = b.getFloat();
+                features[i][f] = version >= VERSION_CAND_F16 ? Float.float16ToFloat(b.getShort()) : b.getFloat();
             }
         }
         int chosen = b.get() & 0xFF;

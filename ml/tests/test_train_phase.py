@@ -29,8 +29,9 @@ OBS = 12
 
 def write_chunk(path, n_games, seed, schema_hash="synthetic0000hash", rows_per_game=6, rule=None, nan=False):
     """Rows whose outcome follows `rule(phase, obs0)` so that the trainer has something to find."""
-    schema = {"type": "PICK_PHASE", "obsSize": OBS, "maxCandidates": 5, "candidateFeatures": 6, "obsDtype": "f2", "hash": schema_hash, "observationLayout": "synthetic"}
-    dtype = record_dtype(schema)
+    schema = {"type": "PICK_PHASE", "obsSize": OBS, "maxCandidates": 5, "candidateFeatures": 6, "obsDtype": "f2",
+              "candDtype": "f2", "hash": schema_hash, "observationLayout": "synthetic"}
+    dtype = record_dtype(schema, 4)
     n = n_games * rows_per_game
     rng = np.random.default_rng(seed)
     rows = np.zeros(n, dtype=dtype)
@@ -49,7 +50,7 @@ def write_chunk(path, n_games, seed, schema_hash="synthetic0000hash", rows_per_g
         rows["obs"][0, 0] = np.nan
     header = json.dumps(schema).encode()
     with open(path, "wb") as f:
-        f.write(b"ARES" + struct.pack("<HI", 2, len(header)) + header + rows.tobytes())
+        f.write(b"ARES" + struct.pack("<HI", 4, len(header)) + header + rows.tobytes())
 
 
 def phase_three_wins(phase, obs0):
