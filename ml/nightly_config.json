@@ -1,5 +1,4 @@
 {
-  "hours": 8.0,
   "low_priority": false,
   "storage": {
     "run_root": "D:/ares/runs",
@@ -16,7 +15,7 @@
       }
     ],
     "data_budget_gb": 150,
-    "keep_data_iterations": 3,
+    "keep_data_iterations": 2,
     "delete_data_of_other_runs": true
   },
   "java": {
@@ -53,29 +52,23 @@
   "rungs": [
     {
       "fraction": 1.0,
-      "keep": 3,
+      "keep": 2,
       "games_factor": 1.0
     }
   ],
   "experiments": [
     {
       "name": "control",
-      "hypothesis": "N3-0 (control of the night, settings of night 2 fine_es): continuing from the best model of night 2, self-play of the best own model raises the gain above night 2 (RANDOM 0.355, SMART 0.043) from iteration to iteration",
+      "hypothesis": "N4-0: with a shared full-night budget (round-robin, no wasted slots), continuing from night3 best raises gain over iterations and improves benchmark vs NETWORK",
       "games_per_iteration": 7000,
       "matchups": "AGENT:AGENT:1"
     },
     {
-      "name": "temp_low",
-      "hypothesis": "H-D5: self-play temperature 0.2 instead of 0.5 (less exploration noise in the recorded player's own moves) gives a higher gain than control; risk: less variety. val_loss is NOT comparable with control here (other data)",
+      "name": "rows8",
+      "hypothesis": "H-D3 as default: self-play writes and train keeps at most 8 rows/game/type (instead of 32) — same strength as control, less disk pressure (night3 cap8 was train-only)",
       "games_per_iteration": 7000,
       "matchups": "AGENT:AGENT:1",
-      "temperature": 0.2
-    },
-    {
-      "name": "cap8",
-      "hypothesis": "H-D3: at most 8 rows of a game per decision type in the training pool (instead of 32) loses nothing: val_loss - constant and gain not worse than control (the rows of a game are near-duplicates)",
-      "games_per_iteration": 7000,
-      "matchups": "AGENT:AGENT:1",
+      "max_rows_per_game_type": 8,
       "train_args": ["--rows-per-game", "8"]
     }
   ],

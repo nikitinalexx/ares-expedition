@@ -1,106 +1,48 @@
-# HANDOFF: как подхватить работу над новым ИИ для Terraforming Mars: Expedition Ares
+# HANDOFF — new AI for Expedition Ares
 
-Документ для другого ИИ-ассистента (или разработчика), который продолжает работу. Читать целиком, затем `AGENTS.md`, `docs/AI_PLAN.md`, `docs/GAME_RULES.md`.
-Язык общения с владельцем проекта — **русский**. Идентификаторы и код — английские. Ветка: `nn-pure-java-verify` (от `advanced_ai`). **Коммитит владелец сам; ничего не коммить и не пушь без прямой просьбы.**
+For the next assistant continuing this work. Also read `AGENTS.md`, `docs/AI_PLAN.md`, `docs/NIGHTLY.md`, `docs/EXPERIMENTS.md`.
+Talk to the owner in **Russian**. Code/identifiers in English. Branch: `nn-pure-java-verify`.
+**Owner commits; do not commit or push unless asked.**
 
-## 1. Цель и главные требования владельца (не нарушать)
+## Goal and owner rules
 
-Сделать компьютерного игрока, **сильнее существующего NETWORK** (старая самописная сеть, на проде) и NETWORK_V2 (value-сеть DL4J, ветка `advanced_ai`; честное сравнение показало, что V2 не сильнее NETWORK). Ограничения и пожелания:
+Build a computer player stronger than **NETWORK** (prod) and NETWORK_V2. Constraints:
 
-1. **Не повторять подход владельца** (value-сеть + ручные проекции + перебор всех ходов): он дорогой (~1 партия/с), с ручными допущениями (например «соперник всегда выбирает фазу 4») и багами. Выбранная замена — **политика+оценка по списку допустимых ходов** (`docs/AI_PLAN.md`, разделы 3–5), с возможным поиском поверх (этап «2.5»).
-2. **Никакого ручного bias.** Награда — только исход партии. Не поощрять «зверушек» и т. п. Сеть должна сама находить синергии (животные, микробы, зелёные/синие карты). Смещение к эвристикам SMART — отдельный риск (см. `AGENT_R`, `bias_alarm`).
-3. **Сначала написать весь ИИ (все решения) и полное описание мира, и только потом обучать.** Обучение одного решения изолированно бессмысленно (его оптимум зависит от остальных решений). Ночные запуски до этого не делаем. Построенная петля на одном решении (выбор фазы) — лишь проверка инфраструктуры.
-4. **Тестировать всё новое.** Владельца годами убивали «тупые баги» (перепутанная перспектива метки, смещение признаков, нормализация). Для каждого компонента — тесты на классы багов; проверяйте, что тест не пустой (мутационная проверка: сломать код → тест падает → откатить).
-5. **Не давать разрастаться смещению окружения:** SMART — только «леса» на время, пока решения не выучены; его решения никогда не пишутся в данные.
-6. Нужно **искать баги движка и покрывать сложные карты тестами**; симуляции и проекции владельца могут содержать баги.
-7. Пайплайн для ночи — **одной командой, отказоустойчивый, с промежуточными результатами, логами ошибок, остановкой/возобновлением в любое время** (сделано, см. раздел 5).
-8. Heroku/прод сейчас **вне объёма**. Сначала — сильный локальный ИИ.
+1. **Do not repeat the owner’s approach** (value net + hand-written projections + enumerating moves): slow (~1 game/s), biased assumptions, bugs. Chosen path: **policy over legal candidates** (`docs/AI_PLAN.md`), optional search later.
+2. **No hand-written behaviour bias.** Reward = game outcome only. SMART heuristics are a measuring stick / temporary scaffold, never a training teacher.
+3. **Ship the full agent (all decisions + observation) before serious training.** Isolated single-decision training is infrastructure only.
+4. **Test new pieces.** Mutation-check tests when practical.
+5. Engine bugs: find and cover them (`docs/BUGS.md`).
+6. Nightly pipeline: one command, resumable, keeps finished chunks, never deletes models/evals.
+7. Heroku/prod out of scope until the local AI is strong.
 
-## 2. Окружение и машины
+## Machine (owner runs nights here)
 
-- **Dev-машина** (где писался код): Windows 11, i7-14700HX (28 потоков), 32 ГБ, RTX 4060 без CUDA в Java-стеке. JDK в `~/.jdks` (openjdk-25.0.2 и др.), системная Java в PATH = 11 (!).
-- **Ночная машина:** Windows, RTX 3070 Ti (8 ГБ), i5-12600KF (16 потоков), 32 ГБ RAM, CUDA Toolkit 11.6 (nvcc), драйвер новый. Диски: `C:` — SSD, свободно ~50 ГБ (**нельзя съедать, там Windows**), `D:` — HDD, ~400 ГБ (для данных). Ночные прогоны ~8–9 часов. Скорость мерить только там.
-- Сборка: Maven, `pom.xml`: Spring Boot 3.2.5, **Java 25 для сборки/запуска, но байткод уровня 21** (`release 21`; Spring 6.1 не читает class files версии 69 — проверено), Lombok подключён через `annotationProcessorPaths` (javac 23+ иначе не запускает обработчики). Глобальный `~/.m2/settings.xml` на dev-машине указывает на корпоративный Artifactory — использовать `-s .mvn/settings.xml` (только Maven Central).
-- Windows/PowerShell: запятые в аргументах Maven (`-Pa,b`) надо брать в кавычки; `python` из WindowsApps — заглушка Microsoft Store, нужен `py -3`. IntelliJ IDEA используется владельцем для запуска приложения (профили Maven и VM options задаются в конфигурации запуска).
-- Python 3.13, numpy; **torch** нужен для тренера (`py -3 -m pip install torch`; на dev-машине стоит CPU-версия в `ml/.venv`, в git не входит). Тесты тренера пропускаются без torch.
-- Данные/запуски: `D:\ares\{runs,data,tmp}` (см. `ml/nightly_config.json`, он в git).
+Windows, ~32 GB RAM, NVIDIA GPU (CUDA for PyTorch training only; self-play is CPU Java).
+Disks: `C:` — OS, keep free (pipeline writes nothing important there); `D:` — runs/data/tmp (`D:\ares\…` in `ml/nightly_config.json`).
+JDK 21+ (bytecode `release 21`). Maven: prefer `-s .mvn/settings.xml`. Python 3.x + torch in `ml/.venv` for training.
 
-## 3. Что уже сделано (с картой файлов)
+Typical night: start `nightly run …` and leave it; it runs until `nightly stop` / Ctrl+C (or disk). No need to set `hours`. Optional timed budget exists if someone wants one.
 
-### Движок и баги (`docs/BUGS.md`)
-- Исправлено: смещённое перемешивание колоды (`ShuffleService`, тест `ShuffleServiceTest`); отрицательные растения при оплате «Restructured Resources» + карта, тратящая растения (`PaymentValidationService`, тест `PlantSpendingValidationTest`).
-- Открыто: инвариант «TR начисляется за каждый шаг параметра» нарушается (причина не найдена; может быть в правилах/подсчёте теста) — `GameInvariantsTest.KNOWN_ISSUES`.
-- `Player.setPlants/setHeat/setMc` содержат `assert >= 0` (в проде `-ea` выключен, в тестах включён).
+## What exists
 
-### Тестовая база (`src/test/java/com/terraforming/ares/`, `mvn test`, 104 теста, БД не нужна)
-`EngineTestBase` (контекст Spring без БД, репозитории замоканы), `GameInvariantsTest`, `CopyFidelityTest`, `ShuffleServiceTest`, `PlantSpendingValidationTest`, `SimulationBenchTest`, `PickPhaseDecisionsTest`, `OpeningDecisionsTest`, `CardDecisionsTest`, `StandardActionDecisionsTest`, `BuildCardDecisionsTest`, `BuildPaymentDecisionsTest`, `BuildInputDecisionsTest`, `BlueActionDecisionsTest`, `BlueInputDecisionsTest`, `UnmiRtDecisionsTest`, `CollectIncomeDecisionsTest`, `AgentAllDecisionsTest`, `DecisionFileTest`, `DecisionLogsTest`, `MlpPhaseModelTest`, `ObservationCompletenessTest`, `ObservationMaskTest`, `CardTrackingAuditTest`, `selfplay/SelfPlayRunnerTest`.
+**Engine / tests:** `mvn test` (no DB). Fixes: biased shuffle, negative plants on some payments. Open: TR-vs-params invariant (`KNOWN_ISSUES`).
 
-### Симуляции и сравнение сил (`controllers/`, `docs/requests.http`)
-- `SimulationCompareController`: `/simulations/compare` (A против B, места чередуются, доверительный интервал), `/simulations/compare/models` (модели из папки против соперника).
-- `SimulationBenchController`: `/simulations/bench` (партий/с, шагов/с, стоимость кодирования, число состояний на вызов сети).
-- `NNService` режимы `-Dares.nn.backend=java|dl4j|verify`: чистая Java инференс V2 (`PureJavaValueNetwork`, без CUDA; нужен для сравнений и т. д.); DL4J-эталон собирается профилями Maven `dl4j-reference,dl4j-cuda|dl4j-cpu` (`src/dl4j-reference`).
+**Agent:** all non-crisis `DecisionType`s; observation v3 (`ObservationBuilder`); `DecisionFile` / `DecisionLogs`; `SelfPlayMain`; `MlpPhaseModel` / `NeuralPolicy`; `ml/train_all.py` (shared trunk).
 
-### Агент (`src/main/java/com/terraforming/ares/services/agent/`)
-- Каркас: `Decision` (наблюдение + кандидаты), `DecisionAgent`, `UniformRandomAgent`, `AgentDecisionService`, `NeuralPolicy` (модель + температура, `-Dares.agent.model`), `MlpPhaseModel` (Java-инференс модели, формат — `ml/phase_model.py`).
-- `PlayerDifficulty.AGENT` (остальное играет SMART) и `AGENT_R` (остальное — случайно). Хуки: `AiPickPhaseTurn`, `AiPickCorporationTurn`, `AiMulliganCardsTurn`, `AiDiscardCardsTurn`, `AiSellCardsLastRoundTurn`, `AiCollectIncomeTurn` (`COLLECT_INCOME`), продажа по ходу в `AiService`, фазы 1–2 (`BUILD_*` → `UNMI_RT`), фаза 3 (`UNMI_RT` → `STANDARD_ACTION` → `PERFORM_BLUE_ACTION` → `BLUE_INPUT` → хвост конца игры), постройка (`BUILD_CARD` → `BUILD_INPUT` → `BUILD_PAYMENT`).
-- **Все некризисные решения агента закрыты** (конец игры: принудительная продажа руки → `STANDARD_ACTION` без stop → `GAME_END_CONFIRM`; `SELL_VP`/кризис — вне объёма; `PICK_EXTRA_BONUS_SECOND_PHASE` / `SKIP_TURN` / `GAME_END*` — не решения).
-- **Наблюдение v3 — `ObservationBuilder`** (743 значения): V2-энкодер без 210 точных копий (маска `src/main/resources/observation/v3_mask.json`) + блок контекста раунда (кто какую фазу выбрал — скрыто пока идёт выбор) + номер раунда, предыдущие фазы, пул dummy. Схема имеет хэш; смена раскладки меняет хэш и отклоняет старые данные/модели. Имена значений: `ObservationBuilder.names()`.
-- Запись решений: `DecisionFile` (бинарный формат `ARES`, v3, float16, идентификаторы кандидатов u16 — id карты не влезает в байт; v2 ещё читается), `DecisionLogs` (пишет решения с исходом партии, чанки атомарно `.tmp`→`.ares`). Python-чтение: `ml/ares_data.py`.
-- Отдельный процесс без БД: `selfplay/SelfPlayMain` (режимы `play`, `compare`, `names`), `SelfPlayRunner`, профиль `selfplay`. Коды выхода: 0, 3 (стоп/лимит), 4 (много сбоев), 5 (диск), 2, 1.
+**Nightly:** `ml/nightly.py` — selfplay → train → eval, successive halving, disk rotation, OOM restart logging, window shrink, delete data of earlier runs on new start, round-robin time sharing, continue survivors while budget remains. Details: `docs/NIGHTLY.md`. Hypotheses log: `docs/EXPERIMENTS.md`.
 
-### Python (`ml/`)
-- `nightly.py` (+ `nightly.cmd`, конфиг `ml/nightly_config.json`): оркестратор (см. раздел 5). `train_phase.py --decision <TYPE>` + `phase_model.py` — тренер/формат Q-сети для любого типа решения (P(победа | наблюдение, кандидат); BCE по исходу; валидация по партиям; чекпойнты; экспорт проверяется независимым numpy). `audit_features.py` — ревизия признаков и генерация маски. `make_test_fixture.py` — эталон для теста эквивалентности. `train_stub.py` — заглушка для тестов пайплайна.
-- Тесты: `python -m unittest discover -s ml/tests -v` (47 штук; с torch: `ml\.venv\Scripts\python.exe`), `RUN_E2E=1 python -m unittest ml.tests.test_e2e_real` (настоящая Java: убийство процесса и возобновление).
+**External players as yardsticks only:** RANDOM / SMART (fast eval), NETWORK / NETWORK_V2 (slow benchmark at end of night). Not training teachers.
 
-### Аудиты наблюдения (важно, делать при любом изменении энкодера)
-`ObservationCompletenessTest` (каждый публичный факт меняет наблюдение, скрытые — нет), `CardTrackingAuditTest` (какие карты энкодер различает; утечек руки соперника = 0; пороги), `ObservationMaskTest`. Отчёты — `docs/ENCODER_REVIEW.md`, `target/card_tracking_audit.txt`.
+## Working theory (short)
 
-## 4. Факты и числа, на которые опирался план
+Nights 1–3: outcome self-play gives a signal; mixed pool + early stop + ≤32 rows/game/type removes night-1 memorisation; agent beats RANDOM (~35–44%) and scores a few % vs SMART; **0% vs NETWORK**, ~5% vs NETWORK_V2. Continuing self-play from a good checkpoint did not steadily climb (night3). Eval needs ≥2000 games/opponent to rank experiments. Disk (~12 KB/row) limits windows and self-play speed.
 
-- Скорость на ночной машине (16 потоков): RANDOM 364–405 партий/с; SMART 72/с; NETWORK_V2 CPU 0,71/с, на GPU 2,53/с (→ GPU ускоряет всего в 3,6 раза: узкое место — проекции и кодирование на CPU, не сеть). V2 тратит ~14 тыс. состояний сети на партию (≈770 вызовов). Кодирование состояния ≈ 0,3 мс. Размер данных ≈ 108 КБ/партию (float16) → ночь на 70 тыс. партий ≈ 8 ГБ.
-- V2 vs NETWORK (по 100 партий, 10 чекпойнтов): лучший `iter3_epoch_4_30` 43,5%, текущий `iter4` 36% — V2 **не** сильнее. Старые чекпойнты лежат в `candidates/` (локально, в `.gitignore`).
-- Первая петля обучения на ОДНОМ решении (выбор фазы, 4 итерации по 1500 партий, локально): агент со случайным выбором фазы против SMART = 0,26; с выученным ≈ 0,41. Это проверка инфраструктуры, не показатель.
-- Правила игры (подтверждены владельцем): `docs/GAME_RULES.md` (одновременный выбор фазы 1–5, разыгрываются выбранные обоими фазы по порядку 1→5; выбравший получает усиленный эффект; dummy hand — «третий игрок», тянущий фазу из пула без возврата; конец игры — в фазе завершения терраформинга). **Сброшенные и проданные карты не видны** (колода перетасовывается — «карточный счёт» ненадёжен, не делаем).
-- Владелец: сыгранные карты, которые лишь изменили теги и доходы, отслеживать не нужно; нужны карты с постоянным эффектом (синие и др.); `CardMetadata` писалась для фронтенда и **не описывает поведение** — смотреть код класса карты.
-- Дубли признаков V2 были из-за разных голов policy-сети владельца; для общего входа они лишние (убраны маской).
+Owner notes (hypotheses, not axioms) about weak policies that pass/sell losing tempo to RANDOM’s constant small gains, and NETWORK always acting via VALUE — see `docs/EXPERIMENTS.md` (H-P1).
 
-## 5. Ночной пайплайн (`docs/NIGHTLY.md` — подробно)
+## Next
 
-`nightly check` (предполётная проверка + мини-итерация на реальных командах) → `nightly run <имя>` (старт или продолжение) → `nightly stop <имя>` / Ctrl+C → результат в `…/handoff/*.zip` (REPORT.md, лучшая модель, логи ошибок). Основное: единица работы — этап итерации (selfplay → train → eval) и чанк; незавершённый чанк теряется, остальное нет; бюджет считается по **рабочему** времени; несколько теорий + отсев (successive halving); резервы свободного места по томам (`C:` и `D:`), JVM сама останавливается при нехватке места; `run.lock`; «сломана среда» при подряд падающих попытках; контракт тренера описан в `docs/NIGHTLY.md`. Оценка: агент с моделью против SMART/NETWORK + базовая линия «тот же агент со случайным выбором фазы», прирост относительно запаса, `bias_alarm`.
-Перед первой ночью на машине: `nightly check` (пути D:, torch, smoke selfplay→train_all→eval).
-
-## 6. Что осталось сделать (по порядку; критерии готовности)
-
-Принцип для КАЖДОГО решения: генератор допустимых ходов (опора — движок и валидаторы), кандидаты с признаками, хук в соответствующий `Ai*Turn`/процессор для `PlayerDifficulty.AGENT/AGENT_R`, запись в `DecisionLogs`, тренер/модель (обобщить `phase_model.py`/`MlpPhaseModel` под несколько типов решений или единую сеть), тесты:
-(а) каждый сгенерированный ход принимается движком; (б) каждый принимаемый движком случайный ход есть в списке (полнота); (в) наблюдение не содержит скрытого (утечка) и содержит всё нужное; (г) метка принадлежит игроку, чьё решение; (д) случайный агент по этим кандидатам доигрывает партии без ошибок.
-
-1. **Закрыть пробелы по картам** (см. раздел 8 — статус).
-2. **Решения** — **закрыты** (без кризиса). Сверка `TurnType`↔`DecisionType`: игровые выборы покрыты; не решения — `SKIP_TURN`, `PICK_EXTRA_BONUS_SECOND_PHASE` (всегда берём), `GAME_END`/`GAME_END_CONFIRM` (принудительно после опустошения руки/SP), кризис/`SELL_VP`. Баг: `AiTurnService.collectIncomeTurn` раньше всегда клал `null` вместо выбранной карты — исправлено.
-3. **Единый агент**: генераторы/хуки + `AgentAllDecisionsTest` **есть**. Тренер всех типов + общий ствол: `ml/train_all.py` (nightly/`nightly_config.json` уже на него). Сравнение сил/скорости на ночной машине — после первых моделей.
-4. **Обучение / nightly**: инфра multi-decision готова; дальше — реальный `nightly check` + `nightly run` на ночной машине, лига соперников, метрики разнообразия, при необходимости вспомогательные головы (разница очков) без смены награды.
-5. **Поиск** (этап 2.5 плана): после первой сети измерить, окупаются ли top-k 1-ply / поиск внутри раунда / матрица «моя фаза × фаза соперника × карта dummy».
-6. Остальное: открытый баг TR (`docs/BUGS.md` №3), сигнал `bias_alarm` пока шумный при <400 партий на соперника, `pays again` карты (возможный признак «этот доход удвоится апгрейдом фазы 4»), перестановочная важность 108 «безсигнальных» признаков, Heroku — позже.
-
-## 7. Ловушки, на которые уже наступили
-
-- Новые энкодеры/наблюдение: менять `ObservationBuilder.LAYOUT` при любом изменении раскладки (иначе модели/данные не отклонятся); пересоздавать эталон: `python ml/make_test_fixture.py --schema-hash <из ошибки теста> --obs-size <размер> --out src/test/resources/phase_model_fixture`.
-- Не трогать V2-энкодеры (`services/ai/advanced/*`) — на них обучена NETWORK_V2 (417/481 входов), её сравнение нужно как эталон; изменения делать в `ObservationBuilder` поверх.
-- Утечки скрытого: порядок пула dummy (фаза уже перетасована), рука/колода соперника, выбор соперника в текущем раунде (скрыт, пока `StateType.PICK_PHASE`).
-- Сравнения/аудиты на случайных партиях шумят: брать несколько срезов, ставить пороги, а не точные списки.
-- `mvn clean` стирает `target/` вместе с `target/cp.txt` (его строит `nightly check`).
-- Игра ведёт себя случайно: никогда не полагаться на единичный прогон; доверительные интервалы (≥400 партий на соперника для вывода о нескольких процентах).
-- Не коммитить: `candidates/`, `ml/.venv/`, `target/`. В `AGENTS.md` не писать имя владельца и абсолютные пути его машин.
-
-## 8. Состояние на момент передачи
-
-- **Пробелы по картам закрыты.** В `ObservationBuilder` добавлен блок «карты, которые V2-энкодер не различал» (17 значений): присутствие на столе у меня/соперника Matter Generator, Sawmill, Filter Feeders, Pets; ресурсы на Filter Feeders и Pets; наличие в моей руке Bedrock Wellbore, Architecture Blueprints, City Planning, Grain Silos, Invasive Irrigation. Размер наблюдения теперь **760** (688 база + 38 контекст раунда + 17 карты + 17 история/пул dummy). Раскладка: база | контекст раунда | карты | extras (extras всегда последние — на это опираются тесты). `CardTrackingAuditTest` теперь строгий: в руке различаются все 288 карт, среди карт с постоянным эффектом неразличимыми могут быть только «платит повторно» (правило владельца); утечек руки соперника нет.
-- Все Java-тесты (104) и Python-тесты (47, из них 2 пропускаются без `RUN_E2E=1`) зелёные. Эталон модели `src/test/resources/phase_model_fixture` соответствует текущей раскладке (хэш схемы `fbf1f802c289634d`, размер 760); при любой смене раскладки его надо пересоздать (команда в разделе 7).
-- **Корпорация и mulligan сделаны.** `PICK_CORPORATION`: каждый допустимый вариант «какая из предложенных корпораций + её вход» — отдельный кандидат (пустой вход у корпораций без выбора; Austellar — тег × веха, Nebu — любая из 10 фазовых карт, и т. д.). Список строится по валидатору движка и сверяется с ним тестом на всём каталоге. `MULLIGAN`: последовательность «сбросить одну оставшуюся карту или остановиться»; пустой сброс законен. Оба решения подключены в `AiPickCorporationTurn` / `AiMulliganCardsTurn` для `AGENT`/`AGENT_R`, пишутся в `DecisionLogs`. Наблюдение общее, 760, не менялось. Признаки кандидата свои: подпись класса карты (64 бита SHA-256 имени, ±1, новая карта не сдвигает старые; уникальность на каталоге проверяет тест) плюс цвет/теги/цена для mulligan и вход корпорации (фаза, тег, слот и тип вехи).
-- **Модель на несколько решений.** `ml/train_all.py` (по умолчанию в nightly): общий ствол наблюдения + голова на тип → `model/<TYPE>/`; Java `--models` / `ares.agent.models`. Один тип: `ml/train_phase.py --decision TYPE` или `train_all --independent`. Формат файла тот же (`phase_mlp` / `MlpPhaseModel`).
-- Формат файла решений — **версия 3** (id кандидата u16). Версия 2 по-прежнему читается. Индекс выбранного кандидата по-прежнему байт, поэтому у типа не больше 255 кандидатов.
-- **Карты сделаны.** `DRAFT_CARDS` / `DISCARD_CARDS` / `SELL_CARDS` / `SELL_CARDS_LAST_ROUND` — см. выше. `PICK_EXTRA_BONUS_SECOND_PHASE` не решение.
-- **Стандартные проекты и конверсии** — `STANDARD_ACTION`. **Постройка** — `BUILD_CARD` → `BUILD_INPUT` → `BUILD_PAYMENT`. **Синие** — `PERFORM_BLUE_ACTION` → `BLUE_INPUT`. **`UNMI_RT`**, **`COLLECT_INCOME`** (double-produce). Хвост конца игры: продажа руки → `STANDARD_ACTION` без stop → confirm. Тесты `UnmiRtDecisionsTest`, `CollectIncomeDecisionsTest`.
-- **`AgentAllDecisionsTest`:** 40 партий AGENT/AGENT_R доигрываются; до 200 партий покрывают каждый `DecisionType` хотя бы раз (после `rotate` чанков).
-- **Следующий конкретный шаг:** на ночной машине `nightly check`, затем `nightly run <имя>`; утром отдать `handoff/*.zip`. Параллельно можно замерить скорость/силу случайного полного агента vs NETWORK/V2.
-- **Не закоммичено** на момент передачи: всё, что описано выше после последних коммитов владельца (проверить `git status`). Коммитит владелец.
-- Вопросы к владельцу, которые остались открытыми: допустимо ли менять движок под интерфейс допустимых ходов (до сих пор менялись только баги и безопасные хуки); сколько ядер/какой GPU на ночной машине подтверждено (16 потоков, RTX 3070 Ti, CUDA 11.6) — для инференса модели в самоигре сейчас используется чистая Java на CPU; для крупной сети понадобится решение (ONNX Runtime GPU / ND4J / отдельный батчер), которое зависит от версии cuDNN на ночной машине.
+1. Fix scheduler leftovers / use full `--hours` (done after night3).
+2. Diagnose passivity / tempo vs NETWORK (action distributions) before inventing architecture changes.
+3. Nightly climb with fewer parallel experiments (disk) and hours covering the whole free window.
+4. Compact decision format (long-term disk lever).

@@ -1,41 +1,29 @@
-# Найденные проблемы
+# Known engine issues
 
-Статусы: **FIXED** — исправлено и покрыто тестом, **OPEN** — воспроизводится, причина ещё не найдена, **BENIGN** — безвредно сейчас, но хрупко.
-Воспроизведение: `mvn test` (в `src/test`), больше партий: `-Dinvariants.games=200`.
+Statuses: **FIXED** (with test), **OPEN**, **BENIGN** (fragile but harmless now).
+Reproduce: `mvn test`; more games: `-Dinvariants.games=200`.
 
 ## FIXED
 
-### 1. Смещённое перемешивание (`ShuffleService.shuffle`)
-Каждая позиция обменивалась со случайным индексом **всего** списка (и цикл шёл до `size - 1`), а не с одной из ещё не зафиксированных позиций. Это
-известная ошибка наивного перемешивания: часть перестановок становится в разы вероятнее. Измерено: для 3 элементов вероятности 22% / 11% вместо 16,7%;
-для 10 элементов элемент попадает на первое место в 13,4% случаев вместо 10%. Используется для колод, **наград и вех** (там списки короткие, и смещение особенно заметно).
-Исправлено на Фишера–Йейтса, тест `ShuffleServiceTest`.
-**Важно:** все уже обученные модели видели данные из смещённого распределения. Это не делает их неверными, но результаты сравнений «до/после» нужно делать на одной версии.
+### 1. Biased shuffle (`ShuffleService.shuffle`)
+Naive swap-with-any-index (not Fisher–Yates). Measured bias on short lists (milestones/awards/decks). Fixed; `ShuffleServiceTest`.
+Models trained before the fix saw the biased distribution — keep compares on one engine version.
 
-### 2. Отрицательные растения (`FoodFactory`, `BiomassCombustors`, `Potatoes`, `Moss`) — FIXED
-Причина найдена: оплата растениями (`RestructuredResourcesPayment`, скидка 5 за растение) и собственная цена карты в растениях проверялись **по отдельности**
-(валидатор оплаты: «растений ≥ 1»; валидатор карты: «растений ≥ 2»), поэтому постройка могла потратить больше растений, чем есть (например, 2 растения: 1 на оплату + 2 карта = −1).
-Исправлено в `PaymentValidationService`: при оплате растениями проверяется сумма «число оплат растениями + собственная цена карты в растениях» (общее место для UI и всех ИИ).
-Тест `PlantSpendingValidationTest` (воспроизводил баг до исправления); на 1200 партий инварианты не нарушаются (раньше ~3 на 600).
+### 2. Negative plants (`FoodFactory`, `BiomassCombustors`, `Potatoes`, `Moss`)
+Plant payment (`RestructuredResources`) and the card’s own plant cost were validated separately, so total spend could exceed plants. Fixed in `PaymentValidationService` (sum both). `PlantSpendingValidationTest`.
 
 ## OPEN
 
-### 3. Параметры планеты растут без начисления TR
-Инвариант «сумма (TR − 5) + потерянный по картам TR ≥ уровень температуры + кислорода + океаны + инфраструктура» нарушается как с dummy hand, так и без него.
-Возможные безобидные причины: эффекты, которые поднимают параметр без TR по правилам; потеря и приобретение TR внутри одного шага (мой подсчёт потерь грубый).
-Нужно сопоставить по шагам, какая именно карта/действие поднимает параметр без TR (добавить в инвариант запись «что сыграно в этом шаге»).
+### 3. Global parameters rise without matching TR
+Invariant “TR progress ≥ temperature + oxygen + oceans + infrastructure (adjusted for card TR loss)” fails with and without dummy. May be legal effects or coarse TR-loss accounting. Need per-step “which action raised the param”.
 
-## BENIGN / хрупко
+## BENIGN / fragile
 
-### 4. `assert` в основном коде не работают в проде
-В `src/main` 12 `assert`, а JVM без `-ea` их игнорирует; в тестах они включены. Я добавил проверки в `Player.setPlants/setHeat/setMc`. `Player.setCardIncome` до сих пор
-**печатает** «CARD INCOME NEGATIVE» вместо ошибки — это сигнал бага, который никто не читает; тест проверяет `cardIncome >= 0`.
+### 4. `assert` in main code
+Ignored without `-ea`. Extra checks in `Player.setPlants/setHeat/setMc`. `setCardIncome` still only prints on negative.
 
-### 5. Копирование игры (`new MarsGame(game)`) — основа всех проекций ИИ
-Тест `CopyFidelityTest` сравнивает рефлексией игру и копию на каждом шаге 6 партий и ищет общие изменяемые объекты.
-- `Deck(Deck)` не копирует `cardToTurn` (читается только статистикой), `MarsGame(MarsGame)` не копирует `corporationsDeck` — безвредно сейчас.
-- Копия делит с оригиналом `BuildDto`, градации параметров, `Player.corporations`, `nextTurns`: нигде не мутируются (проверено поиском по коду). Если кто-то начнёт их изменять, проекции испортят настоящую игру.
-Тест падает при любом **новом** расхождении, так что забытое поле в копировании новой механики будет поймано.
+### 5. Game copy (`new MarsGame(game)`)
+Basis of all AI projections. `CopyFidelityTest` reflection-compares game vs copy. Some shared immutable-in-practice objects (`BuildDto`, param grades, …) — mutating them would corrupt the live game.
 
-### 6. Игровые эффекты, снижающие TR — это правила, а не баг
-`BalancedPortfolios`, `FueledGenerators`, `LunarBeam`, `Monocultures`, `StripMine`, `InvestmentLoan` намеренно снижают TR. Инварианты это учитывают.
+### 6. Effects that lower TR
+Rules, not bugs — invariants must account for them.

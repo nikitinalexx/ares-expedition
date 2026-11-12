@@ -451,6 +451,55 @@ class DiskSafety(Base):
         self.assertTrue(storage.violations())
 
 
+class TimeBudget(Base):
+    def test_unlimited_keeps_going_until_stop(self):
+        cfg = make_cfg(hours=None,
+                       experiments=[{"name": "a", "games_per_iteration": 20, "matchups": "AGENT:AGENT:1"}],
+                       rungs=[{"fraction": 1.0, "keep": 1, "games_factor": 1.0}],
+                       selfplay={"games_per_chunk": 10, "stage_max_seconds": 60, "grace_seconds": 5})
+        cfg.pop("max_iterations_per_experiment", None)
+        p = self.pipeline(cfg)
+        self.assertIsNone(p.state["budget_seconds"])
+        threading.Timer(12.0, p.stop.set).start()
+        self.assertEqual("stopped", p.run())
+        self.assertGreaterEqual(p.state["experiments"]["a"]["iterations_done"], 1)
+
+    def test_experiments_share_a_rung_by_round_robin_and_use_leftover_time(self):
+        """Night3 bug: fixed per-experiment slots left ~40 min unused and then finished the night."""
+        os.environ["FAKE_GAME_SECONDS"] = "0.02"
+        cfg = make_cfg(hours=0.04,  # ~144 s: enough for several shared iterations, stopped by time not by a cap
+                       experiments=[{"name": n, "games_per_iteration": 40, "matchups": "AGENT:AGENT:1"} for n in ("a", "b")],
+                       rungs=[{"fraction": 1.0, "keep": 2, "games_factor": 1.0}],
+                       selfplay={"games_per_chunk": 10, "stage_max_seconds": 60, "grace_seconds": 5})
+        cfg.pop("max_iterations_per_experiment", None)
+        p = self.pipeline(cfg)
+        self.assertEqual("finished", p.run())
+        done = {n: e["iterations_done"] for n, e in p.state["experiments"].items()}
+        self.assertGreaterEqual(done["a"], 1)
+        self.assertGreaterEqual(done["b"], 1)
+        self.assertLess(abs(done["a"] - done["b"]), 2, "round-robin must share the rung")
+        # measure leftover from the persisted active_seconds (elapsed() keeps ticking after run())
+        left = p.budget() - p.state["active_seconds"]
+        need = min((e.get("last_iteration_seconds") or 0) * 1.1 for e in p.state["experiments"].values())
+        self.assertTrue(left < need or need == 0,
+                        f"leftover {left:.0f}s must be too small for another iteration (need {need:.0f}s)")
+
+    def test_raising_hours_continues_after_planned_rungs(self):
+        cfg = make_cfg(hours=0.01, max_iterations_per_experiment=50,
+                       rungs=[{"fraction": 1.0, "keep": 1, "games_factor": 1.0}],
+                       experiments=[{"name": "a", "games_per_iteration": 20, "matchups": "AGENT:AGENT:1"}],
+                       selfplay={"games_per_chunk": 10, "stage_max_seconds": 60, "grace_seconds": 5})
+        p = self.pipeline(cfg)
+        self.assertEqual("finished", p.run())
+        first = p.state["experiments"]["a"]["iterations_done"]
+        p.cfg["hours"] = 0.04
+        p.state["budget_seconds"] = 0.04 * 3600
+        p.state["status"] = "running"
+        self.assertEqual("finished", p.run())
+        self.assertGreater(p.state["experiments"]["a"]["iterations_done"], first,
+                           "extra hours must buy more iterations of the survivors")
+
+
 class ResumeAnyTime(Base):
     """Stop in the morning, continue in the evening (or the next week): only the time spent working counts."""
 

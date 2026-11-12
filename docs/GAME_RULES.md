@@ -1,50 +1,41 @@
-# Правила игры (как их понимает код) и что нужно уточнить
+# Game rules (as the code implements them)
 
-Файл восстановлен **по коду** (`model/Constants`, `states/`, `services/DraftCardsService`, `PlayerDifficulty`). Всё, что я не смог подтвердить кодом, помечено ❓ —
-пожалуйста, поправьте (это основа для обучения ИИ, ошибка здесь дороже любой ошибки в архитектуре сети).
+Reconstructed from code (`Constants`, `states/`, `DraftCardsService`, …). Items marked ❓ need owner confirmation — wrong rules poison training.
 
-## Раунд
-1. **Выбор фазы.** Каждый игрок выбирает одну из 5 фаз; нельзя выбрать ту же, что и в прошлом раунде (`previousChosenPhase`). Выбор делается **одновременно** (подтверждено).
-2. **Разыгрываются выбранные фазы, и для обоих игроков**: если один выбрал фазу 1, а другой фазу 4, то разыгрываются фазы 1 и 4, и каждый игрок участвует в обеих.
-   Выбравший фазу получает её **усиленный** эффект (и апгрейды этой фазы, если есть).
-   Порядок разыгрывания: по номеру фазы **1 → 5** (подтверждено).
-3. После фаз — **продажа лишних карт** (`SELL_EXTRA_CARDS`, фаза 6, лимит руки 10) и следующий раунд.
-   Это не то же самое, что продажа по ходу: карту можно продать за **3 MC** в любой момент, когда ход не единственный
-   (фазы 1 и 2 — рядом со стройкой, фаза 3 — рядом с действием). `SELL_CARDS` не терминальный и стройку не тратит:
-   деньги приходят сразу, следующим шагом можно строить или действовать. Два эффекта дают +1 MC к цене продажи каждый
-   (`SOLD_CARDS_COST_1_MC_MORE`, Exocorp). Подтверждено владельцем.
+## Round
 
-| № | Фаза | Что делает |
+1. **Phase pick.** Each player picks one of 5 phases (not the same as last round). Picks are **simultaneous**.
+2. **Chosen phases resolve for both players**, in order **1 → 5**. The player who picked a phase gets its **boosted** effect (and that phase’s upgrades).
+3. Then **sell extras** (hand limit 10) and next round. Mid-turn sell for **3 MC** is also allowed when it is not the only action (does not spend the build; money arrives immediately). Exocorp effects can +1 MC to sell price.
+
+| # | Phase | Effect |
 |---|---|---|
-| 1 | Постройка зелёных проектов | строит зелёную карту (цена в MC, скидки по тегам, сталь/титан/тепло как оплата ❓) |
-| 2 | Постройка синих/красных | то же для синих (постоянные эффекты/действия) и красных (события) |
-| 3 | Синие действия | каждая синяя карта один раз за раунд (апгрейд — дважды/подглядеть карты); стандартные проекты (тепло→температура, растения→лес и т. д.) |
-| 4 | Доход | MC = доход + TR; тепло, растения, карты по доходам; «выплата ещё раз» зелёных карт при апгрейде |
-| 5 | Набор карт | смотришь 5 берёшь 2 (если выбрана ты) либо смотришь 2 берёшь 1 (если выбрал соперник); апгрейды: 4/3, или 8 на выбор |
-| 6 | Продажа | автоматический этап |
+| 1 | Build green | play a green project |
+| 2 | Build blue/red | blue (permanents/actions) or red (events) |
+| 3 | Blue actions | each blue once/round (upgrade: twice / peek); standard projects |
+| 4 | Income | MC = income + TR; heat/plants/cards; upgrade can replay greens |
+| 5 | Draft | pick 2 of 5 if you chose it, else 1 of 2; upgrades change counts |
+| 6 | Sell extras | automatic |
 
-Апгрейды фаз (`PHASE_*_UPGRADE_*`): у каждой из 5 фаз два варианта улучшения, получаются картами с эффектом «апгрейд фазы».
-Фаза 1: скидка / постройка ещё одной; 2: +проект и MC / +проект и карта; 3: двойное повторение / подсмотр карт; 4: +MC / двойной доход; 5: оставить лишнюю / увидеть больше.
+Phase upgrades: two options per phase, granted by cards.
 
-## Ресурсы и параметры
-- Ресурсы игрока: `mc`, `heat`, `plants` (запас); доходы: `mcIncome`, `heatIncome`, `plantsIncome`, `steelIncome`, `titaniumIncome`, `cardIncome`.
-- Глобальные параметры: температура, кислород, океаны (+ инфраструктура в расширении). Каждый шаг выше даёт TR игроку, который его сделал.
-- Карты (268 всего): зелёные 135, синие 84, красные 49; теги: PLANT 35, SCIENCE 41, ENERGY 33, SPACE 51, EVENT 49, BUILDING 85, ANIMAL 10, MICROBE 23, EARTH 28, JUPITER 14.
-- Очки победы: `TR + леса + очки карт + вехи + награды + очки за ресурсы на картах (животные/микробы)` (`WinPointsService`).
-- Корпорации выбираются в начале (2 на выбор, опционально mulligan).
+## Resources and scoring
 
-## Конец игры (подтверждено)
-Игра заканчивается **в той фазе, в которой завершён терраформинг** (достигнуты все глобальные параметры); игроки спокойно доигрывают эту фазу.
-Игрок, который впереди, заинтересован завершить терраформинг быстрее, отстающий — тянуть: это одно из самых важных стратегических решений.
+- Player: `mc`, `heat`, `plants`; incomes including steel/titanium/cards.
+- Globals: temperature, oxygen, oceans (+ infrastructure in expansion). Raising a step usually grants TR to the actor.
+- VP: TR + forests + card VP + milestones + awards + resources on cards (`WinPointsService`).
+- Start: pick corporation (2 options), optional mulligan.
 
-## Режимы
-- **Dummy hand** (подтверждено): «третий игрок», который не играет сам, а каждый раунд случайно достаёт из рукава одну из фаз 1–5. Пул из пяти фаз уменьшается (достали без возврата),
-  когда пуст — перемешивается заново. Поэтому каждый раунд разыгрывается ещё и фаза dummy (иногда та, которую не выбрал никто из игроков) — игра ускоряется, и ИИ не может
-  «только строить и брать карты», забыв про доход. **Для игры с ИИ режим нужен всегда.** Оставшиеся в пуле фазы известны (`dummyHand` / `usedDummyHand`) → это публичная информация,
-  и она должна быть во входе сети: по ней видно, какие фазы dummy ещё может сыграть в ближайших раундах.
-- Mulligan, Improved corporations (`BUFFED_CORPORATION`), Infrastructure, Experimental, Crisis (кооператив, 1 игрок).
+## End of game
 
-## Типы решений в партии (для ИИ)
-1. Корпорация и mulligan; 2. выбор фазы; 3. постройка: какую карту, чем платить, параметры входа (карта-цель, ресурс и т. д.);
-4. синие действия: какое, в каком порядке, с какими параметрами; стандартные проекты; 5. выбор карт (набор/драфт); 6. что продать/сбросить; 7. когда заканчивать игру.
-Всего порядка **сотен решений за партию** (28 раундов × 2 игрока × 3–10 решений).
+Game ends in the **phase where terraforming completes** (all globals maxed); that phase finishes. Leader wants to end sooner; trailer wants to stall.
+
+## Dummy hand (always on for AI play)
+
+A third “player” draws a phase each round from a pool of 1–5 without replacement; empty pool reshuffles. Remaining pool is **public** and must be in the observation. Speeds the game and forces income/build diversity.
+
+Other modes: buffed corporations, infrastructure, experimental, crisis (coop) — out of agent scope for now.
+
+## Decision types (for the agent)
+
+Corporation/mulligan → phase → build (card / payment / input) → blue actions / standard projects → draft → sell/discard → endgame. On the order of hundreds of decisions per game.

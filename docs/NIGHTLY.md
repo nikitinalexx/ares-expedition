@@ -1,98 +1,67 @@
-# Ночной пайплайн
+# Nightly pipeline
 
-Одна команда запускает цикл «самоигра (Java) → обучение (Python) → оценка», умеет несколько теорий за ночь, пишет только законченные куски, переживает падения и
-останавливается/продолжается когда угодно. **Решения агента закрыты**; тренер по умолчанию — `ml/train_all.py` (все типы чанков в данных, общий ствол наблюдения + голова на тип; папки `model/<TYPE>/`, Java: `--models`).
-Один тип по-прежнему: `ml/train_phase.py --decision TYPE`. Обвязка проверена (мини-прогон, обрыв, возобновление, диск). Перед первой настоящей ночью на машине: `nightly check`.
+One command: self-play (Java) → train (Python) → eval. Several experiments per night, finished chunks only, stop/resume anytime.
+Default trainer: `ml/train_all.py` (shared observation trunk, one head per `DecisionType`, folders `model/<TYPE>/`).
 
-## Настройка (один раз на ночной машине)
-1. `pip install numpy` (позже добавится torch).
-2. Соткройте `ml/nightly_config.json` (он в git) и при необходимости поправьте:
-   - `storage.run_root / data_root / temp_root` — **на диске D:** (состояние, модели, логи; большие чанки данных; TMP дочерних процессов). На C: пайплайн ничего значимого не пишет.
-   - `storage.reserves` — сколько свободного места **никогда** не трогать на каждом томе (например `C:/` 20 ГБ и `D:/` 30 ГБ). Проверяется перед каждым этапом и каждые несколько секунд во время работы.
-   - `storage.data_budget_gb` и `keep_data_iterations` — потолок данных запуска и окно хранения (старые итерации удаляются, **модели и оценки — никогда**).
-     Ротация: после каждой итерации удаляется всё вне окна; если бюджет или резерв диска всё равно не держится (в том числе посреди self-play),
-     удаляются **самые старые** данные этого прогона (окна сужаются) — кроме пишущейся итерации и последней готовой итерации каждого активного
-     эксперимента. Каждое сужение — `state.json → window_shrinks`, `status.json`, раздел **DATA WINDOW SHRUNK** в `REPORT.md`. Остановка
-     `stopped_disk_low` — только если места нет даже на этот минимум. `check` показывает пик данных по ступеням и этот минимум.
-   - `storage.delete_data_of_other_runs` (по умолчанию `true`): **новый** прогон удаляет self-play-данные прежних (`<data_root>/<прогон>/data/*/it_*`),
-     кроме идущих сейчас; их модели, оценки, логи и пакеты остаются. Вручную ничего чистить не нужно.
-   - `java.xmx` (10g при ~32 ГБ достаточно: партиям много heap не нужно, свободная RAM лучше работает как кэш диска).
-     При `OutOfMemoryError` Java сразу завершается с кодом 6, пайплайн перезапускает этап с готовых чанков (до `oom_restarts` раз, попытка не тратится).
-     Каждый такой рестарт записывается: `warnings/*_oom.txt` (хвост лога), `state.json → oom_restarts`, `status.json`, раздел **OUT OF MEMORY** в `REPORT.md`. Это баг, который надо чинить, а не норма.
-   - `java.threads` — **in-flight партий** (virtual threads + семафор), как в `policy_ai`, не размер пула platform-потоков. Типично 512–2000.
-   - `hours` — **бюджет рабочего времени**.
-   - На выделенной ночной машине: `"low_priority": false` (иначе Windows держит процесс ниже обычного — ЦП выглядит «пустым»).
-   - Self-play — чистая Java на ЦП; GPU загорается только на этапе `train` (нужен `torch` с CUDA).
-   - Скорость партий/инференса пишется в `summary.json` (`perf.neuralUsMean`, `neuralCpuShare`, `hint`) и в утренний `REPORT.md`. Если `neuralCpuShare` стабильно ≥0.5 — пора думать про GPU-инференс.
-   - У каждого эксперимента — `hypothesis` и при необходимости `train_args` (флаги тренера поверх общей команды). Итог каждой ночи пишется
-     в `journal.json` пакета и `run_root/JOURNAL.jsonl`; выводы — в `docs/EXPERIMENTS.md` (читать перед планированием новой ночи).
-   - Подача данных: `selfplay.max_rows_per_game_type` (сколько решений партии на тип пишет Java), `--rows-per-game` и `--feed mixed|sequential`
-     тренера (по умолчанию каждый батч случайно из пула всех партий окна). Это гипотезы H-D1–H-D3 в `docs/EXPERIMENTS.md`, проверяются ночами.
-   - `benchmark.references` (NETWORK, NETWORK_V2) — медленные соперники: один раз в конце ночи, только лучшая модель; не в self-play и не в eval итераций.
-   - В логе `gain ±x.xxx` — прирост к baseline (AGENT без модели); `win_rate` против SMART/NETWORK в начале ночи часто ≈0 — это нормально, не «лучшая сила».
-3. Если глобальный Maven ведёт не на Maven Central: `"maven": {"args": ["-s", ".mvn/settings.xml"]}`.
+## Config (`ml/nightly_config.json`)
 
-## Команды (из корня репозитория; `nightly.cmd` — то же самое короче)
-| Что | Команда |
+- `storage.run_root / data_root / temp_root` — on `D:` (state/models/logs; big chunks; child TMP). Nothing heavy on `C:`.
+- `storage.reserves` — free space never to touch per volume; checked before stages and during self-play.
+- `data_budget_gb` / `keep_data_iterations` — data cap and training window. **Models and evals are never deleted.**
+  Rotation deletes data outside the window; if still over budget/reserve, deletes the **oldest** data of this run (window shrinks), never the iteration being written or the latest finished iteration of an active experiment. Shrinks appear in `REPORT.md` as **DATA WINDOW SHRUNK**. `stopped_disk_low` only if even the minimum does not fit.
+- `delete_data_of_other_runs` (default true): a **new** run deletes self-play data of earlier finished runs; their models/reports stay.
+- `java.xmx`, `java.threads` (in-flight games). OOM → Java exit 6, stage restart, logged under **OUT OF MEMORY**.
+- `hours` — **optional**. Default / omit / `null` / `0` = **run until you stop** (`nightly stop` or Ctrl+C) or the disk guard trips. No need to guess how long the machine is free; extra time is used automatically. A positive number is only if you want a timed budget. Experiments share a rung by **round-robin**. Early rungs without a timed budget advance after `min_iterations` each (default 1); the last rung runs until stop.
+- `low_priority: false` on a dedicated night machine.
+- Each experiment: `hypothesis`, optional `train_args`, optional `temperature` (else `selfplay.temperature`).
+- `benchmark.references` — slow opponents once at the end, best model only.
+
+## Commands (repo root)
+
+| Action | Command |
 |---|---|
-| Проверка перед сном (диски, Java, сборка, **мини-итерация всей цепочки**) | `nightly check` |
-| Старт **или продолжение** | `nightly run night1` |
-| Что происходит | `nightly status night1` |
-| Остановка (штатная; результат упакуется сам) | `nightly stop night1` или Ctrl+C в консоли |
-| Собрать результат вручную | `nightly pack night1` |
-| Новая ночь **от лучшей модели прошлой** | `nightly run night3 --start-from night2` |
+| Preflight + tiny real iteration | `nightly check` |
+| Start or resume | `nightly run night4` |
+| Status | `nightly status night4` |
+| Stop (packs result) | `nightly stop night4` or Ctrl+C |
+| Pack manually | `nightly pack night4` |
+| New night from earlier best model | `nightly run night4 --start-from night3` |
 
-## Связь между ночами
-- Каждая ночь — отдельный прогон со своей папкой; по умолчанию эксперименты начинают **без модели** (агент играет случайно).
-- `--start-from <прогон или папка модели>` (только для нового прогона) или `start_model` у эксперимента в конфиге: модель копируется
-  в `it_0000/model`, играет первый self-play, служит warm start тренеру (если совпадает архитектура) и оценивается — новая модель
-  становится лучшей, только если её прирост выше. Указывать имя прогона = взять его лучшую модель.
-- Данные прошлой ночи не переносятся (они от другой политики и много весят) и удаляются при старте новой, переносится только модель.
-  Выводы — в `docs/EXPERIMENTS.md`.
-- У эксперимента может быть своя температура self-play (`"temperature"`), иначе берётся `selfplay.temperature`.
-- С нуля — когда ночь проверяет **способ обучения** (сравнение честнее); от прошлой модели — когда способ уже выбран и нужно наращивать силу.
+`run` runs `check` first and refuses to start if anything is broken.
 
-`run` сам делает `check` (мини-итерация ~20 с), и **не стартует**, если что-то сломано — вы не найдёте утром сломанный прогон.
+## Between nights
 
-## Остановка и продолжение в течение дня
-- `stop` (или Ctrl+C) → завершается текущий чанк, процессы останавливаются, результат упаковывается. Затем та же команда `run night1` продолжает с места остановки.
-- **Бюджет считается по рабочему времени**: часы, пока вы остановили прогон, не тратятся. Можно остановить в 10:00 и продолжить в 22:00.
-- Бюджет закончился, а хочется ещё: `nightly run night1 --hours 12` (или поднять `hours` в конфиге) — продолжат уцелевшие теории.
-- Процессы работают с пониженным приоритетом (`low_priority`), поэтому можно работать за компьютером, не останавливая прогон.
-- Убитый процесс / выключенное питание: просто запустите `run` снова. Незавершённый чанк пропадёт, всё остальное остаётся; этапы с пометкой `.done` не повторяются.
-- Два одновременных запуска одного прогона запрещены (`run.lock`).
+- Each night has its own folder. Default start: no model (uniform agent).
+- `--start-from <run|model dir>` (new runs only) or `start_model` in config: copy to `it_0000`, first self-play, warm start, evaluated; replaced only if beaten.
+- Earlier runs’ self-play data are deleted on new start; only the model is carried. Conclusions: `docs/EXPERIMENTS.md`.
 
-## Несколько теорий за ночь
-Каждый эксперимент — запись в `experiments` (свои матчи/параметры). Ночь делится на **ярусы** (`rungs`): сначала короткие зонды всех теорий (малые итерации), затем хуже оценённые отсеиваются, лучшим
-достаётся остаток времени. Никто не отсеивается без оценки (нет времени = нет вывода). Эксперимент, который ломается 3 раза подряд, выбывает, остальные продолжают; если ломается **вообще всё** подряд
-(`max_failures_in_a_row`), прогон останавливается с причиной «сломана среда».
+## Stop / resume
 
-## Утром
-Папка и zip `…/runs/<имя>/handoff/<имя>_<время>.zip` — отдайте мне этот файл. Внутри: `REPORT.md` (что за теории, оценки по итерациям, лучшая модель, ошибки), `best_model/`, `metrics.csv`,
-`logs/` (хвосты логов этапов и **все файлы ошибок**: команда, код выхода, конец вывода процесса, `errors.log` Java), `state.json`, `config.json`, версии.
+- Stop finishes the current chunk and packs. Same `run` continues.
+- By default there is no time budget — stop when you want the morning pack.
+- Optional timed budget used up: clear `hours` / `--hours 0` and `run` again to continue until stop, or raise hours.
+- Kill / power loss: run again; unfinished chunk is lost, `.done` stages are not redone.
+- One lock per run (`run.lock`).
 
-## Устройство диска
+## Layout
+
 ```
-D:/ares/runs/<имя>/    state.json, status.json, log.txt, errors/, quarantine/, exp/<теория>/it_0007/{model/, eval.json, *.log}, handoff/
-D:/ares/data/<имя>/    data/<теория>/it_0007/PICK_PHASE.000001.ares ...   (≈108 КБ на партию, float16)
-D:/ares/tmp/<имя>/     TMP дочерних процессов
+D:/ares/runs/<name>/   state, logs, exp/<exp>/it_*/{model,eval}, handoff/
+D:/ares/data/<name>/   data/<exp>/it_*/*.ares
+D:/ares/tmp/<name>/    child TMP
 ```
-Чанки пишутся как `*.ares.tmp` и переименовываются в `*.ares` только когда закончены. Битые чанки уходят в `quarantine/` и не попадают в обучение.
 
-## Что обучается и как читать отчёт
-- На каждый `DecisionType` с чанками — своя Q-голова «P(победа | наблюдение, кандидат)»; ствол наблюдения общий (`ml/train_all.py`, формат файла — `ml/phase_model.py`). Самоигра: `--models` на каталог типов, температура `selfplay.temperature`; оценка — жадно (0).
-- В `eval.json` у каждого соперника: счёт модели, **baseline** (тот же агент без моделей / случайные кандидаты) и **прирост**. `score` — среднее по всем соперникам, а не только по SMART.
-- **bias_alarm**: прирост (в долях оставшегося «запаса») против SMART заметно больше, чем против остальных — модель, возможно, подстроилась под эвристики SMART. При 150 партиях шум ±0,08, смотрите на тренд.
-- В `train_metrics.json`: `beats_baseline` (потеря на валидации лучше, чем «предсказать среднее» — этого мало) и **`action_effect`** (насколько хуже становится потеря, если выбранную фазу подменить случайной; около 0 = модель
-  действие не использует).
-- Нужен torch на машине, где запускается пайплайн: `py -3 -m pip install torch`. Если Python с torch другой, укажите его в конфиге: `"python": "C:/.../python.exe"`.
+Chunks: `*.ares.tmp` → `*.ares` when complete. Bad chunks → `quarantine/`.
 
-## Контракт тренера
-Команда задаётся в `train.command` (подстановки `{data}`, `{model_dir}`, `{prev_model}`, `{exp}`, `{iteration}`, `{python}`). Тренер обязан: читать чанки потоково (`ares_data.open_memmap`,
-не загружая всё в RAM; данные float16), сверять хэш схемы, писать чекпойнты атомарно (временное имя → `os.replace`) и **продолжать с последнего чекпойнта**, если он уже есть в `{model_dir}`,
-а в самом конце записать файл `DONE`. Модель без `DONE` не принимается. Любая ошибка — ненулевой код выхода и понятное сообщение в stderr.
+## Reading results
 
-## Тесты
-- `python -m unittest discover -s ml/tests -v` — 30 быстрых тестов (подставной self-play): сбои и повторы, остановка, возобновление, диск, блокировка, отсев, упаковка.
-- `RUN_E2E=1 python -m unittest ml.tests.test_e2e_real -v` — с настоящей Java: убить посреди работы и продолжить.
-- Java: `mvn test` (формат файлов, чанки, раннер self-play, остановка по диску).
+- Morning pack: `…/handoff/<name>_<time>.zip` — `REPORT.md`, `best_model/`, logs, `journal.json`.
+- `gain` = improvement over AGENT without a model. `score` = mean gain over eval references.
+- `val_loss` vs `constant_val_loss`: below constant ⇒ generalises; above ⇒ memorising games.
+- Hypotheses table + evidence-per-iteration in `REPORT.md` → human/AI conclusions in `docs/EXPERIMENTS.md`.
+
+## Tests
+
+- `python -m unittest discover -s ml/tests -v` (use `ml\.venv` when torch tests are needed).
+- `RUN_E2E=1 python -m unittest ml.tests.test_e2e_real -v`
+- Java: `mvn test`

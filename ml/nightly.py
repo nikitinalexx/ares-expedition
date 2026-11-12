@@ -364,7 +364,8 @@ def is_java_home(path):
 JAVA_EXIT_OUT_OF_MEMORY = 6  # SelfPlayMain / FatalErrors
 
 DEFAULT_CONFIG = {
-    "hours": 8.0,                              # budget of ACTIVE working time (stopped time does not count); raise it to continue a finished run
+    # null/0 = run until stop/Ctrl+C/disk (default). A positive number is an optional timed budget only.
+    "hours": None,
     "python": sys.executable,
     "java": {"bin": "auto", "xmx": "8g", "threads": 0, "classes": "target/classes", "classpath_file": "target/cp.txt"},
     "maven": {"command": "mvn", "args": []},
@@ -394,8 +395,10 @@ DEFAULT_CONFIG = {
     "eval": {"games": 200, "references": ["SMART", "RANDOM"], "agent": "AGENT", "concurrency": 32, "timeout_seconds": 1800, "bias_alarm_gap": 0.10},
     # slow opponents: once per run, best model only (see stage_benchmark); never in self-play or the per-iteration eval
     "benchmark": {"references": [], "games": 100, "concurrency": 16, "timeout_seconds": 3600},
-    # successive halving: each rung gets a fraction of the night; only `keep` best experiments continue to the next rung
-    "rungs": [{"fraction": 0.3, "keep": 2, "games_factor": 0.25}, {"fraction": 0.7, "keep": 1, "games_factor": 1.0}],
+    # successive halving. With a timed budget, `fraction` splits active time. With unlimited time, early rungs advance after
+    # `min_iterations` each (default 1); the last rung runs until stop. `keep` best continue.
+    "rungs": [{"fraction": 0.3, "keep": 2, "games_factor": 0.25, "min_iterations": 1},
+              {"fraction": 0.7, "keep": 1, "games_factor": 1.0}],
     "experiments": [{"name": "default", "games_per_iteration": 2000, "matchups": "AGENT:AGENT:1"}],
     "low_priority": True,                    # child processes run below normal priority: you can work on the machine meanwhile
     "promote_margin": 0.0,
@@ -422,10 +425,25 @@ def load_config(path):
     names = [e["name"] for e in cfg["experiments"]]
     if len(set(names)) != len(names):
         raise SystemExit(f"experiment names must be unique: {names}")
-    fractions = sum(r["fraction"] for r in cfg["rungs"])
-    if not 0.99 <= fractions <= 1.01:
-        raise SystemExit(f"rung fractions must add up to 1, got {fractions}")
+    if budget_seconds(cfg) is not None:
+        fractions = sum(r.get("fraction") or 0 for r in cfg["rungs"])
+        if not 0.99 <= fractions <= 1.01:
+            raise SystemExit(f"rung fractions must add up to 1 when hours is set, got {fractions}")
     return cfg
+
+
+def budget_seconds(cfg):
+    """None = unlimited (run until stop). Positive hours → seconds."""
+    h = cfg.get("hours")
+    if h is None or h <= 0:
+        return None
+    return float(h) * 3600
+
+
+def budget_label(cfg_or_seconds):
+    if isinstance(cfg_or_seconds, dict):
+        cfg_or_seconds = budget_seconds(cfg_or_seconds)
+    return "until stop" if cfg_or_seconds is None else f"{cfg_or_seconds / 3600:.2f} h"
 
 
 # ------------------------------------------------------------------------------------------------ the pipeline
@@ -534,7 +552,11 @@ class Pipeline:
         return self.active_base + (now() - self.session_start)
 
     def budget(self):
-        return self.state["budget_seconds"]
+        b = self.state.get("budget_seconds")
+        return math.inf if b is None else b
+
+    def has_time_budget(self):
+        return self.state.get("budget_seconds") is not None
 
     def save_state(self):
         if self.state is not None:
@@ -558,10 +580,13 @@ class Pipeline:
             "run": st.get("name"),
             "state": st.get("status"),
             "started": stamp(st["started"]) if st.get("started") else None,
-            "worked_hours": round(self.elapsed() / 3600, 2) if st.get("budget_seconds") else None,
-            "budget_hours": round(st["budget_seconds"] / 3600, 2) if st.get("budget_seconds") else None,
-            "remaining_hours": round((st["budget_seconds"] - self.elapsed()) / 3600, 2) if st.get("budget_seconds") else None,
-            "finishes_at_if_running": stamp(now() + st["budget_seconds"] - self.elapsed()) if st.get("budget_seconds") else None,
+            "worked_hours": round(self.elapsed() / 3600, 2),
+            "budget_hours": None if st.get("budget_seconds") is None else round(st["budget_seconds"] / 3600, 2),
+            "remaining_hours": (None if st.get("budget_seconds") is None
+                                else round((st["budget_seconds"] - self.elapsed()) / 3600, 2)),
+            "finishes_at_if_running": (None if st.get("budget_seconds") is None
+                                       else stamp(now() + st["budget_seconds"] - self.elapsed())),
+            "runs_until": "stop" if st.get("budget_seconds") is None else "budget",
             "rung": st.get("rung"),
             "current": self.current,
             "free_disk_gb": {str(p): round(free_gb(p), 1) for p, _ in self.storage.reserves},
@@ -720,7 +745,7 @@ class Pipeline:
                                 "--games-per-chunk", str(sp["games_per_chunk"]), "--matchups", exp_cfg["matchups"],
                                 "--max-seconds", str(sp["stage_max_seconds"]), "--stop-file", stop_file.as_posix(),
                                 "--max-failure-ratio", str(sp["max_failure_ratio"]),
-                                "--max-rows-per-game-type", str(sp["max_rows_per_game_type"]),
+                                "--max-rows-per-game-type", str(exp_cfg.get("max_rows_per_game_type", sp["max_rows_per_game_type"])),
                                 # the Java process also guards itself, in case this supervisor dies
                                 "--min-free-gb", str(max((r for p, r in self.storage.reserves if volume_key(p) == volume_key(out)), default=0)),
                                 "--threads", str(self.cfg["java"]["threads"] or (os.cpu_count() or 8) * 4), *model_args)
@@ -1013,7 +1038,7 @@ class Pipeline:
     def init_state(self, name):
         started = now()
         self.state = {
-            "name": name, "status": "running", "started": started, "budget_seconds": self.cfg["hours"] * 3600, "active_seconds": 0.0,
+            "name": name, "status": "running", "started": started, "budget_seconds": budget_seconds(self.cfg), "active_seconds": 0.0,
             "rung": 0, "rung_windows": {},
             "experiments": {e["name"]: {"state": "active", "iterations_done": 0, "scores": [], "failures": 0, "best_score": None}
                             for e in self.cfg["experiments"]},
@@ -1050,49 +1075,84 @@ class Pipeline:
         active = [n for n, e in self.state["experiments"].items() if e["state"] == "active"]
         return sorted(active, key=lambda n: -(self.state["experiments"][n].get("best_score") or -1))
 
+    def rung_deadline(self, rung_index):
+        if not self.has_time_budget():
+            return math.inf
+        return self.budget() * sum(r.get("fraction") or 0 for r in self.cfg["rungs"][:rung_index + 1])
+
+    def rung_min_iterations(self, rung_index, rung):
+        """How many iterations each active experiment must finish in this rung before elimination.
+        Timed budget: optional. Unlimited: early rungs default to 1; last rung has no cap (runs until stop)."""
+        if "min_iterations" in rung:
+            return rung["min_iterations"]
+        if self.has_time_budget() or rung_index >= len(self.cfg["rungs"]) - 1:
+            return None
+        return 1
+
     def run(self):
         st = self.state
         if st.get("budget_for_windows") != st["budget_seconds"]:
-            # the budget changed (the config was edited): the windows of the unfinished rungs are planned again
+            # hours changed in config / CLI: replan unfinished rungs
             for key in [k for k in st["rung_windows"] if int(k) >= st["rung"]]:
                 del st["rung_windows"][key]
             st["budget_for_windows"] = st["budget_seconds"]
         if st["rung"] >= len(self.cfg["rungs"]) and self.elapsed() < self.budget():
-            # a finished run that got more time (hours raised): the survivors of the last rung simply go on working
             st["rung"] = len(self.cfg["rungs"]) - 1
             st["rung_windows"].pop(str(st["rung"]), None)
-            self.log("the run had finished but there is time left: continuing the last rung")
+            self.log("planned rungs done with time/capacity left: continuing the survivors")
         try:
-            for rung_index, rung in enumerate(self.cfg["rungs"]):
-                if st["rung"] > rung_index:
-                    continue
-                st["rung"] = rung_index
-                active = [n for n, e in st["experiments"].items() if e["state"] == "active"]
-                if not active:
-                    break
-                # window of the rung is fixed once, so restarts neither extend nor shorten it
-                windows = st["rung_windows"].setdefault(str(rung_index), {})
-                if not windows:
-                    rung_end = self.budget() * sum(r["fraction"] for r in self.cfg["rungs"][:rung_index + 1])
-                    start = self.elapsed()
-                    slot = max(0.0, (rung_end - start) / len(active))
-                    for i, n in enumerate(active):
-                        windows[n] = [start + i * slot, start + (i + 1) * slot]
+            while True:
+                for rung_index, rung in enumerate(self.cfg["rungs"]):
+                    if st["rung"] > rung_index:
+                        continue
+                    st["rung"] = rung_index
+                    active = [n for n, e in st["experiments"].items() if e["state"] == "active"]
+                    if not active:
+                        break
+                    windows = st["rung_windows"].setdefault(str(rung_index), {})
+                    if "end" not in windows:
+                        windows["end"] = self.rung_deadline(rung_index)
+                        windows["min_iterations"] = self.rung_min_iterations(rung_index, rung)
+                        windows["baseline"] = {n: st["experiments"][n]["iterations_done"] for n in active}
+                        windows["next"] = 0
+                        self.save_state()
+                    until = ("until stop" if not math.isfinite(windows["end"])
+                             else f"until {windows['end'] / 3600:.2f} h of work")
+                    min_it = windows.get("min_iterations")
+                    self.log(f"=== rung {rung_index}: {active} {until}"
+                             + (f", min {min_it} it each" if min_it else "")
+                             + f" (keep {rung['keep']}, games factor {rung['games_factor']})")
+                    self.run_rung_round_robin(active, windows, rung["games_factor"])
+                    ranked = self.ranked_active()
+                    scored = [n for n in ranked if st["experiments"][n].get("best_score") is not None]
+                    losers = ranked[rung["keep"]:] if len(scored) >= len(ranked) else [n for n in scored[rung["keep"]:]]
+                    for loser in losers:
+                        st["experiments"][loser]["state"] = "eliminated"
+                        self.log(f"experiment {loser} eliminated after rung {rung_index} "
+                                 f"(best score {st['experiments'][loser].get('best_score')})")
+                    st["rung"] = rung_index + 1
                     self.save_state()
-                self.log(f"=== rung {rung_index}: {active} (keep {rung['keep']}, games factor {rung['games_factor']})")
-                for n in active:
-                    self.run_slot(n, windows[n][1], rung["games_factor"])
-                # drop the weaker ones - but only on facts: nobody is dropped for lack of time, i.e. without a score
-                ranked = self.ranked_active()
-                scored = [n for n in ranked if st["experiments"][n].get("best_score") is not None]
-                losers = ranked[rung["keep"]:] if len(scored) >= len(ranked) else [n for n in scored[rung["keep"]:]]
-                for loser in losers:
-                    st["experiments"][loser]["state"] = "eliminated"
-                    self.log(f"experiment {loser} eliminated after rung {rung_index} (best score {st['experiments'][loser].get('best_score')})")
-                st["rung"] = rung_index + 1
-                self.save_state()
-                if losers:
-                    self.log(f"freed the data of eliminated experiments: {self.prune_old_data()} folders (their models stay)")
+                    if losers:
+                        self.log(f"freed the data of eliminated experiments: {self.prune_old_data()} folders (their models stay)")
+                # planned rungs done: keep searching while there is capacity (unlimited → until stop; timed → until budget)
+                active = [n for n, e in st["experiments"].items() if e["state"] == "active"]
+                limit = self.cfg.get("max_iterations_per_experiment")
+                left = self.budget() - self.elapsed()
+                need = min((st["experiments"][n].get("last_iteration_seconds") or 0) * 1.1
+                           for n in active) if active else 0
+                can_continue = any(not (limit and st["experiments"][n]["iterations_done"] >= limit) for n in active)
+                if not can_continue or left <= 0 or (math.isfinite(left) and need and left < need):
+                    if math.isfinite(left) and left > 0 and need and left < need:
+                        self.log(f"budget leftover {left / 60:.0f} min is less than the next iteration ({need / 60:.0f} min); packing")
+                    break
+                st["rung"] = len(self.cfg["rungs"]) - 1
+                st["rung_windows"][str(st["rung"])] = {
+                    "end": self.budget(),
+                    "min_iterations": None,
+                    "baseline": {n: st["experiments"][n]["iterations_done"] for n in active},
+                    "next": 0,
+                }
+                self.log(f"continuing {active} ({budget_label(st.get('budget_seconds'))})")
             self.stage_benchmark()
             st["status"] = "finished"
         except StopRequested:
@@ -1120,22 +1180,55 @@ class Pipeline:
             self.write_status()
         return st["status"]
 
-    def run_slot(self, name, slot_end, games_factor):
-        e = self.state["experiments"][name]
-        hard_end = self.budget()
+    def run_rung_round_robin(self, names, windows, games_factor):
+        """One iteration at a time, cycling active experiments until deadline, min_iterations, or stop."""
         limit = self.cfg.get("max_iterations_per_experiment")
+        hard_end = min(windows.get("end", math.inf), self.budget())
+        min_it = windows.get("min_iterations")
+        baseline = windows.setdefault("baseline", {n: self.state["experiments"][n]["iterations_done"] for n in names})
+        for name in names:
+            if self.state["experiments"][name].get("start_pending_eval"):
+                self.score_start_model(name)
+        while True:
+            self.stop.check()
+            if min_it:
+                active_now = [n for n in names if self.state["experiments"][n]["state"] == "active"]
+                if active_now and all(
+                        self.state["experiments"][n]["iterations_done"] - baseline.get(n, 0) >= min_it
+                        for n in active_now):
+                    self.log(f"rung min_iterations={min_it} reached")
+                    return
+            runnable = [n for n in names if self.state["experiments"][n]["state"] == "active"
+                        and not (limit and self.state["experiments"][n]["iterations_done"] >= limit)]
+            if not runnable:
+                return
+            progressed = False
+            start = windows.get("next", 0) % len(runnable)
+            windows["next"] = start
+            for offset in range(len(runnable)):
+                name = runnable[(start + offset) % len(runnable)]
+                e = self.state["experiments"][name]
+                remaining = hard_end - self.elapsed()
+                estimate = (e.get("last_iteration_seconds") or 0) * 1.1
+                if math.isfinite(remaining) and (remaining <= 0 or (estimate and remaining < estimate)):
+                    continue
+                self.run_iteration(name, self.exp_cfg(name), games_factor)
+                windows["next"] = (start + offset + 1) % len(runnable)
+                self.save_state()
+                progressed = True
+                break
+            if not progressed:
+                left = hard_end - self.elapsed()
+                self.log(f"rung time over ({left / 60:.0f} min left, next iteration needs more than that)")
+                return
+
+    def run_slot(self, name, slot_end, games_factor):
+        """Back-compat helper for tests: run one experiment until slot_end."""
+        e = self.state["experiments"][name]
         if e.get("start_pending_eval"):
             self.score_start_model(name)
-        while e["state"] == "active":
-            self.stop.check()
-            if limit and e["iterations_done"] >= limit:
-                return
-            remaining = min(slot_end, hard_end) - self.elapsed()
-            estimate = (e.get("last_iteration_seconds") or 0) * 1.1
-            if remaining <= 0 or (estimate and remaining < estimate):
-                self.log(f"{name}: slot over ({remaining / 60:.0f} min left, an iteration takes {estimate / 60:.0f} min)")
-                return
-            self.run_iteration(name, self.exp_cfg(name), games_factor)
+        windows = {"end": slot_end, "min_iterations": None, "baseline": {name: e["iterations_done"]}, "next": 0}
+        self.run_rung_round_robin([name], windows, games_factor)
 
 
 # ------------------------------------------------------------------------------------------------ data helpers
@@ -1741,8 +1834,8 @@ def cmd_check(args):
 
 def cmd_run(args):
     cfg = load_config(args.config)
-    if args.hours:
-        cfg["hours"] = args.hours
+    if args.hours is not None:
+        cfg["hours"] = args.hours if args.hours > 0 else None
     run_dir, data_root, temp_root = storage_paths(cfg, args.name)
     run_dir.mkdir(parents=True, exist_ok=True)
     existing = read_json(run_dir / "state.json", None)
@@ -1789,22 +1882,28 @@ def run_locked(pipeline, cfg, run_dir, data_root, temp_root, name):
     args = argparse.Namespace(name=name)
     if pipeline.state is None:
         pipeline.init_state(args.name)
-        pipeline.log(f"NEW RUN {args.name}: {cfg['hours']} h, experiments {[e['name'] for e in cfg['experiments']]}")
+        pipeline.log(f"NEW RUN {args.name}: {budget_label(cfg)}, experiments {[e['name'] for e in cfg['experiments']]}")
         pipeline.log(f"run folder {run_dir}, data {data_root}, temp {temp_root}")
     else:
         pipeline.state["status"] = "running"
-        pipeline.state["budget_seconds"] = cfg["hours"] * 3600
-        pipeline.log(f"RESUMING {args.name}: worked {pipeline.elapsed() / 3600:.2f} h of {cfg['hours']} h, "
-                     f"{max(0.0, pipeline.budget() - pipeline.elapsed()) / 3600:.2f} h left (the time while it was stopped does not count)")
+        pipeline.state["budget_seconds"] = budget_seconds(cfg)
+        worked = pipeline.elapsed() / 3600
+        if pipeline.has_time_budget():
+            left = max(0.0, pipeline.budget() - pipeline.elapsed()) / 3600
+            pipeline.log(f"RESUMING {args.name}: worked {worked:.2f} h of {budget_label(cfg)}, "
+                         f"{left:.2f} h left (stopped time does not count)")
+        else:
+            pipeline.log(f"RESUMING {args.name}: worked {worked:.2f} h, runs until stop "
+                         f"(stopped time does not count)")
         for exp_name, e in pipeline.state["experiments"].items():
             if e["state"] == "failed":
                 # a restart is a new chance: the failures may have been caused by the environment (reboot, full disk, ...)
                 e["state"] = "active"
                 e["failures"] = 0
                 pipeline.log(f"experiment {exp_name} was dropped after failures, trying it again")
-        if pipeline.elapsed() >= pipeline.budget():
-            pipeline.log("the time budget of this run is used up: packing what exists. To continue raise `hours` in the config "
-                         "(or run with --hours N)")
+        if pipeline.has_time_budget() and pipeline.elapsed() >= pipeline.budget():
+            pipeline.log("the optional time budget is used up: packing what exists. "
+                         "Clear `hours` (or --hours 0) to continue until stop, or raise hours")
     pipeline.prepare_java()
     pipeline.write_status()
     status = pipeline.run()
@@ -1854,7 +1953,8 @@ def main(argv=None):
             p.add_argument("--quick", action="store_true", help="skip the smoke run")
         if name == "run":
             p.add_argument("--skip-check", action="store_true")
-            p.add_argument("--hours", type=float, default=None, help="working time budget (overrides the config; raise it to continue a finished run)")
+            p.add_argument("--hours", type=float, default=None,
+                           help="optional timed budget in hours (overrides config). 0 = until stop. Default config runs until stop.")
             p.add_argument("--start-from", default=None,
                            help="NEW run only: experiments without their own start_model start from this model folder or from "
                                 "the best model of this earlier run (name or folder)")
