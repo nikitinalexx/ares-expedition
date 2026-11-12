@@ -15,7 +15,7 @@
         "gb": 30
       }
     ],
-    "data_budget_gb": 150,
+    "data_budget_gb": 300,
     "keep_data_iterations": 2,
     "delete_data_of_other_runs": true
   },
@@ -25,10 +25,10 @@
     "threads": 0
   },
   "selfplay": {
-    "games_per_chunk": 250,
+    "games_per_chunk": 500,
     "stage_max_seconds": 3600,
     "temperature": 0.5,
-    "max_rows_per_game_type": 32
+    "max_rows_per_game_type": 8
   },
   "eval": {
     "games": 2000,
@@ -54,22 +54,16 @@
   "rungs": [
     {
       "fraction": 1.0,
-      "keep": 2,
+      "keep": 1,
       "games_factor": 1.0
     }
   ],
   "experiments": [
     {
-      "name": "control",
-      "hypothesis": "N4-0: continuing from night3 best with round-robin until stop raises win rate vs RANDOM/SMART over iterations (NETWORK gated until ≥50% vs RANDOM or SMART)",
-      "games_per_iteration": 7000,
-      "matchups": "AGENT:AGENT:1"
-    },
-    {
-      "name": "rows8",
-      "hypothesis": "H-D3 as default: self-play writes and train keeps at most 8 rows/game/type (instead of 32) — same strength as control, less disk pressure (night3 cap8 was train-only)",
-      "games_per_iteration": 7000,
-      "matchups": "AGENT:AGENT:1",
+      "name": "vs_random",
+      "hypothesis": "H-N1: AGENT:RANDOM self-play gives cleaner outcome labels than AGENT:AGENT at current skill level (~45% vs RANDOM) — winning decisions are genuinely better-than-random, losing decisions are real mistakes; positive feedback loop as win rate rises. Expect win rate vs RANDOM to reach >50% within the night.",
+      "games_per_iteration": 30000,
+      "matchups": "AGENT:RANDOM:1",
       "max_rows_per_game_type": 8,
       "train_args": ["--rows-per-game", "8"]
     }
@@ -91,7 +85,7 @@
       "--patience",
       "5",
       "--rows-per-game",
-      "32"
+      "8"
     ],
     "timeout_seconds": 7200
   },

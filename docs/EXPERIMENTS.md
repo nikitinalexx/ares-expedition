@@ -99,3 +99,31 @@ Goal: use the whole free window; fewer parallel experiments (disk); start measur
 | rows8 | H-D3 as default: write+train ≤8 rows/game/type saves disk without losing strength vs control | `max_rows_per_game_type: 8` + `--rows-per-game 8` |
 
 Separately (not a night ablation): dump action frequencies (build / blue / standard / sell / pass-like) for AGENT model vs RANDOM vs NETWORK on a fixed set of states — evidence for/against H-P1 before changing the objective.
+
+## Night 4 -- 2026-11-12 (stopped early)
+
+Two experiments round-robin: control (AGENT:AGENT, rows32) + rows8 (AGENT:AGENT, rows8). 7000 games/it, start-from night3 best.
+
+| experiment | its | best vs RANDOM / SMART |
+|---|---|---|
+| control | 10 | 40.8% (it4) / 4.4% |
+| rows8 | 9 | 45.7% (it7) / 5.5% -- best result so far |
+
+Throughput: selfplay ~60s/7000 games, train ~34s, eval ~41s = ~2.5 min/iteration. CPU 82% on neural forward.
+
+Verdicts: H-D3 confirmed as default (rows8 it7 = best ever, adopted as global default). AGENT:AGENT does not climb: two weak copies produce noisy win labels; at <50% vs RANDOM the winner is essentially random noise.
+
+H-N1 added: switch to AGENT:RANDOM opponent to get a real outcome signal (see Hypotheses table).
+
+## Night 5 -- plan
+
+Goal: test H-N1.
+
+- Experiment: vs_random -- matchups AGENT:RANDOM:1, 30000 games/it, rows8, start-from night4 best (rows8 it7, 45.7% vs RANDOM).
+- Rationale: when AGENT beats RANDOM those decisions are genuinely better-than-random; losing decisions are real mistakes. Positive feedback loop as win rate rises.
+- Disk budget 300 GB (400 GB free, 30 GB reserve). keep_data_iterations 2.
+- Iteration time: ~4 min selfplay + 34s train + 41s eval = ~5-6 min. Expect ~100 iterations overnight.
+- Success: win rate vs RANDOM reaches >50% within 20 iterations.
+- If not: H-N1 rejected; revisit strategy (filtered imitation / curriculum / auxiliary signals).
+
+Command: nightly run night5 --start-from night4
