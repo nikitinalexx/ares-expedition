@@ -145,3 +145,108 @@ What the owner reported, and what each one was:
 4. **"Run three experiments for a fixed third of the night each, then just analyse"** — fair complaint about the *process*, not only this config (night5 itself only had one experiment). Successive halving (rungs) only compares experiments against each other at fixed checkpoints; nothing previously let an experiment that is *not even beating its own best score any more* stop itself early. Added: a **plateau guard**, independent of the rung schedule — `plateau_patience` consecutive non-improving iterations (after `plateau_min_iterations`, default 5/3, per-experiment override) marks an experiment "plateaued": it stops immediately, its data window is freed at once, and in a multi-experiment night its round-robin turns go to the others right away instead of waiting for a rung boundary. This is what makes scheduling *more* experiments by default reasonable — losers free their slice as soon as they are one, rather than every experiment getting a fixed fraction regardless of outcome. Tests: `ml/tests/test_nightly.py::PlateauGuard`.
 
 None of this touches H-N1's actual mechanics (the AGENT:RANDOM matchup, the reward, the model). The 7 completed iterations of night5 (whatever their file-system state holds) are real data under the OLD, slower pipeline; resuming continues training the same model, now faster per iteration and with clearer logs, so a verdict on H-N1 is still pending.
+
+## Night 5 -- 2026-11-12/13
+
+Single experiment vs_random: AGENT:RANDOM:1, 30000 games/it, rows8, start-from night4 best.
+Ran 15:09 -> 00:21 (7.67 active hours). Stopped by plateau guard after it23.
+
+| it | vs RANDOM | vs SMART | note |
+|---|---|---|---|
+| 1 | 42.0% | 5.2% | start (from night4 rows8 it7) |
+| 8 | 48.1% | 5.3% | |
+| 16 | 52.5% | 7.0% | FIRST TIME OVER 50% |
+| 17 | 50.9% | 5.9% | |
+| 18 | 57.7% | 7.0% | BEST -- benchmark triggered |
+| 20 | 53.2% | 8.6% | |
+| 23 | 50.2% | 5.4% | plateau, stopped |
+
+Benchmark (best model it18 vs NETWORK): 2.0% [0.6%, 7.0%] -- still near 0, expected at this skill level.
+
+Verdict: H-N1 CONFIRMED. AGENT:RANDOM gives real climb. 50%+ vs RANDOM is a milestone.
+Selfplay speed: 222-237 games/s (RANDOM has no net, twice as fast as AGENT:AGENT).
+
+Problems:
+- Training grew to 500-548s/it by it21-23 (pool = 54K games, 2 iterations). Too slow.
+- Pipeline stopped at 00:21; plateau guard finished the experiment but no new one to continue.
+- label_mean = 0.040 (warning: unbalanced labels). Investigate: in AGENT:RANDOM the label
+  counts rows of AGENT decisions only but win label may be computed globally including RANDOM rows?
+  Strength results look fine, but flag for investigation.
+
+Night 6 fix: keep_data_iterations=1 (pool 15K, train ~50s), games_per_it=15000.
+Command: nightly run night6 --start-from night5
+
+## Night 6 -- 2026-11-13 (39 min, plateau guard killed it)
+
+Single experiment vs_random (old config, selfplay not added yet). 15000 games/it, keep_data_it=1.
+Ran 08:23 -> 09:02 (0.65 active hours). Plateau guard killed at it9.
+
+| it | vs RANDOM | vs SMART |
+|---|---|---|
+| 1 | 46.1% | 5.9% |
+| 2 | 55.1% | 5.8% |
+| 4 | 61.8% (BEST) | 7.8% |
+| 7 | 59.4% | 8.7% |
+| 9 | 59.4% | 8.5% |
+
+Verdict: continued climbing vs RANDOM. 61.8% is new best. BUT plateau guard with patience=5 killed
+the experiment on normal eval noise (~5% swing in 2000 games). Real plateau or noise? Unclear.
+Pipeline stopped because only 1 experiment.
+
+Night 7 fix:
+- plateau_patience: 15 (was 5) -- noise in 2000-game eval is ~5%, patience=5 is too trigger-happy
+- plateau_min_iterations: 5 (was 3)
+- 2 experiments: vs_random + selfplay (H-N2: self-play now meaningful at 60% vs RANDOM level)
+- Round-robin: even if one plateaus, the other keeps running all night
+Command: nightly run night7 --start-from night6
+
+## Discovery on Self-Play Temperature (Tested after Night 6)
+
+Investigated the 'label win share: 0.049' warning in self-play data.
+Ran direct empirical tests with the Night 6 best model (it4, 61.8% vs RANDOM):
+- temperature 0 (greedy): AGENT 121 : 72 RANDOM (62.25% win rate)
+- temperature 0.5 (sampling): AGENT 10 : 189 RANDOM (5.25% win rate!)
+
+Conclusion: Sampling with temperature 0.5 across 30+ sequential turns compounded error probabilities,
+causing the agent during self-play to play 10x worse than random (losing 95% of games).
+The network was training on 95% loss labels! Setting selfplay.temperature = 0 completely solves this.
+
+## Night 7 -- Plan
+
+- selfplay.temperature: 0
+- plateau_patience: null (disabled: runs continuously all night, no 39-minute early exit)
+- Two experiments running round-robin:
+  1. vs_random: AGENT:RANDOM:1 with temp 0 (aiming for 70%+ with clean win labels)
+  2. selfplay: AGENT:AGENT:1 with temp 0 (competitive self-play now that model is >60%)
+
+Command: nightly run night7 --start-from night6
+
+## Night 7 -- 2026-11-13 (13 hours, 120 iterations total)
+
+Two experiments round-robin: vs_random (AGENT:RANDOM:1, 15000 games) + selfplay (AGENT:AGENT:1, 15000 games).
+Selfplay temperature: 0. Start from night6.
+
+Results:
+| experiment | best it | vs RANDOM | vs SMART | vs NETWORK | score |
+|---|---|---|---|---|---|
+| vs_random | it46 | **85.7%** [83.6%, 87.6%] | **25.9%** [23.9%, 28.0%] | 0.5% (tested) | **0.5564** |
+| selfplay | it42 | 79.7% [77.5%, 81.8%] | 22.1% [20.2%, 24.1%] | -- | 0.5068 |
+
+Key Findings:
+1. **temperature: 0 was the breakthrough**: agent jumped from 61.8% to 85.7% vs RANDOM, and from 7.8% to 25.9% vs SMART.
+2. **The 68-point ceiling**: Agent consistently scores ~68 points. Against RANDOM (avg ~50 pts), this wins 86% of games.
+   Against SMART (avg ~82 pts), this loses ~74% of games. Against NETWORK (avg ~105 pts), it loses 99% of games.
+3. **Why it stopped growing around it46**: Win share vs RANDOM reached 84%. To beat RANDOM, 68 points is enough.
+   There is zero gradient pressure to score 80-100 points when playing an opponent that scores 50.
+4. vs_random clearly beat pure selfplay (0.5564 vs 0.5068).
+
+## Night 8 -- Plan: Curriculum Stage 2 (Facing SMART)
+
+Goal: Break past the 68-point ceiling by training against SMART (who scores ~82 pts). Only games where the agent
+builds a stronger engine and scores >82 points receive outcome=1.0.
+
+Two experiments round-robin:
+- `vs_smart`: `AGENT:SMART:1` (10000 games/it, ~3.5 min/it) -- direct pressure to outscore SMART.
+- `mixed_smart_random`: `AGENT:SMART:0.7,AGENT:RANDOM:0.3` (12000 games/it, ~3.5 min/it) -- 70% SMART + 30% RANDOM anchor.
+
+Command: `nightly run night8 --start-from night7`

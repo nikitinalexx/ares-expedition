@@ -1235,6 +1235,7 @@ class Pipeline:
         except StopRequested:
             st["status"] = "stopped"
             self.log("stop requested: everything finished so far is kept")
+            self.stage_benchmark()
         except EnvironmentBroken as e:
             st["status"] = "failed_environment"
             self.last_error = str(e)

@@ -15,8 +15,8 @@
         "gb": 30
       }
     ],
-    "data_budget_gb": 300,
-    "keep_data_iterations": 2,
+    "data_budget_gb": 100,
+    "keep_data_iterations": 1,
     "delete_data_of_other_runs": true
   },
   "java": {
@@ -27,7 +27,7 @@
   "selfplay": {
     "games_per_chunk": 500,
     "stage_max_seconds": 3600,
-    "temperature": 0.5,
+    "temperature": 0,
     "max_rows_per_game_type": 8
   },
   "eval": {
@@ -48,24 +48,41 @@
     "games": 100,
     "concurrency": 16,
     "timeout_seconds": 3600,
-    "gate_refs": ["RANDOM", "SMART"],
+    "gate_refs": [
+      "RANDOM",
+      "SMART"
+    ],
     "min_win_rate": 0.5
   },
   "rungs": [
     {
       "fraction": 1.0,
-      "keep": 1,
+      "keep": 2,
       "games_factor": 1.0
     }
   ],
   "experiments": [
     {
-      "name": "vs_random",
-      "hypothesis": "H-N1: AGENT:RANDOM self-play gives cleaner outcome labels than AGENT:AGENT at current skill level (~45% vs RANDOM) — winning decisions are genuinely better-than-random, losing decisions are real mistakes; positive feedback loop as win rate rises. Expect win rate vs RANDOM to reach >50% within the night.",
-      "games_per_iteration": 30000,
-      "matchups": "AGENT:RANDOM:1",
+      "name": "vs_smart",
+      "hypothesis": "Curriculum stage 2: Agent has mastered RANDOM (85.7% win rate, 68 pts avg). Now face SMART (82 pts avg, current win rate 25.9%). Training on AGENT:SMART outcome data directly rewards moves that break the 68-point ceiling and punishes moves that lose tempo to SMART.",
+      "games_per_iteration": 10000,
+      "matchups": "AGENT:SMART:1",
       "max_rows_per_game_type": 8,
-      "train_args": ["--rows-per-game", "8"]
+      "train_args": [
+        "--rows-per-game",
+        "8"
+      ]
+    },
+    {
+      "name": "mixed_smart_random",
+      "hypothesis": "Mixed curriculum: 70% pressure against SMART + 30% anchor against RANDOM (12000 games/it). Tests if keeping a 30% baseline against RANDOM prevents overfitting to SMART\u0027s specific heuristics while climbing against SMART.",
+      "games_per_iteration": 12000,
+      "matchups": "AGENT:SMART:0.7,AGENT:RANDOM:0.3",
+      "max_rows_per_game_type": 8,
+      "train_args": [
+        "--rows-per-game",
+        "8"
+      ]
     }
   ],
   "train": {
@@ -95,5 +112,7 @@
       "-s",
       ".mvn/settings.xml"
     ]
-  }
+  },
+  "plateau_patience": null,
+  "plateau_min_iterations": null
 }
