@@ -9,6 +9,7 @@ import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.GameParameters;
 import com.terraforming.ares.model.GlobalParameter;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.Planet;
 import com.terraforming.ares.model.PlayerDifficulty;
 import com.terraforming.ares.model.parameters.MeasurableGlobalParameter;
 import com.terraforming.ares.model.parameters.Ocean;
@@ -106,11 +107,16 @@ class ObservationCompletenessTest extends EngineTestBase {
     }
 
     private static MeasurableGlobalParameter parameter(MarsGame game, GlobalParameter which) {
+        return startParameter(game.getPlanet(), which);
+    }
+
+    private static MeasurableGlobalParameter startParameter(Object planet, GlobalParameter which) {
         try {
-            Field f = game.getPlanet().getClass().getDeclaredField("measurableGlobalParameters");
+            Field f = planet.getClass().getDeclaredField("measurableGlobalParameters");
             f.setAccessible(true);
             @SuppressWarnings("unchecked")
-            Map<GlobalParameter, MeasurableGlobalParameter> map = (Map<GlobalParameter, MeasurableGlobalParameter>) f.get(game.getPlanet());
+            Map<GlobalParameter, MeasurableGlobalParameter> map =
+                    (Map<GlobalParameter, MeasurableGlobalParameter>) f.get(planet);
             return map.get(which);
         } catch (ReflectiveOperationException e) {
             throw new IllegalStateException(e);
@@ -159,7 +165,24 @@ class ObservationCompletenessTest extends EngineTestBase {
         });
         facts.put("lunaProjectOffice", (g, p) -> p.setLunaProjectOffice(p.getLunaProjectOffice() + 1));
         facts.put("projectInspection", (g, p) -> p.setProjectInspection(p.getProjectInspection() + 1));
+        facts.put("a card that pays again in phase 4", (g, p) -> putOnTable(p, unusedPayAgainCard(g)));
+        facts.put("built a special design last turn", (g, p) -> p.setBuiltSpecialDesignLastTurn(!p.isBuiltSpecialDesignLastTurn()));
         return facts;
+    }
+
+    /** A free card whose {@code payAgain} is non-empty: the phase-4 upgrade turns it into a second payment. */
+    private int unusedPayAgainCard(MarsGame game) {
+        java.util.Set<Integer> taken = new java.util.HashSet<>();
+        game.getPlayerUuidToPlayer().values().forEach(p -> {
+            taken.addAll(p.getHand().getCards());
+            taken.addAll(p.getPlayed().getCards());
+        });
+        for (int id : cardService.createProjectsDeck(game.getExpansions()).getCards()) {
+            if (!taken.contains(id) && cardService.getCard(id).canPayAgain()) {
+                return id;
+            }
+        }
+        throw new IllegalStateException("no free card that can pay again");
     }
 
     /**
@@ -225,6 +248,14 @@ class ObservationCompletenessTest extends EngineTestBase {
                     .ifPresent(m -> m.getAchievedByPlayers().add(first.getUuid()));
         });
         facts.put("round number", g -> setField(g, "turns", g.getTurns() + 3));
+        // Rule predicate, not a value: the engine decides what can still be advanced from the planet AS IT WAS when the
+        // phase started (`TerraformingService.canIncreaseTemperature`). A maxed global that was open at the start of the
+        // phase still pays TR and fires every onTemperatureChangedEffect - the "hold Livestock, buy temperature" tactic.
+        facts.put("a global was open when the phase started", g -> {
+            // The fact must CHANGE something: toggle the start-of-phase oxygen between min and max.
+            MeasurableGlobalParameter oxygen = startParameter(g.getPlanetAtTheStartOfThePhase(), GlobalParameter.OXYGEN);
+            setField(oxygen, "currentLevel", oxygen.isMax() ? 0 : oxygen.levelsSize() - 1);
+        });
         return facts;
     }
 
@@ -244,6 +275,167 @@ class ObservationCompletenessTest extends EngineTestBase {
         List<String> invisible = invisibleFacts(insideARound());
         invisible.removeAll(KNOWN_BLIND_SPOTS);
         assertTrue(invisible.isEmpty(), "The observation does not show (inside a round): " + invisible);
+    }
+
+    /**
+     * The phase-4 double payment is stored as the BEST single card per dimension, not as a sum over the table: with two
+     * cards that would pay 3 and 1 heat, the feature must read 3, not 4 - and the flag of the card itself does not have
+     * to exist (130 greens can pay again, flagging them all would be 260 columns).
+     */
+    @Test
+    void theDoublePaymentIsTheBestCardPerDimensionNotTheSum() {
+        MarsGame game = snapshot(g -> g.getStateType() == com.terraforming.ares.model.StateType.PICK_PHASE);
+        Player player = game.getPlayerUuidToPlayer().values().iterator().next();
+        java.util.Set<Integer> taken = new java.util.HashSet<>();
+        game.getPlayerUuidToPlayer().values().forEach(p -> {
+            taken.addAll(p.getHand().getCards());
+            taken.addAll(p.getPlayed().getCards());
+        });
+        java.util.List<Integer> added = new java.util.ArrayList<>();
+        for (int id : cardService.createProjectsDeck(game.getExpansions()).getCards()) {
+            if (added.size() == 2) {
+                break;
+            }
+            if (taken.contains(id) || !cardService.getCard(id).canPayAgain()) {
+                continue;
+            }
+            // Only cards whose payAgain is purely a player change: the deck-drawing ones (CallistoPenalMines,
+            // AutomatedFactories) make the measurement depend on the copy order, which is not what this test is about.
+            MarsGame probeGame = new MarsGame(game);
+            int deckBefore = probeGame.getProjectsDeck().size();
+            Player probePlayer = probeGame.getPlayerByUuid(player.getUuid());
+            int heatBefore = probePlayer.getHeat();
+            try {
+                cardService.getCard(id).payAgain(probeGame, cardService, probePlayer);
+            } catch (RuntimeException e) {
+                continue;
+            }
+            if (probeGame.getProjectsDeck().size() != deckBefore || probePlayer.getHeat() == heatBefore) {
+                continue;
+            }
+            putOnTable(player, id);
+            added.add(id);
+        }
+        assertTrue(added.size() == 2, "the deck must offer two cards that can pay again");
+        // Every payment is measured in the SAME final state: the amounts are dynamic (they can depend on the table).
+        int max = 0;
+        int sum = 0;
+        for (int id : added) {
+            MarsGame copy = new MarsGame(game);
+            Player probe = copy.getPlayerByUuid(player.getUuid());
+            int before = probe.getHeat();
+            cardService.getCard(id).payAgain(copy, cardService, probe);
+            int heat = Math.max(0, probe.getHeat() - before);
+            max = Math.max(max, heat);
+            sum += heat;
+        }
+        float[] observation = observe(game, player.getUuid());
+        int index = com.terraforming.ares.services.agent.ObservationBuilder.names()
+                .indexOf("cards:my_max_double_payment_heat/10");
+        assertTrue(index >= 0, "the double payment feature is missing from the observation");
+        org.junit.jupiter.api.Assertions.assertEquals(max / 10f, observation[index], 1e-4,
+                "the feature must be the maximum single payment");
+        if (max > 0 && sum > max) {
+            assertTrue(observation[index] < sum / 10f, "the feature must not be the sum over the table");
+        }
+    }
+
+    /**
+     * Building an observation must never change the game: the double-payment block runs cards' {@code payAgain} (some of
+     * them draw from the deck), so this compares a fingerprint of the whole position before and after.
+     */
+    @Test
+    void buildingAnObservationNeverChangesTheGame() {
+        MarsGame game = snapshot(g -> true);
+        String before = gameFingerprint(game);
+        for (Player player : game.getPlayerUuidToPlayer().values()) {
+            observe(game, player.getUuid());
+        }
+        org.junit.jupiter.api.Assertions.assertEquals(before, gameFingerprint(game),
+                "the observation changed the game it was built from");
+    }
+
+    private static String gameFingerprint(MarsGame game) {
+        return game.getTurns() + "|" + game.getStateType() + "|" + game.getPlanet().oxygenLeft() + "|"
+                + game.getPlanet().temperatureLeft() + "|" + game.getPlanet().oceansLeft() + "|"
+                + game.getProjectsDeck().size() + "|" + game.getPlayerUuidToPlayer().values().stream()
+                .map(p -> p.getUuid() + ":" + p.getMc() + ":" + p.getPlants() + ":" + p.getHeat())
+                .sorted().reduce("", String::concat);
+    }
+
+    /**
+     * The engine's own rule: a global that was open when the phase started can still be advanced this phase, even if it
+     * is maxed now (`TerraformingService.canIncreaseTemperature`). The state must carry it, otherwise the "hold Livestock,
+     * buy temperature, one animal per step" plan is invisible.
+     */
+    @Test
+    void aGlobalOpenAtPhaseStartIsVisible() {
+        MarsGame game = snapshot(g -> g.getStateType() == com.terraforming.ares.model.StateType.BUILD_GREEN_PROJECTS
+                || g.getStateType() == com.terraforming.ares.model.StateType.PERFORM_BLUE_ACTION);
+        Player player = game.getPlayerUuidToPlayer().values().iterator().next();
+        MarsGame changed = new MarsGame(game);
+        setField(startParameter(changed.getPlanetAtTheStartOfThePhase(), GlobalParameter.OXYGEN), "currentLevel", 0);
+        MarsGame saturated = new MarsGame(game);
+        Planet start = saturated.getPlanetAtTheStartOfThePhase();
+        setField(startParameter(start, GlobalParameter.OXYGEN), "currentLevel",
+                startParameter(start, GlobalParameter.OXYGEN).levelsSize() - 1);
+
+        java.util.List<String> names = com.terraforming.ares.services.agent.ObservationBuilder.names();
+        int open = names.indexOf("planet:open_at_phase_start_oxygen");
+        assertTrue(open >= 0, "the phase-start feature is missing from the observation");
+        org.junit.jupiter.api.Assertions.assertEquals(1f, observe(changed, player.getUuid())[open], 1e-6f);
+        org.junit.jupiter.api.Assertions.assertEquals(0f, observe(saturated, player.getUuid())[open], 1e-6f);
+    }
+
+    /**
+     * Three ocean states must be distinguishable, because the "infinite last ocean" only exists inside the phase where
+     * the ninth was opened: (1) the last ocean is not open yet; (2) it is open and its bonus can still be collected this
+     * phase; (3) it is open and no further ocean can be opened.
+     */
+    @Test
+    void theLastOceanHasThreeDistinguishableStates() {
+        MarsGame base = snapshot(g -> g.getStateType() == com.terraforming.ares.model.StateType.BUILD_GREEN_PROJECTS
+                || g.getStateType() == com.terraforming.ares.model.StateType.PERFORM_BLUE_ACTION);
+        Player player = gamePlayer(base);
+        int open = com.terraforming.ares.services.agent.ObservationBuilder.names()
+                .indexOf("planet:open_at_phase_start_oceans");
+        int revealedIndex = com.terraforming.ares.services.agent.ObservationBuilder.names()
+                .indexOf("oceans:revealed/9");
+        assertTrue(open >= 0 && revealedIndex >= 0, "the ocean features are missing from the observation");
+
+        MarsGame notOpened = new MarsGame(base);
+        revealAllExcept(notOpened.getPlanet(), 1);
+        revealAllExcept(notOpened.getPlanetAtTheStartOfThePhase(), 1);
+
+        MarsGame justOpened = new MarsGame(base);
+        revealAllExcept(justOpened.getPlanet(), 0);
+        revealAllExcept(justOpened.getPlanetAtTheStartOfThePhase(), 1);
+
+        MarsGame closed = new MarsGame(base);
+        revealAllExcept(closed.getPlanet(), 0);
+        revealAllExcept(closed.getPlanetAtTheStartOfThePhase(), 0);
+
+        float[] a = observe(notOpened, player.getUuid());
+        float[] b = observe(justOpened, player.getUuid());
+        float[] c = observe(closed, player.getUuid());
+        assertTrue(a[revealedIndex] < 1f && b[revealedIndex] == 1f && c[revealedIndex] == 1f,
+                "the number of revealed oceans must tell 'not open' from 'open'");
+        assertTrue(b[open] == 1f, "an ocean opened this phase must still be flagged as openable");
+        assertTrue(c[open] == 0f, "after the phase, all-revealed oceans must be flagged as closed");
+    }
+
+    private static Player gamePlayer(MarsGame game) {
+        return game.getPlayerUuidToPlayer().values().iterator().next();
+    }
+
+    private static void revealAllExcept(Planet planet, int keep) {
+        java.util.List<Ocean> oceans = planet.getOceans();
+        for (int i = 0; i < oceans.size() - keep; i++) {
+            oceans.get(i).reveal();
+        }
+        for (int i = oceans.size() - keep; i < oceans.size(); i++) {
+            oceans.get(i).hide();
+        }
     }
 
     /**

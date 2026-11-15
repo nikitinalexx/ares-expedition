@@ -156,6 +156,9 @@ export class NewGameComponent implements OnInit {
             case 'ai2':
               computers.push('NETWORK_V2');
               break;
+            case 'ares':
+              computers.push('AGENT_V2');
+              break;
           }
         } else {
           computers.push('NONE');

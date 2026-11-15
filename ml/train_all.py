@@ -171,6 +171,47 @@ def train_shared(args, type_files):
                  "train_rows_by_type": {d: s[0] for d, s in sizes.items()}}
     print(json.dumps(pool_info), flush=True)
 
+    # Advantage weighting (night 8's lesson, docs/EXPERIMENTS.md): a binary outcome applied to the single chosen
+    # candidate is the same label for every decision of a game, so training on games the agent loses mostly teaches
+    # "this game was lost" -- which is a statement about the state, not about the move, and it blurs an already good
+    # candidate ranking. V(s) is fitted on a held-out quarter of the *same* games (no extra data, no leakage) and every
+    # policy row is weighted by its advantage outcome - V(s): rows where the game went better than the state promised
+    # keep their weight, the rest are down-weighted (--adv-negative).
+    adv_weights = None
+    if args.adv_weight:
+        from train_phase import is_validation_game
+        from train_value import fit_value, predict
+        value_rows = {d: (np.zeros(0, dtype=bool) if train_pool[d] is None
+                          else is_validation_game(train_pool[d][3], args.adv_holdout)) for d in decisions}
+        value_obs = np.concatenate([train_pool[d][0][value_rows[d]] for d in decisions if train_pool[d] is not None])
+        value_outcome = np.concatenate([train_pool[d][2][value_rows[d]] for d in decisions if train_pool[d] is not None])
+        value_games = np.concatenate([train_pool[d][3][value_rows[d]] for d in decisions if train_pool[d] is not None])
+        if len(value_obs) < 500:
+            raise SystemExit(f"only {len(value_obs)} states for the value model; raise --adv-holdout")
+        inner_val = is_validation_game(value_games, 0.2)
+        fitted = fit_value(value_obs, value_outcome, hidden=[int(x) for x in args.adv_hidden.split(",")],
+                           epochs=args.adv_epochs, lr=1e-3, seed=args.seed, device=str(device),
+                           train_idx=np.flatnonzero(~inner_val), val_idx=np.flatnonzero(inner_val),
+                           label_mean=float(value_outcome[~inner_val].mean()))
+        adv_weights = {}
+        positive, kept = 0, 0
+        for d in decisions:
+            if train_pool[d] is None:
+                adv_weights[d] = None
+                continue
+            v_all = predict(fitted["params"], train_pool[d][0]).astype(np.float32)
+            advantage = train_pool[d][2] - v_all
+            w = np.where(value_rows[d], 0.0, np.where(advantage > 0, 1.0, args.adv_negative)).astype(np.float32)
+            policy = ~value_rows[d]
+            positive += int((advantage[policy] > 0).sum())
+            kept += int(policy.sum())
+            adv_weights[d] = w / max(float(w.mean()), 1e-9)  # mean weight 1: the learning rate stays comparable
+        print(json.dumps({"adv_holdout": args.adv_holdout, "value_rows": int(len(value_obs)),
+                          "value_auc": round(float(fitted["history"][-1]["auc"]), 4),
+                          "value_best_epoch": fitted["best_epoch"],
+                          "policy_rows": kept, "adv_positive_fraction": round(positive / max(kept, 1), 4),
+                          "adv_negative_weight": args.adv_negative}), flush=True)
+
     checkpoint_path = os.path.join(args.out, "checkpoint_shared.pt")
     start_epoch = 0
     resumed = None
@@ -237,26 +278,51 @@ def train_shared(args, type_files):
             if not os.path.exists(prev_pt):
                 continue
             previous = torch.load(prev_pt, map_location="cpu", weights_only=False)
-            if previous.get("schema_hash") != schemas[d]["hash"] or previous.get("hidden") != hidden:
-                continue
-            # independent previous export: only the matching head + obs layer if shapes agree
             sd = previous["model"]
+            same_candidates = previous.get("hidden") == hidden and all(
+                key in sd and sd[key].shape == target.shape
+                for key, target in (
+                    ("cand_layer.weight", model.heads[d].cand.weight),
+                    ("mid.weight", model.heads[d].mid.weight),
+                    ("out.weight", model.heads[d].out.weight)))
+            if not same_candidates:
+                continue
+            # The observation may have GROWN since that model was trained (columns are only ever appended, never
+            # reordered). The new columns start with weight 0 and mean 0 / std 1, so the warm start is exactly the old
+            # model until training gives the new columns a meaning. This is the trainer's job: the engine itself refuses
+            # a model whose observation does not match its encoder.
+            src = sd["obs_layer.weight"]
             with torch.no_grad():
-                if "obs_layer.weight" in sd and sd["obs_layer.weight"].shape == model.obs_layer.weight.shape:
-                    model.obs_layer.weight.copy_(sd["obs_layer.weight"])
+                if src.shape[0] == model.obs_layer.weight.shape[0] and src.shape[1] <= model.obs_layer.weight.shape[1]:
+                    target = model.obs_layer.weight
+                    target.zero_()
+                    target[:, :src.shape[1]].copy_(src)
                     model.obs_layer.bias.copy_(sd["obs_layer.bias"])
-                    model.mean.copy_(sd["mean"])
-                    model.std.copy_(sd["std"])
+                    old = src.shape[1]
+                    model.mean.zero_()
+                    model.mean[:old].copy_(sd["mean"])
+                    model.std.fill_(1.0)
+                    model.std[:old].copy_(sd["std"])
+                    if old != model.mean.numel():
+                        print(f"warm start: {model.mean.numel() - old} new observation columns start at zero")
                 # train_phase / exported shared state_dict keys: cand_layer, mid, out
-                if "cand_layer.weight" in sd and sd["cand_layer.weight"].shape == model.heads[d].cand.weight.shape:
-                    model.heads[d].cand.weight.copy_(sd["cand_layer.weight"])
-                    model.heads[d].mid.weight.copy_(sd["mid.weight"])
-                    model.heads[d].mid.bias.copy_(sd["mid.bias"])
-                    model.heads[d].out.weight.copy_(sd["out.weight"])
-                    model.heads[d].out.bias.copy_(sd["out.bias"])
-                    loaded_any = True
+                model.heads[d].cand.weight.copy_(sd["cand_layer.weight"])
+                model.heads[d].mid.weight.copy_(sd["mid.weight"])
+                model.heads[d].mid.bias.copy_(sd["mid.bias"])
+                model.heads[d].out.weight.copy_(sd["out.weight"])
+                model.heads[d].out.bias.copy_(sd["out.bias"])
+                loaded_any = True
         if loaded_any:
             print("warm start of shared trunk / heads from " + args.prev)
+
+    # night 8 evidence: fine-tuning a model from RANDOM data (label mean 0.85) on SMART data (label mean 0.26) first
+    # recalibrates the value and drags the observation projection with it, which wrecks the candidate ranking (86.7% ->
+    # 78.6% vs RANDOM). Freezing the projection lets the heads absorb the calibration instead. It is applied after the
+    # optimizer state is restored, so a resumed run keeps the same parameter groups.
+    if args.freeze_trunk:
+        for p in model.obs_layer.parameters():
+            p.requires_grad = False
+        print(f"trunk frozen: the observation projection stays at the warm start, only the {len(decisions)} heads train")
 
     loss_fn = nn.BCEWithLogitsLoss()
 
@@ -308,7 +374,13 @@ def train_shared(args, type_files):
             d, idx = next(stream)
             obs, cand, outcome, _ = train_pool[d]
             logits = model(d, tensor(obs, idx), tensor(cand, idx))
-            loss = loss_fn(logits, tensor(outcome, idx))
+            if adv_weights is not None:
+                target = tensor(outcome, idx)
+                weight = tensor(adv_weights[d], idx)
+                loss = (nn.functional.binary_cross_entropy_with_logits(logits, target, reduction="none")
+                        * weight).sum() / weight.sum().clamp_min(1e-9)
+            else:
+                loss = loss_fn(logits, tensor(outcome, idx))
             if not torch.isfinite(loss):
                 print(f"loss diverged on {d} in epoch {epoch}", file=sys.stderr)
                 return 4, {}
@@ -422,6 +494,21 @@ def main():
     parser.add_argument("--data", required=True)
     parser.add_argument("--out", required=True)
     parser.add_argument("--prev", default="")
+    parser.add_argument("--freeze-trunk", action="store_true",
+                        help="keep the warm-started observation projection fixed and adapt only the heads\n"
+                             "(the value calibration of a new opponent is a shift of the label mean; with the trunk\n"
+                             "frozen that shift cannot drag the state representation with it)")
+    parser.add_argument("--adv-weight", action="store_true",
+                        help="weight every policy row by its advantage outcome - V(s), V fitted on a held-out\n"
+                             "fraction of the same games (--adv-holdout); the rows of those games are excluded from\n"
+                             "the policy update. Night 8 evidence: without a baseline, games the agent loses mostly\n"
+                             "teach 'this state is a loss', which blurs the candidate ranking")
+    parser.add_argument("--adv-holdout", type=float, default=0.25,
+                        help="fraction of games used to fit V (they never enter the policy update)")
+    parser.add_argument("--adv-negative", type=float, default=0.1,
+                        help="weight of a row whose outcome is below V(s) (0 = drop them, 1 = no advantage weighting)")
+    parser.add_argument("--adv-epochs", type=int, default=3)
+    parser.add_argument("--adv-hidden", default="256,128")
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--steps", type=int, default=0,
                         help="batches between two validations, i.e. one 'epoch' (0 = one pass over the pool); smaller = finer early stopping")

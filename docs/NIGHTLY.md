@@ -18,6 +18,9 @@ Default trainer: `ml/train_all.py` (shared observation trunk, one head per `Deci
 - `low_priority: false` on a dedicated night machine.
 - Each experiment: `hypothesis`, optional `train_args`, optional `temperature` (else `selfplay.temperature`).
 - `benchmark.references` — slow opponents (NETWORK…) once at the end, best model only. Gated by `min_win_rate` vs `gate_refs` (default: skip until ≥50% wins vs RANDOM or SMART). Until then every NETWORK game is wasted time — the skill gap is huge.
+- `jvm_args` (per stage: `selfplay`, `eval`, `benchmark`) — extra JVM options, i.e. the `-D` flags of the agent. This is how a run turns **oneply search** on for the data it generates and/or for its evaluation, e.g.
+  `"selfplay": {"jvm_args": ["-Dares.agent.search=oneply", "-Dares.agent.search.symmetric=true", "-Dares.agent.valueModel=D:/ares/runs/value/v_smart_it62"]}`.
+  An experiment may override it (`"jvm_args": []` = this arm runs without search); an absent key inherits the stage's list. The **baseline** (the no-model agent every score is measured against) is deliberately left without flags, so the denominator does not move. `ml/search_config.json` is a complete example: two arms, identical matchups, search only in one of them.
 
 ## Commands (repo root)
 
@@ -82,3 +85,27 @@ high disk, near-idle CPU/GPU, for a FIXED amount of iteration time regardless of
 - `python -m unittest discover -s ml/tests -v` (use `ml\.venv` when torch tests are needed).
 - `RUN_E2E=1 python -m unittest ml.tests.test_e2e_real -v`
 - Java: `mvn test`
+
+## GPU (torch), 2026-11-14
+
+`py -3` (Python 3.9.10) carries **torch 2.8.0+cu128**; GPU is an RTX 3070 Ti (8 GB, driver 610.88). Until this date the
+box ran `2.8.0+cpu` and every trainer silently trained on the CPU — the check line `GPU: NVIDIA …` in
+`nightly check` proves the card exists, **not** that torch uses it; look for `device cuda` in the trainer's first line
+(`train.log`).
+
+| measurement | CPU build | CUDA build |
+|---|---|---|
+| trunk-shaped matmul (4096×760×256, fp32) | 3.88 ms | **0.21 ms** (18×) |
+| `train_value.py`, same 8.68 GB of chunks | — | 65.9 s for 4 epochs, AUC 0.8615 |
+| exported model in the engine (oneply search, 10 000 games) | 29.27% SMART / 87.42% RANDOM | 28.50% / 87.33% |
+
+The last row is the one that matters: a GPU-trained net is **indistinguishable in play** from a CPU-trained one
+(difference inside the CI), and `ml/train_value.py`'s export check is a numpy forward pass over the exported weights
+(worst gap 1.8e-6 here vs the 1e-3 the Java loader tolerates), so the training device cannot corrupt an export.
+`torch.backends.cuda.matmul.allow_tf32` stays `false`: both sides compute in fp32, `|gpu − cpu|` on one matmul ≈ 5e-5.
+
+Reinstall on a new machine (match the installed torch version, not "latest"; a diff version changes the export contract
+less than it changes speed):
+`py -3 -m pip install --upgrade "torch==2.8.0+cu128" --index-url https://download.pytorch.org/whl/cu128`.
+Tests pin `--device cpu`, so they stay reproducible. If CUDA is missing, `--device auto` falls back to the CPU and the
+night still runs, only slower.

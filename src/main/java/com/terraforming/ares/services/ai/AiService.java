@@ -121,7 +121,12 @@ public class AiService {
         return false;
     }
 
-    private void processAiTurn(MarsGame game, Player player) {
+    /**
+     * One attempt of one player to make a turn: the only place where the agent's decisions are taken. Public so a
+     * search / measurement harness can replay exactly this attempt on a copy of the game (see {@code RolloutBench}).
+     */
+    public void processAiTurn(MarsGame game, Player player) {
+        com.terraforming.ares.services.agent.DecisionProbe.notifyTurnStarted(game, player);
         ActionsDto nextActions = gameService.getNextActions(game, player.getUuid());
         String nextAction = nextActions.getPlayersToNextActions().get(player.getUuid());
 

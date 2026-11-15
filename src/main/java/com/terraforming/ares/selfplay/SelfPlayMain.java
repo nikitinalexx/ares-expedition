@@ -26,6 +26,9 @@ import java.util.Map;
  *                      [--model MODEL_DIR | --models MODELS_DIR] [--temperature 0.5]
  * compare: --mode compare --out FILE.json --a AGENT --b SMART --games N [--concurrency C]
  *                      [--model MODEL_DIR | --models MODELS_DIR] [--temperature 0]
+ * bench:   --mode bench --out FILE.json [--games N] [--types A,B|all] [--captures-per-type 2] [--max-captures 400]
+ *                      [--truncate-decisions N] [--rollouts-per-capture 1] [--scales 1,2,4,8] [--max-seconds S]
+ *                      [--hash-policy false|true] [--synthetic-model false|true]
  * </pre>
  * {@code --model} is one exported folder (legacy / single decision). {@code --models} is a directory of such folders
  * (one per decision type), as written by {@code ml/train_all.py}.
@@ -75,6 +78,16 @@ public final class SelfPlayMain {
             System.out.println("[NAMES] " + names.size() + " feature names written to " + file);
             return 0;
         }
+        if (mode.equals("schemas")) {  // the encoder's schema hash per decision type: what a converted model must carry
+            Path file = Path.of(required(arguments, "out"));
+            if (file.getParent() != null) {
+                Files.createDirectories(file.getParent());
+            }
+            new ObjectMapper().writeValue(file.toFile(),
+                    com.terraforming.ares.services.agent.NeuralPolicy.schemaHashes());
+            System.out.println("[SCHEMAS] written to " + file);
+            return 0;
+        }
         // the agent model is read by NeuralPolicy when the context starts
         if (arguments.containsKey("models")) {
             System.setProperty("ares.agent.models", arguments.get("models"));
@@ -100,6 +113,10 @@ public final class SelfPlayMain {
                     return play(context, arguments);
                 case "compare":
                     return compare(context, arguments);
+                case "bench":
+                    return bench(context, arguments);
+                case "audit":
+                    return audit(context, arguments);
                 default:
                     throw new IllegalArgumentException("unknown --mode " + mode);
             }
@@ -137,8 +154,57 @@ public final class SelfPlayMain {
         };
     }
 
-    private static int compare(ConfigurableApplicationContext context, Map<String, String> a) throws Exception {
+    /**
+     * Measures the cost and the feasibility of search (see {@link RolloutBench}). A diagnostic mode: it does not write
+     * dataset rows and does not change anything the night pipeline reads.
+     */
+    private static int bench(ConfigurableApplicationContext context, Map<String, String> a) throws Exception {
         Path out = Path.of(required(a, "out"));
+        RolloutBench.Options options = new RolloutBench.Options(
+                out,
+                Integer.parseInt(a.getOrDefault("games", "50")),
+                RolloutBench.parseTypes(a.get("types")),
+                Integer.parseInt(a.getOrDefault("captures-per-type", "2")),
+                Integer.parseInt(a.getOrDefault("max-captures", "400")),
+                Integer.parseInt(a.getOrDefault("truncate-decisions", "0")),
+                Integer.parseInt(a.getOrDefault("rollouts-per-capture", "1")),
+                RolloutBench.parseScales(a.getOrDefault("scales", "1")),
+                Long.parseLong(a.getOrDefault("max-seconds", "0")),
+                Boolean.parseBoolean(a.getOrDefault("hash-policy", "false")),
+                Boolean.parseBoolean(a.getOrDefault("synthetic-model", "false")));
+        context.getBean(RolloutBench.class).run(options);
+        return 0;
+    }
+
+    /**
+     * Sanity check of a value network (see {@link ValueAudit}): perturb one thing in real positions and report whether
+     * V moves the way the rules of the game imply. Diagnostic only.
+     */
+    private static int audit(ConfigurableApplicationContext context, Map<String, String> a) throws Exception {
+        java.util.List<Integer> cards = new java.util.ArrayList<>();
+        for (String part : a.getOrDefault("cards", "").split(",")) {
+            if (!part.isBlank()) {
+                cards.add(Integer.parseInt(part.trim()));
+            }
+        }
+        java.util.List<String> interactionCards = new java.util.ArrayList<>();
+        for (String part : a.getOrDefault("interaction-cards", "").split(",")) {
+            if (!part.isBlank()) {
+                interactionCards.add(part.trim());
+            }
+        }
+        ValueAudit.Options options = new ValueAudit.Options(
+                Path.of(required(a, "out")),
+                Integer.parseInt(a.getOrDefault("games", "100")),
+                Integer.parseInt(a.getOrDefault("captures-per-game", "6")),
+                a.getOrDefault("opponent", "SMART"),
+                cards,
+                interactionCards);
+        context.getBean(ValueAudit.class).run(options);
+        return 0;
+    }
+
+    private static int compare(ConfigurableApplicationContext context, Map<String, String> a) throws Exception {        Path out = Path.of(required(a, "out"));
         SimulationCompareController.CompareResult result = context.getBean(SimulationCompareController.class).compare(
                 Integer.parseInt(required(a, "games")),
                 PlayerDifficulty.valueOf(required(a, "a")),

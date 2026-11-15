@@ -56,3 +56,4 @@ Before training on a new piece: label perspective, hidden-info leak, schema hash
 ## Status
 
 All non-crisis decisions + observation + nightly multi-decision training exist. Strength vs NETWORK is still ~0% (see `docs/EXPERIMENTS.md`). Next leverage is data/behaviour diagnosis (e.g. H-P1 passivity), not a new architecture family.
+Search (family D) feasibility is measured — replay of a decision point is exact, cost and budgets are in `docs/SEARCH.md`.

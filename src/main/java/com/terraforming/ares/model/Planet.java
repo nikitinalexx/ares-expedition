@@ -210,6 +210,15 @@ public class Planet {
         return oceansOpened >= oceanRequirement.getMinValue() && oceansOpened <= oceanRequirement.getMaxValue();
     }
 
+    /**
+     * The ocean that {@link #revealOcean()} keeps paying once every ocean is open (that is how a "free" ocean is farmed in
+     * the phase that closes them). The observation encodes its reward, so it must be readable.
+     */
+    @JsonIgnore
+    public int getLastOpenedOceanIndex() {
+        return lastOpenedOceanIndex;
+    }
+
     public Ocean revealOcean() {
         Optional<Ocean> result = oceans.stream().filter(ocean -> !ocean.isRevealed()).findAny();
         result.ifPresent(ocean -> {

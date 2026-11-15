@@ -1,0 +1,129 @@
+{
+  "low_priority": false,
+  "storage": {
+    "run_root": "D:/ares/runs",
+    "data_root": "D:/ares/data",
+    "temp_root": "D:/ares/tmp",
+    "stage_root": "C:/ares/stage",
+    "reserves": [
+      {
+        "path": "C:/",
+        "gb": 30
+      },
+      {
+        "path": "D:/",
+        "gb": 30
+      }
+    ],
+    "data_budget_gb": 100,
+    "keep_data_iterations": 1,
+    "delete_data_of_other_runs": false
+  },
+  "java": {
+    "bin": "auto",
+    "xmx": "10g",
+    "threads": 0
+  },
+  "selfplay": {
+    "games_per_chunk": 500,
+    "stage_max_seconds": 3600,
+    "temperature": 0,
+    "max_rows_per_game_type": 8,
+    "jvm_args": [
+      "-Dares.agent.search=oneply",
+      "-Dares.agent.search.symmetric=true",
+      "-Dares.agent.valueModel=D:/ares/runs/value/v_smart_it62"
+    ]
+  },
+  "eval": {
+    "games": 3000,
+    "references": [
+      "RANDOM",
+      "SMART"
+    ],
+    "agent": "AGENT",
+    "concurrency": 32,
+    "timeout_seconds": 3600,
+    "bias_alarm_gap": 0.15,
+    "jvm_args": [
+      "-Dares.agent.search=oneply",
+      "-Dares.agent.search.symmetric=true",
+      "-Dares.agent.valueModel=D:/ares/runs/value/v_smart_it62"
+    ]
+  },
+  "benchmark": {
+    "references": [
+      "NETWORK"
+    ],
+    "games": 100,
+    "concurrency": 16,
+    "timeout_seconds": 3600,
+    "gate_refs": [
+      "RANDOM",
+      "SMART"
+    ],
+    "min_win_rate": 0.5
+  },
+  "rungs": [
+    {
+      "fraction": 1.0,
+      "keep": 2,
+      "games_factor": 1.0
+    }
+  ],
+  "plateau_patience": 8,
+  "plateau_min_iterations": 4,
+  "experiments": [
+    {
+      "name": "search_mixed",
+      "hypothesis": "The data of a game, not the policy, should carry the card order: one-ply search on V(afterstate) re-ranks the cards the policy is willing to build. Replacing that choice in the recorded data and retraining makes the policy imitate a better ranker, so the next generation of data starts from better positions. Control = plain_mixed, same games/min, search off: any difference is the search, nothing else.",
+      "games_per_iteration": 12000,
+      "matchups": "AGENT:RANDOM:0.7,AGENT:SMART:0.3",
+      "max_rows_per_game_type": 8,
+      "train_args": [
+        "--rows-per-game",
+        "8"
+      ]
+    },
+    {
+      "name": "plain_mixed",
+      "hypothesis": "Control arm of search_mixed: identical matchups, games and trainer, search explicitly off, so the night measures the search and not the curriculum.",
+      "games_per_iteration": 12000,
+      "matchups": "AGENT:RANDOM:0.7,AGENT:SMART:0.3",
+      "max_rows_per_game_type": 8,
+      "jvm_args": [],
+      "train_args": [
+        "--rows-per-game",
+        "8"
+      ]
+    }
+  ],
+  "train": {
+    "command": [
+      "{python}",
+      "ml/train_all.py",
+      "--data",
+      "{data}",
+      "--out",
+      "{model_dir}",
+      "--prev",
+      "{prev_model}",
+      "--epochs",
+      "50",
+      "--steps",
+      "100",
+      "--patience",
+      "5",
+      "--rows-per-game",
+      "8"
+    ],
+    "timeout_seconds": 7200
+  },
+  "maven": {
+    "command": "mvn",
+    "args": [
+      "-s",
+      ".mvn/settings.xml"
+    ]
+  }
+}

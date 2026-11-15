@@ -63,6 +63,19 @@ public enum PlayerDifficulty {
             AiTurnChoice.RANDOM,
             AiExperimentalTurn.REGULAR
     ),
+    /**
+     * The same learnable agent, but played with the SECOND model set ({@code -Dares.agent.models2}): the strongest
+     * trained player, next to {@code AGENT} which keeps the ordinary set. Both play through {@link
+     * com.terraforming.ares.services.agent.AgentDecisionService}; the only difference is which weights answer.
+     */
+    AGENT_V2(
+            AiCardsChoice.FILE_VALUE,
+            AiTurnChoice.SMART,
+            AiTurnChoice.SMART,
+            AiTurnChoice.SMART,
+            AiTurnChoice.SMART,
+            AiExperimentalTurn.REGULAR
+    ),
     NETWORK_V2(
             AiCardsChoice.RANDOM,
             AiTurnChoice.RANDOM,
@@ -90,7 +103,12 @@ public enum PlayerDifficulty {
     }
 
     public boolean isAgent() {
-        return this == AGENT || this == AGENT_R;
+        return this == AGENT || this == AGENT_R || this == AGENT_V2;
+    }
+
+    /** Plays with the second model set ({@code ares.agent.models2}) instead of the ordinary one. */
+    public boolean isStrongAgent() {
+        return this == AGENT_V2;
     }
 
     /**

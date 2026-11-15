@@ -1,0 +1,282 @@
+{
+ "getActiveCardAction": {
+  "count": 3,
+  "reason": "plumbing"
+ },
+ "getAlreadyDrafted": {
+  "count": 2,
+  "reason": "plumbing"
+ },
+ "getBuffedCorporationsMapping": {
+  "count": 1,
+  "reason": ""
+ },
+ "getBuffedProjectsMapping": {
+  "count": 1,
+  "reason": ""
+ },
+ "getCardTags": {
+  "count": 1,
+  "reason": "candidate"
+ },
+ "getCardToTokensCount": {
+  "count": 1,
+  "reason": "crysis"
+ },
+ "getCardsToSee": {
+  "count": 3,
+  "reason": "plumbing"
+ },
+ "getCardsToTake": {
+  "count": 2,
+  "reason": "plumbing"
+ },
+ "getChoiceOptions": {
+  "count": 2,
+  "reason": "plumbing"
+ },
+ "getCollectableResource": {
+  "count": 24,
+  "reason": "candidate"
+ },
+ "getCorporationCardId": {
+  "count": 3,
+  "reason": "plumbing"
+ },
+ "getCrisisVp": {
+  "count": 3,
+  "reason": "crysis"
+ },
+ "getCrysisCard": {
+  "count": 6,
+  "reason": "crysis"
+ },
+ "getCrysisCards": {
+  "count": 2,
+  "reason": "crysis"
+ },
+ "getCrysisData": {
+  "count": 21,
+  "reason": "crysis"
+ },
+ "getCrysisExcludedCards": {
+  "count": 1,
+  "reason": "crysis"
+ },
+ "getCrysisService": {
+  "count": 3,
+  "reason": "crysis"
+ },
+ "getDiscount": {
+  "count": 1,
+  "reason": "candidate"
+ },
+ "getDoubleCollectCardId": {
+  "count": 2,
+  "reason": "upstream"
+ },
+ "getExpansions": {
+  "count": 3,
+  "reason": "upstream"
+ },
+ "getExtraPoints": {
+  "count": 2,
+  "reason": "upstream"
+ },
+ "getFirst": {
+  "count": 1,
+  "reason": "plumbing"
+ },
+ "getForbiddenPhases": {
+  "count": 1,
+  "reason": "upstream"
+ },
+ "getId": {
+  "count": 149,
+  "reason": "plumbing"
+ },
+ "getInfrastructureColor": {
+  "count": 1,
+  "reason": "upstream"
+ },
+ "getInfrastructureRequirement": {
+  "count": 2,
+  "reason": "candidate"
+ },
+ "getInput": {
+  "count": 3,
+  "reason": "plumbing"
+ },
+ "getInputParams": {
+  "count": 10,
+  "reason": "plumbing"
+ },
+ "getNextTurn": {
+  "count": 47,
+  "reason": "plumbing"
+ },
+ "getOceanDetrimentSize": {
+  "count": 1,
+  "reason": "crysis"
+ },
+ "getOceanRequirement": {
+  "count": 1,
+  "reason": ""
+ },
+ "getOpenedCards": {
+  "count": 14,
+  "reason": "crysis"
+ },
+ "getOxygenRequirement": {
+  "count": 2,
+  "reason": "candidate"
+ },
+ "getPaymentValidationService": {
+  "count": 1,
+  "reason": "plumbing"
+ },
+ "getPayments": {
+  "count": 2,
+  "reason": "plumbing"
+ },
+ "getPhaseId": {
+  "count": 5,
+  "reason": "plumbing"
+ },
+ "getPlayerUuid": {
+  "count": 44,
+  "reason": "plumbing"
+ },
+ "getPlayerWinPoints": {
+  "count": 1,
+  "reason": ""
+ },
+ "getPoints": {
+  "count": 2,
+  "reason": "candidate"
+ },
+ "getPrice": {
+  "count": 1,
+  "reason": "candidate"
+ },
+ "getProjectId": {
+  "count": 4,
+  "reason": "plumbing"
+ },
+ "getProjectPrice": {
+  "count": 1,
+  "reason": "candidate"
+ },
+ "getProjectType": {
+  "count": 2,
+  "reason": "plumbing"
+ },
+ "getProjectsDeck": {
+  "count": 1,
+  "reason": "derivable"
+ },
+ "getResources": {
+  "count": 2,
+  "reason": "candidate"
+ },
+ "getSelectedCorporationCard": {
+  "count": 2,
+  "reason": "upstream"
+ },
+ "getSpecialCrysisGoal": {
+  "count": 1,
+  "reason": "crysis"
+ },
+ "getSpecialDummyCards": {
+  "count": 1,
+  "reason": ""
+ },
+ "getSpecialEffects": {
+  "count": 2,
+  "reason": "plumbing"
+ },
+ "getTagRequirements": {
+  "count": 1,
+  "reason": ""
+ },
+ "getTags": {
+  "count": 19,
+  "reason": "candidate"
+ },
+ "getTemperatureRequirement": {
+  "count": 2,
+  "reason": "candidate"
+ },
+ "getTerraformingService": {
+  "count": 1,
+  "reason": "plumbing"
+ },
+ "getTurnTypeService": {
+  "count": 5,
+  "reason": "plumbing"
+ },
+ "getWinPointsInfo": {
+  "count": 4,
+  "reason": "plumbing"
+ },
+ "isActiveCard": {
+  "count": 1,
+  "reason": "upstream"
+ },
+ "isCrysis": {
+  "count": 18,
+  "reason": "crysis"
+ },
+ "isHasUnmiAction": {
+  "count": 6,
+  "reason": "upstream"
+ },
+ "isIntermediate": {
+  "count": 5,
+  "reason": "plumbing"
+ },
+ "isMulligan": {
+  "count": 1,
+  "reason": "upstream"
+ },
+ "isOceansMax": {
+  "count": 1,
+  "reason": ""
+ },
+ "isOxygenMin": {
+  "count": 1,
+  "reason": "upstream"
+ },
+ "isPhaseUpgraded": {
+  "count": 3,
+  "reason": "upstream"
+ },
+ "isSupportedByExpansionSet": {
+  "count": 1,
+  "reason": ""
+ },
+ "isTemperatureMin": {
+  "count": 1,
+  "reason": "upstream"
+ },
+ "isUnmiCorporation": {
+  "count": 4,
+  "reason": "upstream"
+ },
+ "isValidInfrastructure": {
+  "count": 1,
+  "reason": "candidate"
+ },
+ "isValidNumberOfOceans": {
+  "count": 1,
+  "reason": ""
+ },
+ "isValidOxygen": {
+  "count": 1,
+  "reason": "candidate"
+ },
+ "isValidTemperatute": {
+  "count": 1,
+  "reason": "candidate"
+ }
+}

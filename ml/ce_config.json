@@ -1,0 +1,122 @@
+{
+  "low_priority": false,
+  "storage": {
+    "run_root": "D:/ares/runs",
+    "data_root": "D:/ares/data",
+    "temp_root": "D:/ares/tmp",
+    "stage_root": "C:/ares/stage",
+    "reserves": [
+      {
+        "path": "C:/",
+        "gb": 30
+      },
+      {
+        "path": "D:/",
+        "gb": 30
+      }
+    ],
+    "data_budget_gb": 150,
+    "keep_data_iterations": 1,
+    "delete_data_of_other_runs": false
+  },
+  "java": {
+    "bin": "auto",
+    "xmx": "10g",
+    "threads": 0
+  },
+  "selfplay": {
+    "games_per_chunk": 1000,
+    "stage_max_seconds": 3600,
+    "temperature": 0,
+    "max_rows_per_game_type": 8,
+    "jvm_args": [
+      "-Dares.agent.search=oneply",
+      "-Dares.agent.search.symmetric=true",
+      "-Dares.agent.search.types=BUILD_CARD,DRAFT_CARDS",
+      "-Dares.agent.valueModel=D:/ares/runs/value/v_r3_outcome"
+    ]
+  },
+  "eval": {
+    "games": 3000,
+    "references": [
+      "RANDOM",
+      "SMART"
+    ],
+    "agent": "AGENT",
+    "concurrency": 32,
+    "timeout_seconds": 3600,
+    "bias_alarm_gap": 0.15,
+    "jvm_args": [
+      "-Dares.agent.search=oneply",
+      "-Dares.agent.search.symmetric=true",
+      "-Dares.agent.search.types=BUILD_CARD,DRAFT_CARDS",
+      "-Dares.agent.valueModel=D:/ares/runs/value/v_r3_outcome"
+    ]
+  },
+  "benchmark": {
+    "references": [
+      "NETWORK"
+    ],
+    "games": 100,
+    "concurrency": 16,
+    "timeout_seconds": 3600,
+    "gate_refs": [
+      "RANDOM",
+      "SMART"
+    ],
+    "min_win_rate": 0.5,
+    "jvm_args": [
+      "-Dares.agent.search=oneply",
+      "-Dares.agent.search.symmetric=true",
+      "-Dares.agent.search.types=BUILD_CARD,DRAFT_CARDS",
+      "-Dares.agent.valueModel=D:/ares/runs/value/v_r3_outcome"
+    ]
+  },
+  "rungs": [
+    {
+      "fraction": 1.0,
+      "keep": 2,
+      "games_factor": 1.0
+    }
+  ],
+  "plateau_patience": 8,
+  "plateau_min_iterations": 3,
+  "experiments": [
+    {
+      "name": "ce_mixed",
+      "hypothesis": "Candidate cross-entropy (train the menu, not the taken action) removes the drift that made every previous retrain worse than its parent. The player that generates the data is the best available (policy + 1-ply symmetric search), so each iteration starts from a stronger position. Watch the eval win rate: it should climb instead of falling.",
+      "games_per_iteration": 12000,
+      "matchups": "AGENT:SMART:0.7,AGENT:RANDOM:0.3",
+      "max_rows_per_game_type": 8,
+      "train_args": []
+    }
+  ],
+  "train": {
+    "command": [
+      "{python}",
+      "ml/train_policy_ce.py",
+      "--data",
+      "{data}",
+      "--out",
+      "{model_dir}",
+      "--prev",
+      "{prev_model}",
+      "--epochs",
+      "2",
+      "--rows-per-game",
+      "8",
+      "--max-chunks-per-type",
+      "16",
+      "--outcome-weight",
+      "0"
+    ],
+    "timeout_seconds": 7200
+  },
+  "maven": {
+    "command": "mvn",
+    "args": [
+      "-s",
+      ".mvn/settings.xml"
+    ]
+  }
+}

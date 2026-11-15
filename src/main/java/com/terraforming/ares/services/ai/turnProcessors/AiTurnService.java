@@ -307,6 +307,7 @@ public class AiTurnService {
         makeSyncTurn(player, game, new StandardProjectTurn(player.getUuid(), type, inputParams));
     }
 
+
     public void increaseInfrastructure(Player player, MarsGame game, Map<Integer, List<Integer>> inputParams) {
         if (player.getHeat() < Constants.INFRASTRUCTURE_HEAT_COST) {
             throw new IllegalStateException("Not enough heat to increase infrastructure");

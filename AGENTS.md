@@ -33,6 +33,13 @@ Do not put ND4J/DL4J/CUDA back into the app `pom.xml`. Do not push to `main` or 
 Nobody’s claims (owner or AI) are axioms: they are hypotheses checked by nightly runs, one variable at a time.
 See `docs/EXPERIMENTS.md`.
 
+**Accepting a new network (owner's rule, 2026-11-14).** Win rate alone hides a degenerate player: a model beat RANDOM 95%
+while a human playing it saw "picks phase 3, buys standard projects, 0-2 cards per game". So every new model is first
+measured on **cards built per game** and **which phases it picks** — `py -3 ml/check_player.py --model DIR` prints both,
+the phase-3 spend mix and a verdict (exit 1 when the profile is degenerate: <3 builds, >50% standard projects in phase 3,
+>80% of picks in one phase). Only then look at the win rate. Reference profile of a healthy player: ~11+ cards/game, a mix
+of phases (a real player calls 1/2/5 and only calls 4 when it pays).
+
 ## Agent (`services/agent`)
 - `AGENT` / `AGENT_R`: all non-crisis decisions go through `DecisionAgent` (uniform random without a model).
 - Observation must not contain hidden info — `ObservationCompletenessTest`.

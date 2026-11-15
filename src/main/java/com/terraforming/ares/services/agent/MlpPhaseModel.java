@@ -9,6 +9,7 @@ import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
+import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
 
@@ -21,6 +22,15 @@ import java.util.List;
  *   h1_k = relu(a + W_cand c_k)        h2_k = relu(W_mid h1_k + b_mid)       logit_k = w_out . h2_k + b_out
  * </pre>
  * Immutable and thread safe. A model refuses to load when its files are damaged (hash of weights.bin) or inconsistent.
+ * <p>
+ * <b>Layout and speed.</b> The observation projection is ~195k multiply-adds (760 → 256) and dominates a decision —
+ * it costs several times more than all engine work between two decisions. The file keeps the trainer's row-major
+ * {@code [out, in]} matrices; they are <b>transposed at load</b> so inference walks a contiguous vector per input:
+ * {@code a[j] += W[i][j] * z[i]}. That is the one shape HotSpot's SuperWord vectorises (independent lanes, stride 1,
+ * plain {@code float}); a row-major dot product per neuron stays scalar and is ~5× slower. Accumulation in
+ * {@code float} adds ~1e-6 of error over 760 terms, far below the 1e-4 agreement with the numpy reference.
+ * Whole zero rows are skipped: an observation is largely one-hots and empty tables, and a candidate vector has a
+ * handful of non-zero features out of 6–116.
  */
 public final class MlpPhaseModel {
     private final DecisionType decisionType;
@@ -32,10 +42,17 @@ public final class MlpPhaseModel {
     private final float clip;
     private final float[] mean;
     private final float[] std;
-    private final float[] wObs;
+    /** {@code [obsSize][h1]}, transposed from the file's {@code [h1][obsSize]}. */
+    private final float[] wObsT;
     private final float[] bObs;
-    private final float[] wCand;
-    private final float[] wMid;
+    /** {@code z} of a feature that is 0 in the observation: {@code clip((0 - mean) / std)}. */
+    private final float[] zAtZero;
+    /** {@code b_obs + W_obs z_at_zero}: the whole projection when every feature is 0 (90% of a real observation). */
+    private final float[] aBase;
+    /** {@code [candFeatures][h1]}, transposed. */
+    private final float[] wCandT;
+    /** {@code [h1][h2]}, transposed. */
+    private final float[] wMidT;
     private final float[] bMid;
     private final float[] wOut;
     private final float bOut;
@@ -47,17 +64,25 @@ public final class MlpPhaseModel {
             throw new IllegalArgumentException("Unknown decision type in model.json: " + meta.path("decisionType").asText());
         }
         this.schemaHash = meta.get("schemaHash").asText();
-        this.obsSize = meta.get("obsSize").asInt();
+        int trainedOn = meta.get("obsSize").asInt();
         this.candFeatures = meta.get("candFeatures").asInt();
         this.h1 = meta.get("hidden").get(0).asInt();
         this.h2 = meta.get("hidden").get(1).asInt();
         this.clip = (float) meta.get("clip").asDouble();
-        this.mean = read(weights, obsSize);
-        this.std = read(weights, obsSize);
-        this.wObs = read(weights, h1 * obsSize);
+        if (trainedOn != ObservationBuilder.size()) {
+            // No compatibility shim: a model belongs to the encoder it was trained on, and the engine refuses the rest.
+            // Warm starts across an encoder change are handled where the artifact is produced (ml/train_all.py pads the
+            // input columns with zeros), not by silently reshaping weights at load time.
+            throw new IllegalArgumentException("The model was trained on a " + trainedOn + "-value observation, the "
+                    + "current encoder produces " + ObservationBuilder.size() + ": retrain it");
+        }
+        this.obsSize = trainedOn;
+        this.mean = read(weights, trainedOn);
+        this.std = read(weights, trainedOn);
+        this.wObsT = transpose(read(weights, h1 * trainedOn), h1, trainedOn);
         this.bObs = read(weights, h1);
-        this.wCand = read(weights, h1 * candFeatures);
-        this.wMid = read(weights, h2 * h1);
+        this.wCandT = transpose(read(weights, h1 * candFeatures), h1, candFeatures);
+        this.wMidT = transpose(read(weights, h2 * h1), h2, h1);
         this.bMid = read(weights, h2);
         this.wOut = read(weights, h2);
         this.bOut = read(weights, 1)[0];
@@ -67,6 +92,35 @@ public final class MlpPhaseModel {
         for (float s : std) {
             if (!(s > 0f)) {
                 throw new IllegalArgumentException("std must be positive");
+            }
+        }
+        // A NaN weight would otherwise be swallowed by the relu branches and produce a silent garbage move.
+        for (float[] block : List.of(mean, std, wObsT, bObs, wCandT, wMidT, bMid, wOut)) {
+            for (float w : block) {
+                if (!Float.isFinite(w)) {
+                    throw new IllegalArgumentException("weights.bin contains " + w + ": the model is damaged");
+                }
+            }
+        }
+        if (!Float.isFinite(bOut)) {
+            throw new IllegalArgumentException("weights.bin contains " + bOut + ": the model is damaged");
+        }
+        // The observation is one-hots and empty tables: ~90% of its values are exactly 0. Its projection is linear, so
+        // the contribution of every feature that stays 0 is a constant computed once here; inference only adds the
+        // difference for the features that are actually present. Exact, not an approximation: with clip() in the path,
+        // z_at_zero is written down explicitly instead of relying on (0 - mean) / std.
+        this.zAtZero = new float[obsSize];
+        this.aBase = Arrays.copyOf(bObs, h1);
+        for (int i = 0; i < obsSize; i++) {
+            float v = (0f - mean[i]) / std[i];
+            float z0 = v < -clip ? -clip : Math.min(v, clip);
+            zAtZero[i] = z0;
+            if (z0 == 0f) {
+                continue;
+            }
+            int offset = i * h1;
+            for (int j = 0; j < h1; j++) {
+                aBase[j] += wObsT[offset + j] * z0;
             }
         }
     }
@@ -101,6 +155,18 @@ public final class MlpPhaseModel {
         return result;
     }
 
+    /** {@code [out][in]} (the file order) → {@code [in][out]}, so inference walks contiguous output vectors. */
+    private static float[] transpose(float[] source, int out, int in) {
+        float[] result = new float[source.length];
+        for (int o = 0; o < out; o++) {
+            int row = o * in;
+            for (int i = 0; i < in; i++) {
+                result[i * out + o] = source[row + i];
+            }
+        }
+        return result;
+    }
+
     public DecisionType decisionType() {
         return decisionType;
     }
@@ -124,48 +190,71 @@ public final class MlpPhaseModel {
         if (obs.length != obsSize) {
             throw new IllegalArgumentException("Observation has " + obs.length + " values, the model expects " + obsSize);
         }
-        float[] z = new float[obsSize];
+        // a = W_obs z + b_obs. The bias (aBase) already holds the projection of every feature that is 0, so only the
+        // observations that are actually present are walked — ~10% of 760 on real data.
+        float[] a = Arrays.copyOf(aBase, h1);
         for (int i = 0; i < obsSize; i++) {
-            float v = (obs[i] - mean[i]) / std[i];
-            z[i] = v < -clip ? -clip : Math.min(v, clip);
-        }
-        double[] a = new double[h1];
-        for (int j = 0; j < h1; j++) {
-            double sum = bObs[j];
-            int row = j * obsSize;
-            for (int i = 0; i < obsSize; i++) {
-                sum += wObs[row + i] * z[i];
+            float raw = obs[i];
+            if (raw == 0f) {
+                continue;
             }
-            a[j] = sum;
+            float v = (raw - mean[i]) / std[i];
+            if (!Float.isFinite(v)) {
+                throw new IllegalStateException("Observation " + i + " is " + raw + " (NaN/Inf in the input?)");
+            }
+            float delta = (v < -clip ? -clip : Math.min(v, clip)) - zAtZero[i];
+            if (delta == 0f) {
+                continue;
+            }
+            int offset = i * h1;
+            for (int j = 0; j < h1; j++) {
+                a[j] += wObsT[offset + j] * delta;
+            }
         }
         float[] result = new float[candidates.size()];
-        double[] hidden1 = new double[h1];
+        float[] hidden1 = new float[h1];
+        float[] hidden2 = new float[h2];
         for (int k = 0; k < result.length; k++) {
             float[] c = candidates.get(k).features();
             if (c.length != candFeatures) {
                 throw new IllegalArgumentException("Candidate has " + c.length + " features, the model expects " + candFeatures);
             }
-            for (int j = 0; j < h1; j++) {
-                double sum = a[j];
-                int row = j * candFeatures;
-                for (int f = 0; f < candFeatures; f++) {
-                    sum += wCand[row + f] * c[f];
+            System.arraycopy(a, 0, hidden1, 0, h1);
+            for (int f = 0; f < candFeatures; f++) {
+                float cf = c[f];
+                if (!Float.isFinite(cf)) {
+                    throw new IllegalStateException("Candidate feature " + f + " is " + cf + " (NaN/Inf in the input?)");
                 }
-                hidden1[j] = Math.max(sum, 0.0);
+                if (cf == 0f) {
+                    continue;
+                }
+                int offset = f * h1;
+                for (int j = 0; j < h1; j++) {
+                    hidden1[j] += wCandT[offset + j] * cf;
+                }
             }
-            double logit = bOut;
+            Arrays.fill(hidden2, 0f);
+            for (int i = 0; i < h1; i++) {
+                float hi = hidden1[i];
+                if (hi <= 0f) {
+                    continue; // relu
+                }
+                int offset = i * h2;
+                for (int j = 0; j < h2; j++) {
+                    hidden2[j] += wMidT[offset + j] * hi;
+                }
+            }
+            float logit = bOut;
             for (int j = 0; j < h2; j++) {
-                double sum = bMid[j];
-                int row = j * h1;
-                for (int i = 0; i < h1; i++) {
-                    sum += wMid[row + i] * hidden1[i];
+                float pre = hidden2[j] + bMid[j];
+                if (pre > 0f) {
+                    logit += wOut[j] * pre;
                 }
-                logit += wOut[j] * Math.max(sum, 0.0);
             }
-            if (!Double.isFinite(logit)) {
+            if (!Float.isFinite(logit)) {
                 throw new IllegalStateException("The model produced " + logit + " (NaN/Inf in the input?)");
             }
-            result[k] = (float) logit;
+            result[k] = logit;
         }
         return result;
     }

@@ -39,13 +39,98 @@ public class AgentDecisionService {
     private final CollectIncomeDecisions collectIncomeDecisions;
     private final DecisionAgent agent;
     private final NeuralPolicy neuralPolicy;
+    private final OnePlySearch onePlySearch;
     private final DecisionLogs decisionLogs;
     private final AiTurnService aiTurnService;
     private final CardService cardService;
+    private static final int[] PHASE_PREFERENCE =
+            parsePhases(System.getProperty("ares.agent.preferPhase", ""));
+    /**
+     * Exploration of the DATA GENERATOR, not of the player: {@code -Dares.agent.explore=BUILD_CARD:0.3,PICK_PHASE:0.5}
+     * replaces the decision by a uniformly random candidate for the given decision type with the given probability.
+     * <p>
+     * Why this exists: training on games of one greedy player has a fixed point - the agent never calls phases 1/2/3 and
+     * never builds an engine, so no game it plays (and therefore no value function trained on those games) can ever say
+     * that an engine is worth building. Uniform random noise on individual decision heads is the cheapest way to obtain
+     * the missing counterfactual games with their results, without copying anybody's strategy. Those games are used for
+     * the critic (what does a position lead to) and never as a model of correct play.
+     */
+    private static final Map<DecisionType, Double> EXPLORE =
+            parseExplore(System.getProperty("ares.agent.explore", ""));
 
     public int pickPhase(MarsGame game, Player player) {
         Decision decision = pickPhaseDecisions.build(game, player);
-        return decision.candidates().get(choose(game, player, decision)).id();
+        int forced = forcedPhase(decision);
+        return decision.candidates().get(forced >= 0 ? forced : choose(game, player, decision)).id();
+    }
+
+    /**
+     * Diagnostic override: {@code -Dares.agent.preferPhase=1,2} makes the agent take the first of those phases that is
+     * legal. The phase pick is a first-class decision (the picker gets an extra build, a discount, an extra income or an
+     * extra drafted card, see docs/GAME_RULES.md) and the agent picks income or draft in ~97% of the rounds. Forcing a
+     * preference measures whether that is skill or habit; without the flag nothing changes.
+     */
+    private static int forcedPhase(Decision decision) {
+        if (PHASE_PREFERENCE.length == 0) {
+            return -1;
+        }
+        for (int wanted : PHASE_PREFERENCE) {
+            for (int i = 0; i < decision.candidates().size(); i++) {
+                if (decision.candidates().get(i).id() == wanted) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
+    private static int[] parsePhases(String spec) {
+        if (spec == null || spec.isBlank()) {
+            return new int[0];
+        }
+        List<Integer> phases = new ArrayList<>();
+        for (String part : spec.split(",")) {
+            if (!part.isBlank()) {
+                phases.add(Integer.parseInt(part.trim()));
+            }
+        }
+        return phases.stream().mapToInt(Integer::intValue).toArray();
+    }
+
+    /** {@code TYPE:probability,...} - see {@link #EXPLORE}. Unknown types and bad numbers are a hard error. */
+    private static Map<DecisionType, Double> parseExplore(String spec) {
+        if (spec == null || spec.isBlank()) {
+            return Map.of();
+        }
+        Map<DecisionType, Double> result = new java.util.EnumMap<>(DecisionType.class);
+        for (String part : spec.split(",")) {
+            if (part.isBlank()) {
+                continue;
+            }
+            String[] pieces = part.trim().split(":");
+            if (pieces.length != 2) {
+                throw new IllegalArgumentException("explore entry must look like TYPE:probability, got '" + part + "'");
+            }
+            DecisionType type = DecisionType.valueOf(pieces[0].trim());
+            double probability = Double.parseDouble(pieces[1].trim());
+            if (probability < 0 || probability > 1) {
+                throw new IllegalArgumentException("explore probability out of [0,1]: '" + part + "'");
+            }
+            result.put(type, probability);
+        }
+        return result;
+    }
+
+    /**
+     * A uniformly random candidate for the configured decision types, or -1 to play as usual. Measured exploration only:
+     * it runs while games are generated for the data, and it is not part of the player.
+     */
+    private static int explore(Decision decision) {
+        Double probability = EXPLORE.get(decision.type());
+        if (probability == null || java.util.concurrent.ThreadLocalRandom.current().nextDouble() >= probability) {
+            return -1;
+        }
+        return java.util.concurrent.ThreadLocalRandom.current().nextInt(decision.candidates().size());
     }
 
     public CorporationChoice pickCorporation(MarsGame game, Player player) {
@@ -267,7 +352,23 @@ public class AgentDecisionService {
     }
 
     private int choose(MarsGame game, Player player, Decision decision) {
-        int index = neuralPolicy.choose(decision);
+        // Measurement / search harnesses (services.agent.DecisionProbe) see the state before the action is applied.
+        DecisionProbe.Hook probe = DecisionProbe.current();
+        int index = probe == null ? -1 : probe.beforeChoice(decision, game, player);
+        if (index < 0) {
+            // Measured exploration of the data generator (off unless -Dares.agent.explore is set): a uniformly random
+            // candidate for this decision type, so the recorded games contain lines the greedy player never plays.
+            index = probe == null ? explore(decision) : -1;
+        }
+        if (index < 0) {
+            // One-ply search on the state value net (off unless -Dares.agent.search=oneply): the candidate is applied to a
+            // copy and V(afterstate) decides. Falls back to the policy for every type / state it does not cover.
+            index = onePlySearch.choose(decision, game, player);
+        }
+        if (index < 0) {
+            index = neuralPolicy.choose(decision,
+                    player.getDifficulty() != null && player.getDifficulty().isStrongAgent());
+        }
         if (index < 0) {
             index = agent.choose(decision);
         }
@@ -275,7 +376,11 @@ public class AgentDecisionService {
             throw new IllegalStateException("Agent chose " + index + " out of " + decision.candidates().size()
                     + " candidates of " + decision.type());
         }
-        decisionLogs.record(game, player, decision, index);
+        if (probe == null) {
+            decisionLogs.record(game, player, decision, index);
+        } else {
+            probe.afterChoice(decision, game, player, index);
+        }
         return index;
     }
 }

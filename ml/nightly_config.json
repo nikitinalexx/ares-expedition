@@ -17,7 +17,7 @@
     ],
     "data_budget_gb": 100,
     "keep_data_iterations": 1,
-    "delete_data_of_other_runs": true
+    "delete_data_of_other_runs": false
   },
   "java": {
     "bin": "auto",

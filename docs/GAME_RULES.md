@@ -1,41 +1,63 @@
 # Game rules (as the code implements them)
 
-Reconstructed from code (`Constants`, `states/`, `DraftCardsService`, …). Items marked ❓ need owner confirmation — wrong rules poison training.
+Verified against the code, not against memory. Sources: `model/Constants.java`, `states/`, `services/StateTransitionService.java`,
+`services/DraftCardsService.java`, `mars/MarsGame.java`. Anything not verified here is marked as such.
 
-## Round
+## The round is the unit of time
 
-1. **Phase pick.** Each player picks one of 5 phases (not the same as last round). Picks are **simultaneous**.
-2. **Chosen phases resolve for both players**, in order **1 → 5**. The player who picked a phase gets its **boosted** effect (and that phase’s upgrades).
-3. Then **sell extras** (hand limit 10) and next round. Mid-turn sell for **3 MC** is also allowed when it is not the only action (does not spend the build; money arrives immediately). Exocorp effects can +1 MC to sell price.
+`game.getTurns()` increments **once per round**, when the game enters `PICK_PHASE` (`MarsGame.setStateType`, line ~258).
+Typical game: ~23 rounds (compare mode reports `avgTurns` ≈ 22.8). The agent's decisions are per phase, so a game is
+~500 decisions: ~6 decision chains per round (one per phase state, one per player, plus inner build decisions).
 
-| # | Phase | Effect |
-|---|---|---|
-| 1 | Build green | play a green project |
-| 2 | Build blue/red | blue (permanents/actions) or red (events) |
-| 3 | Blue actions | each blue once/round (upgrade: twice / peek); standard projects |
-| 4 | Income | MC = income + TR; heat/plants/cards; upgrade can replay greens |
-| 5 | Draft | pick 2 of 5 if you chose it, else 1 of 2; upgrades change counts |
-| 6 | Sell extras | automatic |
+## What happens in a round
 
-Phase upgrades: two options per phase, granted by cards.
+1. **`PICK_PHASE`** — both players pick one of the 5 phases **simultaneously**; a player may not pick the phase they picked
+   last round (`AiTurnService.choosePhaseTurn` rejects it). With the dummy hand (always on for AI play) a third, neutral
+   "player" draws a phase too: `game.updateDummyHand(...)`, `game.getCurrentDummyHand()`, from a pool of 1..5 **without
+   replacement**, reshuffled when empty. The remaining pool is public information.
+2. The picked phases are collected into a set (`StateTransitionService.performStateTransferFromPhase`) and resolve in
+   ascending order **1 → 5**, one state per phase. **Every player takes part in every phase that was picked**; the player
+   who picked it gets a boosted version.
+3. After phase 5 (or the last picked phase): if any hand is over the limit (10, `MAX_HAND_SIZE_LAST_ROUND`) →
+   `SELL_EXTRA_CARDS`; otherwise next round.
+4. `game.gameEndCondition()` is checked at every transition: oceans **and** temperature **and** oxygen maxed (plus
+   infrastructure when that expansion is on) → `GAME_END` immediately, so the terraforming phase does not finish.
+
+## The five phases (what a player actually can do)
+
+| # | State | Everyone gets | The picker gets (upgrade in brackets) |
+|---|---|---|---|
+| 1 | `BUILD_GREEN_PROJECTS` | one green project at full price | discount 6 **or** discount 3 **plus** a second green build at −12 |
+| 2 | `BUILD_BLUE_RED_PROJECTS` | one blue/red project at full price | **one more**: another project, or project-or-MC, or project-or-card |
+| 3 | `PERFORM_BLUE_ACTION` | each played blue action once per round | double activation **or** draw 3 blue/red cards |
+| 4 | `COLLECT_INCOME` | MC = income + TR; plants/heat/cards per income | extra MC **or** replay of greens (double production) |
+| 5 | `DRAFT_CARDS` | see 2, keep 1 | see 5, keep 2 (upgrade: 4/3 "keep extra" or 8/2 "see extra") |
+
+Consequences that matter for the agent:
+
+- A player has **~1 build opportunity per build phase per round** (+1 if they picked it). Building is therefore a
+  frequent, small decision, and *declining* to build is a real choice (the search countermeasures measure exactly that:
+  ~40% of build opportunities are declined by the policy).
+- **Production pays from the round after the card is built** (income resolves in phase 4). A card built in round *r*
+  pays `23 − r` times, so the same card is worth much more early — the timing argument that motivated the situational
+  value function.
+- **The phase pick is a first-class decision** (an extra build, a −6 discount, an extra income, an extra draft card) and
+  the search does not touch it at all. It is one of the largest levers left.
+- Builds are limited by `player.getBuilds()` — a list of `BuildDto(type, discount)`, rebuilt at the start of every build
+  phase. That list *is* the candidate set for a BUILD_CARD decision.
 
 ## Resources and scoring
 
-- Player: `mc`, `heat`, `plants`; incomes including steel/titanium/cards.
-- Globals: temperature, oxygen, oceans (+ infrastructure in expansion). Raising a step usually grants TR to the actor.
-- VP: TR + forests + card VP + milestones + awards + resources on cards (`WinPointsService`).
-- Start: pick corporation (2 options), optional mulligan.
+- Player counters: `mc`, `heat`, `plants`, `terraformingRating`, `forests`, `extraPoints`; incomes: MC, cards, steel,
+  titanium, plants, heat. There is **no steel/titanium stock** — those "incomes" are discounts:
+  `DiscountService`: steel → 2 MC per point on **building** cards, titanium → 3 MC per point on **space** cards (more
+  with Advanced Alloys / Phobolog).
+- Globals: temperature, oxygen, oceans. Raising a step normally grants +1 TR to the actor.
+- Final score (`WinPointsService.countWinPoints`): TR + forests + card VP + milestones + awards + resources stored on
+  cards.
+- Start: corporation out of 2, optional mulligan; hand limit 10, selling a card gives 3 MC (more with Exocorp effects).
 
-## End of game
+## Not verified here
 
-Game ends in the **phase where terraforming completes** (all globals maxed); that phase finishes. Leader wants to end sooner; trailer wants to stall.
-
-## Dummy hand (always on for AI play)
-
-A third “player” draws a phase each round from a pool of 1–5 without replacement; empty pool reshuffles. Remaining pool is **public** and must be in the observation. Speeds the game and forces income/build diversity.
-
-Other modes: buffed corporations, infrastructure, experimental, crisis (coop) — out of agent scope for now.
-
-## Decision types (for the agent)
-
-Corporation/mulligan → phase → build (card / payment / input) → blue actions / standard projects → draft → sell/discard → endgame. On the order of hundreds of decisions per game.
+- Exact draft counts with every combination of upgrades and special effects (`DraftCardsService` is the source of truth).
+- Crisis / co-op modes, infrastructure, experimental cards: out of scope for the agent.

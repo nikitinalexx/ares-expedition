@@ -652,9 +652,11 @@ class Pipeline:
         self.run_dir.mkdir(parents=True, exist_ok=True)
         self.java_args_file().write_text(f'-cp\n"{classes}{sep}{classpath}"\n', encoding="utf-8")
 
-    def java_cmd(self, *args):
+    def java_cmd(self, *args, jvm_args=()):
+        """JVM options of a stage (selfplay / eval / benchmark): the "-D" flags that turn on search live in the config,
+        one list per stage (see jvm_args in selfplay / eval / benchmark), so the baseline of the run can stay untouched."""
         j = self.cfg["java"]
-        return [j["bin"], f"-Xmx{j['xmx']}", f"@{self.java_args_file().as_posix()}",
+        return [j["bin"], f"-Xmx{j['xmx']}", *(jvm_args or ()), f"@{self.java_args_file().as_posix()}",
                 "com.terraforming.ares.selfplay.SelfPlayMain", *args]
 
     def template(self, parts, **values):
@@ -770,7 +772,10 @@ class Pipeline:
                                 "--max-failure-ratio", str(sp["max_failure_ratio"]),
                                 "--max-rows-per-game-type", str(exp_cfg.get("max_rows_per_game_type", sp["max_rows_per_game_type"])),
                                 "--min-free-gb", str(max((r for p, r in self.storage.reserves if volume_key(p) == write_vol), default=0)),
-                                "--threads", str(self.cfg["java"]["threads"] or (os.cpu_count() or 8) * 4), *model_args)
+                                "--threads", str(self.cfg["java"]["threads"] or (os.cpu_count() or 8) * 4), *model_args,
+                                # an experiment may switch search on for its own data only: "jvm_args": [] means "none",
+                                # an absent key means "whatever selfplay.jvm_args says"
+                                jvm_args=(exp_cfg["jvm_args"] if "jvm_args" in exp_cfg else sp.get("jvm_args")) or [])
             if stage.resolve() != out.resolve():
                 cmd += ["--count-chunks-from", out.as_posix()]
             self.storage.rotate = lambda: self.make_room(exp, it)
@@ -845,12 +850,13 @@ class Pipeline:
                                    ev["concurrency"], ev["timeout_seconds"], [], ("baseline", 0, f"baseline vs {ref}"))
         return read_json(path) if result.ok else None
 
-    def compare_once(self, path, log_path, a, b, games, concurrency, timeout, model_args, where):
+    def compare_once(self, path, log_path, a, b, games, concurrency, timeout, model_args, where, jvm_args=()):
         """One SelfPlayMain compare outside with_retries (baseline, benchmark); an out-of-memory exit is recorded and restarted."""
         restarts = 0
         while not path.exists():
             cmd = self.java_cmd("--mode", "compare", "--a", a, "--b", b, "--games", str(games),
-                                "--concurrency", str(concurrency), "--out", path.as_posix(), *model_args)
+                                "--concurrency", str(concurrency), "--out", path.as_posix(), *model_args,
+                                jvm_args=jvm_args)
             result = run_command(cmd, log_path, timeout, self.stop, env=self.storage.child_env(),
                                  guard=self.storage.guard, guard_interval=self.storage.interval, tick=self.tick, low_priority=self.cfg["low_priority"])
             if result.code == JAVA_EXIT_OUT_OF_MEMORY and result.reason == "exit" and restarts < self.cfg["oom_restarts"]:
@@ -907,7 +913,8 @@ class Pipeline:
             self.log(f"benchmark: best model ({exp} it{it}) vs {ref}, {bm['games']} games")
             started = now()
             result = self.compare_once(path, out / "benchmark.log", self.cfg["eval"]["agent"], ref, bm["games"], bm["concurrency"],
-                                       bm["timeout_seconds"], java_model_args(model_dir, "0"), (exp, it, f"benchmark vs {ref}"))
+                                       bm["timeout_seconds"], java_model_args(model_dir, "0"), (exp, it, f"benchmark vs {ref}"),
+                                       jvm_args=bm.get("jvm_args") or [])
             if result.ok:
                 r = read_json(path)
                 results[key] = {"exp": exp, "iteration": it, "ref": ref, "score": r["aScore"], "low": r["aScoreCi95Low"],
@@ -937,7 +944,7 @@ class Pipeline:
                     self.write_status()
                     cmd = self.java_cmd("--mode", "compare", "--a", ev["agent"], "--b", ref, "--games", str(ev["games"]),
                                         "--concurrency", str(ev["concurrency"]), "--out", path.as_posix(),
-                                        *java_model_args(str(model_dir), "0"))
+                                        *java_model_args(str(model_dir), "0"), jvm_args=ev.get("jvm_args") or [])
                     result = run_command(cmd, log_path, ev["timeout_seconds"], self.stop, env=self.storage.child_env(),
                                          guard=self.storage.guard, guard_interval=self.storage.interval, tick=self.tick,
                                          low_priority=self.cfg["low_priority"])
@@ -1845,6 +1852,17 @@ def preflight(cfg, run_dir, data_root, temp_root, smoke=True):
     check.add("every experiment states its hypothesis", not missing,
               f"no hypothesis: {missing} (a night must confirm or rule out something, see docs/EXPERIMENTS.md)" if missing
               else f"{len(cfg['experiments'])} experiments", fatal=False)
+
+    # A new rule predicate the encoder does not carry is a silent blind spot of the observation (that is how
+    # `planetAtTheStartOfThePhase` and the ocean bonuses stayed invisible): fail loudly, the allowlist is in ml/.
+    try:
+        coverage = subprocess.run([sys.executable, str(ROOT / "ml" / "rule_coverage.py"), "--check"],
+                                  capture_output=True, text=True, timeout=120)
+        detail = (coverage.stdout or "").strip().splitlines()
+        check.add("observation covers the rule predicates", coverage.returncode == 0,
+                  detail[-1] if detail else "ml/rule_coverage.py produced no output", fatal=False)
+    except Exception as e:  # noqa: BLE001
+        check.add("observation covers the rule predicates", False, f"{type(e).__name__}: {e}", fatal=False)
 
     if smoke and check.ok:
         smoke_ok, detail, bytes_per_game = smoke_run(cfg, run_dir, data_root, temp_root)

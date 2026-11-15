@@ -22,21 +22,19 @@ import java.util.concurrent.ThreadLocalRandom;
 @Service
 public class NeuralPolicy {
     private final ConcurrentHashMap<DecisionType, MlpPhaseModel> models = new ConcurrentHashMap<>();
+    /** Second model set ({@code -Dares.agent.models2}): what {@link com.terraforming.ares.model.PlayerDifficulty#AGENT_V2} plays. */
+    private final ConcurrentHashMap<DecisionType, MlpPhaseModel> strongModels = new ConcurrentHashMap<>();
     private volatile double temperature;
 
     public NeuralPolicy() {
         double configured = Double.parseDouble(System.getProperty("ares.agent.temperature", "0"));
         String root = System.getProperty("ares.agent.models");
         if (root != null && !root.isBlank()) {
-            try (var dirs = Files.list(Path.of(root))) {
-                for (Path dir : dirs.filter(Files::isDirectory).toList()) {
-                    if (Files.exists(dir.resolve("model.json"))) {
-                        use(MlpPhaseModel.load(dir), configured);
-                    }
-                }
-            } catch (IOException e) {
-                throw new UncheckedIOException("Can not load the agent models from " + root, e);
-            }
+            loadInto(models, root, configured);
+        }
+        String strongRoot = System.getProperty("ares.agent.models2");
+        if (strongRoot != null && !strongRoot.isBlank()) {
+            loadInto(strongModels, strongRoot, configured);
         }
         String dir = System.getProperty("ares.agent.model");
         if (dir != null && !dir.isBlank()) {
@@ -48,17 +46,36 @@ public class NeuralPolicy {
         }
     }
 
-    public void use(MlpPhaseModel newModel, double newTemperature) {
-        String expected = schema(newModel.decisionType()).hash();
-        if (!expected.equals(newModel.schemaHash())) {
-            throw new IllegalStateException("The model was trained on data with the schema " + newModel.schemaHash()
-                    + " but the current encoder produces " + expected + ": the observation changed, the model must be trained again");
+    private void loadInto(ConcurrentHashMap<DecisionType, MlpPhaseModel> target, String root, double configured) {
+        try (var dirs = Files.list(Path.of(root))) {
+            for (Path dir : dirs.filter(Files::isDirectory).toList()) {
+                if (Files.exists(dir.resolve("model.json"))) {
+                    MlpPhaseModel model = MlpPhaseModel.load(dir);
+                    checkSchema(model);
+                    target.put(model.decisionType(), model);
+                    this.temperature = configured;
+                }
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException("Can not load the agent models from " + root, e);
         }
+    }
+
+    public void use(MlpPhaseModel newModel, double newTemperature) {
+        checkSchema(newModel);
         if (newTemperature < 0) {
             throw new IllegalArgumentException("temperature must not be negative");
         }
         this.temperature = newTemperature;
         this.models.put(newModel.decisionType(), newModel);
+    }
+
+    private static void checkSchema(MlpPhaseModel model) {
+        String expected = schema(model.decisionType()).hash();
+        if (!expected.equals(model.schemaHash())) {
+            throw new IllegalStateException("The model was trained on data with the schema " + model.schemaHash()
+                    + " but the current encoder produces " + expected + ": the observation changed, the model must be trained again");
+        }
     }
 
     public void clear() {
@@ -69,11 +86,23 @@ public class NeuralPolicy {
         return !models.isEmpty();
     }
 
+    public boolean hasStrongModel() {
+        return !strongModels.isEmpty();
+    }
+
     /**
      * @return the index of the chosen candidate, or -1 when there is no model for this decision
      */
     public int choose(Decision decision) {
-        MlpPhaseModel current = models.get(decision.type());
+        return choose(decision, false);
+    }
+
+    /**
+     * @param strongAnswer use the second model set ({@code ares.agent.models2}) when it has a model for this type
+     * @return the index of the chosen candidate, or -1 when there is no model for this decision
+     */
+    public int choose(Decision decision, boolean strongAnswer) {
+        MlpPhaseModel current = (strongAnswer && !strongModels.isEmpty() ? strongModels : models).get(decision.type());
         if (current == null) {
             AgentPerfStats.recordFallback();
             return -1;
@@ -85,7 +114,17 @@ public class NeuralPolicy {
         return chosen;
     }
 
-    private static DecisionFile.Schema schema(DecisionType type) {
+    /** Hash of every decision type's schema: the encoder's own view, for tooling (model conversion, audit). */
+    public static java.util.Map<String, String> schemaHashes() {
+        java.util.Map<String, String> result = new java.util.LinkedHashMap<>();
+        for (DecisionType type : DecisionType.values()) {
+            result.put(type.name(), schema(type).hash());
+        }
+        return result;
+    }
+
+    /** Package-private so tooling (e.g. {@link SyntheticModelFactory}) can build a model of the current encoder. */
+    static DecisionFile.Schema schema(DecisionType type) {
         return switch (type) {
             case PICK_PHASE -> PickPhaseDecisions.schema();
             case PICK_CORPORATION -> CorporationDecisions.schema();

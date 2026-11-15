@@ -41,7 +41,7 @@ public class DecisionLogs {
     private static final int WRITE_QUEUE_CAPACITY = 256;
     private static final Object STOP = new Object();
 
-    private record Pending(String playerUuid, Decision decision, int chosen, int round, int step) {
+    private record Pending(String playerUuid, Decision decision, int chosen, int round, int step, float[] scores) {
     }
 
     private static final class Buffer {
@@ -49,7 +49,7 @@ public class DecisionLogs {
         final Map<String, Integer> steps = new HashMap<>();
     }
 
-    private record EncodedGame(List<EncodedRow> rows) {
+    private record EncodedGame(List<EncodedRow> rows, List<String> rankings) {
     }
 
     private record EncodedRow(DecisionType type, int obsSize, int maxCandidates, int candidateFeatures,
@@ -76,6 +76,9 @@ public class DecisionLogs {
     private long gameIdBase;
     /** 0 = only manual {@link #rotate()}; self-play sets this so workers never wait on disk. */
     private int gamesPerChunk;
+    /** Open ranking sidecar of the current chunk (JSON lines), closed and renamed with the chunk. */
+    private java.io.BufferedWriter rankingWriter;
+    private Path rankingTmp;
     private int gamesInChunk;
     /** 0 = every decision; otherwise at most this many random decisions of one game per type are written. */
     private volatile int maxRowsPerGameType;
@@ -238,11 +241,18 @@ public class DecisionLogs {
 
     private void closeCurrentChunk() {
         try {
-            boolean any = !writers.isEmpty();
+            boolean any = !writers.isEmpty() || rankingWriter != null;
             for (var entry : writers.entrySet()) {
                 entry.getValue().close();
                 Path tmp = openFiles.get(entry.getKey());
                 Files.move(tmp, Path.of(tmp.toString().replaceAll("\\.tmp$", "")), StandardCopyOption.ATOMIC_MOVE);
+            }
+            if (rankingWriter != null) {
+                rankingWriter.close();
+                Path tmp = rankingTmp;
+                Files.move(tmp, Path.of(tmp.toString().replaceAll("\\.tmp$", "")), StandardCopyOption.ATOMIC_MOVE);
+                rankingWriter = null;
+                rankingTmp = null;
             }
             writers.clear();
             openFiles.clear();
@@ -256,14 +266,36 @@ public class DecisionLogs {
         }
     }
 
+    /** The search's ranking lines of one chunk, next to the binary chunks (see {@link SearchScores}). */
+    private void writeRankings(List<String> lines) {
+        if (lines.isEmpty() || directory == null) {
+            return;
+        }
+        try {
+            if (rankingWriter == null) {
+                Path tmp = directory.resolve("RANKING." + String.format("%06d", chunk) + ".jsonl.tmp");
+                rankingWriter = Files.newBufferedWriter(tmp, java.nio.charset.StandardCharsets.UTF_8);
+                rankingTmp = tmp;
+            }
+            for (String line : lines) {
+                rankingWriter.write(line);
+                rankingWriter.newLine();
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     public void record(MarsGame game, Player player, Decision decision, int chosen) {
         if (directory == null) {
             return;
         }
         Buffer buffer = pending.computeIfAbsent(game, g -> new Buffer());
+        // The search's opinion on this decision's candidates, if it had one (see SearchScores).
+        float[] scores = SearchScores.take(decision);
         synchronized (buffer) {
             int step = buffer.steps.merge(player.getUuid(), 1, Integer::sum) - 1;
-            buffer.list.add(new Pending(player.getUuid(), decision, chosen, game.getTurns(), step));
+            buffer.list.add(new Pending(player.getUuid(), decision, chosen, game.getTurns(), step, scores));
         }
     }
 
@@ -300,6 +332,7 @@ public class DecisionLogs {
         long gameId = gameIdBase + gameCounter.getAndIncrement();
         list = sampled(list, maxRowsPerGameType);
         List<EncodedRow> encoded = new ArrayList<>(list.size());
+        List<String> rankings = new ArrayList<>();
         for (Pending p : list) {
             Player me = game.getPlayerByUuid(p.playerUuid());
             int myPoints = points.get(me.getUuid());
@@ -319,8 +352,30 @@ public class DecisionLogs {
                     players.indexOf(me), me.getDifficulty().agentContext(), p.round(), outcome, myPoints - otherPoints, gameId, p.step());
             encoded.add(new EncodedRow(d.type(), schema.obsSize(), schema.maxCandidates(), schema.candidateFeatures(),
                     schema.observationLayout(), DecisionFile.encodeRow(schema, row)));
+            if (p.scores() != null && p.scores().length == ids.length) {
+                // One line per scored decision: the search's value for every candidate, joinable to the row by
+                // (game, step) once the whole chunk is read. JSON lines keep this separate from the binary format, so
+                // nothing downstream has to change to ignore it.
+                StringBuilder line = new StringBuilder(32 + ids.length * 18);
+                line.append("{\"game\":").append(gameId).append(",\"step\":").append(p.step())
+                        .append(",\"round\":").append(p.round()).append(",\"type\":\"").append(d.type())
+                        .append("\",\"chosen\":").append(p.chosen()).append(",\"ids\":[");
+                for (int i = 0; i < ids.length; i++) {
+                    line.append(i == 0 ? "" : ",").append(ids[i]);
+                }
+                line.append("],\"scores\":[");
+                for (int i = 0; i < p.scores().length; i++) {
+                    if (i > 0) {
+                        line.append(',');
+                    }
+                    // `scores` are milli-logits (the search's units); write logits.
+                    line.append(Math.round(p.scores()[i]) / 1000f);
+                }
+                line.append("]}");
+                rankings.add(line.toString());
+            }
         }
-        EncodedGame item = new EncodedGame(encoded);
+        EncodedGame item = new EncodedGame(encoded, rankings);
         try {
             while (!writeQueue.offer(item, 1, TimeUnit.SECONDS)) {
                 rethrowWriteFailure();
@@ -405,6 +460,7 @@ public class DecisionLogs {
                         writerFor(row).writeEncoded(row.bytes());
                         rowsWritten.incrementAndGet();
                     }
+                    writeRankings(game.rankings());
                     gamesInChunk++;
                     if (gamesPerChunk > 0 && gamesInChunk >= gamesPerChunk) {
                         closeCurrentChunk();

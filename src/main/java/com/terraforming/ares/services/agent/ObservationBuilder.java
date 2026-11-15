@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.BuildDto;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.Planet;
+import com.terraforming.ares.model.parameters.Ocean;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.cards.blue.FilterFeeders;
@@ -66,12 +68,48 @@ public class ObservationBuilder {
             GrainSilos.class, InvasiveIrrigation.class);
     public static final int CARDS_SIZE = 2 * TABLE_CARDS.size() + 2 * RESOURCE_CARDS.size() + HAND_CARDS.size();
 
+    /**
+     * Phase 4 can make ONE played card pay again, and 130 cards can do that — flagging them all would cost 260 columns
+     * for information that is only ever used as "what is the best single double payment available". So the state carries
+     * the maximum double payment per dimension instead (owner's design, 2026-11-14): the best MC a card can pay again,
+     * the best plants, heat, cards, TR and each income. It is computed by actually playing {@code payAgain} on a copy for
+     * the few such cards the player owns, so the dynamic ones ("this card pays 3 science") need no table.
+     */
+    static final List<String> DOUBLE_PAYMENT_DIMENSIONS = List.of(
+            "mc", "plants", "heat", "cards", "tr", "mc_income", "plants_income", "heat_income", "card_income",
+            "steel_income", "titanium_income");
+    public static final int DOUBLE_PAYMENT_SIZE = 2 * DOUBLE_PAYMENT_DIMENSIONS.size();
+
+    /**
+     * Terraforming can still be advanced in the CURRENT phase even when a global is already maxed: the engine checks
+     * `planetAtTheStartOfThePhase` (`TerraformingService.canIncreaseTemperature`), not the current planet. That is what
+     * makes "hold Livestock, dump 300 MC into temperature in phase 3, one animal per step" work - and without these four
+     * bits the state cannot tell "temperature is maxed and closed" from "temperature is maxed but this phase still pays
+     * TR and every onTemperatureChangedEffect". One bit per global, per game.
+     */
+    static final List<String> PHASE_START_DIMENSIONS = List.of("temperature", "oxygen", "infrastructure", "oceans");
+    public static final int PHASE_START_SIZE = PHASE_START_DIMENSIONS.size() + 2;
+
+    /**
+     * The ocean deck is a fixed multiset of rewards, shuffled over 9 slots. Once all nine are revealed, `revealOcean()`
+     * returns the LAST opened one (`lastOpenedOceanIndex`), so every further ocean purchase in that phase pays the same
+     * reward - a 13 MC ocean that pays back 4 MC is a 9 MC ocean, repeatedly. The state therefore carries the reward of
+     * the last opened ocean, the totals collected so far and how many are open; the positions themselves are a shuffle
+     * and carry no information.
+     */
+    static final List<String> OCEAN_DIMENSIONS = List.of("cards", "mc", "plants");
+    public static final int OCEAN_SIZE = 2 * OCEAN_DIMENSIONS.size() + 1;
+
     public static final String LAYOUT = "ObservationBuilder v3.1: V2 encoder (table 417 + hand 481) without 210 exact copies (observation/v3_mask.json)"
             + " + roundContext[revealed, currentPhase(5), sellFlag, picks me/opponent/dummy (15), builds me/opponent (8), extra blue activations (2),"
             + " luna office (2), project inspection (2), activated blue cards (2)]"
             + " + cards[on table me/opponent: MatterGenerator Sawmill FilterFeeders Pets (8), resources on FilterFeeders Pets me/opponent (4),"
             + " in my hand: BedrockWellbore ArchitectureBlueprints CityPlanning GrainSilos InvasiveIrrigation (5)]"
-            + " + extras[round/40, myPreviousPhase(5), opponentPreviousPhase(5), dummyPoolMembership(5), dummyPoolSize/5]";
+            + " + extras[round/40, myPreviousPhase(5), opponentPreviousPhase(5), dummyPoolMembership(5), dummyPoolSize/5]"
+            + " + doublePayment[best single phase-4 repeat per dimension, me/opponent (22): mc, plants, heat, cards, tr,"
+            + " and the six incomes /10]"
+            + " + rules[globals still advanceable this phase from planetAtTheStartOfThePhase (4: temperature, oxygen,"
+            + " infrastructure, oceans), special-design-last-turn me/opponent (2)]";
 
     private static final Set<StateType> PICKS_ARE_KNOWN = Set.of(StateType.BUILD_GREEN_PROJECTS, StateType.BUILD_BLUE_RED_PROJECTS,
             StateType.PERFORM_BLUE_ACTION, StateType.COLLECT_INCOME, StateType.DRAFT_CARDS, StateType.SELL_EXTRA_CARDS);
@@ -109,7 +147,7 @@ public class ObservationBuilder {
     }
 
     public static int size() {
-        return KEEP.length + CONTEXT_SIZE + CARDS_SIZE + EXTRAS_SIZE;
+        return KEEP.length + CONTEXT_SIZE + CARDS_SIZE + EXTRAS_SIZE + DOUBLE_PAYMENT_SIZE + PHASE_START_SIZE + OCEAN_SIZE;
     }
 
     public static List<String> names() {
@@ -149,6 +187,24 @@ public class ObservationBuilder {
         for (int phase = 1; phase <= PHASES; phase++) names.add("extra:opponent_previous_phase_" + phase);
         for (int phase = 1; phase <= PHASES; phase++) names.add("extra:dummy_pool_has_phase_" + phase);
         names.add("extra:dummy_pool_size/5");
+        for (String who : List.of("my", "opponent")) {
+            for (String dimension : DOUBLE_PAYMENT_DIMENSIONS) {
+                names.add("cards:" + who + "_max_double_payment_" + dimension + "/10");
+            }
+        }
+        for (String global : PHASE_START_DIMENSIONS) {
+            names.add("planet:open_at_phase_start_" + global);
+        }
+        for (String who : List.of("my", "opponent")) {
+            names.add("player:" + who + "_special_design_last_turn");
+        }
+        for (String dimension : OCEAN_DIMENSIONS) {
+            names.add("oceans:last_opened_" + dimension + "/10");
+        }
+        for (String dimension : OCEAN_DIMENSIONS) {
+            names.add("oceans:collected_" + dimension + "/40");
+        }
+        names.add("oceans:revealed/9");
         return names;
     }
 
@@ -207,11 +263,103 @@ public class ObservationBuilder {
             observation[pos++] = pool.contains(phase) ? 1f : 0f;
         }
         observation[pos++] = pool.isEmpty() ? 0f : pool.size() / (float) PHASES;
+        pos = doublePayment(observation, pos, game, player);
+        pos = doublePayment(observation, pos, game, opponent);
+        // One bit per global: "this could still be advanced when the phase started" (the engine's own rule).
+        Planet start = game.getPlanetAtTheStartOfThePhase();
+        observation[pos++] = start == null || !start.isTemperatureMax() ? 1f : 0f;
+        observation[pos++] = start == null || !start.isOxygenMax() ? 1f : 0f;
+        observation[pos++] = start == null || !start.isInfrastructureMax() ? 1f : 0f;
+        observation[pos++] = start == null || !start.allOceansRevealed() ? 1f : 0f;
+        // Rule predicate: a card with a "special design" built last turn may ignore global requirements this turn.
+        observation[pos++] = player.isBuiltSpecialDesignLastTurn() ? 1f : 0f;
+        observation[pos++] = opponent.isBuiltSpecialDesignLastTurn() ? 1f : 0f;
+        // Oceans: the reward of the last opened one (what every further purchase pays once all nine are open), the totals
+        // collected so far and how many are revealed. Positions are a shuffle and are not encoded.
+        Planet planet = game.getPlanet();
+        int revealed = 0;
+        int cards = 0;
+        int mc = 0;
+        int plants = 0;
+        for (Ocean ocean : planet.getOceans()) {
+            if (ocean.isRevealed()) {
+                revealed++;
+                cards += ocean.getCards();
+                mc += ocean.getMc();
+                plants += ocean.getPlants();
+            }
+        }
+        // NOT "the last one in the list": the engine pays the ocean it recorded in `lastOpenedOceanIndex`, and every
+        // further purchase after the ninth is exactly that one (`Planet.revealOcean`).
+        int lastIndex = planet.getLastOpenedOceanIndex();
+        Ocean last = lastIndex >= 0 && lastIndex < planet.getOceans().size() ? planet.getOceans().get(lastIndex) : null;
+        int lastCards = last == null ? 0 : last.getCards();
+        int lastMc = last == null ? 0 : last.getMc();
+        int lastPlants = last == null ? 0 : last.getPlants();
+        observation[pos++] = lastCards / 10f;
+        observation[pos++] = lastMc / 10f;
+        observation[pos++] = lastPlants / 10f;
+        observation[pos++] = cards / 40f;
+        observation[pos++] = mc / 40f;
+        observation[pos++] = plants / 40f;
+        observation[pos++] = revealed / 9f;
         if (pos != observation.length) {
             throw new IllegalStateException("The observation layout is inconsistent: wrote " + pos + " of " + observation.length);
         }
         AgentPerfStats.recordObservation(System.nanoTime() - started);
         return observation;
+    }
+
+    /**
+     * The best single double payment this player can get in phase 4, per dimension: for every played card that can pay
+     * again, the card's {@code payAgain} is applied to a copy of the position and the change of every counter is
+     * measured; the maximum per dimension is written. The number of such cards is a handful, so this costs a few
+     * microseconds and needs no static table of 130 cards - and cards whose payment depends on the state (steel, science,
+     * tags) are handled by construction.
+     */
+    private int doublePayment(float[] target, int pos, MarsGame game, Player player) {
+        int[] best = new int[DOUBLE_PAYMENT_DIMENSIONS.size()];
+        // ONE copy of the game for the whole observation: some cards (CallistoPenalMines, AutomatedFactories) draw from
+        // the deck inside payAgain, so they must not run on the live game - and copying the game per card made the
+        // observation 2.7x more expensive than without this feature. Cards that only touch the player get a player copy.
+        MarsGame host = null;
+        for (Integer id : player.getPlayed().getCards()) {
+            Card card = cardService.getCard(id);
+            if (card == null || !card.canPayAgain()) {
+                continue;
+            }
+            if (host == null) {
+                host = new MarsGame(game);
+            }
+            Player probe = new Player(player);
+            try {
+                card.payAgain(host, cardService, probe);
+            } catch (RuntimeException e) {
+                continue; // a card that cannot pay in this state simply contributes nothing
+            }
+            int[] delta = {
+                    probe.getMc() - player.getMc(),
+                    probe.getPlants() - player.getPlants(),
+                    probe.getHeat() - player.getHeat(),
+                    probe.getHand().size() - player.getHand().size(),
+                    probe.getTerraformingRating() - player.getTerraformingRating(),
+                    probe.getMcIncome() - player.getMcIncome(),
+                    probe.getPlantsIncome() - player.getPlantsIncome(),
+                    probe.getHeatIncome() - player.getHeatIncome(),
+                    probe.getCardIncome() - player.getCardIncome(),
+                    probe.getSteelIncome() - player.getSteelIncome(),
+                    probe.getTitaniumIncome() - player.getTitaniumIncome()
+            };
+            for (int i = 0; i < best.length; i++) {
+                if (delta[i] > best[i]) {
+                    best[i] = delta[i];
+                }
+            }
+        }
+        for (int value : best) {
+            target[pos++] = value / 10f;
+        }
+        return pos;
     }
 
     private int onTable(float[] target, int pos, Player player) {
