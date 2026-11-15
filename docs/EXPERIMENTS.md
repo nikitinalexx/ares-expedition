@@ -1112,3 +1112,157 @@ Both rules were measured: sanity 6/6 with no measurable cost (35.9% [33.8, 37.9]
   decision, so this was a crash waiting to happen);
 * the double-payment feature measures one card on a fresh copy per card; a shared copy let one card's `payAgain` change
   the payout another card was measured on.
+
+## Cards: the value is learnable, acting on it is not enough (2026-11-15)
+
+`ml/card_advantage.py` attributes each build the game's final margin *minus what the critic predicted at the decision*, so a
+strong position is already priced and what is left is the card. Over 8 000 recorded games and 40 000 builds:
+
+* the per-card advantage has a standard deviation of **1.8 points**, from +4.4 to -5.0 points for cards built at least 40
+  times;
+* it is **stable**: splitting the games in two halves and correlating the two rankings gives **+0.59**, and 67 of 102 cards
+  keep the sign of their advantage in both halves. The row-by-row advantage of the same data is noise; the card-level
+  average of it is not.
+
+Three ways of using it, measured on 2 000 games against SMART (all from `r15_parent`, 36.5%):
+
+| variant | vs SMART | cards on the table | printed points | scorecard total |
+|---|---|---|---|---|
+| baseline | 36.5% | 13.1 | 3.2 | 71.5 |
+| CE weights scaled by the card advantage (`--card-weights`, alpha 0.15) | 36.0% | 13.1 | 2.6 | 69.8 |
+| CE labels replaced by the best candidate by card advantage (`--relabel card-advantage`) | 36.9% | **15.7** | 3.3 | 70.0 |
+
+So acting on the learned card value raised the number of builds (13.1 -> 15.7) and changed nothing else: the extra cards
+are of the same average quality (0.21 printed points per card either way). The card *choice* is not the binding constraint
+of the score; the number of cards and the engine behind them is.
+
+### What the recorded games say about the score itself
+
+`ml/game_length.py`, 13 974 seats:
+
+* inside a game, the seat with more cards on the table won **3 197** games against **1 569** for the seat with fewer (1 208
+  draws): two thirds of the decisive games go to the bigger table;
+* the correlation of the final margin with the printed money production is **+0.47**, with the number of cards +0.25, with
+  the game length -0.12. Longer games do not favour anybody in particular: both seats score more (86 against 61 points),
+  the margin stays where it was.
+
+## 2026-11-15 — the search as an improvement operator (Stage A), and the latent plan
+
+**Stage A, resolved negative.** `--mode rollouttest --type BUILD_CARD`, 60 positions, against the deployed player
+(policy + 1-ply search + pairs). The honest design selects the candidate on one determinization of the hidden cards and
+evaluates it on another (`services/agent/Determinizer` is shared by the search and the audits):
+
+| | margin |
+|---|---|
+| the policy's choice | +8.3 |
+| the best of 4 by one rollout per candidate | +5.1 |
+| difference, out of sample | -3.3 plus/minus 6.5 (24 positions better with the rollout, 35 with the policy) |
+
+The in-sample version of the same test said **+12.3 plus/minus 8.1** - that was the winner's curse: the maximum of four
+estimates with a per-rollout noise of ~17 points is biased upward by more than the effect. Making a rollout informative
+needs 10-20 samples per candidate (~40 s per decision, ~8 min per game), which does not scale to the thousands of games
+training needs. Conclusion: at this compute a rollout is not an improvement operator; the search stays at 1-ply + pairs and
+further search growth is out of scope.
+
+**The latent plan (z).** The audits can only judge plans somebody names, and the names came from the owner. The mechanism
+that generates diversity instead of listing it: four private bits per player (`Player.planCode`,
+`services/agent/PlanCodes`), assigned randomly per computer seat at game creation, in the observation, switched into the
+generator's exploration profile while recording data. Measured with the new instrument `ml/plan_report.py`:
+
+| run | build spread per code | blue actions per code | phases |
+|---|---|---|---|
+| `r22_plan`, codes assigned, nudges OFF (control, 400 games) | 7.7-9.0 (spread 1.4 = noise) | 0.1-0.5 | 49% income / 51% draft for every code, chi2 = 0 |
+| generator with nudges ON (1 000 games) | 8.3-14.0 | 0.7-8.5 | 49/51 - no phase nudge at that point |
+
+The control is the important half: with the weights on the four bits at zero and the nudges off there is **no divergence**,
+so a divergence after training can only come from what the policy learned.
+
+**Two bugs the instrument found before any training run:**
+1. the phase nudge bypassed `choose()`, which is where `PICK_PHASE` rows are recorded, so every game of a bit-8 code was
+   recorded without a single phase decision (the trainer could not have learned the style, and `plan_report` showed those
+   codes as having no phases at all);
+2. the first phase nudge was unconditional ("always 1, else 2"), which starved the economy - the income phase then depended
+   on the dummy - and measured 0.30-0.42 win rate for bit-8 codes: the data would have encoded "build phases are terrible"
+   when what it actually encoded was "call a build phase with an empty hand". The nudge is now conditional on holding a
+   green card (phase 1) or a blue/red one (phase 2).
+
+### What the built-in bots call (new instrument: `--mode phasedist`)
+
+The recorded data contains agent decisions only, so "what does NETWORK call?" had to be measured in the engine. Every
+phase decision of every difficulty passes through `AiPickPhaseTurn`; `services/PhaseCensus` counts them when
+`--mode phasedist` turns it on (off by default, one volatile read per decision when off). 300 games NETWORK vs RANDOM,
+100 games NETWORK vs NETWORK, 100 SMART vs SMART:
+
+| player | phase 1 | 2 | 3 | 4 | 5 | picks per seat per game |
+|---|---|---|---|---|---|---|
+| NETWORK (vs RANDOM) | **34%** | **39%** | 4% | **2%** | 20% | 30.1 |
+| NETWORK (mirror) | 31% | 37% | 7% | 3% | 22% | 29.9 |
+| SMART (mirror) | 29% | 31% | 6% | 9% | 26% | 29.5 |
+| RANDOM (vs NETWORK) | 21% | 18% | 20% | 11% | 31% | 30.1 |
+| **AGENT (r22_plan)** | **0%** | **0%** | **0%** | **49%** | **51%** | 32.9 |
+
+So the benchmark that beats us calls a **build phase in ~73% of the rounds and the income phase in 2%**, and it alternates
+them (`2>1` 7.6 and `1>2` 6.6 times per game), i.e. it spends the pick on the phases that hand out build slots. Our player
+does the exact opposite: income or draft every round, a build phase never.
+
+That is not a claim that "calling phase 1 is worth 34 points" - the engine numbers are the same for both seats, and the
+pick is only the bonus the picker gets. It is evidence that the phase axis is unexplored by our policy and explored by the
+benchmark: the policy was trained on data in which phases 1/2 never appear, so no value function trained on those games
+can price them (section 3 of PLAN.md). It is also the first target of the latent plan's coverage nudge (bit 8).
+
+## 2026-11-15 — "V as the player" measured on every decision type: it does not work, and why
+
+The owner's benchmark is a learned value *inside* a hand-written decision skeleton. The rule of this repository forbids the
+skeleton, so the honest question was: can the learned value alone be the player? Four configs, 1 000 games against SMART
+each (`v_rand_*` are critics trained on 20 000 games of uniform random play - broad coverage, allowed environment):
+
+| config | vs SMART |
+|---|---|
+| policy only, no search | **35.6%** |
+| V decides everything (`fullTypes` on all menus), V from random play (margin / outcome) | 0.4% / 0.6% |
+| V decides everything, the deployed critic `v_r15_plan` | 0.1% |
+| V only re-ranks inside all menus (deployed policy keeps act-vs-stop) | 5.8% / 0.85% |
+
+Two structural reasons, both visible in the code rather than inferred from the numbers:
+
+1. **Act-vs-stop through a state value is biased against spending.** A build costs money now and pays ten rounds later, so
+   `V(after build) < V(before)` for *any* expensive action. The measured behaviour: 759 of 768 build opportunities declined,
+   **0.45 cards per game** (the reference player builds 12.5). The critic is not wrong; the comparison is. This also explains
+   the earlier "extending the search to blue/standard menus cost 13 points".
+2. **A phase pick's afterstate is not a projection of the phase.** `applyPhaseChoice` applies the pick and the state
+   transfer, so the candidate states differ in *which phase the round starts with* and in the one-hot of "my previous
+   phase" - a feature that in training means "last round I picked X". Nothing in the afterstate contains the income that
+   phase 4 would pay, the cards phase 5 would show, or the discount phase 1 would give. Comparing candidates through that
+   quantity is comparing noise, which is why every earlier phase search collapsed (0.3-3.8%).
+
+So "value decides" is not an operator on its own: it needs either a projection of the action's *delayed* effect (what
+NETWORK does with `projectPlayPhase4/5`, `AiThirdPhaseProjectionService`) or a Q that has seen the action's consequences.
+The second is testable at our scale: critic trained on games with *broad action coverage* (build/draft/standard/phase
+exploration), then act-vs-stop from that critic - so that "built and won" states are inside the training distribution
+instead of only "declined and won".
+
+## 2026-11-15 — the second build slot: a resource the player never holds (owner's observation)
+
+In phases 1/2 every player builds once and the player who picked the phase builds **twice** (plus a discount), and the
+agent's pass is `skipTurn`, which ends the whole chain for that player: declining the first opportunity forfeits the second
+one too. New instrument `ml/slot_report.py` groups the recorded `BUILD_CARD` rows by the number of slots the position
+reports (`ctx:my_green_builds + ctx:my_blue_red_builds`):
+
+| data | slots | rows | share of rows | acceptance |
+|---|---|---|---|---|
+| `plan_ctrl` (policy play, 6 000 games) | 1 | 149 040 | 99.4% | 0.635 |
+| | 2 | **932** | **0.6%** | 0.895 |
+| `mix2` (mixed exploration, 20 000 games) | 1 | 147 772 | 92.4% | 0.635 |
+| | 2 | 12 186 | 7.6% | 0.452 |
+
+So the policy does distinguish the states (89.5% acceptance when only that state is seen) but it **almost never experiences
+them**: our player picks phase 1/2 in 0% of the rounds (see the phase census above), so it never gets the picker's extra
+build, and the two-slot state is 0.6% of its data. That is a *coverage* explanation for a large part of the card deficit
+(12.5 cards per game against 27 for SMART, -9.3 points of score), and it is the same explanation as the phase census: the
+data the policy learns from does not contain the resource.
+
+Two consequences:
+1. the exploration data (7.6% two-slot rows) is where a critic can learn what a second build is worth, and `v_mix2_margin`
+   - trained on it - is the first critic that improved the player (38.5% +/- 0.6, against 37.8% +/- 2 for the old one);
+2. the *policy* cannot learn it from its own games, so either the data generator has to produce build-phase play (the
+   latent-plan nudge does exactly that) or the decision has to move to a quantity that sees the value (the critic).

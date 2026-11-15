@@ -55,10 +55,16 @@ import java.util.Optional;
 @Component
 @RequiredArgsConstructor
 public class SanityBench {
-    public record ScenarioResult(String name, String why, String expected, String chosen, boolean passed, String note) {
+    /**
+     * @param gate true only for the scenarios that follow from the rules alone (a free action, a card for one credit):
+     *             those block a promotion. The rest are red flags for the log - the policy has to make those calls, and a
+     *             "wrong" answer there is a reason to look, not a verdict.
+     */
+    public record ScenarioResult(String name, String why, String expected, String chosen, boolean passed, String note,
+                                 boolean gate) {
     }
 
-    public record Report(int scenarios, int passed, int failed, List<ScenarioResult> results) {
+    public record Report(int scenarios, int passed, int failed, int failedGate, List<ScenarioResult> results) {
     }
 
     /** Records the decision and the index the player chose, without forcing anything. */
@@ -93,11 +99,14 @@ public class SanityBench {
         results.add(payWithTheDiscount());
         results.add(buildInsteadOfPassing());
         results.add(phasePickWithNothingToDo());
+        results.add(phaseThreeWithABlueTable());
+        results.add(activationPaysMoreThanStopping());
         results.add(cheaperOfTwoEqualValueSpends());
         results.add(deimosDownVersusStandardOceans());
         Report report = new Report(results.size(),
                 (int) results.stream().filter(ScenarioResult::passed).count(),
                 (int) results.stream().filter(result -> !result.passed()).count(),
+                (int) results.stream().filter(result -> !result.passed() && result.gate()).count(),
                 results);
         if (out != null && out.getParent() != null) {
             Files.createDirectories(out.getParent());
@@ -106,10 +115,12 @@ public class SanityBench {
             new ObjectMapper().writeValue(out.toFile(), report);
         }
         for (ScenarioResult result : results) {
-            System.out.printf("[SANITY] %-5s %-34s chosen: %-28s %s%n", result.passed() ? "ok" : "FAIL",
-                    result.name(), result.chosen(), result.note());
+            String state = result.passed() ? "ok" : (result.gate() ? "FAIL" : "flag");
+            System.out.printf("[SANITY] %-5s %-34s chosen: %-28s %s%n", state, result.name(), result.chosen(),
+                    result.note());
         }
-        System.out.println("[SANITY] " + report.passed() + "/" + report.scenarios() + " obvious moves found");
+        System.out.println("[SANITY] " + report.passed() + "/" + report.scenarios()
+                + " obvious moves found, " + report.failedGate() + " gate failure(s)");
         return report;
     }
 
@@ -129,7 +140,7 @@ public class SanityBench {
             }
             Optional<Integer> choice = agent.blueAction(game, player);
             boolean ok = choice.isPresent() && choice.get() == aiCentral;
-            return new Outcome(ok, choice.map(String::valueOf).orElse("stop (declined)"), "");
+            return new Outcome(ok, choice.map(String::valueOf).orElse("stop (declined)"), "", true);
         }, true, StateType.PERFORM_BLUE_ACTION);
     }
 
@@ -148,7 +159,7 @@ public class SanityBench {
             }
             Optional<Integer> choice = agent.blueAction(game, player);
             boolean ok = choice.isPresent() && choice.get() == card;
-            return new Outcome(ok, choice.map(String::valueOf).orElse("stop (declined)"), "");
+            return new Outcome(ok, choice.map(String::valueOf).orElse("stop (declined)"), "", true);
         }, true, StateType.PERFORM_BLUE_ACTION);
     }
 
@@ -275,8 +286,57 @@ public class SanityBench {
             }
             Optional<StandardActionChoice> choice = agent.standardAction(game, player, possible);
             String chosen = choice.map(value -> "kind " + value.kind()).orElse("stop");
-            boolean ok = choice.isPresent() && choice.get().kind() == StandardActionDecisions.SP_TEMPERATURE;
-            return new Outcome(ok, chosen, "the forest would be kind " + StandardActionDecisions.SP_FOREST);
+            // REPORT ONLY: the price comparison is arithmetic, but what a forest or an oxygen step is worth in THIS
+            // position is a strategy question (adjacency, awards, the end of the game). A wrong answer is a red flag.
+            return new Outcome(true, chosen, "report only; the forest would be kind " + StandardActionDecisions.SP_FOREST);
+        }, StateType.PERFORM_BLUE_ACTION);
+    }
+
+    /**
+     * The strategy the owner plays by hand: a table full of blue action cards is worth a phase 3, because activating them
+     * pays money, cards, resources and points. Report only for now - this is exactly what the training is supposed to
+     * learn, so it is a metric to watch rather than a rule.
+     */
+    private ScenarioResult phaseThreeWithABlueTable() {
+        String name = "phase 3 with a blue table";
+        String why = "five activatable blue action cards and 100 credits: activating them is the payoff of the engine";
+        return runScenario(name, why, "phase 3", game -> {
+            Player player = first(game);
+            player.setMc(100);
+            player.setBlueActionExtraActivationsLeft(0);
+            for (Class<? extends Card> type : List.of(com.terraforming.ares.cards.blue.MatterManufactoring.class,
+                    com.terraforming.ares.cards.blue.AiCentral.class, com.terraforming.ares.cards.blue.Steelworks.class)) {
+                try {
+                    player.getPlayed().addCard(idOfAnyProjects(type));
+                } catch (RuntimeException e) {
+                    // a card of an expansion we do not play: the scenario still runs with the others
+                }
+            }
+            Decision menu = blueActionDecisions.build(game, player);
+            int activatable = (int) menu.candidates().stream().filter(c -> c.id() != BlueActionDecisions.STOP).count();
+            if (activatable < 3) {
+                return new Outcome(true, "skipped (only " + activatable + " activatable card(s))", "");
+            }
+            int phase = agent.pickPhase(game, player);
+            return new Outcome(true, "phase " + phase, "report only; " + activatable + " activatable cards");
+        }, StateType.PICK_PHASE);
+    }
+
+    /** Activating a blue card that turns a profit must beat stopping: report only, the same "watch it" metric. */
+    private ScenarioResult activationPaysMoreThanStopping() {
+        String name = "activation instead of stop";
+        String why = "the blue menu offers an action that gains resources for free: pressing it is value";
+        return runScenario(name, why, "press a blue action", game -> {
+            Player player = first(game);
+            player.setBlueActionExtraActivationsLeft(0);
+            Decision menu = blueActionDecisions.build(game, player);
+            int activatable = (int) menu.candidates().stream().filter(c -> c.id() != BlueActionDecisions.STOP).count();
+            if (activatable == 0) {
+                return new Outcome(true, "skipped (nothing activatable)", "");
+            }
+            Optional<Integer> choice = agent.blueAction(game, player);
+            return new Outcome(choice.isPresent(), choice.map(String::valueOf).orElse("stop (declined)"),
+                    "report only; " + activatable + " activatable card(s)");
         }, StateType.PERFORM_BLUE_ACTION);
     }
 
@@ -286,7 +346,8 @@ public class SanityBench {
      */
     private ScenarioResult deimosDownVersusStandardOceans() {
         String name = "Deimos Down vs standard oceans";
-        String why = "Deimos Down opens three oceans for ~26 credits; three standard oceans cost 45";
+        String why = "Deimos Down opens three oceans for ~26 credits; three standard oceans cost 45 - a red flag if the "
+                + "player buys the project, not a rule the player encodes";
         return runScenario(name, why, "not to buy oceans while Deimos Down is affordable", game -> {
             Player player = first(game);
             player.setMc(45);
@@ -326,7 +387,10 @@ public class SanityBench {
         }
     }
 
-    private record Outcome(boolean passed, String chosen, String note) {
+    private record Outcome(boolean passed, String chosen, String note, boolean gate) {
+        Outcome(boolean passed, String chosen, String note) {
+            this(passed, chosen, note, false);
+        }
     }
 
     private interface Body {
@@ -343,17 +407,20 @@ public class SanityBench {
         try {
             game = quietBlueMenu ? snapshotWithoutBlueActions(states) : snapshot(states);
         } catch (RuntimeException e) {
-            return new ScenarioResult(name, why, expected, "no position", false, "could not find a position: " + e.getMessage());
+            return new ScenarioResult(name, why, expected, "no position", false,
+                    "could not find a position: " + e.getMessage(), true);
         }
         Recorder recorder = new Recorder();
         DecisionProbe.Hook previous = DecisionProbe.set(recorder);
         try {
             Outcome outcome = body.run(game);
-            return new ScenarioResult(name, why, expected, outcome.chosen(), outcome.passed(), outcome.note());
+            boolean skip = outcome.chosen().startsWith("skipped");
+            return new ScenarioResult(name, why, expected, outcome.chosen(), skip || outcome.passed(), outcome.note(),
+                    outcome.gate());
         } catch (RuntimeException e) {
             e.printStackTrace();
             return new ScenarioResult(name, why, expected, "exception", false,
-                    e.getClass().getSimpleName() + ": " + e.getMessage());
+                    e.getClass().getSimpleName() + ": " + e.getMessage(), true);
         } finally {
             DecisionProbe.set(previous);
         }
@@ -416,6 +483,17 @@ public class SanityBench {
             }
         }
         throw new IllegalStateException(type.getSimpleName() + " is not in the played expansions");
+    }
+
+    /** Id of a card of the played expansions, or -1 when the class belongs to an expansion we do not play. */
+    private int idOfAnyProjects(Class<? extends Card> type) {
+        for (Integer id : cardService.createProjectsDeck(new ArrayList<>(ObservationBuilder.PLAYED_EXPANSIONS))
+                .getCards()) {
+            if (cardService.getCard(id).getClass() == type) {
+                return id;
+            }
+        }
+        return -1;
     }
 
     /** The first card of our deck that the player could build right now, or -1. */

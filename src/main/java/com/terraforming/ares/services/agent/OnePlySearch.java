@@ -99,6 +99,13 @@ public class OnePlySearch {
      * candidate collect its own payoff before the leaf value is read.
      */
     private final boolean phasePlayout;
+    /**
+     * {@code -Dares.agent.search.horizonStop=true}: score the "stop" candidate over the same horizon as the candidates
+     * that act. A one-step comparison is structurally biased - an expensive action lowers V immediately (money out,
+     * nothing in yet) and pays ten rounds later. Measured: 0.45 cards per game and a 1.2% build acceptance. With both
+     * sides playing {@code horizon} turns of the policy before V is read, the delayed payoff is inside the window.
+     */
+    private final boolean horizonStop;
     private final int debug;
     private final ThreadLocal<float[]> lastAfterstate = new ThreadLocal<>();
     /** Re-entrancy guard: the build of a candidate asks the policy for its inner decisions, never the search. */
@@ -147,6 +154,8 @@ public class OnePlySearch {
         int configuredSamples = Math.max(1, Integer.parseInt(System.getProperty("ares.agent.search.samples", "1")));
         boolean configuredPhasePlayout =
                 Boolean.parseBoolean(System.getProperty("ares.agent.search.phasePlayout", "false"));
+        boolean configuredHorizonStop =
+                Boolean.parseBoolean(System.getProperty("ares.agent.search.horizonStop", "false"));
         if (!mode.equals("oneply") || spec.isEmpty()) {
             this.models = List.of();
             this.phaseModels = List.of();
@@ -159,6 +168,7 @@ public class OnePlySearch {
             this.horizonTurns = 0;
             this.samples = 1;
             this.phasePlayout = false;
+            this.horizonStop = false;
             return;
         }
         this.debug = configuredDebug;
@@ -170,6 +180,7 @@ public class OnePlySearch {
         this.horizonTurns = Math.max(0, configuredHorizon);
         this.samples = configuredSamples;
         this.phasePlayout = configuredPhasePlayout;
+        this.horizonStop = configuredHorizonStop;
         this.models = loadNets(spec);
         String phaseSpec = System.getProperty("ares.agent.valueModel.phase", "").trim();
         this.phaseModels = phaseSpec.isEmpty() ? List.of() : loadNets(phaseSpec);
@@ -292,8 +303,15 @@ public class OnePlySearch {
         // already carries. Everything else is built on a copy and scored by V(afterstate).
         float[] stopObs = decision.observation();
         float[] scores = new float[options.size()];
-        float bestOfStop = logit(stopObs);
         long seed = ThreadLocalRandom.current().nextLong();
+        float bestOfStop = logit(stopObs);
+        if (horizonTurns > 0 && horizonStop) {
+            // Same horizon, same determinizations, no action applied: the honest counterfactual of "do nothing now".
+            float h = horizonScore(new MarsGame(game), player, seed);
+            if (!Float.isNaN(h)) {
+                bestOfStop = h;
+            }
+        }
         int best = -1;
         float bestScore = Float.NEGATIVE_INFINITY;
         int failed = 0;
@@ -522,7 +540,7 @@ public class OnePlySearch {
             // Common random numbers: the seed depends on the decision and the sample index, never on the candidate, so
             // every candidate is judged on the SAME determinization. Without it the comparison is dominated by which
             // hidden cards the sample happened to deal, not by the card being scored.
-            determinize(sim, uuid, seed + k);
+            Determinizer.shuffle(sim, uuid, seed + k);
             float leaf = playout(sim, uuid);
             if (!Float.isNaN(leaf)) {
                 sum += leaf;
@@ -548,7 +566,7 @@ public class OnePlySearch {
         int ok = 0;
         for (int k = 0; k < samples; k++) {
             MarsGame sim = k == 0 ? copy : new MarsGame(copy);
-            determinize(sim, uuid, seed + k);
+            Determinizer.shuffle(sim, uuid, seed + k);
             float leaf = playRound(sim, uuid);
             if (!Float.isNaN(leaf)) {
                 sum += leaf;
@@ -612,40 +630,6 @@ public class OnePlySearch {
      * mine, the played and discarded cards stay where they are - only the assignment of the unseen cards is randomized,
      * which is exactly the information a fair player does not have.
      */
-    private void determinize(MarsGame game, String myUuid, long seed) {
-        Player me = game.getPlayerByUuid(myUuid);
-        Player other = otherPlayer(game, me);
-        if (other == null) {
-            return;
-        }
-        List<List<Integer>> slots = new ArrayList<>();
-        slots.add(other.getHand().getCards());
-        slots.add(other.getCorporations().getCards());
-        slots.add(game.getProjectsDeck().getCards());
-        if (game.getCorporationsDeck() != null) {
-            slots.add(game.getCorporationsDeck().getCards());
-        }
-        int total = 0;
-        for (List<Integer> slot : slots) {
-            total += slot.size();
-        }
-        if (total < 2) {
-            return;
-        }
-        List<Integer> pool = new ArrayList<>(total);
-        for (List<Integer> slot : slots) {
-            pool.addAll(slot);
-        }
-        Collections.shuffle(pool, new java.util.Random(seed));
-        int offset = 0;
-        for (List<Integer> slot : slots) {
-            int size = slot.size();
-            slot.clear();
-            slot.addAll(pool.subList(offset, offset + size));
-            offset += size;
-        }
-    }
-
     /**
      * V of a position, symmetric when configured: my own reading and the opponent's mirror of the same public state. The
      * opponent's observation carries no hidden information, so this is a fair, less noisy estimate of the position.

@@ -1,0 +1,132 @@
+{
+  "low_priority": false,
+  "storage": {
+    "run_root": "D:/ares/runs",
+    "data_root": "D:/ares/data",
+    "temp_root": "D:/ares/tmp",
+    "stage_root": "C:/ares/stage",
+    "reserves": [
+      {
+        "path": "C:/",
+        "gb": 30
+      },
+      {
+        "path": "D:/",
+        "gb": 30
+      }
+    ],
+    "data_budget_gb": 150,
+    "keep_data_iterations": 1,
+    "delete_data_of_other_runs": false
+  },
+  "java": {
+    "bin": "auto",
+    "xmx": "10g",
+    "threads": 0
+  },
+  "selfplay": {
+    "games_per_chunk": 1000,
+    "stage_max_seconds": 5400,
+    "temperature": 0,
+    "max_rows_per_game_type": 8,
+    "jvm_args": [
+      "-Dares.agent.search=oneply",
+      "-Dares.agent.search.symmetric=true",
+      "-Dares.agent.search.pairs=true",
+      "-Dares.agent.search.types=BUILD_CARD,DRAFT_CARDS",
+      "-Dares.agent.valueModel=D:/ares/runs/value/v_r15_outcome",
+      "-Dares.agent.preferIncome=true"
+    ]
+  },
+  "eval": {
+    "games": 3000,
+    "references": [
+      "RANDOM",
+      "SMART"
+    ],
+    "agent": "AGENT",
+    "concurrency": 32,
+    "timeout_seconds": 3600,
+    "bias_alarm_gap": 0.15,
+    "jvm_args": [
+      "-Dares.agent.search=oneply",
+      "-Dares.agent.search.symmetric=true",
+      "-Dares.agent.search.pairs=true",
+      "-Dares.agent.search.types=BUILD_CARD,DRAFT_CARDS",
+      "-Dares.agent.valueModel=D:/ares/runs/value/v_r15_outcome"
+    ]
+  },
+  "benchmark": {
+    "references": [
+      "NETWORK"
+    ],
+    "games": 100,
+    "concurrency": 16,
+    "timeout_seconds": 3600,
+    "gate_refs": [
+      "RANDOM",
+      "SMART"
+    ],
+    "min_win_rate": 0.5,
+    "jvm_args": [
+      "-Dares.agent.search=oneply",
+      "-Dares.agent.search.symmetric=true",
+      "-Dares.agent.search.pairs=true",
+      "-Dares.agent.search.types=BUILD_CARD,DRAFT_CARDS",
+      "-Dares.agent.valueModel=D:/ares/runs/value/v_r15_outcome"
+    ]
+  },
+  "rungs": [
+    {
+      "fraction": 1.0,
+      "keep": 2,
+      "games_factor": 1.0
+    }
+  ],
+  "plateau_patience": 10,
+  "plateau_min_iterations": 3,
+  "experiments": [
+    {
+      "name": "income",
+      "hypothesis": "The paired-plan audit measured causally that forcing 'build cards that pay income' for eight turns is worth +1.7 +/- 1.4 points, while forcing 'press every blue action' is worth -1.2 +/- 1.2: the plan that pays for this player is the economy, not the blue actions. Training the build head on games generated with that plan moved the player from 36.5% to 37.8% against SMART (2000 games), i.e. the causal effect transfers. This night keeps the plan in the generator (so every iteration's data contains income builds, with their outcomes) and lets PPO move the whole policy from there: the plan is a validated teacher made of the game itself, not of anybody's heuristics.",
+      "games_per_iteration": 20000,
+      "matchups": "AGENT:AGENT:0.85,AGENT:RANDOM:0.15",
+      "max_rows_per_game_type": 8,
+      "train_args": []
+    }
+  ],
+  "train": {
+    "command": [
+      "{python}",
+      "ml/train_policy_ppo.py",
+      "--data",
+      "{data}",
+      "--out",
+      "{model_dir}",
+      "--prev",
+      "{prev_model}",
+      "--adv-value-model",
+      "D:/ares/runs/value/v_r15_outcome",
+      "--epochs",
+      "3",
+      "--clip",
+      "0.2",
+      "--entropy",
+      "0.01",
+      "--lr",
+      "1e-4",
+      "--rows-per-game",
+      "8",
+      "--max-chunks-per-type",
+      "12"
+    ],
+    "timeout_seconds": 14400
+  },
+  "maven": {
+    "command": "mvn",
+    "args": [
+      "-s",
+      ".mvn/settings.xml"
+    ]
+  }
+}

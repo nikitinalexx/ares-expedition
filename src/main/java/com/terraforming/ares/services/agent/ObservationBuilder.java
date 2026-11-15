@@ -126,6 +126,9 @@ public class ObservationBuilder {
     static final List<String> OCEAN_DIMENSIONS = List.of("cards", "mc", "plants");
     public static final int OCEAN_SIZE = 2 * OCEAN_DIMENSIONS.size() + 1;
 
+    /** The latent plan of this player, one bit per code bit: private, so {@link #buildPublic} zeroes it. */
+    public static final int PLAN_SIZE = PlanCodes.BITS;
+
     public static final String LAYOUT = "ObservationBuilder v3.1: V2 encoder (table 417 + hand 481) without 210 exact copies (observation/v3_mask.json)"
             + " + roundContext[revealed, currentPhase(5), sellFlag, picks me/opponent/dummy (15), builds me/opponent (8), extra blue activations (2),"
             + " luna office (2), project inspection (2), activated blue cards (2)]"
@@ -206,7 +209,7 @@ public class ObservationBuilder {
 
     public static int size() {
         return KEEP.length + CONTEXT_SIZE + CARDS_SIZE + SCORE_SIZE + EXTRAS_SIZE + DOUBLE_PAYMENT_SIZE
-                + PHASE_START_SIZE + OCEAN_SIZE;
+                + PHASE_START_SIZE + OCEAN_SIZE + PLAN_SIZE;
     }
 
     /**
@@ -312,6 +315,9 @@ public class ObservationBuilder {
             names.add("oceans:collected_" + dimension + "/40");
         }
         names.add("oceans:revealed/9");
+        for (int bit = 0; bit < PLAN_SIZE; bit++) {
+            names.add("plan:my_code_bit_" + bit);
+        }
         return names;
     }
 
@@ -424,6 +430,11 @@ public class ObservationBuilder {
         observation[pos++] = mc / 40f;
         observation[pos++] = plants / 40f;
         observation[pos++] = revealed / 9f;
+        // The latent plan: private (the opponent's code is not public information).
+        int code = PlanCodes.code(player);
+        for (int bit = 0; bit < PLAN_SIZE; bit++) {
+            observation[pos++] = (code >> bit & 1) == 1 ? 1f : 0f;
+        }
         if (pos != observation.length) {
             throw new IllegalStateException("The observation layout is inconsistent: wrote " + pos + " of " + observation.length);
         }
@@ -432,6 +443,10 @@ public class ObservationBuilder {
                 if (FROM_HAND[i]) {
                     observation[i] = 0f;
                 }
+            }
+            // the latent plan is private as well
+            for (int i = observation.length - PLAN_SIZE; i < observation.length; i++) {
+                observation[i] = 0f;
             }
         }
         AgentPerfStats.recordObservation(System.nanoTime() - started);

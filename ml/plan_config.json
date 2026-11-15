@@ -1,0 +1,135 @@
+{
+  "low_priority": false,
+  "storage": {
+    "run_root": "D:/ares/runs",
+    "data_root": "D:/ares/data",
+    "temp_root": "D:/ares/tmp",
+    "stage_root": "C:/ares/stage",
+    "reserves": [
+      {
+        "path": "C:/",
+        "gb": 30
+      },
+      {
+        "path": "D:/",
+        "gb": 30
+      }
+    ],
+    "data_budget_gb": 150,
+    "keep_data_iterations": 1,
+    "delete_data_of_other_runs": false
+  },
+  "java": {
+    "bin": "auto",
+    "xmx": "10g",
+    "threads": 0
+  },
+  "selfplay": {
+    "games_per_chunk": 1000,
+    "stage_max_seconds": 5400,
+    "temperature": 0,
+    "max_rows_per_game_type": 8,
+    "jvm_args": [
+      "-Dares.agent.search=oneply",
+      "-Dares.agent.search.symmetric=true",
+      "-Dares.agent.search.pairs=true",
+      "-Dares.agent.search.types=BUILD_CARD,DRAFT_CARDS",
+      "-Dares.agent.valueModel=D:/ares/runs/value/v_r15_plan",
+      "-Dares.agent.planRandom=true",
+      "-Dares.agent.planNudges=true"
+    ]
+  },
+  "eval": {
+    "games": 3000,
+    "references": [
+      "RANDOM",
+      "SMART"
+    ],
+    "agent": "AGENT",
+    "concurrency": 32,
+    "timeout_seconds": 3600,
+    "bias_alarm_gap": 0.15,
+    "jvm_args": [
+      "-Dares.agent.search=oneply",
+      "-Dares.agent.search.symmetric=true",
+      "-Dares.agent.search.pairs=true",
+      "-Dares.agent.search.types=BUILD_CARD,DRAFT_CARDS",
+      "-Dares.agent.valueModel=D:/ares/runs/value/v_r15_plan",
+      "-Dares.agent.planCode=0"
+    ]
+  },
+  "benchmark": {
+    "references": [
+      "NETWORK"
+    ],
+    "games": 100,
+    "concurrency": 16,
+    "timeout_seconds": 3600,
+    "gate_refs": [
+      "RANDOM",
+      "SMART"
+    ],
+    "min_win_rate": 0.5,
+    "jvm_args": [
+      "-Dares.agent.search=oneply",
+      "-Dares.agent.search.symmetric=true",
+      "-Dares.agent.search.pairs=true",
+      "-Dares.agent.search.types=BUILD_CARD,DRAFT_CARDS",
+      "-Dares.agent.valueModel=D:/ares/runs/value/v_r15_plan",
+      "-Dares.agent.planCode=0"
+    ]
+  },
+  "rungs": [
+    {
+      "fraction": 1.0,
+      "keep": 2,
+      "games_factor": 1.0
+    }
+  ],
+  "plateau_patience": 10,
+  "plateau_min_iterations": 3,
+  "experiments": [
+    {
+      "name": "plan",
+      "hypothesis": "The player picks phase 4 or 5 in 100% of the rounds and builds a fixed kind of card: its policy has a fixed point, and no recorded game can say what a different style is worth (the earlier forcing experiments ran the SAME policy inside a plan it did not understand, so they measured the executor, not the plan). This night gives the generator a latent plan code - four private bits in the observation, a random code per computer seat per game - that switch the exploration profile while generating data (prefer income cards, prefer non-green builds, press blue actions, prefer the build phases). The policy can then condition its whole style on the code, the outcomes decide which codes win, and a style that nobody named can emerge. The falsifier is measured by ml/plan_report.py on a play run with codes assigned but nudges OFF: if the codes do not change the behaviour of the trained policy, the latent channel carries nothing and the plan is dead.",
+      "games_per_iteration": 20000,
+      "matchups": "AGENT:AGENT:0.85,AGENT:RANDOM:0.15",
+      "max_rows_per_game_type": 8,
+      "train_args": []
+    }
+  ],
+  "train": {
+    "command": [
+      "{python}",
+      "ml/train_policy_ppo.py",
+      "--data",
+      "{data}",
+      "--out",
+      "{model_dir}",
+      "--prev",
+      "{prev_model}",
+      "--adv-value-model",
+      "D:/ares/runs/value/v_r15_outcome",
+      "--epochs",
+      "3",
+      "--clip",
+      "0.2",
+      "--entropy",
+      "0.01",
+      "--lr",
+      "1e-4",
+      "--rows-per-game",
+      "8",
+      "--max-chunks-per-type",
+      "12"
+    ],
+    "timeout_seconds": 14400
+  },
+  "maven": {
+    "command": "mvn",
+    "args": [
+      "-s",
+      ".mvn/settings.xml"
+    ]
+  }
+}

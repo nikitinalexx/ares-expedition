@@ -154,3 +154,74 @@ future *separate* critic.
 `ml/scale_config.json` (`scale1`): 40 000 games per iteration (self-play + RANDOM), PPO with the advantage of
 `v_r15_outcome`, the two rules on, the sanity bench as a gate, chunks sampled across the iteration instead of the first N.
 Started from `r15_parent` (the best bundle on the 780 encoder).
+
+## 2026-11-15, third part: the search is out, the phase axis is measured, the latent plan is in
+
+### Stage A: a rollout is not an improvement operator at this compute (negative, and it closes a branch)
+
+`--mode rollouttest` with the honest design - the candidate is selected on one determinization of the hidden cards and
+evaluated on another (`services/agent/Determinizer`, shared by the search and the audits) - on 60 `BUILD_CARD` positions
+against the deployed player:
+
+| | margin |
+|---|---|
+| the policy's choice | +8.3 |
+| the best of 4 by one rollout per candidate | +5.1 |
+| difference, out of sample | **-3.3 +/- 6.5** (24 positions better with the rollout, 35 with the policy) |
+
+The in-sample number had been +12.3 +/- 8.1: the winner's curse in full. With a per-rollout noise of ~17 points and four
+candidates, one sample per candidate is a choice made of noise; informative needs 10-20 samples per candidate (~40 s per
+decision, ~8 min per game). So search stays where it was measured positive (1-ply + pairs on BUILD_CARD/DRAFT_CARDS),
+and further search growth is out of scope. PLAN.md branches to the two things that measured positive: validated plans in
+the generator, and scale.
+
+### The phase axis, measured (`--mode phasedist`)
+
+The recorded data has agent decisions only, so "what does NETWORK call?" needed an engine-side counter:
+`services/PhaseCensus` (off by default) counted from `AiPickPhaseTurn` (the *decision*, not the turn processor, which sees
+every turn twice), new mode `--mode phasedist`. 300 games NETWORK vs RANDOM, 100 NETWORK vs NETWORK, 100 SMART vs SMART:
+
+| player | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|
+| NETWORK | 34% | 39% | 4% | **2%** | 20% |
+| SMART | 29% | 31% | 6% | 9% | 26% |
+| RANDOM | 21% | 18% | 20% | 11% | 31% |
+| **AGENT (r22_plan)** | **0%** | **0%** | **0%** | **49%** | **51%** |
+
+NETWORK calls a build phase in ~73% of the rounds and alternates 1/2; our player never does. Not a claim about the value
+of a phase (the engine is the same for both seats) but proof that the axis is unexplored by the policy - it was trained
+on games in which phases 1/2 never appear, so no critic trained on them can price the phase.
+
+### The latent plan: mechanically it works, and imitation of the nudges costs 7 points
+
+`services/agent/PlanCodes`: four private bits per player (`Player.planCode`), random per computer seat at game creation
+(`-Dares.agent.planRandom`), in the observation (last four values, zeroed in `buildPublic`), switching the generator's
+exploration profile while recording (`-Dares.agent.planNudges`, `-Dares.agent.planNudgeRate`). Instrument:
+`ml/plan_report.py` (per-code phases, builds, activations, spends, win rate, chi-square).
+
+| run | data | model | divergence | vs SMART (2 000) |
+|---|---|---|---|---|
+| control | codes assigned, nudges OFF, 400 games | r22_plan (bits at zero weight) | none: builds spread 1.4, chi2 = 0 | - |
+| budget control | 6 000 games, nudges OFF, 10 epochs CE | r25_ce_control | - | **37.8%** (same as the parent) |
+| 3 epochs | 6 000 games, nudges ON | r23_plan_ce | chi2 = 199 (dof 45) | **33.1%** |
+| 10 epochs | same | r24_plan_ce10 | chi2 = **2 367**, builds spread 2.5 | **30.8%** (code 0); 25-31% for codes 2/4/8/12 |
+
+What this says: the channel carries a real, reproducible style (phases 1 at 29-34% for the build-phase codes against
+15-17% for code 0, with the nudges off), and it costs 4.7-7.1 points to learn it, because the policy also learns the
+*context* half of the nudge (code 0 now calls a build phase in 16% of the rounds, was 0%) and the shared trunk follows the
+nudged games. The budget is not the explanation: the same 6 000 games and the same 10 epochs without nudges reproduce the
+parent exactly.
+
+Two bugs the instrument caught before any training run: the phase nudge bypassed `choose()` (so bit-8 games were recorded
+with no phase decisions at all), and the first phase nudge was unconditional, which starved the economy and taught
+"build phases are terrible" instead of "call a build phase with an empty hand" (now conditional on holding a green/blue-red
+card, with `planNudgeRate` turning compulsion into preference).
+
+### Running now
+
+`r26_plan_anchor`: 6 000 games with `planNudgeRate=0.35` and CE 10 epochs from `r22_plan` with a **KL anchor** to the
+parent on code-0 rows (`--anchor r22_plan --anchor-weight 3 --anchor-code 0`). The anchor is the trust region: a change in
+behaviour that the plan code does not explain is paid for, so the deployed style should stay at 37.8% while the other codes
+still diverge. Success = code 0 within ~1 point of 37.8% **and** chi-square in the thousands; failure = the anchor either
+pins everything (no divergence) or nothing (the cost returns), and then the honest step is a bigger dataset per iteration
+(20 000 games) before touching the mechanism again.

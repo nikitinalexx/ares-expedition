@@ -3,6 +3,7 @@ package com.terraforming.ares.services.agent;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardAction;
+import com.terraforming.ares.model.CardColor;
 import com.terraforming.ares.model.Constants;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.turn.DiscardCardsTurn;
@@ -90,13 +91,76 @@ public class AgentDecisionService {
      * the missing counterfactual games with their results, without copying anybody's strategy. Those games are used for
      * the critic (what does a position lead to) and never as a model of correct play.
      */
+    /**
+     * DATA GENERATOR ONLY ({@code -Dares.agent.pressBlueActions=true}): whenever a blue action can be pressed, press it.
+     * A player that never does it produces no game in which a blue engine exists, so neither the critic nor the policy can
+     * ever learn what an engine is worth (measured 2026-11-15: the value net prices "many blue actions" at nothing because
+     * it has never seen a game with them). This is a data collection profile, not part of the player.
+     */
+    private static final boolean PRESS_BLUE_ACTIONS =
+            Boolean.parseBoolean(System.getProperty("ares.agent.pressBlueActions", "false"));
+
+    /**
+     * DATA GENERATOR ONLY ({@code -Dares.agent.preferIncome=true}): among the cards the build menu offers, prefer one that
+     * pays income. Measured causally (paired rollouts on 500 positions, 2026-11-15): forcing this plan for eight turns is
+     * worth +1.7 +/- 1.4 points, while "press every blue action" is worth -1.2 +/- 1.2. The plan that pays for this player
+     * is the economy, not the blue actions - so the games it generates are a little better than the plain ones, and the
+     * policy can learn it from their outcomes.
+     */
+    private static final boolean PREFER_INCOME =
+            Boolean.parseBoolean(System.getProperty("ares.agent.preferIncome", "false"));
+
     private static final Map<DecisionType, Double> EXPLORE =
             parseExplore(System.getProperty("ares.agent.explore", ""));
 
     public int pickPhase(MarsGame game, Player player) {
         Decision decision = pickPhaseDecisions.build(game, player);
         int forced = forcedPhase(decision);
-        return decision.candidates().get(forced >= 0 ? forced : choose(game, player, decision)).id();
+        int index = forced >= 0 ? forced : -1;
+        if (index < 0 && PlanCodes.rollNudge() && PlanCodes.preferBuildPhases(player)) {
+            // Coverage nudge of the generator (bit 8), not a rule of the player: without it no recorded game of the policy
+            // ever picks phases 1/2, so the outcome can never say whether a build-phase style pays. Conditional on holding
+            // a card the phase could build - an unconditional nudge would only generate games that starve (the income phase
+            // would then depend on the dummy), and the outcome would measure the starvation, not the phase.
+            index = buildPhaseWithWork(decision, player);
+        }
+        if (index < 0) {
+            return decision.candidates().get(choose(game, player, decision)).id();
+        }
+        decisionLogs.record(game, player, decision, index);
+        return decision.candidates().get(index).id();
+    }
+
+    /** The build phase whose cards this hand actually holds: 1 for a green card, otherwise 2 for a blue/red one. */
+    private int buildPhaseWithWork(Decision decision, Player player) {
+        boolean green = false;
+        boolean other = false;
+        for (Integer id : player.getHand().getCards()) {
+            Card card = cardService.getCard(id);
+            if (card == null) {
+                continue;
+            }
+            if (card.getColor() == CardColor.GREEN) {
+                green = true;
+            } else if (card.getColor() == CardColor.BLUE || card.getColor() == CardColor.RED) {
+                other = true;
+            }
+        }
+        if (green) {
+            return firstCandidate(decision, 1);
+        }
+        return other ? firstCandidate(decision, 2) : -1;
+    }
+
+    private static int firstCandidate(Decision decision, int... ids) {
+        for (int wanted : ids) {
+            for (int i = 0; i < decision.candidates().size(); i++) {
+                if (decision.candidates().get(i).id() == wanted) {
+                    return i;
+                }
+            }
+        }
+        return -1;
     }
 
     /**
@@ -230,12 +294,9 @@ public class AgentDecisionService {
      * Helion exchange is offered one heat at a time; the next call sees the new heat.
      */
     public Optional<StandardActionChoice> standardAction(MarsGame game, Player player, List<TurnType> possibleTurns) {
-        List<StandardActionChoice> choices = standardActionDecisions.options(game, player, possibleTurns).stream()
-                // A standard project that buys the same global parameter for more than a card in hand is not an option
-                // (owner's arithmetic: three oceans from a card for ~26 credits against 45 for three standard ones).
-                .filter(choice -> choice.kind() == StandardActionDecisions.STOP
-                        || !guaranteedActions.standardProjectIsDominated(game, player, choice))
-                .toList();
+        // Every legal spend stays on the menu. Comparing a standard project with a card in the hand is a strategy
+        // decision that belongs to the policy (owner, 2026-11-15: the bench may watch it, the player may not encode it).
+        List<StandardActionChoice> choices = standardActionDecisions.options(game, player, possibleTurns);
         int index = choose(game, player, standardActionDecisions.decision(game, player, choices));
         StandardActionChoice choice = choices.get(index);
         if (choice.kind() == StandardActionDecisions.STOP) {
@@ -250,6 +311,25 @@ public class AgentDecisionService {
      */
     public Optional<Integer> buildCard(MarsGame game, Player player) {
         Decision decision = buildCardDecisions.build(game, player);
+        boolean nudge = PlanCodes.rollNudge();
+        boolean preferIncome = PREFER_INCOME || (nudge && PlanCodes.preferIncome(player));
+        boolean preferNonGreen = nudge && PlanCodes.preferNonGreen(player);
+        for (int i = 0; i < decision.candidates().size(); i++) {
+            int candidateId = decision.candidates().get(i).id();
+            if (candidateId == BuildCardDecisions.STOP) {
+                continue;
+            }
+            Card card = cardService.getCard(candidateId);
+            if (card == null) {
+                continue;
+            }
+            boolean income = card.getCardMetadata() != null && !card.getCardMetadata().getIncomes().isEmpty();
+            boolean nonGreen = card.getColor() != com.terraforming.ares.model.CardColor.GREEN;
+            if ((preferIncome && income) || (preferNonGreen && nonGreen)) {
+                decisionLogs.record(game, player, decision, i);
+                return Optional.of(candidateId);
+            }
+        }
         int id = decision.candidates().get(choose(game, player, decision)).id();
         if (id == BuildCardDecisions.STOP) {
             return Optional.empty();
@@ -271,6 +351,14 @@ public class AgentDecisionService {
      */
     public Optional<Integer> blueAction(MarsGame game, Player player) {
         Decision decision = blueActionDecisions.build(game, player);
+        if (PRESS_BLUE_ACTIONS || (PlanCodes.rollNudge() && PlanCodes.pressBlueActions(player))) {
+            for (int i = 0; i < decision.candidates().size(); i++) {
+                if (decision.candidates().get(i).id() != BlueActionDecisions.STOP) {
+                    decisionLogs.record(game, player, decision, i);
+                    return Optional.of(decision.candidates().get(i).id());
+                }
+            }
+        }
         // A free action that leaves the position weakly better is taken by arithmetic, not by the network (the owner
         // plays the same way in his own agent). The label is still recorded, so the policy can learn it for the cases
         // where the rule does not apply.
@@ -407,8 +495,10 @@ public class AgentDecisionService {
     }
 
     private int choose(MarsGame game, Player player, Decision decision) {
-        recordAfterstate(game, player);
-        lastDecision.put(key(game, player), decision);
+        if (RECORD_AFTERSTATES) {
+            recordAfterstate(game, player);
+            lastDecision.put(key(game, player), decision);
+        }
         // Measurement / search harnesses (services.agent.DecisionProbe) see the state before the action is applied.
         DecisionProbe.Hook probe = DecisionProbe.current();
         int index = probe == null ? -1 : probe.beforeChoice(decision, game, player);

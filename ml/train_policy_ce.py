@@ -71,7 +71,7 @@ def load_type(directory, decision, rows_per_game, max_chunks, seed):
         # thousand games are one part of the run, not a sample of it.
         picked = np.random.default_rng(seed).choice(len(files), max_chunks, replace=False)
         files = [files[i] for i in sorted(picked)]
-    obs, cands, chosen, count, outcome, game, margin = [], [], [], [], [], [], []
+    obs, cands, chosen, ids, count, outcome, game, margin = [], [], [], [], [], [], [], []
     for path in files:
         schema, rows = ares_data.read_decisions(path)
         if not len(rows):
@@ -84,6 +84,7 @@ def load_type(directory, decision, rows_per_game, max_chunks, seed):
         obs.append(rows["obs"].astype(np.float32))
         cands.append(rows["feat"].astype(np.float32))
         chosen.append(rows["chosen"].astype(np.int64))
+        ids.append(rows["ids"].astype(np.int64))
         count.append(rows["count"].astype(np.int64))
         outcome.append(rows["outcome"].astype(np.float32))
         margin.append(rows["margin"].astype(np.float32))
@@ -91,12 +92,13 @@ def load_type(directory, decision, rows_per_game, max_chunks, seed):
     if not obs:
         return None
     data = {"obs": np.concatenate(obs), "cands": np.concatenate(cands), "chosen": np.concatenate(chosen),
+            "ids": np.concatenate(ids),
             "count": np.concatenate(count), "outcome": np.concatenate(outcome), "game": np.concatenate(game),
             "margin": np.concatenate(margin),
             "obsSize": schema["obsSize"], "candFeatures": schema["candidateFeatures"], "schemaHash": schema["hash"]}
     # rows with a single candidate teach nothing about ranking
     keep = data["count"] >= 2
-    for key in ("obs", "cands", "chosen", "count", "outcome", "game", "margin"):
+    for key in ("obs", "cands", "chosen", "ids", "count", "outcome", "game", "margin"):
         data[key] = data[key][keep]
     return data
 
@@ -168,6 +170,17 @@ def main():
     parser.add_argument("--rows-per-game", type=int, default=8)
     parser.add_argument("--max-chunks-per-type", type=int, default=10,
                         help="a subset of the chunks keeps the candidate tensors (N x K x features) in RAM")
+    parser.add_argument("--anchor", default="",
+                        help="bundle to hold the model close to (the parent). With --anchor-weight > 0 the loss adds a "
+                             "distillation term to the anchor's distribution, so a latent-plan run cannot drift the base "
+                             "style it was supposed to keep: measured, imitating nudged games without it cost 7 points "
+                             "against SMART while the same budget without nudges cost nothing")
+    parser.add_argument("--anchor-weight", type=float, default=0.0,
+                        help="weight of the anchor term (0 = off). It only binds where the anchor is confident, so a "
+                             "small value lets the code-conditioned rows deviate while the rest of the state space stays")
+    parser.add_argument("--anchor-code", type=int, default=-1,
+                        help="apply the anchor only to rows whose plan code equals this value (-1 = all rows): the "
+                             "deployed style is usually code 0")
     parser.add_argument("--outcome-weight", type=float, default=0.0,
                         help="0 = pure candidate cross-entropy; >0 also weights each row by the game outcome")
     parser.add_argument("--objective", default="ce", choices=["ce", "pg-uniform", "pg"],
@@ -179,6 +192,16 @@ def main():
     parser.add_argument("--behaviour", type=float, default=1.0,
                         help="q of the pg objective: probability that the generator picked a candidate uniformly at random "
                              "(1.0 = the whole type was explored, 0.35 = a bounded share so the games stay coherent)")
+    parser.add_argument("--card-weights", default="",
+                        help="JSON of per-card advantages (ml/card_weights.py). For BUILD_CARD rows the loss weight is "
+                             "scaled by (1 + alpha * advantage): the card-level estimate is stable across halves of the "
+                             "data, where the row-level advantage is noise")
+    parser.add_argument("--card-weight-alpha", type=float, default=0.15)
+    parser.add_argument("--relabel", default="",
+                        help="`card-advantage`: for BUILD_CARD rows replace the label with the best candidate by its "
+                             "per-card advantage (ml/card_weights.py). This is offline policy improvement on the states we "
+                             "actually visited: the head learns to prefer cards that went better than the critic expected, "
+                             "instead of imitating the card the old policy happened to take")
     parser.add_argument("--adv-target", default="outcome", choices=["outcome", "margin"],
                         help="what the advantage is measured in: the win (win - P(win)) or the score (margin/20 - V's "
                              "prediction), which is the scale the printed card points live on")
@@ -208,6 +231,12 @@ def main():
     hidden = [int(x) for x in args.hidden.split(",")]
 
     pools, val_pools = {}, {}
+    card_weights = {}
+    if args.card_weights:
+        payload = json.load(open(args.card_weights, encoding="utf-8"))
+        card_weights = {int(card): float(value) for card, value in payload.get("cards", {}).items()}
+        print(f"card weights: {len(card_weights)} cards from {args.card_weights}, alpha {args.card_weight_alpha}")
+
     for decision in decisions:
         data = load_type(args.data, decision, args.rows_per_game, args.max_chunks_per_type, args.seed)
         if data is None or len(data["obs"]) < 100:
@@ -215,12 +244,30 @@ def main():
             continue
         if args.min_outcome > 0:
             keep = data["outcome"] >= args.min_outcome
-            for key in ("obs", "cands", "chosen", "count", "outcome", "game", "margin"):
+            for key in ("obs", "cands", "chosen", "ids", "count", "outcome", "game", "margin"):
                 data[key] = data[key][keep]
             if len(data["obs"]) < 100:
                 print(f"  {decision:22s} skipped ({int(keep.sum())} rows above outcome {args.min_outcome})")
                 continue
             print(f"  {decision:22s} filtered to {int(keep.sum())} rows of games with outcome >= {args.min_outcome}")
+        if args.relabel == "card-advantage" and decision == "BUILD_CARD" and card_weights:
+            relabelled = 0
+            for row in range(len(data["chosen"])):
+                count = int(data["count"][row])
+                ids = data["ids"][row][:count]
+                best, best_value = -1, -1e9
+                for index in range(count):
+                    card = int(ids[index])
+                    if card == 0xFFFF or card not in card_weights:
+                        continue
+                    if card_weights[card] > best_value:
+                        best_value = card_weights[card]
+                        best = index
+                if best >= 0:
+                    data["chosen"][row] = best
+                    relabelled += 1
+            print(f"  {decision:22s} relabelled {relabelled} rows by the per-card advantage")
+
         split_key = (data["game"] * np.uint64(2654435761)) % np.uint64(1000)
         val = split_key < int(1000 * args.val_fraction)
         pools[decision] = {k: (v[~val] if isinstance(v, np.ndarray) and len(v) == len(val) else v)
@@ -249,6 +296,21 @@ def main():
                 parameter.requires_grad = False
             parents[decision] = parent
 
+    anchors = {}
+    if args.anchor_weight > 0:
+        if not args.anchor:
+            raise SystemExit("--anchor-weight needs --anchor <bundle>")
+        for decision, data in pools.items():
+            anchor = Head(obs_size, data["candFeatures"], hidden).to(device)
+            if not warm_start(anchor, args.anchor, decision):
+                raise SystemExit(f"{decision}: the anchor bundle has no usable head")
+            anchor.eval()
+            for parameter in anchor.parameters():
+                parameter.requires_grad = False
+            anchors[decision] = anchor
+        where = "all rows" if args.anchor_code < 0 else f"plan code {args.anchor_code} only"
+        print(f"  anchor {args.anchor} with weight {args.anchor_weight} on {where}")
+
     optimizers = {d: torch.optim.Adam(models[d].parameters(), lr=args.lr) for d in models}
     rng = np.random.default_rng(args.seed)
 
@@ -265,12 +327,15 @@ def main():
             idx = indices[start:start + batch]
             if len(idx) < 2:
                 continue
+            chosen = torch.from_numpy(data["chosen"][idx]).to(device)
+            ids = torch.from_numpy(data["ids"][idx]).to(device)
             yield (torch.from_numpy(data["obs"][idx]).to(device),
                    torch.from_numpy(data["cands"][idx]).to(device),
-                   torch.from_numpy(data["chosen"][idx]).to(device),
+                   chosen,
                    torch.from_numpy(data["count"][idx]).to(device),
                    torch.from_numpy(data["outcome"][idx]).to(device),
-                   torch.from_numpy(data["margin"][idx]).to(device))
+                   torch.from_numpy(data["margin"][idx]).to(device),
+                   ids.gather(1, chosen.unsqueeze(1)).squeeze(1))
 
     def advantage_of(obs, outcome, margin):
         """A(s,a): how much better this game went than the critic promised.
@@ -284,7 +349,27 @@ def main():
             return margin / 20.0 - value_of(obs, advantage, raw=True)
         return outcome - value_of(obs, advantage)
 
-    def loss_of(model, old, obs, cands, chosen, count, outcome, margin):
+    def anchor_term(anchor, model, obs, cands, mask, logits):
+        """Distillation to the anchor: -sum_a p_anchor(a|s) log p_model(a|s) on the rows the anchor guards.
+
+        It is a KL up to a constant, and it is the trust region of this loop: the code has to explain a *change* in
+        behaviour, and every change it does not explain is paid for here. Without it the shared trunk follows the nudged
+        games and the baseline style drifts (measured: 37.8% -> 30.8% against SMART).
+        """
+        with torch.no_grad():
+            anchor_logits = anchor(obs, cands).masked_fill(~mask, -1e9)
+            p = torch.softmax(anchor_logits, dim=1)
+        guard = torch.ones(obs.shape[0], dtype=torch.bool, device=device)
+        if args.anchor_code >= 0:
+            bits = torch.clamp((obs[:, -4:] > 0.5).to(torch.int64), 0, 1)
+            code = (bits * torch.tensor([1, 2, 4, 8], dtype=torch.int64, device=device)).sum(dim=1)
+            guard = code == args.anchor_code
+        if not bool(guard.any()):
+            return None
+        log_p = torch.log_softmax(logits, dim=1)
+        return -(p * log_p).sum(dim=1)[guard].mean()
+
+    def loss_of(model, old, obs, cands, chosen, count, outcome, margin, decision, chosen_ids):
         logits = model(obs, cands)                                     # [B, K]
         mask = torch.arange(cands.shape[1], device=device)[None, :] < count[:, None]
         logits = logits.masked_fill(~mask, -1e9)
@@ -318,6 +403,10 @@ def main():
             if args.adv_normalize:
                 weight = (weight - weight.mean()) / (weight.std() + 1e-6)
             return (ce * weight).mean()
+        if card_weights:
+            table = torch.tensor([card_weights.get(int(card), 0.0) for card in chosen_ids.tolist()],
+                                 dtype=torch.float32, device=device)
+            ce = ce * (1.0 + args.card_weight_alpha * table).clamp(0.2, 3.0)
         if args.outcome_weight > 0:
             weight = 1.0 + args.outcome_weight * (2.0 * outcome - 1.0)   # win 1+w, loss 1-w
             ce = ce * weight
@@ -330,8 +419,18 @@ def main():
             data = pools[decision]
             order = rng.permutation(len(data["obs"]))
             running, seen = 0.0, 0
-            for obs, cands, chosen, count, outcome, margin in batches(data, order, args.batch):
-                loss = loss_of(model, parents.get(decision), obs, cands, chosen, count, outcome, margin)
+            for obs, cands, chosen, count, outcome, margin, chosen_ids in batches(data, order, args.batch):
+                loss = loss_of(model, parents.get(decision), obs, cands, chosen, count, outcome, margin, decision,
+                               chosen_ids)
+                anchor = anchors.get(decision)
+                if anchor is not None:
+                    with torch.no_grad():
+                        pass
+                    mask = torch.arange(cands.shape[1], device=device)[None, :] < count[:, None]
+                    logits = model(obs, cands).masked_fill(~mask, -1e9)
+                    term = anchor_term(anchor, model, obs, cands, mask, logits)
+                    if term is not None:
+                        loss = loss + args.anchor_weight * term
                 if not torch.isfinite(loss):
                     raise SystemExit(f"{decision}: the loss is {float(loss)} in epoch {epoch}")
                 optimizers[decision].zero_grad()
@@ -344,7 +443,7 @@ def main():
             with torch.no_grad():
                 correct, total, val_loss, top3 = 0, 0, 0.0, 0
                 val = val_pools[decision]
-                for obs, cands, chosen, count, outcome, margin in batches(val, np.arange(len(val["obs"])), 1024):
+                for obs, cands, chosen, count, outcome, margin, _ in batches(val, np.arange(len(val["obs"])), 1024):
                     logits = model(obs, cands)
                     mask = torch.arange(cands.shape[1], device=device)[None, :] < count[:, None]
                     logits = logits.masked_fill(~mask, -1e9)

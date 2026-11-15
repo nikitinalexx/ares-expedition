@@ -3,11 +3,7 @@ package com.terraforming.ares.services.agent;
 import com.terraforming.ares.mars.MarsGame;
 import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
-import com.terraforming.ares.model.StandardProjectType;
-import com.terraforming.ares.model.income.Gain;
-import com.terraforming.ares.model.income.GainType;
 import com.terraforming.ares.services.CardService;
-import com.terraforming.ares.services.StandardProjectService;
 import com.terraforming.ares.services.ai.turnProcessors.AiTurnService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -34,7 +30,6 @@ public class GuaranteedActions {
     private final BlueInputDecisions blueInputDecisions;
     private final AiTurnService aiTurnService;
     private final CardService cardService;
-    private final StandardProjectService standardProjectService;
 
     /** The card to press without asking anybody, or empty. */
     public Optional<Integer> freeBlueAction(MarsGame game, Player player) {
@@ -49,72 +44,6 @@ public class GuaranteedActions {
             }
         }
         return Optional.empty();
-    }
-
-    /**
-     * Whether a standard project is a WORSE way to buy the same global parameter than a card already in hand
-     * (owner's arithmetic: three oceans from Deimos Down cost ~26 credits, three standard oceans 45).
-     * <p>
-     * For every unit of the parameter the card gives (three oceans, one forest), the effective price per unit is
-     * {@code (price - immediate credits the card pays back) / units}, and it must be strictly below the standard project
-     * price for the project to be hidden. A card that needs on-built inputs or is not affordable now is ignored: it is not
-     * a cheaper way to get the same thing in this position.
-     */
-    public boolean standardProjectIsDominated(MarsGame game, Player player, StandardActionChoice choice) {
-        try {
-            List<GainType> wanted = gainTypesOf(choice.kind());
-            if (wanted.isEmpty() || choice.projectType() == null) {
-                return false;
-            }
-            int projectPrice = standardProjectService.getProjectPrice(player, choice.projectType());
-            for (Integer id : player.getHand().getCards()) {
-                Card card = cardService.getCard(id);
-                if (card == null || card.getCardMetadata() == null) {
-                    continue;
-                }
-                int units = 0;
-                int gain = 0;
-                for (Gain bonus : card.getCardMetadata().getBonuses()) {
-                    if (wanted.contains(bonus.getType())) {
-                        units += Math.max(1, bonus.getValue());
-                    }
-                    if (bonus.getType() == GainType.MC) {
-                        gain += bonus.getValue();
-                    }
-                }
-                if (units == 0) {
-                    continue;
-                }
-                for (Gain income : card.getCardMetadata().getIncomes()) {
-                    if (income.getType() == GainType.MC) {
-                        gain += income.getValue();
-                    }
-                }
-                if (card.getCardMetadata().getCardAction() != null) {
-                    continue; // a card that needs an on-built choice is not simply affordable
-                }
-                int net = card.getPrice() - gain;
-                if (net <= 0) {
-                    continue;
-                }
-                double perUnit = net / (double) units;
-                if (perUnit < projectPrice) {
-                    return true;
-                }
-            }
-            return false;
-        } catch (RuntimeException e) {
-            return false;
-        }
-    }
-
-    private static List<GainType> gainTypesOf(int kind) {
-        return switch (kind) {
-            case StandardActionDecisions.SP_OCEAN -> List.of(GainType.OCEAN);
-            case StandardActionDecisions.SP_FOREST -> List.of(GainType.FOREST, GainType.OXYGEN);
-            case StandardActionDecisions.SP_TEMPERATURE -> List.of(GainType.TEMPERATURE);
-            default -> List.of();
-        };
     }
 
     /** Applies the action on a copy and compares what it cost with what it gained. */

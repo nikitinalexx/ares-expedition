@@ -35,7 +35,28 @@ public class GameService {
     }
 
     public MarsGame createNewSimulation(GameParameters gameParameters) {
-        return gameFactory.createMarsGame(gameParameters);
+        MarsGame game = gameFactory.createMarsGame(gameParameters);
+        // Data generation with latent plans: every computer seat gets a random code, which switches its exploration
+        // profile and is visible to its own policy (private). Off by default; a deployed game keeps code 0.
+        if (com.terraforming.ares.services.agent.PlanCodes.randomGeneration()) {
+            for (Player player : game.getPlayerUuidToPlayer().values()) {
+                if (player.isComputer()) {
+                    player.setPlanCode(com.terraforming.ares.services.agent.PlanCodes.random());
+                }
+            }
+        } else {
+            // A fixed code for every computer seat: how a candidate style is measured against another (same model, one
+            // bit pattern) and how a chosen style is deployed in a real game.
+            int fixed = com.terraforming.ares.services.agent.PlanCodes.fixed();
+            if (fixed != com.terraforming.ares.services.agent.PlanCodes.NO_FIXED_CODE) {
+                for (Player player : game.getPlayerUuidToPlayer().values()) {
+                    if (player.isComputer()) {
+                        player.setPlanCode(fixed);
+                    }
+                }
+            }
+        }
+        return game;
     }
 
     public MarsGame getGame(String playerUuid) {

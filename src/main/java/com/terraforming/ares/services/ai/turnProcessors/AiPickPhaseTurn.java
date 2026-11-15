@@ -57,7 +57,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
     @Override
     public boolean processTurn(MarsGame game, Player player) {
         if (player.getDifficulty().isAgent()) {
-            aiTurnService.choosePhaseTurn(player, agentDecisionService.pickPhase(game, player));
+            submit(player, agentDecisionService.pickPhase(game, player));
             return true;
         }
         if (player.getDifficulty().EXPERIMENTAL_TURN == AiExperimentalTurn.EXPERIMENT) {
@@ -78,7 +78,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                     return value + 1;
                 });
             }
-            aiTurnService.choosePhaseTurn(player, phaseId);
+            submit(player, phaseId);
             return true;
         }
 
@@ -190,9 +190,19 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
             });
         }
 
-        aiTurnService.choosePhaseTurn(player, chosenPhase);
+        submit(player, chosenPhase);
 
         return true;
+    }
+
+    /**
+     * Every phase decision of every non-human difficulty passes here exactly once (the turn processor sees a turn twice,
+     * so it is the wrong funnel for counting). {@link com.terraforming.ares.services.PhaseCensus} is off unless
+     * {@code --mode phasedist} turns it on.
+     */
+    private void submit(Player player, int phaseId) {
+        com.terraforming.ares.services.PhaseCensus.record(player.getDifficulty(), player.getPreviousChosenPhase(), phaseId);
+        aiTurnService.choosePhaseTurn(player, phaseId);
     }
 
     private PhaseChoiceProjection chooseBetweenFirstAndSecondPhaseAi(MarsGame game, Player player) {

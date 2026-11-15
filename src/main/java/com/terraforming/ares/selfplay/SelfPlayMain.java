@@ -142,6 +142,14 @@ public final class SelfPlayMain {
                     return cards(context, arguments);
                 case "sanity":
                     return sanity(context, arguments);
+                case "engineaudit":
+                    return engineAudit(context, arguments);
+                case "macroaudit":
+                    return macroAudit(context, arguments);
+                case "rollouttest":
+                    return rolloutTest(context, arguments);
+                case "phasedist":
+                    return phaseDist(context, arguments);
                 default:
                     throw new IllegalArgumentException("unknown --mode " + mode);
             }
@@ -238,6 +246,45 @@ public final class SelfPlayMain {
         return report.failed() == 0 ? 0 : 1;
     }
 
+    /**
+     * Is a rollout a better chooser than the policy? For each captured decision the position is replayed once per
+     * candidate and once with the policy's own choice; the paired difference says whether planning can improve the player.
+     */
+    private static int rolloutTest(ConfigurableApplicationContext context, Map<String, String> a) throws Exception {
+        RolloutImprovement.Report report = context.getBean(RolloutImprovement.class).run(
+                Path.of(required(a, "out")),
+                Integer.parseInt(a.getOrDefault("games", "24")),
+                com.terraforming.ares.services.agent.DecisionType.valueOf(a.getOrDefault("type", "BUILD_CARD")));
+        return report.positions() == 0 ? 1 : 0;
+    }
+
+    /**
+     * Causal test of the engine plan: the same position played twice (same deck, same opponent), once plainly and once with
+     * a macro that presses every blue action for a few turns. The paired difference is the effect of committing to the
+     * engine - the evidence a critic or a policy can be taught from, without a teacher.
+     */
+    private static int macroAudit(ConfigurableApplicationContext context, Map<String, String> a) throws Exception {
+        MacroAudit.Report report = context.getBean(MacroAudit.class).run(
+                Path.of(required(a, "out")),
+                Integer.parseInt(a.getOrDefault("games", "24")),
+                Integer.parseInt(a.getOrDefault("turns", "8")),
+                a.getOrDefault("macro", "all"));
+        return report.positions() == 0 ? 1 : 0;
+    }
+
+    /**
+     * Does the critic price a blue engine? V of a real position, then with several activatable blue action cards on the
+     * table, then after pressing them. Diagnostic: it says whether a search could ever prefer an engine.
+     */
+    private static int engineAudit(ConfigurableApplicationContext context, Map<String, String> a) throws Exception {
+        EngineAudit.Report report = context.getBean(EngineAudit.class).run(
+                Path.of(required(a, "out")),
+                Integer.parseInt(a.getOrDefault("games", "12")),
+                a.getOrDefault("value-model", "D:/ares/runs/value/v_r15_outcome"),
+                Integer.parseInt(a.getOrDefault("cards", "4")));
+        return report.positions() == 0 ? 1 : 0;
+    }
+
     /** Which project card class belongs to which expansion: the audit uses it to classify dead observation bits. */
     private static int cards(ConfigurableApplicationContext context, Map<String, String> a) throws Exception {
         Path file = Path.of(required(a, "out"));
@@ -264,6 +311,16 @@ public final class SelfPlayMain {
     }
 
     /** Where the points go, per term of the score, for {@code a} and {@code b}. Diagnostic only. */
+    private static int phaseDist(ConfigurableApplicationContext context, Map<String, String> a) throws Exception {
+        context.getBean(com.terraforming.ares.selfplay.PhaseDistribution.class).run(
+                Path.of(required(a, "out")),
+                Integer.parseInt(required(a, "games")),
+                PlayerDifficulty.valueOf(a.getOrDefault("a", "NETWORK")),
+                PlayerDifficulty.valueOf(a.getOrDefault("b", "RANDOM")),
+                Integer.parseInt(a.getOrDefault("concurrency", "16")));
+        return 0;
+    }
+
     private static int scorecard(ConfigurableApplicationContext context, Map<String, String> a) throws Exception {
         context.getBean(com.terraforming.ares.selfplay.Scorecard.class).run(
                 Path.of(required(a, "out")),

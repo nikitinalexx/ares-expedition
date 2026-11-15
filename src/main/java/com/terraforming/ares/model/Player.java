@@ -46,6 +46,13 @@ public class Player {
     @Builder.Default
     private int austellarMilestone = -1;
     private int lunaProjectOffice = 0;
+    /**
+     * The plan this player committed to for the whole game: a latent code sampled at the start of a self-play game
+     * ({@code -Dares.agent.planCode=random}) and kept until the end. It exists so that the policy can condition its whole
+     * style on it - different codes give different styles, and the game outcome decides which codes win. It is PRIVATE
+     * information (like the hand): the opponent's code never enters an observation.
+     */
+    private int planCode = 0;
     private int projectInspection = 0;
 
     private boolean confirmedGameEndThirdPhase;
@@ -152,6 +159,7 @@ public class Player {
             this.buildContext = new BuildContext(copy.buildContext);
         }
         this.lunaProjectOffice = copy.lunaProjectOffice;
+        this.planCode = copy.planCode;
         this.projectInspection = copy.projectInspection;
     }
 

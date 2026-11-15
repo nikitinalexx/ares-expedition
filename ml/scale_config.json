@@ -87,8 +87,8 @@
   "experiments": [
     {
       "name": "scale",
-      "hypothesis": "The player's ceiling is credit assignment from game outcomes, and the effect being learned (a card worth 2-3 points, an engine paying off over rounds) is far below the noise of one game. The same objective that already works (clipped PPO on candidate cross-entropy, advantage = outcome - V) with 40 000 games per iteration instead of 12 000 sees four times the state space per step; the trainer samples 12 chunks across the whole iteration instead of the first 12, so a wide iteration is a sample of the run, not its beginning. Rules for guaranteed value stay on (free blue actions, dominated standard projects); every iteration also runs the obvious-move bench, and a model that refuses a free card cannot be promoted whatever its win rate.",
-      "games_per_iteration": 40000,
+      "hypothesis": "The player's ceiling is credit assignment from game outcomes, and the effect being learned (a card worth 2-3 points, an engine paying off over rounds) is far below the noise of one game. The same objective that already works (clipped PPO on candidate cross-entropy, advantage = outcome - V) with 20 000 games per iteration instead of 12 000 sees more of the state space per step; the trainer samples chunks across the whole iteration instead of the first N. The only guaranteed-value rule left in the player is the free blue action (owner's own optimisation); the obvious-move bench runs every iteration and only its gate scenarios (a free action, a card for one credit) can block a promotion, the rest are red flags in the log.",
+      "games_per_iteration": 20000,
       "matchups": "AGENT:AGENT:0.75,AGENT:RANDOM:0.25",
       "max_rows_per_game_type": 8,
       "train_args": []

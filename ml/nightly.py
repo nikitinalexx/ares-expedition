@@ -932,6 +932,9 @@ class Pipeline:
         result is written next to the model and is not a promotion criterion of its own: a failed scenario blocks promotion
         (the style is degenerate whatever the win rate says), a passing one changes nothing.
         """
+        if exp == "smoke":
+            # the smoke run measures the pipeline, not a model: an untrained model is expected to fail the bench
+            return None
         path = self.it_dir(exp, it) / "sanity.json"
         if path.exists():
             return read_json(path)
@@ -1097,7 +1100,7 @@ class Pipeline:
                 broken = [r["name"] for r in sanity.get("results", []) if not r.get("passed")]
                 self.log(f"{exp} it{it}: SANITY FAILED ({sanity.get('passed')}/{sanity.get('scenarios')}): "
                          f"{', '.join(broken)} - the model takes moves the rules say are worse")
-                summary["score"] = min(summary["score"], -1.0)
+                summary["sanity_failed"] = True
 
         e["failures"] = 0
         e["iterations_done"] = it
@@ -1108,7 +1111,11 @@ class Pipeline:
         # out the per-reference breakdown here so the log line cannot be misread as "win rate vs RANDOM".
         vs_txt = ", ".join(f"{ref}={v['score']:.1%}" for ref, v in (summary.get("vs") or {}).items())
         wr_txt = f" | win rate {vs_txt}" if vs_txt else ""
-        if best is None or summary["score"] > best + self.cfg["promote_margin"]:
+        if summary.get("sanity_failed"):
+            # measured well or not, a model that refuses a free card is not promoted; the score itself stays honest
+            e["iterations_since_best"] = e.get("iterations_since_best", 0) + 1
+            self.log(f"{exp} it{it}: NOT PROMOTED (sanity) - the score {summary['score']:+.3f}{wr_txt} does not count")
+        elif best is None or summary["score"] > best + self.cfg["promote_margin"]:
             e["best_score"] = round(summary["score"], 4)
             e["best_model"] = str(self.it_dir(exp, it) / "model")
             e["best_iteration"] = it

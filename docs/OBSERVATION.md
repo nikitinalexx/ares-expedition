@@ -114,6 +114,18 @@ when the phase started (the engine's own rule; a maxed global can sometimes stil
 once all nine are open), `oceans:collected_{cards,mc,plants}/40` — the totals collected so far, `oceans:revealed/9`. The
 positions are a shuffle and are not encoded.
 
+## I. The latent plan (795–798)
+
+`plan:my_code_bit_{0..3}` — the four bits of this player's plan code (`Player.planCode`, `services/agent/PlanCodes`). It
+is **private**: `ObservationBuilder.buildPublic` zeroes it together with the hand, so the search's symmetric copy and any
+opponent-facing observation carry "no plan" rather than the real code.
+
+What it is for: during data generation every computer seat gets a random code and the bits switch the generator's
+exploration profile (income cards, non-green builds, pressing blue actions, build phases); the policy conditions its style
+on it, and the game outcome decides which codes win. At play time the code is a knob (random, fixed, or - if the critic ever
+can - chosen by the value). `ml/plan_report.py` measures the divergence per code; the control with the nudges off must
+show none.
+
 ## Candidate vectors (per legal option)
 
 | decision | width | contents |
