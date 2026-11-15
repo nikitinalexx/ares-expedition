@@ -6,6 +6,7 @@ import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.CardColor;
 import com.terraforming.ares.model.GameParameters;
 import com.terraforming.ares.model.Player;
+import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.model.PlayerDifficulty;
 import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.services.CardService;
@@ -89,6 +90,67 @@ public class MacroAudit {
                 }
                 return -1;
             }
+            if (decision.type() == DecisionType.PICK_PHASE && mode.startsWith("phases")) {
+                // The plan under test: call the build phase whose cards this hand can actually pay for. It is the phase
+                // axis where the benchmark lives (NETWORK calls 1/2 in ~73% of the rounds, this player in 0%) and the one
+                // the second build slot comes from (the picker builds twice).
+                int wanted = presenceBuildable(game, player) ? 1
+                        : presenceBuildableBlueRed(game, player) ? 2 : -1;
+                if (wanted > 0) {
+                    for (int i = 0; i < decision.candidates().size(); i++) {
+                        if (decision.candidates().get(i).id() == wanted) {
+                            return i;
+                        }
+                    }
+                }
+                return -1;
+            }
+            if (decision.type() == DecisionType.BUILD_CARD && mode.equals("metals")) {
+                // First link of the owner's chain: "the building-tag cards are cheap because I have steel". The engine
+                // implements steel/titanium as permanent discounts (services/DiscountService: 2 MC per steel on a
+                // BUILDING-tag card, 3 MC per titanium on a SPACE-tag card), and the measured player has a steel income of
+                // 0.12 on average - it never builds the cards that would give it. This plan takes and builds exactly those
+                // cards; the audit says whether the first link alone pays.
+                for (int i = 0; i < decision.candidates().size(); i++) {
+                    int id = decision.candidates().get(i).id();
+                    if (id == com.terraforming.ares.services.agent.BuildCardDecisions.STOP) {
+                        continue;
+                    }
+                    Card card = cardService.getCard(id);
+                    if (card != null && addsMetalIncome(card)) {
+                        return i;
+                    }
+                }
+                return -1;
+            }
+            if (decision.type() == DecisionType.DRAFT_CARDS && mode.equals("metals")) {
+                for (int i = 0; i < decision.candidates().size(); i++) {
+                    Card card = cardService.getCard(decision.candidates().get(i).id());
+                    if (card != null && addsMetalIncome(card)) {
+                        return i;
+                    }
+                }
+                return -1;
+            }
+            if (decision.type() == DecisionType.BUILD_CARD && mode.equals("phasesbuild")) {
+                // The conjunction the owner describes: the picker's extra build and discount are worth nothing unless the
+                // build is actually taken, so this variant changes both decisions together (call the phase, then build the
+                // card the phase was called for) and the audit says whether the chain pays.
+                for (int i = 0; i < decision.candidates().size(); i++) {
+                    int id = decision.candidates().get(i).id();
+                    if (id == com.terraforming.ares.services.agent.BuildCardDecisions.STOP) {
+                        continue;
+                    }
+                    Card card = cardService.getCard(id);
+                    if (card == null) {
+                        continue;
+                    }
+                    if (card.getPrice() <= player.getMc()) {
+                        return i;
+                    }
+                }
+                return -1;
+            }
             if (decision.type() == DecisionType.BUILD_CARD) {
                 for (int i = 0; i < decision.candidates().size(); i++) {
                     int id = decision.candidates().get(i).id();
@@ -109,6 +171,44 @@ public class MacroAudit {
                 }
             }
             return -1;
+        }
+
+        /** True when the card raises the steel or titanium income - the discount the whole chain rests on. */
+        private boolean addsMetalIncome(Card card) {
+            if (card.getCardMetadata() == null || card.getCardMetadata().getIncomes() == null) {
+                return false;
+            }
+            return card.getCardMetadata().getIncomes().stream()
+                    .anyMatch(gain -> gain.getType() == com.terraforming.ares.model.income.GainType.STEEL
+                            || gain.getType() == com.terraforming.ares.model.income.GainType.TITANIUM);
+        }
+
+        /** True when the hand holds a green card this player can pay for right now. */
+        private boolean presenceBuildable(MarsGame game, Player player) {
+            return payable(game, player, CardColor.GREEN);
+        }
+
+        private boolean presenceBuildableBlueRed(MarsGame game, Player player) {
+            return payable(game, player, CardColor.BLUE) || payable(game, player, CardColor.RED);
+        }
+
+        /**
+         * Rule arithmetic only: a card of that colour costs no more than the money at hand. In this game there is no
+         * steel or titanium (the payment types are MC, heat, anaerobic microorganisms and restructured resources), so the
+         * "cheap build" resources are the money itself, heat where a card accepts it, and the picker's discount - which
+         * only exists once the phase is called, so it is not in this check.
+         */
+        private boolean payable(MarsGame game, Player player, CardColor color) {
+            for (Integer id : player.getHand().getCards()) {
+                Card card = cardService.getCard(id);
+                if (card == null || card.getColor() != color) {
+                    continue;
+                }
+                if (card.getPrice() <= player.getMc()) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         @Override

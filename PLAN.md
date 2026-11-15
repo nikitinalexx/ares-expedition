@@ -361,5 +361,25 @@ Two conclusions, both useful:
    delayed effect inside the comparison: a projection of the phase/action (what NETWORK does) or a horizon playout, not a
    one-step value.
 
+**Critic scaling (the first positive result of the day).** Same policy, same mechanism, only the critic: 37.8% (old critic, policy-play data) -> 38.5% +/- 0.6 (20 000 exploration games, margin target) -> **41.18% +/- 0.9** (100 000 games, 512x256, 10 000-game confirmation; 40.36% was the 6 000-game reading). Monotone in data, one extra V call per candidate, no change in deployment cost. The critic is the lever and it has a scaling curve; the mechanism does not need to change.
+
 So the division of labour that the measurements support is: **the policy decides whether, the critic decides which**, and
 the way to a stronger player is a better critic and a broader *ranked* menu - not letting the critic run the game.
+
+### 11.2 The horizon fix for act-vs-stop: rejected (and by the same law)
+
+`-Dares.agent.search.horizonStop=true -Dares.agent.search.horizon=2` scores the "stop" candidate by playing the same two
+rounds of the policy that an acting candidate gets, so the delayed payoff is inside the window (the diagnosis of 11.1).
+
+| config | vs SMART |
+|---|---|
+| rank + `v_mix2_margin`, policy decides stop | 38.5% +/- 0.6 (6 000 games) |
+| the same, with the stop scored over a 2-round horizon | **19.5%** (400 games, +/- 4) |
+
+Rejected, and for the reason Stage A already measured: a two-round playout is a *rollout*, its game noise is ~17 points,
+and choosing among ten candidates by one rollout each is choosing noise (out of sample the rollout lost -3.3 +/- 6.5). The
+horizon does not add information faster than it adds variance; making it informative needs 10-20 samples per candidate,
+which is 8 minutes per game.
+
+So the branch "value decides act-vs-stop" is closed by two independent routes (a one-step comparison is biased, a rollout
+comparison is noise), and the division of labour measured in 11.1 stands: **policy decides whether, critic decides which**.

@@ -225,3 +225,63 @@ behaviour that the plan code does not explain is paid for, so the deployed style
 still diverge. Success = code 0 within ~1 point of 37.8% **and** chi-square in the thousands; failure = the anchor either
 pins everything (no divergence) or nothing (the cost returns), and then the honest step is a bigger dataset per iteration
 (20 000 games) before touching the mechanism again.
+
+## 2026-11-15, fourth part: the critic is the lever (+3.4 points), the mechanisms are not
+
+### The best player now
+
+`r22_plan` + critic `v_mix3_margin_wide`, ranking the candidates of `BUILD_CARD`/`DRAFT_CARDS` (pairs on, symmetric score).
+Measured at the 10 000-game resolution the effect needs:
+
+| opponent | result |
+|---|---|
+| **SMART** | **41.18% +/- 0.9** (was 37.8% +/- 2 with the old critic) |
+| RANDOM | 93.2% |
+| NETWORK | 9.3% |
+
+Profile: 12.5 cards per game, acceptance 0.556, phases 49% income / 51% draft, phase-3 spends 39.7%; sanity bench 7/9
+obvious moves, 0 gate failures. So the gain is not a degenerate trick - the behaviour is the same, the card choice is
+better.
+
+The critic: 100 000 self-play games with mixed exploration (build 0.5, draft 0.3, standard 0.2, blue 0.2, phase 0.2),
+target = margin, 512x256. The scaling is monotone in *data* and flat in *parameters*:
+
+| critic | data | hidden | vs SMART |
+|---|---|---|---|
+| `v_r15_plan` | policy play only | 256,128 | 37.8% |
+| `v_mix2_margin` | 20 000 | 256,128 | 38.5% +/- 0.6 |
+| `v_mix3_margin_wide` | **100 000** | 512,256 | **41.18% +/- 0.9** |
+| `v_mix3_margin_xl` | 100 000 | 1024,512 | 39.82% +/- 1.4 |
+
+### What was measured and rejected today (all with the numbers in docs/EXPERIMENTS.md)
+
+* **V as the player** (V decides act-vs-stop on every menu): 0.4-0.6% with a critic trained on random play, 0.1% with the
+  policy critic, and the mechanism is visible in the data - 759 of 768 build opportunities declined, 0.45 cards per game.
+  A state value is biased against any action that spends money now and pays ten rounds later; it explains the earlier -13
+  and -8 point results too.
+* **The same fix over a horizon** (stop scored by 2 rounds of policy playout): 19.5% - one rollout per candidate is the
+  Stage A noise law again.
+* **Latent plans** (per-game code, generator nudges, KL anchor to the parent): the channel works mechanically (chi-square
+  2 367 across 16 codes, build-phase codes call phase 1 in 29-34% of rounds vs 15-17%), but it costs strength: 30.8%
+  unanchored, 34.95% anchored, against 37.8% for the same budget without nudges.
+* **The phase axis and the second build slot** (owner's observation: in phases 1/2 the picker builds twice and the agent's
+  pass forfeits both): measured 0.6% of its decisions are two-slot states, because it picks phase 1/2 in 0% of rounds. The
+  paired audits of the plans: call the phase -0.5 +/- 1.7, call it and build -0.0 +/- 1.6, build the metal-income cards
+  -0.6 +/- 1.4. No single link of the chain pays when it is forced alone.
+* **The steel/titanium discount**: it exists (services/DiscountService: 2 MC per steel income on a BUILDING-tag card, 3 per
+  titanium on a SPACE one), but the player's mean steel income per decision is **0.12**, and the discount changes which card
+  is cheapest in **1.0%** of rows - it does not own the income, so the chain cannot pay.
+
+### Next, in order
+
+1. **Give the critic the effective price.** `DiscountService.getDiscount` already computes, from the rules, what a card
+   will actually cost this player. Put it in the observation (e.g. `my_best_effective_price_in_hand/50` and the discount
+   available for it) so that the ranking sees "this card is cheap *because of my steel*" instead of having to infer a
+   product of a tag and an income. This is the one feature the owner's chain needs and the encoder lacks. Cost: encoder
+   change, regenerate the critic data (20 min per 100 000 games), retrain (20 min), evaluate at 6 000-10 000 games.
+2. **Coverage generators with audits** (the arbiter stays the paired audit): the three plans measured today were blunt
+   versions (force a link for 8-12 turns). The next family is *conditional* plans (call the build phase when a card is
+   worth building by the critic; keep metal-income cards only when the discount is reachable), which is what the benchmark
+   actually does.
+3. **The critic's target**: margin beats outcome; the next candidate is a distance-to-end weighting (a row in the last five
+   rounds is closer to the payoff than one in round 2), which is cheap to test with the same pipeline.

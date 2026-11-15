@@ -1266,3 +1266,91 @@ Two consequences:
    - trained on it - is the first critic that improved the player (38.5% +/- 0.6, against 37.8% +/- 2 for the old one);
 2. the *policy* cannot learn it from its own games, so either the data generator has to produce build-phase play (the
    latent-plan nudge does exactly that) or the decision has to move to a quantity that sees the value (the critic).
+
+## 2026-11-15 — the first improvement in a while comes from the critic's *data*, not from a new mechanism
+
+Same policy bundle (`r22_plan`), same mechanism (1-ply ranking of the candidates in `BUILD_CARD`/`DRAFT_CARDS`, pairs on,
+symmetric score), only the critic changes. In each row the critic was trained on games whose decisions were *explored*
+(build 50%, draft 30%, standard 20%, blue 20%, phase 20% - the allowed RANDOM/self-play environments, no SMART rows):
+
+| critic | training games | target | vs SMART |
+|---|---|---|---|
+| `v_r15_plan` (the previous pipeline) | policy play only | outcome | 37.8% (2 000 games) |
+| `v_mix2_margin` | 20 000 | margin | 38.5% +/- 0.6 (6 000) |
+| `v_mix3_margin_wide` (512,256) | **100 000** | margin | **40.36% +/- 1.4 (6 000)** |
+
+Two facts worth keeping:
+* **margin beats outcome** as the target, and the wider net on 5x the data adds ~1.9 points over the previous row. The
+  ordering is monotone in data, which is the first evidence in this repository that the critic is on a useful scaling curve.
+* the *deployment* cost is unchanged (one extra V call per candidate, as before) - the gain is not paid for with search
+  time, which matters for the nightly's 20 000 games per iteration.
+
+Gate and profile for the best row: `--mode sanity` 7/9 obvious moves, 0 gate failures; `ml/check_player.py` builds 12.5
+cards per game, acceptance 0.556, phases 49% income / 51% draft, phase-3 spends 39.7% - the same profile as before, so the
+gain did not come from a degenerate trick.
+
+Also measured and rejected in the same pass: scoring the *stop* candidate over a 2-round horizon (`horizonStop`, so the
+delayed payoff is inside the comparison) - **19.5% on 400 games**: a two-round playout is a rollout, and one rollout per
+candidate is a choice made of the ~17-point game noise (the Stage A law again).
+
+### The phase pick and the second build slot: measured with the paired audit
+
+The owner's point: in phases 1/2 the picker builds **twice** with a discount, so passing there throws away both builds; the
+plan is a *conjunction* (take and keep a card in time, call the phase, build it, then collect the income it made possible).
+
+`--mode macroaudit --macro phases`, 300 positions, 8 turns, paired on the same determinizations:
+
+| plan | normal | with plan | difference |
+|---|---|---|---|
+| call phase 1/2 whenever the hand holds a payable card of that colour | +2.1 | +1.6 | **-0.5 +/- 1.7** (135 better with, 153 without) |
+
+So the phase call alone does not pay - and that is the expected reading of the conjunction: the picker's bonus is a
+discount and an extra slot, and a player that then declines 40% of its builds cannot convert it. `--macro phasesbuild`
+(call the phase *and* take the payable build) is the variant that actually tests the chain; it is queued behind the current
+critic run because the audit and the generator cannot share the classifier directory while one of them compiles.
+
+**The conjunction, measured.** `--mode macroaudit --macro phasesbuild` (call the build phase whose cards the hand can pay
+for, *and* take that build), 300 positions, 8 turns, paired:
+
+| plan | normal | with plan | difference |
+|---|---|---|---|
+| call phase 1/2 and build the payable card | +1.6 | +1.6 | **0.0 +/- 1.6** (131 better with, 150 without) |
+
+Together with the phase-only variant (-0.5 +/- 1.7) this says the blunt version of the chain does not pay: "call the phase
+and build whatever is payable" is exactly the `mustBuild` idea that measured -4.7 points before, and the picker's discount
+does not rescue it. What the benchmark does differently is presumably *conditional*: it calls the build phase when it holds a
+card worth building (its own card valuation decides), not whenever the hand is legally playable. At n=300 this audit cannot
+see a effect below ~1.6 points either, so the honest statement is: no measurable gain from the phase axis at our resolution,
+and the money (2.6 points) came from the critic.
+
+### The steel/titanium chain, measured: the player never has the discount
+
+The rules (as the engine implements them in `services/DiscountService`): a card with the BUILDING tag costs 2 MC less per
+steel income (3 with Advanced Alloys), a SPACE-tag card 3 MC less per titanium income (+1 per Advanced Alloys/Phobolog).
+Steel and titanium are *incomes that act as permanent discounts*; in this game there is no spendable steel stock (the
+payment types are MC, heat, anaerobic microorganisms, restructured resources).
+
+`ml/discount_report.py` computes, for every recorded `BUILD_CARD` row, the effective price of every candidate under those
+rules (tags from the candidate features, incomes from the observation), over 6 000 policy games / 149 972 rows:
+
+| fact | value |
+|---|---|
+| mean steel income per decision | **0.12** (titanium 0.12) |
+| rows where the discount changes which candidate is cheapest | **1.0%** |
+| the taken card is the cheapest by nominal price | 25.1% (the same by effective price) |
+
+So the chain "my building-tag cards are cheap because I have steel" cannot pay for this player for a prior reason: it does
+not own the steel. The cards that create that income (`Mine`, `Building Industries`, `Blast Furnaces`, `Electric Arc
+Furnaces`, the mining corporations) are exactly the ones it never builds.
+
+`--mode macroaudit --macro metals` (prefer building and drafting the cards that raise steel/titanium income), 250
+positions, 12 turns, paired:
+
+| plan | normal | with plan | difference |
+|---|---|---|---|
+| build the metal-income cards | -0.5 | -1.1 | **-0.6 +/- 1.4** (115 better with, 115 without) |
+
+Dead even. Three chain plans were measured today - phase call (-0.5 +/- 1.7), phase call plus the build (0.0 +/- 1.6),
+metal-income cards (-0.6 +/- 1.4) - and none of them pays on its own. The pattern is consistent: a single link of a
+conjunction, forced for eight to twelve turns, does not move the final margin, because the rest of the chain is still
+missing. The only thing measured today that moves the margin is the critic's training data (37.8% -> 40.36%).
