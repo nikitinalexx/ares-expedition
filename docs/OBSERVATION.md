@@ -130,7 +130,7 @@ show none.
 
 | decision | width | contents |
 |---|---|---|
-| `BUILD_CARD`, `DRAFT_CARDS`, `DISCARD_CARDS`, `SELL_CARDS`, `SELL_CARDS_LAST_ROUND`, `MULLIGAN`, `PERFORM_BLUE_ACTION`, `COLLECT_INCOME` | 83 (84 for a sale) | 64-bit class signature (±1 each), colour (4), tags (11), price/50, is-a-blue-action, stop flag, **printed victory points/10**; a sale adds sell price/10 |
+| `BUILD_CARD`, `DRAFT_CARDS`, `DISCARD_CARDS`, `SELL_CARDS`, `SELL_CARDS_LAST_ROUND`, `MULLIGAN`, `PERFORM_BLUE_ACTION`, `COLLECT_INCOME` | 83 (84 for a sale) | 64-bit class signature (±1 each), colour (4), tags (11), price/50, is-a-blue-action, stop flag, **printed victory points/10 — LAST slot** (added 2026-11-15; it was documented before and never written). Appended last on purpose: a converted model can then get a zero weight for it (`ml/remap_model.py --pad-candidates`); a slot inserted before `stop` shifted stop's weight and cost 3.8 points in the parity check |
 | `PICK_PHASE` | 6 | phase one-hot (5) + "this phase is upgraded for me" |
 | `PICK_CORPORATION` | 107 | class signature (64), phase-upgrade one-hot (10), tag (10), milestone slot (8), milestone type (15) |
 | `STANDARD_ACTION` | 20 | kind one-hot (11: stop, heat exchange, forest, temperature, 2× infrastructure, 5 standard projects), MC/heat/plant cost, flags for what it raises, Cargo Ships heat variant, stop |
@@ -161,11 +161,29 @@ asks for a phase); a candidate id is the phase number.
    board object (it consumes plants/heat and can be raised).
 4. TR has no field of its own by design: it enters as +1 `winning_points` and +1 `mc_income` (money per round).
 
-## J. The effective price of the best card in hand (779–780, before the plan bits)
+## J. The hand summary (779–798, before the plan bits) — added 2026-11-15
 
-`hand:best_effective_price/50` and `hand:best_discount/50`: for the cheapest card the player holds, what the engine's
-`DiscountService` says it would actually cost, and how much of its nominal price the discounts took off. Both private
-(derived from the hand), so `buildPublic` zeroes them.
+Twenty private values describing the hand, `HAND_SUMMARY_SIZE = 1 + 4 + 11 + 3 + 1`:
+
+| values | what |
+|---|---|
+| `hand:cards/10` | how many cards are held |
+| `hand:colour_<colour>/5` (4) | count per colour |
+| `hand:tag_<tag>/5` (11) | count per tag (BUILDING, SPACE, SCIENCE, …) |
+| `hand:sum_price/50` | total nominal price of the hand |
+| `hand:sum_effective_price/50` | the same after every discount the player owns (`DiscountService`) |
+| `hand:min_effective_price/50` | the cheapest card it could build right now |
+| `hand:affordable_cards/10` | how many of them it can pay for right now |
+
+Before this block the observation described the table, the money and only **five specific** hand cards (bits that had been
+pruned as "dead" because this player never drafted those cards), so a state value could not see that it held three cheap
+building-tag cards: "build now or wait" was judged blind (`docs/REVISION.md`).
+
+The effective price is the engine's own arithmetic - steel income gives 2 MC per BUILDING tag, titanium 3 MC per SPACE tag,
+plus a dozen special effects. The rules make it a product of a tag and an income stream; an MLP sees the factors and has to
+learn the product, and the measured player never had the income to learn it from (mean steel income 0.12,
+`ml/discount_report.py`). All twenty are private: `buildPublic` zeroes them, and a test asserts that every `hand:` and
+`plan:` column is zero in the public view.
 
 Why a separate feature and not "the network will figure it out": the discount is a *product* of a card's tag and an income
 stream (steel income × 2 MC for a BUILDING tag, titanium × 3 for SPACE, plus ten special effects such as Earth Catapult,

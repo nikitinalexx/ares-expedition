@@ -13,8 +13,15 @@ public final class CardFeatures {
     public static final int SIGNATURE = CardSignature.BITS;
     public static final int COLORS = 4;
     public static final int TAGS = 11;
-    /** signature, colour, tags, price/50, active, stop */
-    public static final int LENGTH = SIGNATURE + COLORS + TAGS + 2 + 1;
+    /**
+     * signature, colour, tags, price/50, active, stop, printed points/10.
+     * <p>
+     * The points slot was DOCUMENTED in every decision's layout string from the start and never written: the card menus
+     * described a card by its identity, colour, tags, price and "is a blue action", but not by what it scores. "Which card
+     * to keep in the draft" and "which card to build" were blind to the only property that pays directly (found in the
+     * per-decision revision, 2026-11-15).
+     */
+    public static final int LENGTH = SIGNATURE + COLORS + TAGS + 2 + 1 + 1;
 
     static {
         if (CardColor.values().length != COLORS) {
@@ -56,6 +63,13 @@ public final class CardFeatures {
         }
         pos += 2;
         features[pos] = stop ? 1f : 0f;
+        pos += 1;
+        // LAST, deliberately: candidate features are only ever APPENDED, so a converted model can be given a zero weight
+        // for the new slot (ml/remap_model.py --pad-candidates). Inserting it before `stop` shifted stop's weight into the
+        // points slot and cost 3.8 points of win rate in the parity check - measured, 2026-11-15.
+        if (!stop) {
+            features[pos] = card.getWinningPoints() / 10f;
+        }
         return features;
     }
 }

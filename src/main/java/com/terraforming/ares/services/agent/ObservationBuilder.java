@@ -130,13 +130,14 @@ public class ObservationBuilder {
     public static final int PLAN_SIZE = PlanCodes.BITS;
 
     /**
-     * The effective price of the best card in hand: what this player would actually pay for the cheapest card it holds,
-     * using the engine's own {@code DiscountService} (steel income gives 2 MC per BUILDING tag, titanium 3 per SPACE, plus
-     * a dozen special effects). The rules make that a product of a tag and an income, which a small network has to learn
-     * from scratch; here it is the engine's arithmetic, so ranking a card can see "cheap because of my steel" directly.
+     * An aggregate description of the hand. Until now the observation contained the table, the money and only five bits of
+     * specific hand cards, so a state value could not see "I still hold three building-tag cards I can pay for" - and
+     * "build now or wait" was judged blind. The block is a summary, not a strategy: how many cards, per colour, per tag,
+     * their nominal and *effective* price (the engine's own {@code DiscountService}: steel income gives 2 MC per BUILDING
+     * tag, titanium 3 per SPACE, plus a dozen special effects) and how many of them this player can pay for right now.
      * Private (derived from the hand): zeroed by {@link #buildPublic}.
      */
-    public static final int PRICE_SIZE = 2;
+    public static final int HAND_SUMMARY_SIZE = 1 + 4 + 11 + 3 + 1;
 
     public static final String LAYOUT = "ObservationBuilder v3.1: V2 encoder (table 417 + hand 481) without 210 exact copies (observation/v3_mask.json)"
             + " + roundContext[revealed, currentPhase(5), sellFlag, picks me/opponent/dummy (15), builds me/opponent (8), extra blue activations (2),"
@@ -219,7 +220,7 @@ public class ObservationBuilder {
 
     public static int size() {
         return KEEP.length + CONTEXT_SIZE + CARDS_SIZE + SCORE_SIZE + EXTRAS_SIZE + DOUBLE_PAYMENT_SIZE
-                + PHASE_START_SIZE + OCEAN_SIZE + PRICE_SIZE + PLAN_SIZE;
+                + PHASE_START_SIZE + OCEAN_SIZE + HAND_SUMMARY_SIZE + PLAN_SIZE;
     }
 
     /**
@@ -325,8 +326,17 @@ public class ObservationBuilder {
             names.add("oceans:collected_" + dimension + "/40");
         }
         names.add("oceans:revealed/9");
-        names.add("hand:best_effective_price/50");
-        names.add("hand:best_discount/50");
+        names.add("hand:cards/10");
+        for (com.terraforming.ares.model.CardColor colour : com.terraforming.ares.model.CardColor.values()) {
+            names.add("hand:colour_" + colour.name().toLowerCase() + "/5");
+        }
+        for (com.terraforming.ares.model.Tag tag : com.terraforming.ares.model.Tag.values()) {
+            names.add("hand:tag_" + tag.name().toLowerCase() + "/5");
+        }
+        names.add("hand:sum_price/50");
+        names.add("hand:sum_effective_price/50");
+        names.add("hand:min_effective_price/50");
+        names.add("hand:affordable_cards/10");
         for (int bit = 0; bit < PLAN_SIZE; bit++) {
             names.add("plan:my_code_bit_" + bit);
         }
@@ -442,28 +452,48 @@ public class ObservationBuilder {
         observation[pos++] = mc / 40f;
         observation[pos++] = plants / 40f;
         observation[pos++] = revealed / 9f;
-        // The effective price of the best card in hand (engine arithmetic, see PRICE_SIZE): what the cheapest card I hold
-        // would cost after every discount I own, and how much of that price the discounts took off.
-        int bestEffective = Integer.MAX_VALUE;
-        int bestDiscount = 0;
+        // The hand as a summary (see HAND_SUMMARY_SIZE): counts, prices and what this player can pay for right now.
+        int handCards = 0;
+        int[] byColour = new int[com.terraforming.ares.model.CardColor.values().length];
+        int[] byTag = new int[com.terraforming.ares.model.Tag.values().length];
+        int sumPrice = 0;
+        int sumEffective = 0;
+        int minEffective = Integer.MAX_VALUE;
+        int affordable = 0;
         for (Integer id : player.getHand().getCards()) {
             Card handCard = cardService.getCard(id);
             if (handCard == null) {
                 continue;
             }
+            handCards++;
+            byColour[handCard.getColor().ordinal()]++;
+            for (com.terraforming.ares.model.Tag tag : handCard.getTags()) {
+                byTag[tag.ordinal()]++;
+            }
+            int price = handCard.getPrice();
             int discount = discountService.getDiscount(game, handCard, player, java.util.Map.of());
-            int effective = Math.max(0, handCard.getPrice() - discount);
-            if (effective < bestEffective) {
-                bestEffective = effective;
-                bestDiscount = Math.min(discount, handCard.getPrice());
+            int effective = Math.max(0, price - discount);
+            sumPrice += price;
+            sumEffective += effective;
+            minEffective = Math.min(minEffective, effective);
+            if (effective <= player.getMc()) {
+                affordable++;
             }
         }
-        if (bestEffective == Integer.MAX_VALUE) {
-            bestEffective = 0;
-            bestDiscount = 0;
+        if (minEffective == Integer.MAX_VALUE) {
+            minEffective = 0;
         }
-        observation[pos++] = bestEffective / 50f;
-        observation[pos++] = bestDiscount / 50f;
+        observation[pos++] = handCards / 10f;
+        for (int count : byColour) {
+            observation[pos++] = count / 5f;
+        }
+        for (int count : byTag) {
+            observation[pos++] = count / 5f;
+        }
+        observation[pos++] = sumPrice / 50f;
+        observation[pos++] = sumEffective / 50f;
+        observation[pos++] = minEffective / 50f;
+        observation[pos++] = affordable / 10f;
         // The latent plan: private (the opponent's code is not public information).
         int code = PlanCodes.code(player);
         for (int bit = 0; bit < PLAN_SIZE; bit++) {
@@ -479,7 +509,7 @@ public class ObservationBuilder {
                 }
             }
             // the latent plan and the hand-derived price are private as well
-            for (int i = observation.length - PLAN_SIZE - PRICE_SIZE; i < observation.length; i++) {
+            for (int i = observation.length - PLAN_SIZE - HAND_SUMMARY_SIZE; i < observation.length; i++) {
                 observation[i] = 0f;
             }
         }

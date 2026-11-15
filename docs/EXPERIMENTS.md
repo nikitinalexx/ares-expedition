@@ -1376,3 +1376,22 @@ critic that sees one more exact quantity is a strictly better player at the same
 
 The critic line as it now stands: 37.8% (policy data) -> 38.5% (20k exploration) -> 41.18% (100k, 512x256) -> 42.05% (plus
 the effective price). Every step is the same mechanism, only the critic's information or data changed.
+
+### Why there is no "card Q-model" (a dead end closed on paper before it cost a night)
+
+The natural answer to "why did the old value net understand +1 steel income and our critic needs a hand-made feature" is:
+train a model on the question we actually ask - `Q(state, card)` - instead of reading the difference of two state values.
+It was started and abandoned after one look at the label:
+
+* every candidate of a row belongs to the **same game**, so the label (that game's final margin) is **identical for every
+  candidate of that row**. A model trained on it minimises the loss by predicting the margin for all of them: it learns the
+  value of the *state*, and the card only enters as a spurious correlate of what the policy happened to take;
+* the honest label is the counterfactual, "the margin had this card been taken", which only a rollout gives. Measured
+  cost and quality: 1 rollout per candidate is the Stage A noise law (-3.3 +/- 6.5 out of sample), and making it
+  informative needs 10-20 samples per candidate (~40 s per decision), i.e. ~1 hour per 100 decisions.
+
+So the ceiling of the ranking is the *label*, not the features somebody thinks of. What a feature can do is change the
+*representation* of the difference the critic already has to judge - and that only matters if the information is missing
+from the observation at all, which was the case: the observation described the table, the money and five bits of specific
+hand cards, but **not the hand**. That is why the next change is a hand summary (counts by colour and tag, nominal and
+effective price, how many are affordable), not a per-rule feature.

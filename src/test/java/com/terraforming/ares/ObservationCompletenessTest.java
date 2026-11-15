@@ -30,6 +30,7 @@ import java.util.TreeMap;
 import java.util.function.BiConsumer;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Assertions;
 
 /**
  * "The network can only learn what it is told": every PUBLIC fact about the game must change the observation, and no hidden fact
@@ -57,11 +58,22 @@ class ObservationCompletenessTest extends EngineTestBase {
     PickPhaseDecisions decisions;
     @Autowired
     CardService cardService;
+    @Autowired
+    com.terraforming.ares.services.agent.ObservationBuilder observationBuilder;
 
     /**
      * A copy of a real game at the first moment (round 12 or later) when `wanted` is true for its state.
      */
     private MarsGame snapshot(java.util.function.Predicate<MarsGame> wanted) {
+        return snapshot(wanted, 12);
+    }
+
+    /** {@link #snapshot(java.util.function.Predicate)} without the "round 12 or later" requirement (corporations). */
+    private MarsGame snapshotEarly(java.util.function.Predicate<MarsGame> wanted) {
+        return snapshot(wanted, 0);
+    }
+
+    private MarsGame snapshot(java.util.function.Predicate<MarsGame> wanted, int minTurns) {
         for (int attempt = 0; attempt < 30; attempt++) {
             MarsGame game = gameService.createNewSimulation(GameParameters.builder()
                     .playerNames(new ArrayList<>(List.of("A", "B")))
@@ -71,7 +83,7 @@ class ObservationCompletenessTest extends EngineTestBase {
                     .dummyHand(true).build());
             MarsGame[] snapshot = new MarsGame[1];
             simulation.processSimulation(game, current -> {
-                if (snapshot[0] == null && current.getTurns() >= 12 && wanted.test(current)) {
+                if (snapshot[0] == null && current.getTurns() >= minTurns && wanted.test(current)) {
                     snapshot[0] = new MarsGame(current);
                 }
             });
@@ -149,6 +161,22 @@ class ObservationCompletenessTest extends EngineTestBase {
         facts.put("a build available (e.g. 2nd green build)", (g, p) -> p.getBuilds().add(new BuildDto(BuildType.GREEN)));
         facts.put("extra activations of blue cards left", (g, p) -> p.setBlueActionExtraActivationsLeft(p.getBlueActionExtraActivationsLeft() + 1));
         facts.put("a card is in the hand", (g, p) -> p.getHand().addCard(unusedCard(g, CardColor.GREEN)));
+        // The hand as a whole. Before 2026-11-15 only five SPECIFIC hand cards had a bit of their own, so "the hand" was
+        // invisible to the critic: it could not see that it held three cheap building-tag cards, and "build now or wait"
+        // was judged blind. These facts are what the hand summary block answers to; each one must move the observation.
+        facts.put("a card with a BUILDING tag in the hand", (g, p) -> p.getHand().addCard(unusedCardWithTag(g, com.terraforming.ares.model.Tag.BUILDING)));
+        facts.put("a card with a SPACE tag in the hand", (g, p) -> p.getHand().addCard(unusedCardWithTag(g, com.terraforming.ares.model.Tag.SPACE)));
+        facts.put("the hand is empty", (g, p) -> {
+            while (p.getHand().size() > 0) {
+                p.getHand().removeCard(p.getHand().getCards().getFirst());
+            }
+        });
+        facts.put("three more cards in the hand", (g, p) -> {
+            p.getHand().addCard(unusedCard(g, CardColor.BLUE));
+            p.getHand().addCard(unusedCard(g, CardColor.RED));
+            p.getHand().addCard(unusedCard(g, CardColor.GREEN));
+        });
+        facts.put("enough money to afford the hand", (g, p) -> p.setMc(p.getMc() + 60));
         facts.put("a green card is on the table", (g, p) -> putOnTable(p, unusedCard(g, CardColor.GREEN)));
         facts.put("a blue card is on the table", (g, p) -> putOnTable(p, unusedCard(g, CardColor.BLUE)));
         facts.put("a red card is on the table", (g, p) -> putOnTable(p, unusedCard(g, CardColor.RED)));
@@ -282,6 +310,151 @@ class ObservationCompletenessTest extends EngineTestBase {
      * cards that would pay 3 and 1 heat, the feature must read 3, not 4 - and the flag of the card itself does not have
      * to exist (130 greens can pay again, flagging them all would be 260 columns).
      */
+    /**
+     * The options a decision offers must follow the game. A state observation can be complete and the decision still blind,
+     * if its candidate set is assembled from a stale or partial source: "which card to build" must offer exactly the hand,
+     * "which phase" exactly the legal phases, "which corporation" exactly the ones on offer.
+     */
+    @Test
+    void everyDecisionOffersTheOptionsTheRulesGive() {
+        MarsGame picking = whilePicking();
+        java.util.List<Integer> hand = new java.util.ArrayList<>(picking.getPlayerUuidToPlayer().values().iterator().next()
+                .getHand().getCards());
+        MarsGame around = insideARound();
+        for (Player player : around.getPlayerUuidToPlayer().values()) {
+            // BUILD_CARD: every card of the hand is on the menu (plus the stop candidate) whenever the player can build.
+            if (!player.getBuilds().isEmpty() && !player.getHand().isEmpty()) {
+                var decision = agentBuildDecision(around, player);
+                if (decision != null) {
+                    java.util.Set<Integer> offered = new java.util.HashSet<>();
+                    decision.candidates().forEach(candidate -> offered.add(candidate.id()));
+                    for (int card : player.getHand().getCards()) {
+                        assertTrue(offered.contains(card) || offered.contains(0xFFFF),
+                                "the build menu does not offer a card that is in the hand: " + offered);
+                    }
+                }
+            }
+        }
+        // The other decision types: the menu must be built from the game, not from a stale or partial source. Each
+        // assertion is a rule ("the corporations on offer are the ones the engine dealt", "only cards that are really
+        // activatable can be activated"), so a decision that silently sees half of its options fails here.
+        MarsGame corporations = snapshotEarly(g -> g.getStateType() == com.terraforming.ares.model.StateType.PICK_CORPORATIONS);
+        for (Player player : corporations.getPlayerUuidToPlayer().values()) {
+            if (player.getCorporations().isEmpty()) {
+                continue;
+            }
+            var decision = corporationDecisions.decision(corporations, player, corporationDecisions.options(corporations, player));
+            java.util.Set<Integer> offered = new java.util.HashSet<>();
+            decision.candidates().forEach(candidate -> offered.add(candidate.id()));
+            java.util.Set<Integer> dealt = new java.util.HashSet<>(player.getCorporations().getCards());
+            assertTrue(offered.equals(dealt), "the corporation menu offers " + offered + " but the engine dealt " + dealt);
+        }
+        MarsGame bluePhase = snapshot(g -> g.getStateType() == com.terraforming.ares.model.StateType.PERFORM_BLUE_ACTION);
+        for (Player player : bluePhase.getPlayerUuidToPlayer().values()) {
+            var decision = blueActionDecisions.build(bluePhase, player);
+            java.util.Set<Integer> offered = new java.util.HashSet<>();
+            decision.candidates().forEach(candidate -> offered.add(candidate.id()));
+            for (int offeredId : offered) {
+                if (offeredId == com.terraforming.ares.services.agent.BlueActionDecisions.STOP) {
+                    continue;
+                }
+                assertTrue(player.getPlayed().getCards().contains(offeredId) || player.getActivatedBlueCards().getCards().contains(offeredId),
+                        "the blue action menu offers " + offeredId + " which is not a played card: " + offered);
+            }
+            java.util.Set<Integer> activatable = new java.util.HashSet<>();
+            for (int played : player.getPlayed().getCards()) {
+                if (cardService.getCard(played).isActiveCard()) {
+                    activatable.add(played);
+                }
+            }
+            java.util.Set<Integer> offeredCards = new java.util.HashSet<>(offered);
+            offeredCards.remove(com.terraforming.ares.services.agent.BlueActionDecisions.STOP);
+            assertTrue(activatable.containsAll(offeredCards), "the menu offers a card that cannot be activated: " + offeredCards);
+        }
+        // PICK_PHASE: the legal phases, i.e. everything except the one picked last round.
+        for (Player player : picking.getPlayerUuidToPlayer().values()) {
+            var decision = decisions.build(picking, player);
+            java.util.Set<Integer> offered = new java.util.HashSet<>();
+            decision.candidates().forEach(candidate -> offered.add(candidate.id()));
+            java.util.Set<Integer> legal = new java.util.HashSet<>(PickPhaseDecisions.legalPhases(player));
+            assertTrue(offered.equals(legal), "the phase menu offers " + offered + " but the rules allow " + legal);
+        }
+    }
+
+    @Autowired
+    com.terraforming.ares.services.agent.BuildCardDecisions buildCardDecisions;
+    @Autowired
+    com.terraforming.ares.services.agent.CorporationDecisions corporationDecisions;
+    @Autowired
+    com.terraforming.ares.services.agent.BlueActionDecisions blueActionDecisions;
+
+    private com.terraforming.ares.services.agent.Decision agentBuildDecision(MarsGame game, Player player) {
+        try {
+            return buildCardDecisions.build(game, player);
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    /**
+     * A card's candidate description must contain what the card is worth: its printed victory points, its price and its
+     * tags. The points slot was documented in every layout string and never written (found 2026-11-15), so the card menus
+     * could not tell a 4-point card from a 1-point one except by its class signature. This test is exact - it recomputes
+     * the expected values from the card itself - so a slot that silently disappears fails it.
+     */
+    @Test
+    void aCardCandidateCarriesItsPrintedPointsAndPrice() {
+        java.util.List<Integer> deck = cardService.createProjectsDeck(
+                java.util.List.of(Expansion.BASE, Expansion.BUFFED_CORPORATION, Expansion.DISCOVERY)).getCards();
+        int checked = 0;
+        for (int id : deck) {
+            Card card = cardService.getCard(id);
+            if (card == null || card.getPrice() <= 0 || card.getWinningPoints() <= 0) {
+                continue;
+            }
+            float[] features = com.terraforming.ares.services.agent.CardFeatures.of(card, false);
+            int points = com.terraforming.ares.services.agent.CardFeatures.LENGTH - 1;
+            int stop = points - 1;
+            int price = stop - 2;
+            Assertions.assertEquals(card.getWinningPoints() / 10f, features[points], 1e-4,
+                    "the candidate vector does not carry the printed points of " + card.getClass().getSimpleName());
+            Assertions.assertEquals(card.getPrice() / 50f, features[price], 1e-4,
+                    "the candidate vector does not carry the price of " + card.getClass().getSimpleName());
+            if (++checked >= 20) {
+                break;
+            }
+        }
+        assertTrue(checked >= 10, "not enough cards with points to check (" + checked + ")");
+    }
+
+    /**
+     * Every column derived from the private hand (and the latent plan) must be zero in the PUBLIC view of a position.
+     * <p>
+     * The symmetric search reads the opponent's position through {@code buildPublic}; a private column that is not zeroed
+     * there is hidden information leaking into the search. This asserts it column by column, by name, so a NEW private
+     * block that forgets to declare itself fails here instead of quietly leaking (the hand summary was added exactly this
+     * way, 2026-11-15).
+     */
+    @Test
+    void everyPrivateColumnIsZeroInThePublicView() {
+        MarsGame game = insideARound();
+        java.util.List<String> names = com.terraforming.ares.services.agent.ObservationBuilder.names();
+        for (Player player : game.getPlayerUuidToPlayer().values()) {
+            float[] publicView = observationBuilder.buildPublic(game, player);
+            Assertions.assertEquals(names.size(), publicView.length, "the public view has the encoder's width");
+            int checked = 0;
+            for (int i = 0; i < names.size(); i++) {
+                String name = names.get(i);
+                if (name.startsWith("hand:") || name.startsWith("plan:")) {
+                    Assertions.assertEquals(0f, publicView[i], 0f,
+                            "the public view leaks a private column: " + name);
+                    checked++;
+                }
+            }
+            assertTrue(checked >= 5, "there must be private columns to check (" + checked + ")");
+        }
+    }
+
     @Test
     void theDoublePaymentIsTheBestCardPerDimensionNotTheSum() {
         MarsGame game = snapshot(g -> g.getStateType() == com.terraforming.ares.model.StateType.PICK_PHASE);
@@ -291,9 +464,12 @@ class ObservationCompletenessTest extends EngineTestBase {
             taken.addAll(p.getHand().getCards());
             taken.addAll(p.getPlayed().getCards());
         });
-        java.util.List<Integer> added = new java.util.ArrayList<>();
+        // Candidate cards with the amount of heat they would pay, measured on the CURRENT position before anything is
+        // added; the test then keeps two with DIFFERENT payments so that max and sum cannot coincide.
+        java.util.List<Integer> candidates = new java.util.ArrayList<>();
+        java.util.List<Integer> payments = new java.util.ArrayList<>();
         for (int id : cardService.createProjectsDeck(game.getExpansions()).getCards()) {
-            if (added.size() == 2) {
+            if (candidates.size() >= 8) {
                 break;
             }
             if (taken.contains(id) || !cardService.getCard(id).canPayAgain()) {
@@ -313,10 +489,24 @@ class ObservationCompletenessTest extends EngineTestBase {
             if (probeGame.getProjectsDeck().size() != deckBefore || probePlayer.getHeat() == heatBefore) {
                 continue;
             }
-            putOnTable(player, id);
-            added.add(id);
+            candidates.add(id);
+            payments.add(Math.max(0, probePlayer.getHeat() - heatBefore));
         }
-        assertTrue(added.size() == 2, "the deck must offer two cards that can pay again");
+        java.util.List<Integer> added = new java.util.ArrayList<>();
+        int firstPayment = -1;
+        for (int i = 0; i < candidates.size() && added.size() < 2; i++) {
+            int payment = payments.get(i);
+            if (added.isEmpty()) {
+                if (payment > 0) {
+                    added.add(candidates.get(i));
+                    firstPayment = payment;
+                }
+            } else if (payment > 0 && payment != firstPayment) {
+                added.add(candidates.get(i));
+            }
+        }
+        assertTrue(added.size() == 2, "the deck must offer two cards that pay again by DIFFERENT amounts");
+        added.forEach(id -> putOnTable(player, id));
         // Every payment is measured in the SAME final state: the amounts are dynamic (they can depend on the table).
         int max = 0;
         int sum = 0;
