@@ -1354,3 +1354,25 @@ Dead even. Three chain plans were measured today - phase call (-0.5 +/- 1.7), ph
 metal-income cards (-0.6 +/- 1.4) - and none of them pays on its own. The pattern is consistent: a single link of a
 conjunction, forced for eight to twelve turns, does not move the final margin, because the rest of the chain is still
 missing. The only thing measured today that moves the margin is the critic's training data (37.8% -> 40.36%).
+
+## 2026-11-15 — the effective-price feature: 42.05% +/- 1.0 (10 000 games)
+
+The encoder grew two values (`hand:best_effective_price/50`, `hand:best_discount/50`): for the cheapest card in hand, what
+the engine's own `DiscountService` says it costs after every discount the player owns (steel income x 2 MC on BUILDING-tag
+cards, titanium x 3 MC on SPACE-tag cards, plus ten special effects). The rules make that a product of a tag and an income
+stream; the network saw the two factors and had to learn the product.
+
+Order of the check, because an encoder change invalidates everything:
+
+| step | result |
+|---|---|
+| encoder 786, all old weights padded with zeros, 3 000 games | **41.75% +/- 1.75** (the same as 41.18% before the change, i.e. behaviour preserved) |
+| 100 000 new exploration games (same mix), critic 512x256, margin | AUC 0.8746 (was 0.8722) |
+| that critic, 10 000 games | **42.05% +/- 1.0** |
+| gates | sanity 8/9 (was 7/9), 0 gate failures; profile 12.87 cards per game, acceptance 0.566, phases 49/51, phase-3 spends 39% |
+
+So the feature is worth about a point, and - more importantly - it does not disturb anything: the same policy bundle plus a
+critic that sees one more exact quantity is a strictly better player at the same cost in play time.
+
+The critic line as it now stands: 37.8% (policy data) -> 38.5% (20k exploration) -> 41.18% (100k, 512x256) -> 42.05% (plus
+the effective price). Every step is the same mechanism, only the critic's information or data changed.

@@ -160,3 +160,17 @@ asks for a phase); a candidate id is the phase number.
 3. `winning_points` includes forests while `forests` is also a separate counter — redundant, kept because a forest is a
    board object (it consumes plants/heat and can be raised).
 4. TR has no field of its own by design: it enters as +1 `winning_points` and +1 `mc_income` (money per round).
+
+## J. The effective price of the best card in hand (779–780, before the plan bits)
+
+`hand:best_effective_price/50` and `hand:best_discount/50`: for the cheapest card the player holds, what the engine's
+`DiscountService` says it would actually cost, and how much of its nominal price the discounts took off. Both private
+(derived from the hand), so `buildPublic` zeroes them.
+
+Why a separate feature and not "the network will figure it out": the discount is a *product* of a card's tag and an income
+stream (steel income × 2 MC for a BUILDING tag, titanium × 3 for SPACE, plus ten special effects such as Earth Catapult,
+Media Group, Dev Techs, Launch Star, Martian Lumber). An MLP sees the two factors as separate inputs and has to learn the
+product for every combination; the engine already computes it exactly, in the same service that charges the player. The
+measured player also had no reason to value this: mean steel income 0.12, and the discount changed which card was cheapest
+in 1% of its decisions (`ml/discount_report.py`) - the feature exists so that the signal is at least *available* to the
+critic once the games contain the income.

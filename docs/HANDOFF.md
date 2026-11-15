@@ -235,12 +235,13 @@ Measured at the 10 000-game resolution the effect needs:
 
 | opponent | result |
 |---|---|
-| **SMART** | **41.18% +/- 0.9** (was 37.8% +/- 2 with the old critic) |
+| **SMART** | **42.05% +/- 1.0** (was 37.8% +/- 2 with the old critic) |
 | RANDOM | 93.2% |
 | NETWORK | 9.3% |
 
-Profile: 12.5 cards per game, acceptance 0.556, phases 49% income / 51% draft, phase-3 spends 39.7%; sanity bench 7/9
-obvious moves, 0 gate failures. So the gain is not a degenerate trick - the behaviour is the same, the card choice is
+Profile: 12.9 cards per game, acceptance 0.566, phases 49% income / 51% draft, phase-3 spends 39.0%; sanity bench 8/9
+obvious moves, 0 gate failures. The bundle is `r23_price` (encoder 786) and the critic `v_price1_margin_wide`; the extra
+two values are the effective price of the best card in hand (see docs/OBSERVATION.md section J). So the gain is not a degenerate trick - the behaviour is the same, the card choice is
 better.
 
 The critic: 100 000 self-play games with mixed exploration (build 0.5, draft 0.3, standard 0.2, blue 0.2, phase 0.2),
