@@ -43,6 +43,41 @@ public class AgentDecisionService {
     private final DecisionLogs decisionLogs;
     private final AiTurnService aiTurnService;
     private final CardService cardService;
+    private final GuaranteedActions guaranteedActions;
+    private final ObservationBuilder observationBuilder;
+    /**
+     * The last decision of each (game, player): its action has been applied by the time the player decides again, and
+     * that state is what the search reads as the afterstate of the action. Recording it here keeps the value training
+     * data in the distribution the search asks about.
+     */
+    private final Map<String, Decision> lastDecision = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private static String key(MarsGame game, Player player) {
+        return System.identityHashCode(game) + "/" + player.getUuid();
+    }
+
+    /**
+     * Afterstates are a diagnostic stream (the value of the state one action later); off by default because they add a
+     * third of the data volume and, measured 2026-11-15, training the critic on them costs 3.7 points of win rate.
+     * {@code -Dares.agent.afterstates=true} turns them back on.
+     */
+    private static final boolean RECORD_AFTERSTATES =
+            Boolean.parseBoolean(System.getProperty("ares.agent.afterstates", "false"));
+
+    /** Records "the state one action after my previous decision" before the new decision is made. */
+    private void recordAfterstate(MarsGame game, Player player) {
+        if (!RECORD_AFTERSTATES) {
+            return;
+        }
+        Decision previous = lastDecision.remove(key(game, player));
+        if (previous == null || !decisionLogs.isRecording()) {
+            return;
+        }
+        Decision afterstate = new Decision(DecisionType.AFTERSTATE, player.getUuid(),
+                observationBuilder.build(game, player),
+                List.of(new Candidate(0, new float[]{0f})));
+        decisionLogs.record(game, player, afterstate, 0);
+    }
     private static final int[] PHASE_PREFERENCE =
             parsePhases(System.getProperty("ares.agent.preferPhase", ""));
     /**
@@ -195,7 +230,12 @@ public class AgentDecisionService {
      * Helion exchange is offered one heat at a time; the next call sees the new heat.
      */
     public Optional<StandardActionChoice> standardAction(MarsGame game, Player player, List<TurnType> possibleTurns) {
-        List<StandardActionChoice> choices = standardActionDecisions.options(game, player, possibleTurns);
+        List<StandardActionChoice> choices = standardActionDecisions.options(game, player, possibleTurns).stream()
+                // A standard project that buys the same global parameter for more than a card in hand is not an option
+                // (owner's arithmetic: three oceans from a card for ~26 credits against 45 for three standard ones).
+                .filter(choice -> choice.kind() == StandardActionDecisions.STOP
+                        || !guaranteedActions.standardProjectIsDominated(game, player, choice))
+                .toList();
         int index = choose(game, player, standardActionDecisions.decision(game, player, choices));
         StandardActionChoice choice = choices.get(index);
         if (choice.kind() == StandardActionDecisions.STOP) {
@@ -231,6 +271,21 @@ public class AgentDecisionService {
      */
     public Optional<Integer> blueAction(MarsGame game, Player player) {
         Decision decision = blueActionDecisions.build(game, player);
+        // A free action that leaves the position weakly better is taken by arithmetic, not by the network (the owner
+        // plays the same way in his own agent). The label is still recorded, so the policy can learn it for the cases
+        // where the rule does not apply.
+        Optional<Integer> free = guaranteedActions.freeBlueAction(game, player);
+        if (free.isPresent() && decision.candidates().stream().anyMatch(candidate -> candidate.id() == free.get())) {
+            int index = 0;
+            for (int i = 0; i < decision.candidates().size(); i++) {
+                if (decision.candidates().get(i).id() == free.get()) {
+                    index = i;
+                    break;
+                }
+            }
+            decisionLogs.record(game, player, decision, index);
+            return free;
+        }
         int id = decision.candidates().get(choose(game, player, decision)).id();
         if (id == BlueActionDecisions.STOP) {
             return Optional.empty();
@@ -352,6 +407,8 @@ public class AgentDecisionService {
     }
 
     private int choose(MarsGame game, Player player, Decision decision) {
+        recordAfterstate(game, player);
+        lastDecision.put(key(game, player), decision);
         // Measurement / search harnesses (services.agent.DecisionProbe) see the state before the action is applied.
         DecisionProbe.Hook probe = DecisionProbe.current();
         int index = probe == null ? -1 : probe.beforeChoice(decision, game, player);

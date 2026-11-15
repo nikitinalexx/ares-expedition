@@ -404,9 +404,14 @@ public class DecisionLogs {
         }
         boolean[] keep = new boolean[list.size()];
         java.util.concurrent.ThreadLocalRandom random = java.util.concurrent.ThreadLocalRandom.current();
-        for (List<Integer> positions : byType.values()) {
+        for (Map.Entry<DecisionType, List<Integer>> entry : byType.entrySet()) {
+            List<Integer> positions = entry.getValue();
             java.util.Collections.shuffle(positions, random);
-            for (int i = 0; i < Math.min(max, positions.size()); i++) {
+            // Afterstates are not decisions: they are one observation per action of the value training stream, cheap, and
+            // the more of them the better (the search reads exactly these states). A decision is capped because its rows
+            // are near-duplicates of one game's label.
+            int cap = entry.getKey() == DecisionType.AFTERSTATE ? Math.max(max, 64) : max;
+            for (int i = 0; i < Math.min(cap, positions.size()); i++) {
                 keep[positions.get(i)] = true;
             }
         }

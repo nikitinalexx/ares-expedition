@@ -1,0 +1,131 @@
+{
+  "low_priority": false,
+  "storage": {
+    "run_root": "D:/ares/runs",
+    "data_root": "D:/ares/data",
+    "temp_root": "D:/ares/tmp",
+    "stage_root": "C:/ares/stage",
+    "reserves": [
+      {
+        "path": "C:/",
+        "gb": 30
+      },
+      {
+        "path": "D:/",
+        "gb": 30
+      }
+    ],
+    "data_budget_gb": 150,
+    "keep_data_iterations": 1,
+    "delete_data_of_other_runs": false
+  },
+  "java": {
+    "bin": "auto",
+    "xmx": "10g",
+    "threads": 0
+  },
+  "selfplay": {
+    "games_per_chunk": 1000,
+    "stage_max_seconds": 5400,
+    "temperature": 0,
+    "max_rows_per_game_type": 8,
+    "jvm_args": [
+      "-Dares.agent.search=oneply",
+      "-Dares.agent.search.symmetric=true",
+      "-Dares.agent.search.pairs=true",
+      "-Dares.agent.search.types=BUILD_CARD,DRAFT_CARDS",
+      "-Dares.agent.valueModel=D:/ares/runs/value/v_r15_outcome"
+    ]
+  },
+  "eval": {
+    "games": 3000,
+    "references": [
+      "RANDOM",
+      "SMART"
+    ],
+    "agent": "AGENT",
+    "concurrency": 32,
+    "timeout_seconds": 3600,
+    "bias_alarm_gap": 0.15,
+    "jvm_args": [
+      "-Dares.agent.search=oneply",
+      "-Dares.agent.search.symmetric=true",
+      "-Dares.agent.search.pairs=true",
+      "-Dares.agent.search.types=BUILD_CARD,DRAFT_CARDS",
+      "-Dares.agent.valueModel=D:/ares/runs/value/v_r15_outcome"
+    ]
+  },
+  "benchmark": {
+    "references": [
+      "NETWORK"
+    ],
+    "games": 100,
+    "concurrency": 16,
+    "timeout_seconds": 3600,
+    "gate_refs": [
+      "RANDOM",
+      "SMART"
+    ],
+    "min_win_rate": 0.5,
+    "jvm_args": [
+      "-Dares.agent.search=oneply",
+      "-Dares.agent.search.symmetric=true",
+      "-Dares.agent.search.pairs=true",
+      "-Dares.agent.search.types=BUILD_CARD,DRAFT_CARDS",
+      "-Dares.agent.valueModel=D:/ares/runs/value/v_r15_outcome"
+    ]
+  },
+  "rungs": [
+    {
+      "fraction": 1.0,
+      "keep": 2,
+      "games_factor": 1.0
+    }
+  ],
+  "plateau_patience": 10,
+  "plateau_min_iterations": 3,
+  "experiments": [
+    {
+      "name": "scale",
+      "hypothesis": "The player's ceiling is credit assignment from game outcomes, and the effect being learned (a card worth 2-3 points, an engine paying off over rounds) is far below the noise of one game. The same objective that already works (clipped PPO on candidate cross-entropy, advantage = outcome - V) with 40 000 games per iteration instead of 12 000 sees four times the state space per step; the trainer samples 12 chunks across the whole iteration instead of the first 12, so a wide iteration is a sample of the run, not its beginning. Rules for guaranteed value stay on (free blue actions, dominated standard projects); every iteration also runs the obvious-move bench, and a model that refuses a free card cannot be promoted whatever its win rate.",
+      "games_per_iteration": 40000,
+      "matchups": "AGENT:AGENT:0.75,AGENT:RANDOM:0.25",
+      "max_rows_per_game_type": 8,
+      "train_args": []
+    }
+  ],
+  "train": {
+    "command": [
+      "{python}",
+      "ml/train_policy_ppo.py",
+      "--data",
+      "{data}",
+      "--out",
+      "{model_dir}",
+      "--prev",
+      "{prev_model}",
+      "--adv-value-model",
+      "D:/ares/runs/value/v_r15_outcome",
+      "--epochs",
+      "3",
+      "--clip",
+      "0.2",
+      "--entropy",
+      "0.01",
+      "--lr",
+      "1e-4",
+      "--rows-per-game",
+      "8",
+      "--max-chunks-per-type",
+      "12"
+    ],
+    "timeout_seconds": 14400
+  },
+  "maven": {
+    "command": "mvn",
+    "args": [
+      "-s",
+      ".mvn/settings.xml"
+    ]
+  }
+}

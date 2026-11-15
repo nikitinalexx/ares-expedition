@@ -115,6 +115,24 @@ public class NeuralPolicy {
     }
 
     /** Hash of every decision type's schema: the encoder's own view, for tooling (model conversion, audit). */
+    /**
+     * The full schema of every decision type: the observation size and the candidate width can both grow when the encoder
+     * learns a new feature, and offline conversion ({@code ml/pad_model.py}) needs both numbers, not only the hash.
+     */
+    public static java.util.Map<String, java.util.Map<String, Object>> schemaDetails() {
+        java.util.Map<String, java.util.Map<String, Object>> result = new java.util.LinkedHashMap<>();
+        for (DecisionType type : DecisionType.values()) {
+            DecisionFile.Schema schema = schema(type);
+            java.util.Map<String, Object> detail = new java.util.LinkedHashMap<>();
+            detail.put("hash", schema.hash());
+            detail.put("obsSize", schema.obsSize());
+            detail.put("maxCandidates", schema.maxCandidates());
+            detail.put("candidateFeatures", schema.candidateFeatures());
+            result.put(type.name(), detail);
+        }
+        return result;
+    }
+
     public static java.util.Map<String, String> schemaHashes() {
         java.util.Map<String, String> result = new java.util.LinkedHashMap<>();
         for (DecisionType type : DecisionType.values()) {
@@ -138,6 +156,8 @@ public class NeuralPolicy {
             case BLUE_INPUT -> BlueInputDecisions.schema();
             case UNMI_RT -> UnmiRtDecisions.schema();
             case COLLECT_INCOME -> CollectIncomeDecisions.schema();
+            case AFTERSTATE -> new DecisionFile.Schema(DecisionType.AFTERSTATE, ObservationBuilder.size(), 1, 1,
+                    DecisionType.AFTERSTATE.observationLayout());
         };
     }
 

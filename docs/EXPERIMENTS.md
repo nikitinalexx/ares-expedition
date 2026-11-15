@@ -911,3 +911,204 @@ So the remaining work is not another loss function or another night of the same 
    states), which raises the ceiling of the only mechanism that has ever beaten a policy: the search;
 2. a **much larger scale** (more games per iteration, more iterations, bigger nets) with the objective that already works;
 3. an **architecture** that can plan (the current policy is memoryless: fourteen independent heads over one state).
+
+## Discovering behaviour: exploration, and the phase decision made by search (2026-11-15)
+
+Owner's rule, now binding: **SMART and NETWORK are benchmarks only** - never a teacher, an opponent in training or a data
+source. The cloning attempt (a recorder that labelled SMART's turns as our decisions) was removed; `docs/DISCOVERY.md`
+holds the reasoning and the loop that replaces it.
+
+### Why the style is a fixed point, restated with data
+
+Training on games of one greedy player cannot contain a line that player would not play, so neither the policy nor the
+critic can learn that such a line is better. `-Dares.agent.explore=TYPE:q` makes the **data generator** draw that decision
+uniformly at random with probability q; everything else is played by the current best player. 4 000 mirror games with
+`PICK_PHASE 0.5, BUILD_CARD 0.35, STANDARD_ACTION 0.35, PERFORM_BLUE_ACTION 0.25` (`D:/ares/data/explore1`):
+
+| phases picked | before | with exploration |
+|---|---|---|
+| 1 / 2 / 3 | 0 / 0 / 0 | 11% / 11% / 11% |
+| 4 / 5 | 49% / 51% | 33% / 33% |
+
+`ml/explore_stats.py` relates the final margin of a seat in those mirror games to *everything* the observation says about
+how it played (8 000 seats, both seats are us, so the only difference is the exploration). Margin correlation, 95% half
+width +-0.02:
+
+| dimension | corr | dimension | corr |
+|---|---|---|---|
+| mc income | **+0.40** | cards played | +0.17 |
+| animals on cards | +0.26 | green cards | +0.16 |
+| forests | +0.25 | blue cards | +0.11 |
+| plants income | +0.18 | steel income | -0.02 |
+| heat income | +0.18 | titanium income | -0.08 |
+
+Calling phase 3 with *random spends* is -0.05: the phase itself pays nothing, the engine behind it does. That is a
+measurement, not an opinion, and it is the same conclusion the owner states from his own play: all cards are good when an
+engine pays for them with discounts, so the target is the engine, not one colour.
+
+### The phase decision, decided by search (new capability)
+
+The agent never called phases 1/2/3 because the phase pick is pure policy - the search only re-ranked BUILD_CARD and
+DRAFT_CARDS. It now scores PICK_PHASE too (`-Dares.agent.search.fullTypes=PICK_PHASE`):
+
+* the afterstate is built by **the engine's own code**: `PickPhaseProcessor.processTurn` (round results, chosen/previous
+  phase, the phase-3 double-repeat upgrade, Communications Streamlining and Nebu Labs MC, crysis) followed by
+  `StateTransitionService.performStateTransferFromPhase(game, 0)`, exactly what `PickPhaseState` calls - so the build
+  slots, income, draft, revealed cards and blue activations cannot drift away from the rules;
+* the opponent's simultaneous pick is unknown, so it is drawn from that player's legal phases with the decision's seed:
+  one draw per decision, the same for every candidate (common random numbers);
+* V of the starting position of that phase is the score, so the pick is a one-step lookahead over strategies.
+
+Measured on 300 games vs SMART, policy from `ppo1/it_0012`:
+
+| phase critic | phases 1 / 2 / 3 / 4 / 5 | vs SMART | vs RANDOM |
+|---|---|---|---|
+| none (policy only) | 0 / 0 / 0 / 49 / 51 | 37.5% | 93% |
+| `v_r3_outcome` | 6 / 18 / 51 / 12 / 12 | **0.3%** | 13% |
+| `v_explore1_margin` (exploration + greedy data) | 2 / 7 / 6 / 48 / 37 | 32.8% | 87% |
+
+So the strategic decision is now searchable, and the blocker is exactly the critic: both nets were trained on *greedy*
+games, where the phase a player picked is not independent of the state it picked in (a player calls phase 3 when it has
+actions to take), so V(start of phase 3) mixes "good positions that called phase 3" with "phase 3 is good". The critic
+must be fit to the phase-start distribution on data where the pick is exogenous - which is what
+`-Dares.agent.explore=PICK_PHASE:1.0` produces (6 000 mirror games, `D:/ares/data/explore_phase`). That critic
+(`v_phase1_margin`), and a bounded rollout (play the round out, then read V) as a fallback, are the next two measurements.
+
+### Rejected on the way
+
+| attempt | result |
+|---|---|
+| exact-corrected REINFORCE on the phase head (uniform exploration, 36 000 rows, `train_policy_ce.py --objective pg`) | phase mix unchanged (4/5 only), val loss diverges: the outcome signal of a decision taken 12 times per game is far below the noise |
+| one critic for both card ranking and the phase pick | the two afterstate distributions are different questions; one net answers a mixture of both |
+
+## Where the points go, in points (2026-11-15): the card term
+
+`--mode scorecard` (new, `ml/../selfplay/Scorecard`) plays AGENT against SMART and reports the terms the engine actually
+scores. 400 games, best policy + search:
+
+| term | agent | SMART | difference |
+|---|---|---|---|
+| terraforming rating | 37.8 | 31.2 | **+6.6** |
+| forests | 13.9 | 8.9 | **+5.0** |
+| printed points of played cards | 3.5 | 12.8 | **-9.3** |
+| points from resources on cards | 4.6 | 6.0 | -1.3 |
+| milestones | 3.1 | 5.0 | -1.9 |
+| awards | 8.7 | 12.5 | **-3.9** |
+| **total** | **71.5** | **76.4** | **-4.9** |
+
+The player is not behind on terraforming or forests - it is ahead by 11.6 there - and loses the game on **card points**
+(and the milestones and awards that a stronger card table collects by itself). So the target is not "build more cards":
+`-Dares.agent.search.mustBuild=true` raises builds from 12.2 to 18.1 per game and costs **4.7 points of win rate**
+(33.5% vs 38.2% on 2 000 games) - it converts credits into cards the player cannot use. The target is **which** cards,
+i.e. their points and the engine they form.
+
+Two encoder gaps were found from this and closed (encoder 795 -> 805, candidate width +1 for every card decision):
+
+1. the observation had one number, `win_points`, for Tr + cards + milestones + awards together, so a value function
+   could not tell a 3-point card from a terraforming point; the five terms are now written separately for both players;
+2. the card candidates did not say how many points the card is worth (signature, colour, tags, price, active only); the
+   printed points are now a candidate feature, so the build decision and its search can prefer a 3-point card.
+
+## The critic cannot see a card's points either (2026-11-15)
+
+`ml/value_sensitivity.py` perturbs one observation feature at a time in 6 218 real states and reads dV, so "does the
+critic care?" is measured instead of assumed. For the value net that drives the search:
+
+| perturbation | dV | per point |
+|---|---|---|
+| +10 milestone points | +0.194 | 0.019 |
+| +10 resource points | +0.096 | 0.010 |
+| +10 terraforming rating | +0.051 | 0.005 |
+| **+3 printed card points** | **+0.008** | **0.003** |
+| +0.5 (normalised) mc income | +0.185 | - |
+
+A card worth 3 points moves the critic by 0.008 - about 15% of what ten milestone points move it, i.e. the critic is
+blind to the very term the player loses the game on. Retraining the same net on the final **margin** instead of the win
+did not help (+0.003 for three points): the marginal value of three points in the middle of a game is far below the
+error of a learned value function, whatever the target. That is why the search - which ranks by V - never preferred
+high-point cards, and it is a *measurement*, not a hypothesis.
+
+Consequence for the objective: a card's points cannot be reached through V. They have to be reached through the head that
+chooses the card, trained with an advantage measured **in points** (`train_policy_ce.py --adv-target margin`: the final
+margin/20 minus the critic's own prediction, which is on the same scale) on games where the taken cards differ
+(exploration data), with the card's printed points now among the candidate features. That is experiment `r11_cards`.
+
+## SMART plays 27 cards a game; we play 13 (2026-11-15)
+
+`--mode scorecard` now also reports the cards each side puts on the table (the played deck of each player, per game) and
+the printed points they carry. 300 games, our best policy + search:
+
+| | agent | SMART |
+|---|---|---|
+| cards on the table per game | **13.2** | **27.4** |
+| printed points per game | 3.2 | 13.0 |
+| printed points per card | 0.24 | 0.48 |
+
+So the card term of the deficit is not "one or two good cards": the benchmark plays **twice as many cards**, and each of
+them is worth twice as much. 27 cards in ~11 rounds is ~2.4 builds per round, which only the build phases (1, 2 and the
+phase-3 leftovers) can supply - our player, calling phases 4 and 5 almost every round, has about one build slot per
+round. That closes the circle with the owner's own description: an engine pays for the cards with discounts, and then
+almost every card is worth building.
+
+This also explains why forcing builds (`mustBuild`, 18 per game) lost: without the engine the extra cards are paid at
+full price. The chain is engine -> discounts/income -> many cheap cards -> points, and neither half of it is visible to a
+one-ply search whose critic prices a card's printed points at 0.008 (see the sensitivity table above).
+
+## A better critic did not move the play (2026-11-15)
+
+Coverage of many-card tables was added to the critic on purpose: 6 000 mirror games generated with `mustBuild` and
+`preferPhase=1,2,5` (18-27 cards on the table, phases 1/2/5), then V trained on those plus the 12 000 normal games.
+
+| critic | AUC | dV for +3 card points | cards per game | printed points | vs SMART |
+|---|---|---|---|---|---|
+| `v_r10_outcome` (normal games) | 0.887 | +0.008 | 13.2 | 3.2 | 37.2% (400 g) |
+| `v_r12_outcome` (+ build-heavy games) | **0.905** | +0.010 | 13.4 | 3.3 | 32.3% (300 g) |
+
+The critic became measurably better at predicting the winner and **not** measurably better at pricing a card, and the
+player did not change: the fixed point is not the critic's accuracy, it is that three points are far below the resolution
+of a value function fitted to game outcomes. Written down so nobody spends another night on critic accuracy alone.
+
+## Afterstates, and two rules that fixed real pathologies (2026-11-15)
+
+### The critic was asked about states it never saw - and training it on them does not help
+
+The one-ply search reads V on the state right after a candidate is applied, while the recorded data only contained states
+in which decisions are made. `DecisionType.AFTERSTATE` now writes that state too (one observation per agent action, same
+game result, not capped like decisions). 6 000 games gave 384 000 afterstate rows, and the critic trained on decisions +
+afterstates was measured on 2 000 games against SMART:
+
+| critic | dV per point of `winning_points` | vs SMART |
+|---|---|---|
+| `v_r15_outcome` (decision states) | 0.0029 | **36.5%** [34.4, 38.5] |
+| `v_r17_after` (decisions + afterstates) | 0.0029 | 32.2% [30.2, 34.3] |
+| `v_r17_after_margin` (margin target, same data) | - | 29.4% [27.5, 31.7] |
+
+So the distribution mismatch was real, but mixing the two distributions costs ~4 points of win rate: the afterstate rows
+are near-duplicates of the next decision row (same game, same label), they dominate the stream, and the critic becomes
+worse where decisions are made. Rejected; the stream stays behind `-Dares.agent.afterstates=true` for future experiments
+(e.g. a *separate* critic for the search, trained only on afterstates).
+
+### Two rules from the obvious-move bench (both arithmetic, not strategy)
+
+1. **Free blue action** (`services/agent/GuaranteedActions.freeBlueAction`): an action that spends no credit, heat or plant,
+   gives up no card and leaves at least one card or resource more is pressed without asking the network, once per phase
+   (the extra activation a phase upgrade grants stays a real decision). The bench showed the policy refused a free
+   two-card draw (`AiCentral`) and that letting the value search decide the whole blue menu costs 13 points.
+2. **Dominated standard project**: a standard project that buys a global parameter for more credits than a card in hand
+   buys the same parameter for is removed from the phase-3 menu (owner's arithmetic: `Deimos Down` gives three oceans for
+   ~26 credits against 45 for three standard ones). This is the one cross-menu comparison our architecture can make
+   cheaply, and it is the S6 scenario of the bench.
+
+Both rules were measured: sanity 6/6 with no measurable cost (35.9% [33.8, 37.9] against 36.5% [34.4, 38.5]).
+
+### Pipeline fixes that came out of it
+
+* the policy trainers took the FIRST N chunk files; with a wide iteration that is "the first N thousand games", not a
+  sample - chunks are now sampled (seeded) across the iteration;
+* `--mode sanity` is a gate in the nightly: a model that fails an obvious-move scenario cannot be promoted whatever its
+  win rate;
+* `DecisionLogs` does not cap afterstates with the per-type decision cap (64/game instead of 8);
+* `WinPointsService` no longer throws on a played resource card with no counter entry (the score is read on every
+  decision, so this was a crash waiting to happen);
+* the double-payment feature measures one card on a fresh copy per card; a shared copy let one card's `payAgain` change
+  the payout another card was measured on.

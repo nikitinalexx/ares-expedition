@@ -65,7 +65,13 @@ public enum DecisionType {
     /**
      * Phase-4 double-produce: which green {@code canPayAgain} card to collect again, or stop (income once only).
      */
-    COLLECT_INCOME(CollectIncomeDecisions.MAX_CANDIDATES, CollectIncomeDecisions.OBSERVATION_LAYOUT);
+    COLLECT_INCOME(CollectIncomeDecisions.MAX_CANDIDATES, CollectIncomeDecisions.OBSERVATION_LAYOUT),
+    /**
+     * Not a decision: the state one action after the previous decision of the same player, with the same game outcome.
+     * Its only purpose is to train the value net on the states the one-ply search actually reads (after an action was
+     * applied), which are not the states decisions are made in. One candidate, no features.
+     */
+    AFTERSTATE(1, "afterstate of the agent's own action: one candidate, no features");
 
     private final int maxCandidates;
     private final String observationLayout;

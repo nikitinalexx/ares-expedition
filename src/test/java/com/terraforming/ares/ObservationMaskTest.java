@@ -58,7 +58,11 @@ class ObservationMaskTest extends EngineTestBase {
         assertEquals(base, keep.size() + dropped.size(), "every column is either kept or dropped");
         keep.retainAll(dropped);
         assertTrue(keep.isEmpty());
-        assertEquals(mask.get("keep").size() + ObservationBuilder.CONTEXT_SIZE + ObservationBuilder.CARDS_SIZE + ObservationBuilder.EXTRAS_SIZE, ObservationBuilder.size());
+        assertEquals(ObservationBuilder.keptColumns().length + ObservationBuilder.CONTEXT_SIZE
+                        + ObservationBuilder.CARDS_SIZE + ObservationBuilder.SCORE_SIZE
+                        + ObservationBuilder.EXTRAS_SIZE + ObservationBuilder.DOUBLE_PAYMENT_SIZE
+                        + ObservationBuilder.PHASE_START_SIZE + ObservationBuilder.OCEAN_SIZE,
+                ObservationBuilder.size(), "the blocks must add up to the observation size");
     }
 
     @Test

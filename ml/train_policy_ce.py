@@ -66,9 +66,12 @@ def load_type(directory, decision, rows_per_game, max_chunks, seed):
     """obs [N,obs], cands [N,maxCand,feat], chosen [N], count [N], outcome [N], game [N] for one decision type."""
     rng = np.random.default_rng(seed)
     files = ares_data.chunk_paths(directory, decision)
-    if max_chunks:
-        files = files[:max_chunks]
-    obs, cands, chosen, count, outcome, game = [], [], [], [], [], []
+    if max_chunks and len(files) > max_chunks:
+        # Sample the chunks instead of taking the first N: with a wide iteration (tens of thousands of games) the first N
+        # thousand games are one part of the run, not a sample of it.
+        picked = np.random.default_rng(seed).choice(len(files), max_chunks, replace=False)
+        files = [files[i] for i in sorted(picked)]
+    obs, cands, chosen, count, outcome, game, margin = [], [], [], [], [], [], []
     for path in files:
         schema, rows = ares_data.read_decisions(path)
         if not len(rows):
@@ -83,15 +86,17 @@ def load_type(directory, decision, rows_per_game, max_chunks, seed):
         chosen.append(rows["chosen"].astype(np.int64))
         count.append(rows["count"].astype(np.int64))
         outcome.append(rows["outcome"].astype(np.float32))
+        margin.append(rows["margin"].astype(np.float32))
         game.append(rows["game"].astype(np.uint64))
     if not obs:
         return None
     data = {"obs": np.concatenate(obs), "cands": np.concatenate(cands), "chosen": np.concatenate(chosen),
             "count": np.concatenate(count), "outcome": np.concatenate(outcome), "game": np.concatenate(game),
+            "margin": np.concatenate(margin),
             "obsSize": schema["obsSize"], "candFeatures": schema["candidateFeatures"], "schemaHash": schema["hash"]}
     # rows with a single candidate teach nothing about ranking
     keep = data["count"] >= 2
-    for key in ("obs", "cands", "chosen", "count", "outcome", "game"):
+    for key in ("obs", "cands", "chosen", "count", "outcome", "game", "margin"):
         data[key] = data[key][keep]
     return data
 
@@ -141,12 +146,17 @@ def load_value_params(directory):
             "w2": take(h2 * h1).reshape(h2, h1), "b2": take(h2), "w3": take(h2), "b3": take(1), "clip": clip}
 
 
-def value_of(obs, value):
-    """V(s) of a batch of observations, torch tensors, same numerics as the Java inference."""
+def value_of(obs, value, raw=False):
+    """V(s) of a batch of observations, torch tensors, same numerics as the Java inference.
+
+    `raw=True` returns the output before the sigmoid: for a margin-trained critic that number IS the predicted margin/20,
+    which is the scale a "how many points is this worth" advantage has to be compared on.
+    """
     z = torch.clamp((obs - value["mean"]) / value["std"], -value["clip"], value["clip"])
     h1 = torch.relu(z @ value["w1"].T + value["b1"])
     h2 = torch.relu(h1 @ value["w2"].T + value["b2"])
-    return torch.sigmoid(h2 @ value["w3"] + value["b3"])
+    logit = h2 @ value["w3"] + value["b3"]
+    return logit if raw else torch.sigmoid(logit)
 
 
 def main():
@@ -169,6 +179,9 @@ def main():
     parser.add_argument("--behaviour", type=float, default=1.0,
                         help="q of the pg objective: probability that the generator picked a candidate uniformly at random "
                              "(1.0 = the whole type was explored, 0.35 = a bounded share so the games stay coherent)")
+    parser.add_argument("--adv-target", default="outcome", choices=["outcome", "margin"],
+                        help="what the advantage is measured in: the win (win - P(win)) or the score (margin/20 - V's "
+                             "prediction), which is the scale the printed card points live on")
     parser.add_argument("--adv-normalize", action="store_true",
                         help="normalise the advantage per batch (mean 0, std 1): the pg step")
     parser.add_argument("--max-ratio", type=float, default=20.0,
@@ -202,7 +215,7 @@ def main():
             continue
         if args.min_outcome > 0:
             keep = data["outcome"] >= args.min_outcome
-            for key in ("obs", "cands", "chosen", "count", "outcome", "game"):
+            for key in ("obs", "cands", "chosen", "count", "outcome", "game", "margin"):
                 data[key] = data[key][keep]
             if len(data["obs"]) < 100:
                 print(f"  {decision:22s} skipped ({int(keep.sum())} rows above outcome {args.min_outcome})")
@@ -256,9 +269,22 @@ def main():
                    torch.from_numpy(data["cands"][idx]).to(device),
                    torch.from_numpy(data["chosen"][idx]).to(device),
                    torch.from_numpy(data["count"][idx]).to(device),
-                   torch.from_numpy(data["outcome"][idx]).to(device))
+                   torch.from_numpy(data["outcome"][idx]).to(device),
+                   torch.from_numpy(data["margin"][idx]).to(device))
 
-    def loss_of(model, old, obs, cands, chosen, count, outcome):
+    def advantage_of(obs, outcome, margin):
+        """A(s,a): how much better this game went than the critic promised.
+
+        `outcome`: win minus P(win) - the classic baseline. `margin`: (final margin/20) minus the critic's raw output,
+        which is on the same scale as the margin model's prediction, so the advantage is in POINTS. Points are what the
+        printed card values are, and a win/loss baseline cannot see a 3-point card at all (measured: dV 0.008 for three
+        points against 0.19 for ten milestone points).
+        """
+        if args.adv_target == "margin":
+            return margin / 20.0 - value_of(obs, advantage, raw=True)
+        return outcome - value_of(obs, advantage)
+
+    def loss_of(model, old, obs, cands, chosen, count, outcome, margin):
         logits = model(obs, cands)                                     # [B, K]
         mask = torch.arange(cands.shape[1], device=device)[None, :] < count[:, None]
         logits = logits.masked_fill(~mask, -1e9)
@@ -279,7 +305,7 @@ def main():
                 q = args.behaviour
                 k = count.float()
                 behaviour = torch.where(chosen == greedy, (1.0 - q) + q / k, torch.full_like(k, q) / k)
-                weight = outcome - value_of(obs, advantage)
+                weight = advantage_of(obs, outcome, margin)
                 if args.adv_normalize:
                     weight = (weight - weight.mean()) / (weight.std() + 1e-6)
             ratio = (torch.exp(taken) / behaviour).clamp(max=args.max_ratio)
@@ -288,7 +314,9 @@ def main():
         if advantage is not None:
             # Policy gradient with the value as the baseline: rows where the game went better than V promised push the
             # taken action up, rows where it went worse push it down. Signed, so the sign of the weight matters.
-            weight = outcome - value_of(obs, advantage)
+            weight = advantage_of(obs, outcome, margin)
+            if args.adv_normalize:
+                weight = (weight - weight.mean()) / (weight.std() + 1e-6)
             return (ce * weight).mean()
         if args.outcome_weight > 0:
             weight = 1.0 + args.outcome_weight * (2.0 * outcome - 1.0)   # win 1+w, loss 1-w
@@ -302,8 +330,8 @@ def main():
             data = pools[decision]
             order = rng.permutation(len(data["obs"]))
             running, seen = 0.0, 0
-            for obs, cands, chosen, count, outcome in batches(data, order, args.batch):
-                loss = loss_of(model, parents.get(decision), obs, cands, chosen, count, outcome)
+            for obs, cands, chosen, count, outcome, margin in batches(data, order, args.batch):
+                loss = loss_of(model, parents.get(decision), obs, cands, chosen, count, outcome, margin)
                 if not torch.isfinite(loss):
                     raise SystemExit(f"{decision}: the loss is {float(loss)} in epoch {epoch}")
                 optimizers[decision].zero_grad()
@@ -316,7 +344,7 @@ def main():
             with torch.no_grad():
                 correct, total, val_loss, top3 = 0, 0, 0.0, 0
                 val = val_pools[decision]
-                for obs, cands, chosen, count, outcome in batches(val, np.arange(len(val["obs"])), 1024):
+                for obs, cands, chosen, count, outcome, margin in batches(val, np.arange(len(val["obs"])), 1024):
                     logits = model(obs, cands)
                     mask = torch.arange(cands.shape[1], device=device)[None, :] < count[:, None]
                     logits = logits.masked_fill(~mask, -1e9)

@@ -8,6 +8,7 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.PlayerDifficulty;
 import com.terraforming.ares.model.Tag;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.agent.ObservationBuilder;
 import com.terraforming.ares.services.GameService;
 import com.terraforming.ares.services.SimulationProcessorService;
 import com.terraforming.ares.services.agent.PickPhaseDecisions;
@@ -139,7 +140,7 @@ class CardTrackingAuditTest extends EngineTestBase {
 
     @Test
     void auditCards() throws IOException {
-        List<Integer> ids = new ArrayList<>(cardService.createProjectsDeck(List.of(Expansion.BASE, Expansion.DISCOVERY, Expansion.BUFFED_CORPORATION, Expansion.INFRASTRUCTURE)).getCards());
+        List<Integer> ids = new ArrayList<>(cardService.createProjectsDeck(new java.util.ArrayList<>(ObservationBuilder.PLAYED_EXPANSIONS)).getCards());
         ids.sort(Integer::compare);
         Map<String, List<Integer>> byKey = new TreeMap<>();
         for (int id : ids) {

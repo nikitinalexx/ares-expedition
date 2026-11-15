@@ -8,9 +8,12 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.Planet;
 import com.terraforming.ares.model.parameters.Ocean;
 import com.terraforming.ares.model.Card;
+import com.terraforming.ares.model.Expansion;
 import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.cards.blue.FilterFeeders;
 import com.terraforming.ares.cards.blue.MatterGenerator;
+import com.terraforming.ares.cards.blue.PhysicsComplex;
+import com.terraforming.ares.cards.blue.FibrousCompositeMaterial;
 import com.terraforming.ares.cards.blue.Pets;
 import com.terraforming.ares.cards.blue.Sawmill;
 import com.terraforming.ares.cards.green.ArchitectureBlueprints;
@@ -19,6 +22,7 @@ import com.terraforming.ares.cards.green.CityPlanning;
 import com.terraforming.ares.cards.green.GrainSilos;
 import com.terraforming.ares.cards.green.InvasiveIrrigation;
 import com.terraforming.ares.services.CardService;
+import com.terraforming.ares.services.WinPointsService;
 import com.terraforming.ares.services.ai.AiConstants;
 import com.terraforming.ares.services.ai.advanced.AdvancedAiDataCollectionService;
 import com.terraforming.ares.services.ai.advanced.CompleteHandEncoder;
@@ -55,18 +59,40 @@ public class ObservationBuilder {
     /**
      * round context: revealed flag, current phase (5) + sell flag, picks of me / opponent / dummy (15), builds, activations, ...
      */
-    public static final int CONTEXT_SIZE = 1 + 5 + 1 + 15 + 2 * 4 + 2 + 2 + 2 + 2;
+    public static final int CONTEXT_SIZE = 1 + 5 + 1 + 15 + 2 * 2 + 2 + 2 + 2 + 2;
+    /**
+     * The score of each player, one number, from the engine's own total: printed card points, points on animal and
+     * microbe cards, terraforming, forests, milestones and awards are all the same thing to the value function (owner's
+     * rule). The V2 block keeps its old, legacy `win_points`, because NETWORK_V2 is trained on it.
+     */
+    public static final int SCORE_SIZE = 2;
     public static final int EXTRAS_SIZE = 1 + PHASES + PHASES + PHASES + 1;
 
     /**
      * Cards the V2 encoder can not tell apart (found by CardTrackingAuditTest; the V2 encoder must not be changed - NETWORK_V2 is trained on it):
      * blue cards with an action or a resource that matter when they are on the table, and newest cards that the hand encoder does not know.
      */
-    static final List<Class<? extends Card>> TABLE_CARDS = List.of(MatterGenerator.class, Sawmill.class, FilterFeeders.class, Pets.class);
-    static final List<Class<? extends Card>> RESOURCE_CARDS = List.of(FilterFeeders.class, Pets.class);
-    static final List<Class<? extends Card>> HAND_CARDS = List.of(BedrockWellbore.class, ArchitectureBlueprints.class, CityPlanning.class,
-            GrainSilos.class, InvasiveIrrigation.class);
-    public static final int CARDS_SIZE = 2 * TABLE_CARDS.size() + 2 * RESOURCE_CARDS.size() + HAND_CARDS.size();
+    /**
+     * The expansions this player is trained and played on. A card outside this set can never be built (its deck is not in
+     * the game), so a bit for it would never be set: dead columns dilute the vector and hide bugs (owner's audit rule).
+     */
+    public static final Set<Expansion> PLAYED_EXPANSIONS =
+            Set.of(Expansion.BASE, Expansion.BUFFED_CORPORATION, Expansion.DISCOVERY);
+
+    /** Table cards the legacy V2 encoder cannot tell apart - only the ones that exist in the played expansions. */
+    static final List<Class<? extends Card>> TABLE_CARDS = List.of(MatterGenerator.class, FilterFeeders.class);
+    /**
+     * Cards that hold SCIENCE. PhysicsComplex is worth one point per two science, so the count matters the way an animal
+     * count does - it was the one resource type with no counter at all. CommunicationCenter holds science too but belongs
+     * to the EXPERIMENTAL expansion, which this player never plays, so it is not here.
+     */
+    static final List<Class<? extends Card>> SCIENCE_CARDS = List.of(PhysicsComplex.class, FibrousCompositeMaterial.class);
+    /**
+     * Empty on purpose: the five cards this list used to carry (BedrockWellbore, ArchitectureBlueprints, CityPlanning,
+     * GrainSilos, InvasiveIrrigation) all belong to the INFRASTRUCTURE expansion, which is never played here.
+     */
+    static final List<Class<? extends Card>> HAND_CARDS = List.of();
+    public static final int CARDS_SIZE = 2 * TABLE_CARDS.size() + 2 * SCIENCE_CARDS.size() + HAND_CARDS.size();
 
     /**
      * Phase 4 can make ONE played card pay again, and 130 cards can do that — flagging them all would cost 260 columns
@@ -87,7 +113,7 @@ public class ObservationBuilder {
      * bits the state cannot tell "temperature is maxed and closed" from "temperature is maxed but this phase still pays
      * TR and every onTemperatureChangedEffect". One bit per global, per game.
      */
-    static final List<String> PHASE_START_DIMENSIONS = List.of("temperature", "oxygen", "infrastructure", "oceans");
+    static final List<String> PHASE_START_DIMENSIONS = List.of("temperature", "oxygen", "oceans");
     public static final int PHASE_START_SIZE = PHASE_START_DIMENSIONS.size() + 2;
 
     /**
@@ -103,8 +129,9 @@ public class ObservationBuilder {
     public static final String LAYOUT = "ObservationBuilder v3.1: V2 encoder (table 417 + hand 481) without 210 exact copies (observation/v3_mask.json)"
             + " + roundContext[revealed, currentPhase(5), sellFlag, picks me/opponent/dummy (15), builds me/opponent (8), extra blue activations (2),"
             + " luna office (2), project inspection (2), activated blue cards (2)]"
-            + " + cards[on table me/opponent: MatterGenerator Sawmill FilterFeeders Pets (8), resources on FilterFeeders Pets me/opponent (4),"
-            + " in my hand: BedrockWellbore ArchitectureBlueprints CityPlanning GrainSilos InvasiveIrrigation (5)]"
+            + " + cards[on table me/opponent: MatterGenerator FilterFeeders (4),"
+            + " science on PhysicsComplex FibrousCompositeMaterial me/opponent (4)]"
+            + " + score[winning points of me/opponent: ONE number, every source of points is the same point]"
             + " + extras[round/40, myPreviousPhase(5), opponentPreviousPhase(5), dummyPoolMembership(5), dummyPoolSize/5]"
             + " + doublePayment[best single phase-4 repeat per dimension, me/opponent (22): mc, plants, heat, cards, tr,"
             + " and the six incomes /10]"
@@ -114,10 +141,11 @@ public class ObservationBuilder {
     private static final Set<StateType> PICKS_ARE_KNOWN = Set.of(StateType.BUILD_GREEN_PROJECTS, StateType.BUILD_BLUE_RED_PROJECTS,
             StateType.PERFORM_BLUE_ACTION, StateType.COLLECT_INCOME, StateType.DRAFT_CARDS, StateType.SELL_EXTRA_CARDS);
 
-    private static final int[] KEEP = loadMask();
+    private static final int[] KEEP = dropLegacy(loadMask());
 
     private final AdvancedAiDataCollectionService baseEncoder;
     private final CardService cardService;
+    private final WinPointsService winPointsService;
 
     private static int[] loadMask() {
         try (InputStream in = ObservationBuilder.class.getResourceAsStream("/observation/v3_mask.json")) {
@@ -142,12 +170,89 @@ public class ObservationBuilder {
     /**
      * Indices (in the V2 vector) of the columns that stay.
      */
+    /**
+     * The mask without three legacy columns that carry nothing the kept ones do not: the "hand" copy of the table block
+     * wrote log1p(mcIncome), log1p(heat) and log1p(heatIncome) again, which the duplicate filter could not see because of
+     * the log. A local set, because this runs while the class is being initialised.
+     */
+    private static int[] dropLegacy(int[] keep) {
+        java.util.Set<String> dropped = java.util.Set.of(
+                "hand:mcincome_log", "hand:heat_log", "hand:heat_income_log");
+        List<String> v2 = new ArrayList<>(CompleteTableEncoder.getAllFeatureNames());
+        for (String name : CompleteHandEncoder.getAllFeatureNames()) {
+            v2.add("hand:" + name);
+        }
+        List<Integer> filtered = new ArrayList<>(keep.length);
+        for (int column : keep) {
+            if (!dropped.contains(v2.get(column))) {
+                filtered.add(column);
+            }
+        }
+        int[] result = new int[filtered.size()];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = filtered.get(i);
+        }
+        return result;
+    }
+
+    /** Index of the first value of the extras block (round, previous phases, dummy pool). Never hardcode offsets. */
+    public static int extrasOffset() {
+        return names().indexOf("extra:round/40");
+    }
+
     public static int[] keptColumns() {
         return KEEP.clone();
     }
 
     public static int size() {
-        return KEEP.length + CONTEXT_SIZE + CARDS_SIZE + EXTRAS_SIZE + DOUBLE_PAYMENT_SIZE + PHASE_START_SIZE + OCEAN_SIZE;
+        return KEEP.length + CONTEXT_SIZE + CARDS_SIZE + SCORE_SIZE + EXTRAS_SIZE + DOUBLE_PAYMENT_SIZE
+                + PHASE_START_SIZE + OCEAN_SIZE;
+    }
+
+    /**
+     * For every observation value ({@link #names()} order) the divisor that produced it, so tooling can talk in real
+     * units: value = real / scale. The V2 block is normalised by {@code AiConstants.NORMALIZATION_VECTOR}; the appended
+     * blocks scale themselves (a 1.0 here means "the block already writes its own units", see {@link #LAYOUT}).
+     */
+    /**
+     * Which kept columns come from the private hand encoder. A position of the OPPONENT can only be judged from public
+     * information, so these are zeroed by {@link #buildPublic(MarsGame, Player)} - otherwise the one-ply search's
+     * symmetric reading of the position would look into the opponent's hand (found 2026-11-15).
+     */
+    private static final boolean[] FROM_HAND = handMask();
+
+    private static boolean[] handMask() {
+        List<String> v2 = new ArrayList<>(CompleteTableEncoder.getAllFeatureNames());
+        for (String name : CompleteHandEncoder.getAllFeatureNames()) {
+            v2.add("hand:" + name);
+        }
+        boolean[] mask = new boolean[KEEP.length];
+        for (int i = 0; i < KEEP.length; i++) {
+            mask[i] = v2.get(KEEP[i]).startsWith("hand:");
+        }
+        return mask;
+    }
+
+    /** Every card class that owns an observation bit: the audit checks that each one can actually be played here. */
+    public static List<Class<? extends Card>> auditedCardBits() {
+        List<Class<? extends Card>> cards = new ArrayList<>();
+        cards.addAll(TABLE_CARDS);
+        cards.addAll(SCIENCE_CARDS);
+        cards.addAll(HAND_CARDS);
+        return cards;
+    }
+
+    public static float[] scales() {
+        float[] scales = new float[size()];
+        int pos = 0;
+        for (int column : KEEP) {
+            scales[pos++] = com.terraforming.ares.services.ai.AiConstants.NORMALIZATION_VECTOR[column];
+        }
+        // ctx, cards, extras, double payment, phase-start rules, special design, oceans
+        while (pos < scales.length) {
+            scales[pos++] = 1f;
+        }
+        return scales;
     }
 
     public static List<String> names() {
@@ -168,8 +273,6 @@ public class ObservationBuilder {
         for (String who : List.of("my", "opponent")) {
             names.add("ctx:" + who + "_green_builds");
             names.add("ctx:" + who + "_blue_red_builds");
-            names.add("ctx:" + who + "_best_build_discount/20");
-            names.add("ctx:" + who + "_tightest_build_price_limit/30");
         }
         for (String what : List.of("extra_blue_activations", "luna_project_office", "project_inspection", "activated_blue_cards")) {
             names.add("ctx:my_" + what);
@@ -179,8 +282,12 @@ public class ObservationBuilder {
             for (Class<? extends Card> card : TABLE_CARDS) names.add("cards:" + who + "_on_table_" + card.getSimpleName());
         }
         for (String who : List.of("my", "opponent")) {
-            for (Class<? extends Card> card : RESOURCE_CARDS) names.add("cards:" + who + "_resources_on_" + card.getSimpleName() + "/10");
+            for (Class<? extends Card> card : SCIENCE_CARDS) {
+                names.add("cards:" + who + "_science_on_" + card.getSimpleName() + "/10");
+            }
         }
+        names.add("score:my_winning_points");
+        names.add("score:opponent_winning_points");
         for (Class<? extends Card> card : HAND_CARDS) names.add("cards:in_my_hand_" + card.getSimpleName());
         names.add("extra:round/40");
         for (int phase = 1; phase <= PHASES; phase++) names.add("extra:my_previous_phase_" + phase);
@@ -209,6 +316,18 @@ public class ObservationBuilder {
     }
 
     public float[] build(MarsGame game, Player player) {
+        return build(game, player, true);
+    }
+
+    /**
+     * The same vector with the player's private information (the hand block) zeroed. The engine uses it to judge the
+     * OPPONENT's position: their hand is hidden, so a value read from a full observation of the opponent would be a peek.
+     */
+    public float[] buildPublic(MarsGame game, Player player) {
+        return build(game, player, false);
+    }
+
+    private float[] build(MarsGame game, Player player, boolean includeHand) {
         long started = System.nanoTime();
         Player opponent = game.getPlayerUuidToPlayer().values().stream().filter(p -> !p.getUuid().equals(player.getUuid())).findFirst().orElseThrow();
 
@@ -248,8 +367,11 @@ public class ObservationBuilder {
         // ---- cards the V2 encoder does not tell apart
         pos = onTable(observation, pos, player);
         pos = onTable(observation, pos, opponent);
-        pos = resources(observation, pos, player);
-        pos = resources(observation, pos, opponent);
+        pos = scienceCounters(observation, pos, player);
+        pos = scienceCounters(observation, pos, opponent);
+        // The score, one number per player, from the engine's own total.
+        observation[pos++] = winPointsService.countWinPoints(player, game);
+        observation[pos++] = winPointsService.countWinPoints(opponent, game);
         for (Class<? extends Card> card : HAND_CARDS) {
             observation[pos++] = player.getHand().getCards().stream().anyMatch(id -> card.isInstance(cardService.getCard(id))) ? 1f : 0f;
         }
@@ -269,7 +391,6 @@ public class ObservationBuilder {
         Planet start = game.getPlanetAtTheStartOfThePhase();
         observation[pos++] = start == null || !start.isTemperatureMax() ? 1f : 0f;
         observation[pos++] = start == null || !start.isOxygenMax() ? 1f : 0f;
-        observation[pos++] = start == null || !start.isInfrastructureMax() ? 1f : 0f;
         observation[pos++] = start == null || !start.allOceansRevealed() ? 1f : 0f;
         // Rule predicate: a card with a "special design" built last turn may ignore global requirements this turn.
         observation[pos++] = player.isBuiltSpecialDesignLastTurn() ? 1f : 0f;
@@ -306,6 +427,13 @@ public class ObservationBuilder {
         if (pos != observation.length) {
             throw new IllegalStateException("The observation layout is inconsistent: wrote " + pos + " of " + observation.length);
         }
+        if (!includeHand) {
+            for (int i = 0; i < FROM_HAND.length; i++) {
+                if (FROM_HAND[i]) {
+                    observation[i] = 0f;
+                }
+            }
+        }
         AgentPerfStats.recordObservation(System.nanoTime() - started);
         return observation;
     }
@@ -319,18 +447,17 @@ public class ObservationBuilder {
      */
     private int doublePayment(float[] target, int pos, MarsGame game, Player player) {
         int[] best = new int[DOUBLE_PAYMENT_DIMENSIONS.size()];
-        // ONE copy of the game for the whole observation: some cards (CallistoPenalMines, AutomatedFactories) draw from
-        // the deck inside payAgain, so they must not run on the live game - and copying the game per card made the
-        // observation 2.7x more expensive than without this feature. Cards that only touch the player get a player copy.
-        MarsGame host = null;
+        // ONE FRESH COPY OF THE GAME PER CARD. The phase-4 upgrade makes exactly one played card pay again, on the true
+        // position, so each card has to be measured on its own copy: with a shared copy a card's payment can depend on
+        // what another card's payAgain changed in the copy (a deck draw, a global), and the feature then reports a payment
+        // that cannot happen in the game (caught by ObservationCompletenessTest, 2026-11-15). Cheap: a handful of played
+        // cards can pay again at all.
         for (Integer id : player.getPlayed().getCards()) {
             Card card = cardService.getCard(id);
             if (card == null || !card.canPayAgain()) {
                 continue;
             }
-            if (host == null) {
-                host = new MarsGame(game);
-            }
+            MarsGame host = new MarsGame(game);
             Player probe = new Player(player);
             try {
                 card.payAgain(host, cardService, probe);
@@ -369,30 +496,29 @@ public class ObservationBuilder {
         return pos;
     }
 
-    private static int resources(float[] target, int pos, Player player) {
-        for (Class<? extends Card> card : RESOURCE_CARDS) {
-            target[pos++] = player.getCardResourcesCount().getOrDefault(card, 0) / 10f;
+    /** Science on our own cards, the same shape the animal/microbe counters have (a count per card, /10). */
+    private int scienceCounters(float[] target, int pos, Player player) {
+        for (Class<? extends Card> card : SCIENCE_CARDS) {
+            Integer count = player.getCardResourcesCount().get(card);
+            target[pos++] = (count == null ? 0 : count) / 10f;
         }
         return pos;
     }
 
+    /**
+     * Build slots still available, per colour. The slot's discount and price limit are NOT encoded: both come from the
+     * phase-upgrade cards (already one-hot in the V2 block) and from which phase is being played, so they are derived
+     * information, and a net that sees the hand and the money does not need them spelled out.
+     */
     private static int builds(float[] target, int pos, Player player) {
         int green = 0;
         int blueRed = 0;
-        int bestDiscount = 0;
-        int tightestLimit = 0;
         for (BuildDto build : player.getBuilds()) {
             green += build.getType().isGreen() ? 1 : 0;
             blueRed += build.getType().isBlueRed() ? 1 : 0;
-            bestDiscount = Math.max(bestDiscount, build.getExtraDiscount());
-            if (build.getPriceLimit() > 0) {
-                tightestLimit = tightestLimit == 0 ? build.getPriceLimit() : Math.min(tightestLimit, build.getPriceLimit());
-            }
         }
         target[pos++] = green;
         target[pos++] = blueRed;
-        target[pos++] = bestDiscount / 20f;
-        target[pos++] = tightestLimit / 30f;
         return pos;
     }
 

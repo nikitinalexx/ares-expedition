@@ -146,7 +146,11 @@ public final class MlpValueModel {
             }
             worst = Math.max(worst, Math.abs(logit(obs) - logits.get(i).asDouble()));
         }
-        if (worst > 1e-3) {
+        // The reference is produced by the trainer's own forward pass on the GPU and, in probability space, converted to a
+        // logit; near a saturated prediction that transform amplifies the last bits of float32 into ~1e-3. The check exists
+        // to refuse a structurally wrong export (a misordered layout moves logits by order 1), so the tolerance is tight
+        // but not tighter than the arithmetic: 5e-3 of logit is 0.1% of probability at worst.
+        if (worst > 5e-3) {
             throw new IOException("the exported value model disagrees with the trainer by " + worst + ": " + reference);
         }
     }

@@ -5,9 +5,12 @@ import com.terraforming.ares.model.Card;
 import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StandardProjectType;
 import com.terraforming.ares.model.StateType;
+import com.terraforming.ares.model.turn.PhaseChoiceTurn;
+import com.terraforming.ares.processors.turn.PickPhaseProcessor;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.SimulationProcessorService;
 import com.terraforming.ares.services.WinPointsService;
+import com.terraforming.ares.services.StateTransitionService;
 import com.terraforming.ares.services.ai.turnProcessors.AiTurnService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
@@ -60,9 +63,20 @@ public class OnePlySearch {
     private final BlueInputDecisions blueInputDecisions;
     private final AiTurnService aiTurnService;
     private final CardService cardService;
+    private final StateTransitionService stateTransitionService;
+    /** The engine's own phase-pick processor: the afterstate of a pick is built by the same code that plays it. */
+    private final PickPhaseProcessor pickPhaseProcessor;
     private final SimulationProcessorService simulationProcessorService;
     private final WinPointsService winPointsService;
     private final List<MlpValueModel> models;
+    /**
+     * A separate critic for the phase pick, {@code -Dares.agent.valueModel.phase=DIR}. Entering a phase is a different
+     * question from building a card: the afterstate is the START of a phase, whose distribution is not the distribution of
+     * ordinary decision states. One net for both questions averages two different answers.
+     */
+    private final List<MlpValueModel> phaseModels;
+    /** The nets of the decision currently being scored; empty = the ordinary {@link #models} (see {@link #nets()}). */
+    private final ThreadLocal<List<MlpValueModel>> currentNets = new ThreadLocal<>();
     private final Set<DecisionType> types;
     /** Decision types where the search also decides "act or stop" (full comparison), not only the order of the menu. */
     private final Set<DecisionType> fullTypes;
@@ -77,6 +91,14 @@ public class OnePlySearch {
     private final int horizonTurns;
     /** Determinized playouts per candidate at the horizon (1 = one fair sample). */
     private final int samples;
+    /**
+     * Phase pick scored by PLAYING THE ROUND OUT (until the next pick) instead of by the start of the phase
+     * ({@code -Dares.agent.search.phasePlayout=true}). The start of a phase is not a comparable position: entering phase 1
+     * or 2 hands the player a build slot at once, while income and the draft are only collected when the phase is played,
+     * so a one-step comparison systematically prefers the phases that pay in the afterstate. A round playout lets every
+     * candidate collect its own payoff before the leaf value is read.
+     */
+    private final boolean phasePlayout;
     private final int debug;
     private final ThreadLocal<float[]> lastAfterstate = new ThreadLocal<>();
     /** Re-entrancy guard: the build of a candidate asks the policy for its inner decisions, never the search. */
@@ -96,6 +118,7 @@ public class OnePlySearch {
     public OnePlySearch(ObservationBuilder observationBuilder, NeuralPolicy neuralPolicy,
                         BuildInputDecisions buildInputDecisions, BuildPaymentDecisions buildPaymentDecisions,
                         BlueInputDecisions blueInputDecisions, AiTurnService aiTurnService, CardService cardService,
+                        StateTransitionService stateTransitionService, PickPhaseProcessor pickPhaseProcessor,
                         @Lazy SimulationProcessorService simulationProcessorService, WinPointsService winPointsService) {
         this.observationBuilder = observationBuilder;
         this.neuralPolicy = neuralPolicy;
@@ -104,6 +127,8 @@ public class OnePlySearch {
         this.blueInputDecisions = blueInputDecisions;
         this.aiTurnService = aiTurnService;
         this.cardService = cardService;
+        this.stateTransitionService = stateTransitionService;
+        this.pickPhaseProcessor = pickPhaseProcessor;
         this.simulationProcessorService = simulationProcessorService;
         this.winPointsService = winPointsService;
         String mode = System.getProperty("ares.agent.search", "off");
@@ -120,8 +145,11 @@ public class OnePlySearch {
         boolean configuredPairs = Boolean.parseBoolean(System.getProperty("ares.agent.search.pairs", "false"));
         int configuredHorizon = Integer.parseInt(System.getProperty("ares.agent.search.horizon", "0"));
         int configuredSamples = Math.max(1, Integer.parseInt(System.getProperty("ares.agent.search.samples", "1")));
+        boolean configuredPhasePlayout =
+                Boolean.parseBoolean(System.getProperty("ares.agent.search.phasePlayout", "false"));
         if (!mode.equals("oneply") || spec.isEmpty()) {
             this.models = List.of();
+            this.phaseModels = List.of();
             this.debug = 0;
             this.rankOnly = true;
             this.shuffle = false;
@@ -130,6 +158,7 @@ public class OnePlySearch {
             this.pairs = false;
             this.horizonTurns = 0;
             this.samples = 1;
+            this.phasePlayout = false;
             return;
         }
         this.debug = configuredDebug;
@@ -140,6 +169,56 @@ public class OnePlySearch {
         this.pairs = configuredPairs;
         this.horizonTurns = Math.max(0, configuredHorizon);
         this.samples = configuredSamples;
+        this.phasePlayout = configuredPhasePlayout;
+        this.models = loadNets(spec);
+        String phaseSpec = System.getProperty("ares.agent.valueModel.phase", "").trim();
+        this.phaseModels = phaseSpec.isEmpty() ? List.of() : loadNets(phaseSpec);
+        if (models.isEmpty()) {
+            throw new IllegalStateException("ares.agent.valueModel has no directory: " + spec);
+        }
+        log.info("one-ply search: value model {}, types {}, observation hash {}",
+                spec, types, models.get(0).observationHash());
+        System.out.println("[SEARCH] one-ply on " + types + ", value model " + spec
+                + (phaseModels.isEmpty() ? "" : " (phase pick: "
+                   + System.getProperty("ares.agent.valueModel.phase", "").trim() + ")")
+                + " (" + models.size() + " net(s), obs " + models.get(0).obsSize()
+                + ", hash " + models.get(0).observationHash()
+                + ", rank=" + rankOnly + ", symmetric=" + symmetric + ", mustBuild=" + mustBuild + ", pairs=" + pairs
+                + ", horizon=" + horizonTurns + " gen, samples=" + samples
+                + (phasePlayout ? ", phase pick by a round playout" : "") + ")");
+        Runtime.getRuntime().addShutdownHook(new Thread(this::report, "one-ply-report"));
+    }
+
+    /** Mean logit of every net of the ensemble: the score of one observation on its own. */
+    private List<MlpValueModel> nets() {
+        List<MlpValueModel> nets = currentNets.get();
+        return nets == null ? models : nets;
+    }
+
+    private float logit(float[] observation) {
+        List<MlpValueModel> nets = nets();
+        float sum = 0f;
+        for (MlpValueModel model : nets) {
+            sum += model.logit(observation);
+        }
+        return sum / nets.size();
+    }
+
+    /**
+     * Mean over the ensemble of {@code (logit(me) - logit(opponent)) / 2}: the same quantity as the win probability of
+     * the position with the part of the error that belongs to the position rather than to the player cancelled.
+     */
+    private float symmetricScore(float[] mine, float[] opponent) {
+        List<MlpValueModel> nets = nets();
+        float sum = 0f;
+        for (MlpValueModel model : nets) {
+            sum += (model.logit(mine) - model.logit(opponent)) * 0.5f;
+        }
+        return sum / nets.size();
+    }
+
+    /** One directory, or several separated by a comma (an ensemble): every net must belong to the same encoder. */
+    private static List<MlpValueModel> loadNets(String spec) {
         List<MlpValueModel> loaded = new ArrayList<>();
         for (String item : spec.split(",")) {
             String dir = item.trim();
@@ -163,39 +242,7 @@ public class OnePlySearch {
                 throw new UncheckedIOException("Can not load the value model " + dir, e);
             }
         }
-        if (loaded.isEmpty()) {
-            throw new IllegalStateException("ares.agent.valueModel has no directory: " + spec);
-        }
-        this.models = List.copyOf(loaded);
-        log.info("one-ply search: value model {}, types {}, observation hash {}",
-                spec, types, models.get(0).observationHash());
-        System.out.println("[SEARCH] one-ply on " + types + ", value model " + spec
-                + " (" + models.size() + " net(s), obs " + models.get(0).obsSize()
-                + ", hash " + models.get(0).observationHash()
-                + ", rank=" + rankOnly + ", symmetric=" + symmetric + ", mustBuild=" + mustBuild + ", pairs=" + pairs
-                + ", horizon=" + horizonTurns + " gen, samples=" + samples + ")");
-        Runtime.getRuntime().addShutdownHook(new Thread(this::report, "one-ply-report"));
-    }
-
-    /** Mean logit of every net of the ensemble: the score of one observation on its own. */
-    private float logit(float[] observation) {
-        float sum = 0f;
-        for (MlpValueModel model : models) {
-            sum += model.logit(observation);
-        }
-        return sum / models.size();
-    }
-
-    /**
-     * Mean over the ensemble of {@code (logit(me) - logit(opponent)) / 2}: the same quantity as the win probability of
-     * the position with the part of the error that belongs to the position rather than to the player cancelled.
-     */
-    private float symmetricScore(float[] mine, float[] opponent) {
-        float sum = 0f;
-        for (MlpValueModel model : models) {
-            sum += (model.logit(mine) - model.logit(opponent)) * 0.5f;
-        }
-        return sum / models.size();
+        return List.copyOf(loaded);
     }
 
     private static Set<DecisionType> parseTypes(String spec) {
@@ -222,12 +269,14 @@ public class OnePlySearch {
         }
         busy.set(Boolean.TRUE);
         strongAnswer.set(player.getDifficulty() != null && player.getDifficulty().isStrongAgent());
+        currentNets.set(decision.type() == DecisionType.PICK_PHASE && !phaseModels.isEmpty() ? phaseModels : models);
         long started = System.nanoTime();
         try {
             return search(decision, game, player);
         } finally {
             strongAnswer.set(Boolean.FALSE);
             busy.set(Boolean.FALSE);
+            currentNets.remove();
             nanos.addAndGet(System.nanoTime() - started);
         }
     }
@@ -410,6 +459,8 @@ public class OnePlySearch {
                 // "Which of these cards do you give up": the candidate IS the card that leaves the hand. The sale price is
                 // the same for every card of a hand, so leaving the money out of the copy does not change the ordering.
                 me.getHand().removeCard(cardId);
+            } else if (type == DecisionType.PICK_PHASE) {
+                applyPhaseChoice(copy, me, cardId, seed);
             } else if (type != DecisionType.BUILD_CARD && type != DecisionType.STANDARD_ACTION) {
                 // Anything else is not implemented: return "no opinion" instead of scoring it as a build (a sell or a
                 // mulligan scored through the payment path produced 4.7 million unusable candidates and a 13% win rate).
@@ -422,15 +473,19 @@ public class OnePlySearch {
             float mine;
             if (horizonTurns > 0) {
                 mine = horizonScore(copy, me, seed);
+            } else if (phasePlayout && type == DecisionType.PICK_PHASE) {
+                mine = roundScore(copy, me, seed);
             } else {
                 mine = valueAt(copy, me, observation);
             }
             return Math.round(mine * 1000f);
         } catch (RuntimeException e) {
-            if (debug > 0 && type == DecisionType.STANDARD_ACTION && failures.get() < 5) {
+            if (debug > 0 && failures.get() < 8
+                    && (type == DecisionType.STANDARD_ACTION || type == DecisionType.PICK_PHASE)) {
                 failures.incrementAndGet();
-                System.out.println("[SEARCH-DEBUG] standard action kind " + cardId + " failed: "
+                System.out.println("[SEARCH-DEBUG] " + type + " " + cardId + " failed: "
                         + e.getClass().getSimpleName() + ": " + e.getMessage());
+                e.printStackTrace(System.out);
             }
             return null;
         }
@@ -477,6 +532,49 @@ public class OnePlySearch {
         return ok == 0 ? Float.NaN : sum / ok;
     }
 
+    /**
+     * Plays the round out from the afterstate of a phase pick and reads V at the next pick: every candidate has collected
+     * what its phase pays (a build, income, the draft, blue actions) before the leaf is read, so the comparison is between
+     * complete rounds rather than between the phases' opening gifts.
+     */
+    private float roundScore(MarsGame copy, Player me, long seed) {
+        String uuid = me.getUuid();
+        // A playout needs both seats to be playable by the engine; against a human the search simply has no opinion and
+        // the policy decides (the same fallback as an unusable candidate).
+        if (copy.getPlayerUuidToPlayer().values().stream().anyMatch(player -> !player.isComputer())) {
+            return Float.NaN;
+        }
+        float sum = 0f;
+        int ok = 0;
+        for (int k = 0; k < samples; k++) {
+            MarsGame sim = k == 0 ? copy : new MarsGame(copy);
+            determinize(sim, uuid, seed + k);
+            float leaf = playRound(sim, uuid);
+            if (!Float.isNaN(leaf)) {
+                sum += leaf;
+                ok++;
+            }
+        }
+        return ok == 0 ? Float.NaN : sum / ok;
+    }
+
+    private float playRound(MarsGame sim, String uuid) {
+        int startTurns = sim.getTurns();
+        try {
+            simulationProcessorService.processSimulation(sim, game -> {
+                if (game.getStateType() == StateType.GAME_END
+                        || (game.getTurns() > startTurns && game.getStateType() == StateType.PICK_PHASE)) {
+                    throw new StopPlayout();
+                }
+            });
+        } catch (StopPlayout stop) {
+            // the round is over: the leaf is the next pick
+        } catch (RuntimeException e) {
+            return Float.NaN;
+        }
+        return leafValue(sim, uuid);
+    }
+
     private float playout(MarsGame sim, String uuid) {
         int target = sim.getTurns() + horizonTurns;
         try {
@@ -506,7 +604,7 @@ public class OnePlySearch {
         if (!symmetric || other == null) {
             return logit(observation);
         }
-        return symmetricScore(observation, observationBuilder.build(sim, other));
+        return symmetricScore(observation, observationBuilder.buildPublic(sim, other));
     }
 
     /**
@@ -557,7 +655,32 @@ public class OnePlySearch {
             return logit(observation);
         }
         Player other = otherPlayer(copy, me);
-        return other == null ? logit(observation) : symmetricScore(observation, observationBuilder.build(copy, other));
+        return other == null ? logit(observation) : symmetricScore(observation, observationBuilder.buildPublic(copy, other));
+    }
+
+    /**
+     * The afterstate of one phase pick: exactly what the engine does when the pick is confirmed. It is not re-implemented
+     * here - {@link PickPhaseProcessor} is called, the same bean the engine uses ({@code clearRoundResults}, the chosen and
+     * previous phase, the phase-3 double-repeat upgrade, Communications Streamlining and Nebu Labs MC, the crysis
+     * cleanup), and then {@link StateTransitionService#performStateTransferFromPhase} with 0, which is what
+     * {@code PickPhaseState} calls: the phase's build slots, income, draft, revealed cards and blue activations are set up
+     * by the engine itself, so the afterstate cannot drift away from the rules.
+     * <p>
+     * The opponent's pick is unknown while we pick, so it is drawn from that player's legal phases with the decision's own
+     * seed: the same draw for every candidate (common random numbers), so the comparison stays fair, and neither a hidden
+     * card nor the opponent's hand can enter the value.
+     */
+    private void applyPhaseChoice(MarsGame copy, Player me, int phaseId, long seed) {
+        pickPhaseProcessor.processTurn(new PhaseChoiceTurn(me.getUuid(), phaseId), copy);
+        Player other = otherPlayer(copy, me);
+        if (other != null && other.getChosenPhase() == null) {
+            List<Integer> legal = PickPhaseDecisions.legalPhases(other);
+            if (!legal.isEmpty()) {
+                int pick = legal.get((int) Math.floorMod(seed, legal.size()));
+                pickPhaseProcessor.processTurn(new PhaseChoiceTurn(other.getUuid(), pick), copy);
+            }
+        }
+        stateTransitionService.performStateTransferFromPhase(copy, 0);
     }
 
     /** Applies one build on the copy exactly as the live game does (sync variants), including its inputs and payment. */

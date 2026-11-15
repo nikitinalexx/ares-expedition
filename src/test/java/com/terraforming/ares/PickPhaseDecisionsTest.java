@@ -215,7 +215,7 @@ class PickPhaseDecisionsTest extends EngineTestBase {
         float[] seenByA = pickPhaseDecisions.build(game, a).observation();
         float[] seenByB = pickPhaseDecisions.build(game, b).observation();
 
-        int extras = seenByA.length - PickPhaseDecisions.EXTRAS_SIZE;
+        int extras = com.terraforming.ares.services.agent.ObservationBuilder.extrasOffset();
         // layout: round, my previous phase(5), opponent previous phase(5), ...
         assertEquals(1f, seenByA[extras + 1 + 1], "A: my previous phase is 2");
         assertEquals(1f, seenByA[extras + 1 + 5 + 4], "A: opponent previous phase is 5");
@@ -241,7 +241,7 @@ class PickPhaseDecisionsTest extends EngineTestBase {
         Player player = first(game);
         setPool(game, 5, 2);
         float[] observation = pickPhaseDecisions.build(game, player).observation();
-        int extras = observation.length - PickPhaseDecisions.EXTRAS_SIZE;
+        int extras = com.terraforming.ares.services.agent.ObservationBuilder.extrasOffset();
         float[] pool = Arrays.copyOfRange(observation, extras + 11, extras + 17);
         assertArrayEquals(new float[]{0f, 1f, 0f, 0f, 1f, 2f / 5f}, pool, 1e-6f);
     }

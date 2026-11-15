@@ -35,7 +35,7 @@ public class HandCardDecisions {
     public static final int SELL_FEATURES = CardFeatures.LENGTH + 1;
 
     private static final String CARD = "classSignature(" + CardFeatures.SIGNATURE + "), color(" + CardFeatures.COLORS
-            + "), tags(" + CardFeatures.TAGS + "), price/50, active, stop";
+            + "), tags(" + CardFeatures.TAGS + "), price/50, active, stop, points/10";
 
     public static final String DRAFT_LAYOUT = ObservationBuilder.LAYOUT
             + "; candidate=[" + CARD + "]; discard exactly the required number from the revealed cards; no stop; stopId="

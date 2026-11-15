@@ -149,7 +149,7 @@ class DecisionLogsTest extends EngineTestBase {
     void decisionsAreRecordedInOrderAndMatchTheStateTheNextDecisionSees() throws IOException {
         playAndRecord(dir);
         DecisionFile.Content content = readAll(dir);
-        int extras = content.schema().obsSize() - PickPhaseDecisions.EXTRAS_SIZE;
+        int extras = com.terraforming.ares.services.agent.ObservationBuilder.extrasOffset();
 
         Map<String, DecisionFile.Row> previous = new HashMap<>();
         for (DecisionFile.Row row : content.rows()) {
@@ -204,6 +204,11 @@ class DecisionLogsTest extends EngineTestBase {
         Process process;
         try {
             process = new ProcessBuilder("python", script.toString(), file.toString()).redirectErrorStream(true).start();
+            if (!process.waitFor(20, TimeUnit.SECONDS) || process.exitValue() != 0) {
+                // "python" may be a Windows Store shim that exits 9009: use the real launcher
+                process = new ProcessBuilder("py", "-3", script.toString(), file.toString())
+                        .redirectErrorStream(true).start();
+            }
         } catch (IOException noPython) {
             Assumptions.assumeTrue(false, "python is not available");
             return;

@@ -26,7 +26,7 @@ public class CollectIncomeDecisions {
     public static final int CANDIDATE_FEATURES = CardFeatures.LENGTH;
     public static final String OBSERVATION_LAYOUT = ObservationBuilder.LAYOUT
             + "; candidate=[classSignature(" + CardFeatures.SIGNATURE + "), color(" + CardFeatures.COLORS
-            + "), tags(" + CardFeatures.TAGS + "), price/50, active, stop]; stopId=" + STOP
+            + "), tags(" + CardFeatures.TAGS + "), price/50, active, stop, points/10]; stopId=" + STOP
             + "; phase-4 double-produce pick among green canPayAgain cards";
 
     private final ObservationBuilder observationBuilder;

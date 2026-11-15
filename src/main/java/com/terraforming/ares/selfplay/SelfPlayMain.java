@@ -26,6 +26,8 @@ import java.util.Map;
  *                      [--model MODEL_DIR | --models MODELS_DIR] [--temperature 0.5]
  * compare: --mode compare --out FILE.json --a AGENT --b SMART --games N [--concurrency C]
  *                      [--model MODEL_DIR | --models MODELS_DIR] [--temperature 0]
+ * score:   --mode scorecard --out FILE.json --games N [--a AGENT] [--b SMART] [--concurrency C]
+ *                      (where the points go: Tr, forests, cards, resources, milestones, awards per side)
  * bench:   --mode bench --out FILE.json [--games N] [--types A,B|all] [--captures-per-type 2] [--max-captures 400]
  *                      [--truncate-decisions N] [--rollouts-per-capture 1] [--scales 1,2,4,8] [--max-seconds S]
  *                      [--hash-policy false|true] [--synthetic-model false|true]
@@ -78,13 +80,30 @@ public final class SelfPlayMain {
             System.out.println("[NAMES] " + names.size() + " feature names written to " + file);
             return 0;
         }
+        if (mode.equals("scales")) {  // name + divisor per observation value: tooling can report real units
+            Path file = Path.of(required(arguments, "out"));
+            if (file.getParent() != null) {
+                Files.createDirectories(file.getParent());
+            }
+            java.util.Map<String, Object> payload = new java.util.LinkedHashMap<>();
+            payload.put("names", com.terraforming.ares.services.agent.ObservationBuilder.names());
+            float[] scales = com.terraforming.ares.services.agent.ObservationBuilder.scales();
+            java.util.List<Float> boxes = new java.util.ArrayList<>(scales.length);
+            for (float scale : scales) {
+                boxes.add(scale);
+            }
+            payload.put("scales", boxes);
+            new ObjectMapper().writeValue(file.toFile(), payload);
+            System.out.println("[SCALES] " + scales.length + " values -> " + file);
+            return 0;
+        }
         if (mode.equals("schemas")) {  // the encoder's schema hash per decision type: what a converted model must carry
             Path file = Path.of(required(arguments, "out"));
             if (file.getParent() != null) {
                 Files.createDirectories(file.getParent());
             }
             new ObjectMapper().writeValue(file.toFile(),
-                    com.terraforming.ares.services.agent.NeuralPolicy.schemaHashes());
+                    com.terraforming.ares.services.agent.NeuralPolicy.schemaDetails());
             System.out.println("[SCHEMAS] written to " + file);
             return 0;
         }
@@ -117,6 +136,12 @@ public final class SelfPlayMain {
                     return bench(context, arguments);
                 case "audit":
                     return audit(context, arguments);
+                case "scorecard":
+                    return scorecard(context, arguments);
+                case "cards":
+                    return cards(context, arguments);
+                case "sanity":
+                    return sanity(context, arguments);
                 default:
                     throw new IllegalArgumentException("unknown --mode " + mode);
             }
@@ -201,6 +226,51 @@ public final class SelfPlayMain {
                 cards,
                 interactionCards);
         context.getBean(ValueAudit.class).run(options);
+        return 0;
+    }
+
+    /**
+     * The obvious-move bench: positions where the rules alone say what is better, run through the live decision path.
+     * Exit 1 when a scenario fails, so a night can refuse a model that does not even take a free card.
+     */
+    private static int sanity(ConfigurableApplicationContext context, Map<String, String> a) throws Exception {
+        SanityBench.Report report = context.getBean(SanityBench.class).run(Path.of(required(a, "out")));
+        return report.failed() == 0 ? 0 : 1;
+    }
+
+    /** Which project card class belongs to which expansion: the audit uses it to classify dead observation bits. */
+    private static int cards(ConfigurableApplicationContext context, Map<String, String> a) throws Exception {
+        Path file = Path.of(required(a, "out"));
+        if (file.getParent() != null) {
+            Files.createDirectories(file.getParent());
+        }
+        java.util.Map<String, java.util.List<String>> byExpansion = new java.util.LinkedHashMap<>();
+        var projects = context.getBean(com.terraforming.ares.services.CardFactory.class).createAllProjects();
+        for (var expansion : com.terraforming.ares.model.Expansion.values()) {
+            var cards = projects.get(expansion);
+            if (cards == null) {
+                continue;
+            }
+            java.util.List<String> names = new java.util.ArrayList<>();
+            for (var card : cards.values()) {
+                names.add(card.getClass().getSimpleName());
+            }
+            java.util.Collections.sort(names);
+            byExpansion.put(expansion.name(), names);
+        }
+        new ObjectMapper().writeValue(file.toFile(), byExpansion);
+        System.out.println("[CARDS] " + byExpansion.size() + " expansions -> " + file);
+        return 0;
+    }
+
+    /** Where the points go, per term of the score, for {@code a} and {@code b}. Diagnostic only. */
+    private static int scorecard(ConfigurableApplicationContext context, Map<String, String> a) throws Exception {
+        context.getBean(com.terraforming.ares.selfplay.Scorecard.class).run(
+                Path.of(required(a, "out")),
+                Integer.parseInt(required(a, "games")),
+                PlayerDifficulty.valueOf(a.getOrDefault("a", "AGENT")),
+                PlayerDifficulty.valueOf(a.getOrDefault("b", "SMART")),
+                Integer.parseInt(a.getOrDefault("concurrency", "16")));
         return 0;
     }
 

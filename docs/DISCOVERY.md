@@ -65,3 +65,63 @@ are measured on 10 000 games only - a 3 000-game evaluation (±1.6) cannot see t
 | D2 | `PICK_PHASE` drawn uniformly (1.0), 6 000 mirror games | `D:/ares/data/explore_phase` | the training set for the phase head (step 4) |
 | D3 | critic on D1 + greedy self-play, `--target margin` | `v_explore1_margin` | see `docs/EXPERIMENTS.md` |
 | D4 | phase head by `pg-uniform` from the best policy | D2 | see `docs/EXPERIMENTS.md` |
+
+### What the loop taught us in the first day
+
+| # | attempt | measured result |
+|---|---|---|
+| D5 | phase pick decided by V of the start of each phase (the engine's own `PickPhaseProcessor` + `StateTransitionService`) | phases 1-5 all appear, but the player collapses: 0.3% vs SMART with the outcome critic, 32.8% with an exploration-margin critic, 3.8% with an 8-turn playout. The start of a phase is not a comparable position: entering phase 1/2 hands over a build slot at once while income and the draft are only collected while the phase is played, so every variant chases build slots. |
+| D6 | phase head by exact-corrected REINFORCE (`--objective pg`, uniform exploration) | no change in the profile; a decision taken 12 times per game carries too little outcome signal |
+| D7 | `mustBuild` (never decline a build) | builds 12.2 -> 18.1 per game, win rate 38.2% -> 33.5% (2 000 games): converting credits into cards the player cannot use is worse |
+| D8 | score decomposition (`--mode scorecard`) | agent 71.5 vs SMART 76.4: +6.6 Tr, +5.0 forests, **-9.3 printed card points**, -5.8 milestones/awards |
+| D9 | encoder 805: the five score terms per player, and the card's printed points as a candidate feature | critic AUC 0.879 -> 0.887; but `ml/value_sensitivity.py` shows the search still cannot see three points (+0.008), so V-based ranking of cards stays blind |
+| D10 | advantage **in points** for the card heads (`--adv-target margin`) on bounded exploration data | card term unchanged (3.1 points, 13.2 cards/game, 37.2% vs SMART on 400 games) - the head cannot infer a card's worth from a noisy game outcome |
+
+Two permanent instruments came out of this day: `--mode scorecard` (points per term, per side) and
+`ml/value_sensitivity.py` (what the critic actually reacts to).
+
+### What the benchmark does, in numbers (measured, not assumed)
+
+| | agent | SMART |
+|---|---|---|
+| cards on the table per game | 13.2 | **27.4** |
+| printed points per game | 3.2 | **13.0** |
+| terraforming rating | 37.8 | 31.2 |
+| forests | 13.9 | 8.9 |
+| milestones + awards | 11.8 | 17.6 |
+| total | 71.5 | 76.4 |
+
+The benchmark builds roughly two and a half cards per round, which needs the build phases; and the discounts that make
+them affordable are what an engine is for. Every piece of our infrastructure now exists to attack that chain -
+exploration data that contains it, a score-term and card-point encoder, a search that can score a phase pick with the
+engine's own transition, and instruments that say in points what changed. What is missing is a critic that can price a
+long chain, and that is the open problem, not a lack of knobs.
+
+## The open problem, stated in numbers
+
+Everything above says the same thing from four directions: our player loses on the *card table* (3.2 printed points and
+13.2 cards against 13.0 and 27.4), and the chain that produces that table - an engine that pays for cards with discounts
+and income, so that most cards become worth building - spans many rounds. A one-ply search can only see it if something
+prices it, and a value function trained on our own games cannot:
+
+* `ml/value_sensitivity.py`: +3 printed card points moves the critic by **+0.008** (ten milestone points move it by
+  +0.194); retraining on the final margin instead of the win gives +0.003. The critic was fitted where a card is worth
+  0.24 points, so it prices cards as nearly worthless - and the search acts on that price.
+* advantage-weighted learning of the card heads in points (`--adv-target margin`) on 4 000 exploration games changed the
+  card term by zero (3.1 points).
+* forcing the phase mix or the builds changes the card *count* (13 -> 18 -> 27) and loses win rate, because the extra
+  cards are paid at full price.
+
+So the missing piece is neither an encoder field nor a loss function: it is **credit assignment across a long chain**, and
+the two honest ways to get it are:
+
+1. **Scale.** The chain's effect (a few points per card) is far below the noise of a game (sd ≈ 17 points). The
+   pipeline does 12 000 games per training iteration in ~2 minutes of self-play; 10-100x more games per iteration and
+   more iterations is the direct way to estimate these prices, and the exploration generator already produces the
+   counterfactual games the estimate needs (it is only the sample size that is short).
+2. **Planning with a longer horizon than one ply** - an evaluation that plays the rest of the round (or several rounds)
+   from a candidate. This is implemented (`-Dares.agent.search.phasePlayout`, and `horizon` for the card search) and it
+   is affordable for a *deployed* player, but not for generating 10 000 training games: a full round playout costs ~0.5 s
+   per candidate.
+
+Both are measurements away from a verdict, and neither needs a teacher.

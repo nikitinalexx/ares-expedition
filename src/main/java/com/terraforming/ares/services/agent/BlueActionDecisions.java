@@ -28,7 +28,7 @@ public class BlueActionDecisions {
     public static final int CANDIDATE_FEATURES = CardFeatures.LENGTH;
     public static final String OBSERVATION_LAYOUT = ObservationBuilder.LAYOUT
             + "; candidate=[classSignature(" + CardFeatures.SIGNATURE + "), color(" + CardFeatures.COLORS
-            + "), tags(" + CardFeatures.TAGS + "), price/50, active, stop]; stopId=" + STOP
+            + "), tags(" + CardFeatures.TAGS + "), price/50, active, stop, points/10]; stopId=" + STOP
             + "; blue-action inputs are chosen by BLUE_INPUT";
 
     private final ObservationBuilder observationBuilder;

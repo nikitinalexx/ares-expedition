@@ -231,6 +231,10 @@
   "count": 6,
   "reason": "upstream"
  },
+ "isInfrastructureMax": {
+  "count": 1,
+  "reason": "the infrastructure expansion is never played by this player, so the rule is out of scope"
+ },
  "isIntermediate": {
   "count": 5,
   "reason": "plumbing"

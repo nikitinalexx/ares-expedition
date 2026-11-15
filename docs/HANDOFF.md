@@ -73,3 +73,84 @@ Command: `nightly run night8 --start-from night7`
 change of semantics (`MlpPhaseModelTest` still agrees with the numpy reference to 1e-4; 86.9% vs RANDOM and 23.5% vs
 SMART over 600 games each). Three changes, see `docs/SEARCH.md` Result 3: transposed weights (vectorisable SAXPY),
 the observation's 90% zeros folded into a constant, empty candidate features and relu zeros skipped.
+
+## 2026-11-15: SMART and NETWORK are benchmarks only; the score is a card table
+
+Owner's rule, binding from now on: **SMART and NETWORK are benchmarks. Not teachers, not opponents in training, not a
+source of data.** Imagine SMART does not exist - the only training partners are ourselves and RANDOM. A recorder that
+translated SMART's turns into our decision format was written, tested and then **removed** on the owner's instruction
+(the direction is dead: imitating SMART cannot beat SMART, let alone NETWORK).
+
+Where that leaves us, measured today:
+
+* `--mode scorecard` (new) reports the terms the engine scores. 300-400 games: agent **71.5** vs SMART **76.4**, with
+  **+6.6** Tr and **+5.0** forests but **-9.3 printed card points** and -5.8 milestones+awards.
+* SMART puts **27.4 cards** on the table per game against our **13.2**, worth 13.0 printed points against 3.2. The chain
+  is engine -> discounts/income -> many cheap cards -> points, exactly as the owner describes it.
+* `ml/value_sensitivity.py` (new) shows the critic cannot price a card: +3 printed points move V by **+0.008** (ten
+  milestone points: +0.194). A margin-trained critic is no better (+0.003), and a critic trained on many-card games is
+  better at predicting the winner (AUC 0.905) but still blind to cards.
+* `mustBuild` (build 18 instead of 12 per game): win rate 38.2% -> **33.5%** on 2 000 games. Extra cards without an engine
+  are paid at full price.
+* Phase pick decided by search (new: the engine's own `PickPhaseProcessor` + `StateTransitionService`, opponent's pick
+  determinized) works mechanically - all five phases appear - but every critic variant collapses the player (0.3%, 3.8%,
+  32.8% vs SMART); the start of a phase is not a comparable position.
+
+Encoder is now **805** values (the five score terms per player were missing, and a card candidate did not carry its own
+printed points; the candidate width grew by 1 for every card decision). Old bundles convert with
+`ml/pad_model.py --expected 805 --schemas <schemas.json>` (candidate columns are padded too now).
+
+New/changed instruments: `--mode scorecard`, `ml/value_sensitivity.py`, `ml/card_usage.py`, `ml/explore_stats.py`,
+`ml/check_player.py --no-references/--must-build/--phase-search/--phase-playout/--horizon/--samples/--phase-value-model`,
+`-Dares.agent.explore=TYPE:q` (uniform exploration of the data generator), `-Dares.agent.valueModel.phase` (a separate
+critic for the phase pick), `-Dares.agent.search.phasePlayout` (score a phase by playing the round out),
+`train_policy_ce.py --objective pg/--behaviour/--adv-target margin`, `train_value.py` unchanged.
+
+Training is self-play + RANDOM now: `ml/discover_config.json` (`AGENT:AGENT:0.75,AGENT:RANDOM:0.25`). Night `disc1`
+runs it from `D:/ares/runs/policy/r11_cards` (the best playable bundle on the 805 encoder, ~37% vs SMART on 400 games).
+Its first iteration: RANDOM 92.4%, SMART 33.9%.
+
+The open problem is credit assignment over the engine->cards chain, and `docs/DISCOVERY.md` states it in numbers with the
+two honest ways forward (scale of data; long-horizon planning, both already implemented as knobs).
+
+## 2026-11-15, second half: verification first, then scale
+
+Owner's direction: a network that sees no value in building is more likely a **bug** than a limit, so verify the machinery
+before spending nights on training, and grow a test suite that catches regressions ("every bug becomes a test").
+
+### What verification found and fixed
+
+* **hidden information in the deployed search**: the symmetric score read the *opponent's full observation*, which
+  contains their hand. `ObservationBuilder.buildPublic` zeroes the hand block and the search uses it for the opponent;
+  `AgentDecisionAuditTest` fails if the public observation changes when the opponent's hand changes.
+* **double payment measured on a shared copy**: one card's `payAgain` could improve the payout another card was measured
+  on. One fresh copy per card now, and the test checks the feature is a single card, never the sum.
+* **`WinPointsService` NPE** on a played resource card without a counter entry (the score is read on every decision, so
+  this was a crash waiting to happen).
+* **dead observation bits**: cards of the INFRASTRUCTURE expansion (`Sawmill`, `Pets`, the five hand cards) and the
+  duplicated resource counters removed; encoder 795 -> 780. `ml/feature_audit.py` (activation rate per value over
+  thousands of games) is the instrument; a test asserts no bit belongs to an unplayable card.
+* **the score is ONE number per player** (owner's rule): `score:my_winning_points` / `score:opponent_winning_points`, the
+  engine's own total; TR is not a field of its own. The V2 block keeps its legacy `win_points` because NETWORK_V2 is
+  trained on it. `--mode scales` prints the divisor of every value (the V2 block is normalised by a legacy table).
+
+### The obvious-move bench (`--mode sanity`, docs/SANITY.md)
+
+Seven scenarios where the rules alone say what is better; runs through the live decision path, exit 1 on a hard failure,
+and the nightly refuses to promote a model that fails one. It immediately found that the deployed player **refused a free
+two-card draw** and **bought a standard ocean while holding `Deimos Down`**. Extending the value search to those menus
+fixed the scenarios and cost 13 points of win rate, so the fix is two arithmetic rules instead (free blue action once per
+phase; a standard project dominated by a card in hand), measured at no cost: sanity 6/6, 35.9% [33.8, 37.9] vs SMART.
+
+### Afterstates: measured, rejected
+
+`DecisionType.AFTERSTATE` records the state one action after every agent decision (same game result), so the critic can be
+trained where the search reads. It works, and it costs ~4 points of win rate (36.5% -> 32.2%): the afterstate rows are
+near-duplicates of the next decision row and dominate the stream. Kept behind `-Dares.agent.afterstates=true` for a
+future *separate* critic.
+
+### Running now
+
+`ml/scale_config.json` (`scale1`): 40 000 games per iteration (self-play + RANDOM), PPO with the advantage of
+`v_r15_outcome`, the two rules on, the sanity bench as a gate, chunks sampled across the iteration instead of the first N.
+Started from `r15_parent` (the best bundle on the 780 encoder).

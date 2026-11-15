@@ -49,6 +49,30 @@ public class WinPointsService {
     }
 
 
+    /**
+     * The points of a finished position split into the terms the game scores: terraforming rating, forests, the printed
+     * points of the played cards, points from resources on cards, milestones and awards. Win rate says who lost; this says
+     * by how many points and in which term, which is what a training decision can be aimed at.
+     */
+    public record ScoreBreakdown(int terraformingRating, int forests, int cards, int resourceCards,
+                                 int milestones, int awards, int extra) {
+        public int total() {
+            return terraformingRating + forests + cards + resourceCards + milestones + awards + extra;
+        }
+    }
+
+    public ScoreBreakdown scoreBreakdown(Player player, MarsGame game) {
+        List<Card> cards = player.getPlayed().getCards().stream().map(cardService::getCard).toList();
+        return new ScoreBreakdown(
+                player.getTerraformingRating(),
+                player.getForests(),
+                cards.stream().mapToInt(Card::getWinningPoints).sum(),
+                getWinPointsFromResourceCards(player, cards),
+                milestonesWinPoints(player, game),
+                awardsWinPoints(player, game),
+                player.getExtraPoints());
+    }
+
     public int countWinPoints(Player player, MarsGame game) {
         List<Card> cards = player.getPlayed()
                 .getCards()
@@ -121,7 +145,7 @@ public class WinPointsService {
                             WinPointsInfo winPointsInfo = card.getCardMetadata().getWinPointsInfo();
 
                             int resources = (winPointsInfo.getType() == card.getCollectableResource())
-                                    ? player.getCardResourcesCount().get(card.getClass())
+                                    ? player.getCardResourcesCount().getOrDefault(card.getClass(), 0)
                                     : 0;
 
                             if (winPointsInfo.getType() == CardCollectableResource.FOREST) {
@@ -193,7 +217,7 @@ public class WinPointsService {
                             WinPointsInfo winPointsInfo = card.getCardMetadata().getWinPointsInfo();
 
                             int resources = (winPointsInfo.getType() == card.getCollectableResource())
-                                    ? player.getCardResourcesCount().get(card.getClass())
+                                    ? player.getCardResourcesCount().getOrDefault(card.getClass(), 0)
                                     : 0;
 
                             if (winPointsInfo.getType() == CardCollectableResource.FOREST) {

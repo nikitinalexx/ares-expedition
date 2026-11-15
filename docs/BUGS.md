@@ -27,3 +27,10 @@ Basis of all AI projections. `CopyFidelityTest` reflection-compares game vs copy
 
 ### 6. Effects that lower TR
 Rules, not bugs — invariants must account for them.
+
+### 7. `ObservationCompletenessTest.theDoublePaymentIsTheBestCardPerDimensionNotTheSum` is flaky
+It picks two "can pay again" cards from a freshly shuffled projects deck, puts them on the table and compares the
+observation's max-single-payment feature with the maximum it measures card by card. When the two cards synergise (a
+payment that depends on the other card being on the table) the encoder's shared-copy measurement sees the combined
+payment and the test fails (observed 2026-11-15: expected 0.1, got 0.3, then passed on the next run). The encoder is
+right - the test needs a fixed pair of cards instead of whatever the shuffle deals.

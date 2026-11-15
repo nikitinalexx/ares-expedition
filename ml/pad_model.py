@@ -36,10 +36,15 @@ def write_model(model_dir, meta, values):
     json.dump(meta, open(os.path.join(model_dir, "model.json"), "w", encoding="utf-8"), indent=1)
 
 
-def pad(meta, values, extra, new_hash=None):
-    """mean[obs] std[obs] W[h1][obs] b[h1] ... -> the same with `extra` columns appended."""
+def pad(meta, values, extra, new_hash=None, cand_extra=0, cand_features=0):
+    """The same model with `extra` observation columns and `cand_extra` candidate columns appended (zeros).
+
+    Layout of a policy head: mean[obs], std[obs], W_obs[h1][obs], b_obs[h1], W_cand[h1][cand], mid, out.
+    A value model has no candidate layer, so `cand_extra` must stay 0 there.
+    """
     obs = meta["obsSize"]
     h1 = meta["hidden"][0]
+    cand = cand_features or 0
     out = []
     pos = 0
     # mean, std
@@ -54,10 +59,21 @@ def pad(meta, values, extra, new_hash=None):
         out.extend(values[pos:pos + obs])
         out.extend([0.0] * extra)
         pos += obs
+    # b_obs
+    out.extend(values[pos:pos + h1])
+    pos += h1
+    if cand_extra:
+        # W_cand, one row per hidden unit of width `cand`: append the zeros at the end of every row
+        for _ in range(h1):
+            out.extend(values[pos:pos + cand])
+            out.extend([0.0] * cand_extra)
+            pos += cand
     # everything else keeps its place
     out.extend(values[pos:])
     meta = dict(meta)
     meta["obsSize"] = obs + extra
+    if cand_extra:
+        meta["candFeatures"] = cand + cand_extra
     if new_hash:
         meta["schemaHash"] = new_hash
     return meta, out
@@ -67,7 +83,8 @@ def current_schemas(directory):
     """schema hash per decision type: either from a `--mode schemas` JSON file, or from a freshly generated chunk set."""
     import sys
     if os.path.isfile(directory):
-        return {name: {"hash": value} for name, value in json.load(open(directory, encoding="utf-8")).items()}
+        raw = json.load(open(directory, encoding="utf-8"))
+        return {name: (value if isinstance(value, dict) else {"hash": value}) for name, value in raw.items()}
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__))))
     import ares_data
     result = {}
@@ -102,6 +119,8 @@ def main():
         extra = args.extra or max(0, args.expected - obs)
         if extra <= 0:
             raise SystemExit(f"{model_dir}: nothing to pad (obsSize {obs}, extra {extra})")
+        if meta.get("kind") not in (None, "value_mlp"):
+            raise SystemExit(f"{model_dir}: a single-folder policy is not supported; pass the bundle")
         padded_meta, padded = pad(meta, values, extra)
         if os.path.exists(out_dir):
             shutil.rmtree(out_dir)
@@ -124,9 +143,23 @@ def main():
         sub_meta, sub_values = read_model(source)
         obs = sub_meta["obsSize"]
         extra = args.extra or max(0, args.expected - obs)
-        if extra <= 0:
-            raise SystemExit(f"{source}: nothing to pad (obsSize {obs}, extra {extra})")
-        padded_meta, padded = pad(sub_meta, sub_values, extra, (schemas.get(name) or {}).get("hash"))
+        target = schemas.get(name) or {}
+        old_cand = sub_meta.get("candFeatures", 0)
+        new_cand = target.get("candidateFeatures", old_cand)
+        cand_extra = max(0, new_cand - old_cand)
+        if extra <= 0 and cand_extra <= 0:
+            # This decision type did not change: carry it over unchanged (the schema hash is still re-stamped below,
+            # because the hash covers the encoder's layout, which may have changed for other types only).
+            target_dir = os.path.join(out_dir, name)
+            shutil.copytree(source, target_dir)
+            meta = json.load(open(os.path.join(target_dir, "model.json"), encoding="utf-8"))
+            if target.get("hash"):
+                meta["schemaHash"] = target["hash"]
+                json.dump(meta, open(os.path.join(target_dir, "model.json"), "w", encoding="utf-8"), indent=1)
+            padded_any += 1
+            continue
+        padded_meta, padded = pad(sub_meta, sub_values, extra, target.get("hash"),
+                                  cand_extra=cand_extra, cand_features=old_cand)
         write_model(os.path.join(out_dir, name), padded_meta, padded)
         padded_any += 1
     print(f"{model_dir}: policy bundle, {padded_any} decision types padded by {extra} columns -> {out_dir}")

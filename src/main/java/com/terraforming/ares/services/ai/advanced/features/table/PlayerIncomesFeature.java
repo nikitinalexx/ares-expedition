@@ -51,6 +51,8 @@ public class PlayerIncomesFeature implements FeatureBlock {
         WinPointsService winPointsService = ctx.getWinPointsService();
         CardService cardService = ctx.getCardService();
 
+        // V2 keeps its original meaning here: NETWORK_V2 is trained on this vector, so its values are not ours to
+        // redefine. The single, source-blind score of the learned agent lives in its own block (ObservationBuilder).
         out.write(winPointsService.countWinPointsWithoutResources(player, game) - player.getForests());
         out.write(player.getForests());
 

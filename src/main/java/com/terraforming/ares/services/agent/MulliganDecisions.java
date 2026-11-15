@@ -33,7 +33,7 @@ public class MulliganDecisions {
     public static final int CANDIDATE_FEATURES = CardFeatures.LENGTH;
     public static final String OBSERVATION_LAYOUT = ObservationBuilder.LAYOUT
             + "; candidate=[classSignature(" + SIGNATURE + "), color(" + COLORS + "), tags(" + TAGS
-            + "), price/50, active, stop]; stopId=" + STOP;
+            + "), price/50, active, stop, points/10]; stopId=" + STOP;
 
     private final ObservationBuilder observationBuilder;
     private final CardService cardService;

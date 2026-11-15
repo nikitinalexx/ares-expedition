@@ -925,6 +925,32 @@ class Pipeline:
                 self.log(f"benchmark vs {ref} failed: exit {result.code} ({result.reason}), see benchmark/benchmark.log")
             self.save_state()
 
+    def stage_sanity(self, exp, it):
+        """The obvious-move bench on the iteration's model: a model that refuses a free card is not a player.
+
+        Runs with the same JVM arguments as the evaluation, so it measures the configuration that would be deployed. The
+        result is written next to the model and is not a promotion criterion of its own: a failed scenario blocks promotion
+        (the style is degenerate whatever the win rate says), a passing one changes nothing.
+        """
+        path = self.it_dir(exp, it) / "sanity.json"
+        if path.exists():
+            return read_json(path)
+        ev = self.cfg["eval"]
+        model_dir = self.it_dir(exp, it) / "model"
+        self.current = {"exp": exp, "iteration": it, "stage": "sanity"}
+        self.write_status()
+        cmd = self.java_cmd("--mode", "sanity", "--out", path.as_posix(),
+                            *java_model_args(str(model_dir), "0"), jvm_args=ev.get("jvm_args") or [])
+        result = run_command(cmd, self.it_dir(exp, it) / "sanity.log", 1800, self.stop,
+                             env=self.storage.child_env(), guard=self.storage.guard,
+                             guard_interval=self.storage.interval, tick=self.tick,
+                             low_priority=self.cfg["low_priority"])
+        if not path.exists():
+            self.log(f"{exp} it{it}: the sanity bench did not produce a report (exit {result.code}); "
+                     f"see {self.it_dir(exp, it) / 'sanity.log'}")
+            return None
+        return read_json(path)
+
     def stage_eval(self, exp, it):
         done_marker = self.it_dir(exp, it) / "eval.done"
         if done_marker.exists():
@@ -1063,6 +1089,15 @@ class Pipeline:
         summary = self.stage_eval(exp, it)
         if summary is None:
             return self.iteration_failed(exp, it)
+        sanity = self.stage_sanity(exp, it)
+        if sanity is not None:
+            summary["sanity"] = {"passed": sanity.get("passed"), "failed": sanity.get("failed"),
+                                 "scenarios": sanity.get("scenarios")}
+            if sanity.get("failed"):
+                broken = [r["name"] for r in sanity.get("results", []) if not r.get("passed")]
+                self.log(f"{exp} it{it}: SANITY FAILED ({sanity.get('passed')}/{sanity.get('scenarios')}): "
+                         f"{', '.join(broken)} - the model takes moves the rules say are worse")
+                summary["score"] = min(summary["score"], -1.0)
 
         e["failures"] = 0
         e["iterations_done"] = it

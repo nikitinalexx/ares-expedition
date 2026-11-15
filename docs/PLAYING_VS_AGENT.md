@@ -10,24 +10,39 @@ The models are chosen by JVM properties, so pass them to the Spring Boot process
 
 ```
 -Dares.agent.models=D:/ares/runs/night7/exp/vs_random/it_0046/model_r2
--Dares.agent.models2=D:/ares/runs/ppo1/exp/ppo_mixed/it_0012/model
+-Dares.agent.models2=D:/ares/runs/policy/r11_cards
 -Dares.agent.search=oneply
 -Dares.agent.search.symmetric=true
 -Dares.agent.search.types=BUILD_CARD,DRAFT_CARDS
 -Dares.agent.search.pairs=true
--Dares.agent.valueModel=D:/ares/runs/value/v_r3_outcome
+-Dares.agent.valueModel=D:/ares/runs/value/v_r12_outcome
 ```
 
 - `ares.agent.models` — the model set of `AGENT` (optional: without it `AGENT` falls back to random, `AGENT_V2` still works).
-- `ares.agent.models2` — the model set of `AGENT_V2`. This is the strongest player we have: `ppo1/exp/ppo_mixed/it_0012`
-  (PPO iteration 12: **39.9% vs SMART / 93.2% vs RANDOM** with search, 12.0 cards per game; the parent of the whole lineage
-  was 24.05% / 84.8%).
+- `ares.agent.models2` — the model set of `AGENT_V2`. The strongest player we have, in the current (805-value) encoder:
+  `D:/ares/runs/policy/r11_cards` (a copy of PPO iteration 12 zero-padded to the 805-value encoder, then trained on fresh
+  self-play and on card heads with a points-based advantage). About **37% vs SMART / 93% vs RANDOM** with search, 13 cards
+  per game. The old-encoder bundles (`ppo1/exp/ppo_mixed/it_0012/model`, 795 values) no longer load: the encoder gained the
+  five score terms per player and the printed points of a card, so convert them with `ml/pad_model.py --expected 805`
+  (that is exactly how `r9_805_parent` was made).
 - The three `search` properties switch on the 1-ply symmetric re-ranking at play time (about 1.4 ms per decision). They
   apply to both agents; drop them to see the same weights without search.
 - The frontend: `cd frontend && npx ng serve` (the dialog now has the "Ares" option next to Easy / Normal / Hard / Expert).
 
-The model bundle must match the current encoder; a model trained on another schema is refused at startup with an explicit
-message (that is intentional — no silent reshaping).
+The 805-value model bundle must match the current encoder; a model trained on another schema is refused at startup with an
+explicit message (that is intentional — no silent reshaping). `ml/pad_model.py` is the offline conversion.
+
+### The scorecard: what the player is worth, in points
+
+```
+java -cp "target/classes;$(cat target/cp.txt)" com.terraforming.ares.selfplay.SelfPlayMain \
+     --mode scorecard --out tmp/scorecard.json --games 300 --a AGENT --b SMART --models <bundle>
+```
+
+prints the average of every term the engine scores (terraforming rating, forests, printed card points, resource points,
+milestones, awards) for both seats, plus how many cards each side put on the table. It is the fastest way to see what a
+change actually bought: the current player is ahead on Tr and forests and behind on cards (13.3 cards / 3.3 printed
+points against SMART's 27.4 / 13.2).
 
 ## What the model set is
 
