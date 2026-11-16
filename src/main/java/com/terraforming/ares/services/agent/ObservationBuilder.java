@@ -130,6 +130,18 @@ public class ObservationBuilder {
     public static final int PLAN_SIZE = PlanCodes.BITS;
 
     /**
+     * Tags on the table, per player, and the number of activatable blue cards each side has.
+     * <p>
+     * Why (owner, 2026-11-16): a tag is not a requirement, it is a *price*. Dozens of cards scale with tags - one card pays
+     * 1 income per science tag, another scores 1 VP per two earth tags - so the value of a card in hand depends wildly on
+     * which tags are already down, and the same is true for "how many activatable blue cards do I have" (an engine of
+     * three activatable cards makes the next activatable card worth more, because phase 3 then fires a whole chain).
+     * The observation had 82 per-card bits (identity of specific cards) and no tag counts at all, so a linear reading of
+     * "how much science is on the table" had to sum 82 bits by itself. Public information, so buildPublic keeps them.
+     */
+    public static final int TAG_SIZE = 2 * 11 + 2;
+
+    /**
      * An aggregate description of the hand. Until now the observation contained the table, the money and only five bits of
      * specific hand cards, so a state value could not see "I still hold three building-tag cards I can pay for" - and
      * "build now or wait" was judged blind. The block is a summary, not a strategy: how many cards, per colour, per tag,
@@ -220,7 +232,7 @@ public class ObservationBuilder {
 
     public static int size() {
         return KEEP.length + CONTEXT_SIZE + CARDS_SIZE + SCORE_SIZE + EXTRAS_SIZE + DOUBLE_PAYMENT_SIZE
-                + PHASE_START_SIZE + OCEAN_SIZE + HAND_SUMMARY_SIZE + PLAN_SIZE;
+                + PHASE_START_SIZE + OCEAN_SIZE + TAG_SIZE + HAND_SUMMARY_SIZE + PLAN_SIZE;
     }
 
     /**
@@ -326,6 +338,14 @@ public class ObservationBuilder {
             names.add("oceans:collected_" + dimension + "/40");
         }
         names.add("oceans:revealed/9");
+        for (com.terraforming.ares.model.Tag tag : com.terraforming.ares.model.Tag.values()) {
+            names.add("tags:my_" + tag.name().toLowerCase() + "/5");
+        }
+        for (com.terraforming.ares.model.Tag tag : com.terraforming.ares.model.Tag.values()) {
+            names.add("tags:op_" + tag.name().toLowerCase() + "/5");
+        }
+        names.add("table:my_activatable/10");
+        names.add("table:op_activatable/10");
         names.add("hand:cards/10");
         for (com.terraforming.ares.model.CardColor colour : com.terraforming.ares.model.CardColor.values()) {
             names.add("hand:colour_" + colour.name().toLowerCase() + "/5");
@@ -452,6 +472,43 @@ public class ObservationBuilder {
         observation[pos++] = mc / 40f;
         observation[pos++] = plants / 40f;
         observation[pos++] = revealed / 9f;
+        // Tags on the table and the activatable-card count, per side (public information).
+        int[] myTags = new int[com.terraforming.ares.model.Tag.values().length];
+        int[] otherTags = new int[com.terraforming.ares.model.Tag.values().length];
+        int myActivatable = 0;
+        int otherActivatable = 0;
+        for (Integer id : player.getPlayed().getCards()) {
+            Card played = cardService.getCard(id);
+            if (played == null) {
+                continue;
+            }
+            for (com.terraforming.ares.model.Tag tag : played.getTags()) {
+                myTags[tag.ordinal()]++;
+            }
+            if (played.isActiveCard()) {
+                myActivatable++;
+            }
+        }
+        for (Integer id : opponent.getPlayed().getCards()) {
+            Card played = cardService.getCard(id);
+            if (played == null) {
+                continue;
+            }
+            for (com.terraforming.ares.model.Tag tag : played.getTags()) {
+                otherTags[tag.ordinal()]++;
+            }
+            if (played.isActiveCard()) {
+                otherActivatable++;
+            }
+        }
+        for (int count : myTags) {
+            observation[pos++] = count / 5f;
+        }
+        for (int count : otherTags) {
+            observation[pos++] = count / 5f;
+        }
+        observation[pos++] = myActivatable / 10f;
+        observation[pos++] = otherActivatable / 10f;
         // The hand as a summary (see HAND_SUMMARY_SIZE): counts, prices and what this player can pay for right now.
         int handCards = 0;
         int[] byColour = new int[com.terraforming.ares.model.CardColor.values().length];

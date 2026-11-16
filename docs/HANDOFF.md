@@ -388,3 +388,42 @@ representation on identical rows), `--include-afterstates`, `-Dares.agent.search
 * A dataset is bound to the encoder (schema hash) and is deleted when the encoder changes - six old ones (450 GB) filled the
   disk twice.
 * The sanity bench treats a position it cannot sample as an infrastructure warning, not as a model failure.
+
+## 2026-11-16, second half: the price law, the two roles, the tag block
+
+### What is measured and settled
+
+1. **A critic's price of an income stream is set by how much its data spends** (`ml/price_report.py` on `--mode audit`):
+   policy play 6.5 MC (flat), forced-build play 9.0 MC, uniform random play **12.1 MC with the right round profile**
+   (14.0 -> 10.4), the rules ~15 MC. Random games are noisy about everything except the big effects, so their critic ranks
+   badly (22.8%) while the policy critic ranks well (39-44%) with a wrong price.
+2. **The two roles need different things**: a *ranker* needs only the order of the candidates (a shared slope cancels, and
+   the stop decision is the policy's), a *decider* needs calibrated slopes, i.e. the price. Measured: adding the correctly
+   priced random critic to the five-critic ensemble moved the price 6.5 -> 8.2 MC and the win rate 43.59% -> 42.98% +/- 1.4,
+   i.e. nothing - as theory says for a ranker. Every failed decider experiment now has a reason: `mustBuild` (-4.7),
+   the stopMargin dial (41.4-43.2), the random-data decider (18.9%, bad order), the policy-critic decider (37.3%, wrong
+   price).
+3. **TD in the current form does not solve the price**: with the seat/step link bug fixed (same seat, step + 1, exact
+   `G - M` where the chain ends) the TD critic prices +1 income at 7.7 MC (9.3 / 7.5 / 6.4 by round) - better than the
+   policy critic's flat 6.5, worse than the random critic's 12.1. Not adopted; the `tr +1` row reads as 0.3 MC because a
+   remaining-margin value *subtracts* points already banked (convention, not a bug).
+4. **What the legacy representation covers**: 82 per-card identity bits out of 349 project cards (blue 102, green 192,
+   red 55), so tags for ~267 cards are invisible to the model unless they are counted. The owner's point that
+   "the number of activatable cards is already implied by the identity bits" is right (a linear layer sums them), and that
+   pair will be dropped at the next encoder change.
+
+### Encoder 828 (in progress)
+
+`TAG_SIZE = 2 x 11 + 2`: tag counts on the table per side and the activatable-card count per side (the last two to be
+dropped). Tests: 9/9. Parity check with zero weights and an A/B on identical rows (`--drop-prefix tags:`) are running; the
+verdict uses `ml/verify_critic.ps1` (price, ranking, decider, profile).
+
+**Cost of an encoder change, measured:** every dataset is bound to the encoder's schema hash, so an encoder change discards
+the data of the current cycle (the 50 000-game `tags1` set and the 20 000-game `randplay1` loop data both had to be
+regenerated). Rule: batch encoder changes, then run one cycle.
+
+### The track still stands
+
+`docs/SYSTEMATIC.md`, section E: (1) TD - measured, not adopted; (2) the owner's loop (random -> 1-2 self-play iterations)
+with a critic that keeps the price >= 10 MC while the ranking clears 39%; (3) the leaf representation and one recursion
+level in the projection; (4) the legacy-block A/B.
