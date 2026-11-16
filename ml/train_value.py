@@ -379,14 +379,14 @@ def cap_per_game(games, k, rng):
 
 
 def load_pool(data_dirs, rows_per_game, rng, val_fraction, keep_round=False, drop_columns=None,
-              include_afterstates=False):
+              include_afterstates=False, score_columns=None):
     """Reads every decision type, de-duplicates states, caps the rows of a game, splits by game.
 
     The value model sees only the observation, so the candidate layout (and with it the per-type schema hash) is
     irrelevant. The schema's observationLayout describes the observation first and the candidates after
     "; candidate=" -- that shared prefix is the identity of a value model.
     """
-    obs, outcome, game, round_no, context, margin = [], [], [], [], [], []
+    obs, outcome, game, round_no, context, margin, step = [], [], [], [], [], [], []
     obs_size, observation_layout = None, None
     seen_states = set()
     for decision in discover_decisions(data_dirs):
@@ -432,6 +432,7 @@ def load_pool(data_dirs, rows_per_game, rng, val_fraction, keep_round=False, dro
             margin.append(rows["margin"].astype(np.float32))
             game.append(rows["game"].astype(np.uint64))
             context.append(rows["context"].astype(np.uint8))
+            step.append(rows["step"].astype(np.uint16))
             if keep_round:
                 round_no.append(rows["round"].astype(np.uint16))
         if files:
@@ -439,6 +440,7 @@ def load_pool(data_dirs, rows_per_game, rng, val_fraction, keep_round=False, dro
     if not obs:
         raise SystemExit(f"no decision chunks in {data_dirs}")
     obs = np.concatenate(obs)
+    step = np.concatenate(step)
     if drop_columns:
         # An A/B of one block of the representation on identical rows: the columns are zeroed, so their normalisation
         # becomes (0 - 0) / 1 and they carry no information.
@@ -452,9 +454,24 @@ def load_pool(data_dirs, rows_per_game, rng, val_fraction, keep_round=False, dro
         picked = cap_per_game(game, rows_per_game, rng)
     else:
         picked = np.arange(len(obs))
-    obs, outcome, margin, game, context, round_no = (obs[picked], outcome[picked], margin[picked], game[picked],
-                                                    context[picked], round_no[picked])
+    obs, outcome, margin, game, context, round_no, step = (obs[picked], outcome[picked], margin[picked],
+                                                           game[picked], context[picked], round_no[picked],
+                                                           step[picked])
+    # Order by (game, step) so that every row knows the NEXT decision of the same game: the TD target needs the score
+    # between the two and the value of the next state.
+    order = np.lexsort((step, game))
+    obs, outcome, margin, game, context, round_no, step = (obs[order], outcome[order], margin[order], game[order],
+                                                           context[order], round_no[order], step[order])
+    next_row = np.full(len(obs), -1, dtype=np.int64)
+    if len(obs) > 1:
+        same_game = game[1:] == game[:-1]
+        next_row[:-1][same_game] = np.flatnonzero(same_game) + 1
+    score = None
+    if score_columns:
+        mine, other = score_columns
+        score = (obs[:, mine].astype(np.float32) - obs[:, other].astype(np.float32))
     return {"obs": obs, "outcome": outcome, "margin": margin, "game": game, "context": context, "round": round_no,
+            "step": step, "next": next_row, "score": score,
             "validation": is_validation_game(game, val_fraction), "obsSize": obs_size,
             "observationHash": hashlib.sha256(observation_layout.encode("utf-8")).hexdigest()[:16],
             "observationLayout": observation_layout}
@@ -481,6 +498,17 @@ def main():
     parser.add_argument("--val-fraction", type=float, default=0.1)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--device", default="auto")
+    parser.add_argument("--td-steps", type=int, default=1,
+                        help="how many decision steps the TD target spans (1 = one step, then the bootstrap value). "
+                             "A curriculum 1 -> 3 -> 8 -> 32 mixes more of the terminal outcome in and carries the early-game "
+                             "engine value backwards faster, which is the point: in the first rounds the score does not move, "
+                             "so only the bootstrap can tell a good engine from a bad one")
+    parser.add_argument("--td-bootstrap", default="",
+                        help="an exported margin model: its V of the NEXT decision state bootstraps the target, "
+                             "V(s_t) <- (M(s_t+1) - M(s_t)) + V(s_t+1), with the final margin at the end of a game. "
+                             "The game's score is visible at every state, so this is TD on an exact intermediate reward - "
+                             "the standard answer to a single terminal label (TD-Gammon), and it makes the target far less "
+                             "noisy than regressing a state onto the distant final outcome")
     parser.add_argument("--include-afterstates", action="store_true",
                         help="also train on AFTERSTATE rows: they carry the same encoder observation but a placeholder "
                              "layout string (they are the states the one-ply search actually reads, so they are what the "
@@ -561,8 +589,13 @@ def main():
         print(json.dumps({k: v for k, v in metrics.items() if k != "history"}, indent=1), flush=True)
         return 0
     drop = dropped_columns(args.names, args.drop_prefix) if (args.names and args.drop_prefix) else []
+    score_columns = None
+    if args.names:
+        names = json.load(open(args.names, encoding="utf-8"))
+        if "score:my_winning_points" in names and "score:opponent_winning_points" in names:
+            score_columns = (names.index("score:my_winning_points"), names.index("score:opponent_winning_points"))
     pool = load_pool(args.data, args.rows_per_game, rng, args.val_fraction, keep_round=True, drop_columns=drop,
-                     include_afterstates=args.include_afterstates)
+                     include_afterstates=args.include_afterstates, score_columns=score_columns)
     split = pool["validation"]
     train, val = pool["obs"][~split], pool["obs"][split]
     y_val = pool["outcome"][split]
@@ -571,6 +604,46 @@ def main():
     target = pool["outcome"]
     if args.target == "margin":
         target = np.clip(pool["margin"] / args.margin_scale, -3.0, 3.0).astype(np.float32)
+    if args.td_bootstrap:
+        # TD on the game's own score: the target of a row is the score it actually gained until the next decision plus
+        # the value of that next state; the last row of a game keeps the final margin. The bootstrap values come from an
+        # already trained margin model, so this is one round of fitted value iteration and the labels never see the future
+        # outcome of a state that the model itself is judging.
+        if score_columns is None:
+            raise SystemExit("--td-bootstrap needs --names with the score columns")
+        bootstrap = load_value_params(args.td_bootstrap)
+        values = np.empty(len(pool["obs"]), dtype=np.float32)
+        for start in range(0, len(pool["obs"]), 200_000):
+            block = pool["obs"][start:start + 200_000].astype(np.float64)
+            values[start:start + 200_000] = numpy_forward(bootstrap, CLIP, block).astype(np.float32)
+        nxt = pool["next"]
+        rows = np.arange(len(pool["obs"]))
+        # The value this trains is the REMAINING margin R(s) = final margin - current margin, because that is the quantity
+        # the TD identity holds for: R(s_t) = (M(s_t+1) - M(s_t)) + R(s_t+1), with R = 0 after the game ends. The current
+        # score is exact and visible at every state, so the reward is exact - no terminal noise in it at all. Ranking at
+        # play time compares two afterstates of the same position, where the current score is equal, so the shift by M(s)
+        # changes nothing about the order; it only makes the target much less noisy to fit.
+        # An absolute-margin model bootstraps as R = V_abs - M.
+        values = values - pool["score"] / args.margin_scale
+        steps = max(1, args.td_steps)
+        target = np.zeros(len(pool["obs"]), dtype=np.float32)
+        ended = np.zeros(len(pool["obs"]), dtype=bool)
+        current = rows.copy()
+        for _ in range(steps):
+            step_next = nxt[current]
+            alive = ~ended & (step_next >= 0)
+            target[alive] += (pool["score"][step_next[alive]]
+                              - pool["score"][current[alive]]) / args.margin_scale
+            ended |= ~alive
+            current = np.where(step_next >= 0, step_next, current)
+        alive = ~ended
+        target[alive] += values[current[alive]]
+        # Where the recorded game ends, the return is exact: final margin minus the score of this row.
+        target[ended] = (pool["margin"][ended] - pool["score"][ended]) / args.margin_scale
+        target = np.clip(target, -3.0, 3.0).astype(np.float32)
+        has_next = nxt >= 0
+        print(f"  TD targets from {args.td_bootstrap}: {int(has_next.sum())} rows with a next state, "
+              f"{int((~has_next).sum())} terminal; mean {target.mean():.3f}, sd {target.std():.3f}", flush=True)
     fitted = fit_value(pool["obs"], pool["outcome"], hidden=hidden, epochs=args.epochs, lr=args.lr,
                        weight_decay=args.weight_decay, batch=args.batch, seed=args.seed, device=device,
                        train_idx=np.flatnonzero(~split), val_idx=np.flatnonzero(split),

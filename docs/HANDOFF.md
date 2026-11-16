@@ -333,3 +333,58 @@ payments, which removed a flake); building an observation must not change the ga
 3. the remaining big lever stays the *card flow*: 12.9 cards per game against SMART's 27. The phase axis (NETWORK calls 1/2
    in 73% of the rounds, this player in 0%) and the second build slot are still unexplored by the policy's own data; the
    blunt plans for them measured 0.0 +/- 1.6 and -0.5 +/- 1.7, so the next attempt there has to be a *conditional* plan.
+
+## 2026-11-16, morning: where the player stands, and what the night taught
+
+### The best measured player
+
+`D:/ares/runs/best.json` has the exact configuration. In short: policy `r25_rev2` (encoder 804) + an **ensemble of five
+critics** (`v_rev1_margin_wide`, `v_ens_a..d`), ranking the candidates of `BUILD_CARD`/`DRAFT_CARDS` with pairs and the
+symmetric score.
+
+| | measured |
+|---|---|
+| vs SMART | **43.59% +/- 1.0** (10 000 games) |
+| the same pipeline at the start of the session | 37.8% +/- 2 (2 000 games) |
+| profile | 12.9 cards per game, acceptance 0.57, phases 49% income / 51% draft, phase-3 spends 39% |
+| sanity bench | 9/9 obvious moves, 0 gate failures |
+
+### What actually produced the six points
+
+1. **The critic sees the hand** (20-value summary: cards, per colour, per tag, nominal and *effective* price, cheapest,
+   affordable). Direct A/B on identical rows with the block zeroed: 39.4% -> 27.5%. The observation described the table,
+   the money and five specific hand cards - the state value could not see that it held cheap cards, so "build now or wait"
+   was judged blind. Found by the owner's question, not by an audit.
+2. **The card's printed points** in the candidate vector (documented since the beginning, never written).
+3. **The ensemble**: one critic is a sample, not a number. Same recipe, different 100k sample: 42.98% vs 39.38%. Ensembles of
+   1/3/5: 39.38 / 42.89 / **43.59**. Five forward passes per candidate (~0.7 ms) is nothing at this scale.
+4. Everything else was measured and *rejected*: V deciding act-vs-stop (0.4-0.6%), the horizon fix (19.5%), latent plans
+   (30.8/34.95%), the build/stop dial (41.4-43.2 against 43.6), the phase and metal plans (0.0/-0.5/-0.6 +/- 1.4-1.7), CE on
+   exploration data (41.4 against 42.9), an afterstate-trained critic inside the ensemble (42.84 against 43.59).
+
+### Instruments that did not exist this morning
+
+`ml/plan_report.py`, `ml/slot_report.py`, `ml/discount_report.py`, `--mode phasedist`, `--macro phases|phasesbuild|metals`,
+`--mode rollouttest` with an out-of-sample design, `ml/train_value.py --names/--drop-prefix` (A/B a block of the
+representation on identical rows), `--include-afterstates`, `-Dares.agent.search.stopMargin`, `ml/remap_model.py
+--pad-candidates`, and nine tests in `ObservationCompletenessTest` that would have caught the hand blindness on day one.
+
+### What is still missing, in order of expected value
+
+1. **A quality signal for a single card.** The trainable label we have is the *state* value (final margin of the game we
+   played); the label a card needs is the counterfactual ("what would this game have been worth had I taken this card"), and
+   a rollout gives it only with 10-20 samples per candidate (~8 minutes per game). Everything that tries to answer "should I
+   build this card" without that label has failed (mustBuild -4.7, the stopMargin dial, the phase/metal plans).
+2. **The policy's card flow.** 12.9 cards against SMART's 27 is the largest term of the score gap (cards -9.3). The policy's
+   stop head declines ~43% of builds and CE on exploration data only teaches it the generator's noise. The honest route is
+   PPO with the ensemble's advantage (the nightly) or distillation of an admitted plan - not more CE.
+3. **The phase axis** (NETWORK calls 1/2 in 73% of the rounds, this player in 0%) - only a *conditional* plan can pay there;
+   the blunt ones measured zero.
+
+### Protocol changes that come out of the night
+
+* Every critic is a distribution: report ensembles (or three seeds), never a single net.
+* Every block of the representation is A/B-able with `--drop-prefix`; a block that does not earn its place is deleted.
+* A dataset is bound to the encoder (schema hash) and is deleted when the encoder changes - six old ones (450 GB) filled the
+  disk twice.
+* The sanity bench treats a position it cannot sample as an infrastructure warning, not as a model failure.

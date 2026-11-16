@@ -309,8 +309,28 @@ public class AgentDecisionService {
      * Which hand card to build, or empty to stop. On-built inputs and payment are separate decisions filled by
      * {@link #playBuildCard}.
      */
+    /**
+     * DATA GENERATOR ONLY ({@code -Dares.agent.buildAlways=true}): never decline a build the player can afford.
+     * <p>
+     * Why it exists (measured 2026-11-16 with {@code --mode audit}): the critic prices +1 income at ~6.5 MC while the rules
+     * make it worth ~15 MC at the median round, because in the games it was trained on income does not win - this player
+     * hoards the money instead of converting it. That is a feedback loop: the critic is right about its own games, so the
+     * player keeps hoarding. A critic trained on games where the player *does* build can break it, and this flag is how
+     * those games are generated. It changes the data generator only; the deployed player never sets it.
+     */
+    private static final boolean BUILD_ALWAYS =
+            Boolean.parseBoolean(System.getProperty("ares.agent.buildAlways", "false"));
+
     public Optional<Integer> buildCard(MarsGame game, Player player) {
         Decision decision = buildCardDecisions.build(game, player);
+        if (BUILD_ALWAYS) {
+            for (int i = 0; i < decision.candidates().size(); i++) {
+                if (decision.candidates().get(i).id() != BuildCardDecisions.STOP) {
+                    decisionLogs.record(game, player, decision, i);
+                    return Optional.of(decision.candidates().get(i).id());
+                }
+            }
+        }
         boolean nudge = PlanCodes.rollNudge();
         boolean preferIncome = PREFER_INCOME || (nudge && PlanCodes.preferIncome(player));
         boolean preferNonGreen = nudge && PlanCodes.preferNonGreen(player);

@@ -1528,3 +1528,70 @@ No monotonicity and no point above the baseline: the critic's advantage of a car
 the player is missing. Together with the earlier mustBuild (-4.7) and the phase/metal plans (0.0/-0.5/-0.6), the honest
 conclusion is that the card *count* is not the lever this player is missing - the quality signal for a card is, and the
 critic does not have it (see the Q-model note: the label is the state value, not the card's counterfactual).
+
+## 2026-11-16: the label was sparse only because we made it sparse (TD on the game's own score)
+
+The owner's objection was correct and it changed the plan: this problem - learn from the final result of the game alone -
+has a standard answer, and it is not "regress every state onto the final margin".
+
+**Prior art.** TD-Gammon (1992) learned backgammon from nothing but the game result and self-play: a value function trained
+with TD(λ), used greedily, one network, one machine. AlphaZero adds a search to lower the variance of the label. The common
+part is **bootstrapping**: the value of a state is trained against the value of a later state plus the reward between them,
+so credit does not have to travel from the final result all the way back to every decision.
+
+**What this game gives that we were throwing away.** The score is visible in every state (`score:my_winning_points`,
+`score:opponent_winning_points`, raw points, scale 1.0). So the reward between two consecutive decisions is *exact and
+noiseless*: `M(s_t+1) - M(s_t)`, where M is the current score difference. Our critic was trained on the final margin only -
+a distant, random number - and every attempt to learn "which action is better" died on that noise (mustBuild -4.7, the
+stopMargin dial, the phase and metal plans, CE on exploration rows).
+
+**Implementation** (`ml/train_value.py --td-bootstrap DIR`):
+1. order every game's rows by step and link each row to the next decision of the *same game*;
+2. take bootstrap values from an already trained margin model and form the TD target
+   `V(s_t) <- (M(s_t+1) - M(s_t)) + V(s_t+1)`, with the final margin at the last row of a game;
+3. train the critic on those targets - one round of fitted value iteration, no future label of the state being judged.
+
+The ranking the player already uses does not change; only the critic's target does. If the diagnosis is right, this shows up
+first in the *act-vs-stop* configuration that failed so badly with Monte-Carlo critics (0.4-6%, 0.45 cards per game): a TD
+value absorbs the immediate cost of money through the next state's value instead of comparing "money spent now" with
+"nothing yet".
+
+### Correction (owner, 2026-11-16): NETWORK had no hand-written decision rules, and it built well
+
+Two claims I made earlier today were wrong and are withdrawn:
+
+* `CardValueService` was used **only by SMART**. NETWORK did not use a hand-written card valuation for its builds.
+* NETWORK had **no hand-written act-vs-stop skeleton**: at a build decision it constructed 11 projections (1 "pass" + 10
+  cards), advanced the game through the phase (`projectPhasePick`), built the card (`assumeProjectIsBuilt`), recursed into
+  the *next* best decision, and took the projection whose value was highest. So the value comparison *was* the decision, and
+  it built heavily - 27 cards per game.
+
+That destroys the "a state value cannot decide act-vs-stop" explanation I gave for my own 0.4-6% result. The principle works;
+what failed was **my** critic. The audit (`--mode audit`, 600 positions, `v_rev1_margin_wide`) says in which way:
+
+| perturbation | dV (scaled margin, x20 = points) | in points | in MC (1 MC = 0.129 points) |
+|---|---|---|---|
+| mc +10 | +0.0645 | +1.29 | - |
+| income mcIncome +1 | +0.0422 | +0.84 | **~6.5 MC** |
+| income plantsIncome +1 | +0.078 | +1.56 | ~12 MC |
+| income cardIncome +1 | +0.101 | +2.02 | ~15.7 MC |
+| tr +1 | +0.0705 | +1.41 | ~11 MC |
+| extraPoint +1 | +0.0428 | +0.86 | (a point is 1.0 by definition) |
+
+Every direction is right and the model is symmetric (the opponent's perturbations move V by the same amount with the
+opposite sign; `V(me) + V(opp) = 0.97`). But **+1 income is priced at ~6.5 MC while the rules make it worth ~15 MC** at the
+median round (round 8 of ~23). That single number is the hoarding: a card costing 12 MC "does not pay" in the critic's units.
+
+Why would the critic be right and still wrong? Because **its value depends on the policy that follows it**: in the games it
+was trained on, this player does not convert money into cards, so income really does not turn into wins. The critic is
+accurate about its own games, which closes a loop: no spending -> income looks worthless -> no spending. NETWORK's value was
+trained on games where the player *did* build, so income was worth what the rules say.
+
+The second difference is distribution: `projectPhasePick` + `assumeProjectIsBuilt` produce a state that belongs to the same
+family as the states the network was trained on (`DatasetCollectionService` recorded simulation states at every decision).
+My search compares `buildGreenProjectSync` afterstates - a mid-turn state the critic barely ever saw.
+
+Two experiments follow, and they are the NETWORK mechanism rebuilt with our tools:
+1. `-Dares.agent.buildAlways=true` (data generator only: never decline an affordable build) + `-Dares.agent.afterstates=true`
+   -> a critic trained on games where money converts, on the states the comparison actually reads;
+2. that critic used as the *decider* on a build (the configuration that scored 0.4-6% with decision-state critics).
