@@ -395,7 +395,6 @@ DEFAULT_CONFIG = {
     "selfplay": {"temperature": 0.5, "games_per_chunk": 500, "stage_max_seconds": 3600, "grace_seconds": 90, "max_failure_ratio": 0.05,
                  "max_rows_per_game_type": 64},
     "train": {"command": ["{python}", "ml/train_all.py", "--data", "{data}", "--out", "{model_dir}", "--prev", "{prev_model}", "--epochs", "3"],
-                   "pack_command": ["{python}", "ml/train_all.py", "--packed", "{packed}", "--out", "{model_dir}", "--prev", "{prev_model}", "--epochs", "3"],
                    "timeout_seconds": 7200},
     "pack": {"timeout_seconds": 21600},
     "eval": {"games": 200, "references": ["SMART", "RANDOM"], "agent": "AGENT", "concurrency": 32, "timeout_seconds": 1800, "bias_alarm_gap": 0.10},

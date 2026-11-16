@@ -92,6 +92,17 @@ def main():
             print("FAKE: OUT OF MEMORY", file=sys.stderr)
             return 6
 
+    if a.get("mode") == "sanity":
+        # The obvious-move bench writes a JSON report (not a directory of chunks). Without this branch the generic
+        # self-play code below creates a DIRECTORY at --out, and the pipeline then fails reading it as a report.
+        report = {"scenarios": 10, "passed": 10, "failed": 0, "failedGate": 0, "results": []}
+        if os.environ.get("FAKE_SANITY_FAIL"):
+            report.update({"passed": 9, "failed": 1, "failedGate": 1,
+                           "results": [{"name": "one-credit card draw", "passed": False, "gate": True}]})
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(report))
+        return 1 if report["failedGate"] else 0
+
     if a.get("mode") == "compare":
         score = float(os.environ.get("FAKE_SCORE", (zlib.crc32(str(out).encode()) % 1000) / 1000.0))
         if "model" not in a:  # the agent without a model: the baseline

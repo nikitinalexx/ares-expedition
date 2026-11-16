@@ -5,6 +5,9 @@ import subprocess
 import sys
 import tempfile
 import unittest
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _tmp import temp_dir  # noqa: E402
 from pathlib import Path
 
 import numpy as np
@@ -51,7 +54,7 @@ def write_typed_chunk(path, decision, cand_features, n_games, seed, schema_hash=
 
 class Discover(unittest.TestCase):
     def test_discovers_prefixes(self):
-        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+        with temp_dir() as tmp:
             root = Path(tmp)
             write_typed_chunk(root / "PICK_PHASE.000001.ares", "PICK_PHASE", 6, 2, 1)
             write_typed_chunk(root / "BUILD_CARD.000001.ares", "BUILD_CARD", 8, 2, 2)
@@ -73,7 +76,7 @@ class Pool(unittest.TestCase):
     def test_pool_holds_every_training_game_of_every_file_capped(self):
         from train_all import build_pools
         from train_phase import is_validation_game
-        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+        with temp_dir() as tmp:
             files = []
             for i in range(3):
                 path = Path(tmp) / f"PICK_PHASE.{i + 1:06d}.ares"
@@ -94,7 +97,7 @@ class Pool(unittest.TestCase):
 @unittest.skipUnless(HAVE_TORCH, "torch is not installed")
 class TrainAllShared(unittest.TestCase):
     def setUp(self):
-        self._tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self._tmp = temp_dir()
         self.tmp = Path(self._tmp.name)
         self.data = self.tmp / "data"
         self.data.mkdir()
@@ -165,7 +168,7 @@ class JavaModelArgs(unittest.TestCase):
     def test_prefers_models_bundle(self):
         sys.path.insert(0, str(ML))
         import nightly
-        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+        with temp_dir() as tmp:
             root = Path(tmp)
             (root / "PICK_PHASE").mkdir()
             (root / "PICK_PHASE" / "model.json").write_text("{}")

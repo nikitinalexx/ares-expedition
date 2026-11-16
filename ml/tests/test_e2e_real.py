@@ -14,6 +14,9 @@ import sys
 import tempfile
 import time
 import unittest
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _tmp import temp_dir  # noqa: E402
 from pathlib import Path
 
 ML = Path(__file__).resolve().parents[1]
@@ -26,7 +29,7 @@ from nightly import chunk_files, count_games, read_json  # noqa: E402
 @unittest.skipUnless(os.environ.get("RUN_E2E") == "1", "slow end to end test: set RUN_E2E=1")
 class RealEndToEnd(unittest.TestCase):
     def setUp(self):
-        self._tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self._tmp = temp_dir()
         self.tmp = Path(self._tmp.name)
         self.config = self.tmp / "config.json"
         self.config.write_text(json.dumps({

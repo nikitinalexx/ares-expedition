@@ -8,6 +8,9 @@ import subprocess
 import sys
 import tempfile
 import unittest
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _tmp import temp_dir  # noqa: E402
 from pathlib import Path
 
 import numpy as np
@@ -60,7 +63,7 @@ def phase_three_wins(phase, obs0):
 @unittest.skipUnless(HAVE_TORCH, "torch is not installed")
 class TrainPhase(unittest.TestCase):
     def setUp(self):
-        self._tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self._tmp = temp_dir()
         self.tmp = Path(self._tmp.name)
         self.data = self.tmp / "data"
         self.data.mkdir()

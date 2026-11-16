@@ -10,6 +10,9 @@ import tempfile
 import threading
 import time
 import unittest
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _tmp import temp_dir  # noqa: E402
 from pathlib import Path
 from unittest import mock
 
@@ -24,7 +27,7 @@ FAKE = ML / "tests" / "fake_selfplay.py"
 
 
 class FakePipeline(Pipeline):
-    def java_cmd(self, *args):
+    def java_cmd(self, *args, **kwargs):
         return [sys.executable, str(FAKE), *args]
 
     def prepare_java(self):
@@ -48,7 +51,7 @@ def make_cfg(**override):
 
 class Base(unittest.TestCase):
     def setUp(self):
-        self._tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self._tmp = temp_dir()
         self.tmp = Path(self._tmp.name)
         self.env = mock.patch.dict(os.environ, {}, clear=False)
         self.env.start()
@@ -200,7 +203,7 @@ class PipelineRuns(Base):
         p = self.pipeline(cfg)
         original = FakePipeline.java_cmd
 
-        def java_cmd(self, *a):
+        def java_cmd(self, *a, **kw):
             if "CRASH:CRASH:1" in a:  # the matchups of the 'bad' experiment
                 return [sys.executable, "-c", "import sys; print('boom', file=sys.stderr); sys.exit(1)"]
             return original(self, *a)
@@ -675,7 +678,9 @@ class ResumeAnyTime(Base):
             self.assertLess(p2.state["active_seconds"], 120)
 
     def test_a_used_up_budget_can_be_extended_by_raising_the_hours(self):
-        cfg = make_cfg(hours=0.00001, experiments=[{"name": "a", "games_per_iteration": 30, "matchups": "AGENT:AGENT:1"}],
+        # A budget of 1e-9 h is already used up at the first check; 0.00001 h (36 ms) was a race with the pipeline's own
+        # startup and made this test depend on how fast the machine is, not on the budget logic.
+        cfg = make_cfg(hours=1e-9, experiments=[{"name": "a", "games_per_iteration": 30, "matchups": "AGENT:AGENT:1"}],
                        max_iterations_per_experiment=1)
         run_dir = self.tmp / "runs" / "t"
         data_root = self.tmp / "data" / "t"
@@ -824,8 +829,8 @@ class BenchmarkAndJournal(Base):
         p.cfg["benchmark"]["references"] = ["NETWORK_V2"]
         real = p.compare_once
 
-        def broken(path, log_path, a, b, *rest):
-            return nightly.Result(1, "exit", 0) if b == "NETWORK_V2" else real(path, log_path, a, b, *rest)
+        def broken(path, log_path, a, b, *rest, **kw):
+            return nightly.Result(1, "exit", 0) if b == "NETWORK_V2" else real(path, log_path, a, b, *rest, **kw)
         p.compare_once = broken
         self.assertEqual("finished", p.run())
         (result,) = p.state["benchmark"].values()
