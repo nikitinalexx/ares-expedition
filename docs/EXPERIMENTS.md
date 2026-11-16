@@ -1648,3 +1648,27 @@ price. The loop is now run with our tools:
 
 If the price collapses back to 6-7 MC after iteration 1, the loop does not hold the right slope and the conclusion is that
 the value has to be *told* the arithmetic (engine features), not taught it by data.
+
+### Factorial A/B of the two new blocks (identical rows, 50 000 games, encoder 1090)
+
+| critic | price of +1 income | ranking, 3 000 games |
+|---|---|---|
+| everything (tags + hand identity) | 7.7 MC (8.4 / 7.7 / 7.1) | 37.85% |
+| `--drop-prefix tags:` | 6.5 MC (flat) | 37.3% |
+| `--drop-prefix cards:in_my_hand_` | 7.2 MC | **39.45%** |
+
+Read honestly:
+
+* **the tag counts carry real information**: they move the price of an income stream from 6.5 to 7.7 MC, i.e. the model uses
+  them to price the conversion money -> income;
+* **268 hand-identity bits do not pay at this data volume**: without them the ranking is better (39.45 vs 37.85). Each bit
+  is a rare event (a specific card in a 10-card hand), so 50 000 games give each bit very few positives, and the capacity
+  goes into noise. This is not an argument against the block - it is an argument about *data scale*: the owner's experience
+  ("ten times smarter once the hand bits were there") came from a much larger corpus;
+* all three sit below the ensemble (43.6%), which is the known single-critic variance, not a verdict on the blocks.
+
+Parity check on the new encoder (all new weights zero): **43.12% +/- 1.7** over 3 000 games, so the encoder change itself is
+behaviour preserving.
+
+Next measurement: the same five-critic ensemble on the 1090 encoder, with and without one critic trained on the new blocks,
+10 000 games each - i.e. whether the representation pays *inside an ensemble* at our scale.
