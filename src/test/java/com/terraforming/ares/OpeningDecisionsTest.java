@@ -24,7 +24,7 @@ import com.terraforming.ares.services.GameService;
 import com.terraforming.ares.services.SimulationProcessorService;
 import com.terraforming.ares.services.WinPointsService;
 import com.terraforming.ares.services.agent.Candidate;
-import com.terraforming.ares.services.agent.CardSignature;
+import com.terraforming.ares.services.agent.CardFeatures;
 import com.terraforming.ares.services.agent.CorporationChoice;
 import com.terraforming.ares.services.agent.CorporationDecisions;
 import com.terraforming.ares.services.agent.Decision;
@@ -33,6 +33,7 @@ import com.terraforming.ares.services.agent.DecisionFile;
 import com.terraforming.ares.services.agent.DecisionLogs;
 import com.terraforming.ares.services.agent.DecisionType;
 import com.terraforming.ares.services.agent.MulliganDecisions;
+import com.terraforming.ares.services.agent.PlayableCards;
 import com.terraforming.ares.services.ai.turnProcessors.AiTurnService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -200,28 +201,33 @@ class OpeningDecisionsTest extends EngineTestBase {
 
         List<CorporationChoice> choices = corporationDecisions.options(game, player);
         assertTrue(choices.size() > 2);
-        Set<String> signatures = new HashSet<>();
+        Set<String> identities = new HashSet<>();
         for (CorporationChoice choice : choices) {
             float[] features = choice.candidate().features();
             assertEquals(CorporationDecisions.CANDIDATE_FEATURES, features.length);
             assertEquals(choice.corporationId(), choice.candidate().id());
-            float[] signature = Arrays.copyOf(features, CardSignature.BITS);
-            signatures.add(Arrays.toString(signature));
-            for (int i = 0; i < CardSignature.BITS; i++) {
-                assertTrue(features[i] == 1f || features[i] == -1f);
-            }
-            int phaseOnes = count(features, CardSignature.BITS, CorporationDecisions.PHASE_UPGRADES);
+
+            // exactly one identity bit, at the index of the card itself - no hash, no colour/tag/price copy
+            Card card = choice.corporationId() == helion.getId() ? helion : austellar;
+            int expected = PlayableCards.CORPORATIONS.indexOf(card.getClass());
+            assertTrue(expected >= 0, card.getClass().getSimpleName() + " is not in the corporation one-hot");
+            assertEquals(1, count(features, 0, CorporationDecisions.SIGNATURE), "one identity bit");
+            assertEquals(1f, features[expected], 0f, "identity bit of " + card.getClass().getSimpleName());
+            identities.add(Arrays.toString(Arrays.copyOf(features, CorporationDecisions.SIGNATURE)));
+
+            int phaseOnes = count(features, CorporationDecisions.SIGNATURE, CorporationDecisions.PHASE_UPGRADES);
             assertEquals(choice.input().containsKey(InputFlag.PHASE_UPGRADE_CARD.getId()) ? 1 : 0, phaseOnes);
             if (choice.input().containsKey(InputFlag.TAG_INPUT.getId())) {
-                assertEquals(1, count(features, CardSignature.BITS + CorporationDecisions.PHASE_UPGRADES, CorporationDecisions.TAGS));
+                assertEquals(1, count(features, CorporationDecisions.SIGNATURE + CorporationDecisions.PHASE_UPGRADES,
+                        CorporationDecisions.TAGS));
             }
             if (choice.input().containsKey(InputFlag.AUSTELLAR_CORPORATION_MILESTONE.getId())) {
-                int slotAt = CardSignature.BITS + CorporationDecisions.PHASE_UPGRADES + CorporationDecisions.TAGS;
+                int slotAt = CorporationDecisions.SIGNATURE + CorporationDecisions.PHASE_UPGRADES + CorporationDecisions.TAGS;
                 assertEquals(1, count(features, slotAt, CorporationDecisions.MILESTONE_SLOTS));
                 assertEquals(1, count(features, slotAt + CorporationDecisions.MILESTONE_SLOTS, CorporationDecisions.MILESTONE_TYPES));
             }
         }
-        assertEquals(2, signatures.size(), "the two corporations must not share a signature");
+        assertEquals(2, identities.size(), "the two corporations must not share an identity");
     }
 
     // ---------------------------------------------------------------- mulligan moves
@@ -287,23 +293,21 @@ class OpeningDecisionsTest extends EngineTestBase {
         MarsGame game = opening();
         Player player = named(game, "A");
         Decision decision = mulliganDecisions.build(game, player, List.of());
-        Set<String> signatures = new HashSet<>();
+        Set<String> identities = new HashSet<>();
         for (Candidate candidate : decision.candidates()) {
             assertEquals(MulliganDecisions.CANDIDATE_FEATURES, candidate.features().length);
             boolean stop = candidate.id() == MulliganDecisions.STOP;
             assertEquals(stop ? 1f : 0f, candidate.features()[candidate.features().length - 1]);
             if (!stop) {
-                for (int i = 0; i < CardSignature.BITS; i++) {
-                    assertTrue(candidate.features()[i] == 1f || candidate.features()[i] == -1f);
-                }
-                signatures.add(Arrays.toString(Arrays.copyOf(candidate.features(), CardSignature.BITS)));
+                assertEquals(1, count(candidate.features(), 0, CardFeatures.IDENTITY), "one identity bit");
+                identities.add(Arrays.toString(Arrays.copyOf(candidate.features(), CardFeatures.IDENTITY)));
             } else {
                 for (int i = 0; i < candidate.features().length - 1; i++) {
                     assertEquals(0f, candidate.features()[i]);
                 }
             }
         }
-        assertTrue(signatures.size() >= 2);
+        assertTrue(identities.size() >= 2);
     }
 
     // ---------------------------------------------------------------- hidden information and catalog
@@ -343,21 +347,31 @@ class OpeningDecisionsTest extends EngineTestBase {
     }
 
     @Test
-    void cardSignaturesAreUniqueAcrossTheCatalog() {
-        List<Card> cards = new ArrayList<>(everyCorporation());
-        cards.addAll(cardFactory.getAllProjects(List.of(Expansion.BASE, Expansion.DISCOVERY, Expansion.INFRASTRUCTURE)));
-        cards.addAll(cardFactory.getExperimentalProjects());
-        Map<String, String> signatureToClass = new HashMap<>();
-        Set<Class<?>> seen = new HashSet<>();
-        for (Card card : cards) {
-            if (!seen.add(card.getClass())) {
+    void everyPlayableCardHasItsOwnIdentityBit() {
+        assertEquals(PlayableCards.ALL.size() + 1, CardFeatures.LENGTH,
+                "a card candidate is one-hot over the playable cards plus the stop flag");
+        assertEquals(PlayableCards.ALL.size(), new HashSet<>(PlayableCards.ALL).size(), "no card twice in the one-hot");
+        assertTrue(PlayableCards.ALL.size() > 200, "the playable catalog is too small: " + PlayableCards.ALL.size());
+
+        List<Card> projects = cardFactory.getAllProjects(List.of(Expansion.BASE, Expansion.DISCOVERY));
+        Set<Class<?>> missing = new TreeSet<>((a, b) -> a.getName().compareTo(b.getName()));
+        int checked = 0;
+        for (Card card : projects) {
+            int expected = PlayableCards.ALL.indexOf(card.getClass());
+            if (expected < 0) {
+                missing.add(card.getClass());
                 continue;
             }
-            String signature = Arrays.toString(CardSignature.of(card.getClass()));
-            String other = signatureToClass.put(signature, card.getClass().getName());
-            assertNull(other, "same signature for " + other + " and " + card.getClass().getName());
+            float[] features = CardFeatures.of(card, false);
+            assertEquals(1, count(features, 0, PlayableCards.ALL.size()),
+                    "one identity bit for " + card.getClass().getSimpleName());
+            assertEquals(1f, features[expected], 0f, "the bit of " + card.getClass().getSimpleName());
+            assertEquals(0f, features[PlayableCards.ALL.size()], 0f, "a card is not a stop");
+            checked++;
         }
-        assertTrue(seen.size() > 200, "the catalog under test is too small: " + seen.size());
+        assertTrue(missing.isEmpty(), "playable cards without an identity bit: " + missing.stream()
+                .map(Class::getSimpleName).toList());
+        assertTrue(checked > 200, "the catalog under test is too small: " + checked);
     }
 
     // ---------------------------------------------------------------- whole games and labels

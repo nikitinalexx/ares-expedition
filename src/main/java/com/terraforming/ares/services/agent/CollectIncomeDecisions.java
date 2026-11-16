@@ -22,7 +22,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CollectIncomeDecisions {
     public static final int STOP = CardFeatures.STOP_ID;
-    public static final int MAX_CANDIDATES = 80;
+    public static final int MAX_CANDIDATES = 24;
     public static final int CANDIDATE_FEATURES = CardFeatures.LENGTH;
     public static final String OBSERVATION_LAYOUT = ObservationBuilder.LAYOUT
             + "; candidate=[identityOneHot(" + CardFeatures.IDENTITY + "), stop]; every card property (colour, tags, price, points) is a fixed function of the identity bit";

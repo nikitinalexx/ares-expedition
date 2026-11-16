@@ -45,6 +45,12 @@ of phases (a real player calls 1/2/5 and only calls 4 when it pays).
 - Observation must not contain hidden info — `ObservationCompletenessTest`.
 - Training: `ml/train_all.py`; nightly: `ml/nightly.py` (`docs/NIGHTLY.md`). Self-play: `SelfPlayMain` (profile `selfplay`).
 - Pipeline rules: nothing heavy on `C:`; volume free-space reserves; budget is **active** time; never delete models/evals.
+  Exception agreed with the owner (2026-11-16): a *packed* dataset may live on the SSD (`C:`), because the pack is what
+  makes training I/O cheap.
+- **Efficiency rule (owner, 2026-11-16): every process must be efficient, not just "a bit less data".** One pass over a
+  corpus, then only the bytes a model reads: raw chunks are packed once (`ml/pack_dataset.py`) and every trainer reads
+  the pack (`--packed`). Never re-read the same data per epoch from the disk, never store candidate padding a model does
+  not use, never rebuild a 12-million-key duplicate set on every run. See `docs/PIPELINE_IO.md`.
 - Default night: runs **until stop** (no hours guessing). Optional `hours` / `--hours` only if you want a timed cap.
 
 ## Tests / docs

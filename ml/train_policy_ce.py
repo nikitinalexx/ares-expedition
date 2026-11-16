@@ -103,6 +103,38 @@ def load_type(directory, decision, rows_per_game, max_chunks, seed):
     return data
 
 
+def load_packed_type(directory, decision, manifest, rows_per_game=0, max_chunks=0, seed=1):
+    """The same dict as load_type, from a pack: real candidates only, no padding to the menu maximum.
+
+    The raw loader allocates [rows, maxCand, features] (for BUILD_INPUT that is 12 x 269 for a row that usually has 7),
+    which is why it needed a chunk subset to fit in RAM. The packed view gathers [batch, kmax, features] for the batch
+    being trained on, so a full corpus costs the real candidate bytes and nothing else.
+
+    The cross-type de-duplication mask is NOT used here: the same state recorded for two different decision types is a
+    legitimate row for each of those heads, and dropping it would silently shrink a policy corpus. The mask exists for the
+    value pool, where one state must count once.
+    """
+    data = ares_data.open_packed_type(directory, decision, manifest)
+    if "cands" not in data:
+        return None
+    keep = np.asarray(data["count"]) >= 2
+    if rows_per_game:
+        # Same meaning as in the raw loader: a memory guard on how many states of one game are kept. cap_per_game
+        # returns POSITIONS, so it has to be turned into a row mask before the two filters are combined.
+        rng = np.random.default_rng(seed)
+        picked = cap_per_game(np.asarray(data["game"]).astype(np.uint64), rows_per_game, rng)
+        row_keep = np.zeros(len(keep), dtype=bool)
+        row_keep[picked] = True
+        keep = keep & row_keep
+    if max_chunks:
+        print(f"  {decision:22s} note: --max-chunks-per-type is applied when packing (ml/pack_dataset.py), not here")
+    if not keep.any():
+        return None
+    for key in ("obs", "cands", "ids", "chosen", "count", "outcome", "game", "margin"):
+        data[key] = data[key][keep]
+    return data
+
+
 def warm_start(model, bundle, decision):
     """The parent bundle's head for this type, with the observation projection padded if the encoder grew."""
     path = os.path.join(bundle, decision)
@@ -163,7 +195,7 @@ def value_of(obs, value, raw=False):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data", required=True)
+    parser.add_argument("--data", default="")
     parser.add_argument("--out", required=True)
     parser.add_argument("--prev", default="")
     parser.add_argument("--epochs", type=int, default=3)
@@ -221,6 +253,9 @@ def main():
     parser.add_argument("--val-fraction", type=float, default=0.1)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--types", default="")
+    parser.add_argument("--packed", default="",
+                        help="a directory made by ml/pack_dataset.py --candidates: read the packed candidate "
+                             "block (real candidates only) instead of the padded raw chunks")
     parser.add_argument("--device", default="auto")
     args = parser.parse_args()
 
@@ -237,8 +272,13 @@ def main():
         card_weights = {int(card): float(value) for card, value in payload.get("cards", {}).items()}
         print(f"card weights: {len(card_weights)} cards from {args.card_weights}, alpha {args.card_weight_alpha}")
 
+    manifest = ares_data.open_pack(args.packed) if args.packed else None
     for decision in decisions:
-        data = load_type(args.data, decision, args.rows_per_game, args.max_chunks_per_type, args.seed)
+        if args.packed:
+            data = load_packed_type(args.packed, decision, manifest, args.rows_per_game,
+                                    args.max_chunks_per_type, args.seed)
+        else:
+            data = load_type(args.data, decision, args.rows_per_game, args.max_chunks_per_type, args.seed)
         if data is None or len(data["obs"]) < 100:
             print(f"  {decision:22s} skipped (no usable rows)")
             continue
@@ -270,10 +310,16 @@ def main():
 
         split_key = (data["game"] * np.uint64(2654435761)) % np.uint64(1000)
         val = split_key < int(1000 * args.val_fraction)
-        pools[decision] = {k: (v[~val] if isinstance(v, np.ndarray) and len(v) == len(val) else v)
-                           for k, v in data.items()}
-        val_pools[decision] = {k: (v[val] if isinstance(v, np.ndarray) and len(v) == len(val) else v)
-                               for k, v in data.items()}
+
+        def take(value, mask):
+            # Row-aligned values are split; anything else (widths, schema hashes, lazy views) is passed through. A packed
+            # view is not an ndarray, but it has a shape and supports a boolean mask, so a full corpus can be split
+            # without materialising the padded candidate tensor.
+            aligned = getattr(value, "shape", None) is not None and len(value) == len(mask)
+            return value[mask] if aligned else value
+
+        pools[decision] = {k: take(v, ~val) for k, v in data.items()}
+        val_pools[decision] = {k: take(v, val) for k, v in data.items()}
         print(f"  {decision:22s} train {len(pools[decision]['obs']):7d}  val {len(val_pools[decision]['obs']):6d}  "
               f"candidates {data['cands'].shape[1]}")
     if not pools:
@@ -487,7 +533,7 @@ def main():
                      "logits": logits.tolist()}
         export_from_arrays(os.path.join(args.out, decision), data["schemaHash"], obs_size, data["candFeatures"],
                            hidden, CLIP, params, reference, decision_type=decision)
-    metrics = {"data": args.data, "prev": args.prev, "types": list(models), "epochs": args.epochs,
+    metrics = {"data": args.packed or args.data, "prev": args.prev, "types": list(models), "epochs": args.epochs,
                "rows_per_game": args.rows_per_game, "max_chunks_per_type": args.max_chunks_per_type,
                "outcome_weight": args.outcome_weight, "history": history,
                "adv_value_model": args.adv_value_model,
@@ -497,7 +543,7 @@ def main():
     with open(os.path.join(args.out, "DONE"), "w", encoding="utf-8") as f:
         f.write(json.dumps({"time": time.strftime("%Y-%m-%dT%H:%M:%S"), "trainer": "train_policy_ce"}))
     json.dump({"trainer": "train_policy_ce", "target": "candidate cross-entropy", "outcome_weight": args.outcome_weight,
-               "epochs": args.epochs, "rows_per_game": args.rows_per_game, "data": args.data, "prev": args.prev},
+               "epochs": args.epochs, "rows_per_game": args.rows_per_game, "data": args.packed or args.data, "prev": args.prev},
               open(os.path.join(args.out, "MODEL_INFO.json"), "w", encoding="utf-8"), indent=1)
     print(json.dumps({k: v for k, v in metrics.items() if k != "history"}, indent=1))
     return 0

@@ -43,7 +43,7 @@ public class CorporationDecisions {
     public static final int MILESTONE_SLOTS = 8;
     public static final int MILESTONE_TYPES = 15;
     public static final int CANDIDATE_FEATURES = SIGNATURE + PHASE_UPGRADES + TAGS + MILESTONE_SLOTS + MILESTONE_TYPES;
-    public static final int MAX_CANDIDATES = 96;
+    public static final int MAX_CANDIDATES = 48;
     public static final String OBSERVATION_LAYOUT = ObservationBuilder.LAYOUT
             + "; candidate=[corporationOneHot(" + SIGNATURE + "), phaseUpgrade(" + PHASE_UPGRADES + "), tag(" + TAGS
             + "), milestoneSlot(" + MILESTONE_SLOTS + "), milestoneType(" + MILESTONE_TYPES + ")]";

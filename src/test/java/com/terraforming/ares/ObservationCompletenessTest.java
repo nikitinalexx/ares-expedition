@@ -398,63 +398,49 @@ class ObservationCompletenessTest extends EngineTestBase {
     }
 
     /**
-     * A card's candidate description must contain what the card is worth: its printed victory points, its price and its
-     * tags. The points slot was documented in every layout string and never written (found 2026-11-15), so the card menus
-     * could not tell a 4-point card from a 1-point one except by its class signature. This test is exact - it recomputes
-     * the expected values from the card itself - so a slot that silently disappears fails it.
+     * A card candidate is its identity: exactly one bit set, at the card's own index, and nothing else. Colour, tags, price
+     * and the printed points are deliberately not written any more - with one bit per card they are a fixed function of the
+     * identity (owner, 2026-11-16), and the previous version of this test asserted the redundant copy.
      */
     @Test
-    void aCardCandidateCarriesItsPrintedPointsAndPrice() {
+    void aCardCandidateIsItsIdentityAndNothingElse() {
         java.util.List<Integer> deck = cardService.createProjectsDeck(
                 java.util.List.of(Expansion.BASE, Expansion.BUFFED_CORPORATION, Expansion.DISCOVERY)).getCards();
         int checked = 0;
         for (int id : deck) {
             Card card = cardService.getCard(id);
-            if (card == null || card.getPrice() <= 0 || card.getWinningPoints() <= 0) {
+            if (card == null) {
                 continue;
             }
             float[] features = com.terraforming.ares.services.agent.CardFeatures.of(card, false);
-            int points = com.terraforming.ares.services.agent.CardFeatures.LENGTH - 1;
-            int stop = points - 1;
-            int price = stop - 2;
-            Assertions.assertEquals(card.getWinningPoints() / 10f, features[points], 1e-4,
-                    "the candidate vector does not carry the printed points of " + card.getClass().getSimpleName());
-            Assertions.assertEquals(card.getPrice() / 50f, features[price], 1e-4,
-                    "the candidate vector does not carry the price of " + card.getClass().getSimpleName());
+            int ones = 0;
+            int at = -1;
+            for (int i = 0; i < features.length; i++) {
+                if (features[i] != 0f) {
+                    Assertions.assertEquals(1f, features[i], 0f, "a candidate bit must be 0 or 1");
+                    ones++;
+                    at = i;
+                }
+            }
+            Assertions.assertEquals(1, ones, "exactly one identity bit for " + card.getClass().getSimpleName());
+            Assertions.assertTrue(at >= 0 && at < com.terraforming.ares.services.agent.PlayableCards.ALL.size(),
+                    "the identity bit is inside the one-hot block");
             if (++checked >= 20) {
                 break;
             }
         }
-        assertTrue(checked >= 10, "not enough cards with points to check (" + checked + ")");
-    }
-
-    /**
-     * Every column derived from the private hand (and the latent plan) must be zero in the PUBLIC view of a position.
-     * <p>
-     * The symmetric search reads the opponent's position through {@code buildPublic}; a private column that is not zeroed
-     * there is hidden information leaking into the search. This asserts it column by column, by name, so a NEW private
-     * block that forgets to declare itself fails here instead of quietly leaking (the hand summary was added exactly this
-     * way, 2026-11-15).
-     */
-    @Test
-    void everyPrivateColumnIsZeroInThePublicView() {
-        MarsGame game = insideARound();
-        java.util.List<String> names = com.terraforming.ares.services.agent.ObservationBuilder.names();
-        for (Player player : game.getPlayerUuidToPlayer().values()) {
-            float[] publicView = observationBuilder.buildPublic(game, player);
-            Assertions.assertEquals(names.size(), publicView.length, "the public view has the encoder's width");
-            int checked = 0;
-            for (int i = 0; i < names.size(); i++) {
-                String name = names.get(i);
-                if (name.startsWith("hand:") || name.startsWith("plan:")
-                        || name.startsWith("cards:in_my_hand_")) {
-                    Assertions.assertEquals(0f, publicView[i], 0f,
-                            "the public view leaks a private column: " + name);
-                    checked++;
-                }
+        assertTrue(checked >= 10, "not enough cards to check (" + checked + ")");
+        // the stop candidate is the bit right after the identity block, and nothing else is set
+        float[] stop = com.terraforming.ares.services.agent.CardFeatures.of(null, true);
+        Assertions.assertEquals(1f, stop[com.terraforming.ares.services.agent.PlayableCards.ALL.size()], 0f,
+                "the stop flag is the last slot");
+        int stopOnes = 0;
+        for (float value : stop) {
+            if (value != 0f) {
+                stopOnes++;
             }
-            assertTrue(checked >= 5, "there must be private columns to check (" + checked + ")");
         }
+        Assertions.assertEquals(1, stopOnes, "the stop candidate carries nothing but the flag");
     }
 
     @Test

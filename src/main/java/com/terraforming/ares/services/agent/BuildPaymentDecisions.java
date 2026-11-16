@@ -36,7 +36,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class BuildPaymentDecisions {
-    public static final int MAX_CANDIDATES = 200;
+    public static final int MAX_CANDIDATES = 48;
     public static final int CANDIDATE_FEATURES = 6;
     public static final String OBSERVATION_LAYOUT = ObservationBuilder.LAYOUT
             + "; candidate=[restructured, anaerobic, heat/20, mc/20, need/20, discounts/20]; "

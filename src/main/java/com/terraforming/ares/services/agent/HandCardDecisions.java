@@ -34,7 +34,9 @@ public class HandCardDecisions {
     public static final int MAX_CANDIDATES = POOL + 1;
     public static final int SELL_FEATURES = CardFeatures.LENGTH + 1;
 
-    + "; candidate=[identityOneHot(" + CardFeatures.IDENTITY + "), stop]; every card property (colour, tags, price, points) is a fixed function of the identity bit";
+    /** The description of one card candidate: identity one-hot plus the stop flag (nothing else - see CardFeatures). */
+    private static final String CARD =
+            "identityOneHot(" + CardFeatures.IDENTITY + "), stop; every card property is a function of the identity bit";
 
     public static final String DRAFT_LAYOUT = ObservationBuilder.LAYOUT
             + "; candidate=[" + CARD + "]; discard exactly the required number from the revealed cards; no stop; stopId="

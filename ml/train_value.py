@@ -32,7 +32,7 @@ import torch
 from torch import nn
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from ares_data import discover_decisions, read_decisions  # noqa: E402
+from ares_data import PackedObs, discover_decisions, read_decisions  # noqa: E402
 from train_phase import CLIP, is_validation_game, list_chunks  # noqa: E402
 
 KIND = "value_mlp"
@@ -500,6 +500,75 @@ def load_pool(data_dirs, rows_per_game, rng, val_fraction, keep_round=False, dro
             "observationLayout": observation_layout}
 
 
+def load_packed(directory, rows_per_game, rng, val_fraction, drop_columns=None, score_columns=None):
+    """The same pool as load_pool, read from a pack (ml/pack_dataset.py) instead of the raw chunks.
+
+    Two costs dominated every earlier run and both are gone here: the raw files are 78% candidate blocks, which a value
+    model never reads, and the cross-type duplicate set was rebuilt from 12 million keys on every start. The pack is one
+    sequential pass over the corpus that keeps the observation and the labels (plus a de-duplication mask computed once),
+    so a training run reads ~5 GB per epoch instead of ~120 GB per epoch.
+    """
+    manifest = json.load(open(os.path.join(directory, "manifest.json"), encoding="utf-8"))
+    types = [name for name in manifest["types"] if manifest["types"][name]["rows"] > 0]
+    if not types:
+        raise SystemExit(f"{directory}: the pack is empty")
+    arrays, sizes = [], []
+    for name in types:
+        arrays.append(np.memmap(os.path.join(directory, f"{name}.obs.f16"), dtype="<f2", mode="r",
+                                shape=(manifest["types"][name]["rows"], manifest["obsSize"])))
+        sizes.append(manifest["types"][name]["rows"])
+    fields = ("outcome", "margin", "seat", "context", "round", "game", "step")
+    collected, keeps = {field: [] for field in fields}, []
+    for name in types:
+        with np.load(os.path.join(directory, f"{name}.lab.npz")) as labels:
+            for field in fields:
+                collected[field].append(labels[field])
+            keeps.append(labels["keep"])
+    total = int(sum(sizes))
+    label = {field: np.concatenate(values) for field, values in collected.items()}
+    keep = np.concatenate(keeps)
+    index = np.flatnonzero(keep)  # global row numbers that survive de-duplication
+    game = label["game"][index]
+    if rows_per_game:
+        picked = cap_per_game(game.astype(np.uint64), rows_per_game, rng)
+        index = index[picked]
+        game = game[picked]
+    # Order by (game, seat, step) so that every row knows the NEXT decision of the same player: the TD target needs the
+    # score between the two and the value of the next state.
+    order = np.lexsort((label["step"][index], label["seat"][index], game))
+    index = index[order]
+    selected = {field: label[field][index] for field in fields}
+    obs = PackedObs(arrays, sizes, manifest["obsSize"], selection=index, drop_columns=drop_columns)
+
+    game, seat, step = selected["game"], selected["seat"], selected["step"]
+    next_row = np.full(len(index), -1, dtype=np.int64)
+    if len(index) > 1:
+        adjacent = (game[1:] == game[:-1]) & (seat[1:] == seat[:-1]) & (step[1:] == step[:-1] + 1)
+        next_row[:-1][adjacent] = np.flatnonzero(adjacent) + 1
+
+    score = None
+    if score_columns:
+        # Only two columns are needed for the TD score, and the pack is much larger than the pool: read them in
+        # ascending row order (sequential for the disk) instead of gathering two columns out of every random row.
+        mine, other = score_columns
+        local_of = np.empty(total, dtype=np.int64)
+        local_of[index] = np.arange(len(index))
+        values = np.empty((len(index), 2), dtype=np.float32)
+        ascending = np.argsort(index, kind="stable")
+        block = 1 << 18
+        for start in range(0, len(ascending), block):
+            part = ascending[start:start + block]
+            gathered = obs[local_of[index[part]]][:, [mine, other]]
+            values[part] = gathered
+        score = (values[:, 0] - values[:, 1]).astype(np.float32)
+
+    return {"obs": obs, "outcome": selected["outcome"].astype(np.float32),
+            "margin": selected["margin"].astype(np.float32), "game": game, "context": selected["context"],
+            "round": selected["round"], "step": step, "seat": seat, "next": next_row, "score": score,
+            "validation": is_validation_game(game, val_fraction), "obsSize": manifest["obsSize"],
+            "observationHash": manifest["observationHash"], "totalRows": total}
+
+
 def dropped_columns(names_file, prefix):
     """Column indices to zero: the block can then be removed from the input without touching the data on disk."""
     names = json.load(open(names_file, encoding="utf-8"))
@@ -508,7 +577,13 @@ def dropped_columns(names_file, prefix):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data", required=True, help="comma-separated directories with *.NNNNNN.ares chunks")
+    parser.add_argument("--data", default="", help="comma-separated directories with *.NNNNNN.ares chunks")
+    parser.add_argument("--pool-ram-gb", type=float, default=8.0,
+                        help="with --packed: read the selected pool into RAM once (one sequential pass) as long as it is "
+                             "at most this large; every epoch then runs from memory. 0 keeps the lazy memmap view")
+    parser.add_argument("--packed", default="",
+                        help="a directory made by ml/pack_dataset.py: the observation-only pack. Reads ~5 GB "
+                             "per epoch instead of the whole corpus, which is what the disk bottleneck was")
     parser.add_argument("--out", required=True)
     parser.add_argument("--epochs", type=int, default=6)
     parser.add_argument("--steps", type=int, default=0, help="batches between two validations (0 = one pass)")
@@ -555,13 +630,17 @@ def main():
                         help="margin target is margin/scale; only used with --target margin")
     args = parser.parse_args()
 
+    if not args.data and not args.packed:
+        raise SystemExit("--data or --packed is required")
+    if args.packed and args.stream:
+        raise SystemExit("--packed already streams from the disk; do not combine it with --stream")
     started = time.time()
     os.makedirs(args.out, exist_ok=True)
     rng = np.random.default_rng(args.seed)
     hidden = [int(x) for x in args.hidden.split(",")]
     device = (torch.device("cuda" if torch.cuda.is_available() else "cpu")
               if args.device == "auto" else torch.device(args.device))
-    print(f"device {device}, reading {args.data}", flush=True)
+    print(f"device {device}, reading {args.packed or args.data}", flush=True)
     if args.stream:
         fitted = fit_stream(args.data, args.rows_per_game, hidden, epochs=args.epochs, lr=args.lr,
                             weight_decay=args.weight_decay, batch=args.batch, seed=args.seed, device=device,
@@ -625,13 +704,28 @@ def main():
         names = json.load(open(args.names, encoding="utf-8"))
         if "score:my_winning_points" in names and "score:opponent_winning_points" in names:
             score_columns = (names.index("score:my_winning_points"), names.index("score:opponent_winning_points"))
-    pool = load_pool(args.data, args.rows_per_game, rng, args.val_fraction, keep_round=True, drop_columns=drop,
-                     include_afterstates=args.include_afterstates, score_columns=score_columns)
+    if args.packed:
+        pool = load_packed(args.packed, args.rows_per_game, rng, args.val_fraction,
+                           drop_columns=drop, score_columns=score_columns)
+        print(f"  packed pool: {len(pool['obs'])} rows of {pool['totalRows']} packed, "
+              f"{pool['obsSize']} observation features", flush=True)
+        megabytes = len(pool["obs"]) * pool["obsSize"] * 2 / 2 ** 20
+        if args.pool_ram_gb and megabytes <= args.pool_ram_gb * 1024:
+            started_ram = time.time()
+            pool["obs"] = pool["obs"].to_ram()
+            print(f"  pool read into RAM once: {megabytes:.0f} MB in {time.time() - started_ram:.1f} s "
+                  f"(the epochs no longer read the pack)", flush=True)
+        else:
+            print(f"  pool stays on disk ({megabytes:.0f} MB): every epoch gathers from the pack", flush=True)
+    else:
+        pool = load_pool(args.data, args.rows_per_game, rng, args.val_fraction, keep_round=True, drop_columns=drop,
+                         include_afterstates=args.include_afterstates, score_columns=score_columns)
     split = pool["validation"]
-    train, val = pool["obs"][~split], pool["obs"][split]
+    train_count, val_count = int((~split).sum()), int(split.sum())
+    val = pool["obs"][split]
     y_val = pool["outcome"][split]
-    if len(train) < 1000 or len(val) < 100:
-        raise SystemExit(f"not enough data: {len(train)} train / {len(val)} validation rows")
+    if train_count < 1000 or val_count < 100:
+        raise SystemExit(f"not enough data: {train_count} train / {val_count} validation rows")
     target = pool["outcome"]
     if args.target == "margin":
         target = np.clip(pool["margin"] / args.margin_scale, -3.0, 3.0).astype(np.float32)
@@ -718,7 +812,7 @@ def main():
 
     torch.save({"model": fitted["state"], "observation_hash": pool["observationHash"], "hidden": hidden,
                 "epoch": fitted["best_epoch"], "target": args.target}, os.path.join(args.out, "model.pt"))
-    metrics = {"rows_train": int(len(train)), "rows_val": int(len(val)), "target": args.target,
+    metrics = {"rows_train": train_count, "rows_val": val_count, "target": args.target,
                "games": int(len(np.unique(pool["game"]))), "label_mean": round(fitted["label_mean"], 4),
                "constant_val_loss": round(fitted["constant_loss"], 4),
                "best_epoch": fitted["best_epoch"], "best_val_loss": round(val_loss, 4),

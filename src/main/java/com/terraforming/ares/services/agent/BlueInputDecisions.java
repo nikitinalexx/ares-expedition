@@ -60,7 +60,7 @@ public class BlueInputDecisions {
     public static final int ID_DECOMP_CARD = 0xFFF6;
 
     public static final int PHASE_UPGRADES = 10;
-    public static final int MAX_CANDIDATES = 200;
+    public static final int MAX_CANDIDATES = 48;
     public static final int CANDIDATE_FEATURES = KINDS + CardFeatures.LENGTH + PHASE_UPGRADES + CardFeatures.TAGS + 1;
     public static final String OBSERVATION_LAYOUT = ObservationBuilder.LAYOUT
             + "; candidate=[kind(" + KINDS + "), cardFeatures(" + CardFeatures.LENGTH + "), phase(" + PHASE_UPGRADES
