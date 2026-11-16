@@ -562,11 +562,26 @@ run's bottleneck was the disk again (`v_scale_full` read 119.7 GiB per epoch off
 `mvn test` is green (18/18: `ObservationCompletenessTest`, `OpeningDecisionsTest`), the tree compiles, and `CardSignature`
 is gone: card candidates are `one-hot(268) + stop`, corporation candidates `one-hot(35) + chosen inputs`.
 
+### The hand question, answered with a number (2026-11-16, later)
+
+The owner objected to "the hand gives the critic nothing": a hand is held to be played later, in order, and the first A/B
+averaged over rows where it cannot be played. `ml/hand_ab.py` repeats it on playable hands only (>= 2 cards, >= 1
+affordable), paired by rows/seed/split, error bar by a game-level bootstrap. Result: the 268 identity bits **hurt** the
+critic - +0.00193 loss [+0.00059, +0.00329], AUC 0.8870 vs 0.8888. The same run exposed a real defect: the standardisation
+sample was the first 200k rows of the pool (the opening, where the hand block is empty), so `train_value.py` now samples the
+training rows uniformly (`--stats random`, the default) and both arms get ~0.0008 better for free.
+
+Conclusion for design: the critic is the wrong place to convert "which cards I hold" into strength. A one-ply afterstate
+value cannot express "play the income card now because the tag card is next". The hand belongs to the **policy** (its label
+is literally the card taken, given the hand) and to any multi-step search. Nothing was removed from the observation, and the
+deployed critic is unchanged until a ranking-role test (10 000 games) says otherwise.
+
 ### The next three actions, in order
 
 1. audit `v_scale_packed` (the audit half of `ml/verify_critic.ps1`: it needs no policy); ranking/decider/profile must wait
    for the policy bootstrap, because the old `r25_rev2`/`r28_hand` heads cannot load the new candidate widths;
-2. bootstrap a policy on the new candidate vectors, then rank the critics again;
+2. bootstrap a policy on the new candidate vectors, then rank the critics again - and with the hand bits *in the policy*
+   (that is where they are learnable), not in the critic;
 3. run `ml/nightly.py check` once so the new pack stage (`ensure_pack`) is exercised end to end before a real night.
 
 ### Bootstrap recipe (candidate widths changed, no policy can be loaded)
