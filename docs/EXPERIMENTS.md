@@ -1757,3 +1757,22 @@ data for the price, self-play for the ordering - and it is reproducible with one
 
 The check that decides whether it pays: does `v_loopMix` rank at least as well as the deployed critics, and does adding it to
 the six-critic ensemble move the 10 000-game win rate above 44.0%?
+
+### The better price does not help the ranker (and that is the theory working)
+
+`v_loopMix` has the best income price measured so far (9.6 MC with the right round profile), so it was added to the
+six-critic ensemble:
+
+| configuration (10 000 games) | vs SMART |
+|---|---|
+| six critics (deployed best) | **44.00% +/- 1.0** |
+| the same seven critics, `v_loopMix` included | 42.86% +/- 1.0 |
+| `v_loopMix` alone as a ranker (3 000 games) | 37.9% |
+
+A worse ensemble with a *better-priced* member, exactly as the two-role analysis predicts: in the ranker role a slope shared
+by the candidates cancels and the stop decision is the policy's, so the price is irrelevant there while the member's weaker
+*ordering* dilutes the average. The price belongs to the decider.
+
+So the deployed best stays at six critics, 44.00%, and `v_loopMix` goes where its property is used: the decider test
+(`fullTypes=BUILD_CARD`, the critic chooses build vs pass), which is the configuration whose previous attempts were 36.0%
+(policy critic) and 37.3% (six-critic ensemble with projections).
