@@ -146,3 +146,23 @@ hoards. CE cannot fix it (it reproduces the labels); only data from a player tha
 
 This is the roadmap in one line: *the ranker is close to its ceiling (~44%); the decider and the policy's stop head need the
 loop, and the loop needs a value with a correct price - which the random-data critic already has.*
+
+## H. Rule: never remove knowledge from the observation because of a local measurement
+
+Owner's decision (2026-11-16): the hand-identity block stays even though at 50 000 games it measures a little worse in the
+ranking role (39.45% without it against 37.85% with it). The reason is that the difference is an artefact of the data volume -
+268 bits for specific cards in a 10-card hand are rare events, so a small corpus gives each of them almost no positives and
+the model spends capacity on noise - while the information itself is real and the owner measured a large gain from it at a
+much bigger corpus.
+
+So the rule for the representation is:
+
+* a block that describes a real fact of the game **stays**, even when a small A/B does not show a gain yet; the measurement
+  decides *priorities*, not what the game is allowed to tell the network;
+* what may be removed: values that never fire because they belong to another expansion, values that are a linear function of
+  values already present (the "activatable count" was one), and values whose meaning is a bug. Those are a loss of *space*,
+  not of *knowledge*.
+
+Consequences we accept: at 50 000 games the hand block costs ~1.5 points of ranking; the remedies are more games (the loop),
+or a sparsity-aware regulariser on the block, not deletion. Parity at zero weight is exact (43.12% +/- 1.7), so keeping the
+block cannot hurt a model that does not use it.
