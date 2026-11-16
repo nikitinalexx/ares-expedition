@@ -1595,3 +1595,30 @@ Two experiments follow, and they are the NETWORK mechanism rebuilt with our tool
 1. `-Dares.agent.buildAlways=true` (data generator only: never decline an affordable build) + `-Dares.agent.afterstates=true`
    -> a critic trained on games where money converts, on the states the comparison actually reads;
 2. that critic used as the *decider* on a build (the configuration that scored 0.4-6% with decision-state critics).
+
+### The price of an income stream depends on the data, and random data prices it correctly
+
+Owner's correction (2026-11-16): the first NETWORK was trained on **random** data, then one or two self-play iterations -
+nothing else. That means random games already contain spending, so the value of an income stream is identifiable from them.
+Checked directly, by auditing critics on the same 600 positions (`--mode audit`, `+1 income` against `+10 MC`; the rules
+make `+1 income` worth ~15 MC at the median round, falling with the round):
+
+| critic | training data | +10 MC | +1 income | by round (0-4 / 9-12) | V(me)+V(opp) |
+|---|---|---|---|---|---|
+| `v_rev1_margin_wide` | mixed exploration on top of **our policy's** play | +0.0645 | 0.0422 -> **6.5 MC** | 0.047 / 0.037 (flat) | 0.97 |
+| `v_rand_margin` | **uniform random play** (20 000 games) | +0.0409 | 0.0497 -> **12.1 MC** | **0.057 / 0.043 -> 14.0 / 10.4 MC** | 0.997 |
+| `v_td1_margin` | TD on the remaining margin, from the policy critic | +0.0389 | 0.0154 -> 4.0 MC | flat | 0.79 (not comparable) |
+
+So the critic trained on random play prices the conversion money -> income -> cards almost exactly as the rules do, including
+the round dependence (an income bought in round 2 pays ~20 times, in round 18 ~5). The critic trained on our own games prices
+it at less than half and flat - because in those games the money is never converted.
+
+This is the resolution of "why did NETWORK work despite the noise": its value was trained where the conversion happens, so
+the *slope* it needed was right; the noise never entered the decision, only the fitting. My critic had the right shape and the
+wrong slope, and every mechanism built on top of it (mustBuild, the stopMargin dial, the projection decider, TD from those
+data) inherited the wrong slope.
+
+Two consequences, both being measured now:
+1. the random-data critic is used as the **decider** on a build, with projections (`fullTypes=BUILD_CARD`,
+   `-Dares.agent.search.projectBuilds=true`), 3 000 games - the configuration NETWORK ran;
+2. then his loop: play with that player, record, retrain the critic, one or two iterations (random data first, never SMART).

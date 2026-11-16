@@ -109,6 +109,17 @@ public class OnePlySearch {
      */
     private final boolean phasePlayout;
     /**
+     * {@code -Dares.agent.search.projectBuilds=true}: after applying a candidate, ADVANCE the game to the player's next
+     * decision before reading V, instead of reading the value of a mid-turn afterstate.
+     * <p>
+     * Why (owner, 2026-11-16): NETWORK did not evaluate "the state right after the card"; it projected the phase
+     * (`projectPhasePick`), built the card and recursed, so the value was read on a state of the same family the network
+     * was trained on. Our afterstate - money gone, card on the table, the turn not finished - is a state the critic has
+     * rarely seen, and an out-of-distribution state tends to score low, which biases every comparison against acting.
+     * The stop candidate is the current decision state, so with this flag both sides of the comparison are decision states.
+     */
+    private final boolean projectBuilds;
+    /**
      * {@code -Dares.agent.search.horizonStop=true}: score the "stop" candidate over the same horizon as the candidates
      * that act. A one-step comparison is structurally biased - an expensive action lowers V immediately (money out,
      * nothing in yet) and pays ten rounds later. Measured: 0.45 cards per game and a 1.2% build acceptance. With both
@@ -164,6 +175,8 @@ public class OnePlySearch {
         int configuredSamples = Math.max(1, Integer.parseInt(System.getProperty("ares.agent.search.samples", "1")));
         boolean configuredPhasePlayout =
                 Boolean.parseBoolean(System.getProperty("ares.agent.search.phasePlayout", "false"));
+        boolean configuredProjectBuilds =
+                Boolean.parseBoolean(System.getProperty("ares.agent.search.projectBuilds", "false"));
         boolean configuredHorizonStop =
                 Boolean.parseBoolean(System.getProperty("ares.agent.search.horizonStop", "false"));
         if (!mode.equals("oneply") || spec.isEmpty()) {
@@ -179,6 +192,7 @@ public class OnePlySearch {
             this.horizonTurns = 0;
             this.samples = 1;
             this.phasePlayout = false;
+            this.projectBuilds = false;
             this.horizonStop = false;
             return;
         }
@@ -192,6 +206,7 @@ public class OnePlySearch {
         this.horizonTurns = Math.max(0, configuredHorizon);
         this.samples = configuredSamples;
         this.phasePlayout = configuredPhasePlayout;
+        this.projectBuilds = configuredProjectBuilds;
         this.horizonStop = configuredHorizonStop;
         this.models = loadNets(spec);
         String phaseSpec = System.getProperty("ares.agent.valueModel.phase", "").trim();
@@ -363,7 +378,7 @@ public class OnePlySearch {
         // card B" and keep the better of the two readings. A pair is a better estimate of a card's value than the card
         // alone when its worth is the chain it enables (one microbe that unlocks the next card), and every candidate is
         // still compared through the same quantity: the value of the position after the builds.
-        if (pairs && rankThis && decision.type() == DecisionType.BUILD_CARD && options.size() > 2) {
+        if (pairs && !projectBuilds && rankThis && decision.type() == DecisionType.BUILD_CARD && options.size() > 2) {
             int[] top = new int[Math.min(2, options.size())];
             float[] topScores = {Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY};
             for (int i = 0; i < scores.length; i++) {
@@ -499,6 +514,11 @@ public class OnePlySearch {
                 return null;
             } else if (type == DecisionType.BUILD_CARD) {
                 applyBuild(copy, me, cardId);
+            }
+            if (projectBuilds && (type == DecisionType.BUILD_CARD || type == DecisionType.STANDARD_ACTION)) {
+                // Read the value at the player's next decision instead of at the mid-turn afterstate.
+                float projected = projectToNextDecision(copy, me, seed);
+                return Float.isNaN(projected) ? null : Math.round(projected * 1000f);
             }
             float[] observation = observationBuilder.build(copy, me);
             lastAfterstate.set(observation);
@@ -648,6 +668,38 @@ public class OnePlySearch {
      * V of a position, symmetric when configured: my own reading and the opponent's mirror of the same public state. The
      * opponent's observation carries no hidden information, so this is a fair, less noisy estimate of the position.
      */
+    /**
+     * Applies the candidate and plays the game on (both seats, the policy deciding) until this player is asked again or
+     * the round ends, then reads V there. This is the cheap version of what NETWORK's {@code projectPhasePick +
+     * assumeProjectIsBuilt} did: the leaf is a decision state, not a mid-turn afterstate.
+     */
+    private float projectToNextDecision(MarsGame copy, Player me, long seed) {
+        String uuid = me.getUuid();
+        Determinizer.shuffle(copy, uuid, seed);
+        int startTurns = copy.getTurns();
+        int startStep = copy.getTurns();
+        try {
+            simulationProcessorService.processSimulation(copy, game -> {
+                if (game.getStateType() == StateType.GAME_END) {
+                    throw new StopPlayout();
+                }
+                // One decision of this player inside the same round is enough: the point is to leave the mid-turn state.
+                if (game.getTurns() > startTurns || game.getCurrentPhase() != copy.getCurrentPhase()) {
+                    throw new StopPlayout();
+                }
+            });
+        } catch (StopPlayout stop) {
+            // reached the leaf
+        } catch (RuntimeException e) {
+            return Float.NaN;
+        }
+        Player leaf = copy.getPlayerByUuid(uuid);
+        if (leaf == null) {
+            return Float.NaN;
+        }
+        return valueAt(copy, leaf, observationBuilder.build(copy, leaf));
+    }
+
     private float valueAt(MarsGame copy, Player me, float[] observation) {
         if (!symmetric) {
             return logit(observation);

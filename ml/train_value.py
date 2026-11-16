@@ -353,6 +353,23 @@ def fit_stream(data_dirs, rows_per_game, hidden, epochs, lr, weight_decay, batch
             "train_files": len(train_files), "val_files": len(val_files)}
 
 
+def load_value_params(directory):
+    """The exported value model (mean, std, w1, b1, w2, b2, w3, b3) as numpy arrays: the TD bootstrap reads its own kind."""
+    meta = json.load(open(os.path.join(directory, "model.json"), encoding="utf-8"))
+    raw = np.fromfile(os.path.join(directory, "weights.bin"), dtype="<f4")
+    obs, (h1, h2), clip = meta["obsSize"], meta["hidden"], float(meta["clip"])
+    pos = 0
+
+    def take(n):
+        nonlocal pos
+        chunk = raw[pos:pos + n]
+        pos += n
+        return chunk
+
+    return {"mean": take(obs), "std": take(obs), "w1": take(h1 * obs).reshape(h1, obs), "b1": take(h1),
+            "w2": take(h2 * h1).reshape(h2, h1), "b2": take(h2), "w3": take(h2), "b3": take(1), "clip": clip}
+
+
 def predict(params, obs, batch=200_000, squash=True):
     """V of every row, batched, with the exported numpy parameters (no torch). `squash=False` keeps the raw output, which
     is what a margin model predicts."""
@@ -509,6 +526,9 @@ def main():
                              "The game's score is visible at every state, so this is TD on an exact intermediate reward - "
                              "the standard answer to a single terminal label (TD-Gammon), and it makes the target far less "
                              "noisy than regressing a state onto the distant final outcome")
+    parser.add_argument("--drop-unprefixed", action="store_true",
+                        help="zero every observation column without a 'name:' prefix - the 417 legacy V2 table values. "
+                             "A/B of the block the network inherited from the old encoder against the newer named blocks")
     parser.add_argument("--include-afterstates", action="store_true",
                         help="also train on AFTERSTATE rows: they carry the same encoder observation but a placeholder "
                              "layout string (they are the states the one-ply search actually reads, so they are what the "
@@ -589,6 +609,11 @@ def main():
         print(json.dumps({k: v for k, v in metrics.items() if k != "history"}, indent=1), flush=True)
         return 0
     drop = dropped_columns(args.names, args.drop_prefix) if (args.names and args.drop_prefix) else []
+    if args.drop_unprefixed:
+        if not args.names:
+            raise SystemExit("--drop-unprefixed needs --names")
+        names_for_drop = json.load(open(args.names, encoding="utf-8"))
+        drop = sorted(set(drop) | {i for i, name in enumerate(names_for_drop) if ":" not in name})
     score_columns = None
     if args.names:
         names = json.load(open(args.names, encoding="utf-8"))
@@ -612,10 +637,8 @@ def main():
         if score_columns is None:
             raise SystemExit("--td-bootstrap needs --names with the score columns")
         bootstrap = load_value_params(args.td_bootstrap)
-        values = np.empty(len(pool["obs"]), dtype=np.float32)
-        for start in range(0, len(pool["obs"]), 200_000):
-            block = pool["obs"][start:start + 200_000].astype(np.float64)
-            values[start:start + 200_000] = numpy_forward(bootstrap, CLIP, block).astype(np.float32)
+        # A margin model's raw output is margin/scale: predict() batches the rows and keeps it unsquashed.
+        values = predict(bootstrap, pool["obs"], squash=False).astype(np.float32)
         nxt = pool["next"]
         rows = np.arange(len(pool["obs"]))
         # The value this trains is the REMAINING margin R(s) = final margin - current margin, because that is the quantity
