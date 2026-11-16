@@ -1776,3 +1776,22 @@ by the candidates cancels and the stop decision is the policy's, so the price is
 So the deployed best stays at six critics, 44.00%, and `v_loopMix` goes where its property is used: the decider test
 (`fullTypes=BUILD_CARD`, the critic chooses build vs pass), which is the configuration whose previous attempts were 36.0%
 (policy critic) and 37.3% (six-critic ensemble with projections).
+
+### The decider with the best-priced critic: 33.3%, still below the ranker
+
+| configuration | vs SMART | games |
+|---|---|---|
+| ranker, six critics (deployed) | **44.00% +/- 1.0** | 10 000 |
+| ranker + `v_loopMix` (seven critics) | 42.86% +/- 1.0 | 10 000 |
+| decider with `v_loopMix`, no projections | 33.33% +/- 1.7 | 3 000 |
+| decider with the six-critic ensemble, projections on | 37.3% +/- 1.8 | 3 000 |
+| decider with a policy critic | 36.0% | 3 000 |
+
+So the price is not the missing half of the decider: the best-priced critic available (9.6 MC, correct round profile) decides
+build-vs-pass *worse* than the ranker with the same policy, and worse than the ensemble decider with projections. What the
+decider still lacks is the *ordering* of the specific cards under the price, and the projection machinery that makes its leaf
+a decision state.
+
+Status of the loop after iteration 1: it produced a better-priced critic (which the ranker cannot use, by theory) and the
+deployed best is unchanged at 44.00%. The remaining untested combination is the best-priced critic **with projections** - the
+closest reconstruction of what NETWORK did - which is running at 1 500 games because projections are 30x slower.
