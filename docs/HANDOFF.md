@@ -286,3 +286,50 @@ target = margin, 512x256. The scaling is monotone in *data* and flat in *paramet
    actually does.
 3. **The critic's target**: margin beats outcome; the next candidate is a distance-to-end weighting (a row in the last five
    rounds is closer to the payoff than one in round 2), which is cheap to test with the same pipeline.
+
+## 2026-11-16, night: the critic is a distribution, and the encoder now carries the hand
+
+### Where the player stands
+
+| configuration | vs SMART |
+|---|---|
+| `r25_rev2` (804) + **ensemble of three critics** (`v_rev1`, `v_ens_a`, `v_ens_b`) | **42.89% +/- 1.0** (10 000 games) |
+| same player, any single one of those critics | 38.7% / 39.05% / 39.38% |
+| `r23_price` (786) + the best single critic of the previous encoder | 42.98% +/- 1.0 (10 000) |
+
+The three-point spread inside the *same recipe* is the finding of the night: a single critic is a sample, not a number. The
+search averages an ensemble for free (`-Dares.agent.valueModel=a,b,c`; three forward passes per candidate, ~0.4 ms), so
+every future run carries an ensemble. `docs/RESULTS.md` has the whole ledger with this caveat written at the top.
+
+### What the new representation adds (and what it is worth)
+
+* `HAND_SUMMARY_SIZE = 20` in the observation (cards, per colour, per tag, sum of nominal and *effective* price, cheapest
+  effective price, how many are affordable). A/B on identical rows, the block zeroed before training: **39.4% with it,
+  27.5% without** - it is the most informative block the critic had all day.
+* the printed victory points of a card in the candidate vector (documented since the beginning, never written). It is the
+  LAST slot on purpose: candidate features only ever grow at the end, so a converted model can take a zero weight
+  (`ml/remap_model.py --pad-candidates`). Placing it before `stop` shifted stop's weight and cost 3.8 points - caught by
+  the parity run, now impossible to repeat silently.
+* policy heads retrained on the new encoder (`r26_ce`, CE 6 epochs on 30 000 games) - see the next entry for the number.
+
+### The gate is trustworthy now
+
+`--mode sanity` reported "1 gate failure" in one run of five with no model change: the bench had failed to *sample* a
+position for a scenario ("no position in states [PERFORM_BLUE_ACTION]") and reported that as a gate failure. A missing
+position is an infrastructure problem: it is retried three times and then reported as a warning, never as a gate failure.
+Four consecutive runs: 0 gate failures.
+
+### Tests that now guard the representation (`ObservationCompletenessTest`, 9 tests)
+
+facts (hand included) must move the observation; every decision's menu must be exactly what the rules allow; a card
+candidate must carry its printed points and price (recomputed from the card); every `hand:`/`plan:` column must be zero in
+the public view; the double payment must be one card's payment, not a sum (with a card pair chosen to have different
+payments, which removed a flake); building an observation must not change the game.
+
+### Next
+
+1. two more critics on fresh mixes -> ensemble of five (variance falls as 1/sqrt(k)); same player, same cost.
+2. the nightly (`ml/rev_config.json`) on top of the ensemble, so the policy is trained on data the better critic ranks.
+3. the remaining big lever stays the *card flow*: 12.9 cards per game against SMART's 27. The phase axis (NETWORK calls 1/2
+   in 73% of the rounds, this player in 0%) and the second build slot are still unexplored by the policy's own data; the
+   blunt plans for them measured 0.0 +/- 1.6 and -0.5 +/- 1.7, so the next attempt there has to be a *conditional* plan.

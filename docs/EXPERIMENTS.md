@@ -1461,3 +1461,26 @@ configuration, and it carries the two blocks that the revision found missing.
 
 This also settles the reporting protocol: a critic is a *distribution*, not a point. Every claim about a critic from now on
 is made with an ensemble (or with three seeds), and the nightly carries an ensemble rather than one net.
+
+### CE on exploration data pulls the policy towards the generator's noise (negative)
+
+Policy retrained on the same 804-value data (30 000 games, 6 epochs, warm start from `r25_rev2`), evaluated with the same
+critic ensemble:
+
+| policy | vs SMART (10 000) |
+|---|---|
+| `r25_rev2` (the deployed bundle) | **42.89% +/- 1.0** |
+| `r26_ce` (CE 6 epochs on the exploration data) | 41.40% +/- 1.0 |
+
+So even though the policy heads gain access to the hand summary and to the printed points, imitating a generator that takes
+a random action in 20-50% of its decisions costs 1.5 points. CE is only as good as its labels: on exploration data the
+labels are the exploration. The policy keeps `r25_rev2`; a policy update has to come from a *better* label source (PPO with
+the critic's advantage, or distillation of an admitted plan), not from these rows.
+
+### Disk hygiene is part of the pipeline (learned the hard way, twice)
+
+Every dataset carries the encoder's schema hash, so a dataset produced before an encoder change is unusable - and there
+were six of them, 70-75 GB each, which filled the disk twice and broke a training export at its last step
+(`OSError: No space left on device`, after the epochs had already run). Rule: when the encoder changes, the old datasets are
+deleted in the same session (`Get-ChildItem D:/ares/data`, keep only the dirs whose `*.ares` schema hash matches the current
+encoder), and the disk is checked before a long run.

@@ -85,6 +85,15 @@ public class OnePlySearch {
     private final boolean symmetric;
     /** Never decline a build while a card is available: the ranking decides, not the policy's stop. */
     private final boolean mustBuild;
+    /**
+     * {@code -Dares.agent.search.stopMargin=N}: when the policy wants to stop, build anyway if the best card's value beats
+     * the value of stopping by more than N (same scaled units as the scores, i.e. logit x 1000).
+     * <p>
+     * Why a threshold and not a rule: "always build" measured -4.7 points and "never build" is the policy's own habit
+     * (12.9 cards per game against SMART's 27). A threshold turns the same comparison into a dial whose value is measured,
+     * and the value of a build is judged by the critic, not by a hand-written opinion about cards. 0 = off.
+     */
+    private final float stopMargin;
     /** Two builds deep: score card A together with the best follow-up card B (synergies), not only A alone. */
     private final boolean pairs;
     /** Generations to play out before the leaf value is read (0 = score the immediate afterstate, the original search). */
@@ -149,6 +158,7 @@ public class OnePlySearch {
         boolean configuredShuffle = Boolean.parseBoolean(System.getProperty("ares.agent.search.shuffle", "false"));
         boolean configuredSymmetric = Boolean.parseBoolean(System.getProperty("ares.agent.search.symmetric", "false"));
         boolean configuredMustBuild = Boolean.parseBoolean(System.getProperty("ares.agent.search.mustBuild", "false"));
+        float configuredStopMargin = Float.parseFloat(System.getProperty("ares.agent.search.stopMargin", "0"));
         boolean configuredPairs = Boolean.parseBoolean(System.getProperty("ares.agent.search.pairs", "false"));
         int configuredHorizon = Integer.parseInt(System.getProperty("ares.agent.search.horizon", "0"));
         int configuredSamples = Math.max(1, Integer.parseInt(System.getProperty("ares.agent.search.samples", "1")));
@@ -164,6 +174,7 @@ public class OnePlySearch {
             this.shuffle = false;
             this.symmetric = false;
             this.mustBuild = false;
+            this.stopMargin = 0f;
             this.pairs = false;
             this.horizonTurns = 0;
             this.samples = 1;
@@ -176,6 +187,7 @@ public class OnePlySearch {
         this.shuffle = configuredShuffle;
         this.symmetric = configuredSymmetric;
         this.mustBuild = configuredMustBuild;
+        this.stopMargin = Math.max(0f, configuredStopMargin);
         this.pairs = configuredPairs;
         this.horizonTurns = Math.max(0, configuredHorizon);
         this.samples = configuredSamples;
@@ -409,7 +421,9 @@ public class OnePlySearch {
                 // mustBuild: the diagnosis is that the policy HOARDS (it collects income and then declines ~40% of the
                 // build opportunities), while the opponent that beats it converts every credit into cards. With this flag
                 // the ranking decides even when the policy wants to stop: build the best card if one is available.
-                if (!mustBuild || bestCard < 0) {
+                boolean marginSaysBuild = stopMargin > 0f && bestCard >= 0
+                        && bestCardScore - bestOfStop > stopMargin;
+                if ((!mustBuild && !marginSaysBuild) || bestCard < 0) {
                     return policy;
                 }
             }
