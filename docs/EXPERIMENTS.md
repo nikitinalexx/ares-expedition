@@ -1800,3 +1800,33 @@ a decision state.
 Status of the loop after iteration 1: it produced a better-priced critic (which the ranker cannot use, by theory) and the
 deployed best is unchanged at 44.00%. The remaining untested combination is the best-priced critic **with projections** - the
 closest reconstruction of what NETWORK did - which is running at 1 500 games because projections are 30x slower.
+
+### mustBuild re-measured with the current ensemble: 40.9% (was -4.7 points on the old critic)
+
+| configuration (3 000 games) | vs SMART |
+|---|---|
+| ranker, six critics (deployed) | 44.0% +/- 1.0 (10 000) |
+| the same, forced to build whenever it can | 40.88% +/- 1.8 |
+
+So forcing the builds costs ~3 points instead of the ~5 measured in the morning, but it is still a loss: the policy's stop
+head is not simply "wrong because it hoards" - building with the cards available does not pay either. The card *count* is not
+the missing quantity; the quality of what is built and the timing are.
+
+### The structural reason the model cannot compete with a per-card average
+
+The owner's benchmark is a table of "win rate of games in which the card appeared", measured against a random bot - the
+weakest possible card statistic. That such a table can rival our value ranking says something specific about the
+representation: **the identity of a card enters our model as a fixed 64-bit hash (+1/-1), not as a trainable embedding**. To
+represent "this card is good", the network has to sum 64 fixed random weights into one effect through its hidden layers,
+which is slow and noisy; a per-card mean does it directly, with thousands of observations per class.
+
+With 349 project card classes and 12 000-50 000 games per corpus, a state-conditioned per-card estimate is thin: about two
+thousand builds per class, split over every board state in which the card can appear. The two structural fixes are therefore:
+1. **a learnable card embedding** (one vector per class, trained jointly with the rest) instead of the fixed signature - the
+   model then accumulates per-card knowledge the way the table does, but conditioned on the position;
+2. **more data per corpus**: the 150 000-game generation now running is the first corpus where per-class estimates have a
+   chance.
+
+The measured card-advantage signal says the information is there and stable: 169 of 227 cards keep the sign of their
+advantage in both halves of the games (best +4.1 points, worst -4.8), computed against the critic's own expectation rather
+than a raw win rate.
