@@ -103,6 +103,7 @@ public class SanityBench {
         results.add(activationPaysMoreThanStopping());
         results.add(cheaperOfTwoEqualValueSpends());
         results.add(deimosDownVersusStandardOceans());
+        results.add(doubleProductionIsNeverDeclined());
         Report report = new Report(results.size(),
                 (int) results.stream().filter(ScenarioResult::passed).count(),
                 (int) results.stream().filter(result -> !result.passed()).count(),
@@ -125,6 +126,41 @@ public class SanityBench {
     }
 
     // ------------------------------------------------------------------ scenarios
+
+    /**
+     * The phase-4 double production is free value: the double-produce upgrade is bought, a green card that can pay again is
+     * on the table, and collecting the income once more costs nothing. Answering "stop" there is never weakly better than
+     * taking it, so this is a gate (owner, 2026-11-16: "if it says STOP on that, I have big questions").
+     */
+    private ScenarioResult doubleProductionIsNeverDeclined() {
+        String name = "phase-4 double production";
+        String why = "the double-produce upgrade is bought and a green card can pay again: the second collection is free";
+        return runScenario(name, why, "a double production (not stop)", game -> {
+            Player player = first(game);
+            // hasPhaseUpgrade(u) reads phaseCards.get(u / 3) == u % 3
+            player.getPhaseCards().set(com.terraforming.ares.model.Constants.PHASE_4_UPGRADE_DOUBLE_PRODUCE / 3,
+                    com.terraforming.ares.model.Constants.PHASE_4_UPGRADE_DOUBLE_PRODUCE % 3);
+            player.setChosenPhase(4);
+            int card = greenCardThatPaysAgain();
+            if (card < 0) {
+                return new Outcome(true, "skipped (no green pays-again card in the deck)", "");
+            }
+            player.getPlayed().addCard(card);
+            java.util.Optional<Integer> choice = agent.collectIncome(game, player);
+            return new Outcome(choice.isPresent(), choice.isPresent() ? "double " + choice.get() : "stop (declined)", "");
+        }, StateType.COLLECT_INCOME, StateType.PICK_PHASE);
+    }
+
+    /** A green project card whose class says it can pay again, or -1. */
+    private int greenCardThatPaysAgain() {
+        for (Integer id : cardService.createProjectsDeck(new ArrayList<>(ObservationBuilder.PLAYED_EXPANSIONS)).getCards()) {
+            Card card = cardService.getCard(id);
+            if (card != null && card.getColor() == com.terraforming.ares.model.CardColor.GREEN && card.canPayAgain()) {
+                return id;
+            }
+        }
+        return -1;
+    }
 
     /** AiCentral draws two cards for free: pressing it can never be wrong in a phase that still has an action. */
     private ScenarioResult freeBlueAction() {

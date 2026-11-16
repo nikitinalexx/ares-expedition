@@ -437,6 +437,16 @@ public class AgentDecisionService {
             return Optional.empty();
         }
         Decision decision = collectIncomeDecisions.build(game, player);
+        // A double production with the upgrade bought is a guaranteed gain: take it, never stop (see GuaranteedActions).
+        Optional<Integer> guaranteed = guaranteedActions.doubleIncome(game, player);
+        if (guaranteed.isPresent()) {
+            for (int i = 0; i < decision.candidates().size(); i++) {
+                if (decision.candidates().get(i).id() == guaranteed.get()) {
+                    decisionLogs.record(game, player, decision, i);
+                    return guaranteed;
+                }
+            }
+        }
         int id = decision.candidates().get(choose(game, player, decision)).id();
         if (id == CollectIncomeDecisions.STOP) {
             return Optional.empty();

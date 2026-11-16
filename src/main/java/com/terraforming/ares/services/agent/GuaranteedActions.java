@@ -31,6 +31,65 @@ public class GuaranteedActions {
     private final AiTurnService aiTurnService;
     private final CardService cardService;
 
+    /**
+     * The phase-4 double production is a guaranteed gain: with the double-produce upgrade bought and at least one played
+     * green card that can pay again, collecting income once more costs nothing and pays something. Stopping there is never
+     * weakly better, so the agent does not ask the network (owner, 2026-11-16: "not taking the double payment when you have
+     * the bonus is nonsense - it is the same guaranteed value").
+     * <p>
+     * Among the eligible cards the rule takes the one whose payment is largest, comparing within a fixed order of
+     * dimensions (money, plants, heat, cards, TR, then production). All of them are at least as good as stopping; the order
+     * only decides which bonus to take when several are available.
+     */
+    public Optional<Integer> doubleIncome(MarsGame game, Player player) {
+        Integer phase = player.getChosenPhase();
+        if (phase == null || phase != 4) {
+            return Optional.empty();
+        }
+        if (!player.hasPhaseUpgrade(com.terraforming.ares.model.Constants.PHASE_4_UPGRADE_DOUBLE_PRODUCE)) {
+            return Optional.empty();
+        }
+        int bestCard = -1;
+        long bestScore = 0;
+        for (Integer id : player.getPlayed().getCards()) {
+            Card card = cardService.getCard(id);
+            if (card == null || card.getColor() != com.terraforming.ares.model.CardColor.GREEN
+                    || !card.canPayAgain()) {
+                continue;
+            }
+            long score = paymentScore(game, player, card);
+            if (score > bestScore) {
+                bestScore = score;
+                bestCard = id;
+            }
+        }
+        return bestCard < 0 ? Optional.empty() : Optional.of(bestCard);
+    }
+
+    /**
+     * What this card would pay if collected again, in a comparable unit: money and plants and heat first (they convert to
+     * points directly), cards next, then income. A card that cannot pay in this position scores 0.
+     */
+    private long paymentScore(MarsGame game, Player player, Card card) {
+        try {
+            MarsGame copy = new MarsGame(game);
+            Player probe = copy.getPlayerByUuid(player.getUuid());
+            card.payAgain(copy, cardService, probe);
+            long mc = probe.getMc() - player.getMc();
+            long plants = probe.getPlants() - player.getPlants();
+            long heat = probe.getHeat() - player.getHeat();
+            long cards = probe.getHand().size() - player.getHand().size();
+            long tr = probe.getTerraformingRating() - player.getTerraformingRating();
+            long production = (probe.getMcIncome() - player.getMcIncome())
+                    + (probe.getPlantsIncome() - player.getPlantsIncome())
+                    + (probe.getHeatIncome() - player.getHeatIncome())
+                    + (probe.getCardIncome() - player.getCardIncome());
+            return 1000 * mc + 1000 * plants + 1000 * heat + 300 * cards + 1000 * tr + 200 * production;
+        } catch (RuntimeException e) {
+            return 0;
+        }
+    }
+
     /** The card to press without asking anybody, or empty. */
     public Optional<Integer> freeBlueAction(MarsGame game, Player player) {
         if (!player.getActivatedBlueCards().isEmpty()) {

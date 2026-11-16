@@ -604,6 +604,30 @@ public class ObservationBuilder {
         return observation;
     }
 
+    /** Applies one card's {@code payAgain} to a copy and returns the change per dimension, or null when it cannot pay. */
+    private int[] probePayAgain(MarsGame game, Player player, Card card) {
+        MarsGame host = new MarsGame(game);
+        Player probe = host.getPlayerByUuid(player.getUuid());
+        try {
+            card.payAgain(host, cardService, probe);
+        } catch (RuntimeException e) {
+            return null;
+        }
+        return new int[]{
+                probe.getMc() - player.getMc(),
+                probe.getPlants() - player.getPlants(),
+                probe.getHeat() - player.getHeat(),
+                probe.getHand().size() - player.getHand().size(),
+                probe.getTerraformingRating() - player.getTerraformingRating(),
+                probe.getMcIncome() - player.getMcIncome(),
+                probe.getPlantsIncome() - player.getPlantsIncome(),
+                probe.getHeatIncome() - player.getHeatIncome(),
+                probe.getCardIncome() - player.getCardIncome(),
+                probe.getSteelIncome() - player.getSteelIncome(),
+                probe.getTitaniumIncome() - player.getTitaniumIncome()
+        };
+    }
+
     /**
      * The best single double payment this player can get in phase 4, per dimension: for every played card that can pay
      * again, the card's {@code payAgain} is applied to a copy of the position and the change of every counter is
@@ -639,26 +663,13 @@ public class ObservationBuilder {
             if (card == null || !card.canPayAgain()) {
                 continue;
             }
-            MarsGame host = new MarsGame(game);
-            Player probe = new Player(player);
-            try {
-                card.payAgain(host, cardService, probe);
-            } catch (RuntimeException e) {
+            // One fresh copy per card (a class-level cache was tried and reverted: probing two positions cannot prove
+            // that payAgain ignores the table, and the test that compares the feature with "the best single card, never
+            // the sum" caught exactly that - a cached delta turned out to be the sum of two cards' payments).
+            int[] delta = probePayAgain(game, player, card);
+            if (delta == null) {
                 continue; // a card that cannot pay in this state simply contributes nothing
             }
-            int[] delta = {
-                    probe.getMc() - player.getMc(),
-                    probe.getPlants() - player.getPlants(),
-                    probe.getHeat() - player.getHeat(),
-                    probe.getHand().size() - player.getHand().size(),
-                    probe.getTerraformingRating() - player.getTerraformingRating(),
-                    probe.getMcIncome() - player.getMcIncome(),
-                    probe.getPlantsIncome() - player.getPlantsIncome(),
-                    probe.getHeatIncome() - player.getHeatIncome(),
-                    probe.getCardIncome() - player.getCardIncome(),
-                    probe.getSteelIncome() - player.getSteelIncome(),
-                    probe.getTitaniumIncome() - player.getTitaniumIncome()
-            };
             for (int i = 0; i < best.length; i++) {
                 if (delta[i] > best[i]) {
                     best[i] = delta[i];
