@@ -1622,3 +1622,29 @@ Two consequences, both being measured now:
 1. the random-data critic is used as the **decider** on a build, with projections (`fullTypes=BUILD_CARD`,
    `-Dares.agent.search.projectBuilds=true`), 3 000 games - the configuration NETWORK ran;
 2. then his loop: play with that player, record, retrain the critic, one or two iterations (random data first, never SMART).
+
+### The price law: how much a critic pays for an income stream is set by how much its data spends
+
+Four critics, the same representation and recipe, different games (`--mode audit`, 600 positions; the price is
+`meanDelta(income +1) / meanDelta(mc +10) x 10 MC`):
+
+| training games | price of +1 income | by round (0-4 / 5-8 / 9-12) | cards the data's player builds | ranking (3 000-10 000 games) |
+|---|---|---|---|---|
+| our policy's play (hoards) | 6.5 MC | 7.3 / 6.6 / 5.7 (flat) | 12.9 | **39-44%** |
+| our policy + forced builds (`buildAlways`) | 9.0 MC | 9.4 / 9.0 / 8.5 | high | not measured |
+| the same, with afterstate rows | 8.1 MC | 8.8 / 8.2 / 7.3 | high | not measured |
+| uniform random play | **12.1 MC** | **14.0 / 12.1 / 10.4** | ~everything | 22.8% |
+| (the rules) | ~15 MC | falls with the round | - | - |
+
+Two ordered series, moving in opposite directions: the more the data *spends*, the closer the price gets to the rules, and
+the *worse* the ranking becomes, because random games are noisy about everything except the big effects. That is exactly the
+trade the owner's recipe resolves: a value trained on random data has the right price, its play then converts money (so the
+next dataset has both spending and better play), and one or two self-play iterations sharpen the ranking while keeping the
+price. The loop is now run with our tools:
+
+1. iteration 0: the random-data critic plays (decider + projections), 20 000 games recorded (`randplay1`);
+2. iteration 1: a critic trained on those games - the measurement that decides the loop is whether the price stays >= 10 MC
+   *and* the ranking clears 39%.
+
+If the price collapses back to 6-7 MC after iteration 1, the loop does not hold the right slope and the conclusion is that
+the value has to be *told* the arithmetic (engine features), not taught it by data.
