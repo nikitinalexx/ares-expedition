@@ -1717,3 +1717,22 @@ common case). It did not move the throughput on its own (14.9 vs 15.5 games/s), 
 
 **Practical lever for speed:** the ensemble size. Six critics cost six forward passes; three gave 42.89% on the previous
 encoder against 43.6 for five, so the curve is flat near the top and a smaller ensemble is a legitimate speed knob.
+
+### Correction: the double-payment block is alive (my audit metric was wrong)
+
+I reported the block as dead ("0.00000% over 200 000 rows") and used that to justify a fast path. Checked directly on
+48 000 recorded rows of `BUILD_CARD` decisions:
+
+| fact | value |
+|---|---|
+| cards whose `canPayAgain()` is true | **130**, and every implementation is the constant `return true;` |
+| rows where the block is non-zero | **91.8%** (44 044 / 48 000), maximum value 3.4 |
+
+The "0.00000%" came from the audit's activation threshold: the values are divided by 10, so a 2 MC payment becomes 0.2, and the
+audit counted anything below 0.5 as "not firing". A measurement artefact, not a dead feature - and it is recorded here
+because the same artefact can hide any small-valued block.
+
+Consequence: the block is expensive in the common case (2-5 game copies per observation, and the observation is built once
+per candidate), and the owner's design is the right fix: a per-class table of gains (all 130 declare the property
+statically), with the game-copy path kept only for cards whose `payAgain` reads the state - those can be detected
+automatically by evaluating on two different positions and keeping the copy path when the results differ.
