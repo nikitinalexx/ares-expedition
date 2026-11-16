@@ -427,3 +427,57 @@ regenerated). Rule: batch encoder changes, then run one cycle.
 `docs/SYSTEMATIC.md`, section E: (1) TD - measured, not adopted; (2) the owner's loop (random -> 1-2 self-play iterations)
 with a critic that keeps the price >= 10 MC while the ranking clears 39%; (3) the leaf representation and one recursion
 level in the projection; (4) the legacy-block A/B.
+
+## 2026-11-16, evening: state after the long session
+
+### The best player
+
+`r28_hand` (encoder **1090**) + **six critics**: `v_rev1_hand`, `v_ens_a_hand`, `v_ens_b_hand`, `v_ens_c_hand`,
+`v_ens_d_hand`, `v_h_full`. Ranking the candidates of `BUILD_CARD`/`DRAFT_CARDS`, pairs on, symmetric score.
+`D:/ares/runs/best.json` has the exact flags; `ml/rev_config.json` is the same for the nightly.
+
+| | measured |
+|---|---|
+| vs SMART | **44.00% +/- 1.0** (10 000 games) |
+| vs SMART, the same five critics without the block-trained member | 43.21% +/- 1.0 |
+| profile | 13.5 cards per game, acceptance 0.61, phases 49/51, phase-3 spends 38% |
+| sanity bench | **10/10**, 0 gate failures |
+
+### The encoder (1090 values) and the tests
+
+New since the previous handoff: tag counts on the table per side (22), hand identity bits for every playable card (268,
+generated from `--mode cards` by `ml/gen_playable_cards.py`), the printed points of a card in the candidate vector, and the
+*effective price* of the best card in hand. Removed as dead or redundant: the Luna Project Office and Project Inspection
+counters (EXPERIMENTAL, 0.00000% of 200 000 rows) and the activatable-card counts (a linear function of the identity bits).
+
+`ObservationCompletenessTest` (9 tests) now covers: the hand facts, every decision's menu, the printed points and price of a
+candidate (recomputed from the card), every private column zero in the public view (this one caught a real hand leak), and
+the double payment as one card's payment. `SanityBench` has a new gate: **the phase-4 double production is never declined**
+(`GuaranteedActions.doubleIncome`, wired before the policy).
+
+### What was measured and closed today
+
+* **The price law**: the price a critic puts on +1 income is set by how much its data spends - 6.5 MC (our play, flat),
+  9.0 (forced builds), **12.1 (uniform random, correct round profile)**, and rules say ~15. A critic trained on random data
+  prices it right and ranks badly (22.8%); the mixture (ranker + decider + exploration) gives 9.6 MC and still ranks only
+  37.9%.
+* **The two roles**: a ranker needs the *ordering* (a shared slope cancels, the stop decision is the policy's), a decider
+  needs the *price*. Every failed decider experiment now has a reason: 36.0% (policy critic), 37.3% (ensemble +
+  projections), 33.3% (best-priced critic, no projections).
+* **The better price does not help the ranker**: adding the best-priced critic to the ensemble took 44.00% to 42.86%.
+* **TD on the remaining margin**: first version invalid (seats mixed, non-adjacent steps), fixed version prices income at
+  7.7 MC - better than the policy critic, worse than random. Not adopted.
+* **Batching**: implemented, measured *slower* (3.3 vs 5.2 games/s at 4 threads) and it exposed a scale bug (Vx1000 vs raw)
+  that made pairs outrank batch scores; the path stays behind a flag. Throughput of the normal path: **14.9 games/s** at 12
+  threads (100 000 games in ~1.9 h); the projection configuration is ~30x slower by construction.
+* **A wrong claim corrected**: the double-payment block is alive (91.8% of rows); my "0.00000%" was an audit threshold
+  artefact (values are divided by 10). A class-level cache for it was tried and reverted - the probe could not prove that
+  `payAgain` ignores the table, and the test that compares the feature with the best single card caught a cached sum.
+
+### Next, in order
+
+1. the running test: the best-priced critic **with projections** (the closest reconstruction of NETWORK's mechanism),
+   1 500 games;
+2. if the decider still loses to the ranker: the ranker is the deployment, and the next lever is more data for its ensemble
+   members (the hand bits are rare events and need volume), plus the loop at 100 000 games per iteration rather than 4-12k;
+3. keep every new block behind the A/B protocol (`--drop-prefix`) and every new rule behind a sanity gate.
