@@ -378,7 +378,8 @@ def cap_per_game(games, k, rng):
     return np.sort(order[(np.arange(len(g)) - group_start) < k])
 
 
-def load_pool(data_dirs, rows_per_game, rng, val_fraction, keep_round=False, drop_columns=None):
+def load_pool(data_dirs, rows_per_game, rng, val_fraction, keep_round=False, drop_columns=None,
+              include_afterstates=False):
     """Reads every decision type, de-duplicates states, caps the rows of a game, splits by game.
 
     The value model sees only the observation, so the candidate layout (and with it the per-type schema hash) is
@@ -393,10 +394,23 @@ def load_pool(data_dirs, rows_per_game, rng, val_fraction, keep_round=False, dro
         for path in files:
             schema, rows = read_decisions(path)
             layout = schema["observationLayout"].split("; candidate=")[0]
+            afterstate = decision == "AFTERSTATE"
+            if afterstate and not include_afterstates:
+                continue
+            # AFTERSTATE rows are produced by the same encoder; only their layout TEXT is a placeholder ("one candidate,
+            # no features"). They are the one exception to "one layout per pool": the identity of the pool is taken from
+            # the decision chunks, and an afterstate chunk only has to agree on the width.
             if obs_size is None:
-                obs_size, observation_layout = schema["obsSize"], layout
-            elif schema["obsSize"] != obs_size or layout != observation_layout:
-                raise SystemExit(f"{path}: the observation layout differs from the first chunk; mixed data is not supported")
+                obs_size = schema["obsSize"]
+                if not afterstate:
+                    observation_layout = layout
+            elif schema["obsSize"] != obs_size:
+                raise SystemExit(f"{path}: the observation width differs from the first chunk; mixed data is not supported")
+            elif not afterstate:
+                if observation_layout is None:
+                    observation_layout = layout
+                elif layout != observation_layout:
+                    raise SystemExit(f"{path}: the observation layout differs from the first chunk; mixed data is not supported")
             if not len(rows):
                 continue
             keys = rows["game"].astype(np.uint64) * np.uint64(1 << 16) + rows["step"].astype(np.uint64)
@@ -467,6 +481,10 @@ def main():
     parser.add_argument("--val-fraction", type=float, default=0.1)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--device", default="auto")
+    parser.add_argument("--include-afterstates", action="store_true",
+                        help="also train on AFTERSTATE rows: they carry the same encoder observation but a placeholder "
+                             "layout string (they are the states the one-ply search actually reads, so they are what the "
+                             "critic is deployed on)")
     parser.add_argument("--names", default="", help="feature names of the current encoder (--mode names)")
     parser.add_argument("--drop-prefix", default="",
                         help="zero every observation column whose name starts with this prefix: an A/B of one block "
@@ -543,7 +561,8 @@ def main():
         print(json.dumps({k: v for k, v in metrics.items() if k != "history"}, indent=1), flush=True)
         return 0
     drop = dropped_columns(args.names, args.drop_prefix) if (args.names and args.drop_prefix) else []
-    pool = load_pool(args.data, args.rows_per_game, rng, args.val_fraction, keep_round=True, drop_columns=drop)
+    pool = load_pool(args.data, args.rows_per_game, rng, args.val_fraction, keep_round=True, drop_columns=drop,
+                     include_afterstates=args.include_afterstates)
     split = pool["validation"]
     train, val = pool["obs"][~split], pool["obs"][split]
     y_val = pool["outcome"][split]

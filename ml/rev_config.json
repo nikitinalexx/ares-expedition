@@ -34,7 +34,7 @@
       "-Dares.agent.search.symmetric=true",
       "-Dares.agent.search.pairs=true",
       "-Dares.agent.search.types=BUILD_CARD,DRAFT_CARDS",
-      "-Dares.agent.valueModel=D:/ares/runs/value/v_rev1_margin_wide,D:/ares/runs/value/v_ens_a,D:/ares/runs/value/v_ens_b"
+      "-Dares.agent.valueModel=D:/ares/runs/value/v_rev1_margin_wide,D:/ares/runs/value/v_ens_a,D:/ares/runs/value/v_ens_b,D:/ares/runs/value/v_ens_c,D:/ares/runs/value/v_ens_d"
     ]
   },
   "eval": {
@@ -52,7 +52,7 @@
       "-Dares.agent.search.symmetric=true",
       "-Dares.agent.search.pairs=true",
       "-Dares.agent.search.types=BUILD_CARD,DRAFT_CARDS",
-      "-Dares.agent.valueModel=D:/ares/runs/value/v_rev1_margin_wide,D:/ares/runs/value/v_ens_a,D:/ares/runs/value/v_ens_b"
+      "-Dares.agent.valueModel=D:/ares/runs/value/v_rev1_margin_wide,D:/ares/runs/value/v_ens_a,D:/ares/runs/value/v_ens_b,D:/ares/runs/value/v_ens_c,D:/ares/runs/value/v_ens_d"
     ]
   },
   "benchmark": {
@@ -72,7 +72,7 @@
       "-Dares.agent.search.symmetric=true",
       "-Dares.agent.search.pairs=true",
       "-Dares.agent.search.types=BUILD_CARD,DRAFT_CARDS",
-      "-Dares.agent.valueModel=D:/ares/runs/value/v_rev1_margin_wide,D:/ares/runs/value/v_ens_a,D:/ares/runs/value/v_ens_b"
+      "-Dares.agent.valueModel=D:/ares/runs/value/v_rev1_margin_wide,D:/ares/runs/value/v_ens_a,D:/ares/runs/value/v_ens_b,D:/ares/runs/value/v_ens_c,D:/ares/runs/value/v_ens_d"
     ]
   },
   "rungs": [
@@ -87,7 +87,7 @@
   "experiments": [
     {
       "name": "ensemble",
-      "hypothesis": "The critic is the lever (ranking cards by a margin-trained critic beats the policy alone by ~5 points) and its training variance is ~3.5 points win rate, larger than most of the steps we were chasing. The search averages an ensemble, so the night carries THREE critics trained on disjoint exploration mixes (build-heavy, phase/action-heavy, balanced) and the policy is trained on top of that average. The hand summary block (worth ~12 points inside the critic, measured by zeroing it on identical rows) is in the 804-value encoder; the feedback that the win rate alone hid a blind critic is why every run now also reports the profile and the sanity bench.",
+      "hypothesis": "The critic is the lever: 37.8% (the pipeline at the start of the session, critic trained on policy play) -> 43.59% +/- 1.0 with an ensemble of FIVE critics trained on five different exploration mixes. The steps that produced it: the critic sees the hand (20-value summary, worth ~12 points inside the critic by direct A/B), the candidate vector carries the card printed points, and the ensemble removes the ~3.5-point training variance of a single critic. Rejected on the way, with numbers in docs/RESULTS.md: V deciding act-vs-stop (0.4-0.6%), the horizon fix (19.5%), latent plans (30.8/34.95%), the build/stop dial (41.4-43.2 vs 43.6), the phase and metal plans (0.0/-0.5/-0.6 +/- 1.4-1.7), CE on exploration data (41.4 vs 42.9).",
       "games_per_iteration": 20000,
       "matchups": "AGENT:AGENT:0.85,AGENT:RANDOM:0.15",
       "max_rows_per_game_type": 8,

@@ -1484,3 +1484,47 @@ were six of them, 70-75 GB each, which filled the disk twice and broke a trainin
 (`OSError: No space left on device`, after the epochs had already run). Rule: when the encoder changes, the old datasets are
 deleted in the same session (`Get-ChildItem D:/ares/data`, keep only the dirs whose `*.ares` schema hash matches the current
 encoder), and the disk is checked before a long run.
+
+### The ensemble of five: 43.59% +/- 1.0 (10 000 games)
+
+Five critics, five different exploration mixes (balanced 100k, build-heavy 50k, phase/action-heavy 50k, draft-heavy 50k,
+standard/blue-heavy 50k), same recipe (margin, 512x256, 4 epochs), averaged by the search:
+
+| ensemble | vs SMART (10 000) |
+|---|---|
+| one critic (`v_rev1`) | 39.38% +/- 1.0 |
+| three critics | 42.89% +/- 1.0 |
+| **five critics** | **43.59% +/- 1.0** |
+
+That is 37.8% (the pipeline at the start of the session) -> 43.6%, i.e. +5.8 points, and every step of it came from the
+critic: its data, its information (the hand summary), and finally its variance. The deployment cost is five forward passes
+per candidate instead of one (~0.7 ms at 130 us/call), which is nothing next to a game of 30 rounds.
+
+Gate: sanity 9/9 obvious moves, 0 gate failures.
+
+### The next hypothesis: a critic trained where the search actually reads
+
+The search ranks cards by V of the position *after* the card is applied - an afterstate, which is not a state a decision is
+made in. Every critic above is trained on decision rows. The engine can record afterstate rows
+(`-Dares.agent.afterstates=true`, capped at 64 per game), and the trainer picks them up as just another decision type, so an
+ensemble member trained on data that *contains* afterstates is a one-line experiment. Earlier (2026-11-15) training the
+sole critic that way cost 4.3 points - but as one member of an ensemble that reads the same states the search reads, it is a
+different question.
+
+### The build/stop dial (stopMargin): no gain, rejected
+
+-Dares.agent.search.stopMargin=N builds a card the policy wanted to decline when V(best card) - V(stop) exceeds N (same
+scaled units, logit x 1000). Four thresholds, 2 000 games each, against the baseline 43.6% (10 000):
+
+| stopMargin | vs SMART (2 000) |
+|---|---|
+| off (policy decides) | 43.6% (10 000 reference) |
+| 100 | 41.6% |
+| 250 | 43.2% |
+| 500 | 41.4% |
+| 1000 | 42.65% |
+
+No monotonicity and no point above the baseline: the critic's advantage of a card over stopping does not identify the builds
+the player is missing. Together with the earlier mustBuild (-4.7) and the phase/metal plans (0.0/-0.5/-0.6), the honest
+conclusion is that the card *count* is not the lever this player is missing - the quality signal for a card is, and the
+critic does not have it (see the Q-model note: the label is the state value, not the card's counterfactual).
