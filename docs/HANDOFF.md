@@ -564,11 +564,25 @@ is gone: card candidates are `one-hot(268) + stop`, corporation candidates `one-
 
 ### The next three actions, in order
 
-1. audit and rank `v_scale_packed` (same audit as `v_scale_full`; it is the 150k-game critic now produced in 80 s) and
-   decide whether it joins the ensemble;
-2. bootstrap a policy on the new candidate vectors (a small corpus with **no `--models`**, packed with `--candidates`,
-   then `train_policy_ce.py --packed`), and evaluate the six-critic ensemble at 10 000 games;
+1. audit `v_scale_packed` (the audit half of `ml/verify_critic.ps1`: it needs no policy); ranking/decider/profile must wait
+   for the policy bootstrap, because the old `r25_rev2`/`r28_hand` heads cannot load the new candidate widths;
+2. bootstrap a policy on the new candidate vectors, then rank the critics again;
 3. run `ml/nightly.py check` once so the new pack stage (`ensure_pack`) is exercised end to end before a real night.
+
+### Bootstrap recipe (candidate widths changed, no policy can be loaded)
+
+```powershell
+# 1. a small corpus with NO --models: the agent falls back to uniform random, and the rows carry the new vectors
+$cp = (Get-Content target\cp.txt -Raw).Trim()
+& $java -Xmx10g -cp "target/classes;$cp" com.terraforming.ares.selfplay.SelfPlayMain --mode play `
+    --out D:/ares/data/boot1 --games 20000 --threads 14 --games-per-chunk 3000 `
+    --matchups "AGENT:AGENT:0.85,AGENT:RANDOM:0.15" --max-rows-per-game-type 8
+# 2. one sequential pass, candidates without padding
+py -3 ml/pack_dataset.py --data D:/ares/data/boot1 --out C:/ares/pack/boot1 --candidates
+py -3 ml/pack_check.py --pack C:/ares/pack/boot1 --data D:/ares/data/boot1 --limit-chunks 2
+# 3. CE from scratch, then self-play with the new policy and repeat
+py -3 ml/train_policy_ce.py --packed C:/ares/pack/boot1 --out D:/ares/runs/policy/boot1 --epochs 3
+```
 
 Note on `--mode sanity`: it runs **without a policy model** right now (the old bundle no longer loads after the candidate
 change), so gates that require one specific candidate are coin flips. The last run was 8/10 with one gate failure

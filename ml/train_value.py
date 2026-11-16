@@ -500,7 +500,8 @@ def load_pool(data_dirs, rows_per_game, rng, val_fraction, keep_round=False, dro
             "observationLayout": observation_layout}
 
 
-def load_packed(directory, rows_per_game, rng, val_fraction, drop_columns=None, score_columns=None):
+def load_packed(directory, rows_per_game, rng, val_fraction, drop_columns=None, score_columns=None,
+                include_afterstates=False):
     """The same pool as load_pool, read from a pack (ml/pack_dataset.py) instead of the raw chunks.
 
     Two costs dominated every earlier run and both are gone here: the raw files are 78% candidate blocks, which a value
@@ -509,7 +510,8 @@ def load_packed(directory, rows_per_game, rng, val_fraction, drop_columns=None, 
     so a training run reads ~5 GB per epoch instead of ~120 GB per epoch.
     """
     manifest = json.load(open(os.path.join(directory, "manifest.json"), encoding="utf-8"))
-    types = [name for name in manifest["types"] if manifest["types"][name]["rows"] > 0]
+    types = [name for name in manifest["types"] if manifest["types"][name]["rows"] > 0
+             and (include_afterstates or name != "AFTERSTATE")]
     if not types:
         raise SystemExit(f"{directory}: the pack is empty")
     arrays, sizes = [], []
@@ -706,7 +708,8 @@ def main():
             score_columns = (names.index("score:my_winning_points"), names.index("score:opponent_winning_points"))
     if args.packed:
         pool = load_packed(args.packed, args.rows_per_game, rng, args.val_fraction,
-                           drop_columns=drop, score_columns=score_columns)
+                           drop_columns=drop, score_columns=score_columns,
+                           include_afterstates=args.include_afterstates)
         print(f"  packed pool: {len(pool['obs'])} rows of {pool['totalRows']} packed, "
               f"{pool['obsSize']} observation features", flush=True)
         megabytes = len(pool["obs"]) * pool["obsSize"] * 2 / 2 ** 20
