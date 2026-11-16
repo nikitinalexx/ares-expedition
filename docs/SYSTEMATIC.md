@@ -120,3 +120,29 @@ replace them with engine aggregates. This is a class change, and the last big le
 * no named plan outside the paired audit;
 * no more "add a feature and hope": every block is A/B-able and must earn its place;
 * no direction change per message: this document is the queue, and each step is decided by the criterion written above.
+
+## G. The two roles of a critic need different things (this explains four earlier results)
+
+**Ranker** ("which card of this menu"): only the *order* of cards matters. Any shift or slope shared by the candidates
+cancels in the difference. Measured confirmation: adding the correctly priced random critic to the five-critic ensemble moved
+the price of income from ~6.5 to 8.2 MC and the win rate from 43.59% to 42.98% +/- 1.4 - i.e. nothing, exactly as theory
+says it should, because the stop decision is not the critic's in that role.
+
+**Decider** ("build or pass"): needs *calibrated slopes* - the price of money against the price of what the card gives. This
+is where every failed experiment lived, with a consistent reason:
+
+| experiment | result | why, given the price law |
+|---|---|---|
+| `mustBuild` (always build) | -4.7 points | the policy-critic's price said building is bad; forcing it ignored *when* |
+| the stopMargin dial | 41.4-43.2 vs 43.6 | the gap it thresholds is computed with the wrong price |
+| decider with the random-data critic | 18.9% | right price, but its card *ordering* is poor (22.8% as a ranker) |
+| decider with projections, policy critic | 37.3% | good ordering, wrong price |
+
+So a decider needs **both**: a correct price *and* a good ordering. Neither of our critics has both - which is precisely what
+the owner's loop is meant to produce (a correctly priced value whose play is then good enough to teach the ordering).
+
+**The policy's stop head** is the third consumer: it imitates the behaviour in the data, and in our data that behaviour
+hoards. CE cannot fix it (it reproduces the labels); only data from a player that spends correctly can.
+
+This is the roadmap in one line: *the ranker is close to its ceiling (~44%); the decider and the policy's stop head need the
+loop, and the loop needs a value with a correct price - which the random-data critic already has.*
