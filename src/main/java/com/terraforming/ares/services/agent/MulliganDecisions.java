@@ -32,8 +32,7 @@ public class MulliganDecisions {
     public static final int MAX_CANDIDATES = Constants.DEFAULT_START_HAND_SIZE + 1;
     public static final int CANDIDATE_FEATURES = CardFeatures.LENGTH;
     public static final String OBSERVATION_LAYOUT = ObservationBuilder.LAYOUT
-            + "; candidate=[classSignature(" + SIGNATURE + "), color(" + COLORS + "), tags(" + TAGS
-            + "), price/50, active, stop, points/10]; stopId=" + STOP;
+            + "; candidate=[identityOneHot(" + CardFeatures.IDENTITY + "), stop]; every card property (colour, tags, price, points) is a fixed function of the identity bit";
 
     private final ObservationBuilder observationBuilder;
     private final CardService cardService;

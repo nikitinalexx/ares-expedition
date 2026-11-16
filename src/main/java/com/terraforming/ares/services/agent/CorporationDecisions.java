@@ -36,7 +36,8 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class CorporationDecisions {
-    public static final int SIGNATURE = CardSignature.BITS;
+    /** One-hot over the corporations of the played expansions - same reason as the cards: no hashes (owner, 2026-11-16). */
+    public static final int SIGNATURE = PlayableCards.CORPORATIONS.size();
     public static final int PHASE_UPGRADES = 10;
     public static final int TAGS = 10;
     public static final int MILESTONE_SLOTS = 8;
@@ -44,7 +45,7 @@ public class CorporationDecisions {
     public static final int CANDIDATE_FEATURES = SIGNATURE + PHASE_UPGRADES + TAGS + MILESTONE_SLOTS + MILESTONE_TYPES;
     public static final int MAX_CANDIDATES = 96;
     public static final String OBSERVATION_LAYOUT = ObservationBuilder.LAYOUT
-            + "; candidate=[classSignature(" + SIGNATURE + "), phaseUpgrade(" + PHASE_UPGRADES + "), tag(" + TAGS
+            + "; candidate=[corporationOneHot(" + SIGNATURE + "), phaseUpgrade(" + PHASE_UPGRADES + "), tag(" + TAGS
             + "), milestoneSlot(" + MILESTONE_SLOTS + "), milestoneType(" + MILESTONE_TYPES + ")]";
 
     private static final List<Tag> REAL_TAGS = List.of(Tag.SPACE, Tag.EARTH, Tag.EVENT, Tag.SCIENCE, Tag.PLANT,
@@ -179,7 +180,10 @@ public class CorporationDecisions {
 
     static float[] features(Card card, Map<Integer, List<Integer>> input, MarsGame game) {
         float[] features = new float[CANDIDATE_FEATURES];
-        System.arraycopy(CardSignature.of(card.getClass()), 0, features, 0, SIGNATURE);
+        int index = PlayableCards.CORPORATIONS.indexOf(card.getClass());
+        if (index >= 0) {
+            features[index] = 1f;
+        }
         int pos = SIGNATURE;
         List<Integer> upgrade = input.get(InputFlag.PHASE_UPGRADE_CARD.getId());
         if (upgrade != null) {

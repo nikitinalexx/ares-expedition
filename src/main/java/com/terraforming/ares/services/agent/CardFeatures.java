@@ -5,23 +5,30 @@ import com.terraforming.ares.model.CardColor;
 import com.terraforming.ares.model.Tag;
 
 /**
- * Shared description of a card as a candidate: class signature, colour, tags, project price, blue action, stop flag.
+ * Shared description of a card as a candidate: one-hot identity plus the stop flag.
  * Mulligan and the card-set decisions use the same prefix so a card looks the same wherever it is offered.
  */
 public final class CardFeatures {
     public static final int STOP_ID = 0xFFFF;
-    public static final int SIGNATURE = CardSignature.BITS;
+    /**
+     * Identity is a ONE-HOT over the playable cards, one bit per card class - not a hash. A hash of the class name (+1/-1
+     * per bit) can only be learned by summing 64 arbitrary weights into one effect, which is slow and noisy at our data
+     * volume; one bit per card lets the first layer read "this card" directly, exactly as the observation already does for
+     * the table and the hand (owner, 2026-11-16: "no hashes anywhere, one bit per card is many times easier to learn").
+     */
+    public static final int IDENTITY = PlayableCards.ALL.size();
+    /** Kept as an alias so the older code that speaks of a "signature" still compiles; it is the one-hot width now. */
+    public static final int SIGNATURE = IDENTITY;
+    private static final java.util.Map<Class<?>, Integer> CARD_INDEX = index();
     public static final int COLORS = 4;
     public static final int TAGS = 11;
     /**
-     * signature, colour, tags, price/50, active, stop, printed points/10.
-     * <p>
-     * The points slot was DOCUMENTED in every decision's layout string from the start and never written: the card menus
-     * described a card by its identity, colour, tags, price and "is a blue action", but not by what it scores. "Which card
-     * to keep in the draft" and "which card to build" were blind to the only property that pays directly (found in the
-     * per-decision revision, 2026-11-15).
+     * Identity (one-hot over the playable cards) and the stop flag. Colour, tags, price, "is a blue action" and the
+     * printed points are NOT written: with one bit per card they are a fixed function of the identity, so the first layer
+     * learns them from that bit directly (owner, 2026-11-16) - writing them as well was extra parameters and extra noise
+     * on every candidate.
      */
-    public static final int LENGTH = SIGNATURE + COLORS + TAGS + 2 + 1 + 1;
+    public static final int LENGTH = IDENTITY + 1;
 
     static {
         if (CardColor.values().length != COLORS) {
@@ -35,41 +42,29 @@ public final class CardFeatures {
     private CardFeatures() {
     }
 
+    private static java.util.Map<Class<?>, Integer> index() {
+        java.util.Map<Class<?>, Integer> map = new java.util.HashMap<>();
+        for (int i = 0; i < PlayableCards.ALL.size(); i++) {
+            map.put(PlayableCards.ALL.get(i), i);
+        }
+        return map;
+    }
+
     /**
      * @param stop the "take none of these" candidate; {@code card} is null in that case and every slot except the
      *             stop flag is zero
      */
     public static float[] of(Card card, boolean stop) {
         float[] features = new float[LENGTH];
-        int pos = 0;
-        if (!stop) {
-            float[] signature = CardSignature.of(card.getClass());
-            System.arraycopy(signature, 0, features, pos, SIGNATURE);
+        if (stop) {
+            features[IDENTITY] = 1f;
+            return features;
         }
-        pos += SIGNATURE;
-        if (!stop) {
-            features[pos + card.getColor().ordinal()] = 1f;
-        }
-        pos += COLORS;
-        if (!stop) {
-            for (Tag tag : card.getTags()) {
-                features[pos + tag.ordinal()] = 1f;
-            }
-        }
-        pos += TAGS;
-        if (!stop) {
-            features[pos] = card.getPrice() / 50f;
-            features[pos + 1] = card.isActiveCard() ? 1f : 0f;
-        }
-        pos += 2;
-        features[pos] = stop ? 1f : 0f;
-        pos += 1;
-        // LAST, deliberately: candidate features are only ever APPENDED, so a converted model can be given a zero weight
-        // for the new slot (ml/remap_model.py --pad-candidates). Inserting it before `stop` shifted stop's weight into the
-        // points slot and cost 3.8 points of win rate in the parity check - measured, 2026-11-15.
-        if (!stop) {
-            features[pos] = card.getWinningPoints() / 10f;
+        Integer index = CARD_INDEX.get(card.getClass());
+        if (index != null) {
+            features[index] = 1f;
         }
         return features;
     }
+
 }

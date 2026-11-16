@@ -25,9 +25,7 @@ public class CollectIncomeDecisions {
     public static final int MAX_CANDIDATES = 80;
     public static final int CANDIDATE_FEATURES = CardFeatures.LENGTH;
     public static final String OBSERVATION_LAYOUT = ObservationBuilder.LAYOUT
-            + "; candidate=[classSignature(" + CardFeatures.SIGNATURE + "), color(" + CardFeatures.COLORS
-            + "), tags(" + CardFeatures.TAGS + "), price/50, active, stop, points/10]; stopId=" + STOP
-            + "; phase-4 double-produce pick among green canPayAgain cards";
+            + "; candidate=[identityOneHot(" + CardFeatures.IDENTITY + "), stop]; every card property (colour, tags, price, points) is a fixed function of the identity bit";
 
     private final ObservationBuilder observationBuilder;
     private final CardService cardService;

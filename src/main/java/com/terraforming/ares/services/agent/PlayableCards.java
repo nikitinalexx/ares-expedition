@@ -3,6 +3,8 @@ package com.terraforming.ares.services.agent;
 import com.terraforming.ares.cards.blue.*;
 import com.terraforming.ares.cards.green.*;
 import com.terraforming.ares.cards.red.*;
+import com.terraforming.ares.cards.corporations.*;
+import com.terraforming.ares.cards.buffedCorporations.*;
 
 import com.terraforming.ares.model.Card;
 
@@ -289,5 +291,56 @@ public final class PlayableCards {
             VolcanicSoil.class,
             Warehouses.class,
             Zoos.class
+    );
+
+    /**
+     * The playable BLUE cards, whose identity matters on the table too: a blue card keeps its action or passive
+     * effect after it is built, so nothing else in the observation says which one it is (a green or red card is
+     * fully described by the incomes, tags and points it changed). Owner's rule, 2026-11-16.
+     */
+    public static final List<Class<? extends Card>> BLUE = ALL.stream()
+            .filter(card -> card.getPackageName().equals("com.terraforming.ares.cards.blue"))
+            .toList();
+
+    /**
+     * The corporations of the played expansions: the corporation menu needs their identity one-hot for the same
+     * reason as the cards - a hash is the wrong tool (owner, 2026-11-16).
+     */
+    public static final List<Class<? extends Card>> CORPORATIONS = List.of(
+            ApolloIndustriesCorporation.class,
+            ArclightCorporation.class,
+            AustellarCorporation.class,
+            BuffedArclightCorporation.class,
+            BuffedEcolineCorporation.class,
+            BuffedHelionCorporation.class,
+            BuffedInventrix.class,
+            BuffedMiningGuildCorporation.class,
+            BuffedPhobologCorporation.class,
+            BuffedSaturnSystemsCorporation.class,
+            BuffedUnmiCorporation.class,
+            CelestiorCorporation.class,
+            CredicorCorporation.class,
+            DevTechs.class,
+            DummyCard.class,
+            EcolineCorporation.class,
+            ExocorpCorporation.class,
+            GenericDummyCard.class,
+            HelionCorporation.class,
+            HyperionSystemsCorporation.class,
+            InterplanetaryCinematics.class,
+            Inventrix.class,
+            LaunchStarIncorporated.class,
+            MayNiProductionsCorporation.class,
+            MiningGuildCorporation.class,
+            ModproCorporation.class,
+            NebuLabsCorporation.class,
+            PhobologCorporation.class,
+            SaturnSystemsCorporation.class,
+            SultiraCorporation.class,
+            TeractorCorporation.class,
+            TharsisCorporation.class,
+            ThorgateCorporation.class,
+            UnmiCorporation.class,
+            ZetacellCorporation.class
     );
 }

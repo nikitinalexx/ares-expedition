@@ -215,3 +215,29 @@ exposed the hand (fixed by taking the range from the name list).
 
 Its worth is measured on identical rows with `--drop-prefix cards:in_my_hand_` against the full critic, together with the
 tag block (`--drop-prefix tags:`).
+
+## M. No hashes: identity is one-hot, and the candidate carries nothing else (2026-11-16)
+
+Owner's instruction: "no hashes anywhere, one bit per card - a hash is far harder to learn", and then "once there is a bit per
+card, encoding colour, tags, price and the rest for the candidate is pointless - it learns them perfectly from the bit".
+
+* **Cards as candidates** (build, draft, discard, sell, sell-last-round, mulligan, blue action, collect income): the
+  candidate vector is now `one-hot(268) + stop` = 269 values. It used to be a 64-bit SHA-256 hash of the class name written
+  as +1/-1, plus colour (4), tags (11), price/50, "is a blue action", the printed points and the stop flag = 83. The hash
+  could only be learned by summing 64 arbitrary weights into one effect; the one-hot lets the first layer read "this card"
+  directly, and everything else about a card is a fixed function of that bit.
+* **Corporations as candidates**: `one-hot(35) + phase-upgrade(10) + tag(11) + milestone slot(8) + milestone type(15)`; the
+  hash is gone there too. Phase upgrade, tag and milestone slot stay because they are *chosen inputs*, not properties of the
+  corporation class.
+* **`CardSignature` is deleted** - no code hashes a card any more.
+* **Blue cards on the table** got their own identity bits, per the owner's rule: a blue card keeps its action or passive
+  effect after it is built, so nothing else in the observation says which one it is (a green or red card is fully described
+  by the incomes, tags and points it changed). `BLUE_TABLE_SIZE = 2 x |BLUE|` (both tables, public information).
+
+Dynamic inputs are unaffected by all of this: an on-built choice (phase upgrade, tag, resource target, plant, discard) is a
+*separate decision* (`BUILD_INPUT`/`BLUE_INPUT`, 200 candidates each with kind/phase/tag/target/amount features), never a
+field of the card's candidate vector.
+
+Consequence for the pipeline: candidate widths changed, so every policy head must be retrained (the value models are
+unaffected - they read the observation only). The 150 000-game corpus generated before this change is still valid for the
+critic and is being used for the scale test.

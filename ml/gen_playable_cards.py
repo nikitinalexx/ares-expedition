@@ -40,6 +40,8 @@ packages = sorted({name.rsplit('.', 1)[0] for name in resolved})
 lines = ['package com.terraforming.ares.services.agent;', '']
 for package in packages:
     lines.append(f'import {package}.*;')
+lines += ['import com.terraforming.ares.cards.corporations.*;',
+          'import com.terraforming.ares.cards.buffedCorporations.*;']
 lines += ['', 'import com.terraforming.ares.model.Card;', '', 'import java.util.List;', '',
           '/**',
           ' * Every project card of the expansions this player actually plays (BASE, DISCOVERY), as classes.',
@@ -55,6 +57,32 @@ for i, name in enumerate(resolved):
     simple = name.rsplit('.', 1)[1]
     comma = ',' if i + 1 < len(resolved) else ''
     lines.append(f'            {simple}.class{comma}')
+lines += ['    );', '',
+          '    /**',
+          '     * The playable BLUE cards, whose identity matters on the table too: a blue card keeps its action or passive',
+          '     * effect after it is built, so nothing else in the observation says which one it is (a green or red card is',
+          '     * fully described by the incomes, tags and points it changed). Owner\'s rule, 2026-11-16.',
+          '     */',
+          '    public static final List<Class<? extends Card>> BLUE = ALL.stream()',
+          '            .filter(card -> card.getPackageName().equals("com.terraforming.ares.cards.blue"))',
+          '            .toList();',
+          '',
+          '    /**',
+          '     * The corporations of the played expansions: the corporation menu needs their identity one-hot for the same',
+          '     * reason as the cards - a hash is the wrong tool (owner, 2026-11-16).',
+          '     */',
+          '    public static final List<Class<? extends Card>> CORPORATIONS = List.of(']
+corporations = []
+for folder in ('corporations', 'buffedCorporations'):
+    for path in glob.glob(os.path.join(root, 'src', 'main', 'java', 'com', 'terraforming', 'ares', 'cards', folder,
+                                       '*.java')):
+        body = open(path, encoding='utf-8', errors='ignore').read()
+        match = re.search(r'public\s+(?:abstract\s+)?class\s+(\w+)', body)
+        if match:
+            corporations.append(match.group(1))
+corporations.sort()
+for i, simple in enumerate(corporations):
+    lines.append('            ' + simple + '.class' + (',' if i + 1 < len(corporations) else ''))
 lines += ['    );', '}', '']
 os.makedirs(os.path.dirname(out), exist_ok=True)
 open(out, 'w', encoding='utf-8').write('\n'.join(lines))

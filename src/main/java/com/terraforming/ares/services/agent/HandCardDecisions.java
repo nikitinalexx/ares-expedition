@@ -34,8 +34,7 @@ public class HandCardDecisions {
     public static final int MAX_CANDIDATES = POOL + 1;
     public static final int SELL_FEATURES = CardFeatures.LENGTH + 1;
 
-    private static final String CARD = "classSignature(" + CardFeatures.SIGNATURE + "), color(" + CardFeatures.COLORS
-            + "), tags(" + CardFeatures.TAGS + "), price/50, active, stop, points/10";
+    + "; candidate=[identityOneHot(" + CardFeatures.IDENTITY + "), stop]; every card property (colour, tags, price, points) is a fixed function of the identity bit";
 
     public static final String DRAFT_LAYOUT = ObservationBuilder.LAYOUT
             + "; candidate=[" + CARD + "]; discard exactly the required number from the revealed cards; no stop; stopId="

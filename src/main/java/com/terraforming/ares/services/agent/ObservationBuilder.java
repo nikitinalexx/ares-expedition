@@ -148,6 +148,14 @@ public class ObservationBuilder {
     public static final int TAG_SIZE = 2 * 11;
 
     /**
+     * Identity bits of the playable BLUE cards on each table. A blue card keeps its action or passive effect after it is
+     * built, so nothing else in the observation says which one it is; with 82 identity bits for 349 project cards, most of
+     * the table was invisible. Green and red cards do not get one: their effect is fully in the incomes, tags and points
+     * they changed (owner's rule, 2026-11-16).
+     */
+    public static final int BLUE_TABLE_SIZE = 2 * PlayableCards.BLUE.size();
+
+    /**
      * An aggregate description of the hand. Until now the observation contained the table, the money and only five bits of
      * specific hand cards, so a state value could not see "I still hold three building-tag cards I can pay for" - and
      * "build now or wait" was judged blind. The block is a summary, not a strategy: how many cards, per colour, per tag,
@@ -248,7 +256,7 @@ public class ObservationBuilder {
 
     public static int size() {
         return KEEP.length + CONTEXT_SIZE + CARDS_SIZE + SCORE_SIZE + EXTRAS_SIZE + DOUBLE_PAYMENT_SIZE
-                + PHASE_START_SIZE + OCEAN_SIZE + TAG_SIZE + HAND_SUMMARY_SIZE + PLAN_SIZE;
+                + PHASE_START_SIZE + OCEAN_SIZE + TAG_SIZE + BLUE_TABLE_SIZE + HAND_SUMMARY_SIZE + PLAN_SIZE;
     }
 
     /**
@@ -359,6 +367,11 @@ public class ObservationBuilder {
         }
         for (com.terraforming.ares.model.Tag tag : com.terraforming.ares.model.Tag.values()) {
             names.add("tags:op_" + tag.name().toLowerCase() + "/5");
+        }
+        for (String who : List.of("my", "opponent")) {
+            for (Class<? extends Card> card : PlayableCards.BLUE) {
+                names.add("cards:" + who + "_blue_" + card.getSimpleName());
+            }
         }
         names.add("hand:cards/10");
         for (com.terraforming.ares.model.CardColor colour : com.terraforming.ares.model.CardColor.values()) {
@@ -533,6 +546,19 @@ public class ObservationBuilder {
         }
         for (int count : otherTags) {
             observation[pos++] = count / 5f;
+        }
+        // Identity of the blue cards on each table (see BLUE_TABLE_SIZE): public information.
+        for (Player side : List.of(player, opponent)) {
+            Set<Class<?>> blue = new java.util.HashSet<>();
+            for (Integer id : side.getPlayed().getCards()) {
+                Card played = cardService.getCard(id);
+                if (played != null && played.getColor() == com.terraforming.ares.model.CardColor.BLUE) {
+                    blue.add(played.getClass());
+                }
+            }
+            for (Class<? extends Card> card : PlayableCards.BLUE) {
+                observation[pos++] = blue.contains(card) ? 1f : 0f;
+            }
         }
         // The hand as a summary (see HAND_SUMMARY_SIZE): counts, prices and what this player can pay for right now.
         int handCards = 0;
