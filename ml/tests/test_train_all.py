@@ -1,5 +1,6 @@
 """Tests for train_all (multi-type + shared trunk). Needs torch."""
 import json
+import os
 import struct
 import subprocess
 import sys
@@ -88,7 +89,7 @@ class Pool(unittest.TestCase):
             train, val = build_pools(files, 0.2, np.random.default_rng(1), 3)
             obs, cand, outcome, game = train
             self.assertEqual(expected, set(np.unique(game).tolist()))
-            self.assertLessEqual(np.bincount(game - game.min()).max(), 3)
+            self.assertLessEqual(np.bincount((game - game.min()).astype(np.int64)).max(), 3)
             self.assertEqual(len(obs), len(cand))
             self.assertEqual(np.float16, obs.dtype)
             self.assertFalse(set(np.unique(val[3]).tolist()) & expected, "validation games never appear in training")
