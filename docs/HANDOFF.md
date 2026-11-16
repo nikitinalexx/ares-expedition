@@ -481,3 +481,43 @@ the double payment as one card's payment. `SanityBench` has a new gate: **the ph
 2. if the decider still loses to the ranker: the ranker is the deployment, and the next lever is more data for its ensemble
    members (the hand bits are rare events and need volume), plus the loop at 100 000 games per iteration rather than 4-12k;
 3. keep every new block behind the A/B protocol (`--drop-prefix`) and every new rule behind a sanity gate.
+
+## STOPPED HERE (2026-11-16, power cut) - resume from this block
+
+Everything is committed. No process was left running; two jobs were killed mid-flight and must be redone or discarded:
+
+| job | state | what to do |
+|---|---|---|
+| `v_scale_nohand` (critic on 150 000 games, hand block zeroed) | **killed during training**, the folder is incomplete | delete `D:/ares/runs/value/v_scale_nohand` and rerun the command in the experiment log |
+| `v_scale_full` (critic on 150 000 games) | trained, AUC 0.8676, not yet audited or measured | run the audit and the ranking test |
+
+Dataset present on disk: `D:/ares/data/scale1090` (150 000 games, 12.08 M rows, encoder **1090**) - the scale corpus for the
+critic. Disk: ~280 GB free.
+
+### The working tree state (uncompiled!)
+
+The last commit contains **uncompiled** changes to the candidate representation:
+
+* `CardFeatures`: candidate = `one-hot(268) + stop`; the 64-bit hash, colour, tags, price, points are gone;
+* `CorporationsDecisions`: `one-hot(35)` + the chosen inputs; `CardSignature` deleted;
+* `ObservationBuilder`: blue-card identity bits on both tables (`BLUE_TABLE_SIZE`), on top of the 1090 encoder;
+* `ml/gen_playable_cards.py` now generates `ALL`, `BLUE`, `CORPORATIONS`.
+
+Because candidate widths changed, **every policy head must be retrained** (the value models are unaffected: they read the
+observation only). Until that is done, `--mode play`/`compare` cannot load the old policy bundle `r28_hand` with the new
+classes. The bootstrap path: compile, `--mode names/schemas`, then generate a small corpus with **no `--models`** (the agent
+falls back to uniform random, which still records rows with the new candidate vectors), CE a policy from scratch, and iterate.
+
+### What is measured and stands
+
+* best player: `r28_hand` + six critics = **44.00% +/- 1.0** vs SMART (10 000 games), sanity **10/10**;
+* the price law, the two roles, the closed decider branch, the ensemble variance - in `docs/RESULTS.md`,
+  `docs/EXPERIMENTS.md`, `docs/SYSTEMATIC.md`;
+* the single rule added today: the phase-4 double production is never declined (`GuaranteedActions.doubleIncome`), with its
+  sanity gate.
+
+### The next three actions, in order
+
+1. compile + `mvn test` (the candidate change touches every card menu) and run `--mode sanity`;
+2. audit + rank `v_scale_full` (does 3x data improve the price or the ranking?);
+3. bootstrap a policy on the new candidate vectors (random-play corpus, CE), then evaluate the six-critic ensemble.
