@@ -56,6 +56,30 @@ def numpy_forward(params, clip, obs):
     return params["w3"] @ h2 + params["b3"][0]
 
 
+def mask_features(params, columns):
+    """Make the exported model *provably* ignore these observation columns.
+
+    Zeroing a column in the training data is not enough. The first-layer weights of a column that is always zero never
+    receive a gradient, so they keep their random initial values - and at play time the engine feeds the real (non-zero)
+    value, which then adds pure noise. Here the weights and the normalisation of those columns are zeroed, so the column
+    contributes nothing whatever the engine sends; `main` then refuses to export a model that is not invariant to them.
+    """
+    if not columns:
+        return params
+    columns = np.asarray(sorted(columns), dtype=np.int64)
+    masked = dict(params)
+    w1 = np.array(params["w1"], dtype=np.float64)
+    w1[:, columns] = 0.0
+    masked["w1"] = w1.astype(params["w1"].dtype)
+    mean = np.array(params["mean"], dtype=np.float64)
+    mean[columns] = 0.0
+    masked["mean"] = mean.astype(params["mean"].dtype)
+    std = np.array(params["std"], dtype=np.float64)
+    std[columns] = 1.0
+    masked["std"] = std.astype(params["std"].dtype)
+    return masked
+
+
 def export_value(out_dir, observation_hash, obs_size, hidden, clip, params, reference):
     layout = value_weight_layout(obs_size, hidden)
     chunks = []
@@ -795,6 +819,9 @@ def main():
                        label_mean=float(pool["outcome"][~split].mean()),
                        target=target, target_kind=args.target, stats_idx=stats_idx)
     params, history = fitted["params"], fitted["history"]
+    if drop:
+        # The A/B may drop a block; then the DEPLOYED model must ignore it, not just the training rows.
+        params = mask_features(params, drop)
     predicted = predict(params, val, squash=args.target == "outcome")
     if args.target == "outcome":
         val_loss = float(nn.functional.binary_cross_entropy_with_logits(
@@ -831,6 +858,16 @@ def main():
                 for o, l in zip(val[sample].astype(np.float64), logits))
     if worst > 1e-3:
         raise SystemExit(f"the exported model disagrees with numpy by {worst}: refusing to finish")
+    masked_gain = 0.0
+    if drop:
+        # Invariance gate: the deployed model must not react to the dropped block AT ALL. The engine feeds the real values
+        # (the training rows had zeros), so a weight left at its random initial value would inject noise in play.
+        probe = val[sample[0]].astype(np.float64)
+        bumped = probe.copy()
+        bumped[drop] = 1.0
+        masked_gain = abs(float(numpy_forward(params, CLIP, probe)) - float(numpy_forward(params, CLIP, bumped)))
+        if masked_gain > 1e-6:
+            raise SystemExit(f"the exported model reacts to the {len(drop)} dropped columns by {masked_gain}: refusing to finish")
 
     torch.save({"model": fitted["state"], "observation_hash": pool["observationHash"], "hidden": hidden,
                 "epoch": fitted["best_epoch"], "target": args.target}, os.path.join(args.out, "model.pt"))
@@ -841,7 +878,8 @@ def main():
                "auc": round(auc_of_prediction, 4),
                "brier": round(float(np.mean((predicted - y_val) ** 2)), 4) if args.target == "outcome" else None,
                "export_check": worst, "calibration": calibration, "rows_per_game_cap": args.rows_per_game,
-               "data": args.data, "observation_hash": pool["observationHash"],
+               "data": args.packed or args.data, "observation_hash": pool["observationHash"],
+               "dropped_columns": len(drop), "masked_gain": masked_gain,
                "seconds": round(time.time() - started, 1), "weightsSha256": meta["weightsSha256"]}
     with open(os.path.join(args.out, "train_metrics.json"), "w", encoding="utf-8") as f:
         json.dump(metrics, f, indent=1)
