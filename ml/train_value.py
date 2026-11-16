@@ -403,7 +403,7 @@ def load_pool(data_dirs, rows_per_game, rng, val_fraction, keep_round=False, dro
     irrelevant. The schema's observationLayout describes the observation first and the candidates after
     "; candidate=" -- that shared prefix is the identity of a value model.
     """
-    obs, outcome, game, round_no, context, margin, step = [], [], [], [], [], [], []
+    obs, outcome, game, round_no, context, margin, step, seat = [], [], [], [], [], [], [], []
     obs_size, observation_layout = None, None
     seen_states = set()
     for decision in discover_decisions(data_dirs):
@@ -450,6 +450,7 @@ def load_pool(data_dirs, rows_per_game, rng, val_fraction, keep_round=False, dro
             game.append(rows["game"].astype(np.uint64))
             context.append(rows["context"].astype(np.uint8))
             step.append(rows["step"].astype(np.uint16))
+            seat.append(rows["seat"].astype(np.uint8))
             if keep_round:
                 round_no.append(rows["round"].astype(np.uint16))
         if files:
@@ -458,6 +459,7 @@ def load_pool(data_dirs, rows_per_game, rng, val_fraction, keep_round=False, dro
         raise SystemExit(f"no decision chunks in {data_dirs}")
     obs = np.concatenate(obs)
     step = np.concatenate(step)
+    seat = np.concatenate(seat)
     if drop_columns:
         # An A/B of one block of the representation on identical rows: the columns are zeroed, so their normalisation
         # becomes (0 - 0) / 1 and they carry no information.
@@ -471,24 +473,28 @@ def load_pool(data_dirs, rows_per_game, rng, val_fraction, keep_round=False, dro
         picked = cap_per_game(game, rows_per_game, rng)
     else:
         picked = np.arange(len(obs))
-    obs, outcome, margin, game, context, round_no, step = (obs[picked], outcome[picked], margin[picked],
-                                                           game[picked], context[picked], round_no[picked],
-                                                           step[picked])
+    obs, outcome, margin, game, context, round_no, step, seat = (obs[picked], outcome[picked], margin[picked],
+                                                                 game[picked], context[picked], round_no[picked],
+                                                                 step[picked], seat[picked])
     # Order by (game, step) so that every row knows the NEXT decision of the same game: the TD target needs the score
     # between the two and the value of the next state.
-    order = np.lexsort((step, game))
-    obs, outcome, margin, game, context, round_no, step = (obs[order], outcome[order], margin[order], game[order],
-                                                           context[order], round_no[order], step[order])
+    order = np.lexsort((step, seat, game))
+    obs, outcome, margin, game, context, round_no, step, seat = (
+        obs[order], outcome[order], margin[order], game[order], context[order], round_no[order], step[order],
+        seat[order])
+    # A TD link may only join the NEXT decision of the SAME player, one step later. The score in the observation is the
+    # decision maker's margin, so linking rows of different seats mixes two viewpoints (that bug produced a target that was
+    # anti-correlated with the outcome, AUC 0.458, 2026-11-16), and linking a far-away row is not a one-step transition.
     next_row = np.full(len(obs), -1, dtype=np.int64)
     if len(obs) > 1:
-        same_game = game[1:] == game[:-1]
-        next_row[:-1][same_game] = np.flatnonzero(same_game) + 1
+        adjacent = (game[1:] == game[:-1]) & (seat[1:] == seat[:-1]) & (step[1:] == step[:-1] + 1)
+        next_row[:-1][adjacent] = np.flatnonzero(adjacent) + 1
     score = None
     if score_columns:
         mine, other = score_columns
         score = (obs[:, mine].astype(np.float32) - obs[:, other].astype(np.float32))
     return {"obs": obs, "outcome": outcome, "margin": margin, "game": game, "context": context, "round": round_no,
-            "step": step, "next": next_row, "score": score,
+            "step": step, "seat": seat, "next": next_row, "score": score,
             "validation": is_validation_game(game, val_fraction), "obsSize": obs_size,
             "observationHash": hashlib.sha256(observation_layout.encode("utf-8")).hexdigest()[:16],
             "observationLayout": observation_layout}
