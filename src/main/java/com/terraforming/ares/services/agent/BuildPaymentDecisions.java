@@ -30,13 +30,15 @@ import java.util.Map;
  * Restructured Resources and Anaerobic Microorganisms that the player can afford, with the remaining price covered by
  * MC (and heat for Helion). Each candidate is checked with {@link CardValidationService#validateCard}.
  * <p>
- * Helion may split the remaining price between MC and heat; every split is a separate candidate. Worst case stays under
- * {@link #MAX_CANDIDATES} for ordinary card prices.
+ * Helion may split the remaining price between MC and heat; every split is a separate candidate, so the menu grows with the
+ * player's heat stock. A measured 48 was not enough: a heat-rich player hit 67 options and 140 of 20 000 games died on the
+ * guard (2026-11-16). The cap is therefore the old generous one; the raw corpus pays for it in padding, the pack does not
+ * (it stores the real candidates only, docs/PIPELINE_IO.md).
  */
 @Service
 @RequiredArgsConstructor
 public class BuildPaymentDecisions {
-    public static final int MAX_CANDIDATES = 48;
+    public static final int MAX_CANDIDATES = 200;
     public static final int CANDIDATE_FEATURES = 6;
     public static final String OBSERVATION_LAYOUT = ObservationBuilder.LAYOUT
             + "; candidate=[restructured, anaerobic, heat/20, mc/20, need/20, discounts/20]; "
