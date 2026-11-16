@@ -403,12 +403,23 @@ public class SanityBench {
 
     private ScenarioResult runScenario(String name, String why, String expected, Body body, boolean quietBlueMenu,
                                        StateType... states) {
-        MarsGame game;
-        try {
-            game = quietBlueMenu ? snapshotWithoutBlueActions(states) : snapshot(states);
-        } catch (RuntimeException e) {
+        MarsGame game = null;
+        RuntimeException failure = null;
+        // A position that cannot be built is an INFRASTRUCTURE problem, not a model failure: the bench takes real
+        // mid-game snapshots, so once in a while a scenario's state never appears in the sampled games. It used to be
+        // reported as a gate failure, which blocked a promotion for a reason that had nothing to do with the player
+        // (measured: 1 of 5 runs, "no position in states [PERFORM_BLUE_ACTION]", 2026-11-15). Retry, then warn.
+        for (int attempt = 0; attempt < 3 && game == null; attempt++) {
+            try {
+                game = quietBlueMenu ? snapshotWithoutBlueActions(states) : snapshot(states);
+            } catch (RuntimeException e) {
+                failure = e;
+            }
+        }
+        if (game == null) {
             return new ScenarioResult(name, why, expected, "no position", false,
-                    "could not find a position: " + e.getMessage(), true);
+                    "could not find a position (infrastructure, not the model): "
+                            + (failure == null ? "unknown" : failure.getMessage()), false);
         }
         Recorder recorder = new Recorder();
         DecisionProbe.Hook previous = DecisionProbe.set(recorder);

@@ -378,7 +378,7 @@ def cap_per_game(games, k, rng):
     return np.sort(order[(np.arange(len(g)) - group_start) < k])
 
 
-def load_pool(data_dirs, rows_per_game, rng, val_fraction, keep_round=False):
+def load_pool(data_dirs, rows_per_game, rng, val_fraction, keep_round=False, drop_columns=None):
     """Reads every decision type, de-duplicates states, caps the rows of a game, splits by game.
 
     The value model sees only the observation, so the candidate layout (and with it the per-type schema hash) is
@@ -425,6 +425,10 @@ def load_pool(data_dirs, rows_per_game, rng, val_fraction, keep_round=False):
     if not obs:
         raise SystemExit(f"no decision chunks in {data_dirs}")
     obs = np.concatenate(obs)
+    if drop_columns:
+        # An A/B of one block of the representation on identical rows: the columns are zeroed, so their normalisation
+        # becomes (0 - 0) / 1 and they carry no information.
+        obs[:, drop_columns] = 0.0
     outcome = np.concatenate(outcome)
     margin = np.concatenate(margin)
     game = np.concatenate(game)
@@ -442,6 +446,12 @@ def load_pool(data_dirs, rows_per_game, rng, val_fraction, keep_round=False):
             "observationLayout": observation_layout}
 
 
+def dropped_columns(names_file, prefix):
+    """Column indices to zero: the block can then be removed from the input without touching the data on disk."""
+    names = json.load(open(names_file, encoding="utf-8"))
+    return [i for i, name in enumerate(names) if name.startswith(prefix)]
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", required=True, help="comma-separated directories with *.NNNNNN.ares chunks")
@@ -457,6 +467,10 @@ def main():
     parser.add_argument("--val-fraction", type=float, default=0.1)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--device", default="auto")
+    parser.add_argument("--names", default="", help="feature names of the current encoder (--mode names)")
+    parser.add_argument("--drop-prefix", default="",
+                        help="zero every observation column whose name starts with this prefix: an A/B of one block "
+                             "of the representation without regenerating the data")
     parser.add_argument("--target", default="outcome", choices=["outcome", "margin"],
                         help="`outcome`: predict the win (BCE). `margin`: regress the final score difference "
                              "(scaled by --margin-scale) - the game's own objective, carrying how dominant a position was")
@@ -528,7 +542,8 @@ def main():
             json.dump(fitted["history"], f, indent=1)
         print(json.dumps({k: v for k, v in metrics.items() if k != "history"}, indent=1), flush=True)
         return 0
-    pool = load_pool(args.data, args.rows_per_game, rng, args.val_fraction, keep_round=True)
+    drop = dropped_columns(args.names, args.drop_prefix) if (args.names and args.drop_prefix) else []
+    pool = load_pool(args.data, args.rows_per_game, rng, args.val_fraction, keep_round=True, drop_columns=drop)
     split = pool["validation"]
     train, val = pool["obs"][~split], pool["obs"][split]
     y_val = pool["outcome"][split]

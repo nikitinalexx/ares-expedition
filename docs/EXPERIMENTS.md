@@ -1395,3 +1395,69 @@ So the ceiling of the ranking is the *label*, not the features somebody thinks o
 from the observation at all, which was the case: the observation described the table, the money and five bits of specific
 hand cards, but **not the hand**. That is why the next change is a hand summary (counts by colour and tag, nominal and
 effective price, how many are affordable), not a per-rule feature.
+
+## 2026-11-15, night: the critic's own variance is a few points, and the hand summary is worth twelve
+
+Two critics, **same recipe** (100 000 games, mixed exploration, margin target, 512x256), differ by 3.6 points of win rate:
+
+| critic | encoder | AUC on its own validation | vs SMART |
+|---|---|---|---|
+| `v_price2_margin_wide` | 786 | 0.8653 | **42.98% +/- 1.0** (10 000) |
+| `v_rev1_margin_wide` | 804 (hand summary + points slot) | 0.8668 | 39.38% +/- 1.0 (10 000) |
+
+Same policy function in both runs (the 786 -> 804 remap was verified weight by weight: 200 704 weights by name, zero
+differences, new columns at zero), same mechanism, same exploration mix, same number of games. So this is not the
+representation and not the mechanism: it is the critic's variance at our data scale, and it is the largest single error bar
+in the whole pipeline.
+
+**A/B of the hand block on the same rows** (`ml/train_value.py --names ... --drop-prefix hand:`, which zeroes the twenty
+columns before training, so the data is identical):
+
+| critic input | vs SMART (3 000) |
+|---|---|
+| with the hand summary | 39.4% (10 000: 39.38 +/- 1.0) |
+| with the hand block zeroed | **27.5%** |
+
+Twelve points: the hand summary is not decoration, it is the most informative block the critic got all day (it is what lets
+a state value see that it holds cheap cards). So it stays, and the 3.6-point gap has to be attacked where it comes from -
+variance - which is what the search's ensemble support is for: `-Dares.agent.valueModel=a,b,c` averages the logits of
+several critics (three forward passes per candidate, ~0.4 ms).
+
+Overnight run: two more critics on disjoint exploration mixes (build-heavy 50 000 games, phase/action-heavy 50 000), then
+the ensemble of three against each single critic, 10 000 games against SMART.
+
+**Consequence for how results are reported from now on:** a single critic's win rate has a +/- 3 point band that is not
+sampling noise of the *evaluation* (1 000-10 000 games measure to +/- 1) but training variance of the critic itself. Any
+"A beats B" claim about critics needs either an ensemble or repeated training seeds, and every future nightly should carry
+an ensemble rather than one net.
+
+### Correction to today's "monotone critic curve"
+
+Earlier today I reported the critic line as 37.8% -> 38.5% -> 40.36% -> 41.18% -> 42.98% and called it monotone in data. The
+A/B above shows that two critics with the *same* recipe differ by 3.6 points, which is larger than several of those steps
+combined. The evaluation error bars (+/- 1 point at 10 000 games) measure how well the *player* was measured, not how well
+the *critic* was trained - the second error is the dominant one and it was not accounted for.
+
+So the honest statement is: the critic's training *data and target* matter (the 20 000 -> 100 000 step was measured with
+2 000/6 000-game evaluations and is at the edge of that band), but the "curve" as a whole is not established. What *is*
+established: (a) the mechanism (ranking cards by a margin-trained critic) beats the policy alone by ~5 points
+(35.6% -> ~40%), (b) the hand summary is worth ~12 points inside the critic (direct A/B on identical rows), (c) a single
+critic needs an ensemble before any further claim is made.
+
+### The ensemble recovers the three points (and makes the new encoder deployable)
+
+Three critics, three disjoint exploration mixes (100k balanced + 50k build-heavy + 50k phase/action-heavy), each trained
+with the same recipe (margin, 512x256, 4 epochs), averaged by the search (`-Dares.agent.valueModel=a,b,c`):
+
+| critic | vs SMART |
+|---|---|
+| `v_rev1_margin_wide` alone (100k balanced) | 39.38% +/- 1.0 (10 000) |
+| **the average of the three** | **42.89% +/- 1.0** (10 000) |
+
+So the 3.6-point gap that looked like a regression caused by the new encoder was the critic's own variance, and the
+ensemble removes it: +3.5 points for two extra forward passes per candidate (~0.4 ms, i.e. nothing at this scale). The
+804-value encoder - hand summary + printed points in the candidate vector - is now deployable at the level of the best 786
+configuration, and it carries the two blocks that the revision found missing.
+
+This also settles the reporting protocol: a critic is a *distribution*, not a point. Every claim about a critic from now on
+is made with an ensemble (or with three seeds), and the nightly carries an ensemble rather than one net.
