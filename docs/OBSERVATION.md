@@ -192,3 +192,26 @@ product for every combination; the engine already computes it exactly, in the sa
 measured player also had no reason to value this: mean steel income 0.12, and the discount changed which card was cheapest
 in 1% of its decisions (`ml/discount_report.py`) - the feature exists so that the signal is at least *available* to the
 critic once the games contain the income.
+
+## L. Hand identity bits (the 268 cards this player can hold) — added 2026-11-16
+
+`cards:in_my_hand_<CardClass>` — one bit per project card of BASE and DISCOVERY, 268 values, private. The list is generated
+by `ml/gen_playable_cards.py` from `--mode cards`, so a card of another expansion physically cannot appear.
+
+Why (owner, 2026-11-16): "my value net built ten times smarter once I gave it bits for every card that can be in the
+hand". The encoder had this block since the beginning but with an **empty** card list: `HAND_CARDS = List.of()`. The
+hand summary (section J) described the hand by counts, tags and prices - everything except *which cards*, and a card's
+presence in hand is not reflected anywhere else. A card that is already built does not need its bit: a green or red card's
+effect is fully in the incomes, tags and points; a blue card's persistent action/passive effect and a corporation do need
+one.
+
+Also removed in the same pass (dead-bit audit over 200 000 rows, `ml/feature_audit.py`): the Luna Project Office and Project
+Inspection counters (0.00000% activation, EXPERIMENTAL expansion - not a mechanic this player plays) and the two
+"activatable card count" values (a linear function of the identity bits, so redundant: the owner's point).
+
+The block is private and `buildPublic` zeroes it; the test that asserts every private column is zero in the public view
+caught a real leak here - the zeroing window had been computed from a mid-build position, so the public observation
+exposed the hand (fixed by taking the range from the name list).
+
+Its worth is measured on identical rows with `--drop-prefix cards:in_my_hand_` against the full critic, together with the
+tag block (`--drop-prefix tags:`).

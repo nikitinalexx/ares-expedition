@@ -34,7 +34,7 @@
       "-Dares.agent.search.symmetric=true",
       "-Dares.agent.search.pairs=true",
       "-Dares.agent.search.types=BUILD_CARD,DRAFT_CARDS",
-      "-Dares.agent.valueModel=D:/ares/runs/value/v_rev1_margin_wide,D:/ares/runs/value/v_ens_a,D:/ares/runs/value/v_ens_b,D:/ares/runs/value/v_ens_c,D:/ares/runs/value/v_ens_d"
+      "-Dares.agent.valueModel=D:/ares/runs/value/v_rev1_hand,D:/ares/runs/value/v_ens_a_hand,D:/ares/runs/value/v_ens_b_hand,D:/ares/runs/value/v_ens_c_hand,D:/ares/runs/value/v_ens_d_hand"
     ]
   },
   "eval": {
@@ -52,7 +52,7 @@
       "-Dares.agent.search.symmetric=true",
       "-Dares.agent.search.pairs=true",
       "-Dares.agent.search.types=BUILD_CARD,DRAFT_CARDS",
-      "-Dares.agent.valueModel=D:/ares/runs/value/v_rev1_margin_wide,D:/ares/runs/value/v_ens_a,D:/ares/runs/value/v_ens_b,D:/ares/runs/value/v_ens_c,D:/ares/runs/value/v_ens_d"
+      "-Dares.agent.valueModel=D:/ares/runs/value/v_rev1_hand,D:/ares/runs/value/v_ens_a_hand,D:/ares/runs/value/v_ens_b_hand,D:/ares/runs/value/v_ens_c_hand,D:/ares/runs/value/v_ens_d_hand"
     ]
   },
   "benchmark": {
@@ -72,7 +72,7 @@
       "-Dares.agent.search.symmetric=true",
       "-Dares.agent.search.pairs=true",
       "-Dares.agent.search.types=BUILD_CARD,DRAFT_CARDS",
-      "-Dares.agent.valueModel=D:/ares/runs/value/v_rev1_margin_wide,D:/ares/runs/value/v_ens_a,D:/ares/runs/value/v_ens_b,D:/ares/runs/value/v_ens_c,D:/ares/runs/value/v_ens_d"
+      "-Dares.agent.valueModel=D:/ares/runs/value/v_rev1_hand,D:/ares/runs/value/v_ens_a_hand,D:/ares/runs/value/v_ens_b_hand,D:/ares/runs/value/v_ens_c_hand,D:/ares/runs/value/v_ens_d_hand"
     ]
   },
   "rungs": [
