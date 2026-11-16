@@ -60,6 +60,26 @@ public final class DecisionFile {
             }
         }
 
+        /**
+         * The identity a trained MODEL depends on: what it reads (the observation layout and width, the candidate
+         * features) and what it answers (the decision type). It deliberately excludes {@code maxCandidates}, which is only
+         * how far a data FILE pads its rows: changing a menu cap invalidates the file hash and requires repacking, but it
+         * must not invalidate a model that has never seen the padding. Before this, raising a cap made every policy bundle
+         * unloadable and the player had to bootstrap again (2026-11-16).
+         */
+        public String modelHash() {
+            try {
+                MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                // The observation part only: the candidate description follows "; candidate=" and is layout text for the
+                // menu, not something the model reads.
+                String text = type + "|" + obsSize + "|" + candidateFeatures + "|"
+                        + observationLayout.split("; candidate=")[0];
+                return HexFormat.of().formatHex(digest.digest(text.getBytes(StandardCharsets.UTF_8))).substring(0, 16);
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
         public String toJson() {
             return "{\"type\":\"" + type + "\",\"obsSize\":" + obsSize + ",\"maxCandidates\":" + maxCandidates
                     + ",\"candidateFeatures\":" + candidateFeatures + ",\"obsDtype\":\"f2\",\"candDtype\":\"f2\",\"hash\":\"" + hash()

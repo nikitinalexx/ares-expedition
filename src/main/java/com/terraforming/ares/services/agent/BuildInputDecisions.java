@@ -60,7 +60,7 @@ public class BuildInputDecisions {
     public static final int ID_MU_STOP = 0xFFF7;
 
     public static final int PHASE_UPGRADES = 10;
-    public static final int MAX_CANDIDATES = 16;
+    public static final int MAX_CANDIDATES = 24;
     public static final int CANDIDATE_FEATURES = KINDS + CardFeatures.LENGTH + PHASE_UPGRADES + CardFeatures.TAGS;
     public static final String OBSERVATION_LAYOUT = ObservationBuilder.LAYOUT
             + "; candidate=[kind(" + KINDS + "), cardFeatures(" + CardFeatures.LENGTH + "), phase(" + PHASE_UPGRADES

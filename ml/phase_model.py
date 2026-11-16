@@ -67,7 +67,19 @@ def atomic_write(path, data, mode="wb"):
     os.replace(tmp, path)
 
 
-def export_from_arrays(out_dir, schema_hash, obs_size, cand_features, hidden, clip, params, reference=None, decision_type="PICK_PHASE"):
+def model_hash(decision_type, obs_size, cand_features, observation_layout):
+    """The identity a MODEL depends on - what it reads and what it answers.
+
+    It deliberately excludes the menu cap (`maxCandidates`), which is only how far a data FILE pads its rows. The full
+    schema hash still covers it, because a reader needs it to decode a file; a model has never seen the padding. Both
+    sides compute this string identically (DecisionFile.Schema.modelHash in Java).
+    """
+    text = f"{decision_type}|{obs_size}|{cand_features}|{observation_layout}"
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+
+
+def export_from_arrays(out_dir, schema_hash, obs_size, cand_features, hidden, clip, params, reference=None,
+                       decision_type="PICK_PHASE", model_hash_value=None):
     """Writes model.json / weights.bin from numpy arrays (names as in weight_layout).
 
     The same files describe every decision type: only decisionType, the schema hash and the candidate width differ.
@@ -86,6 +98,8 @@ def export_from_arrays(out_dir, schema_hash, obs_size, cand_features, hidden, cl
     meta = {"kind": KIND, "version": FORMAT_VERSION, "decisionType": decision_type, "schemaHash": schema_hash, "obsSize": obs_size,
             "candFeatures": cand_features, "hidden": list(hidden), "clip": clip, "weightsCount": len(raw) // 4,
             "weightsSha256": hashlib.sha256(raw).hexdigest()}
+    if model_hash_value:
+        meta["modelHash"] = model_hash_value
     atomic_write(os.path.join(out_dir, "weights.bin"), raw)
     atomic_write(os.path.join(out_dir, "model.json"), json.dumps(meta, indent=1), "w")
     if reference is not None:

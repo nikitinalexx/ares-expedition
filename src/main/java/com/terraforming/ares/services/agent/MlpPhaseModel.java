@@ -35,6 +35,8 @@ import java.util.List;
 public final class MlpPhaseModel {
     private final DecisionType decisionType;
     private final String schemaHash;
+    /** The identity the model depends on (no file padding): null for bundles written before it existed. */
+    private final String modelHash;
     private final int obsSize;
     private final int candFeatures;
     private final int h1;
@@ -64,6 +66,7 @@ public final class MlpPhaseModel {
             throw new IllegalArgumentException("Unknown decision type in model.json: " + meta.path("decisionType").asText());
         }
         this.schemaHash = meta.get("schemaHash").asText();
+        this.modelHash = meta.hasNonNull("modelHash") ? meta.get("modelHash").asText() : null;
         int trainedOn = meta.get("obsSize").asInt();
         this.candFeatures = meta.get("candFeatures").asInt();
         this.h1 = meta.get("hidden").get(0).asInt();
@@ -173,6 +176,11 @@ public final class MlpPhaseModel {
 
     public String schemaHash() {
         return schemaHash;
+    }
+
+    /** The identity the model depends on, or null for a bundle written before the field existed. */
+    public String modelHash() {
+        return modelHash;
     }
 
     public int obsSize() {

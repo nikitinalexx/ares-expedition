@@ -25,7 +25,7 @@ from torch import nn
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ares_data  # noqa: E402
-from phase_model import export_from_arrays, load_exported  # noqa: E402
+from phase_model import export_from_arrays, load_exported, model_hash  # noqa: E402
 
 CLIP = 5.0
 CATEGORICAL = ["BLUE_INPUT", "BUILD_CARD", "BUILD_INPUT", "BUILD_PAYMENT", "DISCARD_CARDS", "DRAFT_CARDS",
@@ -367,6 +367,14 @@ def main():
         where = "all rows" if args.anchor_code < 0 else f"plan code {args.anchor_code} only"
         print(f"  anchor {args.anchor} with weight {args.anchor_weight} on {where}")
 
+    def layout_of(decision):
+        """The observation part of the layout: what the model hash identifies (the menu text after '; candidate=' is not)."""
+        if manifest is not None:
+            return manifest["types"][decision]["layout"]
+        files = ares_data.chunk_paths(args.data, decision)
+        schema, _ = ares_data.open_memmap(files[0])
+        return schema["observationLayout"].split("; candidate=")[0]
+
     optimizers = {d: torch.optim.Adam(models[d].parameters(), lr=args.lr) for d in models}
     rng = np.random.default_rng(args.seed)
 
@@ -546,7 +554,9 @@ def main():
         reference = {"inputs": val["obs"][sample].tolist(), "candidates": val["cands"][sample].tolist(),
                      "logits": logits.tolist()}
         export_from_arrays(os.path.join(args.out, decision), data["schemaHash"], obs_size, data["candFeatures"],
-                           hidden, CLIP, params, reference, decision_type=decision)
+                           hidden, CLIP, params, reference, decision_type=decision,
+                           model_hash_value=model_hash(decision, obs_size, data["candFeatures"],
+                                                       layout_of(decision)))
     metrics = {"data": args.packed or args.data, "prev": args.prev, "types": list(models), "epochs": args.epochs,
                "rows_per_game": args.rows_per_game, "max_chunks_per_type": args.max_chunks_per_type,
                "outcome_weight": args.outcome_weight, "history": history,

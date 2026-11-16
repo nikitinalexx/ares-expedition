@@ -31,7 +31,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ares_data import chunk_paths, open_memmap, read_decisions, validate  # noqa: E402
-from phase_model import export_from_arrays, load_exported, numpy_forward  # noqa: E402
+from phase_model import export_from_arrays, load_exported, model_hash, numpy_forward  # noqa: E402
 
 BLOCK_ROWS = 100_000
 CLIP = 5.0
@@ -175,7 +175,8 @@ def main():
             return 2
         meta = packed_manifest["types"][args.decision]
         schema = {"type": args.decision, "hash": meta["hash"], "obsSize": meta["obsSize"],
-                  "candidateFeatures": meta.get("candidates", {}).get("features")}
+                  "candidateFeatures": meta.get("candidates", {}).get("features"),
+                  "observationLayout": meta["layout"]}
         files = [args.packed]
         if "candidates" not in meta:
             print(f"{args.packed}: {args.decision} has no candidate block (pack with --candidates)", file=sys.stderr)
@@ -320,7 +321,10 @@ def main():
     with torch.no_grad():
         torch_logits = model(torch.from_numpy(sample_obs).to(device), torch.from_numpy(sample_cands).to(device)).cpu().numpy()
     reference = [{"obs": o.tolist(), "cands": [c.tolist()], "logits": [float(l)]} for o, c, l in zip(sample_obs, sample_cands, torch_logits)]
-    export_from_arrays(args.out, schema["hash"], obs_size, cand_features, hidden, CLIP, params, reference, decision_type=schema["type"])
+    export_from_arrays(args.out, schema["hash"], obs_size, cand_features, hidden, CLIP, params, reference,
+                       decision_type=schema["type"],
+                       model_hash_value=model_hash(schema["type"], obs_size, cand_features,
+                                                   schema["observationLayout"].split("; candidate=")[0]))
 
     meta, loaded = load_exported(args.out)
     worst = 0.0

@@ -71,6 +71,17 @@ public class NeuralPolicy {
     }
 
     private static void checkSchema(MlpPhaseModel model) {
+        // A bundle written with `modelHash` is validated against what the model actually reads and answers; the menu cap
+        // (file padding) is not part of it. An older bundle has only the full schema hash, so it stays strictly checked.
+        if (model.modelHash() != null) {
+            String expected = schema(model.decisionType()).modelHash();
+            if (!expected.equals(model.modelHash())) {
+                throw new IllegalStateException("The model was trained on data with the model hash " + model.modelHash()
+                        + " but the current encoder produces " + expected
+                        + ": the observation or the candidate features changed, the model must be trained again");
+            }
+            return;
+        }
         String expected = schema(model.decisionType()).hash();
         if (!expected.equals(model.schemaHash())) {
             throw new IllegalStateException("The model was trained on data with the schema " + model.schemaHash()
