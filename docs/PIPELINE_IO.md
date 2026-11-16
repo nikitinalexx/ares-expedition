@@ -84,3 +84,28 @@ feature, every id, and that the padding is zero. It is the gate before any train
 3. Never compress or truncate the observation to make a pack smaller: the remaining bytes are the model's input, and the
    point was to stop reading what the model does not use.
 4. The same rule applies to every new tool: read the corpus once, keep only what is used, and state the measured cost.
+
+## The producer wrote 87% padding: where the HDD time actually goes (2026-11-16, night)
+
+Owner's question: why is RAM at 9 GB of 32 GB while the HDD sits at 100%? Measured during a bootstrap iteration:
+
+| | value |
+|---|---|
+| self-play `boot3` | 19 860 games, 1.69 M rows, **27.6 GB written to the HDD** in ~18 min (18.2 games/s) |
+| the same data, observation only | 1.69 M x 2512 B = **4.2 GB** |
+| the verified pack of it | **3.1 GB** |
+| disk during packing | **66 MB/s, queue length 79, disk time 242%**; the SSD sat at 0% |
+| RAM | python 1.7 GB (one chunk at a time, by design) |
+
+So the memory number is not the problem: the packer streams a chunk, writes the observation, drops the chunk. The disk is
+the problem, and the cause is one level up from the packer: the simulator writes every row with its candidate block padded to
+the menu cap (`BUILD_CARD` 40 x 269 x 2 = 21.5 KB per row, `BLUE_INPUT` 48 x 269 x 2 = 25.8 KB), and the packer then reads
+all of it back to throw the padding away. One iteration costs **55 GB of HDD traffic** (27.6 write + 27.6 read) about 9
+minutes of wall time with the CPU and the SSD idle.
+
+Immediate fix (in `ml/bootstrap_loop.ps1`): the raw corpus is written to the **SSD**, and after the bit-exact pack check the
+raw files are deleted - the pack is the dataset (it reproduces the chunks exactly), and the raw files exist only to be packed.
+
+The structural fix, not done yet: emit the compact form directly from the simulator (real candidates, variable length), i.e.
+make the pack the native output format. The corpus would then be ~4-5 GB instead of 27.6 GB, generation writes 5-7x less and
+the separate packing pass disappears. Until that lands, every iteration pays ~55 GB of HDD traffic it does not need.

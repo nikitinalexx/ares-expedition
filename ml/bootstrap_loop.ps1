@@ -34,7 +34,12 @@ $root = "C:\Users\user\IdeaProjects\ares-expedition"
 Set-Location $root
 $cp = (Get-Content "$root\target\cp.txt" -Raw).Trim()
 $java = "C:\Program Files\Java\jdk-25.0.5.0.2\bin\java.exe"
-$data = "D:/ares/data/$Name"
+# The raw corpus is written by the simulator with every candidate block padded to the menu cap: 27.6 GB for 1.69 M rows
+# whose observation is 4.2 GB and whose pack is 3.1 GB (measured 2026-11-16). Writing that to the HDD and reading it back to
+# strip the padding saturated the disk at 66 MB/s for ~9 minutes per iteration while the CPU and the SSD were idle. The raw
+# corpus therefore lives on the SSD, and the verified pack is the dataset (it is bit-exact to the raw chunks), so the raw
+# files are removed after the check - they exist only to be packed.
+$data = "C:/ares/data/$Name"
 $pack = "C:/ares/pack/$Name"
 $value = "D:/ares/runs/value/v_${Name}_mask"
 $model = "D:/ares/runs/policy/$Name"
@@ -61,6 +66,8 @@ py -3 ml/pack_dataset.py --data $data --out $pack --candidates | Select-Object -
 if ($LASTEXITCODE -ne 0) { throw "packing exited $LASTEXITCODE" }
 py -3 ml/pack_check.py --pack $pack --data $data --limit-chunks 2 | Select-Object -Last 4
 if ($LASTEXITCODE -ne 0) { throw "the pack check failed: the pack does not reproduce the raw chunks" }
+Remove-Item -Recurse -Force $data -ErrorAction SilentlyContinue
+Write-Host "        raw corpus removed: the verified pack is the dataset ($pack)"
 
 Write-Host "=== 3. critic -> $value (hand identity masked)"
 Remove-Item -Recurse -Force $value -ErrorAction SilentlyContinue
