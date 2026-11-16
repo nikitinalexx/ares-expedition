@@ -137,3 +137,53 @@ reported val loss / AUC / `reference.json` now describe the masked, deployable m
 contract.
 
 With that in place a block ablation (`ml/critic_ablation.py`) is a real decision, not just a training-side A/B.
+
+## The blue table is populated - the block is redundant, not empty (2026-11-16, night)
+
+Correction of a claim made earlier in the same session. I had explained the blue-table ablation result with "random players
+rarely build blue cards, so the block is nearly empty". The owner rejected that, and the corpus says he is right:
+
+| measurement over `D:/ares/pack/boot1` (random play, 20 000 games) | value |
+|---|---|
+| rows with >= 1 blue card on MY table | **36.8%** (mean 0.49 cards) |
+| rows with >= 1 blue card on the OPPONENT table | **43.8%** (mean 1.03) |
+| (game, decision) samples where the decision maker has >= 1 blue card | **75.1%** |
+| samples with >= 3 blue cards | 8.7% |
+
+So the block is dense. The correct reading of the three-seed ablation (delta = loss without the block minus loss with it):
+
+| block | seed 1 | seed 2 | seed 3 | CI excludes 0 |
+|---|---|---|---|---|
+| hand identity (268) | -0.00405 | -0.00236 | -0.00244 | **3 of 3** |
+| blue table (166) | -0.00154 | -0.00163 | -0.00052 | 1 of 3 |
+| milestones and awards (58) | +0.00882 | +0.00915 | +0.00767 | **3 of 3 (wanted)** |
+| context switches (30) | +0.00050 | +0.00086 | +0.00044 | 0 of 3 (wanted, small) |
+
+Adopted into the critic recipe: mask the hand identity (3 of 3, and it also cost 0.0019 on the 150k-game policy corpus).
+NOT adopted yet: the blue table - the sign is consistent (all three seeds negative) but only one interval excludes zero, and
+the owner's rule is that a critic claim needs an ensemble or three seeds, not a sign. It is re-tested on the policy-play
+corpus, where blue cards are built by a player that chooses them rather than by chance.
+
+Interpretation that survives both blocks: a state value reads the CONSEQUENCES of a card (incomes, tags, points, resources),
+which are already in the observation. The identity bit says *which action this card offers*, and that is the policy's
+business, not the critic's.
+
+## Bootstrapping a policy from random play: two structural failures, both measured (2026-11-16, night)
+
+With the candidate widths changed, no policy bundle from before can be loaded, so the first 1256 policy was trained from
+scratch on 20 000 random games (`D:/ares/data/boot1`, 1.30 M rows, pack `C:/ares/pack/boot1`).
+
+1. **Greedy decoding collapses to "stop".** The CE policy stops on **91.5%** of real BUILD_CARD rows (mean probability of
+   stop 0.92) and builds **0.0 cards per game**; against RANDOM it wins 1.7%. Not under-training: "stop" is one generic
+   option while every card is its own action, so without a value signal the generic option always wins the argmax.
+2. **A signed advantage weight is unbounded below.** `--adv-value-model` multiplied the cross-entropy by the signed
+   advantage and diverged: PICK_PHASE val loss **860**, train loss -20. Driving a taken action's probability to zero lowers
+   such a loss without limit. Fixed with `--adv-weight-clip` (default 0.2..3.0): a bounded, positive reweighting. The same
+   run is stable afterwards (PICK_PHASE val 1.3956, exactly the plain-CE level) and moves the stop share 91.5% -> 86.1% -
+   better, still unusable alone.
+
+What works: the **one-ply search with the critic decides build-vs-pass**, and the policy only ranks cards inside the menu.
+`ml/check_player.py --search --value-model v_boot1_mask` gives **9.97 cards per game** (acceptance 0.29) from the same
+policy that builds nothing by itself. That is the bootstrap that continues: generate with search + V, train the critic on
+that distribution, then let the policy imitate the search's choices (expert iteration), which is self-play with our own
+critic - no benchmark model is involved.

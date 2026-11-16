@@ -239,6 +239,13 @@ def main():
                              "prediction), which is the scale the printed card points live on")
     parser.add_argument("--adv-normalize", action="store_true",
                         help="normalise the advantage per batch (mean 0, std 1): the pg step")
+    parser.add_argument("--adv-weight-clip", default="0.2,3.0",
+                        help="clip of the advantage weight that scales the cross-entropy. Signed, unbounded weights make "
+                             "the objective unbounded below (measured 2026-11-16: PICK_PHASE val loss 860, train loss -20), "
+                             "because driving a taken action's probability to zero lowers the loss without limit. A strictly "
+                             "positive clipped weight turns the step into reweighting: rows whose game went better than the "
+                             "critic promised count more, rows that went worse count less, and the loss stays a bounded "
+                             "cross-entropy. `0,0` restores the old unbounded behaviour (not recommended)")
     parser.add_argument("--max-ratio", type=float, default=20.0,
                         help="cap of the importance ratio, so one confident wrong row cannot dominate a batch")
     parser.add_argument("--min-outcome", type=float, default=0.0,
@@ -264,6 +271,9 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     decisions = [t for t in (args.types.split(",") if args.types else CATEGORICAL) if t]
     hidden = [int(x) for x in args.hidden.split(",")]
+    low_weight, high_weight = (float(x) for x in args.adv_weight_clip.split(","))
+    if low_weight > 0 and high_weight <= low_weight:
+        raise SystemExit(f"--adv-weight-clip needs low < high, got {args.adv_weight_clip}")
 
     pools, val_pools = {}, {}
     card_weights = {}
@@ -439,15 +449,19 @@ def main():
                 weight = advantage_of(obs, outcome, margin)
                 if args.adv_normalize:
                     weight = (weight - weight.mean()) / (weight.std() + 1e-6)
+                weight = weight.clamp(low_weight, high_weight)
             ratio = (torch.exp(taken) / behaviour).clamp(max=args.max_ratio)
             return -(weight * ratio * taken).mean()
         ce = nn.functional.cross_entropy(logits, chosen.clamp(max=cands.shape[1] - 1), reduction="none")
         if advantage is not None:
-            # Policy gradient with the value as the baseline: rows where the game went better than V promised push the
-            # taken action up, rows where it went worse push it down. Signed, so the sign of the weight matters.
+            # Policy gradient with the value as the baseline: rows where the game went better than V promised count more,
+            # rows that went worse count less. The weight is CLIPPED to stay positive: a signed, unbounded weight makes the
+            # objective unbounded below (measured 2026-11-16: PICK_PHASE val loss 860, train loss -20), because driving a
+            # taken action's probability to zero lowers the loss without limit.
             weight = advantage_of(obs, outcome, margin)
             if args.adv_normalize:
                 weight = (weight - weight.mean()) / (weight.std() + 1e-6)
+            weight = weight.clamp(low_weight, high_weight)
             return (ce * weight).mean()
         if card_weights:
             table = torch.tensor([card_weights.get(int(card), 0.0) for card in chosen_ids.tolist()],

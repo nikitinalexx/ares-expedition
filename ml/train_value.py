@@ -603,9 +603,15 @@ def load_packed(directory, rows_per_game, rng, val_fraction, drop_columns=None, 
 
 
 def dropped_columns(names_file, prefix):
-    """Column indices to zero: the block can then be removed from the input without touching the data on disk."""
+    """Column indices to zero: the block can then be removed from the input without touching the data on disk.
+
+    `prefix` may be a comma-separated list of prefixes, so one run can drop several blocks (the ablation may nominate more
+    than one: ml/critic_ablation.py)."""
     names = json.load(open(names_file, encoding="utf-8"))
-    return [i for i, name in enumerate(names) if name.startswith(prefix)]
+    prefixes = [p for p in str(prefix).split(",") if p]
+    if not prefixes:
+        return []
+    return [i for i, name in enumerate(names) if any(name.startswith(p) for p in prefixes)]
 
 
 def main():
@@ -653,8 +659,9 @@ def main():
                              "critic is deployed on)")
     parser.add_argument("--names", default="", help="feature names of the current encoder (--mode names)")
     parser.add_argument("--drop-prefix", default="",
-                        help="zero every observation column whose name starts with this prefix: an A/B of one block "
-                             "of the representation without regenerating the data")
+                        help="zero every observation column whose name starts with this prefix (comma-separated for "
+                             "several blocks): an A/B of a block of the representation without regenerating the data. "
+                             "The exported model provably ignores the dropped columns (mask_features + invariance gate)")
     parser.add_argument("--target", default="outcome", choices=["outcome", "margin"],
                         help="`outcome`: predict the win (BCE). `margin`: regress the final score difference "
                              "(scaled by --margin-scale) - the game's own objective, carrying how dominant a position was")

@@ -45,7 +45,8 @@ def main():
             for field in ("outcome", "margin", "seat", "round", "game", "step"):
                 if not np.array_equal(np.asarray(raw[field]), np.asarray(packed[field][offset:offset + count])):
                     raise SystemExit(f"{decision} {os.path.basename(path)}: label {field} differs")
-            if "cands" in packed:                if not np.array_equal(np.asarray(raw["chosen"]), np.asarray(packed["chosen"][offset:offset + count])):
+            if "cands" in packed:
+                if not np.array_equal(np.asarray(raw["chosen"]), np.asarray(packed["chosen"][offset:offset + count])):
                     raise SystemExit(f"{decision} {os.path.basename(path)}: chosen differs")
                 if not np.array_equal(np.asarray(raw["count"]), np.asarray(packed["count"][offset:offset + count])):
                     raise SystemExit(f"{decision} {os.path.basename(path)}: count differs")
