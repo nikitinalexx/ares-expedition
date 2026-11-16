@@ -593,13 +593,29 @@ is the policy bootstrap. Next: pack it with `--candidates`, `ml/critic_ablation.
 on the current representation), `train_policy_ce.py --packed` for the bootstrap policy, then self-play with that policy and a
 new critic; only then is the ranking-role measurement (10 000 games) possible.
 
+### Where the bootstrap stands (2026-11-16, late)
+
+Done and committed:
+
+* `C:/ares/pack/boot1` - 20 000 random games, encoder **1256**, packed with candidates, verified bit-exact;
+* `D:/ares/runs/value/v_boot1_mask` - the first deployable 1256 critic (hand identity masked, 268 columns, invariance gate
+  0.0, AUC 0.8839);
+* `D:/ares/runs/policy/boot1` (plain CE) and `boot1_adv` (bounded advantage reweighting) - both mechanically fine, both
+  worthless alone: the greedy argmax stops on 91.5% / 86.1% of BUILD_CARD rows and builds 0.0 cards per game;
+* `ml/check_player.py --search --value-model v_boot1_mask` on that same policy: **9.97 cards per game**, acceptance 0.29.
+  The search decides build-vs-pass, the policy only ranks. That is the mechanism the bootstrap continues with.
+
+Running: `D:/ares/data/boot2` - 5 000 games played with exactly that configuration (search on BUILD_CARD/DRAFT_CARDS over
+`v_boot1_mask`, `boot1_adv` elsewhere).
+
 ### The next three actions, in order
 
-1. pack `boot1` with `--candidates`, run `pack_check`, then `ml/critic_ablation.py` on it - the block screen on the encoder
-   that will actually be deployed;
-2. `train_policy_ce.py --packed` on the same pack: the bootstrap policy that makes play/compare possible again;
-3. self-play with that policy -> a bigger corpus -> the critic chosen by the screen, then the six-critic ensemble at 10 000
-   games against SMART.
+1. pack `boot2` with `--candidates`, `pack_check`, then the critic on it (hand masked) - and with it the blue-table
+   re-test on policy-play data (3 seeds; the random corpus only gave 1 of 3 intervals);
+2. CE the policy on `boot2`: it imitates the search's choices, which is the expert-iteration step - self-play with our own
+   critic, no benchmark model anywhere;
+3. profile + `--mode compare` at 10 000 games against SMART once the policy's argmax builds on its own, then the critic
+   ensemble.
 
 ### Bootstrap recipe (candidate widths changed, no policy can be loaded)
 
