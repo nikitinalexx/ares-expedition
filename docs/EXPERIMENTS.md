@@ -1736,3 +1736,24 @@ Consequence: the block is expensive in the common case (2-5 game copies per obse
 per candidate), and the owner's design is the right fix: a per-class table of gains (all 130 declare the property
 statically), with the game-copy path kept only for cards whose `payAgain` reads the state - those can be detected
 automatically by evaluating on two different positions and keeping the copy path when the results differ.
+
+### The loop's first step: a mixed corpus gives the best price so far
+
+The owner's loop, iteration 1: play with the deployed player (ranker) and with the value-decider, record both, and add the
+earlier exploration set. Prices from `--mode audit` (rules: ~15 MC at the median round, falling with the round):
+
+| data | price of +1 income | by round (0-4 / 5-8 / 9-12) | sanity of the audit |
+|---|---|---|---|
+| ranker's games only (12 000 games) | degenerate model (mc +10 priced at 0.001; V(me)+V(opp) = 1.27) | - | rejected |
+| decider's games only (4 000 games) | degenerate model (312 000 rows is too little) | - | rejected |
+| **ranker + decider + exploration (mixed)** | **9.6 MC** | **11.0 / 9.3 / 8.4** | consistent (V(me)+V(opp) = 0.93) |
+| exploration only (earlier) | 12.1 MC | 14.0 / 12.1 / 10.4 | consistent |
+| the deployed ensemble (policy data) | ~7.7 MC | flat | consistent |
+
+Two things follow. First, the loop cannot be built on a single small data source: 4 000 and 12 000 games are not enough for
+a critic (both produced degenerate models), while the mixture is well behaved. Second, and this is the useful part: the
+*mixture* keeps a good price (9.6) while containing on-policy play, which is exactly the trade the owner described - random
+data for the price, self-play for the ordering - and it is reproducible with one command (three directories to `--data`).
+
+The check that decides whether it pays: does `v_loopMix` rank at least as well as the deployed critics, and does adding it to
+the six-critic ensemble move the 10 000-game win rate above 44.0%?
