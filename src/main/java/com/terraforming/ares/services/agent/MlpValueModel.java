@@ -239,6 +239,74 @@ public final class MlpValueModel {
     }
 
     /** P(win) of the state, i.e. sigmoid of {@link #logit}. */
+    /**
+     * V of several observations in ONE pass over the weights.
+     * <p>
+     * The forward pass is memory bound: the weight block is 1090 x 512 floats (2.2 MB) and a single-candidate call reads it
+     * once, so scoring 6 candidates read it 6 times - 13 MB per critic per decision, and with an ensemble of six critics
+     * ~80 MB per decision. That is why the pipeline never loaded the machine (owner, 2026-11-16). Here every feature row of
+     * the weights is read once and applied to all candidates, which divides the memory traffic by the batch size; the
+     * arithmetic is identical.
+     */
+    public float[] batchLogits(float[][] observations, int count) {
+        float[][] acc = new float[count][h1];
+        for (int k = 0; k < count; k++) {
+            System.arraycopy(aBase, 0, acc[k], 0, h1);
+        }
+        float[] deltas = new float[count];
+        for (int i = 0; i < obsSize; i++) {
+            boolean any = false;
+            for (int k = 0; k < count; k++) {
+                float raw = observations[k][i];
+                if (raw == 0f) {
+                    deltas[k] = 0f;
+                    continue;
+                }
+                float v = (raw - mean[i]) / std[i];
+                float clipped = v < -clip ? -clip : Math.min(v, clip);
+                float delta = clipped - zAtZero[i];
+                deltas[k] = delta;
+                any |= delta != 0f;
+            }
+            if (!any) {
+                continue;
+            }
+            int offset = i * h1;
+            for (int j = 0; j < h1; j++) {
+                float w = w1T[offset + j];
+                for (int k = 0; k < count; k++) {
+                    float delta = deltas[k];
+                    if (delta != 0f) {
+                        acc[k][j] += w * delta;
+                    }
+                }
+            }
+        }
+        float[] result = new float[count];
+        float[] hidden1 = new float[h1];
+        float[] hidden2 = new float[h2];
+        for (int k = 0; k < count; k++) {
+            for (int j = 0; j < h1; j++) {
+                float pre = acc[k][j];
+                hidden1[j] = pre > 0f ? pre : 0f;
+            }
+            for (int j = 0; j < h2; j++) {
+                float sum = b2[j];
+                int offset = j * h1;
+                for (int i = 0; i < h1; i++) {
+                    sum += w2T[offset + i] * hidden1[i];
+                }
+                hidden2[j] = sum > 0f ? sum : 0f;
+            }
+            float logit = b3;
+            for (int j = 0; j < h2; j++) {
+                logit += w3[j] * hidden2[j];
+            }
+            result[k] = logit;
+        }
+        return result;
+    }
+
     public float value(float[] obs) {
         float logit = logit(obs);
         return (float) (1.0 / (1.0 + Math.exp(-logit)));

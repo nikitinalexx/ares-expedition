@@ -119,6 +119,9 @@ public class OnePlySearch {
      * The stop candidate is the current decision state, so with this flag both sides of the comparison are decision states.
      */
     private final boolean projectBuilds;
+    /** {@code -Dares.agent.search.batch=false} falls back to scoring the menu one candidate at a time. */
+    private static final boolean BATCH =
+            Boolean.parseBoolean(System.getProperty("ares.agent.search.batch", "false"));
     /**
      * {@code -Dares.agent.search.horizonStop=true}: score the "stop" candidate over the same horizon as the candidates
      * that act. A one-step comparison is structurally biased - an expensive action lowers V immediately (money out,
@@ -345,10 +348,25 @@ public class OnePlySearch {
         int scored = 0;
         float[] bestAfterstate = null;
         float debugBest = Float.NEGATIVE_INFINITY;
+        boolean batch = batchable(decision.type());
+        float[][] mineObs = batch ? new float[options.size()][] : null;
+        float[][] otherObs = batch ? new float[options.size()][] : null;
         for (int i = 0; i < options.size(); i++) {
             int id = options.get(i).id();
             if (id == stopId) {
                 scores[i] = bestOfStop;
+                scored++;
+                continue;
+            }
+            if (batch) {
+                float[][] prepared = prepare(game, player, id, decision.type(), seed);
+                if (prepared == null) {
+                    scores[i] = Float.NEGATIVE_INFINITY;
+                    failed++;
+                    continue;
+                }
+                mineObs[i] = prepared[0];
+                otherObs[i] = prepared[1];
                 scored++;
                 continue;
             }
@@ -367,6 +385,9 @@ public class OnePlySearch {
         }
         if (debugThis && bestAfterstate != null) {
             reportDelta(stopObs, bestAfterstate);
+        }
+        if (batch) {
+            scoreBatch(mineObs, otherObs, scores, bestOfStop);
         }
         if (failed > 0) {
             failures.addAndGet(failed);
@@ -471,6 +492,118 @@ public class OnePlySearch {
             SearchScores.put(decision, scores.clone());
         }
         return best;
+    }
+
+    /**
+     * Scores a whole menu in one pass per critic: the candidates' afterstate observations are collected first and then
+     * evaluated together, so the weight block is read once instead of once per candidate (see
+     * {@link MlpValueModel#batchLogits}). Returns null when the menu cannot be batched (a path that needs playouts).
+     */
+    private boolean batchable(DecisionType type) {
+        return BATCH
+                && horizonTurns == 0 && !phasePlayout && !projectBuilds && !shuffle
+                && type != DecisionType.PICK_PHASE;
+    }
+
+    /** The afterstate observations of one candidate: {mine, opponent's public view or null}. */
+    private float[][] prepare(MarsGame game, Player player, int cardId, DecisionType type, long seed) {
+        try {
+            MarsGame copy = new MarsGame(game);
+            Player me = copy.getPlayerByUuid(player.getUuid());
+            if (!applyOn(copy, me, cardId, type, seed)) {
+                return null;
+            }
+            float[] mine = observationBuilder.build(copy, me);
+            float[] other = null;
+            if (symmetric) {
+                Player opponent = otherPlayer(copy, me);
+                if (opponent != null) {
+                    other = observationBuilder.buildPublic(copy, opponent);
+                }
+            }
+            return new float[][]{mine, other};
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    /** The menu scored in batch: one forward pass per critic over all usable candidates. */
+    private void scoreBatch(float[][] mine, float[][] other, float[] scores, float stopScore) {
+        List<MlpValueModel> nets = nets();
+        int count = 0;
+        for (float[] obs : mine) {
+            if (obs != null) {
+                count++;
+            }
+        }
+        if (count == 0) {
+            return;
+        }
+        float[][] compactMine = new float[count][];
+        float[][] compactOther = new float[count][];
+        int[] slot = new int[count];
+        int at = 0;
+        for (int i = 0; i < mine.length; i++) {
+            if (mine[i] != null) {
+                compactMine[at] = mine[i];
+                compactOther[at] = other[i];
+                slot[at] = i;
+                at++;
+            }
+        }
+        for (MlpValueModel model : nets) {
+            float[] mineLogits = model.batchLogits(compactMine, count);
+            float[] otherLogits = null;
+            boolean needOther = symmetric && compactOther[0] != null;
+            if (needOther) {
+                otherLogits = model.batchLogits(compactOther, count);
+            }
+            for (int k = 0; k < count; k++) {
+                float value = needOther ? (mineLogits[k] - otherLogits[k]) * 0.5f : mineLogits[k];
+                // The one-candidate path returns Math.round(V * 1000) and the pair logic compares raw numbers, so the
+                // batch path must use the same scale - mixing them silently made every pair outrank every batch score
+                // (measured: 8.4% instead of 44%, 2026-11-16).
+                scores[slot[k]] += Math.round(value * 1000f) / (float) nets.size();
+            }
+        }
+    }
+
+    /** Applies one candidate's effect to a copy. Divided out of {@link #score} so the batch path can reuse it. */
+    private boolean applyOn(MarsGame copy, Player me, int id, DecisionType type, long seed) {
+        Card candidate = type == DecisionType.STANDARD_ACTION ? null : cardService.getCard(id);
+        if (type == DecisionType.STANDARD_ACTION) {
+            switch (id) {
+                case StandardActionDecisions.EXCHANGE_ONE_HEAT -> aiTurnService.exchangeHeat(copy, me, 1);
+                case StandardActionDecisions.PLANT_FOREST -> aiTurnService.plantForest(copy, me);
+                case StandardActionDecisions.INCREASE_TEMPERATURE -> aiTurnService.increaseTemperature(copy, me);
+                case StandardActionDecisions.SP_OCEAN -> aiTurnService.standardProjectTurn(copy, me, StandardProjectType.OCEAN);
+                case StandardActionDecisions.SP_FOREST -> aiTurnService.standardProjectTurn(copy, me, StandardProjectType.FOREST);
+                case StandardActionDecisions.SP_TEMPERATURE ->
+                        aiTurnService.standardProjectTurn(copy, me, StandardProjectType.TEMPERATURE);
+                default -> {
+                    return false;
+                }
+            }
+            return true;
+        }
+        if (type == DecisionType.PERFORM_BLUE_ACTION) {
+            Map<Integer, List<Integer>> input = blueInputDecisions.fill(copy, me, candidate, this::innerChoice);
+            aiTurnService.performBlueAction(copy, me, id, input);
+            return true;
+        }
+        if (isGiveUpCard(type)) {
+            me.getHand().removeCard(id);
+            return true;
+        }
+        if (type == DecisionType.PICK_PHASE) {
+            applyPhaseChoice(copy, me, id, seed);
+            return true;
+        }
+        if (type == DecisionType.BUILD_CARD) {
+            applyBuild(copy, me, id);
+            return true;
+        }
+        return false;
     }
 
     /** Applies one candidate to a copy and returns V(afterstate) as a logit, or null when the move is not applicable. */

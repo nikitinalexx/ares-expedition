@@ -1691,3 +1691,29 @@ critic, pairs on, symmetric score):
 37.8% (start) -> 41.2 (critic trained on 100k exploration games, 512x256) -> 42.0 (the effective price of a card in the
 observation) -> 43.6 (five-critic ensemble) -> **44.0** (ensemble plus a critic that sees the tags on the table and the hand
 identities). Every step came from the critic - its data, its information, its variance - not from a new decision mechanism.
+
+## 2026-11-16: pipeline speed, measured (the owner's question)
+
+| configuration | games/s | what it means |
+|---|---|---|
+| normal generation (rank cards + pairs, ensemble of six) | **14.9** at 12 threads | 100 000 games in ~1.9 h |
+| decision-level (the critic decides build vs pass) without projections | 10.2 at 12 threads | 4 000 games in ~7 min |
+| decision-level **with projections** | ~0.4 | 30x slower, by construction: every candidate plays the game forward to the next decision |
+
+Where the time goes per candidate: the value network is 111 us per call and the ensemble multiplies it by six (~670 us),
+against ~165 us for building the observation and ~50-100 us for the engine copy. So the ensemble, not the search logic, is the
+dominant cost at this width - which is the opposite of what the "bad batching" hypothesis predicted.
+
+**Batching tested and rejected (for now):** a batched forward pass (`MlpValueModel.batchLogits`, one pass over the weight
+block for all candidates of a menu) was implemented and measured **slower** (3.3 vs 5.2 games/s at 4 threads), and a scale
+bug between the one-candidate path (V x 1000, rounded) and the batch path made every "pair" outrank the batch scores, which
+showed up as 8.4% against SMART instead of 43%. The scale is fixed, the path stays behind
+`-Dares.agent.search.batch=false` (default) until it is understood: with sparse observations the win is in cache reuse, not
+in arithmetic, and my formulation did not deliver it.
+
+**A dead block removed from the hot path:** the double-payment block runs every `payAgain` card on a fresh copy at every
+observation, and it fires in 0.00000% of 200 000 audited rows. It now early-exits when no played card can pay again (the
+common case). It did not move the throughput on its own (14.9 vs 15.5 games/s), which confirms the network cost dominates.
+
+**Practical lever for speed:** the ensemble size. Six critics cost six forward passes; three gave 42.89% on the previous
+encoder against 43.6 for five, so the curve is flat near the top and a smaller ensemble is a legitimate speed knob.
