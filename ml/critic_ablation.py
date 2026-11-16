@@ -31,14 +31,14 @@ import train_value  # noqa: E402
 
 # name prefix -> the block. A block is a set of columns that encode one kind of fact, so zeroing it is a clean question.
 BLOCKS = {
-    "hand identity (268)": ("cards:in_my_hand_",),
-    "opponent table (178)": ("op_table_",),
-    "blue table (166)": ("cards:my_blue_", "cards:opponent_blue_"),
-    "milestones and awards (58)": ("milestone_", "award_"),
-    "context switches (30)": ("ctx:",),
-    "tags (22)": ("tags:",),
-    "double payment maxima (22)": ("cards:my_max_double_payment_", "cards:opponent_max_double_payment_"),
-    "score (2)": ("score:",),
+    "hand identity": ("cards:in_my_hand_",),
+    "opponent table": ("op_table_",),
+    "blue table": ("cards:my_blue_", "cards:opponent_blue_"),
+    "milestones and awards": ("milestone_", "award_"),
+    "context switches": ("ctx:",),
+    "tags": ("tags:",),
+    "double payment maxima": ("cards:my_max_double_payment_", "cards:opponent_max_double_payment_"),
+    "score": ("score:",),
 }
 
 

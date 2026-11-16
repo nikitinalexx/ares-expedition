@@ -576,13 +576,30 @@ value cannot express "play the income card now because the tag card is next". Th
 is literally the card taken, given the hand) and to any multi-step search. Nothing was removed from the observation, and the
 deployed critic is unchanged until a ranking-role test (10 000 games) says otherwise.
 
+### The critic, changed on measurement (2026-11-16, night)
+
+Owner's permission: "change the critic as you see fit". Two changes, both with a reason and a gate:
+
+* **A dropped block is now dead in the exported model.** `--drop-prefix` used to zero the block only in the training rows;
+  the first-layer weights of those columns never receive a gradient and keep their random initial values, and the engine
+  feeds the real values at play time - a silent noise injector. `train_value.mask_features` zeroes the weights and the
+  normalisation, `main` refuses to export a model that reacts to the block (measured 0.0 on 268 dropped columns), and
+  `ml/tests/test_train_value.py` pins the contract. Without this, no block ablation could ever become a deployment.
+* **The encoder is 1256 wide, every scale critic is 1090.** The blue-table identity bits (83 per side) were added after the
+  150k-game corpus. Those critics are critic science, not deployable models. Everything must be retrained on a 1256 corpus.
+
+The first 1256 corpus is being generated now: `D:/ares/data/boot1`, 20 000 games, **no `--models`** (uniform random), which
+is the policy bootstrap. Next: pack it with `--candidates`, `ml/critic_ablation.py` on it (which of the eight blocks pays
+on the current representation), `train_policy_ce.py --packed` for the bootstrap policy, then self-play with that policy and a
+new critic; only then is the ranking-role measurement (10 000 games) possible.
+
 ### The next three actions, in order
 
-1. audit `v_scale_packed` (the audit half of `ml/verify_critic.ps1`: it needs no policy); ranking/decider/profile must wait
-   for the policy bootstrap, because the old `r25_rev2`/`r28_hand` heads cannot load the new candidate widths;
-2. bootstrap a policy on the new candidate vectors, then rank the critics again - and with the hand bits *in the policy*
-   (that is where they are learnable), not in the critic;
-3. run `ml/nightly.py check` once so the new pack stage (`ensure_pack`) is exercised end to end before a real night.
+1. pack `boot1` with `--candidates`, run `pack_check`, then `ml/critic_ablation.py` on it - the block screen on the encoder
+   that will actually be deployed;
+2. `train_policy_ce.py --packed` on the same pack: the bootstrap policy that makes play/compare possible again;
+3. self-play with that policy -> a bigger corpus -> the critic chosen by the screen, then the six-critic ensemble at 10 000
+   games against SMART.
 
 ### Bootstrap recipe (candidate widths changed, no policy can be loaded)
 

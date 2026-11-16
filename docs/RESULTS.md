@@ -118,3 +118,22 @@ Reading it correctly:
 Decision: nothing is removed from the observation (owner's rule), and the deployed critic is **not** changed on this
 evidence. A 0.002 value-accuracy difference is not a win in the ranking role, and only the ranking role pays; if the block
 is to be masked at export, that must be measured as a ranking player (10 000 games), not as an AUC.
+
+## Critic housekeeping the ablation needed (2026-11-16, night)
+
+Two facts that block "just deploy the better critic", both found while setting up the block ablation:
+
+1. **The encoder is 1256 wide now, the scale corpus and every critic on it are 1090.** The blue-table identity bits (166
+   columns) were added after `D:/ares/data/scale1090` was generated. So `v_scale_full` / `v_scale_packed` are valid *critic
+   science* on the 1090 representation but cannot be deployed: the engine would feed 1256 values. Every deployed critic has
+   to be retrained on a 1256 corpus (the bootstrap corpus below is the first one).
+2. **`--drop-prefix` was not deployable.** Zeroing a block in the training data leaves the first-layer weights of those
+   columns at their random initial values, because their gradient is exactly zero. At play time the engine feeds the real
+   (non-zero) values, so a "hand-free" critic would have added random noise in play - silently.
+
+Fix: `train_value.mask_features` zeroes the weights and the normalisation of the dropped columns, and `main` now *refuses to
+export* a model that reacts to them at all (invariance gate; the test run with 268 dropped columns measured 0.0). The
+reported val loss / AUC / `reference.json` now describe the masked, deployable model. `ml/tests/test_train_value.py` pins the
+contract.
+
+With that in place a block ablation (`ml/critic_ablation.py`) is a real decision, not just a training-side A/B.
