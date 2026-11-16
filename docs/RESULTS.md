@@ -187,3 +187,33 @@ What works: the **one-ply search with the critic decides build-vs-pass**, and th
 policy that builds nothing by itself. That is the bootstrap that continues: generate with search + V, train the critic on
 that distribution, then let the policy imitate the search's choices (expert iteration), which is self-play with our own
 critic - no benchmark model is involved.
+
+## Two infrastructure faults the bootstrap exposed (2026-11-16, night)
+
+**1. A menu cap is a property of the player, not a constant.** `BlueActionDecisions` was sized for 12 candidates from a
+corpus played by a weaker agent; a policy that builds 23 cards opens up to 14 blue actions, and the loud guard ("menu has N
+candidates; the decision is sized for M") killed **8% of games** - `TOO_MANY_FAILURES` after 120 games. That guard is doing
+its job: silent truncation would have trained on a mutilated menu. Re-measured maxima over the two 1256 corpora (mean /
+max): BUILD_CARD 1.2-1.9 / 11, BLUE_INPUT 3.3-3.5 / 40, BUILD_INPUT 5.7-6.2 / 15, BUILD_PAYMENT 1.2-1.4 / 40,
+PERFORM_BLUE_ACTION 1.3-2.0 / 11 (14 seen in the wild), SELL 2.5-4.8 / 21. Caps are now BuildCard 40, BlueAction 32,
+CollectIncome 32, BuildInput 24; the pack strips padding, so a generous cap costs raw file size only.
+
+**2. A model's identity is not a file's padding.** The full schema hash covers `maxCandidates` because a reader needs it to
+decode a file - but the model never sees the padding. Raising a cap therefore made every policy bundle unloadable and the
+bootstrap had to start over. `DecisionFile.Schema.modelHash()` now covers type + obsSize + candidateFeatures + the
+observation layout, the export writes it (`ml/phase_model.model_hash`), and `NeuralPolicy.checkSchema` prefers it, falling
+back to the strict check for older bundles. Cap tuning no longer invalidates a trained policy.
+
+## The bootstrap loop, as a single command (2026-11-16, night)
+
+`ml/bootstrap_loop.ps1 -Name boot4 -Games 20000 -Policy <dir> -Critic <dir>` runs one iteration: self-play with the search
+deciding build-vs-pass, one pack pass with the candidate block, the bit-exact pack check, the critic (hand identity masked,
+export gate), the policy by cross-entropy on the search's choices, then the acceptance instruments in order -
+`ml/policy_argmax.py` (the share of BUILD_CARD rows where the argmax stops; a policy trained on uniform-random choices stops
+on 91.5% and builds 0.0 cards per game), `check_player.py` (cards per game, phases, phase-3 spends), and only then a
+1000-game compare against SMART.
+
+State of the loop so far: `boot1` (random play) -> policy that stops on 91.5% and wins 1.7% vs RANDOM;
+`boot2` (5 000 games with search + critic) -> a policy whose argmax builds on 42.5% of rows, **23.6 cards per game**,
+16% vs RANDOM on its own, **3.2% +/- 1.1 vs SMART** with the search and its own critic. The engine and the loop are now
+sound; what is missing is iterations, not machinery.

@@ -27,7 +27,9 @@ param(
   [string]$Matchups = "AGENT:AGENT:0.85,AGENT:RANDOM:0.15"
 )
 
-$ErrorActionPreference = "Stop"
+# A native program may write to stderr on a recoverable event (one failed game out of thousands) and still
+# finish: PowerShell must not treat that as fatal. Exit codes are checked explicitly below.
+$ErrorActionPreference = "Continue"
 $root = "C:\Users\user\IdeaProjects\ares-expedition"
 Set-Location $root
 $cp = (Get-Content "$root\target\cp.txt" -Raw).Trim()
@@ -51,22 +53,27 @@ $play = @("-Xmx10g") + $search + @("-cp", "target/classes;$cp",
   "--max-rows-per-game-type", "8")
 if ($Policy) { $play += @("--models", $Policy) }
 & $java @play 2>&1 | Select-String -Pattern "done:" | ForEach-Object { "PLAY " + $_.Line.Substring(0, [Math]::Min(140, $_.Line.Length)) }
+if ($LASTEXITCODE -ne 0) { throw "self-play exited $LASTEXITCODE (see $data/errors.log)" }
 
 Write-Host "=== 2. pack -> $pack"
 if (Test-Path $pack) { Remove-Item -Recurse -Force $pack }
 py -3 ml/pack_dataset.py --data $data --out $pack --candidates | Select-Object -Last 5
+if ($LASTEXITCODE -ne 0) { throw "packing exited $LASTEXITCODE" }
 py -3 ml/pack_check.py --pack $pack --data $data --limit-chunks 2 | Select-Object -Last 4
+if ($LASTEXITCODE -ne 0) { throw "the pack check failed: the pack does not reproduce the raw chunks" }
 
 Write-Host "=== 3. critic -> $value (hand identity masked)"
 Remove-Item -Recurse -Force $value -ErrorAction SilentlyContinue
 py -3 ml/train_value.py --packed $pack --out $value --target margin --epochs 4 --hidden 512,256 `
     --names D:/ares/tmp/names_now.json --drop-prefix "cards:in_my_hand_" > "$out/critic.log" 2>&1
+if ($LASTEXITCODE -ne 0) { throw "the critic trainer exited $LASTEXITCODE (see $out/critic.log)" }
 Select-String -Path "$out/critic.log" -Pattern '"epoch"|dropped_columns|masked_gain|best_epoch' |
   ForEach-Object { "CRITIC " + $_.Line.Trim() } | Select-Object -Last 6
 
 Write-Host "=== 4. policy -> $model (cross-entropy on the search's choices)"
 Remove-Item -Recurse -Force $model -ErrorAction SilentlyContinue
 py -3 ml/train_policy_ce.py --packed $pack --out $model --epochs 3 > "$out/policy.log" 2>&1
+if ($LASTEXITCODE -ne 0) { throw "the policy trainer exited $LASTEXITCODE (see $out/policy.log)" }
 Select-String -Path "$out/policy.log" -Pattern "BUILD_CARD|PICK_PHASE|seconds" |
   ForEach-Object { "POLICY " + $_.Line.Trim().Substring(0, [Math]::Min(150, $_.Line.Trim().Length)) } | Select-Object -Last 4
 
