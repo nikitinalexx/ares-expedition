@@ -82,3 +82,39 @@ question. The owner's rule stands: information is not removed from the observati
 Pipeline: the same 4-epoch run costs 79.8 s instead of 2406 s, because the corpus is packed once
 (`docs/PIPELINE_IO.md`). The scale axis is therefore cheap now: a critic at 150k games is a two-minute experiment, not a
 40-minute one.
+
+## The hand, tested where it can matter (2026-11-16, night)
+
+The first A/B (`--drop-prefix cards:in_my_hand_` over every row) found a difference of +0.0008 loss, inside the noise band.
+The owner's objection was precise: a hand is held *in order to be played later, in order*, and that interaction can only
+show up where the hand is playable - the first test averaged over rows where it is not. It also, it turned out, used a
+biased normalisation sample.
+
+Instrument: `ml/hand_ab.py`. Rows with at least two cards in hand and at least one affordable (`hand:affordable_cards >= 1`):
+1 815 868 of 2 400 000 (mean hand 9.6 cards, 8.2 affordable), 15 002 held-out games. Paired: same rows, same seed, same
+split; error bar = game-level bootstrap of the per-row squared-error difference (rows of one game are not independent).
+
+| arm | best val loss (head stats) | best val loss (random stats) | AUC |
+|---|---|---|---|
+| with the 268 hand identity bits | 0.26156 | 0.26073 | 0.8866 / 0.8870 |
+| the bits zeroed | 0.25928 | 0.25880 | 0.8880 / 0.8888 |
+
+Difference (full - without) = **+0.00228 [+0.00090, +0.00368]** with the head statistics, **+0.00193 [+0.00059, +0.00329]**
+with random ones. Both intervals exclude zero: on playable hands the identity block costs the critic about 0.7% relative
+error and 0.0018 AUC.
+
+Reading it correctly:
+
+* the hand is **not** unimportant; the *critic* does not convert the identity of the hand cards into value accuracy. The
+  train loss is also higher with the bits, so this is not classic overfitting: the extra 268 sparse inputs make the
+  optimisation harder while the signal they carry is weak and interaction-dependent at our data volume.
+* found on the way, a real defect: the standardisation sample was the **first 200 000 rows of the pool**, i.e. the opening
+  of the first games, where a hand block is nearly empty. `--stats random` (now the default in `train_value.py`) samples the
+  training rows uniformly and lowers the error of *both* arms by ~0.0008 for free.
+* a one-ply afterstate value cannot express "play the income card now because the tag card is next turn": that is a plan,
+  not a state. The place where the hand can pay is the **policy** (its label is literally "which card was taken, given this
+  hand") and any multi-step search.
+
+Decision: nothing is removed from the observation (owner's rule), and the deployed critic is **not** changed on this
+evidence. A 0.002 value-accuracy difference is not a win in the ranking role, and only the ranking role pays; if the block
+is to be masked at export, that must be measured as a ranking player (10 000 games), not as an AUC.

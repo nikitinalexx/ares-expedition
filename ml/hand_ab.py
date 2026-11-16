@@ -52,14 +52,14 @@ class Without:
         return out
 
 
-def train_arm(obs, pool, hidden, epochs, seed, device, train_idx, val_idx):
+def train_arm(obs, pool, hidden, epochs, seed, device, train_idx, val_idx, stats_idx=None):
     started = time.time()
     target = np.clip(pool["margin"] / 20.0, -3.0, 3.0).astype(np.float32)
     fitted = train_value.fit_value(obs, pool["outcome"], hidden=hidden, epochs=epochs, lr=1e-3,
                                    weight_decay=1e-5, batch=4096, seed=seed, device=device,
                                    train_idx=train_idx, val_idx=val_idx,
                                    label_mean=float(pool["outcome"][train_idx].mean()),
-                                   target=target, target_kind="margin", verbose=True)
+                                   target=target, target_kind="margin", verbose=True, stats_idx=stats_idx)
     predicted = train_value.predict(fitted["params"], obs[val_idx], squash=False)
     return {"params": fitted["params"], "history": fitted["history"], "predicted": predicted,
             "truth": target[val_idx], "seconds": round(time.time() - started, 1)}
@@ -86,6 +86,10 @@ def main():
     parser.add_argument("--hidden", default="512,256")
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--out", default="")
+    parser.add_argument("--stats", choices=("head", "random"), default="random",
+                        help="how the standardisation sample is drawn: `head` is the first 200k rows of the pool (the "
+                             "opening of the first games, where the hand block is nearly empty), `random` is a uniform "
+                             "sample of the training rows")
     args = parser.parse_args()
 
     names = json.load(open(args.names, encoding="utf-8"))
@@ -115,8 +119,15 @@ def main():
     hidden = [int(x) for x in args.hidden.split(",")]
     import torch
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    full = train_arm(obs, pool, hidden, args.epochs, args.seed, device, train_idx, val_idx)
-    nohand = train_arm(Without(obs, drop), pool, hidden, args.epochs, args.seed, device, train_idx, val_idx)
+    stats_idx = None
+    if args.stats == "random":
+        # The identity bits are zero at the start of a game and dense later, and the pool is in (game, seat, step) order:
+        # statistics taken from its head would enter the first layer unnormalised. A uniform sample of the training rows is
+        # the honest normalisation, and it is the same sample for both arms.
+        stats_idx = np.random.default_rng(args.seed + 11).choice(train_idx, size=min(200_000, len(train_idx)),
+                                                                 replace=False)
+    full = train_arm(obs, pool, hidden, args.epochs, args.seed, device, train_idx, val_idx, stats_idx)
+    nohand = train_arm(Without(obs, drop), pool, hidden, args.epochs, args.seed, device, train_idx, val_idx, stats_idx)
 
     # paired, game-level bootstrap: rows of the same game are not independent
     games = np.asarray(pool["game"][val_idx])

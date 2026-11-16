@@ -111,8 +111,15 @@ class ValueNet(nn.Module):
         return self.w3(h2).squeeze(-1)
 
 
-def standardize(obs):
-    sample = obs if len(obs) <= BLOCK_ROWS else obs[:BLOCK_ROWS]
+def standardize(obs, index=None):
+    if index is not None:
+        sample = np.asarray(obs[np.asarray(index, dtype=np.int64)])
+    else:
+        # NOTE: the pool is ordered by (game, seat, step), so "the first rows" are the OPENING of the first games. For a
+        # block that is zero at the start of a game and dense later (the hand identity bits) those statistics are
+        # systematically wrong: mean too low, std too low, so the block enters the first layer unnormalised. Pass a random
+        # sample (--stats-random, ml/hand_ab.py) when the question is about such a block.
+        sample = obs if len(obs) <= BLOCK_ROWS else obs[:BLOCK_ROWS]
     mean = sample.astype(np.float32).mean(0)
     std = sample.astype(np.float32).std(0)
     return mean, np.where(std < 1e-3, 1.0, std).astype(np.float32)
@@ -120,7 +127,7 @@ def standardize(obs):
 
 def fit_value(obs, outcome, hidden=(256, 128), epochs=6, lr=1e-3, weight_decay=1e-5, batch=4096,
               seed=1, device="cpu", val_fraction=0.1, steps=0, label_mean=None, verbose=True,
-              train_idx=None, val_idx=None, target=None, target_kind="outcome"):
+              train_idx=None, val_idx=None, target=None, target_kind="outcome", stats_idx=None):
     """Trains V on (obs f16/f32 [n, obsSize], outcome f32 [n]). Returns the best epoch as numpy parameters.
 
     The split is by game (`train_idx` / `val_idx` from the caller, or a hash of the row's game id), so the same game
@@ -133,7 +140,7 @@ def fit_value(obs, outcome, hidden=(256, 128), epochs=6, lr=1e-3, weight_decay=1
     rng = np.random.default_rng(seed)
     device = torch.device(device)
     target = outcome if target is None else target
-    mean, std = standardize(obs)
+    mean, std = standardize(obs, stats_idx)
     if train_idx is None or val_idx is None:
         split = is_validation_game(np.arange(len(obs)).astype(np.uint64), val_fraction) if val_fraction else \
             np.zeros(len(obs), dtype=bool)
@@ -597,6 +604,10 @@ def main():
                         help="at most this many states of one game (0 = all); the label is the same for all of them")
     parser.add_argument("--val-fraction", type=float, default=0.1)
     parser.add_argument("--seed", type=int, default=1)
+    parser.add_argument("--stats", choices=("random", "head"), default="random",
+                        help="where the mean/std of the observation come from: `head` = the first 200k rows of the pool, "
+                             "which is the opening of the first games (that block is nearly empty there, so a hand block "
+                             "enters the first layer unnormalised); `random` = a uniform sample of the training rows")
     parser.add_argument("--device", default="auto")
     parser.add_argument("--td-steps", type=int, default=1,
                         help="how many decision steps the TD target spans (1 = one step, then the bootstrap value). "
@@ -770,11 +781,19 @@ def main():
         has_next = nxt >= 0
         print(f"  TD targets from {args.td_bootstrap}: {int(has_next.sum())} rows with a next state, "
               f"{int((~has_next).sum())} terminal; mean {target.mean():.3f}, sd {target.std():.3f}", flush=True)
+    train_idx = np.flatnonzero(~split)
+    stats_idx = None
+    if args.stats == "random":
+        # Uniform over the training rows, not over the first 200k rows of the pool: the pool is ordered by
+        # (game, seat, step), so its head is the opening, where a hand block is nearly empty and its mean/std are wrong
+        # (measured: the same recipe fits better with random statistics, ml/hand_ab.py, 2026-11-16).
+        stats_idx = np.random.default_rng(args.seed + 11).choice(train_idx, size=min(200_000, len(train_idx)),
+                                                                replace=False)
     fitted = fit_value(pool["obs"], pool["outcome"], hidden=hidden, epochs=args.epochs, lr=args.lr,
                        weight_decay=args.weight_decay, batch=args.batch, seed=args.seed, device=device,
-                       train_idx=np.flatnonzero(~split), val_idx=np.flatnonzero(split),
+                       train_idx=train_idx, val_idx=np.flatnonzero(split),
                        label_mean=float(pool["outcome"][~split].mean()),
-                       target=target, target_kind=args.target)
+                       target=target, target_kind=args.target, stats_idx=stats_idx)
     params, history = fitted["params"], fitted["history"]
     predicted = predict(params, val, squash=args.target == "outcome")
     if args.target == "outcome":
