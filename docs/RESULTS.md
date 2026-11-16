@@ -5,6 +5,18 @@ error bar in mind: **evaluation** noise is +/- 1 point at 10 000 games, but **cr
 points win rate (two critics with the same recipe on different 100k samples scored 42.98% and 39.38%, see
 docs/EXPERIMENTS.md). The ensemble experiment exists because of that second band.
 
+## The marginal rate (the honest accounting)
+
+| period | change | what it was |
+|---|---|---|
+| until 15 Nov | 37.8% | the starting point of the session |
+| 16 Nov, first half | 37.8 -> 42.98% | two one-off blindness repairs (the hand, the printed points) and the five-critic ensemble |
+| 16 Nov, last ~24 h | 43.59 -> **44.00%** | tags and hand identities inside the ensemble: **+1 point, inside the +/- 1 band** |
+
+At this rate the remaining distance to NETWORK (roughly 20 points of win rate against SMART) is not reachable by tuning:
+`docs/FORECAST.md` states the kill criteria and the only two levers with a measured mechanism - data scale, and a class
+change of the representation.
+
 ## What is deployed / best
 
 | configuration | vs SMART | games |

@@ -1685,12 +1685,17 @@ So the local A/B was misleading in exactly the way the owner warned it would be:
 cannot exploit 268 rare bits, but averaged with five others it adds 0.8 points - and the behaviour moves with it (cards per
 game 12.9 -> 13.5, acceptance 0.57 -> 0.61, phases unchanged at 49/51). The gate holds: sanity 9/9, 0 gate failures.
 
-Shape of today's progression, all on the same mechanism (rank the candidates of BUILD_CARD/DRAFT_CARDS by a margin-trained
-critic, pairs on, symmetric score):
+Progression, with the dates, because the rate is the point:
 
-37.8% (start) -> 41.2 (critic trained on 100k exploration games, 512x256) -> 42.0 (the effective price of a card in the
-observation) -> 43.6 (five-critic ensemble) -> **44.0** (ensemble plus a critic that sees the tags on the table and the hand
-identities). Every step came from the critic - its data, its information, its variance - not from a new decision mechanism.
+| date | vs SMART | what moved it |
+|---|---|---|
+| 15 Nov (before this session) | 37.8% +/- 2 (2 000) | the critic trained on policy play |
+| 16 Nov, first half | 42.98% +/- 1.0 (10 000) | the two blindness fixes (the hand in the observation, the printed points of a card) and the five-critic ensemble |
+| 16 Nov, second half - **the last ~24 h** | 43.59 -> **44.00% +/- 1.0** (10 000) | tag counts on the table and the hand identities *inside* the ensemble: **+1.0 point, inside the +/- 1.0 band** |
+
+So the marginal rate of this approach is about **one point a day**, and it is slowing: the six points since the 15th were
+almost all one-off blindness repairs, not a mechanism that keeps giving. That is written in docs/FORECAST.md with the kill
+criteria, and it is why the current work is the data-scale test (rare hand bits need volume) rather than another mechanism.
 
 ## 2026-11-16: pipeline speed, measured (the owner's question)
 
