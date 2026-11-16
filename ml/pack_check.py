@@ -65,7 +65,7 @@ def main():
                     checked_candidates += int(counts[i])
                 checked_rows += count
             offset += count
-        if offset != manifest["types"][decision]["rows"]:
+        if args.limit_chunks == 0 and offset != manifest["types"][decision]["rows"]:
             raise SystemExit(f"{decision}: pack has {manifest['types'][decision]['rows']} rows, "
                              f"the checked chunks have {offset}")
         print(f"  {decision:22s} {offset:7d} rows, {checked_candidates:8d} candidates checked", flush=True)

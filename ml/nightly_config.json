@@ -104,6 +104,24 @@
       "--rows-per-game",
       "8"
     ],
+    "pack_command": [
+      "{python}",
+      "ml/train_all.py",
+      "--packed",
+      "{packed}",
+      "--out",
+      "{model_dir}",
+      "--prev",
+      "{prev_model}",
+      "--epochs",
+      "50",
+      "--steps",
+      "100",
+      "--patience",
+      "5",
+      "--rows-per-game",
+      "8"
+    ],
     "timeout_seconds": 7200
   },
   "maven": {

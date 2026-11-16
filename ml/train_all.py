@@ -57,6 +57,7 @@ def load_type_schemas(data, decisions):
     return result
 
 
+MANIFEST = None  # the opened pack, when --packed is used
 SEQUENTIAL_RUN = 25  # night 1: a 100k-row block of ~250 games = ~25 batches of 4096 in a row
 
 
@@ -108,6 +109,47 @@ def build_pools(files, fraction, rng, rows_per_game):
     return finish(collected[False]), finish(collected[True])
 
 
+def build_packed_pools(packed_dir, decision, fraction, rng, rows_per_game, manifest):
+    """The same pools as build_pools, from a pack: obs + the candidate each row took, never the padded block.
+
+    The shared-trunk trainer and the per-type trainer both read only the chosen candidate, so the pack can serve them
+    directly. The raw loader needed one padded read of every chunk per run (119.7 GiB for the 150k-game corpus); this
+    reads the observation file and gathers the chosen rows, which is 26 GiB for the same corpus.
+    """
+    import ares_data
+
+    data = ares_data.open_packed_type(packed_dir, decision, manifest)
+    if "cands" not in data:
+        raise SystemExit(f"{packed_dir}: {decision} was packed without --candidates")
+    total = len(data["obs"])
+    collected = {False: ([], [], [], []), True: ([], [], [], [])}
+    for start in range(0, total, BLOCK_ROWS):
+        stop = min(start + BLOCK_ROWS, total)
+        rows = np.arange(start, stop)
+        games = np.asarray(data["game"][rows])
+        side = is_validation_game(games, fraction)
+        for validation, mask in ((False, ~side), (True, side)):
+            positions = np.nonzero(mask)[0]
+            if rows_per_game and len(positions):
+                positions = positions[cap_per_game(games[positions], rows_per_game, rng)]
+            if not len(positions):
+                continue
+            picked = rows[positions]
+            obs, cand, outcome, game = collected[validation]
+            obs.append(data["obs"][picked])
+            cand.append(data["cands"].chosen(picked))
+            outcome.append(np.asarray(data["outcome"])[picked].astype(np.float32))
+            game.append(np.asarray(data["game"])[picked])
+
+    def finish(parts):
+        obs, cand, outcome, game = parts
+        if not obs:
+            return None
+        return np.concatenate(obs), np.concatenate(cand), np.concatenate(outcome), np.concatenate(game)
+
+    return finish(collected[False]), finish(collected[True])
+
+
 def train_independent(args, type_files):
     """One subprocess of train_phase.py per type. No shared weights."""
     results = {}
@@ -116,7 +158,7 @@ def train_independent(args, type_files):
         os.makedirs(out, exist_ok=True)
         prev = os.path.join(args.prev, decision) if args.prev and os.path.isdir(os.path.join(args.prev, decision)) else ""
         cmd = [sys.executable, os.path.join(os.path.dirname(__file__), "train_phase.py"),
-               "--data", args.data, "--out", out, "--decision", decision,
+               ("--packed" if args.packed else "--data"), (args.packed or args.data), "--out", out, "--decision", decision,
                "--epochs", str(args.epochs), "--hidden", args.hidden, "--lr", str(args.lr),
                "--weight-decay", str(args.weight_decay), "--batch", str(args.batch),
                "--val-fraction", str(args.val_fraction), "--seed", str(args.seed), "--device", args.device]
@@ -155,7 +197,11 @@ def train_shared(args, type_files):
     pool_rng = np.random.default_rng(args.seed)  # the same pools after a resume
     train_pool, val_pool = {}, {}
     for d in decisions:
-        train_pool[d], val_pool[d] = build_pools(files_by[d], args.val_fraction, pool_rng, args.rows_per_game)
+        if args.packed:
+            train_pool[d], val_pool[d] = build_packed_pools(args.packed, d, args.val_fraction, pool_rng,
+                                                            args.rows_per_game, MANIFEST)
+        else:
+            train_pool[d], val_pool[d] = build_pools(files_by[d], args.val_fraction, pool_rng, args.rows_per_game)
     sizes = {d: (0 if train_pool[d] is None else len(train_pool[d][0]), 0 if val_pool[d] is None else len(val_pool[d][0])) for d in decisions}
     n_train = sum(s[0] for s in sizes.values())
     if n_train == 0:
@@ -491,7 +537,10 @@ def train_shared(args, type_files):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data", required=True)
+    parser.add_argument("--data", default="", help="comma-separated directories with *.NNNNNN.ares chunks")
+    parser.add_argument("--packed", default="",
+                        help="a pack made by ml/pack_dataset.py --candidates: every trainer reads it instead "
+                             "of the padded raw chunks (one disk pass instead of one per run)")
     parser.add_argument("--out", required=True)
     parser.add_argument("--prev", default="")
     parser.add_argument("--freeze-trunk", action="store_true",
@@ -531,26 +580,50 @@ def main():
                         help="comma-separated decision types to train (default: every type that has chunks)")
     args = parser.parse_args()
 
+    global MANIFEST
     started = time.time()
     os.makedirs(args.out, exist_ok=True)
-    discovered = discover_decisions(args.data)
-    if args.only:
-        wanted = [x.strip() for x in args.only.split(",") if x.strip()]
-        missing = [w for w in wanted if w not in discovered]
-        if missing:
-            print(f"no chunks for: {missing}", file=sys.stderr)
-            return 2
-        decisions = wanted
-    else:
-        decisions = discovered
-    if not decisions:
-        print("no finished decision chunks in " + args.data, file=sys.stderr)
+    if not args.data and not args.packed:
+        print("--data or --packed is required", file=sys.stderr)
         return 2
+    if args.packed:
+        import ares_data
 
-    type_files = load_type_schemas(args.data, decisions)
-    if not type_files:
-        print("no usable chunks after schema checks", file=sys.stderr)
-        return 2
+        MANIFEST = ares_data.open_pack(args.packed)
+        available = sorted(d for d, meta in MANIFEST["types"].items() if "candidates" in meta)
+        if args.only:
+            wanted = [x.strip() for x in args.only.split(",") if x.strip()]
+            missing = [w for w in wanted if w not in available]
+            if missing:
+                print(f"no packed candidates for: {missing}", file=sys.stderr)
+                return 2
+            decisions = wanted
+        else:
+            decisions = available
+        if not decisions:
+            print(f"no decision types with candidates in {args.packed} (pack with --candidates)", file=sys.stderr)
+            return 2
+        type_files = {d: ({"type": d, "hash": MANIFEST["types"][d]["hash"], "obsSize": MANIFEST["obsSize"],
+                           "candidateFeatures": MANIFEST["types"][d]["candidates"]["features"]}, [args.packed])
+                      for d in decisions}
+    else:
+        discovered = discover_decisions(args.data)
+        if args.only:
+            wanted = [x.strip() for x in args.only.split(",") if x.strip()]
+            missing = [w for w in wanted if w not in discovered]
+            if missing:
+                print(f"no chunks for: {missing}", file=sys.stderr)
+                return 2
+            decisions = wanted
+        else:
+            decisions = discovered
+        if not decisions:
+            print("no finished decision chunks in " + args.data, file=sys.stderr)
+            return 2
+        type_files = load_type_schemas(args.data, decisions)
+        if not type_files:
+            print("no usable chunks after schema checks", file=sys.stderr)
+            return 2
     print(f"training {len(type_files)} decision types: {', '.join(type_files)}", flush=True)
 
     if args.independent:

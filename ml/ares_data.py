@@ -220,11 +220,12 @@ class PackedCandidates:
     reads a zero row that contributes nothing to any score.
     """
 
-    def __init__(self, flat, ids, offsets, count, features, selection=None):
+    def __init__(self, flat, ids, offsets, count, features, selection=None, chosen=None):
         self.flat = flat
         self.ids = ids
         self.offsets = np.asarray(offsets, dtype=np.int64)
         self.count = np.asarray(count, dtype=np.int64)
+        self.chosen_index = None if chosen is None else np.asarray(chosen, dtype=np.int64)
         self.features = int(features)
         self.selection = None if selection is None else np.asarray(selection, dtype=np.int64)
         self.shape = (len(self.selection) if self.selection is not None else len(self.count), self.features)
@@ -240,7 +241,8 @@ class PackedCandidates:
             index = np.flatnonzero(index)
         if self.selection is not None:
             index = self.selection[index]
-        return PackedCandidates(self.flat, self.ids, self.offsets, self.count, self.features, selection=index)
+        return PackedCandidates(self.flat, self.ids, self.offsets, self.count, self.features, selection=index,
+                                chosen=self.chosen_index)
 
     def _padded(self, index, source, dtype):
         index = np.asarray(index, dtype=np.int64)
@@ -266,6 +268,19 @@ class PackedCandidates:
         if index.ndim == 0:
             return self._padded(index[None], self.flat, np.float32)[0]
         return self._padded(index, self.flat, np.float32)
+
+    def chosen(self, item):
+        """The features of the candidate each row actually took: [b, features] float32, no padding at all.
+
+        This is what the older per-type learner (`train_phase.py`) reads (obs + the chosen candidate), so it can use the
+        pack without materialising the padded candidate tensor.
+        """
+        index = np.asarray(item, dtype=np.int64)
+        if self.selection is not None:
+            index = self.selection[index]
+        if self.chosen_index is None:
+            raise ValueError("this packed type has no chosen indices")
+        return np.asarray(self.flat[self.offsets[index] + self.chosen_index[index]], dtype=np.float32)
 
     def gather_ids(self, item):
         index = np.asarray(item, dtype=np.int64)
@@ -326,7 +341,8 @@ def open_packed_type(directory, decision, manifest=None):
         ids = np.memmap(os.path.join(directory, f"{decision}.cids.u2"), dtype="<u2", mode="r",
                         shape=(int(meta["candidates"]["rows"]) + 1,))
         data["cands"] = PackedCandidates(flat, ids, candidates["offset"], count,
-                                         int(meta["candidates"]["features"]))
+                                         int(meta["candidates"]["features"]),
+                                         chosen=candidates["chosen"])
         data["ids"] = PackedIdView(data["cands"])
         data["chosen"] = candidates["chosen"].astype(np.int64)
         data["count"] = count

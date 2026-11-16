@@ -83,6 +83,44 @@ def build_pool(files, fraction):
     return finish(collected[False]), finish(collected[True])
 
 
+def build_packed_pool(directory, decision, fraction, manifest=None):
+    """The same (obs, chosen candidate) pool as build_pool, from a pack: no padded candidate block is ever read.
+
+    The older per-type learner only uses the candidate each row actually took, so the pack can serve exactly that - one
+    gather of the chosen rows instead of unpacking [rows, maxCand, features] and throwing all but one away.
+    """
+    import ares_data
+
+    manifest = ares_data.open_pack(directory) if manifest is None else manifest
+    data = ares_data.open_packed_type(directory, decision, manifest)
+    if "cands" not in data:
+        raise SystemExit(f"{directory}: {decision} was packed without --candidates")
+    total = len(data["obs"])
+    collected = {False: ([], [], [], []), True: ([], [], [], [])}
+    for start in range(0, total, BLOCK_ROWS):
+        stop = min(start + BLOCK_ROWS, total)
+        rows = np.arange(start, stop)
+        games = np.asarray(data["game"][rows])
+        side = is_validation_game(games, fraction)
+        for validation, mask in ((False, ~side), (True, side)):
+            if not mask.any():
+                continue
+            picked = rows[mask]
+            obs, cand, outcome, game = collected[validation]
+            obs.append(data["obs"][picked])
+            cand.append(data["cands"].chosen(picked))
+            outcome.append(np.asarray(data["outcome"])[picked].astype(np.float32))
+            game.append(np.asarray(data["game"])[picked])
+
+    def finish(parts):
+        obs, cand, outcome, game = parts
+        if not obs:
+            return None
+        return np.concatenate(obs), np.concatenate(cand), np.concatenate(outcome), np.concatenate(game)
+
+    return finish(collected[False]), finish(collected[True])
+
+
 def standardisation_from_pool(obs):
     """Mean and std of every observation feature over the TRAINING pool (already in RAM; chunked float64 accumulation
     so a huge pool is not doubled in memory by one big float64 cast)."""
@@ -104,7 +142,9 @@ def standardisation_from_pool(obs):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data", required=True)
+    parser.add_argument("--data", default="", help="comma-separated directories with *.NNNNNN.ares chunks")
+    parser.add_argument("--packed", default="",
+                        help="a pack made by ml/pack_dataset.py --candidates: read it instead of the raw chunks")
     parser.add_argument("--out", required=True)
     parser.add_argument("--decision", default="PICK_PHASE", help="which decision type to train; the chunks are named <decision>.NNNNNN.ares")
     parser.add_argument("--prev", default="")
@@ -122,20 +162,39 @@ def main():
     from torch import nn
 
     started = time.time()
-    files = list_chunks(args.data, args.decision)
-    if not files:
-        print("no finished chunks in " + args.data, file=sys.stderr)
+    if not args.data and not args.packed:
+        print("--data or --packed is required", file=sys.stderr)
         return 2
-    schema, first = open_memmap(files[0])
-    problems = validate(schema, first[: min(len(first), 20000)])
-    if problems:
-        print(f"{files[0]}: {problems}", file=sys.stderr)
-        return 3
-    for f in files[1:]:
-        other, _ = open_memmap(f)
-        if other["hash"] != schema["hash"]:
-            print(f"{f} has the schema hash {other['hash']}, expected {schema['hash']}: data of different encoders must not be mixed", file=sys.stderr)
+    packed_manifest = None
+    if args.packed:
+        import ares_data
+
+        packed_manifest = ares_data.open_pack(args.packed)
+        if args.decision not in packed_manifest["types"]:
+            print(f"{args.packed}: no {args.decision}", file=sys.stderr)
+            return 2
+        meta = packed_manifest["types"][args.decision]
+        schema = {"type": args.decision, "hash": meta["hash"], "obsSize": meta["obsSize"],
+                  "candidateFeatures": meta.get("candidates", {}).get("features")}
+        files = [args.packed]
+        if "candidates" not in meta:
+            print(f"{args.packed}: {args.decision} has no candidate block (pack with --candidates)", file=sys.stderr)
+            return 2
+    else:
+        files = list_chunks(args.data, args.decision)
+        if not files:
+            print("no finished chunks in " + args.data, file=sys.stderr)
+            return 2
+        schema, first = open_memmap(files[0])
+        problems = validate(schema, first[: min(len(first), 20000)])
+        if problems:
+            print(f"{files[0]}: {problems}", file=sys.stderr)
             return 3
+        for f in files[1:]:
+            other, _ = open_memmap(f)
+            if other["hash"] != schema["hash"]:
+                print(f"{f} has the schema hash {other['hash']}, expected {schema['hash']}: data of different encoders must not be mixed", file=sys.stderr)
+                return 3
     obs_size, cand_features = schema["obsSize"], schema["candidateFeatures"]
     hidden = [int(x) for x in args.hidden.split(",")]
     device = torch.device("cuda" if args.device == "auto" and torch.cuda.is_available() else ("cpu" if args.device == "auto" else args.device))
@@ -143,7 +202,11 @@ def main():
     rng = np.random.default_rng(args.seed)
     os.makedirs(args.out, exist_ok=True)
 
-    train_data, val_data = build_pool(files, args.val_fraction)  # one disk pass, total, regardless of --epochs
+    # one disk pass, total, regardless of --epochs
+    if args.packed:
+        train_data, val_data = build_packed_pool(args.packed, args.decision, args.val_fraction, packed_manifest)
+    else:
+        train_data, val_data = build_pool(files, args.val_fraction)
     if train_data is None:
         raise SystemExit("no training rows (are there finished chunks and more than one game?)")
     train_obs, train_cand, train_outcome, _train_game = train_data

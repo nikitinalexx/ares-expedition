@@ -394,7 +394,10 @@ DEFAULT_CONFIG = {
     # max_rows_per_game_type: decisions of one game written per type (0 = all); how many are useful is hypothesis H-D3
     "selfplay": {"temperature": 0.5, "games_per_chunk": 500, "stage_max_seconds": 3600, "grace_seconds": 90, "max_failure_ratio": 0.05,
                  "max_rows_per_game_type": 64},
-    "train": {"command": ["{python}", "ml/train_all.py", "--data", "{data}", "--out", "{model_dir}", "--prev", "{prev_model}", "--epochs", "3"], "timeout_seconds": 7200},
+    "train": {"command": ["{python}", "ml/train_all.py", "--data", "{data}", "--out", "{model_dir}", "--prev", "{prev_model}", "--epochs", "3"],
+                   "pack_command": ["{python}", "ml/train_all.py", "--packed", "{packed}", "--out", "{model_dir}", "--prev", "{prev_model}", "--epochs", "3"],
+                   "timeout_seconds": 7200},
+    "pack": {"timeout_seconds": 21600},
     "eval": {"games": 200, "references": ["SMART", "RANDOM"], "agent": "AGENT", "concurrency": 32, "timeout_seconds": 1800, "bias_alarm_gap": 0.10},
     # slow opponents (NETWORK…): once at end, best model only; never training data. Skipped until the best model’s
     # win rate vs a gate_ref reaches min_win_rate (skill gap is huge — 40% vs RANDOM still means ~0% vs NETWORK).
@@ -824,9 +827,13 @@ class Pipeline:
             self.write_status()
             model_dir.mkdir(parents=True, exist_ok=True)
             # per-experiment trainer flags (architecture, lr, ...) go last, so they override the common ones
-            cmd = self.template(list(tr["command"]) + list(exp_cfg.get("train_args", [])),
-                                data=",".join(str(w) for w in window), model_dir=str(model_dir),
-                                prev_model=str(prev) if prev else "", exp=exp, iteration=it)
+            values = dict(data=",".join(str(w) for w in window), model_dir=str(model_dir),
+                          prev_model=str(prev) if prev else "", exp=exp, iteration=it)
+            parts = list(tr["command"])
+            packed = self.ensure_pack(exp, it, window) if tr.get("pack_command") else None
+            if packed is not None:
+                parts, values["packed"] = list(tr["pack_command"]), str(packed)
+            cmd = self.template(parts + list(exp_cfg.get("train_args", [])), **values)
             result = run_command(cmd, log_path, tr["timeout_seconds"], self.stop, env=self.storage.child_env(),
                                  guard=self.storage.guard, guard_interval=self.storage.interval, tick=self.tick,
                                  low_priority=self.cfg["low_priority"])
@@ -1021,6 +1028,54 @@ class Pipeline:
     def data_window(self, exp, it):
         keep = self.storage.keep
         return [self.data_dir(exp, i) for i in range(max(1, it - keep + 1), it + 1) if self.data_dir(exp, i).exists()]
+
+    def pack_dir(self, exp, it):
+        return self.run_dir / "pack" / f"{exp}_it{it:04d}"
+
+    def ensure_pack(self, exp, it, window):
+        """One sequential pass over the window; the trainers then read the pack instead of the padded chunks.
+
+        The raw corpus is 76-96% candidate padding per row and every training run re-read all of it. The pack is built
+        once per window (~20 min for 150 000 games at the measured 110 MB/s), is bit-exact to the raw chunks
+        (ml/pack_check.py) and makes every later run read ~26 GB instead of ~120 GB. A failed pack is not fatal: the
+        trainers fall back to the raw chunks.
+        """
+        if not window:
+            return None
+        target = self.pack_dir(exp, it)
+        manifest = target / "manifest.json"
+        if manifest.exists():
+            try:
+                if json.loads(manifest.read_text(encoding="utf-8")).get("rows", 0) > 0:
+                    return target
+            except (ValueError, OSError):
+                pass
+        building = target.with_name(target.name + ".building")
+        shutil.rmtree(building, ignore_errors=True)
+        log_path = self.run_dir / "pack" / f"{exp}_it{it:04d}.log"
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        cmd = [self.cfg["python"], os.path.join("ml", "pack_dataset.py"),
+               "--data", ",".join(str(w) for w in window), "--out", str(building), "--candidates"]
+        started = time.time()
+        result = run_command(cmd, log_path, (self.cfg.get("pack") or {}).get("timeout_seconds", 21600), self.stop,
+                             env=self.storage.child_env(), guard=self.storage.guard,
+                             guard_interval=self.storage.interval, tick=self.tick,
+                             low_priority=self.cfg["low_priority"])
+        if not result.ok:
+            self.log(f"pack of {exp} it{it} failed ({result.reason}); the trainers fall back to the raw chunks")
+            shutil.rmtree(building, ignore_errors=True)
+            return None
+        try:
+            rows = json.loads((building / "manifest.json").read_text(encoding="utf-8")).get("rows", 0)
+        except (ValueError, OSError):
+            rows = 0
+        if rows <= 0:
+            self.log(f"pack of {exp} it{it} wrote no rows; the trainers fall back to the raw chunks")
+            shutil.rmtree(building, ignore_errors=True)
+            return None
+        building.rename(target)
+        self.log(f"pack of {exp} it{it}: {rows} rows in {time.time() - started:.0f} s -> {target}")
+        return target
 
     def prune_old_data(self, protect_exp=None, protect_it=None):
         """Deletes the data of iterations that fell out of the window. Models, evaluations and logs are never deleted."""
