@@ -68,14 +68,19 @@ feature, every id, and that the padding is zero. It is the gate before any train
 
 | | before | after |
 |---|---|---|
-| bytes read by a 4-epoch value run | 4 x 119.7 GiB on the HDD | 26.3 GiB once (pack build) + 5.2 GiB once per run (pool to RAM) |
+| pack build on `D:/ares/data/scale1090` | - | **25 min**, 24.5 GiB written, 1 047 208 duplicate rows dropped once |
+| bytes read by a 4-epoch value run | 4 x 119.7 GiB on the HDD | 24.5 GiB once per run from the SSD, then 5.2 GiB into RAM once |
+| **wall time of the same 4-epoch run** | **2406 s** | **79.8 s** |
+| best AUC of that run (margin target, 16 rows/game) | 0.8676 | 0.8736 (same seed; the two runs draw slightly different per-game rows) |
 | bytes of a policy corpus | padded to the menu maximum | real candidates only |
 | de-duplication set | rebuilt every run (12 M keys) | computed once, stored as a 12 M-bit mask |
 
 ## Rules that follow
 
 1. A new corpus is packed once, immediately after it is generated, next to it (`<corpus>.pack`). Nothing trains from raw
-   chunks twice.
+   chunks twice. `ml/nightly.py` does this per window automatically (`ensure_pack`) and falls back to the raw chunks if
+   the pack fails.
 2. A pack is bound to its schema hash, like the raw corpus. If the encoder changes, delete the pack with the corpus.
 3. Never compress or truncate the observation to make a pack smaller: the remaining bytes are the model's input, and the
    point was to stop reading what the model does not use.
+4. The same rule applies to every new tool: read the corpus once, keep only what is used, and state the measured cost.

@@ -45,8 +45,7 @@ def main():
             for field in ("outcome", "margin", "seat", "round", "game", "step"):
                 if not np.array_equal(np.asarray(raw[field]), np.asarray(packed[field][offset:offset + count])):
                     raise SystemExit(f"{decision} {os.path.basename(path)}: label {field} differs")
-            if "cands" in packed:
-                if not np.array_equal(np.asarray(raw["chosen"]), np.asarray(packed["chosen"][offset:offset + count])):
+            if "cands" in packed:                if not np.array_equal(np.asarray(raw["chosen"]), np.asarray(packed["chosen"][offset:offset + count])):
                     raise SystemExit(f"{decision} {os.path.basename(path)}: chosen differs")
                 if not np.array_equal(np.asarray(raw["count"]), np.asarray(packed["count"][offset:offset + count])):
                     raise SystemExit(f"{decision} {os.path.basename(path)}: count differs")
@@ -63,7 +62,7 @@ def main():
                     if np.any(cands[i][counts[i]:] != 0) or np.any(ids[i][counts[i]:] != 0):
                         raise SystemExit(f"{decision} {os.path.basename(path)}: padding is not zero at row {i}")
                     checked_candidates += int(counts[i])
-                checked_rows += count
+            checked_rows += count
             offset += count
         if args.limit_chunks == 0 and offset != manifest["types"][decision]["rows"]:
             raise SystemExit(f"{decision}: pack has {manifest['types'][decision]['rows']} rows, "

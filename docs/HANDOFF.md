@@ -482,7 +482,10 @@ the double payment as one card's payment. `SanityBench` has a new gate: **the ph
    members (the hand bits are rare events and need volume), plus the loop at 100 000 games per iteration rather than 4-12k;
 3. keep every new block behind the A/B protocol (`--drop-prefix`) and every new rule behind a sanity gate.
 
-## STOPPED HERE (2026-11-16, power cut) - resume from this block
+## STOPPED HERE (2026-11-16, power cut) - superseded by the section after it
+
+> The tree is compiled and tested now, and the pending jobs were redone from the pack. Keep this block only as the record of
+> what the power cut interrupted; the live state is in "2026-11-16, evening (after the power cut)" below.
 
 Everything is committed. No process was left running; two jobs were killed mid-flight and must be redone or discarded:
 
@@ -521,3 +524,52 @@ falls back to uniform random, which still records rows with the new candidate ve
 1. compile + `mvn test` (the candidate change touches every card menu) and run `--mode sanity`;
 2. audit + rank `v_scale_full` (does 3x data improve the price or the ranking?);
 3. bootstrap a policy on the new candidate vectors (random-play corpus, CE), then evaluate the six-critic ensemble.
+
+## 2026-11-16, evening (after the power cut): the pipeline stops reading the HDD twice
+
+Owner's rule for this session: *"all processes must be efficient, not just slightly reduce the data volume"* - the previous
+run's bottleneck was the disk again (`v_scale_full` read 119.7 GiB per epoch off the HDD). Measured, then fixed.
+
+### What was measured
+
+* `D:` is a 2 TB Seagate HDD: **106-113 MB/s** through one `read()`, but only **48 MB/s** through `np.memmap` (a memmap
+  faults one page at a time).
+* `C:` is a 465 GB Samsung 980 PRO SSD with 164 GB free.
+* In the 119.7 GiB corpus, **76-96% of a row is the candidate block padded to the menu maximum** (BUILD_INPUT: 7 real
+  candidates padded to 200; BUILD_CARD: 3.7 padded to 81). A value model never reads a byte of it.
+* `v_scale_full`: 2406 s for 4 epochs, best AUC 0.8676.
+
+### What was built
+
+* `ml/pack_dataset.py` - one sequential pass writes per decision type: `obs.f16` + `lab.npz` + a cross-type
+  de-duplication mask computed **once** (it used to be a 12-million-key Python set rebuilt on every start). With
+  `--candidates` it writes the real candidates only.
+* `ml/pack_check.py` - the gate: proves the pack is bit-exact to the raw chunks (obs, every label, every candidate, ids,
+  zero padding). Run before training on any pack.
+* `train_value.py --packed`, `train_phase.py --packed`, `train_all.py --packed`, `train_policy_ce.py --packed`, and the
+  nightly now packs each data window automatically (`ensure_pack`) and falls back to raw chunks if the pack fails.
+* `docs/PIPELINE_IO.md` - the numbers, the format and the rules (one pass, only used bytes, no re-reads).
+
+### Result on the same corpus, same flags
+
+| | `v_scale_full` (raw chunks) | `v_scale_packed` (pack) |
+|---|---|---|
+| wall time, 4 epochs | **2406 s** (40 min) | **79.8 s** |
+| best AUC (margin target, 2.4 M rows, 16/game) | 0.8676 | 0.8736 (same seed, the caps differ slightly) |
+| disk read by the trainer | 4 x 119.7 GiB (HDD) | 24.5 GiB once from the SSD, then 4 990 MB into RAM in 5.6 s |
+| pack build (once) | - | 1500 s, 24.5 GiB, 1 047 208 duplicate rows dropped |
+
+`mvn test` is green (18/18: `ObservationCompletenessTest`, `OpeningDecisionsTest`), the tree compiles, and `CardSignature`
+is gone: card candidates are `one-hot(268) + stop`, corporation candidates `one-hot(35) + chosen inputs`.
+
+### The next three actions, in order
+
+1. audit and rank `v_scale_packed` (same audit as `v_scale_full`; it is the 150k-game critic now produced in 80 s) and
+   decide whether it joins the ensemble;
+2. bootstrap a policy on the new candidate vectors (a small corpus with **no `--models`**, packed with `--candidates`,
+   then `train_policy_ce.py --packed`), and evaluate the six-critic ensemble at 10 000 games;
+3. run `ml/nightly.py check` once so the new pack stage (`ensure_pack`) is exercised end to end before a real night.
+
+Note on `--mode sanity`: it runs **without a policy model** right now (the old bundle no longer loads after the candidate
+change), so gates that require one specific candidate are coin flips. The last run was 8/10 with one gate failure
+("one-credit card draw: stop"), which is the random agent, not a regression.

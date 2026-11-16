@@ -64,3 +64,21 @@ change of the representation.
 `ml/discount_report.py` (effective price and whether the player acts on it), `--mode phasedist` (which phases each
 built-in bot calls), `--macro phases|phasesbuild|metals`, `--mode rollouttest` with an out-of-sample design,
 `ml/train_value.py --names/--drop-prefix` (A/B one block of the representation on identical rows).
+
+## The scale test (2026-11-16, 150 000 games) and what the pack changed
+
+Two critics, same rows, same flags, one variable: the hand block zeroed (`--drop-prefix "cards:in_my_hand_"`).
+
+| critic | hand block | best val loss | AUC | wall |
+|---|---|---|---|---|
+| `v_scale_full` | present | 0.2870 (epoch 2) | 0.8736 | 2406 s (raw chunks), 79.8 s (pack) |
+| `v_scale_nohand` | zeroed | 0.2862 (epoch 2) | 0.8744 | 66.2 s (pack) |
+
+At 150 000 games and 16 rows per game the hand identity block **does not improve the critic**: the difference is 0.0008
+loss and 0.0008 AUC, inside the run-to-run noise of the same recipe. This does not overturn the play-strength result on the
+3 000-game corpus (`hand block zeroed inside the critic`: 27.5%, worth ~12 points there) - different corpus, different
+question. The owner's rule stands: information is not removed from the observation because of a local A/B.
+
+Pipeline: the same 4-epoch run costs 79.8 s instead of 2406 s, because the corpus is packed once
+(`docs/PIPELINE_IO.md`). The scale axis is therefore cheap now: a critic at 150k games is a two-minute experiment, not a
+40-minute one.
