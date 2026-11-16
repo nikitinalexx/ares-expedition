@@ -1672,3 +1672,22 @@ behaviour preserving.
 
 Next measurement: the same five-critic ensemble on the 1090 encoder, with and without one critic trained on the new blocks,
 10 000 games each - i.e. whether the representation pays *inside an ensemble* at our scale.
+
+### The blocks pay inside an ensemble: 44.00% +/- 1.0 (10 000 games)
+
+| configuration (10 000 games) | vs SMART |
+|---|---|
+| five-critic ensemble on the 1090 encoder, the new blocks at zero weight | 43.21% +/- 1.0 |
+| the same plus one critic trained *with* the tag and hand blocks | **44.00% +/- 1.0** |
+| the previous best (804 encoder, five critics) | 43.59% +/- 1.0 |
+
+So the local A/B was misleading in exactly the way the owner warned it would be: a single critic trained on 50 000 games
+cannot exploit 268 rare bits, but averaged with five others it adds 0.8 points - and the behaviour moves with it (cards per
+game 12.9 -> 13.5, acceptance 0.57 -> 0.61, phases unchanged at 49/51). The gate holds: sanity 9/9, 0 gate failures.
+
+Shape of today's progression, all on the same mechanism (rank the candidates of BUILD_CARD/DRAFT_CARDS by a margin-trained
+critic, pairs on, symmetric score):
+
+37.8% (start) -> 41.2 (critic trained on 100k exploration games, 512x256) -> 42.0 (the effective price of a card in the
+observation) -> 43.6 (five-critic ensemble) -> **44.0** (ensemble plus a critic that sees the tags on the table and the hand
+identities). Every step came from the critic - its data, its information, its variance - not from a new decision mechanism.

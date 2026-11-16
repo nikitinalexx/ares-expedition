@@ -9,7 +9,9 @@ docs/EXPERIMENTS.md). The ensemble experiment exists because of that second band
 
 | configuration | vs SMART | games |
 |---|---|---|
-| `r25_rev2` (804) + **ensemble of five critics** (+ `v_ens_c`, `v_ens_d`) | **43.59% +/- 1.0** | 10 000 |
+| `r28_hand` (1090) + **six critics** (five remapped + `v_h_full`, trained with the tag and hand blocks) | **44.00% +/- 1.0** | 10 000 |
+| `r28_hand` (1090) + five remapped critics (new blocks at zero weight) | 43.21% +/- 1.0 | 10 000 |
+| `r25_rev2` (804) + **ensemble of five critics** (+ `v_ens_c`, `v_ens_d`) | 43.59% +/- 1.0 | 10 000 |
 | `r25_rev2` + ensemble of three critics | 42.89% +/- 1.0 | 10 000 |
 | `r23_price` (786) + `v_price2_margin_wide`, rank cards, pairs, symmetric | 42.98% +/- 1.0 | 10 000 |
 | the same with `v_price1_margin_wide` | 42.05% +/- 1.0 | 10 000 |
