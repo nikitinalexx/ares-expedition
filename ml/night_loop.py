@@ -26,6 +26,8 @@ import sys
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import action_coverage  # noqa: E402
 ROOT = os.path.dirname(HERE)
 CP_FILE = os.path.join(ROOT, "target", "cp.txt")
 JAVA = r"C:\Program Files\Java\jdk-25.0.5.0.2\bin\java.exe"
@@ -194,6 +196,10 @@ def main():
     parser.add_argument("--patience", type=int, default=3)
     parser.add_argument("--keep-packs", type=int, default=3)
     parser.add_argument("--stop-share-floor", type=float, default=0.18)
+    parser.add_argument("--coverage-baseline", default="",
+                        help="coverage json to compare the first iteration against (ml/action_coverage.py --out)")
+    parser.add_argument("--coverage-floor", type=float, default=0.10)
+    parser.add_argument("--coverage-drop", type=float, default=0.05)
     parser.add_argument("--explore", default="BUILD_CARD:0.15")
     parser.add_argument("--names", default="D:/ares/tmp/names_now.json")
     parser.add_argument("--types", default="BUILD_CARD,DRAFT_CARDS",
@@ -226,6 +232,7 @@ def main():
     log(f"night starts: policy {policy}, critic {critic}, {games} games per iteration, "
         f"budget {args.minutes} min, best so far {best:.3f}")
 
+    prev_name = ""
     while time.time() - started < args.minutes * 60:
         index = len(ledger) + 1
         name = f"night{index:02d}"
@@ -264,6 +271,33 @@ def main():
             continue
         shutil.rmtree(raw, ignore_errors=True)
 
+        # Coverage: did this corpus still use every decision type's options? A self-training loop writes the next corpus with
+        # its own greedy choice, so a type can collapse silently (phase 5 went 20% -> 7% -> 2.2% in two iterations and
+        # nothing noticed). Any flagged type gets exploration in the NEXT generation.
+        coverage_path = f"D:/ares/tmp/coverage_{name}.json"
+        previous_path = args.coverage_baseline if (index == 1 and args.coverage_baseline) else \
+            f"D:/ares/tmp/coverage_{prev_name}.json" if prev_name else ""
+        try:
+            current = action_coverage.coverage(pack)
+            previous = {}
+            if previous_path and os.path.exists(previous_path):
+                with open(previous_path, encoding="utf-8") as f:
+                    previous = json.load(f)
+            collapsed = action_coverage.flags(current, previous, floor=args.coverage_floor, drop=args.coverage_drop)
+            with open(coverage_path, "w", encoding="utf-8") as f:
+                json.dump(current, f, indent=1)
+            for item in collapsed:
+                log(f"COLLAPSE {item['decision']}: lost {item['lost']} gone {item['gone']} "
+                    f"entropy {item['entropy_before']} -> {item['entropy_now']}")
+            added = [item["decision"] for item in collapsed if item["decision"] not in args.explore]
+            if added:
+                args.explore = (args.explore + "," if args.explore else "") + \
+                               ",".join(f"{decision}:0.60" for decision in added)
+                log(f"exploration added for the next generation: {added} -> {args.explore}")
+        except Exception as error:  # noqa: BLE001 - the night must not die on a diagnostic
+            collapsed = []
+            log(f"coverage check failed ({error}); the iteration continues")
+
         new_critics = [f"{VALUE_ROOT}/v_{name}_s{k}" for k in range(1, args.critics + 1)]
         critic_ok = True
         for k, new_critic in enumerate(new_critics, start=1):
@@ -299,6 +333,7 @@ def main():
             f"{result['ci_random']} | builds {result['builds_per_game']} | phases {mix} | "
             f"argmax stop {result['stop_share']}")
 
+        prev_name = name
         policy, critic = new_policy, new_critic
         score = result["score"] or 0.0
         floor = result.get("score_random") or 0.0

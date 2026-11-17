@@ -1,0 +1,4 @@
+{
+  "SELL_CARDS": "the game sells cards automatically after phase 5, so the explicit sell menu is not the card source (owner, 2026-11-17). Re-check if the card count stays low for another reason.",
+  "SELL_CARDS_LAST_ROUND": "same automatic selling applies; the explicit last-round menu is a cleanup, not a source of cards."
+}
