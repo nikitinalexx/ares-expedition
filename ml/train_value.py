@@ -130,10 +130,33 @@ class ValueNet(nn.Module):
         self.w3 = nn.Linear(hidden[1], 1)
 
     def forward(self, x):
-        z = torch.clamp((x - self.mean) / self.std, -self.clip, self.clip)
+        z = (x - self.mean) / self.std
+        if self.clip > 0:
+            z = torch.clamp(z, -self.clip, self.clip)
         h1 = torch.relu(self.w1(z))
         h2 = torch.relu(self.w2(h1))
         return self.w3(h2).squeeze(-1)
+
+
+def scale_by_max(obs, index=None, percentile=None):
+    """Per-feature division by the observed maximum (the owner's scheme): z = x / max, no centring, nothing clipped.
+
+    A per-feature affine map cannot change what the network can represent - the first layer absorbs it - so the only thing
+    that matters is WHERE the representation saturates. mean/std with a clamp saturates at mean + clip * sd, which for a rare
+    counter can be 170 sd deep in the tail; dividing by the maximum saturates nowhere inside the observed range and simply
+    extrapolates beyond it. The cost is different scales per feature (a rare counter stays small), so this is an A/B to be
+    measured, not an assumption.
+    """
+    sample = np.asarray(obs[np.asarray(index, dtype=np.int64)]) if index is not None else obs
+    if len(sample) > BLOCK_ROWS:
+        sample = sample[:BLOCK_ROWS]
+    values = sample.astype(np.float32)
+    if percentile is None:
+        scale = np.abs(values).max(axis=0)
+    else:
+        scale = np.percentile(np.abs(values), percentile, axis=0)
+    scale = np.where(scale < 1e-6, 1.0, scale).astype(np.float32)
+    return np.zeros_like(scale), scale
 
 
 def standardize(obs, index=None):
@@ -153,7 +176,7 @@ def standardize(obs, index=None):
 def fit_value(obs, outcome, hidden=(256, 128), epochs=6, lr=1e-3, weight_decay=1e-5, batch=4096,
               seed=1, device="cpu", val_fraction=0.1, steps=0, label_mean=None, verbose=True,
               train_idx=None, val_idx=None, target=None, target_kind="outcome", stats_idx=None,
-              clip=40.0):
+              clip=40.0, scale="mean"):
     """Trains V on (obs f16/f32 [n, obsSize], outcome f32 [n]). Returns the best epoch as numpy parameters.
 
     The split is by game (`train_idx` / `val_idx` from the caller, or a hash of the row's game id), so the same game
@@ -166,7 +189,16 @@ def fit_value(obs, outcome, hidden=(256, 128), epochs=6, lr=1e-3, weight_decay=1
     rng = np.random.default_rng(seed)
     device = torch.device(device)
     target = outcome if target is None else target
-    mean, std = standardize(obs, stats_idx)
+    if scale == "max":
+        mean, std = scale_by_max(obs, stats_idx)
+        # Effectively no clamp. It cannot be 0: the Java model computes min(v, clip), so a zero would flatten every input
+        # to 0 and the exported net would answer a constant. 1e6 is out of reach of any encoded value.
+        clip = 1e6
+    elif scale == "max99":
+        mean, std = scale_by_max(obs, stats_idx, percentile=99.9)
+        clip = 1e6
+    else:
+        mean, std = standardize(obs, stats_idx)
     if train_idx is None or val_idx is None:
         split = is_validation_game(np.arange(len(obs)).astype(np.uint64), val_fraction) if val_fraction else \
             np.zeros(len(obs), dtype=bool)
@@ -409,7 +441,9 @@ def predict(params, obs, batch=200_000, squash=True, clip=CLIP):
     mean, std = params["mean"], params["std"]
     result = np.empty(len(obs), dtype=np.float32)
     for s in range(0, len(obs), batch):
-        z = np.clip((obs[s:s + batch].astype(np.float32) - mean) / std, -clip, clip)
+        z = (obs[s:s + batch].astype(np.float32) - mean) / std
+        if clip > 0:
+            z = np.clip(z, -clip, clip)
         h1 = np.maximum(z @ params["w1"].T + params["b1"], 0.0)
         h2 = np.maximum(h1 @ params["w2"].T + params["b2"], 0.0)
         raw = h2 @ params["w3"] + params["b3"][0]
@@ -672,6 +706,11 @@ def main():
                              "(the only option for a night of games: 30 000 games with every decision is ~58 GB)")
     parser.add_argument("--val-every", type=int, default=10,
                         help="every N-th chunk file per type is held out for validation (whole games, no leakage)")
+    parser.add_argument("--scale", choices=("mean", "max", "max99"), default="max99",
+                        help="how the observation is scaled before the first layer: `mean` = standardise and clamp at "
+                             "--clip sigmas; `max` = divide by the observed maximum, no clamp (the owner's scheme); "
+                             "`max99` = the same with the 99.9th percentile as the divisor, so one freak maximum cannot "
+                             "compress the working range")
     parser.add_argument("--clip", type=float, default=40.0,
                         help="the input clamp in sigmas (mean +/- clip * std). Measured on the exported models "
                              "(ml/clip_probe.py): at clip 5 the response to money is FLAT above ~58 MC; at clip 20 it is "
@@ -833,7 +872,8 @@ def main():
                        weight_decay=args.weight_decay, batch=args.batch, seed=args.seed, device=device,
                        train_idx=train_idx, val_idx=np.flatnonzero(split),
                        label_mean=float(pool["outcome"][~split].mean()),
-                       target=target, target_kind=args.target, stats_idx=stats_idx, clip=args.clip)
+                       target=target, target_kind=args.target, stats_idx=stats_idx, clip=args.clip,
+                       scale=args.scale)
     params, history = fitted["params"], fitted["history"]
     if drop:
         # The A/B may drop a block; then the DEPLOYED model must ignore it, not just the training rows.

@@ -462,3 +462,35 @@ the value model (`train_value --clip`, threaded through the model, `predict`, th
 Still open in the same class: the sparse resource counters (`ghg_microbe_count` 171 sd, `zoos_animal_count` 130 sd) are cut even
 at 40 - they are near-always zero, so a mean/std scale inflates their tail. A robust scale (median/IQR or nonzero-values std)
 is the next representation fix, and `ml/feature_ranges.py` lists every such column.
+### Scaling the observation: the owner's max-normalisation, measured against the clamp (2026-11-17)
+
+The owner's question: he normalised every parameter by its observed maximum (after ~100k random games), which keeps each value in
+proportion to its own range, and asked what the difference is from the fixed clamp at 40 and which is better.
+
+The mathematics first, because it settles half of it: a per-feature AFFINE map cannot change what the network can represent - the
+first layer absorbs `a*x + b`. So "proportion" is preserved by both schemes, and the only real differences are (1) where the
+representation SATURATES and (2) how well-conditioned the first layer's input is.
+
+| scheme | saturation | scale of the inputs |
+|---|---|---|
+| `(x - mean) / std`, clamp 40 | at mean + 40 sd - for a rare counter 170 sd deep in the tail, i.e. flat | all features unit variance |
+| `x / max` (the owner) | nowhere inside the observed range, extrapolates beyond | features keep their own size (a rare counter stays ~0.06) |
+| `x / p99.9` | same, but one freak maximum cannot compress the working range | same |
+
+Measured on the same 40 000-game pack, same recipe, three modes (`train_value.py --scale`):
+
+| scale | best val loss | AUC |
+|---|---|---|
+| `mean` (standardise + clamp 40) | 0.5285 | 0.8705 |
+| `max` (divide by the maximum, no clamp) | 0.5723 | 0.8559 |
+| `max99` (divide by the 99.9th percentile, no clamp) | **0.5269** | **0.8729** |
+
+So the owner's scheme is right in principle and the raw maximum is the weak version of it: one outlier (the observed maximum of
+money in this corpus is ~7.7 in encoded units, i.e. far beyond the working range) compresses everything else. The 99.9th
+percentile keeps the no-saturation property without that cost, and it is the best of the three here.
+
+`--scale max99` is now the default. The clamp is exported as 1e6, not 0: the Java model computes `min(v, clip)`, so a zero would
+flatten every input to zero and the exported net would answer a constant - a silent catastrophe avoided by construction.
+
+Also worth recording as a measurement of the worst case: the probe on the max-scaled model keeps rising with money at 400 MC
+(dV +0.043 from 300 to 400), where the clamped model is already 41 sd out at 400 MC. No money position is invisible any more.
