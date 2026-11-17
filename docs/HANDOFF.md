@@ -608,14 +608,31 @@ Done and committed:
 Running: `D:/ares/data/boot2` - 5 000 games played with exactly that configuration (search on BUILD_CARD/DRAFT_CARDS over
 `v_boot1_mask`, `boot1_adv` elsewhere).
 
-### The next three actions, in order
+### Morning of 17 November: the agent is rebuilt, and it works
 
-1. pack `boot2` with `--candidates`, `pack_check`, then the critic on it (hand masked) - and with it the blue-table
-   re-test on policy-play data (3 seeds; the random corpus only gave 1 of 3 intervals);
-2. CE the policy on `boot2`: it imitates the search's choices, which is the expert-iteration step - self-play with our own
-   critic, no benchmark model anywhere;
-3. profile + `--mode compare` at 10 000 games against SMART once the policy's argmax builds on its own, then the critic
-   ensemble.
+| | value |
+|---|---|
+| start of the night (random policy + search) | 3.2% +/- 1.1 vs SMART |
+| end of the night, best iteration (1 000 games) | 9.85% |
+| **final bundle, 10 000 games** | **10.28% +/- 0.60** (`policy/night16` + three critics `v_night16_s1..s3`) |
+| the same policy with one critic, 10 000 games | 8.63% [8.10, 9.20] |
+| profile (acceptance gate) | phases 11/26/16/42/4%, phase-3 pass 58%, std projects 19%, **24.6 cards per game** |
+
+Everything is in `docs/RESULTS.md` ("The night of 16/17 November"), `ml/night_loop.py`, `ml/night_report.py`,
+`ml/ensemble_check.py`.
+
+### What is left, in order of expected value
+
+1. **Overbuilding**: 24.6 cards per game against a healthy ~11, while the search reports
+   `mean V(best build) - V(stop) = +262 logit` and the policy declines 0% of 84 468 build opportunities. The stopping
+   decision is the defect; a second run with `--explore BUILD_CARD:0.40` (so the corpus keeps real declines) is measuring
+   it now.
+2. The blue-table re-test on policy-play data (3 seeds) - it was negative in sign on all three seeds of the random corpus
+   but the interval excluded zero in only one.
+3. Data scale on the new encoder: the corpus of the night is 40 000 games; the old critic wanted 150 000. The pack makes a
+   150k-game critic a 2-minute run once the games exist (about an hour of self-play at the measured 24 games/s).
+4. The producer still writes candidate padding: 27.6 GB per 20 000 games of which 4.2 GB is observation
+   (`docs/PIPELINE_IO.md`). Emitting the compact form from the simulator is the next efficiency item, not a model item.
 
 ### Bootstrap recipe (candidate widths changed, no policy can be loaded)
 
