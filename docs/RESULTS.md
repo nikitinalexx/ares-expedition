@@ -311,3 +311,34 @@ That makes the next two variables clear and cheap to test, one at a time:
 2. the build/decline balance - with the sign read from the table above: we build 24 cards where SMART builds 32-34 and
    NETWORK 45, so the open question is whether *more* building raises the score, and `-Dares.agent.explore` (which adds
    declines) is the knob that moves it.
+
+## Extra card draw and blue cards, measured against SMART (2026-11-17)
+
+The owner asked whether the game values the phase-5 extra draw (many blue cards give it) and why phase 2 (blue/red builds) fell
+to 8% of our phase calls. Two instruments answer it from our own games: `ml/blue_report.py` counts the blue-card identities of
+both tables (the observation carries both), `ml/hand_report.py` the hand size and how much of it is payable.
+
+**Against SMART, 30 games with the best bundle:**
+
+| | ours | SMART |
+|---|---|---|
+| blue cards on the table at the end | **7.57** | **9.83** |
+| extra-draw blue cards | 2.40 (in 96.7% of games) | - |
+| mean margin | -24.3 | - |
+
+**In 40 000 self-play games:** blue cards on our table 7.28, on the opponent's 7.00; extra-draw cards 1.21 per game (73.2% of
+games); correlation(blue cards, margin) **+0.230**; correlation(draw cards, margin) **-0.001** (mean margin +0.13 without a draw
+card, -0.33 with one).
+
+**Hand:** at its largest, mean **12.4** cards (median 12, 84.7% of games above 10), of which on average **5.4 are payable**; a
+hand of 12+ goes with +1.88 mean margin against -4.31 for a hand of 9-11 (association), correlation(hand, margin) +0.152.
+
+What this says, without turning any number into a norm:
+
+* the player is not short of cards - it holds 12 and can pay for about five - so **extra draw is not the bottleneck**, which is
+  consistent with the measured 0.000 correlation of the draw cards with the result;
+* it IS short of **blue cards against SMART** (7.6 vs 9.8) and blue-card count is the quantity that correlates with the margin
+  in our own games; that is the first measured support for the owner's reading of phase 2, and it is an association, not a
+  proven cause;
+* both instruments are in the repo and cheap (`blue_report.py`, `hand_report.py`), so the next phase change can be read on the
+  quantity that matters (blue cards built, cards payable) rather than on the call frequency alone.
