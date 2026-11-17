@@ -48,14 +48,14 @@ def classpath():
         return "target/classes;" + f.read().strip()
 
 
-def play(out, games, policy, critic, threads, explore, timeout=7200):
+def play(out, games, policy, critic, threads, explore, matchups, timeout=7200):
     os.makedirs(out, exist_ok=True)
     args = [JAVA, "-Xmx10g"] + SEARCH + [f"-Dares.agent.valueModel={critic}"]
     if explore:
         args.append(f"-Dares.agent.explore={explore}")
     args += ["-cp", classpath(), "com.terraforming.ares.selfplay.SelfPlayMain", "--mode", "play",
              "--out", out, "--games", str(games), "--threads", str(threads), "--games-per-chunk", "2000",
-             "--matchups", "AGENT:AGENT:0.85,AGENT:RANDOM:0.15", "--max-rows-per-game-type", "8",
+             "--matchups", matchups, "--max-rows-per-game-type", "8",
              "--models", policy]
     started = time.time()
     log_path = out.rstrip("/\\") + ".play.log"
@@ -131,22 +131,26 @@ def measure(policy, critic, games, out_dir, pack):
                     "--opponent", "SMART", "--no-references", "--search", "--value-model", critic],
                    stdout=open(profile, "w", encoding="utf-8"), stderr=subprocess.STDOUT, timeout=3600)
     builds = number_in(profile, "builds_per_game")
-    compare = os.path.join(out_dir, "compare.json")
-    args = [JAVA, "-Xmx10g"] + SEARCH + [f"-Dares.agent.valueModel={critic}", "-cp", classpath(),
-            "com.terraforming.ares.selfplay.SelfPlayMain", "--mode", "compare", "--a", "AGENT", "--b", "SMART",
-            "--games", str(games), "--concurrency", "14", "--out", compare, "--models", policy]
-    with open(os.path.join(out_dir, "compare.log"), "w", encoding="utf-8") as sink:
-        subprocess.run(args, stdout=sink, stderr=subprocess.STDOUT, timeout=7200)
-    score, low, high = None, None, None
-    try:
-        with open(compare, encoding="utf-8") as f:
-            blob = json.load(f)
-        score = blob.get("aScore")
-        low, high = blob.get("aScoreCi95Low"), blob.get("aScoreCi95High")
-    except (OSError, ValueError):
-        pass
-    return {"stop_share": stop_share, "builds_per_game": builds, "score": score, "ci": [low, high],
-            "games": games}
+    def versus(opponent, count, label):
+        path = os.path.join(out_dir, f"compare_{label}.json")
+        args = [JAVA, "-Xmx10g"] + SEARCH + [f"-Dares.agent.valueModel={critic}", "-cp", classpath(),
+                "com.terraforming.ares.selfplay.SelfPlayMain", "--mode", "compare", "--a", "AGENT",
+                "--b", opponent, "--games", str(count), "--concurrency", "14", "--out", path, "--models", policy]
+        with open(os.path.join(out_dir, f"compare_{label}.log"), "w", encoding="utf-8") as sink:
+            subprocess.run(args, stdout=sink, stderr=subprocess.STDOUT, timeout=7200)
+        try:
+            with open(path, encoding="utf-8") as f:
+                blob = json.load(f)
+            return blob.get("aScore"), [blob.get("aScoreCi95Low"), blob.get("aScoreCi95High")]
+        except (OSError, ValueError):
+            return None, None
+
+    # The benchmark (SMART) and the floor (RANDOM). The night of 16/11 produced a player at 10.9% vs SMART and 53% vs
+    # RANDOM - a specialist that only ever played against a copy of itself - so both numbers are recorded from now on.
+    score, ci = versus("SMART", games, "smart")
+    random_score, random_ci = versus("RANDOM", max(500, games // 2), "random")
+    return {"stop_share": stop_share, "builds_per_game": builds, "score": score, "ci": ci,
+            "score_random": random_score, "ci_random": random_ci, "games": games}
 
 
 def main():
@@ -164,6 +168,9 @@ def main():
     parser.add_argument("--stop-share-floor", type=float, default=0.18)
     parser.add_argument("--explore", default="BUILD_CARD:0.15")
     parser.add_argument("--names", default="D:/ares/tmp/names_now.json")
+    parser.add_argument("--matchups", default="AGENT:AGENT:0.85,AGENT:RANDOM:0.15",
+                        help="opponents of the training games. 85%% mirror matches taught a player that beats a copy of "
+                             "itself: 10.89%% vs SMART but only 53%% vs RANDOM (measured 2026-11-17)")
     parser.add_argument("--seed-policy", default="D:/ares/runs/policy/boot3")
     parser.add_argument("--seed-critic", default="D:/ares/runs/value/v_boot3_mask")
     parser.add_argument("--smoke", action="store_true", help="one tiny iteration, to check the plumbing")
@@ -201,7 +208,7 @@ def main():
         if os.path.isdir(raw):
             shutil.rmtree(raw, ignore_errors=True)
 
-        code, seconds, summary = play(raw, games, policy, critic, args.threads, args.explore)
+        code, seconds, summary = play(raw, games, policy, critic, args.threads, args.explore, args.matchups)
         played = summary.get("gamesPlayed", 0)
         failed = summary.get("gamesFailed", 0)
         log(f"played {played} games in {seconds / 60:.1f} min ({failed} failed, {summary.get('rows', 0)} rows)")
@@ -251,11 +258,12 @@ def main():
                "time": time.strftime("%Y-%m-%dT%H:%M:%S")}
         ledger.append(row)
         json.dump(ledger, open(LEDGER, "w", encoding="utf-8"), indent=1)
-        log(f"score {result['score']}, CI {result['ci']}, builds {result['builds_per_game']}, "
-            f"argmax stop {result['stop_share']}")
+        log(f"vs SMART {result['score']} {result['ci']} | vs RANDOM {result['score_random']} "
+            f"{result['ci_random']} | builds {result['builds_per_game']} | argmax stop {result['stop_share']}")
 
         policy, critic = new_policy, new_critic
         score = result["score"] or 0.0
+        floor = result.get("score_random") or 0.0
         if score > best + 0.005:
             best, flat = score, 0
             log(f"new best {best:.3f}")
