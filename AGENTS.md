@@ -37,8 +37,12 @@ See `docs/EXPERIMENTS.md`.
 while a human playing it saw "picks phase 3, buys standard projects, 0-2 cards per game". So every new model is first
 measured on **cards built per game** and **which phases it picks** — `py -3 ml/check_player.py --model DIR` prints both,
 the phase-3 spend mix and a verdict (exit 1 when the profile is degenerate: <3 builds, >50% standard projects in phase 3,
->80% of picks in one phase). Only then look at the win rate. Reference profile of a healthy player: ~11+ cards/game, a mix
-of phases (a real player calls 1/2/5 and only calls 4 when it pays).
+>80% of picks in one phase). Only then look at the win rate.
+
+**There is no "healthy" profile (owner, 2026-11-17).** The gate above catches degeneracy - never building, always the same
+phase, standard projects instead of cards - and nothing more. There is **no upper band on cards per game** (more cards is
+plausibly stronger, not a defect) and NETWORK's profile is a *clue*, not a standard: the numbers of a genuinely strong player
+are unknown until a player stronger than NETWORK exists and we measure it. Do not turn a measured count into a norm.
 
 ## Agent (`services/agent`)
 - `AGENT` / `AGENT_R`: all non-crisis decisions go through `DecisionAgent` (uniform random without a model).

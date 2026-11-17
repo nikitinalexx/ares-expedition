@@ -257,8 +257,24 @@ acceptance instruments, then 1 000 games against SMART.
 
 The ensembles' intervals do not overlap: **+1.65 points** from averaging three nets, the historical lever, now reproduced on
 the new encoder and a base that is 4x weaker than when it was found. The profile passes the owner's gate - phases
-11/26/16/42/4%, phase-3 pass 58%, standard projects 19%, no warning - but the player builds **24.6 cards per game** against a
-healthy ~11: it overbuilds, and that is the next variable.
+11/26/16/42/4%, phase-3 pass 58%, standard projects 19%, no warning.
+
+**Correction (owner, 2026-11-17): there is no "healthy" card count, and the first reading of ours was backwards.** I had
+written that 24.6 cards per game was "overbuilding against a healthy ~11". That 11 came from an old note, not a measurement,
+and the measured comparison says the opposite (`--mode scorecard`, averages per game):
+
+| player | cards per game | points | win rate |
+|---|---|---|---|
+| NETWORK (vs SMART) | **45.42** | 111.12 | 83.3% |
+| SMART (vs NETWORK) | 34.41 | 74.26 | - |
+| SMART (vs our agent) | 31.77 | 92.21 | - |
+| our agent (night02) | **24.15** | 61.05 | 9.2% vs SMART |
+
+We build **less than everyone** - half of SMART, a third of NETWORK - so "more cards" is a direction to move towards, not a
+defect to remove, and NETWORK's profile is a clue rather than a standard: the numbers of a genuinely strong player are
+unknown until one exists that beats NETWORK. What follows for the loop: the exploration knob (`-Dares.agent.explore`,
+which randomises a share of build decisions and therefore adds declines) pushes this number *down*, so its effect has to be
+read on cards per game and on both win rates together, never as "less building is healthier".
 
 Start of the night: 3.2% +/- 1.1 (the random agent, with a search). Morning: **10.28% +/- 0.60**. No benchmark model was
 used as a teacher, an opponent in training or a data source; SMART appears only in the measurements.
@@ -292,5 +308,6 @@ not the degenerate profile the owner warned about; it is a missing part of the o
 That makes the next two variables clear and cheap to test, one at a time:
 1. opponents in the training games: raise the RANDOM share and/or add a second AGENT variant, so the policy sees opponents
    that are not itself;
-2. the overbuilding: 21.9 cards is still double the healthy ~11, and the search still reports a large positive V(build) -
-   V(stop) margin; the exploration lever moved both numbers in the right direction, so it is the knob to keep turning.
+2. the build/decline balance - with the sign read from the table above: we build 24 cards where SMART builds 32-34 and
+   NETWORK 45, so the open question is whether *more* building raises the score, and `-Dares.agent.explore` (which adds
+   declines) is the knob that moves it.

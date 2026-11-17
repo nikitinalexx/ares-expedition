@@ -623,10 +623,11 @@ Everything is in `docs/RESULTS.md` ("The night of 16/17 November"), `ml/night_lo
 
 ### What is left, in order of expected value
 
-1. **Overbuilding**: 24.6 cards per game against a healthy ~11, while the search reports
-   `mean V(best build) - V(stop) = +262 logit` and the policy declines 0% of 84 468 build opportunities. The stopping
-   decision is the defect; a second run with `--explore BUILD_CARD:0.40` (so the corpus keeps real declines) is measuring
-   it now.
+1. **The build/decline balance, with the sign measured instead of assumed.** Card counts per game (scorecard averages):
+   NETWORK 45.4, SMART 34.4 (vs NETWORK) / 31.8 (vs us), our agent 24.2. We build the least, so "more cards" is the
+   direction, not a defect; there is no healthy band, and NETWORK is a clue, not a standard (owner, 2026-11-17).
+   `-Dares.agent.explore` randomises a share of build decisions and therefore adds declines - it must be read on cards per
+   game AND both win rates together.
 2. The blue-table re-test on policy-play data (3 seeds) - it was negative in sign on all three seeds of the random corpus
    but the interval excluded zero in only one.
 3. Data scale on the new encoder: the corpus of the night is 40 000 games; the old critic wanted 150 000. The pack makes a
