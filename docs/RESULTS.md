@@ -217,3 +217,58 @@ State of the loop so far: `boot1` (random play) -> policy that stops on 91.5% an
 `boot2` (5 000 games with search + critic) -> a policy whose argmax builds on 42.5% of rows, **23.6 cards per game**,
 16% vs RANDOM on its own, **3.2% +/- 1.1 vs SMART** with the search and its own critic. The engine and the loop are now
 sound; what is missing is iterations, not machinery.
+
+
+## The night of 16/17 November: the agent grew from its own games (2026-11-17, morning)
+
+The candidate representation changed, so no policy bundle from before could be loaded and the agent had to be rebuilt from
+nothing. `ml/night_loop.py` ran 18 iterations, each: 20 000 (then 40 000) games with the search deciding build-vs-pass and
+the policy ranking the menu -> one pack pass with the candidate block -> the critic with the hand identity masked (export
+gate proves the deployed model ignores the block) -> the policy by cross-entropy on the search's own choices -> the
+acceptance instruments, then 1 000 games against SMART.
+
+| iteration | vs SMART (1 000 games) | cards per game | argmax stop share | games |
+|---|---|---|---|---|
+| 1 | 5.10% | 26.8 | 28.8% | 20000 |
+| 2 | 5.00% | 23.8 | 29.5% | 20000 |
+| 3 | 5.60% | 24.8 | 29.9% | 20000 |
+| 4 | 6.35% | 24.0 | 28.1% | 20000 |
+| 5 | 6.40% | 25.0 | 29.0% | 20000 |
+| 6 | 5.85% | 24.2 | 29.0% | 20000 |
+| 7 | 7.10% | 24.3 | 29.0% | 20000 |
+| 8 | 6.95% | 23.2 | 28.7% | 20000 |
+| 9 | 6.90% | 24.8 | 28.6% | 20000 |
+| 10 | 8.15% | 25.0 | 28.3% | 20000 |
+| 11 | 8.50% | 22.3 | 26.7% | 20000 |
+| 12 | 8.25% | 24.3 | 28.7% | 20000 |
+| 13 | 7.60% | 23.3 | 29.1% | 20000 |
+| 14 | 8.80% | 23.9 | 28.6% | 40000 |
+| 15 | 9.65% | 23.7 | 28.9% | 40000 |
+| 16 | 9.85% | 22.4 | 29.1% | 40000 |
+| 17 | 8.30% | 23.8 | 28.2% | 40000 |
+| 18 | 9.40% | 23.3 | 27.9% | 40000 |
+
+**Final measurement, 10 000 games each (the headline, not an iteration number):**
+
+| critic | vs SMART | 95% CI |
+|---|---|---|
+| one critic (`v_night16_mask`) | **8.63%** | [8.10, 9.20] |
+| three critics averaged by the search | **10.28%** | [9.70, 10.89] |
+
+The ensembles' intervals do not overlap: **+1.65 points** from averaging three nets, the historical lever, now reproduced on
+the new encoder and a base that is 4x weaker than when it was found. The profile passes the owner's gate - phases
+11/26/16/42/4%, phase-3 pass 58%, standard projects 19%, no warning - but the player builds **24.6 cards per game** against a
+healthy ~11: it overbuilds, and that is the next variable.
+
+Start of the night: 3.2% +/- 1.1 (the random agent, with a search). Morning: **10.28% +/- 0.60**. No benchmark model was
+used as a teacher, an opponent in training or a data source; SMART appears only in the measurements.
+
+What the loop proved about the pipeline, not about the model:
+
+* **it runs unattended**: 18 iterations in 6 hours, every stage logged, every stage either verified (bit-exact pack check,
+  export invariance, 10/10 sanity) or refused;
+* **the plateau is a recipe plateau**: 3.2 -> 9.85% over 15 iterations, then flat for three with a doubled corpus. The
+  stagnation guard doubled the corpus once (iteration 14) and stopped the night at the second flat stretch instead of
+  grinding - exactly what it was built to do;
+* the drift guard never had to fire (argmax stop share stayed 27-30%, above the 18% floor) and the disk guard never fired
+  (C: stayed above 120 GB, last two packs kept, raw corpora deleted after the bit-exact check).

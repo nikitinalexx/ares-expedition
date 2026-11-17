@@ -156,6 +156,9 @@ def main():
     parser.add_argument("--threads", type=int, default=14)
     parser.add_argument("--epochs-critic", type=int, default=4)
     parser.add_argument("--epochs-policy", type=int, default=3)
+    parser.add_argument("--critics", type=int, default=3,
+                        help="critics trained per iteration; the search averages them (ensemble_check.py measured 10.28%% "
+                             "against 8.63%% for one, 10 000 games, disjoint intervals)")
     parser.add_argument("--patience", type=int, default=3)
     parser.add_argument("--keep-packs", type=int, default=3)
     parser.add_argument("--stop-share-floor", type=float, default=0.18)
@@ -219,12 +222,18 @@ def main():
             continue
         shutil.rmtree(raw, ignore_errors=True)
 
-        new_critic = f"{VALUE_ROOT}/v_{name}_mask"
-        code = run([sys.executable, os.path.join(HERE, "train_value.py"), "--packed", pack, "--out", new_critic,
-                    "--target", "margin", "--epochs", str(args.epochs_critic), "--hidden", "512,256",
-                    "--names", args.names, "--drop-prefix", "cards:in_my_hand_"], os.path.join(out_dir, "critic.log"))
-        critic_ok = code == 0 and os.path.exists(os.path.join(new_critic, "weights.bin"))
-        log(f"critic {'ok' if critic_ok else 'FAILED'}: {tail(os.path.join(out_dir, 'critic.log'), 3).strip()}")
+        new_critics = [f"{VALUE_ROOT}/v_{name}_s{k}" for k in range(1, args.critics + 1)]
+        critic_ok = True
+        for k, new_critic in enumerate(new_critics, start=1):
+            code = run([sys.executable, os.path.join(HERE, "train_value.py"), "--packed", pack, "--out", new_critic,
+                        "--target", "margin", "--epochs", str(args.epochs_critic), "--hidden", "512,256",
+                        "--names", args.names, "--drop-prefix", "cards:in_my_hand_", "--seed", str(k)],
+                       os.path.join(out_dir, f"critic{k}.log"))
+            ok = code == 0 and os.path.exists(os.path.join(new_critic, "weights.bin"))
+            critic_ok = critic_ok and ok
+            log(f"critic {k}/{len(new_critics)} {'ok' if ok else 'FAILED'}: "
+                f"{tail(os.path.join(out_dir, f'critic{k}.log'), 2).strip()}")
+        new_critic = ",".join(new_critics) if critic_ok else ""
 
         new_policy = f"{POLICY_ROOT}/{name}"
         code = run([sys.executable, os.path.join(HERE, "train_policy_ce.py"), "--packed", pack, "--out", new_policy,
@@ -237,8 +246,8 @@ def main():
 
         result = measure(new_policy, new_critic, 1000 if not args.smoke else 100, out_dir, pack)
         row = {"iteration": index, "name": name, "games": played, "rows": summary.get("rows"),
-               "failed": failed, "seconds": round(seconds, 1),
-               "explore": args.explore, "critic": new_critic, "policy": new_policy, **result,
+               "failed": failed, "seconds": round(seconds, 1), "explore": args.explore,
+               "critic": new_critic, "critics": len(new_critics), "policy": new_policy, **result,
                "time": time.strftime("%Y-%m-%dT%H:%M:%S")}
         ledger.append(row)
         json.dump(ledger, open(LEDGER, "w", encoding="utf-8"), indent=1)
