@@ -120,8 +120,9 @@ def auc(scores, labels):
 class ValueNet(nn.Module):
     """obs -> logit of P(win). Same shape as the Java MlpValueModel reads."""
 
-    def __init__(self, obs_size, hidden, mean, std):
+    def __init__(self, obs_size, hidden, mean, std, clip=20.0):
         super().__init__()
+        self.clip = float(clip)
         self.register_buffer("mean", torch.as_tensor(mean))
         self.register_buffer("std", torch.as_tensor(std))
         self.w1 = nn.Linear(obs_size, hidden[0])
@@ -129,7 +130,7 @@ class ValueNet(nn.Module):
         self.w3 = nn.Linear(hidden[1], 1)
 
     def forward(self, x):
-        z = torch.clamp((x - self.mean) / self.std, -CLIP, CLIP)
+        z = torch.clamp((x - self.mean) / self.std, -self.clip, self.clip)
         h1 = torch.relu(self.w1(z))
         h2 = torch.relu(self.w2(h1))
         return self.w3(h2).squeeze(-1)
@@ -151,7 +152,8 @@ def standardize(obs, index=None):
 
 def fit_value(obs, outcome, hidden=(256, 128), epochs=6, lr=1e-3, weight_decay=1e-5, batch=4096,
               seed=1, device="cpu", val_fraction=0.1, steps=0, label_mean=None, verbose=True,
-              train_idx=None, val_idx=None, target=None, target_kind="outcome", stats_idx=None):
+              train_idx=None, val_idx=None, target=None, target_kind="outcome", stats_idx=None,
+              clip=20.0):
     """Trains V on (obs f16/f32 [n, obsSize], outcome f32 [n]). Returns the best epoch as numpy parameters.
 
     The split is by game (`train_idx` / `val_idx` from the caller, or a hash of the row's game id), so the same game
@@ -171,7 +173,7 @@ def fit_value(obs, outcome, hidden=(256, 128), epochs=6, lr=1e-3, weight_decay=1
         train_idx, val_idx = np.flatnonzero(~split), np.flatnonzero(split)
     if len(val_idx) < 10:
         train_idx, val_idx = np.arange(len(obs)), np.arange(min(len(obs), 1000))
-    model = ValueNet(obs.shape[1], list(hidden), mean, std).to(device)
+    model = ValueNet(obs.shape[1], list(hidden), mean, std, clip=clip).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     regression = target_kind == "margin"
     loss_fn = nn.MSELoss() if regression else nn.BCEWithLogitsLoss()
@@ -401,13 +403,13 @@ def load_value_params(directory):
             "w2": take(h2 * h1).reshape(h2, h1), "b2": take(h2), "w3": take(h2), "b3": take(1), "clip": clip}
 
 
-def predict(params, obs, batch=200_000, squash=True):
+def predict(params, obs, batch=200_000, squash=True, clip=CLIP):
     """V of every row, batched, with the exported numpy parameters (no torch). `squash=False` keeps the raw output, which
     is what a margin model predicts."""
     mean, std = params["mean"], params["std"]
     result = np.empty(len(obs), dtype=np.float32)
     for s in range(0, len(obs), batch):
-        z = np.clip((obs[s:s + batch].astype(np.float32) - mean) / std, -CLIP, CLIP)
+        z = np.clip((obs[s:s + batch].astype(np.float32) - mean) / std, -clip, clip)
         h1 = np.maximum(z @ params["w1"].T + params["b1"], 0.0)
         h2 = np.maximum(h1 @ params["w2"].T + params["b2"], 0.0)
         raw = h2 @ params["w3"] + params["b3"][0]
@@ -670,6 +672,12 @@ def main():
                              "(the only option for a night of games: 30 000 games with every decision is ~58 GB)")
     parser.add_argument("--val-every", type=int, default=10,
                         help="every N-th chunk file per type is held out for validation (whole games, no leakage)")
+    parser.add_argument("--clip", type=float, default=20.0,
+                        help="the input clamp in sigmas (mean +/- clip * std). Measured on the exported models "
+                             "(ml/clip_probe.py): at clip 5 the response to money is FLAT above ~58 MC - 80, 120 and 200 MC "
+                             "give the same V to five decimals, because the richest 0.6%% of rows all sit past mean+5sd. At "
+                             "clip 20 V rises monotonically over the whole observed range. The encoder divides money by 100 "
+                             "and the distribution is zero-inflated at the start of a game, so 5 sd is simply too tight")
     parser.add_argument("--margin-scale", type=float, default=20.0,
                         help="margin target is margin/scale; only used with --target margin")
     args = parser.parse_args()
@@ -824,12 +832,12 @@ def main():
                        weight_decay=args.weight_decay, batch=args.batch, seed=args.seed, device=device,
                        train_idx=train_idx, val_idx=np.flatnonzero(split),
                        label_mean=float(pool["outcome"][~split].mean()),
-                       target=target, target_kind=args.target, stats_idx=stats_idx)
+                       target=target, target_kind=args.target, stats_idx=stats_idx, clip=args.clip)
     params, history = fitted["params"], fitted["history"]
     if drop:
         # The A/B may drop a block; then the DEPLOYED model must ignore it, not just the training rows.
         params = mask_features(params, drop)
-    predicted = predict(params, val, squash=args.target == "outcome")
+    predicted = predict(params, val, squash=args.target == "outcome", clip=args.clip)
     if args.target == "outcome":
         val_loss = float(nn.functional.binary_cross_entropy_with_logits(
             torch.from_numpy(np.log(np.clip(predicted, 1e-9, 1 - 1e-9) / np.clip(1 - predicted, 1e-9, 1))),
@@ -860,8 +868,8 @@ def main():
     logits = (predicted[sample] if args.target == "margin"
               else np.log(np.clip(predicted[sample], 1e-9, 1 - 1e-9) / np.clip(1 - predicted[sample], 1e-9, 1 - 1e-9)))
     reference = {"inputs": val[sample].astype(np.float32).tolist(), "logits": logits.astype(float).tolist()}
-    meta = export_value(args.out, pool["observationHash"], pool["obsSize"], hidden, CLIP, params, reference)
-    worst = max(abs(float(numpy_forward(params, CLIP, o.astype(np.float64))) - float(l))
+    meta = export_value(args.out, pool["observationHash"], pool["obsSize"], hidden, args.clip, params, reference)
+    worst = max(abs(float(numpy_forward(params, args.clip, o.astype(np.float64))) - float(l))
                 for o, l in zip(val[sample].astype(np.float64), logits))
     if worst > 1e-3:
         raise SystemExit(f"the exported model disagrees with numpy by {worst}: refusing to finish")
@@ -872,7 +880,7 @@ def main():
         probe = val[sample[0]].astype(np.float64)
         bumped = probe.copy()
         bumped[drop] = 1.0
-        masked_gain = abs(float(numpy_forward(params, CLIP, probe)) - float(numpy_forward(params, CLIP, bumped)))
+        masked_gain = abs(float(numpy_forward(params, args.clip, probe)) - float(numpy_forward(params, args.clip, bumped)))
         if masked_gain > 1e-6:
             raise SystemExit(f"the exported model reacts to the {len(drop)} dropped columns by {masked_gain}: refusing to finish")
 

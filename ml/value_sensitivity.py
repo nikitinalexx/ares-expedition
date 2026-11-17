@@ -19,7 +19,8 @@ sys.path.insert(0, HERE)
 import ares_data  # noqa: E402
 from train_policy_ce import load_value_params, value_of  # noqa: E402
 
-NAME_FILES = ["D:/ares/tmp/names_v5.json", "D:/ares/tmp/names_v4.json", "D:/ares/tmp/names795b.json",
+NAME_FILES = ["D:/ares/tmp/names_now.json", "D:/ares/tmp/names_v10.json",
+              "D:/ares/tmp/names_v5.json", "D:/ares/tmp/names_v4.json", "D:/ares/tmp/names795b.json",
               "D:/ares/tmp/names805.json"]
 DATA = "D:/ares/data/r13_self"
 

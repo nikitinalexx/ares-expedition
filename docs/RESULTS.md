@@ -394,3 +394,39 @@ lever is measured on the quantity that actually differs, not on the money.
 2. so draft and draw are a money engine, not dead weight - but everybody runs it;
 3. the difference between a 60-point player and a 92-point one is not the size of the engine but the average value of what the
    engine buys: 0.25 vs 0.52 printed points per card.
+### The input clamp was blinding the critic above ~58 MC (2026-11-17)
+
+The owner's warning - "if the difference between 50 and 200 MC is lost anywhere, that is a catastrophe, and it holds for every
+parameter" - was right, and it was the value model's own preprocessing.
+
+`ValueNet` standardises every column and clamps it to mean +/- `CLIP` sd. With CLIP = 5 that cut the top of almost every
+counter, because the encoder divides by 100 (money) or 10 (plants, forests) and the distributions are zero-inflated at the
+start of a game, so the top end sits 9-27 sd away from the mean (`ml/feature_ranges.py`: mc 21.4 sd, forests 27.4, plants
+11.7, win_points 9.0, mc_income 10.1, blue_cards_count 7.95, hand_cards_count 7.0).
+
+The clamp affects the richest 0.5-0.6% of the rows (`ml/clip_report.py`) - which are the positions that decide games - and
+inside them the response is exactly flat. Asked directly of the exported models (`ml/clip_probe.py`, mean V over 4 000 real
+rows, money set to a fixed value):
+
+| mc (encoded /100) | clip = 5 | clip = 20 |
+|---|---|---|
+| 0.40 | 0.54102 | 0.52100 |
+| 0.63 | 0.55018 | 0.53536 |
+| 0.80 | 0.55018 (**+0.00000**) | 0.54600 (+0.0106) |
+| 1.20 | 0.55018 (**+0.00000**) | 0.57102 (+0.0250) |
+| 2.00 | 0.55018 (**+0.00000**) | 0.62073 (+0.0497) |
+
+So at clip 5 the critic cannot tell 80 MC from 200 MC at all; at clip 20 it rises monotonically over the whole observed range.
+
+Actions taken:
+
+* `--clip` is now a parameter of `train_value.py`, default **20** for the value model (the policy heads keep 5: their candidate
+  features are one-hot bits, where the clamp is harmless);
+* the value is threaded through the model, `predict`, the export and the invariance gate, and the export refuses to finish if
+  the numpy path and the torch path disagree (it caught exactly that during the change);
+* an A/B on 600 games is neutral on AUC (0.776 clip 5 vs 0.767 clip 20) and slightly better on loss (0.784 -> 0.768) - far too
+  small to decide, so the next night runs the critics at clip 20 and the ranking role decides.
+
+What this says about the rest of the representation: no other known defect of this class remains, but the sensor
+(`feature_ranges.py` + `clip_report.py` + `clip_probe.py`) now runs on any feature, so the next one will be found by
+measurement rather than by a conversation.
