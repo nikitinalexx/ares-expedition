@@ -342,3 +342,20 @@ What this says, without turning any number into a norm:
   proven cause;
 * both instruments are in the repo and cheap (`blue_report.py`, `hand_report.py`), so the next phase change can be read on the
   quantity that matters (blue cards built, cards payable) rather than on the call frequency alone.
+### The end-of-game card sale: real money, but dead money (2026-11-17)
+
+The owner's point: excess cards are sold at the end, so a big hand is money. Checked in the code and measured.
+
+* `SellExtraCardsState` offers `SELL_CARDS_LAST_ROUND` only when `player.getNextTurn() == null` and the hand is above
+  `MAX_HAND_SIZE_LAST_ROUND = 10`; the price is 3 MC per card.
+* Measured over 40 000 games (`ml/sale_report.py`): the last-round hand is 13.2 cards, so 3.2 are sold for **9.7 MC on
+  average** (median 6, maximum 60), and the money raised correlates **+0.18** with the margin.
+* But the turn is issued when there is no next turn left, and `ScoreBreakdown` has no MC term
+  (TR + forests + card points + resource points + milestones + awards + extra): **the money cannot be spent and is not
+  scored**. The +0.18 is the hand size standing in for the position, not the sale.
+* Corrected in `ml/gap_allowlist.json`: the LAST_ROUND menu is a forced cleanup (benign), while the **in-game** `SELL_CARDS`
+  menu is a real action that costs a turn and that the agent never takes - deprioritised by the owner, but not "automatic".
+
+Consequence for the draw question: extra cards are not a money engine at the end, and the hand is already rich (12.4 cards,
+5.4 payable), so the draw is not the bottleneck. The measured gap that matches a real deficit is blue cards against SMART
+(7.6 vs 9.8) - association, not cause.

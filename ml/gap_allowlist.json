@@ -1,4 +1,4 @@
 {
-  "SELL_CARDS": "the game sells cards automatically after phase 5, so the explicit sell menu is not the card source (owner, 2026-11-17). Re-check if the card count stays low for another reason.",
-  "SELL_CARDS_LAST_ROUND": "same automatic selling applies; the explicit last-round menu is a cleanup, not a source of cards."
+  "SELL_CARDS": "deprioritised by the owner (2026-11-17), but note it is NOT automatic: this is the in-game sale, an action that costs a turn, and the agent never takes it (100% stop, 319 936 rows). The end-of-game cleanup is a different turn. Revisit when cards are the bottleneck - at 3 MC per card it is the only way to turn a dead card into money while actions still exist.",
+  "SELL_CARDS_LAST_ROUND": "forced cleanup, not a decision with value: SellExtraCardsState offers it only when player.getNextTurn() == null and the hand is above MAX_HAND_SIZE_LAST_ROUND = 10, at 3 MC per card. The money arrives after the last turn and money is not scored (ScoreBreakdown has no MC term), so the ~9.7 MC it raises per game is dead. The measured +0.18 correlation with the margin is the hand size, not the sale."
 }
