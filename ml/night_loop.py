@@ -98,6 +98,22 @@ def number_in(path, key):
         return None
 
 
+def phases_of(path):
+    """{"1 build green": 0.11, ...} from the profile log: the phase the player calls, as a share of its picks.
+
+    The owner's hypothesis (2026-11-17): calling phase 4 often hands the opponent production, and rarely calling 5 leaves us
+    with a poor hand. Both are visible here, and this is the instrument that has to be checked every iteration.
+    """
+    import re
+    try:
+        with open(path, encoding="utf-8", errors="ignore") as f:
+            text = f.read()
+        block = text[text.index('"phases"'):]
+        return {name: float(value) for name, value in re.findall(r'"([1-5] [a-z/ ]+)":\s*([0-9.]+)', block)}
+    except (OSError, ValueError):
+        return {}
+
+
 def free_gb(path):
     import ctypes
     free = ctypes.c_ulonglong(0)
@@ -127,10 +143,11 @@ def measure(policy, critic, games, out_dir, pack):
     except (OSError, subprocess.SubprocessError):
         pass
     profile = os.path.join(out_dir, "profile.log")
-    subprocess.run([sys.executable, os.path.join(HERE, "check_player.py"), "--model", policy, "--games", "40",
+    subprocess.run([sys.executable, os.path.join(HERE, "check_player.py"), "--model", policy, "--games", "60",
                     "--opponent", "SMART", "--no-references", "--search", "--value-model", critic],
                    stdout=open(profile, "w", encoding="utf-8"), stderr=subprocess.STDOUT, timeout=3600)
     builds = number_in(profile, "builds_per_game")
+    phases = phases_of(profile)
     def versus(opponent, count, label):
         path = os.path.join(out_dir, f"compare_{label}.json")
         args = [JAVA, "-Xmx10g"] + SEARCH + [f"-Dares.agent.valueModel={critic}", "-cp", classpath(),
@@ -149,7 +166,7 @@ def measure(policy, critic, games, out_dir, pack):
     # RANDOM - a specialist that only ever played against a copy of itself - so both numbers are recorded from now on.
     score, ci = versus("SMART", games, "smart")
     random_score, random_ci = versus("RANDOM", max(500, games // 2), "random")
-    return {"stop_share": stop_share, "builds_per_game": builds, "score": score, "ci": ci,
+    return {"stop_share": stop_share, "builds_per_game": builds, "phases": phases, "score": score, "ci": ci,
             "score_random": random_score, "ci_random": random_ci, "games": games}
 
 
@@ -258,8 +275,10 @@ def main():
                "time": time.strftime("%Y-%m-%dT%H:%M:%S")}
         ledger.append(row)
         json.dump(ledger, open(LEDGER, "w", encoding="utf-8"), indent=1)
+        mix = " ".join(f"{k.split()[0]}:{v * 100:.0f}%" for k, v in sorted((result.get("phases") or {}).items()))
         log(f"vs SMART {result['score']} {result['ci']} | vs RANDOM {result['score_random']} "
-            f"{result['ci_random']} | builds {result['builds_per_game']} | argmax stop {result['stop_share']}")
+            f"{result['ci_random']} | builds {result['builds_per_game']} | phases {mix} | "
+            f"argmax stop {result['stop_share']}")
 
         policy, critic = new_policy, new_critic
         score = result["score"] or 0.0
