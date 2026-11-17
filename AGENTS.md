@@ -30,6 +30,14 @@ Do not put ND4J/DL4J/CUDA back into the app `pom.xml`. Do not push to `main` or 
 1. **Data quality** — what we record, who plays, how much, shuffle, leakage, label balance.
 2. **Training quality** — architecture, regularisation, early stopping — only on top of good data.
 
+**Self-training decays silently (owner, 2026-11-17).** A loop that writes its next corpus with its own greedy choice can drop
+an action and never notice: the phase mix went 20% (uniform) -> 7% -> 2.2%, the mulligan is declined in 100% of rows, and
+nothing looked. So every self-play iteration must measure **action coverage per decision type** (`ml/action_coverage.py`:
+slot entropy / menu, thin options in small menus, options that shrank against the previous corpus) and turn a flag into
+exploration for that type in the next generation. A gap with a recorded reason lives in `ml/gap_allowlist.json` - the
+detector must be teachable, or the exploration it injects is wasted. The ledger records the flags, so a new gap appears in
+the record the moment it starts; finding gaps is the loop's job, not the owner's.
+
 Nobody’s claims (owner or AI) are axioms: they are hypotheses checked by nightly runs, one variable at a time.
 See `docs/EXPERIMENTS.md`.
 
