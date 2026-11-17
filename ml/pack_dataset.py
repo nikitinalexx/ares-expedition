@@ -46,6 +46,25 @@ def chunks_of(directory, decision):
 def pack(data_dirs, out, limit_chunks=0, types=None, candidates=False, verbose=True):
     started = time.time()
     os.makedirs(out, exist_ok=True)
+    # Refuse before writing instead of dying with ENOSPC halfway: a partial pack is useless and the error arrives after
+    # minutes of work. The pack keeps the observation and the real candidates only, which measured ~0.45-0.6 of the raw size
+    # on this machine (119.7 GiB -> 24.5 GiB for one corpus, 27 GB -> 15.4 GB for another); 0.7 with a 2 GB margin is safe.
+    raw_bytes = 0
+    for directory in [d for d in data_dirs.split(',') if d]:
+        for path in glob.glob(os.path.join(directory, '*.ares')):
+            raw_bytes += os.path.getsize(path)
+    free = None
+    try:
+        import ctypes
+        value = ctypes.c_ulonglong(0)
+        ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(out), None, None, ctypes.byref(value))
+        free = value.value
+    except Exception:
+        pass
+    needed = int(raw_bytes * (0.7 if candidates else 0.3)) + 2 * 2 ** 30
+    if free is not None and free < needed:
+        raise SystemExit(f'{out}: needs about {needed / 2 ** 30:.0f} GiB for a {raw_bytes / 2 ** 30:.0f} GiB corpus, '
+                         f'{free / 2 ** 30:.0f} GiB free. Pack to another disk or free space first.')
     directories = [d for d in data_dirs.split(",") if d]
     names = set()
     for directory in directories:
