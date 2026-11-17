@@ -120,7 +120,7 @@ def auc(scores, labels):
 class ValueNet(nn.Module):
     """obs -> logit of P(win). Same shape as the Java MlpValueModel reads."""
 
-    def __init__(self, obs_size, hidden, mean, std, clip=20.0):
+    def __init__(self, obs_size, hidden, mean, std, clip=40.0):
         super().__init__()
         self.clip = float(clip)
         self.register_buffer("mean", torch.as_tensor(mean))
@@ -153,7 +153,7 @@ def standardize(obs, index=None):
 def fit_value(obs, outcome, hidden=(256, 128), epochs=6, lr=1e-3, weight_decay=1e-5, batch=4096,
               seed=1, device="cpu", val_fraction=0.1, steps=0, label_mean=None, verbose=True,
               train_idx=None, val_idx=None, target=None, target_kind="outcome", stats_idx=None,
-              clip=20.0):
+              clip=40.0):
     """Trains V on (obs f16/f32 [n, obsSize], outcome f32 [n]). Returns the best epoch as numpy parameters.
 
     The split is by game (`train_idx` / `val_idx` from the caller, or a hash of the row's game id), so the same game
@@ -672,12 +672,13 @@ def main():
                              "(the only option for a night of games: 30 000 games with every decision is ~58 GB)")
     parser.add_argument("--val-every", type=int, default=10,
                         help="every N-th chunk file per type is held out for validation (whole games, no leakage)")
-    parser.add_argument("--clip", type=float, default=20.0,
+    parser.add_argument("--clip", type=float, default=40.0,
                         help="the input clamp in sigmas (mean +/- clip * std). Measured on the exported models "
-                             "(ml/clip_probe.py): at clip 5 the response to money is FLAT above ~58 MC - 80, 120 and 200 MC "
-                             "give the same V to five decimals, because the richest 0.6%% of rows all sit past mean+5sd. At "
-                             "clip 20 V rises monotonically over the whole observed range. The encoder divides money by 100 "
-                             "and the distribution is zero-inflated at the start of a game, so 5 sd is simply too tight")
+                             "(ml/clip_probe.py): at clip 5 the response to money is FLAT above ~58 MC; at clip 20 it is "
+                             "flat above ~250 MC (250 and 300 MC give the same V to five decimals). At 40 the probe "
+                             "distinguishes 100 / 200 / 250 / 300 MC (dV +0.12 / +0.025 / +0.015), because the encoder "
+                             "divides money by 100 and the distribution is zero-inflated at the start of a game, so a "
+                             "tight clamp simply hides the rich positions that decide games")
     parser.add_argument("--margin-scale", type=float, default=20.0,
                         help="margin target is margin/scale; only used with --target margin")
     args = parser.parse_args()

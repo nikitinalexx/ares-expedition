@@ -430,3 +430,35 @@ Actions taken:
 What this says about the rest of the representation: no other known defect of this class remains, but the sensor
 (`feature_ranges.py` + `clip_report.py` + `clip_probe.py`) now runs on any feature, so the next one will be found by
 measurement rather than by a conversation.
+### Two corrections from the owner (2026-11-17, evening)
+
+**1. The phase-5 draft count is NOT fixed** - I had answered that the reveal upgrade deals a fixed three cards. The engine's
+`DraftCardsService.countCardsToTakeAndDraftByChosenPhase` says otherwise:
+
+* choosing phase 5: see **5**, take **2**; upgrade `KEEP_EXTRA`: see 4, take 3; upgrade `SEE_EXTRA`: see **8**;
+* plus the special effects of played cards (`countExtraCardsToTake` / `countExtraCardsToSee`): Tharsis, United Planetary
+  Alliance and others add to both numbers;
+* plus `LunaProjectOffice`: +1 see and +1 take for one turn, then it is spent.
+
+So "how many cards I will see and take" is a sum of the phase upgrade, the played cards and a counter - a dynamic quantity, not
+a bit. The observation carries the phase-upgrade bits and the blue-card identity bits, so the information is derivable; asked
+directly (`ml/clip_probe.py` on the `cards:my_blue_UnitedPlanetaryAlliance` bit), V responds to that card by **+0.0164** at
+clip 5 and **+0.0206** at clip 20 - the net is not blind to it. Whether the size of the response is right is a separate
+question that only the ranking role can answer.
+
+**2. 200 vs 300 MC is a big difference, and my clamp still lost it.** The owner: "that is about ten victory points, decisive at
+the end". Measured on the exported models (`ml/clip_probe.py`, money set to a fixed value):
+
+| mc (/100) | clip 20 | clip 40 |
+|---|---|---|
+| 1.00 (100 MC) | 0.57429 | 0.82267 |
+| 2.00 (200 MC) | 0.63735 | 0.94175 |
+| 2.50 (250 MC) | 0.64483 (+0.0075) | 0.96690 (+0.0252) |
+| 3.00 (300 MC) | 0.64483 (**+0.0000**) | 0.98140 (+0.0145) |
+
+At clip 20, 250 and 300 MC were identical to five decimals; at clip 40 all three are distinct. The default is now **40** for
+the value model (`train_value --clip`, threaded through the model, `predict`, the export and the invariance gate).
+
+Still open in the same class: the sparse resource counters (`ghg_microbe_count` 171 sd, `zoos_animal_count` 130 sd) are cut even
+at 40 - they are near-always zero, so a mean/std scale inflates their tail. A robust scale (median/IQR or nonzero-values std)
+is the next representation fix, and `ml/feature_ranges.py` lists every such column.
