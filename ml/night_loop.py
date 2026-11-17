@@ -39,6 +39,17 @@ SEARCH = ["-Dares.agent.search=oneply", "-Dares.agent.search.symmetric=true",
           "-Dares.agent.search.types=BUILD_CARD,DRAFT_CARDS", "-Dares.agent.search.pairs=true"]
 
 
+def search_args(types, critic, phase_critic=""):
+    """The search flags for one run. `types` decides which menus the critic ranks - PICK_PHASE included means the critic
+    chooses the phase, with `phase_critic` as its own model set (Dares.agent.valueModel.phase)."""
+    args = [a for a in SEARCH if not a.startswith("-Dares.agent.search.types=")]
+    args.append(f"-Dares.agent.search.types={types}")
+    args.append(f"-Dares.agent.valueModel={critic}")
+    if phase_critic:
+        args.append(f"-Dares.agent.valueModel.phase={phase_critic}")
+    return args
+
+
 def log(message):
     print(f"[{time.strftime('%H:%M:%S')}] {message}", flush=True)
 
@@ -48,9 +59,9 @@ def classpath():
         return "target/classes;" + f.read().strip()
 
 
-def play(out, games, policy, critic, threads, explore, matchups, timeout=7200):
+def play(out, games, policy, critic, threads, explore, matchups, types, phase_critic="", timeout=7200):
     os.makedirs(out, exist_ok=True)
-    args = [JAVA, "-Xmx10g"] + SEARCH + [f"-Dares.agent.valueModel={critic}"]
+    args = [JAVA, "-Xmx10g"] + search_args(types, critic, phase_critic)
     if explore:
         args.append(f"-Dares.agent.explore={explore}")
     args += ["-cp", classpath(), "com.terraforming.ares.selfplay.SelfPlayMain", "--mode", "play",
@@ -131,7 +142,7 @@ def prune(keep_packs):
     return removed
 
 
-def measure(policy, critic, games, out_dir, pack):
+def measure(policy, critic, games, out_dir, pack, types, phase_critic=""):
     """The acceptance instruments in order: argmax, profile, and only then the score."""
     argmax = os.path.join(out_dir, "argmax.json")
     stop_share = None
@@ -150,9 +161,9 @@ def measure(policy, critic, games, out_dir, pack):
     phases = phases_of(profile)
     def versus(opponent, count, label):
         path = os.path.join(out_dir, f"compare_{label}.json")
-        args = [JAVA, "-Xmx10g"] + SEARCH + [f"-Dares.agent.valueModel={critic}", "-cp", classpath(),
-                "com.terraforming.ares.selfplay.SelfPlayMain", "--mode", "compare", "--a", "AGENT",
-                "--b", opponent, "--games", str(count), "--concurrency", "14", "--out", path, "--models", policy]
+        args = [JAVA, "-Xmx10g"] + search_args(types, critic, phase_critic) + [
+            "-cp", classpath(), "com.terraforming.ares.selfplay.SelfPlayMain", "--mode", "compare", "--a", "AGENT",
+            "--b", opponent, "--games", str(count), "--concurrency", "14", "--out", path, "--models", policy]
         with open(os.path.join(out_dir, f"compare_{label}.log"), "w", encoding="utf-8") as sink:
             subprocess.run(args, stdout=sink, stderr=subprocess.STDOUT, timeout=7200)
         try:
@@ -185,6 +196,11 @@ def main():
     parser.add_argument("--stop-share-floor", type=float, default=0.18)
     parser.add_argument("--explore", default="BUILD_CARD:0.15")
     parser.add_argument("--names", default="D:/ares/tmp/names_now.json")
+    parser.add_argument("--types", default="BUILD_CARD,DRAFT_CARDS",
+                        help="menus the critic ranks. Add PICK_PHASE to let the critic choose the phase - the policy alone "
+                             "never calls phase 5 (0% of its picks, and no phase-5 row exists in the corpus)")
+    parser.add_argument("--phase-critic", action="store_true",
+                        help="use the first critic of the ensemble as the phase-pick model (Dares.agent.valueModel.phase)")
     parser.add_argument("--matchups", default="AGENT:AGENT:0.85,AGENT:RANDOM:0.15",
                         help="opponents of the training games. 85%% mirror matches taught a player that beats a copy of "
                              "itself: 10.89%% vs SMART but only 53%% vs RANDOM (measured 2026-11-17)")
@@ -225,7 +241,9 @@ def main():
         if os.path.isdir(raw):
             shutil.rmtree(raw, ignore_errors=True)
 
-        code, seconds, summary = play(raw, games, policy, critic, args.threads, args.explore, args.matchups)
+        phase_critic = (critic.split(",")[0] if isinstance(critic, str) else critic[0]) if args.phase_critic else ""
+        code, seconds, summary = play(raw, games, policy, critic, args.threads, args.explore, args.matchups,
+                                      args.types, phase_critic)
         played = summary.get("gamesPlayed", 0)
         failed = summary.get("gamesFailed", 0)
         log(f"played {played} games in {seconds / 60:.1f} min ({failed} failed, {summary.get('rows', 0)} rows)")
@@ -268,7 +286,8 @@ def main():
             log("training failed; keeping the previous pair and continuing")
             continue
 
-        result = measure(new_policy, new_critic, 1000 if not args.smoke else 100, out_dir, pack)
+        result = measure(new_policy, new_critic, 1000 if not args.smoke else 100, out_dir, pack, args.types,
+                         new_critic.split(",")[0] if args.phase_critic else "")
         row = {"iteration": index, "name": name, "games": played, "rows": summary.get("rows"),
                "failed": failed, "seconds": round(seconds, 1), "explore": args.explore,
                "critic": new_critic, "critics": len(new_critics), "policy": new_policy, **result,
