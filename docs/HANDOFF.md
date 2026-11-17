@@ -692,3 +692,52 @@ game, won or lost, so the channel is learnable even where the outcome is dominat
 - the ledger of the last loop run: `D:/ares/tmp/night_ledger.json`, the plateau report `plateau_1117-2001.md`;
 - best measured bundle so far: 19.55-20.1% vs SMART, 77% vs RANDOM (`policy/1117-2001_11`, `v_1117-2001_11_s1..s3`);
 - disk after cleanup: ~100 GB free on C:, ~350 GB on D:; only one pack is kept.
+
+## Morning report, 18 November: the ceiling was the search's blind spot, not the network
+
+### What changed
+
+`19.55%` -> **`27.9% [26.3, 29.5]` vs SMART, 3000 games, nothing retrained.** The single change: the critic now ranks two
+more menus, `STANDARD_ACTION` and `PERFORM_BLUE_ACTION`. Before, 13 of 16 decision types were chosen by the policy with no
+lookahead at all; the two added are where the channel breakdown localised the loss (ground game, engine).
+
+### How it wins, measured
+
+Scorecard, 300 games, same bundle:
+
+| | ours | SMART |
+|---|---|---|
+| before | 72.33 | 92.79 |
+| after | 72.25 | **83.91** |
+
+Our own score did not move; SMART's fell 8.9. We contest the shared board - take the ocean, the forest, the temperature
+step, press blue actions - and deny it while spending the same money. Card points are still 8.9 against 16.9.
+
+### Why the critic could not learn card points (the answer to "why does nothing learn")
+
+`ml/card_points_data.py` on 40 000 games, 320 000 build decisions:
+
+```
+menus offering a card with >= 2 printed points:  8.9%
+took it:     margin +8.54, win 62.3%
+took other:  margin +8.82, win 62.6%    <- no difference
+correlation(picked points, margin): +0.042
+```
+
+The corpus does not contain the fact "points win", and point cards are barely reachable because the draft does not take
+them. A critic trained on the outcome is therefore *correct* to price them at zero. This is not capacity and not volume:
+it is the training target being collapsed, the same silent-decay mechanism the coverage guard exists for, one level up.
+The seven-channel variant of the same idea was trained and rejected (`docs/RESULTS.md`): every channel lands at its own
+variance.
+
+### Next levers, in the order they are cheap
+
+1. **Consolidate the wide menus in the loop** - one night iteration with
+   `--types BUILD_CARD,DRAFT_CARDS,PICK_PHASE,STANDARD_ACTION,PERFORM_BLUE_ACTION`, so the policy learns the critic's
+   standard-project and blue-action choices instead of only imitating the old narrow search.
+2. **Transfer check against NETWORK** (not only SMART): the gain is *denial of a scripted opponent*, and a stronger
+   opponent may punish it, or may be denied harder. 1000 games, one command.
+3. **Raise our own card points** (8.9 against 16.9) - only reachable through the card menus, and those need a target the
+   corpus can teach. Options that are still fair: exploration on `DRAFT_CARDS` (the 8.9% reachability is the measured
+   reason), or a critic on the seat's own final score (`train_value.py --target myscore`) rather than on the outcome.
+4. Do not re-run the seven-channel critic, the `mustBuild` rule, or volume - all measured, all in `docs/RESULTS.md`.

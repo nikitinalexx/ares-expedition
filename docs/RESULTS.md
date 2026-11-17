@@ -601,3 +601,41 @@ channels are each as unpredictable as the whole, because each is dominated by th
 The structural conclusion: a model trained on *who won our games* cannot learn that points win, because in our games they
 do not - economy does. That is the same silent-decay mechanism the coverage guard exists for, one level up: the target,
 not the action, is collapsed.
+
+## The critic was only ranking three menus; giving it the other two is where the 20% broke (2026-11-18, night)
+
+Measured on the best bundle (`policy/1117-2001_11`, `v_1117-2001_11_s1..s3`), same flags, same 3000 games, the only change
+being `-Dares.agent.search.types`:
+
+| menus the critic ranks | win rate vs SMART (3000 games) |
+|---|---|
+| BUILD_CARD, DRAFT_CARDS, PICK_PHASE (the bundle as it was) | 19.55% [17.2, 22.1] (1000 games, earlier) |
+| the same plus STANDARD_ACTION and PERFORM_BLUE_ACTION | **27.9% [26.3, 29.5]** |
+
+The intervals do not overlap. Nothing was retrained; the critic simply got a vote on two menus it had never been asked
+about, and those two are exactly where the channel breakdown says the points are lost: standard projects are the ground game
+(terraforming rating, forests) and blue actions are the engine.
+
+Why this works when the card ranking does not: V sees the *afterstate*, and an afterstate of `SP_OCEAN` or of a pressed
+blue action differs from the current state in something immediate and structural - a terraforming step, an ocean, a forest,
+a resource moved onto a card. The policy alone was choosing those with no lookahead at all (13 of 16 decision types were
+policy-only). The card menus stay hard for V, because a card's worth shows up in points at the end of a game, not in the
+next state.
+
+### The corpus, measured before it was blamed
+
+`ml/card_points_data.py` on 40 000 games (320 000 logged build decisions):
+
+```
+menus where a card with >= 2 printed points was offered:   8.9%
+built a 0-point card:                                    82.0%
+took the >=2-point card:  margin +8.54, win 62.3%
+took another:             margin +8.82, win 62.6%      <- no difference
+correlation(picked points, margin) = +0.042
+winners built 1.03 printed points, losers 0.81
+```
+
+So a critic trained on our outcomes is *right* to ignore printed points: in our games they do not separate winners, and
+they are barely reachable (8.9% of menus) because the draft does not take them. This is the silent-decay pattern at the
+level of the training target: the corpus does not contain the fact, so no architecture and no number of seeds can learn it.
+It also retires the "the network is too small / the data too thin" hypotheses - they were never the binding constraint.

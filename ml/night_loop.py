@@ -465,6 +465,7 @@ def main():
                 log(f"regret report: {tail(os.path.join(out_dir, 'regret.log'), 6).strip()}")
         row = {"iteration": index, "name": name, "games": played, "rows": summary.get("rows"),
                "failed": failed, "seconds": round(seconds, 1), "explore": args.explore,
+               "types": args.types, "value_scale": args.value_scale,
                "critic": new_critic, "critics": len(new_critics), "policy": new_policy, **result,
                "time": time.strftime("%Y-%m-%dT%H:%M:%S")}
         ledger.append(row)
