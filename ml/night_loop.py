@@ -199,6 +199,10 @@ def main():
     parser.add_argument("--coverage-baseline", default="",
                         help="coverage json to compare the first iteration against (ml/action_coverage.py --out)")
     parser.add_argument("--coverage-floor", type=float, default=0.10)
+    parser.add_argument("--entropy", type=float, default=0.01,
+                        help="entropy bonus on the policy (0 = off): without it the trainer sharpens the policy onto one "
+                             "option every iteration, which is how phase 5 fell to 2%")
+    parser.add_argument("--adv-weight-clip", default="0.2,3.0")
     parser.add_argument("--coverage-drop", type=float, default=0.05)
     parser.add_argument("--explore", default="BUILD_CARD:0.15")
     parser.add_argument("--names", default="D:/ares/tmp/names_now.json")
@@ -225,6 +229,9 @@ def main():
         except ValueError:
             ledger = []
     started = time.time()
+    # Every artifact carries the run tag. Without it, a second run reuses "night01", "night02", ... and overwrites the
+    # previous run's models - which happened on 2026-11-17: the 10.89% bundle was replaced by the next run's iteration 2.
+    run_tag = time.strftime("%m%d-%H%M")
     policy, critic = args.seed_policy, args.seed_critic
     best = max([row.get("score") or 0 for row in ledger], default=0.0)
     flat = 0
@@ -235,7 +242,7 @@ def main():
     prev_name = ""
     while time.time() - started < args.minutes * 60:
         index = len(ledger) + 1
-        name = f"night{index:02d}"
+        name = f"{run_tag}_{index:02d}"
         raw = f"{SSD_DATA}/{name}"
         pack = f"{PACK_ROOT}/{name}"
         out_dir = f"D:/ares/tmp/{name}"
@@ -313,7 +320,8 @@ def main():
 
         new_policy = f"{POLICY_ROOT}/{name}"
         code = run([sys.executable, os.path.join(HERE, "train_policy_ce.py"), "--packed", pack, "--out", new_policy,
-                    "--epochs", str(args.epochs_policy)], os.path.join(out_dir, "policy.log"))
+                    "--epochs", str(args.epochs_policy), "--entropy", str(args.entropy),
+                    "--adv-weight-clip", args.adv_weight_clip], os.path.join(out_dir, "policy.log"))
         policy_ok = code == 0 and len(glob.glob(os.path.join(new_policy, "*", "model.json"))) > 0
         log(f"policy {'ok' if policy_ok else 'FAILED'}: {tail(os.path.join(out_dir, 'policy.log'), 2).strip()}")
         if not (critic_ok and policy_ok):

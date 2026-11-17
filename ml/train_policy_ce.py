@@ -239,6 +239,12 @@ def main():
                              "prediction), which is the scale the printed card points live on")
     parser.add_argument("--adv-normalize", action="store_true",
                         help="normalise the advantage per batch (mean 0, std 1): the pg step")
+    parser.add_argument("--entropy", type=float, default=0.0,
+                        help="coefficient of an entropy bonus on the policy's own distribution (0 = off). The loop trains on "
+                             "its own argmax, which sharpens the choice every iteration until one option takes everything "
+                             "(phase 5 went 20%% -> 2.2%%). The bonus keeps mass on the alternatives inside the legal menu, "
+                             "so a mismatch of the argmax for one context can be corrected by the next update instead of "
+                             "being amplified")
     parser.add_argument("--adv-weight-clip", default="0.2,3.0",
                         help="clip of the advantage weight that scales the cross-entropy. Signed, unbounded weights make "
                              "the objective unbounded below (measured 2026-11-16: PICK_PHASE val loss 860, train loss -20), "
@@ -461,6 +467,13 @@ def main():
             ratio = (torch.exp(taken) / behaviour).clamp(max=args.max_ratio)
             return -(weight * ratio * taken).mean()
         ce = nn.functional.cross_entropy(logits, chosen.clamp(max=cands.shape[1] - 1), reduction="none")
+        if args.entropy > 0:
+            # Entropy of the policy over the legal candidates only (padding is -1e9, so its probability is ~0 and it does not
+            # contribute). Maximising it keeps the alternatives alive; the cross-entropy still decides which one is best.
+            log_probs = torch.log_softmax(logits, dim=1)
+            probabilities = log_probs.exp()
+            entropy = -(probabilities * log_probs).sum(dim=1).mean()
+            ce = ce - args.entropy * entropy
         if advantage is not None:
             # Policy gradient with the value as the baseline: rows where the game went better than V promised count more,
             # rows that went worse count less. The weight is CLIPPED to stay positive: a signed, unbounded weight makes the
