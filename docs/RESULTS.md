@@ -533,3 +533,26 @@ metric (card value), not the score slope, is what to optimise.
 Next: a clean, large corpus (all rows, vs SMART, afterstates on, exploration only where a collateral collapse is detected), three
 critics, policy by CE on it, then 10 000 games. The exploration shares are the variable that poisoned the previous night and they
 are now a measured cost, not a free safety net.
+
+### Where the loop stands after 12 iterations (2026-11-17, night)
+
+`plateau_1117-2001.md` in one paragraph: 12 iterations, SMART 11.2-20.1% with 1000-game intervals of +/-2, RANDOM 64-81%,
+printed card points **6.9-8.9 the whole time** against SMART's 18-19, phase mix swinging from 4:7% to 4:38%. Best 20.1%
+(iteration 9, RANDOM 64%), best profile iteration 11 and 12 (phase 4 at 13-14%, phase 5 at 21-26%, RANDOM 77%).
+
+What that means, without decoration:
+
+* the loop does not converge: the spread between iterations is larger than any trend, so "18%" and "20%" are the same number
+  measured twice. The causes are the 1000-game measurement (+/-2), the three-critic retrain, and the phase behaviour flipping
+  between iterations.
+* the one number that never moved is the one the diagnostics pointed at: **printed card points 8-9 against 18-19**. Every
+  lever of the night (opponents, exploration, entropy, phase critic, ensemble, corpus doubling, clean data) touched it by less
+  than a point.
+* the phase mix is unstable at the *critic* level: a small change in the value net flips phase 4 between 7% and 38% of the
+  calls. That is a variance problem in the phase head, not a strategy problem, and it is worth its own experiment.
+
+The next single experiment, chosen because it attacks the flat metric directly: **give the critic the printed points of the
+card**. The owner removed them from the candidate vector on the principle that one bit per card teaches everything; measured,
+it does not: correlation(card value, printed points) is 0.19 on the cleanest corpus, and the search builds cards worth half of
+what SMART builds. That is a schema change (one number per candidate), so it means regenerating the corpus - which the pipeline
+now does in ~55 minutes per 40 000 games.
