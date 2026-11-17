@@ -288,6 +288,7 @@ def main():
     best = max([row.get("score") or 0 for row in ledger], default=0.0)
     best_policy, best_critic = policy, critic
     best_iteration = 0
+    best_random = None
     flat = regressed = no_progress = 0
     tried = []
     games = args.games
@@ -408,10 +409,10 @@ def main():
             for item in collapsed:
                 log(f"COLLAPSE {item['decision']} ({item['kind']}): lost {item.get('lost', [])} "
                     f"gone {item.get('gone', [])} coverage {item.get('coverage_before', '-')} -> {item['coverage']}")
-                for key in ("entropy_before", "entropy_now", "lost", "gone", "coverage", "kind", "decision"):
+                for key in ("decision", "kind", "coverage"):
                     if key not in item:
-                        raise KeyError(f"the collapse flag for {item.get('decision')} has no '{key}': the loop's log and "
-                                       f"the detector disagree about the flag format")
+                        raise KeyError(f"the collapse flag for {item.get('decision')} has no '{key}': the loop and the "
+                                       f"detector disagree about the flag format")
             added = sorted({item["decision"] for item in collapsed if item["decision"] not in args.explore})
             if added:
                 args.explore = (args.explore + "," if args.explore else "") + \
@@ -487,11 +488,16 @@ def main():
             regressed = 0
             continue
         floor = result.get("score_random") or 0.0
-        if score > best + 0.005:
+        random_score = result.get("score_random") or 0.0
+        tie_break = (best_random is not None and abs(score - best) <= 0.02
+                     and random_score >= best_random + 0.05)
+        if score > best + 0.005 or tie_break:
             best, flat = score, 0
+            best_random = random_score
             best_policy, best_critic = policy, critic
             best_iteration = index
-            log(f"new best {best:.3f} (kept as the rollback target)")
+            log(f"new best {best:.3f} (RANDOM {random_score:.3f}{', on the RANDOM tie-break' if tie_break else ''}) "
+                f"kept as the rollback target")
         else:
             flat += 1
             log(f"no improvement ({flat}/{args.patience})")
