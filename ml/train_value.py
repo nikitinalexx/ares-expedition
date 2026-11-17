@@ -207,7 +207,7 @@ def fit_value(obs, outcome, hidden=(256, 128), epochs=6, lr=1e-3, weight_decay=1
         train_idx, val_idx = np.arange(len(obs)), np.arange(min(len(obs), 1000))
     model = ValueNet(obs.shape[1], list(hidden), mean, std, clip=clip).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
-    regression = target_kind == "margin"
+    regression = target_kind in ("margin", "myscore")
     loss_fn = nn.MSELoss() if regression else nn.BCEWithLogitsLoss()
     steps = steps or (len(train_idx) + batch - 1) // batch
     label_mean = float(target[train_idx].mean()) if label_mean is None else label_mean
@@ -568,7 +568,7 @@ def load_pool(data_dirs, rows_per_game, rng, val_fraction, keep_round=False, dro
 
 
 def load_packed(directory, rows_per_game, rng, val_fraction, drop_columns=None, score_columns=None,
-                include_afterstates=False):
+                include_afterstates=False, with_breakdown=False):
     """The same pool as load_pool, read from a pack (ml/pack_dataset.py) instead of the raw chunks.
 
     Two costs dominated every earlier run and both are gone here: the raw files are 78% candidate blocks, which a value
@@ -587,12 +587,16 @@ def load_packed(directory, rows_per_game, rng, val_fraction, drop_columns=None, 
                                 shape=(manifest["types"][name]["rows"], manifest["obsSize"])))
         sizes.append(manifest["types"][name]["rows"])
     fields = ("outcome", "margin", "seat", "context", "round", "game", "step")
-    collected, keeps = {field: [] for field in fields}, []
+    collected, keeps, breakdowns = {field: [] for field in fields}, [], []
     for name in types:
         with np.load(os.path.join(directory, f"{name}.lab.npz")) as labels:
             for field in fields:
                 collected[field].append(labels[field])
             keeps.append(labels["keep"])
+            if with_breakdown:
+                if "breakdown" not in labels.files:
+                    raise SystemExit(f"{directory}/{name}: no score breakdown in the pack (repack it)")
+                breakdowns.append(labels["breakdown"])
     total = int(sum(sizes))
     label = {field: np.concatenate(values) for field, values in collected.items()}
     keep = np.concatenate(keeps)
@@ -631,7 +635,16 @@ def load_packed(directory, rows_per_game, rng, val_fraction, drop_columns=None, 
             values[part] = gathered
         score = (values[:, 0] - values[:, 1]).astype(np.float32)
 
-    return {"obs": obs, "outcome": selected["outcome"].astype(np.float32),
+    self_score = None
+    if with_breakdown:
+        # The seat's own final score, summed from the game's seven channels: terraforming rating, forests, printed card
+        # points, points on the resources of cards, milestones, awards, extra. It is the game's own arithmetic, and unlike
+        # the outcome it has a gradient in games we lose: a card that prints two points adds two to this number always.
+        table = np.concatenate(breakdowns, axis=0).astype(np.float32)[index]
+        self_score = table.sum(axis=1)
+
+    return {"self_score": self_score,
+            "obs": obs, "outcome": selected["outcome"].astype(np.float32),
             "margin": selected["margin"].astype(np.float32), "game": game, "context": selected["context"],
             "round": selected["round"], "step": step, "seat": seat, "next": next_row, "score": score,
             "validation": is_validation_game(game, val_fraction), "obsSize": manifest["obsSize"],
@@ -698,7 +711,9 @@ def main():
                         help="zero every observation column whose name starts with this prefix (comma-separated for "
                              "several blocks): an A/B of a block of the representation without regenerating the data. "
                              "The exported model provably ignores the dropped columns (mask_features + invariance gate)")
-    parser.add_argument("--target", default="outcome", choices=["outcome", "margin"],
+    parser.add_argument("--score-scale", type=float, default=30.0,
+                        help="the divisor for --target myscore (a typical final score, so the regression is ~O(1))")
+    parser.add_argument("--target", default="outcome", choices=["outcome", "margin", "myscore"],
                         help="`outcome`: predict the win (BCE). `margin`: regress the final score difference "
                              "(scaled by --margin-scale) - the game's own objective, carrying how dominant a position was")
     parser.add_argument("--stream", action="store_true",
@@ -752,7 +767,7 @@ def main():
                 observation_hash = hashlib.sha256(layout.encode("utf-8")).hexdigest()[:16]
                 scores = predict(fitted["params"], obs, squash=args.target == "outcome")
                 reference_rows = obs
-                reference_scores = (scores if args.target == "margin"
+                reference_scores = (scores if args.target in ("margin", "myscore")
                                     else np.log(np.clip(scores, 1e-9, 1 - 1e-9) / np.clip(1 - scores, 1e-9, 1 - 1e-9)))
                 break
             if reference_rows is not None:
@@ -799,7 +814,8 @@ def main():
     if args.packed:
         pool = load_packed(args.packed, args.rows_per_game, rng, args.val_fraction,
                            drop_columns=drop, score_columns=score_columns,
-                           include_afterstates=args.include_afterstates)
+                           include_afterstates=args.include_afterstates,
+                           with_breakdown=args.target == "myscore")
         print(f"  packed pool: {len(pool['obs'])} rows of {pool['totalRows']} packed, "
               f"{pool['obsSize']} observation features", flush=True)
         megabytes = len(pool["obs"]) * pool["obsSize"] * 2 / 2 ** 20
@@ -822,6 +838,14 @@ def main():
     target = pool["outcome"]
     if args.target == "margin":
         target = np.clip(pool["margin"] / args.margin_scale, -3.0, 3.0).astype(np.float32)
+    if args.target == "myscore":
+        # Predicting MY score rather than the difference is the one target that still points at the cards the game pays
+        # points for after economy has already won every game in the corpus we can generate: the margin answers "who won",
+        # this answers "what did this position turn into". Ranking candidates compares two afterstates of one position, so
+        # the shift by the current score cancels and only the remaining points matter.
+        target = np.clip(pool["self_score"] / args.score_scale, 0.0, 6.0).astype(np.float32)
+        print(f"  target: own final score, mean {pool['self_score'][~split].mean():.2f}, "
+              f"sd {pool['self_score'][~split].std():.2f}", flush=True)
     if args.td_bootstrap:
         # TD on the game's own score: the target of a row is the score it actually gained until the next decision plus
         # the value of that next state; the last row of a game keeps the final margin. The bootstrap values come from an
@@ -871,7 +895,7 @@ def main():
     fitted = fit_value(pool["obs"], pool["outcome"], hidden=hidden, epochs=args.epochs, lr=args.lr,
                        weight_decay=args.weight_decay, batch=args.batch, seed=args.seed, device=device,
                        train_idx=train_idx, val_idx=np.flatnonzero(split),
-                       label_mean=float(pool["outcome"][~split].mean()),
+                       label_mean=None if args.target != "outcome" else float(pool["outcome"][~split].mean()),
                        target=target, target_kind=args.target, stats_idx=stats_idx, clip=args.clip,
                        scale=args.scale)
     params, history = fitted["params"], fitted["history"]
@@ -883,6 +907,10 @@ def main():
         val_loss = float(nn.functional.binary_cross_entropy_with_logits(
             torch.from_numpy(np.log(np.clip(predicted, 1e-9, 1 - 1e-9) / np.clip(1 - predicted, 1e-9, 1))),
             torch.from_numpy(y_val.astype(np.float32))))
+    elif args.target == "myscore":
+        val_loss = float(nn.functional.mse_loss(
+            torch.from_numpy(predicted),
+            torch.from_numpy(target[split].astype(np.float32))))
     else:
         val_loss = float(nn.functional.mse_loss(
             torch.from_numpy(predicted), torch.from_numpy((pool["margin"][split] / args.margin_scale)
@@ -906,7 +934,7 @@ def main():
                             "observed": round(float(y_val[group].mean()), 4)})
 
     sample = np.unique(np.linspace(0, len(val) - 1, min(8, len(val))).astype(int))
-    logits = (predicted[sample] if args.target == "margin"
+    logits = (predicted[sample] if args.target in ("margin", "myscore")
               else np.log(np.clip(predicted[sample], 1e-9, 1 - 1e-9) / np.clip(1 - predicted[sample], 1e-9, 1 - 1e-9)))
     reference = {"inputs": val[sample].astype(np.float32).tolist(), "logits": logits.astype(float).tolist()}
     meta = export_value(args.out, pool["observationHash"], pool["obsSize"], hidden, args.clip, params, reference)

@@ -693,29 +693,54 @@ game, won or lost, so the channel is learnable even where the outcome is dominat
 - best measured bundle so far: 19.55-20.1% vs SMART, 77% vs RANDOM (`policy/1117-2001_11`, `v_1117-2001_11_s1..s3`);
 - disk after cleanup: ~100 GB free on C:, ~350 GB on D:; only one pack is kept.
 
-## Morning report, 18 November: the ceiling was the search's blind spot, not the network
+## Morning report, 18 November: the 20% was a blind spot of the search, not a property of the network
 
-### What changed
+### The number
 
-`19.55%` -> **`27.9% [26.3, 29.5]` vs SMART, 3000 games, nothing retrained.** The single change: the critic now ranks two
-more menus, `STANDARD_ACTION` and `PERFORM_BLUE_ACTION`. Before, 13 of 16 decision types were chosen by the policy with no
-lookahead at all; the two added are where the channel breakdown localised the loss (ground game, engine).
+**19.55% -> 47.6% [45.8, 49.4] vs SMART, 3000 games.** Against RANDOM: 77.2% -> **92.75% [91.0, 94.2]**, 1000 games.
+Nothing was retrained; every weight is the bundle of 17/11 evening (`policy/1117-2001_11`,
+`v_1117-2001_11_s1..s3`). The only change is *which menus the critic ranks*.
 
-### How it wins, measured
+| menus the critic ranks | vs SMART, 3000 games |
+|---|---|
+| BUILD_CARD, DRAFT_CARDS, PICK_PHASE (the bundle as it was) | 20.2% [18.8, 21.7] |
+| + STANDARD_ACTION, PERFORM_BLUE_ACTION | 27.9% [26.3, 29.5] |
+| + DISCARD_CARDS, SELL_CARDS, SELL_CARDS_LAST_ROUND | **47.6% [45.8, 49.4]** |
 
-Scorecard, 300 games, same bundle:
+`OnePlySearch.applyOn` already applied all five added types to a game copy. 13 of 16 decision types were decided by the
+policy with no lookahead; the five that can be applied are the ones that were missing, and each is an *immediate*
+consequence - an ocean, a temperature step, a card out of the hand - not a promise of points in twelve generations.
 
-| | ours | SMART |
-|---|---|---|
-| before | 72.33 | 92.79 |
-| after | 72.25 | **83.91** |
+Exact flags:
 
-Our own score did not move; SMART's fell 8.9. We contest the shared board - take the ocean, the forest, the temperature
-step, press blue actions - and deny it while spending the same money. Card points are still 8.9 against 16.9.
+```
+-Dares.agent.search.types=BUILD_CARD,DRAFT_CARDS,PICK_PHASE,STANDARD_ACTION,PERFORM_BLUE_ACTION,DISCARD_CARDS,SELL_CARDS,SELL_CARDS_LAST_ROUND
+-Dares.agent.search=oneply -Dares.agent.search.symmetric=true -Dares.agent.search.pairs=true
+-Dares.agent.valueModel=<the three critics> -Dares.agent.valueModel.phase=<the first>
+```
 
-### Why the critic could not learn card points (the answer to "why does nothing learn")
+### Where the points come from, by the game's own channels (300 games)
 
-`ml/card_points_data.py` on 40 000 games, 320 000 build decisions:
+| channel | before | after | SMART |
+|---|---|---|---|
+| resource cards (animals, microbes) | 9.87 | **15.97** | 6.57 |
+| printed card points | 8.93 | 10.75 | 17.12 |
+| terraforming rating | 30.64 | 33.90 | 33.11 |
+| forests | 8.33 | 10.01 | 9.11 |
+| milestones / awards | 4.19 / 10.29 | 4.45 / 10.87 | 4.42 / 10.26 |
+| **total** | 72.25 | **85.95** | 80.59 |
+
+Builds 34.0 against 32.9. So the engine does work once it is paid for: the sell menus were the money. `SELL_CARDS` had the
+policy answering "stop" in 100% of the rows (a known, allowlisted collapse in `ml/action_coverage.py`), and the end-of-round
+sale is worth ~110 MC per game; the critic only has to answer "which card do I miss least", which it can read off the hand
+summary. The money became a 34-card game and a live resource-card engine.
+
+Profile gate (`ml/check_player.py`): builds 27-30 per game, phases 26/21/23/15/15%, standard projects in phase 3 = 16.6%.
+Not degenerate; it got better against RANDOM too, so it is not a denier of one scripted opponent.
+
+### Why the card menus are still the next lever, and what the data says about them
+
+`ml/card_points_data.py` on 40 000 games (320 000 build decisions):
 
 ```
 menus offering a card with >= 2 printed points:  8.9%
@@ -724,20 +749,24 @@ took other:  margin +8.82, win 62.6%    <- no difference
 correlation(picked points, margin): +0.042
 ```
 
-The corpus does not contain the fact "points win", and point cards are barely reachable because the draft does not take
-them. A critic trained on the outcome is therefore *correct* to price them at zero. This is not capacity and not volume:
-it is the training target being collapsed, the same silent-decay mechanism the coverage guard exists for, one level up.
-The seven-channel variant of the same idea was trained and rejected (`docs/RESULTS.md`): every channel lands at its own
-variance.
+A critic trained on the outcome is *correct* to price printed points at zero: the corpus does not contain the fact, and
+point cards are barely reachable because the draft does not take them. This is the silent-decay pattern one level up - the
+training target is collapsed, not the network. Volume and capacity were never the binding constraint; do not spend a night
+on 150k games before this is fixed.
 
-### Next levers, in the order they are cheap
+The seven-channel critic was the first attempt at this and is rejected in `docs/RESULTS.md` (each channel lands at its own
+variance). The untested ones, cheapest first:
 
-1. **Consolidate the wide menus in the loop** - one night iteration with
-   `--types BUILD_CARD,DRAFT_CARDS,PICK_PHASE,STANDARD_ACTION,PERFORM_BLUE_ACTION`, so the policy learns the critic's
-   standard-project and blue-action choices instead of only imitating the old narrow search.
-2. **Transfer check against NETWORK** (not only SMART): the gain is *denial of a scripted opponent*, and a stronger
-   opponent may punish it, or may be denied harder. 1000 games, one command.
-3. **Raise our own card points** (8.9 against 16.9) - only reachable through the card menus, and those need a target the
-   corpus can teach. Options that are still fair: exploration on `DRAFT_CARDS` (the 8.9% reachability is the measured
-   reason), or a critic on the seat's own final score (`train_value.py --target myscore`) rather than on the outcome.
-4. Do not re-run the seven-channel critic, the `mustBuild` rule, or volume - all measured, all in `docs/RESULTS.md`.
+1. **Consolidate the wide menus in the loop** - one iteration with the eight types above, so the policy learns these
+   choices instead of only imitating the narrow search. This is what the night run after this report does.
+2. **`train_value.py --target myscore`** (the seat's own final score, from the pack's `breakdown`) - it has a gradient in
+   games we lose, which the margin does not. It diverged at lr 1e-3 on a smoke pack; start at 3e-4 and gate it with
+   `ml/card_value_check.py` (correlation > 0.3) before any win-rate run.
+3. **Exploration on DRAFT_CARDS** - 8.9% reachability is the measured reason; the generator's own rule is that a collapsed
+   option is fixed by exploring that type, not by more seeds.
+
+### Housekeeping
+
+- bench ledger: `D:/ares/tmp/night_ledger.json`; plateau report of the previous run `D:/ares/tmp/plateau_1117-2001.md`.
+- `ml/train_breakdown.py` (seven channel heads) is kept as a rejected experiment, not part of the pipeline.
+- `night_loop.py` ledger rows now record `types` and `value_scale`, because those two now change the meaning of a score.

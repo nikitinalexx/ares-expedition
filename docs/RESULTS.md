@@ -639,3 +639,25 @@ So a critic trained on our outcomes is *right* to ignore printed points: in our 
 they are barely reachable (8.9% of menus) because the draft does not take them. This is the silent-decay pattern at the
 level of the training target: the corpus does not contain the fact, so no architecture and no number of seeds can learn it.
 It also retires the "the network is too small / the data too thin" hypotheses - they were never the binding constraint.
+
+### The same change, three menus further: 27.9% -> 47.6% (2026-11-18, night)
+
+`OnePlySearch.applyOn` also applies the give-up menus: a candidate of `DISCARD_CARDS`, `SELL_CARDS` and
+`SELL_CARDS_LAST_ROUND` is "this card leaves my hand", which is *exactly* what those decisions do (the money a sale pays
+is the same for every candidate, so it cancels in the ranking - the critic only has to answer "which card do I miss least").
+Adding those three types to `-Dares.agent.search.types`, nothing else changed:
+
+| menus ranked by the critic | vs SMART, 3000 games |
+|---|---|
+| BUILD_CARD, DRAFT_CARDS, PICK_PHASE | 20.2% [18.8, 21.7] |
+| + STANDARD_ACTION, PERFORM_BLUE_ACTION | 27.9% [26.3, 29.5] |
+| + DISCARD_CARDS, SELL_CARDS, SELL_CARDS_LAST_ROUND | **47.6% [45.8, 49.4]** |
+
+The third step is the end-of-round sale. Measured on 2026-11-17: the sale is worth ~110 MC per game for every player, and
+`ml/action_coverage.py` had the sell decision as a known collapse - the policy answered "stop" in 100% of the rows, which
+was allowlisted rather than fixed. The agent never sold a card, so it never had that money, and the money is what buys the
+next card. The critic, asked which card it would miss least, answers that correctly from the afterstate alone.
+
+Note what these three steps have in common: all of them are menus the critic was never asked about, and all of them are
+*immediate* consequences (an ocean, a temperature step, a card out of the hand), not a promise of points in twelve
+generations. The card menus stay at 0.19 correlation with printed points and are still the next lever.
