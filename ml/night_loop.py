@@ -232,6 +232,9 @@ def main():
                         help="critics trained per iteration; the search averages them (ensemble_check.py measured 10.28%% "
                              "against 8.63%% for one, 10 000 games, disjoint intervals)")
     parser.add_argument("--patience", type=int, default=3)
+    parser.add_argument("--max-flat", type=int, default=8,
+                        help="stop when the best score has not improved for this many iterations, whatever the lever list "
+                             "says: a night that grinds the same win rate is worse than a short honest one")
     parser.add_argument("--keep-packs", type=int, default=3)
     parser.add_argument("--stop-share-floor", type=float, default=0.18)
     parser.add_argument("--coverage-baseline", default="",
@@ -284,7 +287,9 @@ def main():
     policy, critic = args.seed_policy, args.seed_critic
     best = max([row.get("score") or 0 for row in ledger], default=0.0)
     best_policy, best_critic = policy, critic
-    flat = regressed = 0
+    best_iteration = 0
+    flat = regressed = no_progress = 0
+    tried = []
     games = args.games
     log(f"night starts: policy {policy}, critic {critic}, {games} games per iteration, "
         f"budget {args.minutes} min, best so far {best:.3f}")
@@ -308,7 +313,25 @@ def main():
         args.types = args.types + ",STANDARD_ACTION"
         return f"the critic now ranks {args.types} (let value decide one more menu)"
 
-    ladder = [double_corpus, more_entropy, more_exploration, search_more_types]
+    ladder = {"corpus": double_corpus, "entropy": more_entropy, "explore": more_exploration,
+              "types": search_more_types}
+    used = set()
+
+    def choose_lever(row, levers):
+        """The lever whose hypothesis matches the symptom: a collapse is cured by exploration, a policy that sharpens onto
+        one option by entropy, a critic that lacks data by a bigger corpus. A fixed order tries the wrong thing first."""
+        order = []
+        if row.get("collapses"):
+            order.append("explore")
+        stop_share = row.get("stop_share")
+        if stop_share is not None and (stop_share < 0.05 or stop_share > 0.95):
+            order.append("entropy")
+        order += ["corpus", "entropy", "explore", "types"]
+        for name in order:
+            if name not in used:
+                used.add(name)
+                return levers[name]
+        return None
 
     while time.time() - started < args.minutes * 60:
         index = len(ledger) + 1
@@ -467,6 +490,7 @@ def main():
         if score > best + 0.005:
             best, flat = score, 0
             best_policy, best_critic = policy, critic
+            best_iteration = index
             log(f"new best {best:.3f} (kept as the rollback target)")
         else:
             flat += 1
@@ -477,12 +501,13 @@ def main():
         if flat >= args.patience:
             # A plateau is not an answer. Climb the lever list one step at a time (docs/AUDIT.md), and say which step was
             # taken, so the night produces either a better player or a precise negative result.
-            step = ladder.pop(0) if ladder else None
+            step = choose_lever(ledger[-1], ladder)
             if step is None:
-                log("stagnation and the lever list is exhausted: stopping the night")
+                log("stagnation and every lever has been tried: stopping the night")
                 break
             reason = step()
-            log(f"STAGNATION -> next lever: {reason}")
+            tried.append(reason)
+            log(f"STAGNATION -> next lever by symptom: {reason}")
             ledger[-1]["ladder"] = reason
             flat = 0
 
@@ -490,7 +515,31 @@ def main():
         if removed:
             log(f"pruned packs {removed}; free on C: {free_gb('C:/'):.0f} GB, D: {free_gb('D:/'):.0f} GB")
 
-    log(f"night finished: {len(ledger)} iterations, best score {best:.3f}, ledger {LEDGER}")
+        no_progress = 0 if score > best + 0.005 else no_progress + 1
+        if no_progress >= args.max_flat:
+            log(f"no improvement for {no_progress} iterations: stopping instead of grinding the same score")
+            break
+
+    plateau = os.path.join("D:/ares/tmp", f"plateau_{run_tag}.md")
+    try:
+        with open(plateau, "w", encoding="utf-8") as f:
+            f.write(f"# run {run_tag}: {len(ledger)} iterations, best {best * 100:.2f}% "
+                    f"(iteration {best_iteration})\n\n")
+            f.write(f"levers tried: {tried or 'none'}\n\n")
+            f.write("| it | SMART | 95% CI | RANDOM | cards | printed card points | phases | collapse flags |\n")
+            f.write("|---|---|---|---|---|---|---|---|\n")
+            for row in ledger:
+                ci = row.get("ci") or [0, 0]
+                phases = " ".join(f"{k.split()[0]}:{v * 100:.0f}"
+                                  for k, v in sorted((row.get("phases") or {}).items()))
+                flags = [c.get("kind") for c in (row.get("collapses") or [])]
+                f.write(f"| {row['iteration']} | {(row.get('score') or 0) * 100:.1f}% "
+                        f"[{ci[0] * 100:.1f}, {ci[1] * 100:.1f}] | {(row.get('score_random') or 0) * 100:.1f}% | "
+                        f"{row.get('cards')} | {row.get('card_points')} | {phases} | {flags} |\n")
+    except OSError:
+        pass
+    log(f"night finished: {len(ledger)} iterations, best {best:.3f} (iteration {best_iteration}), "
+        f"levers {tried}, report {plateau}")
     return 0
 
 
