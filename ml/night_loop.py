@@ -243,6 +243,11 @@ def main():
     parser.add_argument("--regret-positions", type=int, default=40)
     parser.add_argument("--auto-levers", action="store_true", default=True,
                         help="on a plateau, climb the lever list (docs/AUDIT.md) instead of only enlarging the corpus")
+    parser.add_argument("--value-scale", choices=("mean", "max", "max99"), default="max99",
+                        help="how the critic scales the observation (ml/train_value.py --scale). Recorded in every ledger "
+                             "row, because changing it mid-run silently confounds the comparison")
+    parser.add_argument("--value-clip", type=float, default=40.0,
+                        help="the clamp for --value-scale mean; ignored by max/max99, which export no clamp")
     parser.add_argument("--entropy", type=float, default=0.01,
                         help="entropy bonus on the policy (0 = off): without it the trainer sharpens the policy onto one "
                              "option every iteration, which is how phase 5 fell to 2%")
@@ -278,7 +283,8 @@ def main():
     run_tag = time.strftime("%m%d-%H%M")
     policy, critic = args.seed_policy, args.seed_critic
     best = max([row.get("score") or 0 for row in ledger], default=0.0)
-    flat = 0
+    best_policy, best_critic = policy, critic
+    flat = regressed = 0
     games = args.games
     log(f"night starts: policy {policy}, critic {critic}, {games} games per iteration, "
         f"budget {args.minutes} min, best so far {best:.3f}")
@@ -377,8 +383,12 @@ def main():
             with open(coverage_path, "w", encoding="utf-8") as f:
                 json.dump(current, f, indent=1)
             for item in collapsed:
-                log(f"COLLAPSE {item['decision']}: lost {item['lost']} gone {item['gone']} "
-                    f"entropy {item['entropy_before']} -> {item['entropy_now']}")
+                log(f"COLLAPSE {item['decision']} ({item['kind']}): lost {item.get('lost', [])} "
+                    f"gone {item.get('gone', [])} coverage {item.get('coverage_before', '-')} -> {item['coverage']}")
+                for key in ("entropy_before", "entropy_now", "lost", "gone", "coverage", "kind", "decision"):
+                    if key not in item:
+                        raise KeyError(f"the collapse flag for {item.get('decision')} has no '{key}': the loop's log and "
+                                       f"the detector disagree about the flag format")
             added = sorted({item["decision"] for item in collapsed if item["decision"] not in args.explore})
             if added:
                 args.explore = (args.explore + "," if args.explore else "") + \
@@ -393,7 +403,8 @@ def main():
         for k, new_critic in enumerate(new_critics, start=1):
             code = run([sys.executable, os.path.join(HERE, "train_value.py"), "--packed", pack, "--out", new_critic,
                         "--target", "margin", "--epochs", str(args.epochs_critic), "--hidden", "512,256",
-                        "--names", args.names, "--drop-prefix", "cards:in_my_hand_", "--seed", str(k)],
+                        "--names", args.names, "--drop-prefix", "cards:in_my_hand_", "--seed", str(k),
+                    "--scale", args.value_scale, "--clip", str(args.value_clip)],
                        os.path.join(out_dir, f"critic{k}.log"))
             ok = code == 0 and os.path.exists(os.path.join(new_critic, "weights.bin"))
             critic_ok = critic_ok and ok
@@ -440,10 +451,23 @@ def main():
         prev_name = name
         policy, critic = new_policy, new_critic
         score = result["score"] or 0.0
+        # A plateau has a ladder; a REGRESSION has a rollback. The run of 2026-11-17 fell 18.45 -> 11.15 over three
+        # iterations because each one was seeded from the previous, worse bundle, and nothing compared them with the best.
+        if best - score > 0.03:
+            regressed += 1
+            log(f"REGRESSION: {score:.3f} against the best {best:.3f} ({regressed}/2)")
+        else:
+            regressed = 0
+        if regressed >= 2:
+            log(f"two regressions in a row: rolling back to the best bundle ({best_policy} + {best_critic})")
+            policy, critic = best_policy, best_critic
+            regressed = 0
+            continue
         floor = result.get("score_random") or 0.0
         if score > best + 0.005:
             best, flat = score, 0
-            log(f"new best {best:.3f}")
+            best_policy, best_critic = policy, critic
+            log(f"new best {best:.3f} (kept as the rollback target)")
         else:
             flat += 1
             log(f"no improvement ({flat}/{args.patience})")

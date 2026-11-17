@@ -178,6 +178,45 @@ class RegretTable(unittest.TestCase):
         self.assertIn("-25.0%", text)
 
 
+class FlagFormat(unittest.TestCase):
+    """The loop reads a fixed set of keys from a collapse flag; a missing one used to crash the guard SILENTLY.
+
+    On 2026-11-17 the loop logged `coverage check failed ('entropy_before')` for a whole iteration: the detector had stopped
+    emitting that key for some flag kinds, the loop's f-string raised, and the try/except around the whole coverage block
+    swallowed it - so the guard that exists to catch a collapse was itself dead. This test pins the contract from the other
+    side: for every kind of flag, the keys the loop reads exist.
+    """
+
+    def test_every_flag_kind_carries_the_keys_the_loop_logs(self):
+        required = {"decision", "kind", "coverage", "lost", "gone"}
+        narrow_rows, narrow_chosen = [[1, 2, 3, 4, 5] for _ in range(50)], [0] * 50
+        thin_rows = [[1, 2, 3, 4, 5] for _ in range(100)]
+        thin_chosen = [index % 4 if index else 4 for index in range(100)]
+        before_chosen = [0] * 50 + [4] * 50
+        after_chosen = [0] * 100
+        with temp_dir() as tmp:
+            root = Path(tmp)
+            packs = {}
+            for name, rows, chosen in (
+                    ("narrow", narrow_rows, narrow_chosen),
+                    ("thin", thin_rows, thin_chosen),
+                    ("before", [[1, 2, 3, 4, 5] for _ in range(100)], before_chosen),
+                    ("after", [[1, 2, 3, 4, 5] for _ in range(100)], after_chosen)):
+                corpus(root / name, "PICK_PHASE", rows, chosen)
+                pack_dataset.pack(str(root / name), str(root / f"pack_{name}"), candidates=True, verbose=False)
+            reports = {name: action_coverage.coverage(str(root / f"pack_{name}")) for name in packs} \
+                if False else {name: action_coverage.coverage(str(root / f"pack_{name}"))
+                               for name in ("narrow", "thin", "before", "after")}
+            found = (action_coverage.flags(reports["narrow"], {})
+                     + action_coverage.flags(reports["thin"], {})
+                     + action_coverage.flags(reports["after"], reports["before"]))
+        kinds = {item["kind"] for item in found}
+        self.assertEqual({"narrow", "thin", "shrunk"}, kinds, f"got {kinds}")
+        for item in found:
+            missing = required - set(item)
+            self.assertEqual(set(), missing, f"the loop reads {missing} from {item['kind']} and the detector does not emit it")
+
+
 class LoopHelpers(unittest.TestCase):
     def test_search_args_carry_the_types_and_the_phase_model(self):
         import night_loop
