@@ -167,6 +167,39 @@ def pack(data_dirs, out, limit_chunks=0, types=None, candidates=False, verbose=T
     if not manifest["types"]:
         raise SystemExit("nothing packed")
 
+    # ---- the game's own score decomposition (RANKING.<chunk>.jsonl, one line per game): seven channels per seat.
+    # A critic trained only on the final margin cannot learn that a card scores, because in our games the margin is dominated
+    # by tempo; the channels are measured by the game itself, and a card that adds two printed points adds two to that channel
+    # in every game, won or lost.
+    breakdown = {}
+    for directory in directories:
+        for path in glob.glob(os.path.join(directory, "RANKING.*.jsonl")):
+            with open(path, encoding="utf-8", errors="ignore") as sidecar:
+                for line in sidecar:
+                    if "breakdown" not in line:
+                        continue
+                    try:
+                        blob = json.loads(line)
+                        breakdown[int(blob["game"])] = blob["breakdown"]
+                    except (ValueError, KeyError):
+                        continue
+    if breakdown:
+        for decision in manifest["types"]:
+            # `labels` is the in-memory dict of this run (already carrying `keep`), so there is no dependence on the order in
+            # which the files are written.
+            games = labels[decision]["game"]
+            seats = labels[decision]["seat"]
+            table = np.zeros((len(games), 7), dtype=np.float32)
+            for index, (game, seat) in enumerate(zip(games.tolist(), seats.tolist())):
+                entry = breakdown.get(int(game))
+                if entry is not None and seat < len(entry):
+                    table[index] = entry[seat]
+            labels[decision]["breakdown"] = table
+            np.savez(os.path.join(out, f"{decision}.lab.npz"), **labels[decision])
+        manifest["breakdown"] = ["terraformingRating", "forests", "cards", "resourceCards", "milestones", "awards", "extra"]
+    else:
+        print("  no RANKING sidecar: the pack carries no score decomposition")
+
     # ---- cross-type de-duplication, in pack order (type name, then chunk), first arrival wins ----
     #
     # AFTERSTATE rows are not decisions: they are the states one action after a decision, the states the one-ply search

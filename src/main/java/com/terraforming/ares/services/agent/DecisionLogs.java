@@ -333,6 +333,19 @@ public class DecisionLogs {
         list = sampled(list, maxRowsPerGameType);
         List<EncodedRow> encoded = new ArrayList<>(list.size());
         List<String> rankings = new ArrayList<>();
+        // The game's own score decomposition, per seat: terraforming rating, forests, printed card points, points from
+        // resources on cards, milestones, awards, extra. The single final margin is dominated by tempo in our games, so a
+        // critic trained only on it cannot learn that a card scores; these seven terms are the channels the game itself
+        // measures, and a card that adds two printed points adds two to that channel in every game, won or lost.
+        // One line per game, joinable to the rows by the same game id, in the same seat order (players sorted by name).
+        WinPointsService.ScoreBreakdown first = winPointsService.scoreBreakdown(players.get(0), game);
+        WinPointsService.ScoreBreakdown second = winPointsService.scoreBreakdown(players.get(1), game);
+        rankings.add("{\"game\":" + gameId + ",\"breakdown\":[["
+                + first.terraformingRating() + "," + first.forests() + "," + first.cards() + ","
+                + first.resourceCards() + "," + first.milestones() + "," + first.awards() + "," + first.extra() + "],["
+                + second.terraformingRating() + "," + second.forests() + "," + second.cards() + ","
+                + second.resourceCards() + "," + second.milestones() + "," + second.awards() + "," + second.extra()
+                + "]]}");
         for (Pending p : list) {
             Player me = game.getPlayerByUuid(p.playerUuid());
             int myPoints = points.get(me.getUuid());

@@ -50,6 +50,10 @@ def main():
     parser.add_argument("--names", default="D:/ares/tmp/names_now.json")
     parser.add_argument("--rows", type=int, default=20_000)
     parser.add_argument("--top", type=int, default=12)
+    parser.add_argument("--source", choices=("table", "hand"), default="table",
+                        help="which block to perturb: `table` = cards:my_blue_X (a built card), `hand` = "
+                             "cards:in_my_hand_X (a card held). The hand is dealt at random, so its coefficient is not "
+                             "confounded with the strength of the position; a built card is chosen, so it is.")
     args = parser.parse_args()
 
     import torch
@@ -76,9 +80,10 @@ def main():
     points = printed_points()
     measured = []
     for name, index in column.items():
-        if not name.startswith("cards:my_blue_"):
+        prefix = "cards:my_blue_" if args.source == "table" else "cards:in_my_hand_"
+        if not name.startswith(prefix):
             continue
-        card = name[len("cards:my_blue_"):]
+        card = name[len(prefix):]
         if card not in points:
             continue
         probe = obs.copy()

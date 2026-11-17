@@ -653,3 +653,42 @@ py -3 ml/train_policy_ce.py --packed C:/ares/pack/boot1 --out D:/ares/runs/polic
 Note on `--mode sanity`: it runs **without a policy model** right now (the old bundle no longer loads after the candidate
 change), so gates that require one specific candidate are coin flips. The last run was 8/10 with one gate failure
 ("one-credit card draw: stop"), which is the random agent, not a regression.
+
+## Night of 17/18 November: the score-decomposition experiment (owner: no more 20%)
+
+Owner's instruction before going to sleep: verify whether the score-channel theory gives an effect; if it does not, dig into why
+the network does not learn, check every two hours, and do not spend five two-hour runs doing the same thing.
+
+### What is running
+
+`train_breakdown.py` on a fresh 40 000-game corpus (`C:/ares/data/bd40`) whose RANKING sidecar now carries the game's own
+`ScoreBreakdown` per seat. The critic predicts the seven-term difference `d = b[me] - b[opp]` (terraforming rating, forests,
+printed card points, points from resources on cards, milestones, awards, extra), and the ranking value is `V = sum(d)`, which
+is exactly the margin: verified on 40 packed game pairs. The seven heads are collapsed into one output at export
+(`--export`), so the Java loader and the deployment path are untouched.
+
+Why this and not an auxiliary target per feature: the margin is the sum of these seven channels, so they are not a hand-picked
+list - they are the game's own definition of victory. A card that adds two printed points raises its channel by two in every
+game, won or lost, so the channel is learnable even where the outcome is dominated by tempo.
+
+### Decision tree (each step has a falsifier; do not repeat a failed step)
+
+1. **Breakdown critic measured**: card-value correlation (target > 0.2; it was 0.19 with the margin target and 0.074 on the
+   poisoned night data), `dV per victory point` (target near 0.05; it was 0.0003), and 10 000 games against SMART.
+   - score > 22% -> adopt, continue iterations with the breakdown critic;
+   - card correlation > 0.25 but score flat -> the critic is fine and the **policy** is the bottleneck: next lever is the
+     policy's imitation (search choices, advantage weighting), not the critic;
+   - correlation still <= 0.2 -> the target is not the problem: next hypotheses in order are (a) volume/capacity (150k games,
+     1024 wide, dropout), (b) the observation does not carry "what this card will do" (the owner's "blue engine" point).
+2. **If the critic stays blind to scoring**: test the opposite direction - the *search's stop rule*. Measured earlier:
+   `mean V(best build) - V(stop) = +262 logit` and the agent builds 24-30 cards per game; if the build-vs-pass comparison is
+   systematically off, no card ranking can fix the score.
+3. **Fallback that needs no critic at all**: `ml/card_advantage.py` (per-card advantage from our own games, split-half stable)
+   as a CE reweighting of the card choice - it is a statistical table of our own games, so it must be measured against the rule
+   that forbids hand-written strategy before it is used.
+
+### Housekeeping for the morning
+
+- the ledger of the last loop run: `D:/ares/tmp/night_ledger.json`, the plateau report `plateau_1117-2001.md`;
+- best measured bundle so far: 19.55-20.1% vs SMART, 77% vs RANDOM (`policy/1117-2001_11`, `v_1117-2001_11_s1..s3`);
+- disk after cleanup: ~100 GB free on C:, ~350 GB on D:; only one pack is kept.
