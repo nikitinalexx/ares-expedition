@@ -272,3 +272,25 @@ What the loop proved about the pipeline, not about the model:
   grinding - exactly what it was built to do;
 * the drift guard never had to fire (argmax stop share stayed 27-30%, above the 18% floor) and the disk guard never fired
   (C: stayed above 120 GB, last two packs kept, raw corpora deleted after the bit-exact check).
+
+### The second run: exploration on declines, and the red flag it exposed (2026-11-17, morning)
+
+Two iterations with three critics, 40 000 games and `-Dares.agent.explore=BUILD_CARD:0.40` (the corpus keeps real declines
+instead of drifting towards "build everything"): 9.50% then **11.40% [9.58, 13.52]** at 1 000 games, and cards per game fell
+24.8 -> 21.9, so the lever does what it is supposed to.
+
+**Final measurement of that bundle (policy `night02` + critics `v_night02_s1..s3`), 10 000 games: 10.89% [10.29, 11.51]
+against SMART.** One step further than the first bundle (10.28% [9.70, 10.89]), so the two changes of the second run
+(exploration on declines and the ensemble in the loop) together are worth ~+0.6 points.
+
+**The red flag: the same bundle wins only 53.0% +/- 2.1 against RANDOM (2 000 games).** The old 44%-vs-SMART player won about
+99% against RANDOM. A player that beats SMART 11% of the time and RANDOM 53% of the time is not weak - it is a *specialist*:
+it learned what beats a mirror image of itself (85% of its training games are AGENT:AGENT) and does not convert a chaotic
+opponent into wins. The profile gate passes (21.9 cards, phases mixed, phase-3 pass 58%, standard projects 19%), so this is
+not the degenerate profile the owner warned about; it is a missing part of the objective.
+
+That makes the next two variables clear and cheap to test, one at a time:
+1. opponents in the training games: raise the RANDOM share and/or add a second AGENT variant, so the policy sees opponents
+   that are not itself;
+2. the overbuilding: 21.9 cards is still double the healthy ~11, and the search still reports a large positive V(build) -
+   V(stop) margin; the exploration lever moved both numbers in the right direction, so it is the knob to keep turning.
