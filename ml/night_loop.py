@@ -199,6 +199,12 @@ def main():
     parser.add_argument("--coverage-baseline", default="",
                         help="coverage json to compare the first iteration against (ml/action_coverage.py --out)")
     parser.add_argument("--coverage-floor", type=float, default=0.10)
+    parser.add_argument("--regret-every", type=int, default=3,
+                        help="every K iterations run the counterfactual regret report on the phase decision (ml/regret_report.py): "
+                             "chosen share against best-by-rollout share, i.e. over- and under-use measured by the engine")
+    parser.add_argument("--regret-positions", type=int, default=40)
+    parser.add_argument("--auto-levers", action="store_true", default=True,
+                        help="on a plateau, climb the lever list (docs/AUDIT.md) instead of only enlarging the corpus")
     parser.add_argument("--entropy", type=float, default=0.01,
                         help="entropy bonus on the policy (0 = off): without it the trainer sharpens the policy onto one "
                              "option every iteration, which is how phase 5 fell to 2%")
@@ -240,6 +246,26 @@ def main():
         f"budget {args.minutes} min, best so far {best:.3f}")
 
     prev_name = ""
+    def double_corpus():
+        nonlocal games
+        games *= 2
+        return f"corpus {games // 2} -> {games} games per iteration (more data for the critic)"
+
+    def more_entropy():
+        args.entropy = min(0.05, (args.entropy or 0.01) * 2)
+        return f"policy entropy {args.entropy:.3f} (the trainer must not sharpen onto one option)"
+
+    def more_exploration():
+        args.explore = ",".join(part if ":" not in part else part.split(":")[0] + ":0.60"
+                                for part in args.explore.split(",") if part)
+        return f"exploration {args.explore} (keep the alternatives in the corpus)"
+
+    def search_more_types():
+        args.types = args.types + ",STANDARD_ACTION"
+        return f"the critic now ranks {args.types} (let value decide one more menu)"
+
+    ladder = [double_corpus, more_entropy, more_exploration, search_more_types]
+
     while time.time() - started < args.minutes * 60:
         index = len(ledger) + 1
         name = f"{run_tag}_{index:02d}"
@@ -260,6 +286,21 @@ def main():
                                       args.types, phase_critic)
         played = summary.get("gamesPlayed", 0)
         failed = summary.get("gamesFailed", 0)
+        # The engine throws loudly when a menu exceeds MAX_CANDIDATES ("menu has N candidates; the decision is sized for M").
+        # That is a rule-level blocker, not a training problem: it appears when the player's style changes and the caps were
+        # measured on an older one. Surface it as a first-class event instead of a line of stderr.
+        overflow = []
+        try:
+            with open(raw.rstrip("/\\") + ".play.log", encoding="utf-8", errors="ignore") as f:
+                for line in f:
+                    if "candidates" in line and ("sized for" in line or "has " in line and "options" in line):
+                        overflow.append(line.strip()[:160])
+                        if len(overflow) >= 5:
+                            break
+        except OSError:
+            pass
+        if overflow:
+            log(f"CAP OVERFLOW - the menu caps must be re-measured (ml/menu_sizes.py): {overflow[0]}")
         log(f"played {played} games in {seconds / 60:.1f} min ({failed} failed, {summary.get('rows', 0)} rows)")
         if code != 0 or played < games * 0.5:
             log(f"self-play unusable (exit {code}); skipping the iteration")
@@ -296,7 +337,7 @@ def main():
             for item in collapsed:
                 log(f"COLLAPSE {item['decision']}: lost {item['lost']} gone {item['gone']} "
                     f"entropy {item['entropy_before']} -> {item['entropy_now']}")
-            added = [item["decision"] for item in collapsed if item["decision"] not in args.explore]
+            added = sorted({item["decision"] for item in collapsed if item["decision"] not in args.explore})
             if added:
                 args.explore = (args.explore + "," if args.explore else "") + \
                                ",".join(f"{decision}:0.60" for decision in added)
@@ -330,6 +371,17 @@ def main():
 
         result = measure(new_policy, new_critic, 1000 if not args.smoke else 100, out_dir, pack, args.types,
                          new_critic.split(",")[0] if args.phase_critic else "")
+
+        regret = None
+        if args.regret_every and index % args.regret_every == 0:
+            regret_path = os.path.join(out_dir, "regret.json")
+            code = run([sys.executable, os.path.join(HERE, "regret_report.py"), "--run", "--type", "PICK_PHASE",
+                        "--positions", str(args.regret_positions), "--policy", new_policy, "--critics", new_critic,
+                        "--phase-critic", new_critic.split(",")[0], "--types", args.types,
+                        "--out", regret_path], os.path.join(out_dir, "regret.log"))
+            if code == 0:
+                regret = {"positions": args.regret_positions, "file": regret_path}
+                log(f"regret report: {tail(os.path.join(out_dir, 'regret.log'), 6).strip()}")
         row = {"iteration": index, "name": name, "games": played, "rows": summary.get("rows"),
                "failed": failed, "seconds": round(seconds, 1), "explore": args.explore,
                "critic": new_critic, "critics": len(new_critics), "policy": new_policy, **result,
@@ -355,12 +407,15 @@ def main():
             log(f"the argmax stops on only {result['stop_share']:.1%} of cards: adding exploration to keep declines in the data")
             args.explore = "BUILD_CARD:0.30"
         if flat >= args.patience:
-            if games == args.games:
-                games *= 2
-                log(f"stagnation: doubling the corpus to {games} games per iteration")
-            else:
-                log("stagnation after the doubling: stopping the night")
+            # A plateau is not an answer. Climb the lever list one step at a time (docs/AUDIT.md), and say which step was
+            # taken, so the night produces either a better player or a precise negative result.
+            step = ladder.pop(0) if ladder else None
+            if step is None:
+                log("stagnation and the lever list is exhausted: stopping the night")
                 break
+            reason = step()
+            log(f"STAGNATION -> next lever: {reason}")
+            ledger[-1]["ladder"] = reason
             flat = 0
 
         removed = prune(args.keep_packs)

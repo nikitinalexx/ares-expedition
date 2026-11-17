@@ -16,6 +16,8 @@ import ares_data  # noqa: E402
 def mix_from_pack(pack):
     manifest = ares_data.open_pack(pack)
     data = ares_data.open_packed_type(pack, 'PICK_PHASE', manifest)
+    if 'chosen' not in data:
+        raise SystemExit(f"{pack}: PICK_PHASE was packed without candidates; pack with `--candidates`")
     chosen = np.asarray(data['chosen'])
     ids = data['ids']
     phase = np.empty(len(chosen), dtype=np.int32)

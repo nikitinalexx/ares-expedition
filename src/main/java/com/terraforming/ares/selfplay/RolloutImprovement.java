@@ -35,8 +35,8 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class RolloutImprovement {
-    public record Sample(DecisionType type, int candidates, int policyIndex, int bestIndex, double policyMargin,
-                         double bestMargin, double difference, boolean sameChoice) {
+    public record Sample(DecisionType type, int candidates, int policyIndex, int bestIndex, int policyId, int bestId,
+                         double policyMargin, double bestMargin, double difference, boolean sameChoice) {
     }
 
     public record Report(String type, int positions, double policyMargin, double bestMargin, double meanDifference,
@@ -147,8 +147,13 @@ public class RolloutImprovement {
             }
             double policyMargin = playOut(new MarsGame(base), uuid, null, evaluationSeed);
             double chosenMargin = playOut(new MarsGame(base), uuid, new Force(type, bestIndex, uuid), evaluationSeed);
-            samples.add(new Sample(type, candidates, capture.policyIndex, bestIndex, policyMargin, chosenMargin,
-                    chosenMargin - policyMargin, capture.policyIndex == bestIndex));
+            // The candidate IDS matter as much as the indices: comparing how often an option is CHOSEN with how often it is
+            // BEST BY ROLLOUT is the measurement of over- or under-use (phase 4 called too often, phase 5 too rarely), and it
+            // needs the option's identity, not its slot.
+            int policyId = capture.decision.candidates().get(capture.policyIndex).id();
+            int bestId = capture.decision.candidates().get(bestIndex).id();
+            samples.add(new Sample(type, candidates, capture.policyIndex, bestIndex, policyId, bestId, policyMargin,
+                    chosenMargin, chosenMargin - policyMargin, capture.policyIndex == bestIndex));
         }
         double meanPolicy = samples.stream().mapToDouble(Sample::policyMargin).average().orElse(0);
         double meanBest = samples.stream().mapToDouble(Sample::bestMargin).average().orElse(0);

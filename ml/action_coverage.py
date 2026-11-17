@@ -41,6 +41,9 @@ def chosen_distribution(pack, decision, manifest=None):
     if decision not in manifest["types"]:
         return None
     data = ares_data.open_packed_type(pack, decision, manifest)
+    if "chosen" not in data:
+        raise SystemExit(f"{pack}: {decision} was packed without candidates; the census needs "
+                         f"`pack_dataset.py --candidates` (it reads what was chosen)")
     chosen = np.asarray(data["chosen"])
     if not len(chosen):
         return None
@@ -107,21 +110,23 @@ def flags(current, previous, min_coverage=0.45, floor=0.10, drop=0.02):
     for decision, now in current.items():
         if decision in benign:
             continue
+        # The json form of a corpus keeps the option ids as strings; everything below compares ids, so normalise once.
+        now = dict(now, distribution={int(k): v for k, v in now["distribution"].items()})
         best = max(now["distribution"].values()) if now["distribution"] else 0.0
+        # A type can be broken in more than one way at once (always one slot AND an option that disappeared); reporting only
+        # the first would hide the rest.
         if now["meanCandidates"] > 2.0 and now["coverage"] < min_coverage:
             flagged.append({"decision": decision, "kind": "narrow", "coverage": now["coverage"],
                             "top": best, "menu": now["meanCandidates"], "lost": [], "gone": []})
-            continue
         thin = thin_options(now)
         if thin:
             flagged.append({"decision": decision, "kind": "thin", "coverage": now["coverage"],
                             "top": best, "menu": now["meanCandidates"], "thin": thin,
                             "shares": {k: now["distribution"][k] for k in thin}, "lost": [], "gone": []})
-            continue
         before = previous.get(decision)
         if not before:
             continue
-        seen = before["distribution"]
+        seen = {int(k): v for k, v in before["distribution"].items()}
         heavy = {k for k, v in seen.items() if v >= floor}
         lost = sorted(k for k in heavy if now["distribution"].get(k, 0.0) < drop)
         gone = sorted(k for k in seen if k not in now["distribution"])
