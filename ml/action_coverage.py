@@ -129,7 +129,10 @@ def flags(current, previous, min_coverage=0.45, floor=0.10, drop=0.02):
         seen = {int(k): v for k, v in before["distribution"].items()}
         heavy = {k for k, v in seen.items() if v >= floor}
         lost = sorted(k for k in heavy if now["distribution"].get(k, 0.0) < drop)
-        gone = sorted(k for k in seen if k not in now["distribution"])
+        # Only options that were FREQUENT before can be said to have disappeared: with three million rows an option that had
+        # 0.1% of the picks can simply not be drawn in the next corpus, and flagging that spends exploration for nothing (it
+        # happened on BUILD_INPUT and DISCARD_CARDS on 2026-11-17, where the "gone" options had been rare all along).
+        gone = sorted(k for k in heavy if k not in now["distribution"])
         if lost or gone:
             flagged.append({"decision": decision, "kind": "shrunk", "coverage": now["coverage"],
                             "top": best, "menu": now["meanCandidates"], "lost": lost[:10], "gone": gone[:10],
