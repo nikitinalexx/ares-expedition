@@ -127,6 +127,22 @@ def phases_of(path):
         return {}
 
 
+# Measured on this machine: a 20 000-game corpus writes 27 GB of raw chunks (1.35 MB per game, the candidate padding
+# dominates), and its pack is ~0.39 MB per game. A run that asks for both on the SSD without planning overfills it.
+RAW_GB_PER_GAME = 27.0 / 20_000
+PACK_GB_PER_GAME = 15.4 / 40_000
+
+
+def choose_disk(games, slow_root, fast_root, reserve_gb=25.0):
+    """Where the raw corpus goes: the SSD when it fits with its pack and a reserve, else the HDD."""
+    need = games * (RAW_GB_PER_GAME + PACK_GB_PER_GAME) + reserve_gb
+    fast_free = free_gb("C:/")
+    if fast_free >= need:
+        return fast_root, f"raw+pack need {need:.0f} GB, C: has {fast_free:.0f} free"
+    return slow_root, (f"raw+pack need {need:.0f} GB, C: has only {fast_free:.0f} free -> the raw corpus goes to the HDD "
+                       f"(the pack stays on the SSD)")
+
+
 def free_gb(path):
     import ctypes
     free = ctypes.c_ulonglong(0)
@@ -291,7 +307,9 @@ def main():
     while time.time() - started < args.minutes * 60:
         index = len(ledger) + 1
         name = f"{run_tag}_{index:02d}"
-        raw = f"{SSD_DATA}/{name}"
+        data_root, why = choose_disk(games, "D:/ares/data", SSD_DATA)
+        raw = f"{data_root}/{name}"
+        log(f"storage: {why}")
         pack = f"{PACK_ROOT}/{name}"
         out_dir = f"D:/ares/tmp/{name}"
         os.makedirs(out_dir, exist_ok=True)
@@ -331,9 +349,11 @@ def main():
         code = run([sys.executable, os.path.join(HERE, "pack_dataset.py"), "--data", raw, "--out", pack,
                     "--candidates"], os.path.join(out_dir, "pack.log"))
         if code != 0:
-            log(f"packing failed (exit {code}); skipping")
-            shutil.rmtree(raw, ignore_errors=True)
-            continue
+            # Never delete what a failed pack did not consume. A disk-full or a crash here is recoverable - pack it again to
+            # another disk - but regenerating 100 GB of games is an hour of the night. (This used to delete the corpus; on
+            # 2026-11-17 an 80 000-game corpus was thrown away by exactly this line.)
+            log(f"packing failed (exit {code}); the corpus is KEPT at {raw} (see {out_dir}/pack.log)")
+            break
         code = run([sys.executable, os.path.join(HERE, "pack_check.py"), "--pack", pack, "--data", raw,
                     "--limit-chunks", "2"], os.path.join(out_dir, "pack_check.log"))
         if code != 0:

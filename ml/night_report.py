@@ -1,3 +1,10 @@
+def phase_mix(phases):
+    """'1:40 2:12 ...' for the report; empty when the profile did not parse."""
+    if not phases:
+        return ' ' * 18
+    return " ".join(f"{name.split()[0]}:{value * 100:.0f}" for name, value in sorted(phases.items())).ljust(18)
+
+
 """The night in one screen: what each iteration did, how the score moved, and whether it stopped growing."""
 import json
 import os
