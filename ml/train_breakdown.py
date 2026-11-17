@@ -112,6 +112,12 @@ def main():
     std = np.percentile(np.abs(sample), 99.9, axis=0)
     std = np.where(std < 1e-6, 1.0, std).astype(np.float32)
     mean = np.zeros(obs.shape[1], dtype=np.float32)
+    # Each CHANNEL gets its own scale. Otherwise the mean squared error is dominated by the channel with the largest spread
+    # (terraforming rating, up to 60 points) and the printed-card channel (up to 20) is almost ignored - which would make this
+    # experiment answer the wrong question. The scales are folded back into the export, so V stays exact.
+    channel_scale = target[train_idx[:min(200_000, len(train_idx))]].std(axis=0).astype(np.float32)
+    channel_scale = np.where(channel_scale < 1e-3, 1.0, channel_scale)
+    print("channel scales:", {c: round(float(s), 2) for c, s in zip(CHANNELS, channel_scale)}, flush=True)
 
     class Net(nn.Module):
         def __init__(self):
@@ -131,7 +137,7 @@ def main():
 
     model = Net().to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-5)
-    y_all = torch.from_numpy(target / SCALE).to(device)
+    y_all = torch.from_numpy(target / channel_scale[None, :]).to(device)
 
     def batches(index, batch):
         order = rng.permutation(index)
@@ -160,7 +166,7 @@ def main():
             for start in range(0, len(val_idx), args.batch):
                 part = val_idx[start:start + args.batch]
                 predictions.append(model(torch.from_numpy(obs[part]).to(device)).cpu().numpy())
-        predicted = np.concatenate(predictions) * SCALE
+        predicted = np.concatenate(predictions) * channel_scale[None, :]
         truth = target[val_idx]
         per_channel = np.mean((predicted - truth) ** 2, axis=0)
         margin_error = float(np.mean((predicted.sum(axis=1) - margin[val_idx]) ** 2))
@@ -185,9 +191,11 @@ def main():
         params = {"mean": mean, "std": std,
                   "w1": state["w1.weight"].detach().cpu().numpy(), "b1": state["w1.bias"].detach().cpu().numpy(),
                   "w2": state["w2.weight"].detach().cpu().numpy(), "b2": state["w2.bias"].detach().cpu().numpy(),
-                  "w3": w3.sum(axis=0) / SCALE, "b3": b3.sum() / SCALE}
+                  "w3": (w3 * channel_scale[:, None]).sum(axis=0) / SCALE,
+                  "b3": np.array([(b3 * channel_scale).sum() / SCALE], dtype=np.float32)}
         import hashlib
         import train_value
+        os.makedirs(args.export, exist_ok=True)
         from phase_model import model_hash
         # The Java loader compares the model's observation hash with the current encoder's, so it must be the pack's real
         # hash (sha256 of the observation layout text), not a placeholder.

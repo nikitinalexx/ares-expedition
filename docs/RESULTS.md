@@ -556,3 +556,48 @@ card**. The owner removed them from the candidate vector on the principle that o
 it does not: correlation(card value, printed points) is 0.19 on the cleanest corpus, and the search builds cards worth half of
 what SMART builds. That is a schema change (one number per candidate), so it means regenerating the corpus - which the pipeline
 now does in ~55 minutes per 40 000 games.
+
+## Where the 20 points go, by the game's own channels (2026-11-18, night)
+
+`--mode scorecard` on the best bundle, 200 games against SMART, prints the seven channels of `WinPointsService.ScoreBreakdown`:
+
+| channel | ours | SMART | gap |
+|---|---|---|---|
+| printed card points | 9.32 | 18.83 | **-9.51** |
+| terraforming rating | 31.78 | 37.53 | -5.75 |
+| forests | 7.78 | 12.92 | -5.14 |
+| milestones | 3.59 | 5.27 | -1.68 |
+| awards | 9.91 | 11.25 | -1.34 |
+| points on resources of cards | 9.96 | 7.00 | **+2.96** |
+| extra | 0.0 | 0.0 | 0 |
+
+Total 72.33 : 92.79 (19.5% of games won). Builds are 31.2 against 33.5 and cards in hand about the same, so **the game is
+not lost on volume or on the engine**: the resource-card channel is the one we already win (+2.96, animals/microbes on
+cards), and the whole deficit is printed points per built card (0.30 against 0.56), plus the ground game (TR + forests,
+-10.9 between them).
+
+That kills two hypotheses at once: (a) "we build too few cards" is false, (b) "the blue engine does not work" is false - it
+works better than SMART's. What does not work is *which* cards are built and *whether* the ground game is played.
+
+### The score-decomposition critic, measured and rejected
+
+Seven channel heads (`ml/train_breakdown.py`) on the 40 000-game corpus `bd40`, per-channel scales, 4 epochs, 3.37M rows:
+
+| channel | MSE | variance of the channel |
+|---|---|---|
+| terraforming rating | 92.2 | ~90 |
+| forests | 24.6 | ~24 |
+| printed card points | 21.3 | ~21 |
+| resource cards | 80.0 | ~80 |
+| milestones | 18.1 | ~18 |
+| awards | 18.4 | ~19 |
+| extra | 0.0 | 0.0 |
+
+Every channel lands at its own variance - the heads predict the mean and nothing else - and the summed model gives margin
+MSE 331 against 72 for a constant. Card-value correlation falls to 0.122 (margin target: 0.19) and `dV` per victory point
+is 0.00019 (income is still worth ~124 points). Splitting the target into the seven channels does not create the signal; the
+channels are each as unpredictable as the whole, because each is dominated by the rest of the game.
+
+The structural conclusion: a model trained on *who won our games* cannot learn that points win, because in our games they
+do not - economy does. That is the same silent-decay mechanism the coverage guard exists for, one level up: the target,
+not the action, is collapsed.
