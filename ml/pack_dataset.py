@@ -149,22 +149,35 @@ def pack(data_dirs, out, limit_chunks=0, types=None, candidates=False, verbose=T
         raise SystemExit("nothing packed")
 
     # ---- cross-type de-duplication, in pack order (type name, then chunk), first arrival wins ----
+    #
+    # AFTERSTATE rows are not decisions: they are the states one action after a decision, the states the one-ply search
+    # actually reads, and they share the game and step number with that decision. They must never take part in the
+    # de-duplication - either they would delete real decision rows, or a decision would delete them.
     order = [t for t in manifest["types"]]
-    keys = [labels[t]["game"].astype(np.uint64) * np.uint64(1 << 16) + labels[t]["step"].astype(np.uint64)
-            for t in order]
-    all_keys = np.concatenate(keys)
-    stable = np.argsort(all_keys, kind="stable")
-    ordered = all_keys[stable]
-    first = np.empty(len(ordered), dtype=bool)
-    first[0] = True
-    first[1:] = ordered[1:] != ordered[:-1]
-    keep = np.zeros(len(ordered), dtype=bool)
-    keep[stable[first]] = True
-    dropped = int((~keep).sum())
+    dedup_order = [t for t in order if t != "AFTERSTATE"]
+    if dedup_order:
+        keys = [labels[t]["game"].astype(np.uint64) * np.uint64(1 << 16) + labels[t]["step"].astype(np.uint64)
+                for t in dedup_order]
+        all_keys = np.concatenate(keys)
+        stable = np.argsort(all_keys, kind="stable")
+        ordered = all_keys[stable]
+        first = np.empty(len(ordered), dtype=bool)
+        first[0] = True
+        first[1:] = ordered[1:] != ordered[:-1]
+        dedup_keep = np.zeros(len(ordered), dtype=bool)
+        dedup_keep[stable[first]] = True
+    else:
+        dedup_keep = np.zeros(0, dtype=bool)
+    dropped = int(len(dedup_keep) - dedup_keep.sum())
     offset = 0
+    dedup_offset = 0
     for decision in order:
         rows = manifest["types"][decision]["rows"]
-        labels[decision]["keep"] = keep[offset:offset + rows]
+        if decision == "AFTERSTATE":
+            labels[decision]["keep"] = np.ones(rows, dtype=bool)
+        else:
+            labels[decision]["keep"] = dedup_keep[dedup_offset:dedup_offset + rows]
+            dedup_offset += rows
         np.savez(os.path.join(out, f"{decision}.lab.npz"), **labels[decision])
         offset += rows
     manifest["rows"] = int(sum(rows_by_type.values()))

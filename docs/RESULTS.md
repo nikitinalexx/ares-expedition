@@ -494,3 +494,42 @@ flatten every input to zero and the exported net would answer a constant - a sil
 
 Also worth recording as a measurement of the worst case: the probe on the max-scaled model keeps rising with money at 400 MC
 (dV +0.043 from 300 to 400), where the clamped model is already 41 sd out at 400 MC. No money position is invisible any more.
+
+## Targeted diagnostics: the critic can rank cards, the loop was drowning the signal (2026-11-17, evening)
+
+Owner's question: how can the model fail to value victory points, when a point wins the game? Measured, then explained.
+
+**The probes** (`ml/diagnostics.py`, `ml/card_value_check.py`, on the best critic at the time):
+
+| probe | result |
+|---|---|
+| +1 victory point, rounds 1-4 / 17+ | dV +0.00584 / +0.00348 |
+| one income unit in "victory points" the model's own units | 75 (mc), 54 (steel), 35 (titanium) |
+| correlation(printed points of a blue card, dV of its bit) | **+0.074** |
+| cards WITHOUT printed points vs WITH | +0.01292 vs **+0.01075** - scoring cards were valued *less* |
+| AiCentral / AntiGravityTechnology / UnitedPlanetaryAlliance / MarsUniversity | +0.082 / +0.020 / +0.048 / **-0.010** |
+
+So on the night corpora the critic had no usable sense of which card scores. The theory of why (and it is not the objective, which is
+already E[final margin]): the data holds ONE card per position, so the marginal value of a card is confounded with the strength
+of the position it was built in; the final margin is noisy (+/-20 points), which attenuates the slope of a small feature; and the
+score column is collinear with TR, cards and forests, so it keeps almost none of the weight.
+
+**The decisive comparison** - same recipe, two corpora:
+
+| corpus | correlation(printed points, dV) |
+|---|---|
+| night pack (45% mirror, exploration on 8 decision types, 8 rows per type sampled) | **+0.074** |
+| 3 000 clean games vs SMART, all rows, no build exploration | **+0.226** (decisions) / **+0.230** (with afterstates) |
+
+So the critic *can* rank cards; the loop was drowning the signal with randomised builds. Afterstates add a little (val loss
+0.888 -> 0.863, correlation +0.004) - they are not the lever by themselves, but they are the only data where two options differ
+*only* by the card, so they stay on.
+
+Also measured and worth keeping: on the clean corpus the critic's response to the score feature is tiny (dV per point 0.0003
+against the 0.05 the margin target implies), i.e. the model is a *position-strength* estimator, not a calibrated score. That is
+exactly why the ranking role works and the "V decides act-vs-stop" decider branch failed before - and it means the ranking
+metric (card value), not the score slope, is what to optimise.
+
+Next: a clean, large corpus (all rows, vs SMART, afterstates on, exploration only where a collateral collapse is detected), three
+critics, policy by CE on it, then 10 000 games. The exploration shares are the variable that poisoned the previous night and they
+are now a measured cost, not a free safety net.
