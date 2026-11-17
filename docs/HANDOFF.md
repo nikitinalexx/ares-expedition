@@ -738,6 +738,10 @@ summary. The money became a 34-card game and a live resource-card engine.
 Profile gate (`ml/check_player.py`): builds 27-30 per game, phases 26/21/23/15/15%, standard projects in phase 3 = 16.6%.
 Not degenerate; it got better against RANDOM too, so it is not a denier of one scripted opponent.
 
+**Transfer to the stronger benchmark, 1000 games, same bundle:** vs NETWORK `0.9%` with three menus -> **`15.75%
+[13.6, 18.1]`** with eight. A 17x jump on an opponent that was never the one being denied, which rules out "it learned to
+spoil SMART's script". This is the number to quote for strength; SMART is now the easy half.
+
 ### Why the card menus are still the next lever, and what the data says about them
 
 `ml/card_points_data.py` on 40 000 games (320 000 build decisions):

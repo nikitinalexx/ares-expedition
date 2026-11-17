@@ -661,3 +661,11 @@ next card. The critic, asked which card it would miss least, answers that correc
 Note what these three steps have in common: all of them are menus the critic was never asked about, and all of them are
 *immediate* consequences (an ocean, a temperature step, a card out of the hand), not a promise of points in twelve
 generations. The card menus stay at 0.19 correlation with printed points and are still the next lever.
+
+Channels with the eight menus (300 games): resource-card points 9.87 -> **15.97** (SMART 6.57), printed card points
+8.93 -> 10.75 (SMART 17.12), TR 30.64 -> 33.90, forests 8.33 -> 10.01, total 72.25 -> 85.95 against SMART's 80.59, builds
+34.0 against 32.9. The sale pays ~110 MC per game, the money becomes a 34-card game, and the resource-card engine - the one
+channel we already beat SMART on - doubles. Against RANDOM the same bundle goes 77.2% -> 92.75% [91.0, 94.2].
+
+Transfer, which is what rules out benchmark-specific denial: vs NETWORK, 1000 games, the same bundle with three menus wins
+0.9% (9 games), with eight it wins **15.75% [13.6, 18.1]**.
