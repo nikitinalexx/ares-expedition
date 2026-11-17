@@ -177,10 +177,32 @@ def measure(policy, critic, games, out_dir, pack, types, phase_critic=""):
 
     # The benchmark (SMART) and the floor (RANDOM). The night of 16/11 produced a player at 10.9% vs SMART and 53% vs
     # RANDOM - a specialist that only ever played against a copy of itself - so both numbers are recorded from now on.
+    # Card quality: printed points per game and cards built, ours against the opponent. The exchange of 2026-11-17 showed
+    # that the money engine is universal (the end-of-round sale raises ~110 MC per game for everyone) and the difference is
+    # what the money buys: our card is worth 0.25 printed points, SMART's 0.52. The scorecard is the instrument.
+    scorecard = os.path.join(out_dir, "scorecard.json")
+    card_points = cards_built = opponent_card_points = opponent_cards = None
+    try:
+        scorecard_args = [JAVA, "-Xmx8g"] + search_args(types, critic, phase_critic) + [
+            "-cp", classpath(), "com.terraforming.ares.selfplay.SelfPlayMain", "--mode", "scorecard", "--a", "AGENT",
+            "--b", "SMART", "--games", "60", "--concurrency", "10", "--out", scorecard, "--models", policy]
+        with open(os.path.join(out_dir, "scorecard.log"), "w", encoding="utf-8") as sink:
+            subprocess.run(scorecard_args, stdout=sink, stderr=subprocess.STDOUT, timeout=3600)
+        with open(scorecard, encoding="utf-8") as f:
+            blob = json.load(f)
+        card_points = blob.get("aPrintedPointsPerGame")
+        opponent_card_points = blob.get("bPrintedPointsPerGame")
+        cards_built = sum(blob.get("aCards", {}).values())
+        opponent_cards = sum(blob.get("bCards", {}).values())
+    except (OSError, ValueError, subprocess.SubprocessError):
+        pass
+
     score, ci = versus("SMART", games, "smart")
     random_score, random_ci = versus("RANDOM", max(500, games // 2), "random")
     return {"stop_share": stop_share, "builds_per_game": builds, "phases": phases, "score": score, "ci": ci,
-            "score_random": random_score, "ci_random": random_ci, "games": games}
+            "score_random": random_score, "ci_random": random_ci, "games": games,
+            "card_points": card_points, "opponent_card_points": opponent_card_points,
+            "cards": cards_built, "opponent_cards": opponent_cards}
 
 
 def main():
@@ -389,6 +411,8 @@ def main():
         ledger.append(row)
         json.dump(ledger, open(LEDGER, "w", encoding="utf-8"), indent=1)
         mix = " ".join(f"{k.split()[0]}:{v * 100:.0f}%" for k, v in sorted((result.get("phases") or {}).items()))
+        log(f"card quality: printed {result.get('card_points')} vs {result.get('opponent_card_points')}, "
+            f"cards {result.get('cards')} vs {result.get('opponent_cards')}")
         log(f"vs SMART {result['score']} {result['ci']} | vs RANDOM {result['score_random']} "
             f"{result['ci_random']} | builds {result['builds_per_game']} | phases {mix} | "
             f"argmax stop {result['stop_share']}")

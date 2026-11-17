@@ -359,3 +359,38 @@ The owner's point: excess cards are sold at the end, so a big hand is money. Che
 Consequence for the draw question: extra cards are not a money engine at the end, and the hand is already rich (12.4 cards,
 5.4 payable), so the draw is not the bottleneck. The measured gap that matches a real deficit is blue cards against SMART
 (7.6 vs 9.8) - association, not cause.
+### Correction: the end-of-round sale is a real per-round income, and the gap is card QUALITY (2026-11-17)
+
+The owner was right and my first reading was wrong. `StateTransitionService.performStateTransferFromPhase` enters
+`SellExtraCardsState` after EVERY round whenever a player holds more than `MAX_HAND_SIZE_LAST_ROUND = 10`; the turn's name
+("last round") is legacy. Measured over 40 000 games (`ml/sale_report.py`):
+
+| | value |
+|---|---|
+| cards sold over a game | **36.8** |
+| money raised over a game | **110.5 MC** (median 105, max 399) |
+| per round | 1.84 cards -> 5.5 MC |
+| games raising 61+ MC this way | 89.8% |
+
+So the money is spendable and large - not dead. But it is also universal: correlation with the margin +0.076 and the bands are
+flat, so the amount of sale income does not separate winners.
+
+**What does separate them is what the money buys** (`--mode scorecard`, same 120-game runs):
+
+| player | printed card points per game | total points | cards per game |
+|---|---|---|---|
+| our agent | **6.14** | 61.05 | 24.1 |
+| SMART (vs us) | **16.43** | 92.21 | 31.8 |
+| NETWORK | 18.20 | 111.12 | 45.4 |
+| SMART (vs NETWORK) | 18.82 | 74.26 | 34.4 |
+
+Our card is worth 0.25 printed points on average, SMART's 0.52 - half. The conveyor works (37 sold, 27 built, 12 in hand per
+game) and the selection does not. `ml/night_loop.py` now records printed card points and cards built per iteration, so the next
+lever is measured on the quantity that actually differs, not on the money.
+
+### The card economy, measured end to end
+
+1. a card in hand above 10 at the end of a round = 3 MC next round (`SellExtraCardsState`);
+2. so draft and draw are a money engine, not dead weight - but everybody runs it;
+3. the difference between a 60-point player and a 92-point one is not the size of the engine but the average value of what the
+   engine buys: 0.25 vs 0.52 printed points per card.
