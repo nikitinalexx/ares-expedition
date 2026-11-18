@@ -29,8 +29,15 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class HandCardDecisions {
-    /** Largest set offered at one step. A phase-5 reveal stays far under this; a bigger pool has to be a conscious change. */
-    public static final int POOL = 40;
+    /**
+     * Largest set offered at one step. A phase-5 reveal stays far under this; a bigger pool has to be a conscious change.
+     * <p>
+     * Raised 40 -> 64 on 18/11: a player that sells every round keeps a hand large enough to overflow the old limit, and
+     * `SELL_CARDS offers 42 candidates; the decision is sized for 41` aborted the game inside the night loop's own corpus
+     * generation. The cap is per-decision schema and is excluded from the policy's model hash, so raising it does not
+     * invalidate any bundle (see DecisionFile.Schema.modelHash).
+     */
+    public static final int POOL = 64;
     public static final int MAX_CANDIDATES = POOL + 1;
     public static final int SELL_FEATURES = CardFeatures.LENGTH + 1;
 

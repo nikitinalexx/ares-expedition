@@ -711,3 +711,34 @@ same 64 bits as unsigned. `pack_dataset.py` joined them without masking, which m
 `breakdown` array of zeros and a critic trained on it learned a constant (mean 0.00, sd 0.00). It went unnoticed on the
 40k corpus only because those ids happened to be positive. Fixed with `& 0xFFFFFFFFFFFFFFFF` on both sides; any future
 sidecar join must do the same. `ml/card_points_data.py` also reads the pack, so a zeroed breakdown is visible there.
+
+### Final numbers of the night (18/11, ~07:40, cap-fixed build)
+
+Bundle `policy/1118-0058_13` + `v_1118-0058_13_s1..s3`, eight ranked menus:
+
+| opponent | games | win rate | 95% CI | failed |
+|---|---|---|---|---|
+| SMART | 3000 | **56.23%** | [54.5, 58.0] | 0 |
+| NETWORK | 1000 | **34.53%** | [31.7, 37.5] | 1 |
+| RANDOM | 1000 | **92.80%** | [91.0, 94.2] | 0 |
+
+Morning-to-morning, the same weights as the 19.55% bundle with three ranked menus: 20.2% -> 56.2% vs SMART, 0.9% -> 34.5%
+vs NETWORK, 77.2% -> 92.8% vs RANDOM.
+
+### A smaller corpus made it worse, and that is recorded here so it is not retried
+
+One iteration on 7 998 games (same recipe, same eight menus, `BUILD_CARD:0.15` exploration) measured **45.1% [42.0, 48.2]**
+against the 57.45% of the 18.7k-game iteration. Two iterations of the same recipe at different corpus sizes is the whole
+difference, so: **do not shrink the corpus to fit a night budget.** 20 000 games per iteration is the floor for this player
+(it takes ~2 h 10 m to generate at 2.6 games/s, `docs/PIPELINE.md`).
+
+### Three defects the night found, all fixed
+
+1. `pack_dataset.py` joined the `RANKING` sidecar on the game id as a signed Java `long` against the pack's unsigned
+   representation, so half the games matched nothing and the score breakdown was an array of zeros. A critic trained on it
+   learned a constant. Fixed with `& 0xFFFFFFFFFFFFFFFF` on both sides.
+2. `HandCardDecisions.POOL = 40` (41 candidates with the stop option) overflowed: a player that sells every round keeps a
+   hand large enough for 42 offers, and the decision threw `IllegalStateException` inside the generator. Raised to 64; the
+   cap is excluded from the policy's model hash, so no bundle is invalidated. Re-measured: 56.23% with 0 failed games.
+3. `night_loop.play()` capped a corpus at a fixed 7200 s and killed a 20 000-game generation at 18 772. The limit now
+   scales with the game count.

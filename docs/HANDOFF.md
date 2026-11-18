@@ -753,6 +753,10 @@ hand (`pack_dataset -> pack_check -> 3 x train_value --target margin -> train_po
 | `policy/1117-2001_11` + `v_1117-2001_11_s1..s3` (old search config) | 20.2% [18.8, 21.7] | 0.9% |
 | same weights, eight menus | 47.6% [45.8, 49.4] | 15.75% [13.6, 18.1] |
 | `policy/1118-0058_13` + `v_1118-0058_13_s1..s3` (one iteration on 18.7k games) | **57.45% [55.7, 59.2]** | **32.35% [29.5, 35.3]** |
+| the same, on the cap-fixed build (final) | **56.23% [54.5, 58.0]**, 0 failed | **34.53% [31.7, 37.5]** |
+
+Also measured: RANDOM **92.80% [91.0, 94.2]** on 1000 games, and one iteration on only 7 998 games scored 45.1% [42.0, 48.2]
+- i.e. shrinking the corpus to fit the night makes the player worse. 20 000 games per iteration is the floor.
 
 Critic AUC on the new corpus 0.913-0.917 (was 0.895). Channels, 300 games: resource cards **20.23** against SMART's 7.03,
 forests 12.29 against 8.54, printed points 11.67 against 17.03, TR 29.2 against 33.44, total 88.2 against 81.14, builds
