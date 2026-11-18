@@ -544,7 +544,6 @@ public class CardFactory {
                 34, new BuffedHydroElectricEnergy(5034),
                 50, new BuffedRegolithEaters(5050),
                 64, new BuffedWoodBurningStoves(5064),
-                217, new BuffedFilterFeeders(5217),
                 306, new BuffedDroneAssistedConstruction(5306),
                 12, new BuffedBirds(5012)
         ));

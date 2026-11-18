@@ -72,7 +72,7 @@ public class TableResourcesFeature implements FeatureBlock {
         //ANIMALS BLOCK
         {
             out.write(player.getCardResourcesCount().getOrDefault(Birds.class, 0) + player.getCardResourcesCount().getOrDefault(BuffedBirds.class, 0));
-            out.write(player.getCardResourcesCount().getOrDefault(FilterFeeders.class, 0) + player.getCardResourcesCount().getOrDefault(BuffedFilterFeeders.class, 0));
+            out.write(player.getCardResourcesCount().getOrDefault(FilterFeeders.class, 0));
             out.write(player.getCardResourcesCount().getOrDefault(Fish.class, 0));
             out.write(player.getCardResourcesCount().getOrDefault(Livestock.class, 0));
             out.write(player.getCardResourcesCount().getOrDefault(Zoos.class, 0));

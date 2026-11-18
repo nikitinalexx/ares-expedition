@@ -779,3 +779,32 @@ Consequence for the ranking: a candidate is only comparable if the rest of the b
 candidate into the partial input, completes the remaining slots with the policy (and, if the engine rejects that completion,
 with the first option of every remaining slot), builds the card on a copy, and reads `V(afterstate)`. That is what makes
 "chose the plant tag, so Viral Enhancers and Decomposers fire" visible to the value net.
+
+## Engine tests for the complex cards (2026-11-18)
+
+`src/test/java/com/terraforming/ares/ComplexCardsTest.java`, 11 tests, green. They check the *mechanics* every ranking above
+them depends on, not a strategy:
+
+| test | what it pins |
+|---|---|
+| Filter Feeders animals | one animal per addition of microbes to another card, and 4 animals = 2 VP (the owner's 1 VP per 2) |
+| Filter Feeders singleton | card id 217 resolves to the single `FilterFeeders`; `BuffedFilterFeeders` is gone |
+| Decomposers | "remove a microbe to draw" exists only while a microbe will be on the card |
+| Viral Enhancers | the card being built **is** a legal target (`resourceCards(..., includeBuilding = true)`) |
+| Mars University | the card being built cannot be discarded, and stop is always offered |
+| Anaerobic Microorganisms | -10 needs two microbes; without a plant the -5 is not legal; both together make -15 |
+| Fibrous Composite Material | a phase upgrade is asked only for three microbes |
+| Research Grant | the tag is asked first, and the tag then fires Mars University |
+| Power Infrastructure | every amount of heat up to the whole stock is offered and pays 1 MC each |
+| Self Replicating Bacteria | five microbes must produce a build slot worth -25, or the microbes are wasted |
+| Drone Assisted Construction | 2 MC, +2 when *my chosen* phase this round is upgraded (the opponent may be playing another phase) |
+| Green Houses | heat pays plants at par, at most four per activation (the card's own `max`) |
+
+Three of these corrected my own reading of the engine, and the corrections are part of the tests now:
+
+- **Restructured Resources is paid with a plant, not with a green card** (`canUseRestructured` checks the special effect and
+  `player.getPlants() >= 1`). So the -15 is two microbes plus one plant.
+- **Viral Enhancers may put its resource on the card being built.** I had told the owner the opposite; the engine's
+  `includeBuilding = true` says otherwise, and only Filter Feeders' text says "ANOTHER card".
+- **Green Houses is capped at four heat per activation** by the card itself, so a large heat stock is dumped over several
+  activations rather than one.

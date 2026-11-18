@@ -84,7 +84,7 @@ public class StateContext {
         if (cardsPlayed.containsKey(ConservedBiome.class)) {
             conservedBiome = true;
         }
-        if (cardsPlayed.containsKey(FilterFeeders.class) || cardsPlayed.containsKey(BuffedFilterFeeders.class)) {
+        if (cardsPlayed.containsKey(FilterFeeders.class)) {
             filterFeeders = true;
         }
         if (cardsPlayed.containsKey(Fish.class)) {
