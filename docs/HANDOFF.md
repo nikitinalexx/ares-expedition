@@ -854,6 +854,35 @@ has the list.
 that sidecar, the next recording renamed a path from the previous directory and threw. Fixed with `releaseRankings()` in
 `abort()` and `startRecording()`; `DecisionLogsTest` is 9/9.
 
+### Playing against it yourself (owner, 18/11)
+
+The app reads the bundle from JVM properties, so the only thing a normal run needs is the VM options. In IntelliJ: Run ->
+Edit Configurations -> VM options, or on the command line:
+
+```
+mvn -s .mvn/settings.xml spring-boot:run -Dspring-boot.run.jvmArguments="\
+-Dares.agent.models=D:/ares/runs/policy/1118-0058_13 \
+-Dares.agent.search=oneply -Dares.agent.search.symmetric=true -Dares.agent.search.pairs=true \
+-Dares.agent.search.types=BUILD_CARD,DRAFT_CARDS,PICK_PHASE,STANDARD_ACTION,PERFORM_BLUE_ACTION,DISCARD_CARDS,SELL_CARDS,SELL_CARDS_LAST_ROUND,BUILD_PAYMENT,PICK_CORPORATION,BLUE_INPUT,BUILD_INPUT,MULLIGAN,UNMI_RT,COLLECT_INCOME \
+-Dares.agent.valueModel=D:/ares/runs/value/v_1118-0058_13_s1,D:/ares/runs/value/v_1118-0058_13_s2,D:/ares/runs/value/v_1118-0058_13_s3 \
+-Dares.agent.valueModel.phase=D:/ares/runs/value/v_1118-0058_13_s1"
+```
+
+Then pick the **AGENT** difficulty in the UI (`AGENT_V2` reads `-Dares.agent.models2`, a different set). Without
+`-Dares.agent.models` the agent is uniform random - that is the documented default, so the options above are what make it
+play as the trained bundle. Every menu is now under the search, so a decision costs ~15-20 ms; the UI stays responsive.
+
+### Full coverage: 15 of 15 decision types
+
+`MULLIGAN`, `UNMI_RT` and `COLLECT_INCOME` were the last three without a critic. What each needed:
+
+- **MULLIGAN**: `MulliganTurnProcessor` does not only remove the cards - it deals as many new ones. So the afterstate of
+  "throw this card away" is the same hand size with a random replacement, and that is what `applyOn` now does. The
+  mulligan was declined in 100% of the recorded rows, which is exactly what a search that saw a smaller hand would decide.
+- **UNMI_RT**: +1 TR for 6 MC, applied by the existing synchronous `unmiRtCorporationTurnSync`.
+- **COLLECT_INCOME**: the phase-4 double produce; the turn is asynchronous, so the engine's `CollectIncomeTurnProcessor`
+  is called directly on the copy.
+
 ### Known follow-up: the parent menu still completes with the policy
 
 `PERFORM_BLUE_ACTION`'s afterstate (`OnePlySearch.applyOn`) fills the blue inputs with `innerChoice`, i.e. the policy, and

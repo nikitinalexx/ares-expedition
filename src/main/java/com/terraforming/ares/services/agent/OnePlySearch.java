@@ -134,6 +134,7 @@ public class OnePlySearch {
     private final int debug;
     private final PickCorporationProcessor pickCorporationProcessor;
     private final HandCardDecisions handCardDecisions;
+    private final com.terraforming.ares.processors.turn.CollectIncomeTurnProcessor collectIncomeTurnProcessor;
     private final ThreadLocal<float[]> lastAfterstate = new ThreadLocal<>();
     /** Re-entrancy guard: the build of a candidate asks the policy for its inner decisions, never the search. */
     private final ThreadLocal<Boolean> busy = ThreadLocal.withInitial(() -> Boolean.FALSE);
@@ -155,6 +156,7 @@ public class OnePlySearch {
                         AiTurnService aiTurnService, CardService cardService,
                         StateTransitionService stateTransitionService, PickPhaseProcessor pickPhaseProcessor,
                         PickCorporationProcessor pickCorporationProcessor,
+                        com.terraforming.ares.processors.turn.CollectIncomeTurnProcessor collectIncomeTurnProcessor,
                         @Lazy SimulationProcessorService simulationProcessorService, WinPointsService winPointsService) {
         this.observationBuilder = observationBuilder;
         this.neuralPolicy = neuralPolicy;
@@ -167,6 +169,7 @@ public class OnePlySearch {
         this.stateTransitionService = stateTransitionService;
         this.pickPhaseProcessor = pickPhaseProcessor;
         this.pickCorporationProcessor = pickCorporationProcessor;
+        this.collectIncomeTurnProcessor = collectIncomeTurnProcessor;
         this.simulationProcessorService = simulationProcessorService;
         this.winPointsService = winPointsService;
         String mode = System.getProperty("ares.agent.search", "off");
@@ -874,6 +877,27 @@ public class OnePlySearch {
         if (type == DecisionType.PERFORM_BLUE_ACTION) {
             Map<Integer, List<Integer>> input = blueInputDecisions.fill(copy, me, candidate, this::innerChoice);
             aiTurnService.performBlueAction(copy, me, id, input);
+            return true;
+        }
+        if (type == DecisionType.MULLIGAN) {
+            // MulliganTurnProcessor does not just remove the card: it removes them and deals as many new ones, so the
+            // afterstate of "throw this card away" is the same hand size with a random replacement. Without the deal the
+            // ranking would see a smaller hand and decline every mulligan - which is exactly what the corpus shows: the
+            // mulligan was declined in 100% of the recorded rows.
+            me.getHand().removeCard(id);
+            me.getHand().addCards(cardService.dealCards(copy, 1));
+            return true;
+        }
+        if (type == DecisionType.UNMI_RT) {
+            // +1 TR for 6 MC: no afterstate of its own beyond the TR and the money, so the sync turn is the whole effect.
+            aiTurnService.unmiRtCorporationTurnSync(copy, me);
+            return true;
+        }
+        if (type == DecisionType.COLLECT_INCOME) {
+            // The phase-4 double-produce: pay the chosen green card's income a second time. Applied through the engine's
+            // own processor, because the turn itself is asynchronous and would never run on a copy.
+            collectIncomeTurnProcessor.processTurn(
+                    new com.terraforming.ares.model.turn.CollectIncomeTurn(me.getUuid(), id), copy);
             return true;
         }
         if (isGiveUpCard(type)) {
