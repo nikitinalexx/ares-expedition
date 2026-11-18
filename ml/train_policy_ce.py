@@ -291,21 +291,17 @@ def main():
     # `--packed` may be a comma-separated list of packs: REPLAY. Training only on the newest corpus is how a self-play loop
     # loses the styles it abandoned (owner, 2026-11-18), so the last few iterations are mixed into every epoch.
     pack_dirs = [part.strip() for part in (args.packed or "").split(",") if part.strip()]
-    manifest = ares_data.open_pack(pack_dirs[0]) if pack_dirs else None
     if len(pack_dirs) > 1:
-        print(f"  replay over {len(pack_dirs)} packs", flush=True)
+        # A pack keeps `cands` and `ids` as LAZY row views (PackedCandidates / PackedIdView). Concatenating two packs by
+        # numpy would keep the first pack's view while the row arrays carry rows of both, i.e. every label would point at
+        # the wrong candidates - a silent misalignment that CUDA then reports as an out-of-bounds gather (measured
+        # 18/11). The honest fix is a merged pack on disk (ml/pack_merge.py), so this refuses instead of guessing.
+        raise SystemExit("policy replay needs a merged pack: pass one pack, or build it with ml/pack_merge.py")
+    manifest = ares_data.open_pack(pack_dirs[0]) if pack_dirs else None
     for decision in decisions:
         if pack_dirs:
-            data = None
-            for one in pack_dirs:
-                piece = load_packed_type(one, decision, ares_data.open_pack(one), args.rows_per_game,
-                                         args.max_chunks_per_type, args.seed)
-                if piece is None or not len(piece["obs"]):
-                    continue
-                if data is None:
-                    data = piece
-                else:
-                    data = {key: np.concatenate([data[key], piece[key]]) for key in data}
+            data = load_packed_type(pack_dirs[0], decision, manifest, args.rows_per_game,
+                                    args.max_chunks_per_type, args.seed)
         else:
             data = load_type(args.data, decision, args.rows_per_game, args.max_chunks_per_type, args.seed)
         if data is None or len(data["obs"]) < 100:

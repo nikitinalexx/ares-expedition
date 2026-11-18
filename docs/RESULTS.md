@@ -861,3 +861,19 @@ Smoke test on two packs: 3 240 825 rows mixed, 76 000 sampled, regression beats 
 artifacts written, AUC 0.865.
 
 One variable against iteration 13: same seed bundle, same exploration, same game count - only the training mixture changes.
+
+## A silent misalignment in the policy replay, caught and closed (2026-11-18, evening)
+
+The first replay attempt at the policy stage crashed with `CUDA error: device-side assert - scatter gather kernel index
+out of bounds`. The pack keeps two of its arrays as LAZY row views: `cands` (`PackedCandidates`) and `ids`
+(`PackedIdView`). A numpy concatenation of two packs keeps the *first* pack's view while the per-row arrays (`chosen`,
+`count`, `obs`) now carry the rows of both - every label then points at the wrong candidate set. On a single pack the
+path is fine (`pol_single`, exit 0), which is how the cause was isolated.
+
+`train_policy_ce` now **refuses** a comma list ("policy replay needs a merged pack") instead of guessing, and the loop
+passes the replay set to the critic only (the critic's loader builds real numpy arrays, so its replay is safe: three
+critics trained on two packs). The honest fix for the policy is a merged pack on disk (`ml/pack_merge.py`: append
+`obs.f16` and the label arrays, shift the candidate offsets) - next.
+
+This is exactly the failure the owner asked to design against: not a crash, but a *different representation* that silently
+loses the correspondence between a row and its candidates.

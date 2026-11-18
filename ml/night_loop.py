@@ -528,7 +528,8 @@ def main():
         critic_ok = True
         training_data = replay_packs(pack, args.replay_packs)
         if training_data != pack:
-            log(f"replay: training on {len(training_data.split(','))} packs")
+            log(f"replay: the critic trains on {len(training_data.split(','))} packs, the policy on the newest "
+                f"(a policy merge needs ml/pack_merge.py)")
         for k, new_critic in enumerate(new_critics, start=1):
             code = run([sys.executable, os.path.join(HERE, "train_value.py"), "--packed", training_data,
                         "--out", new_critic,
@@ -543,7 +544,7 @@ def main():
         new_critic = ",".join(new_critics) if critic_ok else ""
 
         new_policy = f"{POLICY_ROOT}/{name}"
-        policy_args = [sys.executable, os.path.join(HERE, "train_policy_ce.py"), "--packed", training_data, "--out", new_policy,
+        policy_args = [sys.executable, os.path.join(HERE, "train_policy_ce.py"), "--packed", pack, "--out", new_policy,
                        "--epochs", str(args.epochs_policy), "--entropy", str(args.entropy),
                        "--adv-weight-clip", args.adv_weight_clip]
         if args.policy_adv and new_critics:
