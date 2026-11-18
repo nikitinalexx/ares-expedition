@@ -782,9 +782,10 @@ variance). The untested ones, cheapest first:
 
 1. **Consolidate the wide menus in the loop** - one iteration with the eight types above, so the policy learns these
    choices instead of only imitating the narrow search. This is what the night run after this report does.
-2. **`train_value.py --target myscore`** (the seat's own final score, from the pack's `breakdown`) - it has a gradient in
-   games we lose, which the margin does not. It diverged at lr 1e-3 on a smoke pack; start at 3e-4 and gate it with
-   `ml/card_value_check.py` (correlation > 0.3) before any win-rate run.
+2. ~~`train_value.py --target myscore`~~ - **measured and rejected (18/11, 05:30)**: it learns the score (val MSE 0.0373
+   against 0.0706 for a constant) and still prices a printed point at 0.00012, i.e. 1% of its value; correlation with
+   printed points 0.089. Three targets have now failed to create a card signal (outcome 0.19, seven channels 0.12, own
+   score 0.09). Stop trying targets.
 3. **Exploration on DRAFT_CARDS** - 8.9% reachability is the measured reason; the generator's own rule is that a collapsed
    option is fixed by exploring that type, not by more seeds.
 

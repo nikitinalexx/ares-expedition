@@ -684,3 +684,30 @@ Channels (300 games): resource cards 20.23 (SMART 7.03), forests 12.29 (8.54), p
 (33.44), total 88.2 against 81.14, builds 33.2 against 31.9. The scorecard's 300-game win rate (49.67%) disagreed with the
 3000-game compare (57.45%); at 1000 games the scorecard reads **55.9%** with a score of 91.11 against 79.40, so 300 games
 are too few for the scorecard - 1000 is its floor.
+
+### The own-score target learns the score and still ignores the cards (2026-11-18, 05:30)
+
+`--target myscore` (the seat's own final score from the pack's `breakdown`) on the 18.7k-game corpus, 512x256, `max99`,
+lr 3e-4, 4 epochs:
+
+| metric | value |
+|---|---|
+| validation MSE | 0.0373 |
+| constant predictor (target variance) | 0.0706 |
+| AUC on the outcome (not the target) | 0.836 |
+| correlation(card value, printed points) | **+0.089** |
+| dV per victory point | 0.00012 |
+| dV per victory point if the model simply read the points | 0.0111 (= 1/90) |
+
+So the target is learnable (half the constant's error) and the model still prices a printed point at 1% of its value. With
+the current score already an input column, predicting the final score is explained by "current score + round + economy";
+the card identity adds almost nothing, and the network takes the easy path. This is the third target that fails to create a
+card signal (outcome 0.19, seven channels 0.12, own score 0.09) and it should stop the "try another target" line of work.
+
+### A data-integrity bug worth remembering
+
+`RANKING.<chunk>.jsonl` writes the game id as the Java `long` it is, so **half of them are negative**; the pack stores the
+same 64 bits as unsigned. `pack_dataset.py` joined them without masking, which matched *nothing*: the pack carried a
+`breakdown` array of zeros and a critic trained on it learned a constant (mean 0.00, sd 0.00). It went unnoticed on the
+40k corpus only because those ids happened to be positive. Fixed with `& 0xFFFFFFFFFFFFFFFF` on both sides; any future
+sidecar join must do the same. `ml/card_points_data.py` also reads the pack, so a zeroed breakdown is visible there.

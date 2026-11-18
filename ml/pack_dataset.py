@@ -180,7 +180,10 @@ def pack(data_dirs, out, limit_chunks=0, types=None, candidates=False, verbose=T
                         continue
                     try:
                         blob = json.loads(line)
-                        breakdown[int(blob["game"])] = blob["breakdown"]
+                        # The sidecar writes the game id as the Java `long` it is, so half of them are negative; the pack
+                        # stores the same 64 bits as unsigned. Without the mask the join silently matches nothing and every
+                        # breakdown row is zero (found on 18/11, after a myscore critic trained on a constant target).
+                        breakdown[int(blob["game"]) & 0xFFFFFFFFFFFFFFFF] = blob["breakdown"]
                     except (ValueError, KeyError):
                         continue
     if breakdown:
@@ -191,7 +194,7 @@ def pack(data_dirs, out, limit_chunks=0, types=None, candidates=False, verbose=T
             seats = labels[decision]["seat"]
             table = np.zeros((len(games), 7), dtype=np.float32)
             for index, (game, seat) in enumerate(zip(games.tolist(), seats.tolist())):
-                entry = breakdown.get(int(game))
+                entry = breakdown.get(int(game) & 0xFFFFFFFFFFFFFFFF)
                 if entry is not None and seat < len(entry):
                     table[index] = entry[seat]
             labels[decision]["breakdown"] = table
