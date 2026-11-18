@@ -853,3 +853,17 @@ has the list.
 `DecisionLogs` is a singleton and `abort()` kept its ranking sidecar open; now that every game writes a breakdown line into
 that sidecar, the next recording renamed a path from the previous directory and threw. Fixed with `releaseRankings()` in
 `abort()` and `startRecording()`; `DecisionLogsTest` is 9/9.
+
+### Known follow-up: the parent menu still completes with the policy
+
+`PERFORM_BLUE_ACTION`'s afterstate (`OnePlySearch.applyOn`) fills the blue inputs with `innerChoice`, i.e. the policy, and
+`BUILD_CARD`'s afterstate (`applyBuild`) fills the build inputs and the payment plan the same way. Now that `BLUE_INPUT`,
+`BUILD_INPUT` and `BUILD_PAYMENT` are ranked at execution time, the two are inconsistent: the parent compares candidates as
+if the policy would finish them, and then the ranking finishes them differently. Making the parent use the ranked
+completion is correct but multiplies the cost by the menu sizes (a parent menu of 5 actions times 3 slots times 5 options),
+so it should be measured, not assumed - one variable, `docs/AUDIT.md`.
+
+Blue inputs turn out to be interdependent exactly like build inputs: `RESEARCH_GRANT` asks a tag and then the tag's triggers
+(Mars University, Viral Enhancers, Decomposers), and `FIBROUS COMPOSITE MATERIAL` asks for a microbe amount and only for
+3 does it then ask for a phase upgrade. `rankBlueSlot` completes each candidate with the policy, so both are evaluated on
+the whole action, but the ordering is greedy per slot.
