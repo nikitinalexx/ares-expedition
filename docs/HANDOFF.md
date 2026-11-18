@@ -988,6 +988,28 @@ One more contained idea, measured before the big work: with `symmetric=true` eve
 build, a sale, a mulligan. A declared "does this action touch public state" predicate per decision type would skip the
 second build for the private ones, with the same bit-exact differential test as the incremental observation.
 
+### The legacy encoder block: 33% of the columns, and a schema change to drop most of it
+
+`ObservationBuilder` copies 1256 values: 839 columns of the current encoder plus **417 legacy columns** produced by
+`baseEncoder.collectData(...)` only because NETWORK_V2 was trained on them. Inside the 417 are the milestone and award
+features (40 + 18 columns) whose value was measured (dV 0.081 per unit of milestone progress, `ml/progress_check.py`), so the
+block cannot simply be dropped.
+
+Plan, in the order that costs least first:
+
+1. **(running)** measure `-Dares.agent.search.symmetric=false`: if the opponent's public view is not worth its 31% of the
+   per-candidate cost, deleting it is free. 3000 games against SMART on the champion bundle.
+2. **Quality check, cheap**: train a critic with `train_value --drop-unprefixed` (masks every column without a `:`) on the
+   current pack and compare AUC and `ml/card_value_check.py`. If the masked critic is as good, the legacy columns carry no
+   signal for the critic, and the schema change is justified.
+3. **Schema change** (only if 1 and 2 say yes): stop producing the legacy columns except milestones and awards - 1256 -> ~897
+   (-29% columns, which also removes ~29% of the first layer's FLOPs, the layer that is 84% of the critic's work). Cost: every
+   pack becomes incompatible, so it needs one full corpus regeneration plus retraining both the critics and the policy. That
+   is a whole night, so it goes in only after 1 and 2.
+4. **Independent of all of the above**: the opponent view can be built **once per menu** for the hand menus (mulligan, sale,
+   discard, draft), where every candidate changes only private state - 31% saved on ~40% of the decisions, gated by a test
+   that the public view is byte-identical across the candidates of those menus.
+
 ### Known follow-up: the parent menu still completes with the policy
 
 `PERFORM_BLUE_ACTION`'s afterstate (`OnePlySearch.applyOn`) fills the blue inputs with `innerChoice`, i.e. the policy, and

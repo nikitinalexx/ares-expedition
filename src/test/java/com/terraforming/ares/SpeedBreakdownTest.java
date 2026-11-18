@@ -39,6 +39,8 @@ class SpeedBreakdownTest extends EngineTestBase {
     GameService gameService;
     @Autowired
     ObservationBuilder observationBuilder;
+    @Autowired
+    com.terraforming.ares.services.ai.AdvancedAiDataCollectionService baseEncoder;
 
     @Test
     void printsThePerCandidateCostOfCopyObservationAndCritic() throws IOException {
@@ -96,6 +98,53 @@ class SpeedBreakdownTest extends EngineTestBase {
                 copy, obs, pub, critic, total,
                 100 * copy / total, 100 * obs / total, 100 * pub / total, 100 * critic / total);
         assertTrue(copy > 0 && obs > 0 && critic > 0, "every path must have been measured");
+    }
+
+    /**
+     * How much of the observation cost is the legacy V2 block?
+     * <p>
+     * The 1256-value vector is the current encoder's columns *plus* a legacy block kept only because NETWORK_V2 was trained
+     * on it (`ObservationBuilder` calls {@code baseEncoder.collectData}). If that block is most of the 86 us, dropping it
+     * from the encoder would speed up every decision far more than any micro-optimisation - at the price of retraining the
+     * critics on the narrower observation.
+     */
+    @Test
+    void printsTheShareOfTheLegacyEncoderBlock() {
+        MarsGame game = gameService.createNewSimulation(GameParameters.builder()
+                .playerNames(new ArrayList<>(List.of("A", "B")))
+                .computers(List.of(PlayerDifficulty.AGENT, PlayerDifficulty.AGENT))
+                .mulligan(true)
+                .expansion(Expansion.BASE).expansion(Expansion.DISCOVERY).expansion(Expansion.BUFFED_CORPORATION)
+                .dummyHand(true)
+                .build());
+        Player player = game.getPlayerUuidToPlayer().values().iterator().next();
+
+        int rounds = 2000;
+        for (int i = 0; i < 300; i++) {
+            baseEncoder.collectData(game, player.getUuid());
+            observationBuilder.build(game, player);
+            observationBuilder.buildPublic(game, player);
+        }
+        long legacy = 0, mine = 0, publicView = 0;
+        for (int i = 0; i < rounds; i++) {
+            long t0 = System.nanoTime();
+            float[] block = baseEncoder.collectData(game, player.getUuid());
+            long t1 = System.nanoTime();
+            observationBuilder.build(game, player);
+            long t2 = System.nanoTime();
+            observationBuilder.buildPublic(game, player);
+            long t3 = System.nanoTime();
+            if (block.length == 0) {
+                throw new IllegalStateException("the legacy encoder produced nothing");
+            }
+            legacy += t1 - t0;
+            mine += t2 - t1;
+            publicView += t3 - t2;
+        }
+        double l = legacy / 1e3 / rounds, b = mine / 1e3 / rounds, p = publicView / 1e3 / rounds;
+        System.out.printf("legacy V2 block %.1f us, build() %.1f us (of which legacy %.0f%%), buildPublic() %.1f us%n",
+                l, b, 100 * l / b, p);
+        assertTrue(l > 0 && b > 0, "both paths must have been measured");
     }
 
     private MlpValueModel model(long seed) throws IOException {
