@@ -1078,18 +1078,24 @@ average is about half. Three measurements pin what happens instead.
 
 Two is neutral, five costs 3.7 points: discarding a fixed number throws away good cards exactly as the owner said.
 
-**2. The critic with the replacement draw discards almost everything.** `junkGate=MULLIGAN` with the engine's afterstate ("this
-card replaced by a random draw") gave 91.8% of gated decisions "free", mean **6.58** discards of 10, and the discard counts
-clustered at 6-8. A random card usually beats the worst card in the hand, so every removal looks like an improvement.
+**2. The first gate discarded almost everything - because the afterstate lost the accumulation, not because of the draw.**
+`junkGate=MULLIGAN` with "this card replaced by a random draw" gave 91.8% of gated decisions "free", mean **6.58** discards of
+10, clustered at 6-8 (i.e. at the recording cap). The first explanation offered - "a random card usually beats the worst card"
+- is **wrong** (owner's correction, 18/11): a random card is worth about an average card, so it is neither good nor bad.
+The real cause: the engine does not touch the hand during the mulligan loop. It collects the chosen cards into a pending set
+and replaces the whole set only when the player says stop. Every step's afterstate was therefore built from the *full* hand, so
+the already-queued cards stayed in the copy: step 5 looked exactly as profitable as step 1, and the loop ran until the
+candidate list ended. **Lost accumulation.**
 
-**3. The critic without the draw also discards almost everything.** The deterministic afterstate ("the hand without this card")
-removed the draw bias, and the gate still fired in 91.6% of decisions with a *positive* mean gap (+348 milli-logit): mean
-**9.10** discards. Reason: in our corpora a large unbuilt hand correlates with losing (no money to build), so V prefers a
-smaller hand - and a mulligan does not shrink the hand, it replaces cards.
+**3. Removing the draw did not fix it (same bug, same symptom).** With a deterministic afterstate ("the hand without this card")
+the gate still fired in 91.6% of decisions with a *positive* mean gap (+348 milli-logit): mean **9.10** discards of 12. Hand
+size shrinking is what V likes in our corpora (a large unbuilt hand correlates with losing), so this variant is biased too -
+and it is also the wrong question: a mulligan does not shrink the hand, it replaces cards.
 
-So V has no usable "this card is junk" signal: the card's own worth is not something a position value can express when the
-hand identity block is masked and the replacement keeps the hand size. **The mulligan has to be learned by the policy**, which
-does see the card identities, from explored games weighted by their outcomes - not from the critic and not from a fixed count.
+The corrected afterstate is per-step marginal: step *k* scores `hand - (queued + candidate) + (k+1) random cards`, and the
+"stop" baseline is `hand - queued + k random cards` (what the engine does when the player stops). Both hands have the same
+size, so the difference is the value of replacing *that one card* - which is exactly the owner's rule "discard the junk, the
+count follows the hand". Whether V can express it is now a measurement, not an argument.
 
 A structural finding from this thread: `OnePlySearch` has **two** afterstate dispatchers (`applyOn`, used by the batch path,
 and a separate block inside `score()`, used by the normal path). The mulligan was added to the first only, so on the normal

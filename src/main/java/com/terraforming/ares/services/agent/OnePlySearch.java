@@ -173,6 +173,22 @@ public class OnePlySearch {
     private final HandCardDecisions handCardDecisions;
     private final com.terraforming.ares.processors.turn.CollectIncomeTurnProcessor collectIncomeTurnProcessor;
     private final ThreadLocal<float[]> lastAfterstate = new ThreadLocal<>();
+    /**
+     * Cards already queued by the mulligan loop of this decision. The engine does not touch the hand until the player says
+     * "stop" and then replaces the whole set at once, so the afterstate of the k-th discard is
+     * {@code hand - (queued + candidate) + (k+1) random cards}. Without the queued set every step looked as good as the
+     * first and the loop discarded until the candidate list ran out (measured 6.58 cards at the recording cap of 8, 9.10 at
+     * 12) - the accumulation was lost, not the replacement.
+     */
+    private final ThreadLocal<List<Integer>> mulliganQueued = ThreadLocal.withInitial(List::of);
+    /**
+     * The replacement cards of this mulligan decision, drawn ONCE: the first {@code |queued|} are the stop baseline's
+     * replacements, all of them are the candidate's. Sampling per candidate instead would compare "hand - c + random" with
+     * "hand + random'" - two different draws - and the difference would carry the draw's noise on top of the card's value.
+     * With common random numbers every arm sees the SAME replacements, so the gap is the value of the card alone. This is
+     * the "sample it" the owner asked about, done so that the sample cancels.
+     */
+    private final ThreadLocal<List<Integer>> mulliganDraws = ThreadLocal.withInitial(List::of);
     /** Re-entrancy guard: the build of a candidate asks the policy for its inner decisions, never the search. */
     private final ThreadLocal<Boolean> busy = ThreadLocal.withInitial(() -> Boolean.FALSE);
     /** Whether this decision belongs to the second model set (AGENT_V2): passed to every policy call of this decision. */
@@ -386,6 +402,11 @@ public class OnePlySearch {
      * @return the index of the candidate with the best afterstate, or -1 when the search does not apply (different
      * decision type, re-entrant call, or every candidate failed)
      */
+    /** Tells the search which cards the mulligan loop has already queued (see {@link #mulliganQueued}). */
+    public void mulliganContext(List<Integer> queued) {
+        mulliganQueued.set(queued == null ? List.of() : List.copyOf(queued));
+    }
+
     public int choose(Decision decision, MarsGame game, Player player) {
         if (models.isEmpty() || !types.contains(decision.type()) || busy.get()) {
             return -1;
@@ -399,6 +420,8 @@ public class OnePlySearch {
         } finally {
             strongAnswer.set(Boolean.FALSE);
             busy.set(Boolean.FALSE);
+            mulliganQueued.set(List.of());
+            mulliganDraws.set(List.of());
             currentNets.remove();
             nanos.addAndGet(System.nanoTime() - started);
         }
@@ -691,6 +714,18 @@ public class OnePlySearch {
         // The stop candidate changes nothing: its afterstate is the current state, whose observation the decision
         // already carries. Everything else is built on a copy and scored by V(afterstate).
         float[] stopObs = decision.observation();
+        if (decision.type() == DecisionType.MULLIGAN) {
+            mulliganDraws.set(drawMulliganCards(game, mulliganQueued.get().size() + 1));
+        }
+        if (junkGateTypes.contains(decision.type()) && !mulliganQueued.get().isEmpty()) {
+            // "Stop" is not the current hand: when the player stops, the engine still discards the queued cards and deals
+            // as many replacements. Comparing a candidate that already replaced them against a baseline that still holds
+            // them is comparing two different hands, so the baseline is the post-stop state as well.
+            float[] shifted = mulliganStopObservation(game, player);
+            if (shifted != null) {
+                stopObs = shifted;
+            }
+        }
         float[] scores = new float[options.size()];
         long seed = ThreadLocalRandom.current().nextLong();
         float bestOfStop = logit(stopObs);
@@ -968,12 +1003,10 @@ public class OnePlySearch {
             return true;
         }
         if (type == DecisionType.MULLIGAN) {
-            // DETERMINISTIC on purpose: the afterstate is "the hand WITHOUT this card", not "the hand with this card
-            // replaced by a random draw". The replacement makes every candidate look like an improvement on average (a
-            // random card is usually better than the worst card), which is why the gate that used it discarded 6.6 cards
-            // of 10 - nearly the whole hand. Without the draw, V(hand) - V(hand - c) IS the value of that card in the hand:
-            // junk gives ~0 and a good card gives a real loss, which is the owner's "discard the junk" made explicit.
-            me.getHand().removeCard(id);
+            // The true counterfactual of the k-th discard: the cards already queued by the loop leave the hand too, and the
+            // engine deals as many replacements as the whole set. Modelling only the candidate kept the queued cards in the
+            // copy's hand, so every step looked as good as the first.
+            applyMulligan(me, copy, id);
             return true;
         }
         if (type == DecisionType.UNMI_RT) {
@@ -1008,48 +1041,12 @@ public class OnePlySearch {
         try {
             MarsGame copy = new MarsGame(game);
             Player me = copy.getPlayerByUuid(player.getUuid());
-            if (type == DecisionType.STANDARD_ACTION) {
-                // The candidate id is the KIND of spend (StandardActionDecisions.*), and its effect is applied by the same
-                // synchronous turn the live game uses. The economy of the decision is then in the afterstate: money out,
-                // TR/ocean/forest in - which is what "28 MC for two temperatures vs a cheap card" has to be judged by.
-                switch (cardId) {
-                    case StandardActionDecisions.EXCHANGE_ONE_HEAT -> aiTurnService.exchangeHeat(copy, me, 1);
-                    case StandardActionDecisions.PLANT_FOREST -> aiTurnService.plantForest(copy, me);
-                    case StandardActionDecisions.INCREASE_TEMPERATURE -> aiTurnService.increaseTemperature(copy, me);
-                    case StandardActionDecisions.SP_OCEAN ->
-                            aiTurnService.standardProjectTurn(copy, me, StandardProjectType.OCEAN);
-                    case StandardActionDecisions.SP_FOREST ->
-                            aiTurnService.standardProjectTurn(copy, me, StandardProjectType.FOREST);
-                    case StandardActionDecisions.SP_TEMPERATURE ->
-                            aiTurnService.standardProjectTurn(copy, me, StandardProjectType.TEMPERATURE);
-                    default -> {
-                        return null; // the infrastructure variants need inputs: the policy keeps those
-                    }
-                }
-            }
-            Card card = type == DecisionType.STANDARD_ACTION ? null : cardService.getCard(cardId);
-            if (type == DecisionType.PERFORM_BLUE_ACTION) {
-                Map<Integer, List<Integer>> input = blueInputDecisions.fill(copy, me, card, this::innerChoice);
-                // performBlueAction is already synchronous: it applies the action to this game object.
-                aiTurnService.performBlueAction(copy, me, cardId, input);
-            } else if (isGiveUpCard(type)) {
-                // "Which of these cards do you give up": the candidate IS the card that leaves the hand. The sale price is
-                // the same for every card of a hand, so leaving the money out of the copy does not change the ordering.
-                me.getHand().removeCard(cardId);
-            } else if (type == DecisionType.MULLIGAN) {
-                // Same semantics as applyOn (the batch path): the hand WITHOUT this card, no replacement draw. Keeping the
-                // two dispatchers in step is exactly the fragility this class has: the batch path used applyOn and the
-                // normal path used this method, so a type added to one of them silently scores as "no opinion" on the other
-                // (found 18/11 with the mulligan: 100% stop).
-                me.getHand().removeCard(cardId);
-            } else if (type == DecisionType.PICK_PHASE) {
-                applyPhaseChoice(copy, me, cardId, seed);
-            } else if (type != DecisionType.BUILD_CARD && type != DecisionType.STANDARD_ACTION) {
-                // Anything else is not implemented: return "no opinion" instead of scoring it as a build (a sell or a
-                // mulligan scored through the payment path produced 4.7 million unusable candidates and a 13% win rate).
+            // ONE dispatcher for both paths. The second copy of this switch was the bug found on 18/11: a type added to
+            // applyOn alone (MULLIGAN) scored as "no opinion" here, so the mulligan menu answered stop in 100% of rows, and
+            // UNMI_RT / COLLECT_INCOME were missing here for the same reason. The batch path was slower and is off by
+            // default, so this one is the live one - it must not be the less complete one.
+            if (!applyOn(copy, me, cardId, type, seed)) {
                 return null;
-            } else if (type == DecisionType.BUILD_CARD) {
-                applyBuild(copy, me, cardId);
             }
             if (projectBuilds && (type == DecisionType.BUILD_CARD || type == DecisionType.STANDARD_ACTION)) {
                 // Read the value at the player's next decision instead of at the mid-turn afterstate.
@@ -1090,6 +1087,58 @@ public class OnePlySearch {
     }
 
     /** Decisions whose candidate is a card that leaves the hand: draft, discard, selling. */
+    /**
+     * The mulligan's "stop" baseline: the hand with the queued cards already replaced (the engine does this when the player
+     * says stop), so the gate compares two hands of the same size and content shape.
+     */
+    private float[] mulliganStopObservation(MarsGame game, Player player) {
+        try {
+            MarsGame copy = new MarsGame(game);
+            Player me = copy.getPlayerByUuid(player.getUuid());
+            List<Integer> queued = mulliganQueued.get();
+            for (int id : queued) {
+                me.getHand().removeCard(id);
+            }
+            List<Integer> draws = mulliganDraws.get();
+            me.getHand().addCards(draws.subList(0, Math.min(queued.size(), draws.size())));
+            return observationBuilder.build(copy, me);
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    /** The replacement cards of this decision, drawn from a copy so the real deck is untouched. */
+    private List<Integer> drawMulliganCards(MarsGame game, int count) {
+        if (count <= 0) {
+            return List.of();
+        }
+        try {
+            MarsGame copy = new MarsGame(game);
+            return List.copyOf(cardService.dealCards(copy, count));
+        } catch (RuntimeException e) {
+            return List.of();
+        }
+    }
+
+    /**
+     * The mulligan's afterstate: the hand without the queued cards and the candidate, plus as many random replacements as
+     * the whole set. The engine applies exactly this when the player stops.
+     */
+    private void applyMulligan(Player me, MarsGame copy, int candidateId) {
+        List<Integer> queued = mulliganQueued.get();
+        for (int id : queued) {
+            me.getHand().removeCard(id);
+        }
+        me.getHand().removeCard(candidateId);
+        List<Integer> draws = mulliganDraws.get();
+        if (draws.size() >= queued.size() + 1) {
+            me.getHand().addCards(draws);
+        } else {
+            // No sampled set (a decision that never went through search): fall back to the engine's own draw.
+            me.getHand().addCards(cardService.dealCards(copy, queued.size() + 1));
+        }
+    }
+
     private static boolean isGiveUpCard(DecisionType type) {
         return type == DecisionType.DRAFT_CARDS || type == DecisionType.DISCARD_CARDS
                 || type == DecisionType.SELL_CARDS || type == DecisionType.SELL_CARDS_LAST_ROUND;

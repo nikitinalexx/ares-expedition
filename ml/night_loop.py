@@ -88,6 +88,48 @@ def search_args(types, critic, phase_critic="", symmetric=True):
     return args
 
 
+def menu_health(pack):
+    """Per-game mulligan discards and the share of games that sell, read straight from the packed corpus."""
+    try:
+        import mulligan_report
+        found = {"mulligan": None, "mulligan_spread": 0, "mulligan_stop": None, "sale": None}
+        mulligan = mulligan_report.behaviour(pack, "MULLIGAN")
+        if mulligan:
+            found["mulligan"] = mulligan["mean_discards_per_game"]
+            found["mulligan_spread"] = len(mulligan["by_count"])
+            found["mulligan_stop"] = mulligan["stop_share"]
+        sale = mulligan_report.behaviour(pack, "SELL_CARDS")
+        if sale:
+            found["sale"] = sale["games_with_a_discard"]
+        return found
+    except Exception:  # noqa: BLE001 - a sensor must never stop the night
+        return None
+
+
+def menu_verdict(menus, explore):
+    """Why this corpus must not be trained on, from its mulligan and sale behaviour. Empty list = usable.
+
+    A menu that answers the same thing in every game teaches nothing, and self-training cannot notice it on its own: the
+    mulligan was declined in 100% of every recorded corpus, and a 30% sale exploration made the generator sell in 89.7% of
+    games, which collapsed that iteration to 43.1%. Both checks read the measured numbers, not the flags that were asked
+    for - a flag the generator ignores looks exactly like a menu that learned to decline.
+    """
+    reasons = []
+    spec = (explore or "").upper()
+    if not menus:
+        return reasons
+    mulligan = menus.get("mulligan")
+    if "MULLIGAN" in spec and mulligan is not None:
+        if mulligan < 1.0:
+            reasons.append(f"the mulligan exploration did not reach the rows ({mulligan:.2f} discards per game)")
+        if (menus.get("mulligan_spread") or 0) < 2:
+            reasons.append("every game discarded the same number of cards, so the count does not follow the hand")
+    sale = menus.get("sale")
+    if "SELL_CARDS" in spec and sale is not None and sale > 0.60:
+        reasons.append(f"the sale exploration sells in {100 * sale:.0f}% of games (measured collapse: 89.7% -> 43.1%)")
+    return reasons
+
+
 def catastrophic(best, score, drop):
     """True when a single iteration is so far below the best that the configuration is broken, not noisy.
 
@@ -109,7 +151,7 @@ def config_summary(args):
             f" sym_gen={bool(args.generation_symmetric)}"
             f" afterstates={bool(args.record_afterstates)}/{bool(args.critic_afterstates)}"
             f" replay={args.replay_packs}{'+policy' if args.policy_replay else ''}"
-            f" adv={bool(args.policy_adv)} explore='{args.explore}'")
+            f" adv={bool(args.policy_adv)} explore='{args.explore}' rows={args.rows_per_type}")
 
 
 def log(message):
@@ -121,7 +163,7 @@ def classpath():
         return "target/classes;" + f.read().strip()
 
 
-def play(out, games, policy, critic, threads, explore, matchups, types, phase_critic="", timeout=0,
+def play(out, games, policy, critic, threads, explore, matchups, types, rows_per_type=8, phase_critic="", timeout=0,
          generation_symmetric=False, afterstates=False):
     """Generates one corpus. The wall-clock limit scales with the games: the fixed 7200 s was measured on three ranked
     menus, and eight menus (standard projects, blue actions, the sell menus) generate at 2.6 games/s instead of ~5, so a
@@ -139,7 +181,7 @@ def play(out, games, policy, critic, threads, explore, matchups, types, phase_cr
         args.append(f"-Dares.agent.explore={explore}")
     args += ["-cp", classpath(), "com.terraforming.ares.selfplay.SelfPlayMain", "--mode", "play",
              "--out", out, "--games", str(games), "--threads", str(threads), "--games-per-chunk", "2000",
-             "--matchups", matchups, "--max-rows-per-game-type", "8",
+             "--matchups", matchups, "--max-rows-per-game-type", str(rows_per_type),
              "--models", policy]
     started = time.time()
     log_path = out.rstrip("/\\") + ".play.log"
@@ -364,6 +406,10 @@ def main():
     parser.add_argument("--max-flat", type=int, default=8,
                         help="stop when the best score has not improved for this many iterations, whatever the lever list "
                              "says: a night that grinds the same win rate is worse than a short honest one")
+    parser.add_argument("--rows-per-type", type=int, default=8,
+                        help="cap on recorded decisions per type per game. The mulligan needs >= 11: a 10-card hand makes "
+                             "up to 10 discards plus the stop, and the cap SAMPLES uniformly, so at 8 the stop row of the "
+                             "longest games is dropped at random - a silent distortion of exactly the menu we are teaching")
     parser.add_argument("--keep-packs", type=int, default=3)
     parser.add_argument("--record-afterstates", action="store_true",
                         help="record the state one action after each decision (AFTERSTATE rows). Required before a critic "
@@ -513,7 +559,8 @@ def main():
         code, seconds, summary = play(raw, games, policy, critic, args.threads, args.explore, args.matchups,
                                       args.types, phase_critic,
                                       generation_symmetric=args.generation_symmetric,
-                                      afterstates=args.record_afterstates)
+                                      afterstates=args.record_afterstates,
+                                      rows_per_type=args.rows_per_type)
         played = summary.get("gamesPlayed", 0)
         failed = summary.get("gamesFailed", 0)
         # The engine throws loudly when a menu exceeds MAX_CANDIDATES ("menu has N candidates; the decision is sized for M").
@@ -550,6 +597,19 @@ def main():
             log(f"the pack does not reproduce the raw chunks; skipping (see {out_dir}/pack_check.log)")
             continue
         shutil.rmtree(raw, ignore_errors=True)
+
+        # Corpus gate: is the menu that the night is about to learn actually varied in this corpus? A collapsed menu is
+        # invisible to training (it fits perfectly) and costs the whole iteration, so it is checked before any model runs.
+        menus = menu_health(pack)
+        if menus:
+            log(f"corpus menus: mulligan {menus.get('mulligan')} discards over {menus.get('mulligan_spread')} values, "
+                f"stop {100 * (menus.get('mulligan_stop') or 0):.0f}%, sale in {100 * (menus.get('sale') or 0):.0f}% of games")
+        blocked = menu_verdict(menus, args.explore)
+        if blocked:
+            for reason in blocked:
+                log(f"CORPUS GATE: {reason}")
+            log("skipping the iteration: training on this corpus teaches the collapse again")
+            continue
 
         # Coverage: did this corpus still use every decision type's options? A self-training loop writes the next corpus with
         # its own greedy choice, so a type can collapse silently (phase 5 went 20% -> 7% -> 2.2% in two iterations and
@@ -652,7 +712,8 @@ def main():
                "abort_drop": args.abort_drop,
                "record_afterstates": bool(args.record_afterstates),
                "critic_afterstates": bool(args.critic_afterstates),
-               "critic": new_critic, "critics": len(new_critics), "policy": new_policy, **result,
+               "critic": new_critic, "critics": len(new_critics), "policy": new_policy, "menus": menus,
+               "rows_per_type": args.rows_per_type, **result,
                "time": time.strftime("%Y-%m-%dT%H:%M:%S")}
         ledger.append(row)
         json.dump(ledger, open(LEDGER, "w", encoding="utf-8"), indent=1)

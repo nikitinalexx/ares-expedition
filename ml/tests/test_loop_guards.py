@@ -48,10 +48,11 @@ class ConfigSummaryTest(unittest.TestCase):
             policy_replay = False
             policy_adv = True
             explore = "BUILD_CARD:0.15"
+            rows_per_type = 12
 
         summary = night_loop.config_summary(Args())
         for piece in ("types=4 menus", "sym_gen=False", "afterstates=True/True", "replay=2",
-                      "adv=True", "explore='BUILD_CARD:0.15'"):
+                      "adv=True", "explore='BUILD_CARD:0.15'", "rows=12"):
             self.assertIn(piece, summary)
 
 

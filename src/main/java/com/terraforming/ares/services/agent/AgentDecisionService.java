@@ -258,6 +258,7 @@ public class AgentDecisionService {
         if (MULLIGAN_CARDS > 0) {
             List<Integer> forced = new ArrayList<>();
             for (int step = 0; step < MULLIGAN_CARDS; step++) {
+                onePlySearch.mulliganContext(forced);
                 Decision decision = mulliganDecisions.build(game, player, forced);
                 int id = decision.candidates().get(choose(game, player, decision)).id();
                 if (id == MulliganDecisions.STOP) {
@@ -269,6 +270,7 @@ public class AgentDecisionService {
         }
         List<Integer> discard = new ArrayList<>();
         while (true) {
+            onePlySearch.mulliganContext(discard);
             Decision decision = mulliganDecisions.build(game, player, discard);
             int id = decision.candidates().get(choose(game, player, decision)).id();
             if (id == MulliganDecisions.STOP) {
