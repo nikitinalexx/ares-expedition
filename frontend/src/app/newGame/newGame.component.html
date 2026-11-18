@@ -89,9 +89,6 @@
              style="margin-left: 5px; border-radius: 5px;">Hard <span class="bg-success text-white">(AI)</span>
         <input type="radio" value="ai" style=" width: 30px" [formControlName]="'difficulty' + item" (click)="clickAiComputer()"></label>
 
-      <label *ngIf="parentForm.get('computer' + item)?.value && this.parentForm.value.playerCount === '2' && !this.parentForm.value.infrastructure && !this.parentForm.value.experimental" class="form-label p-1 mb-2 bg-warning text-dark "
-             style="margin-left: 5px; border-radius: 5px;">Expert <span class="bg-success text-white">(AI v2)</span>
-        <input type="radio" value="ai2" style=" width: 30px" [formControlName]="'difficulty' + item"></label>
 
       <label *ngIf="parentForm.get('computer' + item)?.value && this.parentForm.value.playerCount === '2' && !this.parentForm.value.infrastructure && !this.parentForm.value.experimental" class="form-label p-1 mb-2 bg-warning text-dark "
              style="margin-left: 5px; border-radius: 5px;">Ares <span class="bg-success text-white">(learned + search)</span>

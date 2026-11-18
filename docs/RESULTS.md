@@ -808,3 +808,25 @@ Three of these corrected my own reading of the engine, and the corrections are p
   `includeBuilding = true` says otherwise, and only Filter Feeders' text says "ANOTHER card".
 - **Green Houses is capped at four heat per activation** by the card itself, so a large heat stock is dumped over several
   activations rather than one.
+
+## `fullTypes` is not a way to make a collapsed stop menu work (2026-11-18)
+
+The idea was: `MULLIGAN` and `SELL_CARDS` have a policy that always answers "stop", and in the default `rankOnly` mode the
+critic only re-orders candidates while the *policy* keeps the act-or-stop decision - so those two menus are no-ops. The knob
+is `-Dares.agent.search.fullTypes`, where the critic is compared against the stop candidate as well.
+
+Measured: **2.88% [2.3, 3.5] against SMART, 3000 games, 0 failed** with `fullTypes=MULLIGAN,SELL_CARDS,UNMI_RT` on the
+15-menu bundle that otherwise scores 63.9%. The failure is the one the code comment warned about: `V(state)` and
+`V(after the action)` are not on one scale (an afterstate is a state between two decisions, and the value net was trained
+on decision states), so "act vs stop" by raw V sells the whole hand and buys terraforming rating.
+
+Conclusion: coverage has to stay `rankOnly`. A menu whose policy always stops cannot be fixed by ranking it - it needs the
+**policy** to learn the decision, which needs a corpus that contains mulligans (and rows from exploration must be marked so
+they do not become the policy's teaching labels).
+
+## The UI: Easy / Normal / Hard / Ares (2026-11-18, owner's request)
+
+`NETWORK_V2` ("Expert / AI v2") is no longer offered; `NETWORK` stays as Hard and the learned player with the search stays
+as Ares. Ares is `AGENT_V2`, i.e. the second model set, so the live app must be started with `-Dares.agent.models=<bundle>`
+(falls back to the same set) or `-Dares.agent.models2=<bundle>`, plus the search properties. The form now locks the settings
+the player was trained on while Ares is selected: improved corporations, dummy hand, mulligan.

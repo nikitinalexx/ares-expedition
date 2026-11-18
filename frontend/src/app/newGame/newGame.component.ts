@@ -59,12 +59,24 @@ export class NewGameComponent implements OnInit {
     this.parentForm.valueChanges.subscribe(() => this.applyAiV2Rules());
   }
 
-  /** True when some enabled computer slot uses AI v2 (NETWORK_V2). */
+  /**
+   * NETWORK_V2 ("Expert / AI v2") is no longer offered (owner, 18/11): the learned agent with the search is the stronger
+   * opponent. The enum and the backend validations stay, so old games and recorded difficulties still resolve - only the
+   * form stopped producing it.
+   */
   v2Selected(): boolean {
+    return false;
+  }
+
+  /** The learned player was trained with improved corporations, a dummy hand and the mulligan; the form locks them. */
+  aresSelected(): boolean {
     for (let i = 1; i <= this.parentForm.value.playerCount; i++) {
-      if (this.parentForm.get('computer' + i)?.value && this.parentForm.get('difficulty' + i)?.value === 'ai2') {
+      if (this.parentForm.get('computer' + i)?.value && this.parentForm.get('difficulty' + i)?.value === 'ares') {
         return true;
       }
+    }
+    return false;
+  }
     }
     return false;
   }
@@ -80,6 +92,18 @@ export class NewGameComponent implements OnInit {
         if (difficulty === 'ai' || difficulty === 'ai2') {
           this.parentForm.patchValue({['difficulty' + i]: ''}, {emitEvent: false});
         }
+      }
+    }
+    if (this.aresSelected()) {
+      const v = this.parentForm.value;
+      if (!v.dummyHand || !v.mulligan || !v.improveWeakCorp || v.infrastructure || v.experimental) {
+        this.parentForm.patchValue({
+          dummyHand: true,
+          mulligan: true,
+          improveWeakCorp: true,
+          infrastructure: false,
+          experimental: false
+        }, {emitEvent: false});
       }
     }
     if (this.v2Selected()) {
@@ -152,9 +176,6 @@ export class NewGameComponent implements OnInit {
               break;
             case 'ai':
               computers.push('NETWORK');
-              break;
-            case 'ai2':
-              computers.push('NETWORK_V2');
               break;
             case 'ares':
               computers.push('AGENT_V2');
