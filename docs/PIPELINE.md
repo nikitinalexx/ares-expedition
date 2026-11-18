@@ -137,3 +137,25 @@ Rules now enforced by `night_loop` (they are not advice):
 
 Budget rule of thumb: a 20 000-game night needs ~27 GiB (raw) + ~9 GiB (new pack) and must keep `K x 10` GiB of replay
 packs, so it starts only with **60 GiB free on C:**; below that the guard reclaims before generating instead of after.
+
+## The loop's knobs, with the measurement behind each
+
+A night is reproducible only if the search configuration is known: the same weights moved from 19.6% to 63.9% purely by
+changing which menus the critic ranked. Every knob below is recorded in the ledger (`types`, `value_scale`,
+`generation_symmetric`, `record_afterstates`, `critic_afterstates`, `policy_replay`, `policy_adv`, `explore`).
+
+| knob | default | what it does | measured |
+|---|---|---|---|
+| `--types` | BUILD_CARD,DRAFT_CARDS | menus the critic ranks | 3 -> 19.6%, 8 -> 27.9/47.6%, 15 -> 63.9% |
+| `--fullTypes` | empty | the critic also decides act-vs-stop for these | **2.88%** when used for the hand menus (V scales differ) |
+| `--policyChoice` | empty | the policy's candidate is kept for these menus | **56.9% vs 63.9%** on the five hand menus: keep it empty |
+| `--stopMargins` | empty | per-type `TYPE:N` override of the act-despite-stop threshold | the global threshold forced every build (-4.7) |
+| `--generation-symmetric` | off | score the opponent's public view while generating | on: 63.9% at 2.83 games/s; off: 59.7% at 4.43 (measure always keeps it on) |
+| `--record-afterstates` | off | write AFTERSTATE rows (<= 8 per game) | needed for the act/stop gate; 300 games -> 19 200 rows |
+| `--critic-afterstates` | off | train the critic on those rows | the calibration experiment, not yet measured |
+| `--replay-packs` | 2 | train the critic on the newest pack plus this many older ones | the anti-narrowing replay |
+| `--policy-replay` | off | merge the replay set into one pack and train the policy on it | merge verified row by row (`test_pack_merge`) |
+| `--policy-adv` | off | weight policy rows by `outcome - V(s)` | needed before exploring a collapsed menu |
+| `--explore` | BUILD_CARD:0.15 | uniform random choices in the generator for these types | `MULLIGAN:0.4,SELL_CARDS:0.3` to reach the dead menus |
+| `--keep-packs` | 3 | packs kept on disk | never below `replay-packs + 1` (the disk guard enforces it) |
+| `-Dares.agent.search.batch` | false | one forward per critic per menu | **5x slower and not bit-equal**: pinned by `ValueBatchParityTest`, do not enable |
