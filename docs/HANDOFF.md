@@ -742,6 +742,26 @@ Not degenerate; it got better against RANDOM too, so it is not a denier of one s
 [13.6, 18.1]`** with eight. A 17x jump on an opponent that was never the one being denied, which rules out "it learned to
 spoil SMART's script". This is the number to quote for strength; SMART is now the easy half.
 
+### Iteration on the new menus: 47.6% -> 57.45% vs SMART, 15.75% -> 32.35% vs NETWORK
+
+The night loop's first attempt died on its own fixed 7200 s generation limit with 18 772 of 20 000 games written (eight
+ranked menus generate at 2.6 games/s, `docs/PIPELINE.md`). The corpus was packed as it stood and the iteration was run by
+hand (`pack_dataset -> pack_check -> 3 x train_value --target margin -> train_policy_ce`), the same commands the loop uses:
+
+| bundle | vs SMART (3000) | vs NETWORK (1000) |
+|---|---|---|
+| `policy/1117-2001_11` + `v_1117-2001_11_s1..s3` (old search config) | 20.2% [18.8, 21.7] | 0.9% |
+| same weights, eight menus | 47.6% [45.8, 49.4] | 15.75% [13.6, 18.1] |
+| `policy/1118-0058_13` + `v_1118-0058_13_s1..s3` (one iteration on 18.7k games) | **57.45% [55.7, 59.2]** | **32.35% [29.5, 35.3]** |
+
+Critic AUC on the new corpus 0.913-0.917 (was 0.895). Channels, 300 games: resource cards **20.23** against SMART's 7.03,
+forests 12.29 against 8.54, printed points 11.67 against 17.03, TR 29.2 against 33.44, total 88.2 against 81.14, builds
+33.2 against 31.9. The engine channel is now three times SMART's; printed card points are the only channel still behind.
+
+One inconsistency to resolve before quoting the scorecard: it reports a 49.67% win rate on 300 games where `--mode compare`
+reports 57.45% on 3000. The compare number is the one with the interval; re-run the scorecard on 1000 games to see whether
+the gap is a small-sample artefact or a real difference between the two harnesses.
+
 ### Why the card menus are still the next lever, and what the data says about them
 
 `ml/card_points_data.py` on 40 000 games (320 000 build decisions):
