@@ -310,8 +310,14 @@ def measure(policy, critic, games, out_dir, pack, types, phase_critic=""):
 
     score, ci = versus("SMART", games, "smart")
     random_score, random_ci = versus("RANDOM", max(500, games // 2), "random")
+    # NETWORK is the second absolute benchmark, and the acceptance rule reads the WORST of them, not the best: a candidate
+    # that wins against the hand-written SMART while losing ground against NETWORK is specialising.
+    network_score, network_ci = versus("NETWORK", max(300, games // 4), "network")
+    worst = min([value for value in (score, random_score, network_score) if value is not None], default=None)
     return {"stop_share": stop_share, "builds_per_game": builds, "phases": phases, "score": score, "ci": ci,
-            "score_random": random_score, "ci_random": random_ci, "games": games,
+            "score_random": random_score, "ci_random": random_ci,
+            "score_network": network_score, "ci_network": network_ci, "worst_benchmark": worst,
+            "games": games,
             "card_points": card_points, "opponent_card_points": opponent_card_points,
             "cards": cards_built, "opponent_cards": opponent_cards}
 
@@ -624,8 +630,8 @@ def main():
         log(f"card quality: printed {result.get('card_points')} vs {result.get('opponent_card_points')}, "
             f"cards {result.get('cards')} vs {result.get('opponent_cards')}")
         log(f"vs SMART {result['score']} {result['ci']} | vs RANDOM {result['score_random']} "
-            f"{result['ci_random']} | builds {result['builds_per_game']} | phases {mix} | "
-            f"argmax stop {result['stop_share']}")
+            f"| vs NETWORK {result['score_network']} | worst {result['worst_benchmark']} | "
+            f"builds {result['builds_per_game']} | phases {mix} | argmax stop {result['stop_share']}")
 
         prev_name = name
         policy, critic = new_policy, new_critic
