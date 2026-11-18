@@ -288,11 +288,24 @@ def main():
         card_weights = {int(card): float(value) for card, value in payload.get("cards", {}).items()}
         print(f"card weights: {len(card_weights)} cards from {args.card_weights}, alpha {args.card_weight_alpha}")
 
-    manifest = ares_data.open_pack(args.packed) if args.packed else None
+    # `--packed` may be a comma-separated list of packs: REPLAY. Training only on the newest corpus is how a self-play loop
+    # loses the styles it abandoned (owner, 2026-11-18), so the last few iterations are mixed into every epoch.
+    pack_dirs = [part.strip() for part in (args.packed or "").split(",") if part.strip()]
+    manifest = ares_data.open_pack(pack_dirs[0]) if pack_dirs else None
+    if len(pack_dirs) > 1:
+        print(f"  replay over {len(pack_dirs)} packs", flush=True)
     for decision in decisions:
-        if args.packed:
-            data = load_packed_type(args.packed, decision, manifest, args.rows_per_game,
-                                    args.max_chunks_per_type, args.seed)
+        if pack_dirs:
+            data = None
+            for one in pack_dirs:
+                piece = load_packed_type(one, decision, ares_data.open_pack(one), args.rows_per_game,
+                                         args.max_chunks_per_type, args.seed)
+                if piece is None or not len(piece["obs"]):
+                    continue
+                if data is None:
+                    data = piece
+                else:
+                    data = {key: np.concatenate([data[key], piece[key]]) for key in data}
         else:
             data = load_type(args.data, decision, args.rows_per_game, args.max_chunks_per_type, args.seed)
         if data is None or len(data["obs"]) < 100:

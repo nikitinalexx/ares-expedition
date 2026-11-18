@@ -838,3 +838,26 @@ The owner played one game against the bundle `policy/1118-0058_13` + `v_1118-005
 for besides the win rate - the earlier failure mode was a model that beat RANDOM 95% and played like a random card picker to
 a human. What he did not report: nothing degenerate in the opening, no phase hoarding, no skipped mulligan complaints. The
 mulligan is still declined by construction (the menu is a no-op in `rankOnly`), which is the next thing to make learnable.
+
+## The first retrained iteration did not improve, and the phase mix narrowed (2026-11-18)
+
+Iteration 13 of the loop (20 000 games, all fifteen menus, `BUILD_CARD:0.15`): **60.05% [57.0, 63.0] vs SMART** at 1000 games,
+RANDOM 94.5%, builds 32.9, phases **1:4% 2:39% 3:44% 4:4% 5:9%**. The 3000-game number of the previous bundle was 63.93%
+[62.2, 65.6], so the iterations overlap and the retraining did **not** move the player - while the phase mix did move: phase 1
+fell from 26% to 4% and phase 4 from 15% to 4%. That is the narrowing the owner asked about, visible in the ledger before it
+costs anything: the player found a phase-2/3 line and stopped using the rest.
+
+The coverage guard flagged `MULLIGAN` after this corpus and wanted to add `MULLIGAN:0.60` exploration. Vetoed and recorded in
+`ml/gap_allowlist.json` with the reason: exploring it is not safe until the act-vs-stop gate is calibrated (measured 2.88%
+when the critic decides), and the critic cannot see the hand anyway. The guard reads the allowlist, so the next corpus does
+not explore it.
+
+## Replay across iterations, implemented (anti-narrowing, item 1)
+
+`train_value.load_packed`, `train_policy_ce` and `night_loop` now accept a **comma-separated list of packs**: the newest one
+plus `--replay-packs` older ones of the same encoder (default 2). Rationale: training on the newest corpus alone deletes the
+data of every abandoned style, so nothing pulls the player back - the owner's NETWORK lost universality exactly this way.
+Smoke test on two packs: 3 240 825 rows mixed, 76 000 sampled, regression beats its constant (val 2.22 against 3.26), export
+artifacts written, AUC 0.865.
+
+One variable against iteration 13: same seed bundle, same exploration, same game count - only the training mixture changes.

@@ -104,3 +104,36 @@ corpus - not two of 20 000.
 
 When a corpus dies mid-generation, do not regenerate it: pack what exists (`pack_dataset.py` ignores the unfinished chunk),
 check it, and train on that. The raw corpus is the expensive artifact.
+
+## Storage: what the replay costs and what may never be deleted (owner, 18/11)
+
+Measured on 18/11 before cleanup:
+
+| disk | total | free before | after cleanup |
+|---|---|---|---|
+| C: (SSD) | 464 GB | 64 GB | **153 GB** |
+| D: (HDD) | 1863 GB | 332 GB | 332 GB |
+
+What occupies C: and what it is for:
+
+- **the replay set**: the newest `replay_packs + 1` packs, ~7-9 GiB each (three today: 19.6 GiB). This is the anti-narrowing
+  buffer - losing it silently re-opens the failure the owner described for his NETWORK, so it is budgeted, not "spare space";
+- **one raw corpus being generated**: ~27 GiB for 20 000 games. Deleted automatically once its pack is verified;
+- **the code, the JDK, the maven cache** (not ours to prune).
+
+The 18/11 cleanup freed 82.8 GiB by deleting *only* redundant data: `bd40` (an experiment corpus whose pack had already been
+pruned), the raw `1118-0058_13` (its pack exists, the pack is the dataset), the smoke corpora `bd1` and `break_smoke`, and
+the partial `1118-1233_14` left by a killed run. No pack and no model was touched.
+
+Rules now enforced by `night_loop` (they are not advice):
+
+1. **A raw corpus with a pack is redundant and goes first** (`reclaim`), newest first, so a disk guard never has to touch a
+   pack while an equivalent amount of raw data is sitting there.
+2. **A raw corpus WITHOUT a pack is never deleted automatically.** It is the only copy of that corpus, and the 17/11
+   incident (an 80 000-game corpus thrown away by a crash path) is the reason.
+3. **Packs are cut only beyond `max(keep_packs, replay_packs + 1)`.** The replay buffer can therefore never be destroyed by
+   the low-disk branch, which used to keep a single pack (`keep_packs // 2`).
+4. Every reclaim logs the gigabytes it freed and each item with its size, so the arithmetic is auditable the next morning.
+
+Budget rule of thumb: a 20 000-game night needs ~27 GiB (raw) + ~9 GiB (new pack) and must keep `K x 10` GiB of replay
+packs, so it starts only with **60 GiB free on C:**; below that the guard reclaims before generating instead of after.

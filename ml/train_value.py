@@ -576,27 +576,49 @@ def load_packed(directory, rows_per_game, rng, val_fraction, drop_columns=None, 
     sequential pass over the corpus that keeps the observation and the labels (plus a de-duplication mask computed once),
     so a training run reads ~5 GB per epoch instead of ~120 GB per epoch.
     """
-    manifest = json.load(open(os.path.join(directory, "manifest.json"), encoding="utf-8"))
-    types = [name for name in manifest["types"] if manifest["types"][name]["rows"] > 0
-             and (include_afterstates or name != "AFTERSTATE")]
-    if not types:
-        raise SystemExit(f"{directory}: the pack is empty")
-    arrays, sizes = [], []
-    for name in types:
-        arrays.append(np.memmap(os.path.join(directory, f"{name}.obs.f16"), dtype="<f2", mode="r",
-                                shape=(manifest["types"][name]["rows"], manifest["obsSize"])))
-        sizes.append(manifest["types"][name]["rows"])
+    # `directory` may be a comma-separated list of packs: REPLAY. Training only on the newest corpus is how a self-play
+    # loop loses the styles it abandoned - the data that taught them is deleted, so nothing pulls the player back
+    # (owner's objection, 2026-11-18: his NETWORK became narrower every iteration). Concatenating several packs of the same
+    # encoder mixes the styles of the last few iterations into every batch.
+    directories = [part.strip() for part in str(directory).split(",") if part.strip()]
+    if not directories:
+        raise SystemExit("no pack directory given")
+    obs_size = None
     fields = ("outcome", "margin", "seat", "context", "round", "game", "step")
+    arrays, sizes = [], []
     collected, keeps, breakdowns = {field: [] for field in fields}, [], []
-    for name in types:
-        with np.load(os.path.join(directory, f"{name}.lab.npz")) as labels:
-            for field in fields:
-                collected[field].append(labels[field])
-            keeps.append(labels["keep"])
-            if with_breakdown:
-                if "breakdown" not in labels.files:
-                    raise SystemExit(f"{directory}/{name}: no score breakdown in the pack (repack it)")
-                breakdowns.append(labels["breakdown"])
+    first_manifest = None
+    for one in directories:
+        manifest = json.load(open(os.path.join(one, "manifest.json"), encoding="utf-8"))
+        if first_manifest is None:
+            first_manifest = manifest
+        if obs_size is None:
+            obs_size = manifest["obsSize"]
+        elif manifest["obsSize"] != obs_size:
+            # a pack of another encoder cannot be concatenated with this one; say so instead of training on garbage
+            raise SystemExit(f"{one}: observation size {manifest['obsSize']} against {obs_size} - repack it")
+        types = [name for name in manifest["types"] if manifest["types"][name]["rows"] > 0
+                 and (include_afterstates or name != "AFTERSTATE")]
+        if not types:
+            print(f"  {one}: empty, skipped", flush=True)
+            continue
+        for name in types:
+            arrays.append(np.memmap(os.path.join(one, f"{name}.obs.f16"), dtype="<f2", mode="r",
+                                    shape=(manifest["types"][name]["rows"], manifest["obsSize"])))
+            sizes.append(manifest["types"][name]["rows"])
+        for name in types:
+            with np.load(os.path.join(one, f"{name}.lab.npz")) as labels:
+                for field in fields:
+                    collected[field].append(labels[field])
+                keeps.append(labels["keep"])
+                if with_breakdown:
+                    if "breakdown" not in labels.files:
+                        raise SystemExit(f"{one}/{name}: no score breakdown in the pack (repack it)")
+                    breakdowns.append(labels["breakdown"])
+    if not sizes:
+        raise SystemExit(f"{directory}: every pack is empty")
+    if len(directories) > 1:
+        print(f"  replay over {len(directories)} packs: {int(sum(sizes))} rows", flush=True)
     total = int(sum(sizes))
     label = {field: np.concatenate(values) for field, values in collected.items()}
     keep = np.concatenate(keeps)
@@ -647,8 +669,8 @@ def load_packed(directory, rows_per_game, rng, val_fraction, drop_columns=None, 
             "obs": obs, "outcome": selected["outcome"].astype(np.float32),
             "margin": selected["margin"].astype(np.float32), "game": game, "context": selected["context"],
             "round": selected["round"], "step": step, "seat": seat, "next": next_row, "score": score,
-            "validation": is_validation_game(game, val_fraction), "obsSize": manifest["obsSize"],
-            "observationHash": manifest["observationHash"], "totalRows": total}
+            "validation": is_validation_game(game, val_fraction), "obsSize": obs_size,
+            "observationHash": first_manifest["observationHash"], "totalRows": total}
 
 
 def dropped_columns(names_file, prefix):

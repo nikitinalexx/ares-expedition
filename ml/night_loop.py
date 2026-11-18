@@ -33,12 +33,46 @@ CP_FILE = os.path.join(ROOT, "target", "cp.txt")
 JAVA = r"C:\Program Files\Java\jdk-25.0.5.0.2\bin\java.exe"
 SSD_DATA = "C:/ares/data"
 PACK_ROOT = "C:/ares/pack"
+RAW_ROOT = "C:/ares/data"
 POLICY_ROOT = "D:/ares/runs/policy"
 VALUE_ROOT = "D:/ares/runs/value"
 LEDGER = "D:/ares/tmp/night_ledger.json"
 
 SEARCH = ["-Dares.agent.search=oneply", "-Dares.agent.search.symmetric=true",
           "-Dares.agent.search.types=BUILD_CARD,DRAFT_CARDS", "-Dares.agent.search.pairs=true"]
+
+
+def replay_packs(newest, keep):
+    """The newest `keep` packs of the same encoder as `newest`, newest first, as a comma list for --packed.
+
+    Training on the newest corpus alone is how a self-play loop loses the styles it abandoned: once a style stops being
+    played its data is deleted and nothing pulls the player back (owner's NETWORK, 2026-11-18). Packs of another encoder
+    are skipped instead of raising, so a stale pack left on disk cannot stop a night.
+    """
+    import glob as _glob
+    try:
+        size = json.load(open(os.path.join(newest, "manifest.json"), encoding="utf-8"))["obsSize"]
+    except (OSError, ValueError):
+        return newest
+    candidates = []
+    for path in _glob.glob(os.path.join(PACK_ROOT, "*")):
+        if not os.path.isdir(path):
+            continue
+        try:
+            manifest = json.load(open(os.path.join(path, "manifest.json"), encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if manifest.get("obsSize") != size:
+            continue
+        candidates.append((os.path.getmtime(path), path))
+    candidates.sort(reverse=True)
+    ordered = [os.path.abspath(newest)]
+    for _, path in candidates:
+        if len(ordered) >= max(1, keep):
+            break
+        if os.path.abspath(path) != os.path.abspath(newest):
+            ordered.append(os.path.abspath(path))
+    return ",".join(ordered)
 
 
 def search_args(types, critic, phase_critic=""):
@@ -155,7 +189,19 @@ def free_gb(path):
     return free.value / 2 ** 30
 
 
+def folder_gb(path):
+    total = 0
+    for root, _, files in os.walk(path):
+        for name in files:
+            try:
+                total += os.path.getsize(os.path.join(root, name))
+            except OSError:
+                pass
+    return total / 2 ** 30
+
+
 def prune(keep_packs):
+    """Delete packs beyond `keep_packs`, newest kept. Never call it below the replay set."""
     packs = sorted(glob.glob(os.path.join(PACK_ROOT, "*")), key=os.path.getmtime, reverse=True)
     removed = []
     for path in packs[keep_packs:]:
@@ -163,6 +209,42 @@ def prune(keep_packs):
             shutil.rmtree(path, ignore_errors=True)
             removed.append(os.path.basename(path))
     return removed
+
+
+def reclaim(wanted_gb, min_packs):
+    """Free space WITHOUT touching the replay set (owner, 2026-11-18).
+
+    A raw corpus whose pack exists is redundant - the pack is the dataset, and the loop deletes the raw after a verified
+    pack anyway - so it goes first, newest first. Packs are cut only beyond `min_packs` = the newest pack plus the replay
+    set, so a disk guard can never destroy the anti-narrowing buffer. Every deletion is logged with its size.
+    """
+    freed, removed = 0.0, []
+    if wanted_gb <= 0:
+        return freed, removed
+    raws = sorted(glob.glob(os.path.join(RAW_ROOT, "*")), key=os.path.getmtime, reverse=True)
+    for path in raws:
+        if not os.path.isdir(path):
+            continue
+        name = os.path.basename(path)
+        if not os.path.isdir(os.path.join(PACK_ROOT, name)):
+            continue  # no pack: the only copy of that corpus, never deleted here
+        size = folder_gb(path)
+        shutil.rmtree(path, ignore_errors=True)
+        freed += size
+        removed.append(f"raw {name} {size:.1f}G")
+        if freed >= wanted_gb:
+            return freed, removed
+    packs = sorted(glob.glob(os.path.join(PACK_ROOT, "*")), key=os.path.getmtime, reverse=True)
+    for path in packs[max(1, min_packs):]:
+        if not os.path.isdir(path):
+            continue
+        size = folder_gb(path)
+        shutil.rmtree(path, ignore_errors=True)
+        freed += size
+        removed.append(f"pack {os.path.basename(path)} {size:.1f}G")
+        if freed >= wanted_gb:
+            break
+    return freed, removed
 
 
 def measure(policy, critic, games, out_dir, pack, types, phase_critic=""):
@@ -241,6 +323,9 @@ def main():
                         help="stop when the best score has not improved for this many iterations, whatever the lever list "
                              "says: a night that grinds the same win rate is worse than a short honest one")
     parser.add_argument("--keep-packs", type=int, default=3)
+    parser.add_argument("--replay-packs", type=int, default=2,
+                        help="train on the newest pack plus this many older ones of the same encoder (the anti-narrowing "
+                             "replay). 1 = newest only, which is the old behaviour.")
     parser.add_argument("--stop-share-floor", type=float, default=0.18)
     parser.add_argument("--coverage-baseline", default="",
                         help="coverage json to compare the first iteration against (ml/action_coverage.py --out)")
@@ -359,9 +444,12 @@ def main():
         os.makedirs(out_dir, exist_ok=True)
         log(f"=== iteration {index}: {games} games, explore '{args.explore}'")
 
-        if free_gb("C:/") < 45:
-            removed = prune(max(1, args.keep_packs // 2))
-            log(f"disk low on C: ({free_gb('C:/'):.0f} GB) - pruned packs {removed}")
+        min_packs = max(1, args.replay_packs + 1)
+        if free_gb("C:/") < 60:
+            before = free_gb("C:/")
+            freed, removed = reclaim(60 - before, min_packs)
+            log(f"disk low on C: ({before:.0f} GB free) - reclaimed {freed:.1f} GB "
+                f"(the replay keeps {min_packs} packs): {removed}")
         if os.path.isdir(raw):
             shutil.rmtree(raw, ignore_errors=True)
 
@@ -438,11 +526,15 @@ def main():
 
         new_critics = [f"{VALUE_ROOT}/v_{name}_s{k}" for k in range(1, args.critics + 1)]
         critic_ok = True
+        training_data = replay_packs(pack, args.replay_packs)
+        if training_data != pack:
+            log(f"replay: training on {len(training_data.split(','))} packs")
         for k, new_critic in enumerate(new_critics, start=1):
-            code = run([sys.executable, os.path.join(HERE, "train_value.py"), "--packed", pack, "--out", new_critic,
+            code = run([sys.executable, os.path.join(HERE, "train_value.py"), "--packed", training_data,
+                        "--out", new_critic,
                         "--target", "margin", "--epochs", str(args.epochs_critic), "--hidden", "512,256",
                         "--names", args.names, "--drop-prefix", "cards:in_my_hand_", "--seed", str(k),
-                    "--scale", args.value_scale, "--clip", str(args.value_clip)],
+                        "--scale", args.value_scale, "--clip", str(args.value_clip)],
                        os.path.join(out_dir, f"critic{k}.log"))
             ok = code == 0 and os.path.exists(os.path.join(new_critic, "weights.bin"))
             critic_ok = critic_ok and ok
@@ -451,7 +543,7 @@ def main():
         new_critic = ",".join(new_critics) if critic_ok else ""
 
         new_policy = f"{POLICY_ROOT}/{name}"
-        policy_args = [sys.executable, os.path.join(HERE, "train_policy_ce.py"), "--packed", pack, "--out", new_policy,
+        policy_args = [sys.executable, os.path.join(HERE, "train_policy_ce.py"), "--packed", training_data, "--out", new_policy,
                        "--epochs", str(args.epochs_policy), "--entropy", str(args.entropy),
                        "--adv-weight-clip", args.adv_weight_clip]
         if args.policy_adv and new_critics:
@@ -535,7 +627,7 @@ def main():
             ledger[-1]["ladder"] = reason
             flat = 0
 
-        removed = prune(args.keep_packs)
+        removed = prune(max(args.keep_packs, args.replay_packs + 1))
         if removed:
             log(f"pruned packs {removed}; free on C: {free_gb('C:/'):.0f} GB, D: {free_gb('D:/'):.0f} GB")
 
