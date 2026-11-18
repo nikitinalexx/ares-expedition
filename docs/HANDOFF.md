@@ -951,9 +951,9 @@ An iteration is **~3.1 h generation and ~15 min for everything else** (packing, 
 Inside one decision (~10 ms): observation build 236 us x 7.6 candidates = 1.8 ms, three critics 139 us x 3 x 7.6 = 3.2 ms,
 copy+apply ~600 us x 7.6 = 4.6 ms. So the levers, in the order they are measured:
 
-1. **A/B, no new code**: `-Dares.agent.search.batch=true` (one forward per critic over the whole menu instead of one per
-   candidate; `batchLogits` also skips feature columns that are zero across the menu). Measure games/s **and** the win rate:
-   the decisions must not move, and if they do, the batched path diverges from the single path - stop signal.
+1. ~~A/B with `-Dares.agent.search.batch=true`~~ - **measured and rejected (18/11)**: 5x slower (49.1 against 9.4 us/row)
+   and not bit-equal to the single-row path (a different float association order). `ValueBatchParityTest` pins both, so it
+   cannot be re-enabled as an "optimisation". See `docs/RESULTS.md`.
 2. **Batched inference service (branch `batcher-experiments`)**: adapted from the owner's `PolicyNNService` on `policy_ai`
    - a queue, one batcher thread, up to BATCH_ROWS rows per forward, 50 ms backfill, reusable flat arrays, futures, one
      ND4J/CUDA forward per critic per batch. The plugin point is `OnePlySearch.scoreBatch` (a `ValueScorer` interface), so

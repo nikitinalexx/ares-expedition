@@ -901,3 +901,29 @@ What this does **not** yet test: replay on the *policy* side, which is the side 
 trains on the newest corpus alone because a policy merge needs a merged pack (`ml/pack_merge.py`, refused rather than
 guessed after the misalignment above). Until that exists, the anti-narrowing hypothesis is only half-tested, and the honest
 statement is "critic replay alone does not move SMART play".
+
+## `batch=true` is both slower and not equivalent (2026-11-18, measured)
+
+`ValueBatchParityTest` (3 tests) compares `MlpValueModel.batchLogits` with the per-row `logit` on real observations plus
+sparse/dense edge cases, with a zero tolerance (`Float.compare == 0`):
+
+```
+single  9.4 us/row
+batched 49.1 us/row   (5x SLOWER)
+one-row batch differs from logit: 1024637515 != 1024438334
+```
+
+Two conclusions, both now pinned by a test:
+
+1. **Not equivalent, by construction.** `batchLogits` accumulates feature by feature (`aBase` + per-row deltas, skipping
+   columns that are zero across the menu) while `logit` accumulates per row. Same mathematics, different float association
+   order, so the low bits differ - and a ranker decides on differences that can be that small.
+2. **Not an optimisation on CPU.** The feature-major loop does more work than a plain matvec per row.
+
+So `-Dares.agent.search.batch=true` is rejected: it changes decisions and makes the games slower. It stays in the code only
+as a reference, guarded by the parity test so nobody re-enables it believing it is free.
+
+What this means for the "zero tolerance" rule: bit equality is achievable **inside one implementation** (the incremental
+observation must reproduce the from-scratch build exactly), and against a float64 reference; it is not achievable between
+two *different* implementations. A GPU path therefore needs its own reference check plus a measured count of how many real
+menu decisions flip against the pure-Java path.
