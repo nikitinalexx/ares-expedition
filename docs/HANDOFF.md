@@ -761,6 +761,24 @@ forests 12.29 against 8.54, printed points 11.67 against 17.03, TR 29.2 against 
 Resolved: the scorecard's 49.67% was a 300-game artefact. At 1000 games it reads **55.9%** and a score of 91.11 against
 79.40, which agrees with the compare interval. Use 1000 games as the scorecard's minimum, not 300.
 
+### The bundle to use, and the exact flags
+
+```
+policy:  D:/ares/runs/policy/1118-0058_13
+critics: D:/ares/runs/value/v_1118-0058_13_s1,D:/ares/runs/value/v_1118-0058_13_s2,D:/ares/runs/value/v_1118-0058_13_s3
+
+-Dares.agent.search=oneply
+-Dares.agent.search.symmetric=true
+-Dares.agent.search.pairs=true
+-Dares.agent.search.types=BUILD_CARD,DRAFT_CARDS,PICK_PHASE,STANDARD_ACTION,PERFORM_BLUE_ACTION,DISCARD_CARDS,SELL_CARDS,SELL_CARDS_LAST_ROUND
+-Dares.agent.valueModel=<the three critics>
+-Dares.agent.valueModel.phase=D:/ares/runs/value/v_1118-0058_13_s1
+```
+
+The previous bundle (`policy/1117-2001_11` + `v_1117-2001_11_s1..s3`) is kept and still scores 47.6% with the same flags, so
+a regression there is a one-line rollback. Do not quote a scorecard run under 1000 games: at 300 games it read 49.67%
+where 1000 games read 55.9% and 3000 games read 57.45%.
+
 ### Why the card menus are still the next lever, and what the data says about them
 
 `ml/card_points_data.py` on 40 000 games (320 000 build decisions):
