@@ -62,13 +62,18 @@ class SpeedBreakdownTest extends EngineTestBase {
             }
         }
 
-        long copyNanos = 0, obsNanos = 0, criticNanos = 0;
+        long copyNanos = 0, obsNanos = 0, publicNanos = 0, criticNanos = 0;
         for (int i = 0; i < rounds; i++) {
             long t0 = System.nanoTime();
             MarsGame copy = new MarsGame(game);
             long t1 = System.nanoTime();
             float[] obs = observationBuilder.build(copy, copy.getPlayerByUuid(player.getUuid()));
             long t2 = System.nanoTime();
+            // with --search.symmetric every candidate also builds the OPPONENT's public view; this is that second build
+            Player opponent = copy.getPlayerUuidToPlayer().values().stream()
+                    .filter(p -> !p.getUuid().equals(player.getUuid())).findFirst().orElseThrow();
+            float[] other = observationBuilder.buildPublic(copy, opponent);
+            long t2b = System.nanoTime();
             float sum = 0f;
             for (MlpValueModel critic : critics) {
                 sum += critic.logit(obs);
@@ -79,15 +84,17 @@ class SpeedBreakdownTest extends EngineTestBase {
             }
             copyNanos += t1 - t0;
             obsNanos += t2 - t1;
-            criticNanos += t3 - t2;
+            publicNanos += t2b - t2;
+            criticNanos += t3 - t2b;
         }
 
-        double copy = copyNanos / 1e3 / rounds, obs = obsNanos / 1e3 / rounds, critic = criticNanos / 1e3 / rounds;
-        System.out.printf("per candidate: copy %.1f us, observation %.1f us, three critics %.1f us, total %.1f us "
-                        + "(copy %.0f%%, observation %.0f%%, critics %.0f%%)%n",
-                copy, obs, critic, copy + obs + critic,
-                100 * copy / (copy + obs + critic), 100 * obs / (copy + obs + critic),
-                100 * critic / (copy + obs + critic));
+        double copy = copyNanos / 1e3 / rounds, obs = obsNanos / 1e3 / rounds;
+        double pub = publicNanos / 1e3 / rounds, critic = criticNanos / 1e3 / rounds;
+        double total = copy + obs + pub + critic;
+        System.out.printf("per candidate: copy %.1f us, observation %.1f us, opponent public view %.1f us, "
+                        + "three critics %.1f us, total %.1f us (copy %.0f%%, obs %.0f%%, public %.0f%%, critics %.0f%%)%n",
+                copy, obs, pub, critic, total,
+                100 * copy / total, 100 * obs / total, 100 * pub / total, 100 * critic / total);
         assertTrue(copy > 0 && obs > 0 && critic > 0, "every path must have been measured");
     }
 

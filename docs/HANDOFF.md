@@ -966,6 +966,10 @@ the observation second, the copy irrelevant. The levers, in the order they are m
    j-unrolled ones are not bit-identical. `MlpValueModel.logit` already skips zero features, pre-accumulates the zero
    baseline and keeps the inner loop contiguous. CPU-side neural work is exhausted; do not retry.
 
+1c. **Paired observation build** - the largest lever now measured: 62% of a candidate is one observation built twice
+   (mine + the opponent's public view, `symmetric=true`). `buildPair(game, me, opponent)` builds both in one pass, sharing
+   the seat-independent blocks, gated bit-exactly against the two separate builds. Do this before the GPU work.
+
 2. **Batched inference service (branch `batcher-experiments`)**: adapted from the owner's `PolicyNNService` on `policy_ai`
    - a queue, one batcher thread, up to BATCH_ROWS rows per forward, 50 ms backfill, reusable flat arrays, futures, one
      ND4J/CUDA forward per critic per batch. The plugin point is `OnePlySearch.scoreBatch` (a `ValueScorer` interface), so

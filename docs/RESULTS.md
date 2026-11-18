@@ -949,3 +949,29 @@ dead ReLU units in the second layer. That is the memory-optimal order; changing 
 Consequence for the speed work: **the neural term cannot be improved on CPU**. The two remaining levers are a batched
 GPU/ND4J service (the owner's queue design) or a smaller network - and the latter is a quality decision that must be
 measured, not assumed. The observation (44% of the per-candidate cost) remains a real CPU lever.
+
+## The real per-candidate split with `symmetric=true` (2026-11-18, measured)
+
+```
+copy the game                 10.1 us   4%
+my observation                86.3 us  31%
+opponent's public view        86.3 us  31%
+three critics                 98.5 us  35%
+total                        281.3 us
+```
+
+The observation is built **twice per candidate** (my view and the opponent's public view, which is what
+`-Dares.agent.search.symmetric=true` compares), so **62% of the per-candidate cost is one observation built twice**, and the
+critic is only 35%. My earlier estimate ("neural is the largest term") was measured without the symmetric second build and
+is therefore wrong for the configuration we actually run.
+
+That makes the next speed step cheap and safe: a **paired build** (`buildPair(game, me, opponent)`) that produces both
+views in one pass, sharing the blocks that do not depend on the seat (planet, score, round, context, dummy pool) and
+building only the seat-specific ones twice. It is gated by the same bit-exact differential test as the incremental work:
+for real decisions of all 15 types, the paired result must equal the two independent builds, bit for bit. If a block turns
+out to depend on the seat in a way the sharing does not capture, the test says so instead of the player getting silently
+different inputs.
+
+Second candidate after that: with `symmetric=true` the opponent's public view is unchanged by actions that only touch
+private state (mulligan, sale, discard, draft) *if* money and points are not in the public block - to be read from
+`buildPublic` and measured, not assumed.
