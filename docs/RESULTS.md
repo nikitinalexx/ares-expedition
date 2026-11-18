@@ -1061,3 +1061,38 @@ with `symmetric=true` so the generator itself is not weakened.
 The lesson recorded for the levers: **exploration is not a safety dial, it is a teaching signal.** A 30% uniform sale teaches
 "always sell"; a useful exploration of that menu has to be far more conservative (or the menu learned from outcomes instead of
 imitation).
+
+## The mulligan cannot be decided by the critic, in either formulation (2026-11-18, measured)
+
+The owner's model is "discard the junk": the number follows the hand (sometimes many junk cards, sometimes few), and the
+average is about half. Three measurements pin what happens instead.
+
+**1. A fixed number is not the answer.** Champion bundle, `-Dares.agent.mulligan.cards=N` (the critic still picks which cards),
+1000 games against SMART:
+
+| forced discards | vs SMART |
+|---|---|
+| 0 (the champion as it plays) | 63.93% [62.2, 65.6] |
+| 2 | 63.75% [60.7, 66.7] |
+| 5 | **60.25% [57.2, 63.2]** |
+
+Two is neutral, five costs 3.7 points: discarding a fixed number throws away good cards exactly as the owner said.
+
+**2. The critic with the replacement draw discards almost everything.** `junkGate=MULLIGAN` with the engine's afterstate ("this
+card replaced by a random draw") gave 91.8% of gated decisions "free", mean **6.58** discards of 10, and the discard counts
+clustered at 6-8. A random card usually beats the worst card in the hand, so every removal looks like an improvement.
+
+**3. The critic without the draw also discards almost everything.** The deterministic afterstate ("the hand without this card")
+removed the draw bias, and the gate still fired in 91.6% of decisions with a *positive* mean gap (+348 milli-logit): mean
+**9.10** discards. Reason: in our corpora a large unbuilt hand correlates with losing (no money to build), so V prefers a
+smaller hand - and a mulligan does not shrink the hand, it replaces cards.
+
+So V has no usable "this card is junk" signal: the card's own worth is not something a position value can express when the
+hand identity block is masked and the replacement keeps the hand size. **The mulligan has to be learned by the policy**, which
+does see the card identities, from explored games weighted by their outcomes - not from the critic and not from a fixed count.
+
+A structural finding from this thread: `OnePlySearch` has **two** afterstate dispatchers (`applyOn`, used by the batch path,
+and a separate block inside `score()`, used by the normal path). The mulligan was added to the first only, so on the normal
+path every mulligan candidate scored as "no opinion" and the agent answered stop in 100% of rows - the very collapse it was
+supposed to fix. Both dispatchers now carry every type; a test that enumerates `DecisionType` and asserts both handle the same
+set is the obvious next guard.

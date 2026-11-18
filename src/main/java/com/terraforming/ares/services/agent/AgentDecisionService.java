@@ -244,7 +244,29 @@ public class AgentDecisionService {
      * separate recorded decisions, so the learned value of "discard this" does not depend on an arbitrary order being
      * the only way to name a set.
      */
+    /**
+     * {@code -Dares.agent.mulligan.cards=N}: force exactly N discards, chosen by the same ranking as always, then stop.
+     * <p>
+     * A measurement instrument, not a rule of the player: the owner's question (18/11) is whether an aggressive mulligan -
+     * "discarding more than half the opening hand can be right" - pays, and exploration cannot answer it because with a high
+     * exploration rate the recorded *choice* is a random card. Forcing the count keeps the card choice with the critic and
+     * varies only the number, so N=0/2/5 answers the question the owner asked. 0 (the default) keeps the learned behaviour.
+     */
+    private static final int MULLIGAN_CARDS = Integer.parseInt(System.getProperty("ares.agent.mulligan.cards", "0"));
+
     public List<Integer> mulligan(MarsGame game, Player player) {
+        if (MULLIGAN_CARDS > 0) {
+            List<Integer> forced = new ArrayList<>();
+            for (int step = 0; step < MULLIGAN_CARDS; step++) {
+                Decision decision = mulliganDecisions.build(game, player, forced);
+                int id = decision.candidates().get(choose(game, player, decision)).id();
+                if (id == MulliganDecisions.STOP) {
+                    break;
+                }
+                forced.add(id);
+            }
+            return forced;
+        }
         List<Integer> discard = new ArrayList<>();
         while (true) {
             Decision decision = mulliganDecisions.build(game, player, discard);

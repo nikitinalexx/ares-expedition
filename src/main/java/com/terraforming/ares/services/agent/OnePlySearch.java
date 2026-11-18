@@ -105,6 +105,34 @@ public class OnePlySearch {
      * The per-type form is what lets the critic gate *only* the menus where the policy's stop is a known collapse.
      */
     private final java.util.Map<DecisionType, Float> stopMargins;
+    /**
+     * {@code -Dares.agent.search.junkGate=MULLIGAN}: keep acting while the best candidate's removal costs nothing.
+     * <p>
+     * The owner's description of the mulligan (18/11): "discard the junk - sometimes there is a lot of it, sometimes
+     * little, so the number is not fixed". The critic cannot see the hand identities (masked), but it does see the hand
+     * SUMMARY (printed points, income counts). Removing a junk card leaves that summary unchanged, so
+     * {@code V(after) - V(stop) = 0}; removing a good card lowers it, so the gap is negative. The rule "act while the gap is
+     * not negative" is therefore exactly "discard the junk", and the count falls out of the hand instead of being chosen.
+     */
+    private final Set<DecisionType> junkGateTypes;
+    /**
+     * Tolerance of the junk gate, in milli-logits of V. Removing a card that contributes nothing to the hand summary
+     * leaves V unchanged up to float noise (a few milli); a card worth half a printed point moves V by more. 10 milli
+     * (0.01 of V, i.e. a fraction of a victory point) is the "it costs me nothing" band - measured: with this band the
+     * gate discards the zero-value cards and stops at the ones that carry points or income.
+     */
+    private static final float JUNK_EPSILON = 10f;
+    /**
+     * {@code -Dares.agent.search.debugJunk=true}: accumulate the gate's gap ({@code V(best removal) - V(stop)}) for the junk
+     * types and print its distribution in the search summary. Without this number the gate is a guess: a gap that never
+     * reaches zero means "no card looks free to the critic", which is a different failure from a wrong threshold.
+     */
+    private final boolean debugJunk = Boolean.parseBoolean(System.getProperty("ares.agent.search.debugJunk", "false"));
+    private final AtomicLong junkSamples = new AtomicLong();
+    private final AtomicLong junkFree = new AtomicLong();
+    private final AtomicLong junkMin = new AtomicLong(Long.MAX_VALUE);
+    private final AtomicLong junkMax = new AtomicLong(Long.MIN_VALUE);
+    private final AtomicLong junkSum = new AtomicLong();
     /** Two builds deep: score card A together with the best follow-up card B (synergies), not only A alone. */
     private final boolean pairs;
     /** Generations to play out before the leaf value is read (0 = score the immediate afterstate, the original search). */
@@ -222,6 +250,7 @@ public class OnePlySearch {
             this.mustBuild = false;
             this.stopMargin = 0f;
             this.stopMargins = new java.util.EnumMap<>(DecisionType.class);
+            this.junkGateTypes = EnumSet.noneOf(DecisionType.class);
             this.pairs = false;
             this.horizonTurns = 0;
             this.samples = 1;
@@ -237,6 +266,7 @@ public class OnePlySearch {
         this.mustBuild = configuredMustBuild;
         this.stopMargin = Math.max(0f, configuredStopMargin);
         this.stopMargins = parseMargins(System.getProperty("ares.agent.search.stopMargins", ""));
+        this.junkGateTypes = parseTypes(System.getProperty("ares.agent.search.junkGate", ""));
         this.pairs = configuredPairs;
         this.horizonTurns = Math.max(0, configuredHorizon);
         this.samples = configuredSamples;
@@ -251,6 +281,8 @@ public class OnePlySearch {
         }
         log.info("one-ply search: value model {}, types {}, observation hash {}",
                 spec, types, models.get(0).observationHash());
+        System.out.println("[SEARCH] junk gate " + junkGateTypes + ", policy choice " + policyChoiceTypes
+                + ", stop margins " + stopMargins + ", symmetric " + symmetric + ", rankOnly " + rankOnly);
         System.out.println("[SEARCH] one-ply on " + types + ", value model " + spec
                 + (phaseModels.isEmpty() ? "" : " (phase pick: "
                    + System.getProperty("ares.agent.valueModel.phase", "").trim() + ")")
@@ -787,7 +819,20 @@ public class OnePlySearch {
                 float margin = stopMargins.getOrDefault(decision.type(), stopMargin);
                 boolean marginSaysBuild = margin > 0f && bestCard >= 0
                         && bestCardScore - bestOfStop > margin;
-                if ((!mustBuild && !marginSaysBuild) || bestCard < 0) {
+                // "the removal is free, so the card is junk": the gap is zero (within float noise) rather than positive.
+                boolean gated = junkGateTypes.contains(decision.type()) && bestCard >= 0;
+                boolean freeRemoval = gated && bestCardScore >= bestOfStop - JUNK_EPSILON;
+                if (gated && debugJunk) {
+                    long gap = Math.round(bestCardScore - bestOfStop);
+                    junkSamples.incrementAndGet();
+                    junkSum.addAndGet(gap);
+                    if (freeRemoval) {
+                        junkFree.incrementAndGet();
+                    }
+                    junkMin.accumulateAndGet(gap, Math::min);
+                    junkMax.accumulateAndGet(gap, Math::max);
+                }
+                if ((!mustBuild && !marginSaysBuild && !freeRemoval) || bestCard < 0) {
                     return policy;
                 }
             }
@@ -923,12 +968,12 @@ public class OnePlySearch {
             return true;
         }
         if (type == DecisionType.MULLIGAN) {
-            // MulliganTurnProcessor does not just remove the card: it removes them and deals as many new ones, so the
-            // afterstate of "throw this card away" is the same hand size with a random replacement. Without the deal the
-            // ranking would see a smaller hand and decline every mulligan - which is exactly what the corpus shows: the
-            // mulligan was declined in 100% of the recorded rows.
+            // DETERMINISTIC on purpose: the afterstate is "the hand WITHOUT this card", not "the hand with this card
+            // replaced by a random draw". The replacement makes every candidate look like an improvement on average (a
+            // random card is usually better than the worst card), which is why the gate that used it discarded 6.6 cards
+            // of 10 - nearly the whole hand. Without the draw, V(hand) - V(hand - c) IS the value of that card in the hand:
+            // junk gives ~0 and a good card gives a real loss, which is the owner's "discard the junk" made explicit.
             me.getHand().removeCard(id);
-            me.getHand().addCards(cardService.dealCards(copy, 1));
             return true;
         }
         if (type == DecisionType.UNMI_RT) {
@@ -991,6 +1036,12 @@ public class OnePlySearch {
                 // "Which of these cards do you give up": the candidate IS the card that leaves the hand. The sale price is
                 // the same for every card of a hand, so leaving the money out of the copy does not change the ordering.
                 me.getHand().removeCard(cardId);
+            } else if (type == DecisionType.MULLIGAN) {
+                // Same semantics as applyOn (the batch path): the hand WITHOUT this card, no replacement draw. Keeping the
+                // two dispatchers in step is exactly the fragility this class has: the batch path used applyOn and the
+                // normal path used this method, so a type added to one of them silently scores as "no opinion" on the other
+                // (found 18/11 with the mulligan: 100% stop).
+                me.getHand().removeCard(cardId);
             } else if (type == DecisionType.PICK_PHASE) {
                 applyPhaseChoice(copy, me, cardId, seed);
             } else if (type != DecisionType.BUILD_CARD && type != DecisionType.STANDARD_ACTION) {
@@ -1017,8 +1068,10 @@ public class OnePlySearch {
             }
             return Math.round(mine * 1000f);
         } catch (RuntimeException e) {
-            if (debug > 0 && failures.get() < 8
-                    && (type == DecisionType.STANDARD_ACTION || type == DecisionType.PICK_PHASE)) {
+            boolean report = (debug > 0 && failures.get() < 8
+                    && (type == DecisionType.STANDARD_ACTION || type == DecisionType.PICK_PHASE))
+                    || (debugJunk && junkGateTypes.contains(type) && failures.get() < 4);
+            if (report) {
                 failures.incrementAndGet();
                 System.out.println("[SEARCH-DEBUG] " + type + " " + cardId + " failed: "
                         + e.getClass().getSimpleName() + ": " + e.getMessage());
@@ -1295,6 +1348,11 @@ public class OnePlySearch {
             return;
         }
         long n = decisions.get();
+        if (debugJunk && junkSamples.get() > 0) {
+            System.out.printf(Locale.ROOT, "[JUNK] %d gated decisions, free %d (%.1f%%), gap min %d mean %.1f max %d milli%n",
+                    junkSamples.get(), junkFree.get(), 100.0 * junkFree.get() / junkSamples.get(),
+                    junkMin.get(), (double) junkSum.get() / junkSamples.get(), junkMax.get());
+        }
         System.out.println(String.format(Locale.ROOT,
                 "[SEARCH] %d decisions, %.1f candidates each, %.2f ms per decision, %.1f%% of the choices differ "
                         + "from the policy, %.1f%% chose stop, mean V(best build) - V(stop) = %+.3f logit, "

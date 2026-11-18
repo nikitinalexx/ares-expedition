@@ -32,6 +32,9 @@ def behaviour(pack, decision, stop_id=0xFFFF):
         entry[0] += 1
         entry[1] += 0 if value else 1
     discarded = np.array([v[1] for v in per_game.values()], dtype=np.float64)
+    # The whole point of a "discard the junk" rule is that the COUNT follows the hand: a fixed number would show up as one
+    # spike in this distribution, while a hand-dependent rule spreads over several values.
+    histogram = {int(k): int(v) for k, v in zip(*np.unique(discarded, return_counts=True))}
     return {
         "rows": len(chosen),
         "games": len(per_game),
@@ -39,6 +42,7 @@ def behaviour(pack, decision, stop_id=0xFFFF):
         "games_with_a_discard": float((discarded > 0).mean()),
         "mean_discards_per_game": float(discarded.mean()),
         "max_discards_in_a_game": int(discarded.max()) if len(discarded) else 0,
+        "by_count": histogram,
     }
 
 
@@ -59,6 +63,9 @@ def main():
               f"stop {100 * found['stop_share']:5.1f}% "
               f"games that discarded {100 * found['games_with_a_discard']:5.1f}% "
               f"mean {found['mean_discards_per_game']:.2f} max {found['max_discards_in_a_game']}")
+        spread = " ".join(f"{count}:{100 * games / found['games']:.0f}%"
+                          for count, games in sorted(found["by_count"].items()))
+        print(f"  {'':22s} per game: {spread}")
 
 
 if __name__ == "__main__":
