@@ -80,6 +80,7 @@ public class OnePlySearch {
     /** The nets of the decision currently being scored; empty = the ordinary {@link #models} (see {@link #nets()}). */
     private final ThreadLocal<List<MlpValueModel>> currentNets = new ThreadLocal<>();
     private final Set<DecisionType> types;
+    private final Set<DecisionType> policyChoiceTypes;
     /** Decision types where the search also decides "act or stop" (full comparison), not only the order of the menu. */
     private final Set<DecisionType> fullTypes;
     private final boolean rankOnly;
@@ -96,6 +97,14 @@ public class OnePlySearch {
      * and the value of a build is judged by the critic, not by a hand-written opinion about cards. 0 = off.
      */
     private final float stopMargin;
+    /**
+     * Per-type override of {@link #stopMargin}: {@code -Dares.agent.search.stopMargins=MULLIGAN:300,SELL_CARDS:300}.
+     * <p>
+     * The global value cannot be used for every menu: a build's afterstate beats the stop by ~1300 units (measured), so a
+     * threshold that makes sense for a mulligan would make the player build every offered card, which measured -4.7 points.
+     * The per-type form is what lets the critic gate *only* the menus where the policy's stop is a known collapse.
+     */
+    private final java.util.Map<DecisionType, Float> stopMargins;
     /** Two builds deep: score card A together with the best follow-up card B (synergies), not only A alone. */
     private final boolean pairs;
     /** Generations to play out before the leaf value is read (0 = score the immediate afterstate, the original search). */
@@ -177,6 +186,11 @@ public class OnePlySearch {
         // cheaper than making one net better and has no shared point of failure.
         String spec = System.getProperty("ares.agent.valueModel", "").trim();
         this.types = parseTypes(System.getProperty("ares.agent.search.types", "BUILD_CARD"));
+        // Menus where the POLICY picks the candidate and the critic only decides "act or not" (with stopMargin). The hands
+        // are the case that needs it: the critic's hand-identity block is masked, so it cannot tell which card is junk,
+        // while the policy can see the cards. Letting the critic choose *and* gate measured 2.88% against SMART; the split
+        // is the design that matches each model to the information it actually has.
+        this.policyChoiceTypes = parseTypes(System.getProperty("ares.agent.search.policyChoice", ""));
         this.fullTypes = parseTypes(System.getProperty("ares.agent.search.fullTypes", ""));
         int configuredDebug = Integer.parseInt(System.getProperty("ares.agent.search.debug", "0"));
         boolean configuredRank = Boolean.parseBoolean(System.getProperty("ares.agent.search.rank", "true"));
@@ -202,6 +216,7 @@ public class OnePlySearch {
             this.symmetric = false;
             this.mustBuild = false;
             this.stopMargin = 0f;
+            this.stopMargins = new java.util.EnumMap<>(DecisionType.class);
             this.pairs = false;
             this.horizonTurns = 0;
             this.samples = 1;
@@ -216,6 +231,7 @@ public class OnePlySearch {
         this.symmetric = configuredSymmetric;
         this.mustBuild = configuredMustBuild;
         this.stopMargin = Math.max(0f, configuredStopMargin);
+        this.stopMargins = parseMargins(System.getProperty("ares.agent.search.stopMargins", ""));
         this.pairs = configuredPairs;
         this.horizonTurns = Math.max(0, configuredHorizon);
         this.samples = configuredSamples;
@@ -295,6 +311,24 @@ public class OnePlySearch {
             }
         }
         return List.copyOf(loaded);
+    }
+
+    private static java.util.Map<DecisionType, Float> parseMargins(String spec) {
+        java.util.Map<DecisionType, Float> result = new java.util.EnumMap<>(DecisionType.class);
+        if (spec == null || spec.isBlank()) {
+            return result;
+        }
+        for (String part : spec.split(",")) {
+            if (part.isBlank()) {
+                continue;
+            }
+            String[] pieces = part.split(":");
+            if (pieces.length != 2) {
+                throw new IllegalArgumentException("stopMargins entry must look like TYPE:N, got '" + part + "'");
+            }
+            result.put(DecisionType.valueOf(pieces[0].trim()), Float.parseFloat(pieces[1].trim()));
+        }
+        return result;
     }
 
     private static Set<DecisionType> parseTypes(String spec) {
@@ -745,8 +779,9 @@ public class OnePlySearch {
                 // mustBuild: the diagnosis is that the policy HOARDS (it collects income and then declines ~40% of the
                 // build opportunities), while the opponent that beats it converts every credit into cards. With this flag
                 // the ranking decides even when the policy wants to stop: build the best card if one is available.
-                boolean marginSaysBuild = stopMargin > 0f && bestCard >= 0
-                        && bestCardScore - bestOfStop > stopMargin;
+                float margin = stopMargins.getOrDefault(decision.type(), stopMargin);
+                boolean marginSaysBuild = margin > 0f && bestCard >= 0
+                        && bestCardScore - bestOfStop > margin;
                 if ((!mustBuild && !marginSaysBuild) || bestCard < 0) {
                     return policy;
                 }
@@ -754,7 +789,10 @@ public class OnePlySearch {
             if (bestCard < 0) {
                 return policy;
             }
-            best = bestCard;
+            // The critic re-orders the menu, but for the hand menus the *policy's* candidate is kept: it is the only one of
+            // the two that can see which card is which. The critic still had its say above - it decided that acting is
+            // worth it at all.
+            best = policyChoiceTypes.contains(decision.type()) ? policy : bestCard;
         }
         decisions.incrementAndGet();
         candidates.addAndGet(scored);

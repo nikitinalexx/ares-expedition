@@ -98,7 +98,7 @@ def classpath():
 
 
 def play(out, games, policy, critic, threads, explore, matchups, types, phase_critic="", timeout=0,
-         generation_symmetric=False):
+         generation_symmetric=False, afterstates=False):
     """Generates one corpus. The wall-clock limit scales with the games: the fixed 7200 s was measured on three ranked
     menus, and eight menus (standard projects, blue actions, the sell menus) generate at 2.6 games/s instead of ~5, so a
     20 000-game corpus needs ~2 h 10 m - the night of 18/11 lost two hours to exactly that timeout, with the corpus at
@@ -106,6 +106,11 @@ def play(out, games, policy, critic, threads, explore, matchups, types, phase_cr
     timeout = max(timeout, int(games * 5) + 600)
     os.makedirs(out, exist_ok=True)
     args = [JAVA, "-Xmx10g"] + search_args(types, critic, phase_critic, symmetric=generation_symmetric)
+    if afterstates:
+        # The state one action AFTER a decision is what a critic needs to answer "act or stop": without it,
+        # V(state) and V(after the action) are on different scales and the comparison is meaningless (measured 2.88% on
+        # fullTypes). The per-type row cap keeps this to at most 8 afterstate rows per game.
+        args.append("-Dares.agent.afterstates=true")
     if explore:
         args.append(f"-Dares.agent.explore={explore}")
     args += ["-cp", classpath(), "com.terraforming.ares.selfplay.SelfPlayMain", "--mode", "play",
@@ -326,6 +331,12 @@ def main():
                         help="stop when the best score has not improved for this many iterations, whatever the lever list "
                              "says: a night that grinds the same win rate is worse than a short honest one")
     parser.add_argument("--keep-packs", type=int, default=3)
+    parser.add_argument("--record-afterstates", action="store_true",
+                        help="record the state one action after each decision (AFTERSTATE rows). Required before a critic "
+                             "can be trusted with the act-vs-stop gate: without those rows V(state) and V(after the "
+                             "action) live on different scales. The row cap keeps it to <= 8 extra rows per game.")
+    parser.add_argument("--critic-afterstates", action="store_true",
+                        help="train the critic on AFTERSTATE rows as well (train_value --include-afterstates).")
     parser.add_argument("--generation-symmetric", action="store_true",
                         help="score the opponent's public view while GENERATING too. Measured 18/11: with it the player is "
                              "63.9%% vs SMART at 2.83 games/s, without it 59.7%% at 4.43 games/s (+56%% corpus per night). "
@@ -463,7 +474,8 @@ def main():
         phase_critic = (critic.split(",")[0] if isinstance(critic, str) else critic[0]) if args.phase_critic else ""
         code, seconds, summary = play(raw, games, policy, critic, args.threads, args.explore, args.matchups,
                                       args.types, phase_critic,
-                                      generation_symmetric=args.generation_symmetric)
+                                      generation_symmetric=args.generation_symmetric,
+                                      afterstates=args.record_afterstates)
         played = summary.get("gamesPlayed", 0)
         failed = summary.get("gamesFailed", 0)
         # The engine throws loudly when a menu exceeds MAX_CANDIDATES ("menu has N candidates; the decision is sized for M").
@@ -543,7 +555,8 @@ def main():
                         "--out", new_critic,
                         "--target", "margin", "--epochs", str(args.epochs_critic), "--hidden", "512,256",
                         "--names", args.names, "--drop-prefix", "cards:in_my_hand_", "--seed", str(k),
-                        "--scale", args.value_scale, "--clip", str(args.value_clip)],
+                        "--scale", args.value_scale, "--clip", str(args.value_clip)]
+                       + (["--include-afterstates"] if args.critic_afterstates else []),
                        os.path.join(out_dir, f"critic{k}.log"))
             ok = code == 0 and os.path.exists(os.path.join(new_critic, "weights.bin"))
             critic_ok = critic_ok and ok
@@ -581,6 +594,8 @@ def main():
                "failed": failed, "seconds": round(seconds, 1), "explore": args.explore,
                "types": args.types, "value_scale": args.value_scale,
                "generation_symmetric": bool(args.generation_symmetric),
+               "record_afterstates": bool(args.record_afterstates),
+               "critic_afterstates": bool(args.critic_afterstates),
                "critic": new_critic, "critics": len(new_critics), "policy": new_policy, **result,
                "time": time.strftime("%Y-%m-%dT%H:%M:%S")}
         ledger.append(row)

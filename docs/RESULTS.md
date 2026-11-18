@@ -975,3 +975,39 @@ different inputs.
 Second candidate after that: with `symmetric=true` the opponent's public view is unchanged by actions that only touch
 private state (mulligan, sale, discard, draft) *if* money and points are not in the public block - to be read from
 `buildPublic` and measured, not assumed.
+
+## The critic structurally cannot gate the hand menus (2026-11-18, measured)
+
+Mechanism test: all fifteen menus ranked, `policyChoice=MULLIGAN,SELL_CARDS`, per-type stop margins
+(`stopMargins=MULLIGAN:100,SELL_CARDS:200`), 200 games, then `ml/mulligan_report.py`:
+
+```
+MULLIGAN   rows 400  stop 100.0%  games that discarded 0.0%
+SELL_CARDS rows 1600 stop 100.0%  games that discarded 0.0%
+```
+
+Nothing changed, and the reason is structural rather than a bug:
+
+1. the critic's **hand-identity block is masked** (`--drop-prefix cards:in_my_hand_`), so it cannot tell a junk card from an
+   engine card - it only sees summaries;
+2. a mulligan **replaces** the card with a random draw, so the afterstate's summaries are a random sample of the deck: the
+   expected gain of "throw this one away" is not positive for any particular card, which is why
+   `V(best candidate) - V(stop)` never clears the threshold.
+
+So the act-vs-stop comparison cannot be handed to this critic for the hand menus. The correct division is:
+
+* **critic-gated** menus: builds, standard actions, blue actions, payments, inputs, corporations, phases - the candidate
+  changes something in the state the critic can see;
+* **policy-decided** menus: mulligan, in-phase sale, and the choice of *which* card to discard/draft/sell. The policy sees the
+  hand identities, so it is the model that can tell junk from an engine. It has to **learn** that from outcomes, because
+  today it answers "stop" in 100% of the rows and has therefore never seen what discarding leads to.
+
+The route for those two menus is therefore data, not the critic: explore them in the corpus (`MULLIGAN:0.4`,
+`SELL_CARDS:0.3`) and weight the policy's rows by `outcome - V(s)` (`night_loop --policy-adv`), so an explored discard that
+ended well is reinforced and one that ended badly is suppressed. The sensor `ml/mulligan_report.py` is the acceptance
+instrument: "did it start discarding, and how many".
+
+Mechanically the split exists and is tested end to end: `-Dares.agent.search.policyChoice=<types>` keeps the policy's
+candidate (the critic then only re-orders nothing for those menus), and `-Dares.agent.search.stopMargins=TYPE:N` gives the
+critic an act-despite-stop override per type - the global `stopMargin` cannot be used, because a build's afterstate beats the
+stop by ~1300 units and the same threshold made the player build every offered card (-4.7 points, measured earlier).
