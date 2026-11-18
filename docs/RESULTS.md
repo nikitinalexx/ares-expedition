@@ -877,3 +877,27 @@ critics trained on two packs). The honest fix for the policy is a merged pack on
 
 This is exactly the failure the owner asked to design against: not a crash, but a *different representation* that silently
 loses the correspondence between a row and its candidates.
+
+## Bundle comparison after the replay attempt (2026-11-18, evening)
+
+| bundle | corpus | critic replay | vs SMART 3000 | vs RANDOM 1000 |
+|---|---|---|---|---|
+| `1118-0058_13` (champion) | 18.7k, 8 menus | no | **63.93% [62.2, 65.6]** | 92.80% |
+| `1118-1233_13` | 20k, 15 menus | no | 60.05% [57.0, 63.0] (1000 games) | 94.50% |
+| `1118-1558_14` | 20k, 15 menus | yes (2 packs) | 61.57% [59.8, 63.3] | **94.15%** |
+
+Three readings, all uncomfortable and all recorded:
+
+1. **The 15-menu corpus did not improve SMART play.** Iteration 13 (60.05% at 1000) and the replay bundle (61.57% at 3000)
+   both sit below the champion's 63.93%, and the intervals overlap only at the edge. The coverage work bought its points
+   *at play time* (19.55% -> 64.22% with unchanged weights); turning it into training data has not paid yet.
+2. **RANDOM went the other way** (92.8 -> 94.5/94.15). Lower against the hand-written benchmark and higher against a random
+   one is what "less tuned to the SMART style, more general" looks like - which is the *stated purpose* of replay, but a
+   purpose is not a result.
+3. Under the owner's acceptance rule (**the worst benchmark decides**), the champion is still `1118-0058_13`: its worst
+   number is 63.93 against SMART, the new bundles' worst is 61.57. Nothing is retired; the new ones stay as artifacts.
+
+What this does **not** yet test: replay on the *policy* side, which is the side that carries the style. The policy still
+trains on the newest corpus alone because a policy merge needs a merged pack (`ml/pack_merge.py`, refused rather than
+guessed after the misalignment above). Until that exists, the anti-narrowing hypothesis is only half-tested, and the honest
+statement is "critic replay alone does not move SMART play".
