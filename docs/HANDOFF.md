@@ -914,11 +914,12 @@ instead of dictating one line). What is missing, in the order it should be built
    three). Needs `load_packed` in `ml/train_value.py` to accept a comma-separated list of packs and concatenate per type -
    every pack of one encoder has the same schema, so concatenation is valid. Falsifier: with replay, the drop of a profile
    dimension across iterations must be smaller than the same drop without it, at equal games.
-2. **A strategy-diversity sensor**, not just action coverage. A player can use all fifteen menus and still play one plan.
-   Per game, build a profile vector (builds per colour, phase picks, TR against card points, resource-card share, sales,
-   mulligans), cluster it, and record the number of live clusters and the largest cluster's share in the ledger. Flag when
-   the corpus collapses into one cluster. Falsifier: the flag must fire on the 16-17/11 corpora (known narrowing) and stay
-   quiet on the clean 18/11 one.
+2. **A strategy-diversity sensor** - **done** (`ml/strategy_mix.py`, 6 tests). A player-game is labelled by the phase it
+   leaned on and the game channel its points came from ("phase2:tr", "phase5:resourceCards"), and the report prints the top
+   profile's share and the effective number of profiles (exp of the entropy). Baseline on the 18.7k corpus: **17 profiles,
+   top 29.2%, 5 above 5%, effective 6.27** - a mixed corpus, not a single plan. Read across iterations as a trend, not
+   against a threshold (there is no known-good number). Clustering was rejected for this: k groups always partition into k
+   groups, so an 80/20 corpus reported 29% with k=4.
 3. **Acceptance on the worst benchmark, not the best.** SMART encodes the owner's heuristics, so a player can be tuned to
    beat that one style; today a run is accepted on `max(spread)` implicitly. Report and gate on
    `min(SMART, NETWORK, RANDOM)` alongside the profile gate.
