@@ -159,3 +159,29 @@ changing which menus the critic ranked. Every knob below is recorded in the ledg
 | `--explore` | BUILD_CARD:0.15 | uniform random choices in the generator for these types | `MULLIGAN:0.4,SELL_CARDS:0.3` to reach the dead menus |
 | `--keep-packs` | 3 | packs kept on disk | never below `replay-packs + 1` (the disk guard enforces it) |
 | `-Dares.agent.search.batch` | false | one forward per critic per menu | **5x slower and not bit-equal**: pinned by `ValueBatchParityTest`, do not enable |
+
+## How much exploration gives how many discards (and what it teaches)
+
+`--explore TYPE:q` replaces a decision with a uniformly random candidate with probability q. For a *sequence* decision such as
+the mulligan (discard one card, then decide again, until "stop"), the length of the sequence follows from the probability of
+stopping at each step:
+
+    P(stop per step) = (1 - q) * 1  +  q / (n + 1)        (the policy always stops; a random pick stops with 1/(n+1))
+
+For an opening hand of 10 cards:
+
+| q | P(stop per step) | expected discards |
+|---|---|---|
+| 0.4 | 0.69 | ~1.4 (measured 1.01 in the corpus of 18/11) |
+| 0.9 | 0.19 | ~5.2 (more than half the hand, the owner's "aggressive" case) |
+| 1.0 | 0.09 | ~10 (almost the whole hand, for completeness) |
+
+Two consequences that matter more than the arithmetic:
+
+1. **Exploration is a teaching signal.** With `q` high, most recorded mulligan choices are *random cards*, so imitating them
+   teaches "discard a random card", not "discard the junk". The number of discards is learnable this way; the choice of card
+   is not. The choice keeps coming from the search's ranking (which beats the policy's pick by 7 points, measured), and the
+   only thing exploration can teach is *how many*.
+2. **The sale is different.** In-phase selling is a rare, strong-player decision (owner, 18/11). A 30% exploration made the
+   generator sell in 89.7% of games and the iteration collapsed to 43.1%. If that menu is explored at all, it has to be
+   conservative (a few percent), and the reason must be written down in `ml/gap_allowlist.json`.
