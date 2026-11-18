@@ -948,8 +948,16 @@ An iteration is **~3.1 h generation and ~15 min for everything else** (packing, 
 | policy CE | ~1.7 min | 1% |
 | measurement (1000 SMART, 500 RANDOM, scorecard, profile) | ~12 min | 4% |
 
-Inside one decision (~10 ms): observation build 236 us x 7.6 candidates = 1.8 ms, three critics 139 us x 3 x 7.6 = 3.2 ms,
-copy+apply ~600 us x 7.6 = 4.6 ms. So the levers, in the order they are measured:
+Inside one decision (~10 ms) - **measured**, not estimated (`SpeedBreakdownTest`, plus the in-game log):
+
+| part | per candidate | share |
+|---|---|---|
+| copy the game | 8.7 us | 5% |
+| build the observation (mine; the symmetric opponent view doubles it) | 81.6 us early game, 236 us mid game | 44-36% |
+| three critics | 96.9 us early game, 139 x 3 = 417 us mid game | 52-64% |
+
+So the old guess that the game copy dominates was wrong by two orders of magnitude: **the neural part is the largest term**,
+the observation second, the copy irrelevant. The levers, in the order they are measured:
 
 1. ~~A/B with `-Dares.agent.search.batch=true`~~ - **measured and rejected (18/11)**: 5x slower (49.1 against 9.4 us/row)
    and not bit-equal to the single-row path (a different float association order). `ValueBatchParityTest` pins both, so it
@@ -963,8 +971,14 @@ copy+apply ~600 us x 7.6 = 4.6 ms. So the levers, in the order they are measured
    gated by a differential test that compares against the from-scratch build **bit-exactly** on real corpus decisions of all
    15 types. That gate is the whole point: a representation that silently loses a bit is worse than a slow one.
 
-Expected ceiling: the neural part is ~1/3 of a decision, so GPU alone cannot beat ~30%; with the observation work a
-1.7-2x speedup on generation is realistic. Nothing here changes the player - it buys iterations per night.
+Expected ceiling, from the measured split: making the critics free (GPU batched across games) roughly halves the
+per-candidate cost, and halving the observation on top of that gets to ~3.5x. A 1.7-2x generation speedup is the realistic
+first target. Nothing here changes the player - it buys iterations per night.
+
+One more contained idea, measured before the big work: with `symmetric=true` every candidate builds **two** observations
+(mine and the opponent's public view), but most actions cannot change the opponent's public state at all - a private card
+build, a sale, a mulligan. A declared "does this action touch public state" predicate per decision type would skip the
+second build for the private ones, with the same bit-exact differential test as the incremental observation.
 
 ### Known follow-up: the parent menu still completes with the policy
 
