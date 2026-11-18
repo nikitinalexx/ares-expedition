@@ -830,3 +830,11 @@ they do not become the policy's teaching labels).
 as Ares. Ares is `AGENT_V2`, i.e. the second model set, so the live app must be started with `-Dares.agent.models=<bundle>`
 (falls back to the same set) or `-Dares.agent.models2=<bundle>`, plus the search properties. The form now locks the settings
 the player was trained on while Ares is selected: improved corporations, dummy hand, mulligan.
+
+## A human played it (owner, 2026-11-18)
+
+The owner played one game against the bundle `policy/1118-0058_13` + `v_1118-0058_13_s1..s3` through the UI (Ares =
+`AGENT_V2`, all fifteen menus ranked) and called it "very decent". This is the qualitative check the acceptance rule asks
+for besides the win rate - the earlier failure mode was a model that beat RANDOM 95% and played like a random card picker to
+a human. What he did not report: nothing degenerate in the opening, no phase hoarding, no skipped mulligan complaints. The
+mulligan is still declined by construction (the menu is a no-op in `rankOnly`), which is the next thing to make learnable.
