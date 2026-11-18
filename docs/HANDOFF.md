@@ -1040,6 +1040,30 @@ champion is never overwritten. Champion seeded: `1118-0058_13` (63.93 / 92.8).
 Next for this thread: `-Dares.agent.valueModel2` so each side carries its own critics, then the league corpus
 (`--matchups AGENT:AGENT:0.7,AGENT:AGENT_V2:0.15,AGENT:RANDOM:0.15`, where `models2` is a sampled old champion).
 
+### Reading a night, and accepting a bundle
+
+One ledger row (`D:/ares/tmp/night_ledger.json`) now carries everything needed to decide whether an iteration is progress:
+
+| field | meaning |
+|---|---|
+| `score`, `ci` | SMART, `games` games, with the interval |
+| `score_random`, `score_network` | the floor and the second absolute benchmark |
+| `worst_benchmark` | `min` of the three - **this is the number the acceptance rule reads** |
+| `builds_per_game`, `phases`, `card_points` | the profile gate: a player that stops building or lives in one phase is degenerate regardless of its win rate |
+| `stop_share` | how often the policy declines a build offer (a collapse shows here first) |
+| `types`, `value_scale`, `generation_symmetric`, `record_afterstates`, `critic_afterstates`, `policy_replay`, `policy_adv`, `explore` | the configuration, because a score without it cannot be compared |
+| `policy`, `critic` | the bundle, for the rollback and for the hall of fame |
+
+Acceptance order (cheapest first, `ml/hof.py` implements the last two):
+
+1. **Profile gate**: builds, phase mix, printed card points. Degenerate -> reject without looking at the win rate.
+2. **Absolute**: SMART, RANDOM, NETWORK each within 1.5 points of the champion (`worst_benchmark` is the one to quote).
+3. **Head to head vs the champion**: 2000 games, at least 54%, interval clear of 50%.
+4. **The pool**: against the last three champions, no loss below 45% (a specialist fails here even if it passed 3).
+
+A candidate that passes 2-4 is promoted with `ml/hof.py promote`, and the promotion must be re-measured at 10 000 games if the
+margin over the champion is under 1.5 points.
+
 ### Known follow-up: the parent menu still completes with the policy
 
 `PERFORM_BLUE_ACTION`'s afterstate (`OnePlySearch.applyOn`) fills the blue inputs with `innerChoice`, i.e. the policy, and
