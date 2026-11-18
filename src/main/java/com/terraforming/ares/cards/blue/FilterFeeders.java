@@ -24,11 +24,11 @@ public class FilterFeeders implements BlueCard {
         this.id = id;
         this.cardMetadata = CardMetadata.builder()
                 .name("Filter Feeders")
-                .description("When you add any number of microbes to ANOTHER* card, add an animal to this card. 1 VP per 3 animals on this card.")
+                .description("When you add any number of microbes to ANOTHER* card, add an animal to this card. 1 VP per 2 animals on this card.")
                 .cardAction(CardAction.FILTER_FEEDERS)
                 .winPointsInfo(WinPointsInfo.builder()
                         .type(CardCollectableResource.ANIMAL)
-                        .resources(3)
+                        .resources(2)
                         .points(1)
                         .build()
                 )

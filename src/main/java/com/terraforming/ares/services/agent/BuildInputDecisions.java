@@ -97,6 +97,36 @@ public class BuildInputDecisions {
         }
     }
 
+    /**
+     * One input slot of a build, decided by a caller that can see what has been decided so far. The slots interact - the
+     * tag decides how many times Decomposers/ViralEnhancers/MarsUniversity trigger, and Decomposers' "take a card" option
+     * only exists while enough microbes will be on the card - so a counterfactual has to start from the partial input.
+     */
+    public interface SlotChooser {
+        int choose(Decision decision, List<BuildInputChoice> choices, Map<Integer, List<Integer>> partial, Card card);
+    }
+
+    /** Fills the slots of a build, asking {@code chooser} for every slot. */
+    public Map<Integer, List<Integer>> fillRanked(MarsGame game, Player player, Card card, SlotChooser chooser) {
+        return fillRanked(game, player, card, new HashMap<>(), chooser);
+    }
+
+    /** Fills the remaining slots starting from {@code start}. */
+    public Map<Integer, List<Integer>> fillRanked(MarsGame game, Player player, Card card,
+                                                  Map<Integer, List<Integer>> start, SlotChooser chooser) {
+        Map<Integer, List<Integer>> input = start;
+        while (true) {
+            Optional<Slot> slot = nextSlot(game, player, card, input);
+            if (slot.isEmpty()) {
+                return input;
+            }
+            List<BuildInputChoice> choices = slot.get().choices();
+            Decision decision = decision(game, player, choices);
+            int index = chooser.choose(decision, choices, input, card);
+            apply(input, choices.get(index), card);
+        }
+    }
+
     public Decision decision(MarsGame game, Player player, List<BuildInputChoice> choices) {
         List<Candidate> candidates = new ArrayList<>(choices.size());
         for (BuildInputChoice choice : choices) {

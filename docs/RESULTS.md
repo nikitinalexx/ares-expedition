@@ -759,3 +759,23 @@ difference, so: **do not shrink the corpus to fit a night budget.** 20 000 games
    cap is excluded from the policy's model hash, so no bundle is invalidated. Re-measured: 56.23% with 0 failed games.
 3. `night_loop.play()` capped a corpus at a fixed 7200 s and killed a 20 000-game generation at 18 772. The limit now
    scales with the game count.
+
+## The tricky cards, checked one by one (owner's list, 2026-11-18)
+
+The owner named the cards where a build's input is not independent per slot. All of them are confirmed against the engine,
+and the slot order in `BuildInputDecisions.nextSlot` matters because earlier slots decide which later ones exist:
+
+`tag -> phase upgrades -> resource targets -> cargo -> Decomposers -> ViralEnhancers -> MarsUniversity`
+
+| card | what the engine does | verdict |
+|---|---|---|
+| Anaerobic Microorganisms | with >= 2 microbes on it, a payment plan for -10 appears (`BuildPaymentDecisions.canAnaerobic`); combinable with Restructured Resources (-5) for -15 | correct, now ranked by V |
+| Decomposers | one slot per animal/microbe/plant tag of the built card; each slot is "add a microbe here" or "remove one to draw"; the second option exists only while `microbes_on_card + added > drawn` | correct, and it reads the partial input, so the tag chosen one slot earlier feeds it |
+| Filter Feeders | `CardResourceService.addResources` gives the owner +1 animal whenever a microbe is added to a card | correct. **Rule changed on the owner's request: 1 VP per 2 animals, not per 3** (the buffed variant already printed 2) |
+| Viral Enhancers | one slot per animal/microbe/plant tag: take a plant, or put a resource on a card that holds animals/microbes - never on the card being built | correct |
+| Mars University | one slot per science tag; discard a card from hand (not the card being built) or stop; a discarded card with a PLANT **or DYNAMIC** tag draws two, otherwise one | correct |
+
+Consequence for the ranking: a candidate is only comparable if the rest of the build is completed, so `rankBuildSlot` puts the
+candidate into the partial input, completes the remaining slots with the policy (and, if the engine rejects that completion,
+with the first option of every remaining slot), builds the card on a copy, and reads `V(afterstate)`. That is what makes
+"chose the plant tag, so Viral Enhancers and Decomposers fire" visible to the value net.

@@ -360,8 +360,17 @@ public class AgentDecisionService {
 
     public void playBuildCard(MarsGame game, Player player, int cardId) {
         Card card = cardService.getCard(cardId);
-        Map<Integer, List<Integer>> input = buildInputDecisions.fill(game, player, card,
-                decision -> choose(game, player, decision));
+        // What the card does when it is built - which phase is upgraded, which tag is taken, where the animal goes, what
+        // MarsUniversity discards - is where a build is won or lost. Each slot with more than one legal option is ranked by
+        // the search (OnePlySearch.rankBuildSlot) and the executed index goes through choose() so the corpus records it.
+        Map<Integer, List<Integer>> input = onePlySearch.buildInputs(game, player, card,
+                (decision, choices, partial, slotCard) -> {
+                    int ranked = onePlySearch.rankBuildSlot(game, player, slotCard, choices, partial);
+                    return choose(game, player, decision, ranked);
+                });
+        if (input == null) {
+            input = buildInputDecisions.fill(game, player, card, decision -> choose(game, player, decision));
+        }
         List<BuildPaymentChoice> payments = buildPaymentDecisions.options(game, player, card, input);
         // A discount plan changes what the same card costs, so it is worth a real counterfactual rather than the policy's
         // guess: the search applies each plan to a copy (OnePlySearch.choosePayment) and the row records that plan.

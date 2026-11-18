@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -428,6 +429,89 @@ public class OnePlySearch {
             return null;
         }
         return blueInputDecisions.fillRanked(game, player, card, chooser);
+    }
+
+    /**
+     * The build's input slots, decided by {@code chooser} - which the caller wires to {@link #rankBuildSlot}. Returns null
+     * when the input menus are not ranked, so the caller keeps the policy's own fill.
+     */
+    public Map<Integer, List<Integer>> buildInputs(MarsGame game, Player player, Card card,
+                                                   BuildInputDecisions.SlotChooser chooser) {
+        if (models.isEmpty() || !types.contains(DecisionType.BUILD_INPUT)) {
+            return null;
+        }
+        return buildInputDecisions.fillRanked(game, player, card, chooser);
+    }
+
+    /**
+     * Ranks one slot of a card's input by {@code V(afterstate)} of the whole build: the candidate is put into the partial
+     * input, the remaining slots are filled by the policy, the card is built on a copy and the afterstate is read.
+     * <p>
+     * This covers the owner's list: the tag of a dynamic card decides how many times Decomposers / ViralEnhancers /
+     * MarsUniversity trigger (they are asked after the tag), Decomposers' "take a card" needs enough microbes on the card,
+     * MarsUniversity cannot discard the card being built, and Filter Feeders' animal follows a microbe placed on another
+     * card. A candidate whose completion the engine rejects is retried with the first option of every remaining slot
+     * before it is dropped, so an option is not silently lost to a bad policy completion.
+     */
+    public int rankBuildSlot(MarsGame game, Player player, Card card, List<BuildInputChoice> choices,
+                             Map<Integer, List<Integer>> partial) {
+        if (models.isEmpty() || !types.contains(DecisionType.BUILD_INPUT) || busy.get() || choices.size() < 2) {
+            return -1;
+        }
+        busy.set(Boolean.TRUE);
+        strongAnswer.set(player.getDifficulty() != null && player.getDifficulty().isStrongAgent());
+        currentNets.set(models);
+        long started = System.nanoTime();
+        try {
+            int best = -1;
+            float bestScore = Float.NEGATIVE_INFINITY;
+            for (int i = 0; i < choices.size(); i++) {
+                Float score = scoreBuildWith(game, player, card, partial, choices.get(i), true);
+                if (score == null) {
+                    score = scoreBuildWith(game, player, card, partial, choices.get(i), false);
+                }
+                if (score != null && score > bestScore) {
+                    bestScore = score;
+                    best = i;
+                }
+            }
+            return best;
+        } finally {
+            strongAnswer.set(Boolean.FALSE);
+            busy.set(Boolean.FALSE);
+            currentNets.remove();
+            nanos.addAndGet(System.nanoTime() - started);
+        }
+    }
+
+    /**
+     * @param policyCompletion true: the remaining slots and the payment plan are the policy's choices; false: the first
+     *                         option of every remaining slot, which is the cheap fallback when the policy's completion is
+     *                         not legal for this candidate.
+     */
+    private Float scoreBuildWith(MarsGame game, Player player, Card card, Map<Integer, List<Integer>> partial,
+                                 BuildInputChoice choice, boolean policyCompletion) {
+        try {
+            MarsGame copy = new MarsGame(game);
+            Player me = copy.getPlayerByUuid(player.getUuid());
+            Map<Integer, List<Integer>> input = new HashMap<>(partial);
+            buildInputDecisions.apply(input, choice, card);
+            BuildInputDecisions.SlotChooser chooser = policyCompletion
+                    ? (decision, slotChoices, slotInput, slotCard) -> innerChoice(decision)
+                    : (decision, slotChoices, slotInput, slotCard) -> 0;
+            Map<Integer, List<Integer>> full = buildInputDecisions.fillRanked(copy, me, card, input, chooser);
+            List<BuildPaymentChoice> plans = buildPaymentDecisions.options(copy, me, card, full);
+            List<com.terraforming.ares.model.payments.Payment> payments =
+                    plans.get(Math.max(0, innerChoice(buildPaymentDecisions.decision(copy, me, card, plans)))).payments();
+            if (card.getColor() == com.terraforming.ares.model.CardColor.GREEN) {
+                aiTurnService.buildGreenProjectSync(copy, me, card.getId(), payments, full);
+            } else {
+                aiTurnService.buildBlueRedProjectSync(copy, me, card.getId(), payments, full);
+            }
+            return logit(observationBuilder.build(copy, me));
+        } catch (RuntimeException e) {
+            return null;
+        }
     }
 
     /**
