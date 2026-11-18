@@ -322,6 +322,58 @@ public class OnePlySearch {
         }
     }
 
+    /**
+     * Ranks the payment plans of a card that was already chosen, by {@code V(afterstate)}.
+     * <p>
+     * Why this is a separate entry point and not another entry in {@link #types}: the payment decision does not carry the
+     * card, so a candidate id alone (restructured / anaerobic / how much heat) cannot be applied to a copy. Here the caller
+     * is the live build and it holds the card and the input, so the afterstate of each plan is exactly one build with that
+     * plan. The menu is tiny in practice (mean 1.4 plans, 10% of decisions have more than two), so every plan is scored -
+     * no cap, no heuristic, and a build with a single legal plan costs nothing.
+     *
+     * @return the index of the plan with the best afterstate, or -1 when the search does not apply (payment menu not
+     *         ranked, one plan only, re-entrant call, or every plan failed to apply)
+     */
+    public int choosePayment(MarsGame game, Player player, int cardId, Map<Integer, List<Integer>> input,
+                             List<BuildPaymentChoice> plans) {
+        if (models.isEmpty() || !types.contains(DecisionType.BUILD_PAYMENT) || busy.get() || plans.size() < 2) {
+            return -1;
+        }
+        busy.set(Boolean.TRUE);
+        strongAnswer.set(player.getDifficulty() != null && player.getDifficulty().isStrongAgent());
+        currentNets.set(models);
+        long started = System.nanoTime();
+        try {
+            Card card = cardService.getCard(cardId);
+            int best = -1;
+            float bestScore = Float.NEGATIVE_INFINITY;
+            for (int i = 0; i < plans.size(); i++) {
+                try {
+                    MarsGame copy = new MarsGame(game);
+                    Player me = copy.getPlayerByUuid(player.getUuid());
+                    if (card.getColor() == com.terraforming.ares.model.CardColor.GREEN) {
+                        aiTurnService.buildGreenProjectSync(copy, me, cardId, plans.get(i).payments(), input);
+                    } else {
+                        aiTurnService.buildBlueRedProjectSync(copy, me, cardId, plans.get(i).payments(), input);
+                    }
+                    float score = logit(observationBuilder.build(copy, me));
+                    if (score > bestScore) {
+                        bestScore = score;
+                        best = i;
+                    }
+                } catch (RuntimeException ignored) {
+                    // a plan the engine rejects on a copy is simply not a candidate for the ranking
+                }
+            }
+            return best;
+        } finally {
+            strongAnswer.set(Boolean.FALSE);
+            busy.set(Boolean.FALSE);
+            currentNets.remove();
+            nanos.addAndGet(System.nanoTime() - started);
+        }
+    }
+
     private int search(Decision decision, MarsGame game, Player player) {
         List<Candidate> options = decision.candidates();
         // STANDARD_ACTION codes its stop as kind 0, the card decisions use the shared STOP id.

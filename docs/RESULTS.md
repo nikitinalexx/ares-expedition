@@ -653,14 +653,31 @@ Adding those three types to `-Dares.agent.search.types`, nothing else changed:
 | + STANDARD_ACTION, PERFORM_BLUE_ACTION | 27.9% [26.3, 29.5] |
 | + DISCARD_CARDS, SELL_CARDS, SELL_CARDS_LAST_ROUND | **47.6% [45.8, 49.4]** |
 
-The third step is the end-of-round sale. Measured on 2026-11-17: the sale is worth ~110 MC per game for every player, and
-`ml/action_coverage.py` had the sell decision as a known collapse - the policy answered "stop" in 100% of the rows, which
-was allowlisted rather than fixed. The agent never sold a card, so it never had that money, and the money is what buys the
-next card. The critic, asked which card it would miss least, answers that correctly from the afterstate alone.
+**Correction (owner, 18/11).** The mechanism written here first - "the policy always answered stop, so it never got the sale
+money" - is wrong, and the owner is right about the rule: `SellExtraCardsState` offers only `SELL_CARDS_LAST_ROUND` when the
+hand is over 10 at the end of a round (`Constants.MAX_HAND_SIZE_LAST_ROUND`), so the end-of-round sale is **mandatory** and
+its money was always paid. What the menus changed is *which card leaves the hand* (`SELL_CARDS_LAST_ROUND` down to 10,
+`SELL_CARDS` optionally during phases 1-4, 3 MC each) and *whether* to sell in-phase at all.
 
-Note what these three steps have in common: all of them are menus the critic was never asked about, and all of them are
-*immediate* consequences (an ocean, a temperature step, a card out of the hand), not a promise of points in twelve
-generations. The card menus stay at 0.19 correlation with printed points and are still the next lever.
+**Ablation, 1500 games each, same bundle, only the ranked list differs:**
+
+| ranked menus | vs SMART |
+|---|---|
+| all eight | 56.23% (3000 games, [54.5, 58.0]) |
+| without the end-of-round sale | 54.87% [52.3, 57.4] |
+| without the in-phase sale | 56.60% [54.1, 59.1] |
+| without either sale | 53.73% [51.2, 56.2] |
+
+So the two sale menus are worth ~1-2 points *at play time with the current policy*, not 20. The 27.9% -> 47.6% step was
+measured on the **old** weights: there the critic had to make those choices because the policy could not. Once the corpus
+had been generated with the menus ranked, the policy learned the behaviour, and the search became nearly redundant for
+them. That is the honest reading of the whole night: **the search is mostly a teacher - it manufactures the decisions the
+policy is bad at, and the policy absorbs them in the next iteration.** It also means the play-time menu list can be trimmed
+for speed later, at a measured cost of ~2 points.
+
+What the three steps do have in common: every one of them is a menu the critic had never been asked about, and every one is
+an *immediate* consequence (an ocean, a temperature step, a card out of the hand), not a promise of points twelve
+generations later.
 
 Channels with the eight menus (300 games): resource-card points 9.87 -> **15.97** (SMART 6.57), printed card points
 8.93 -> 10.75 (SMART 17.12), TR 30.64 -> 33.90, forests 8.33 -> 10.01, total 72.25 -> 85.95 against SMART's 80.59, builds

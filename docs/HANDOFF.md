@@ -783,6 +783,21 @@ The previous bundle (`policy/1117-2001_11` + `v_1117-2001_11_s1..s3`) is kept an
 a regression there is a one-line rollback. Do not quote a scorecard run under 1000 games: at 300 games it read 49.67%
 where 1000 games read 55.9% and 3000 games read 57.45%.
 
+### The four menus still decided by the policy alone (owner's list, 18/11)
+
+`BUILD_PAYMENT`, `BUILD_INPUT`, `BLUE_INPUT`, `PICK_CORPORATION`. All four are applied by an existing call the live agent
+already makes, so each is a matter of asking the search instead of the policy:
+
+| menu | mean menu | how the afterstate is produced | status |
+|---|---|---|---|
+| BUILD_PAYMENT | 1.4 (p99 10) | `aiTurnService.buildGreen/BlueRedProjectSync(copy, me, card, plan.payments(), input)` - the caller holds the card, so the afterstate is one build per plan | **implemented** (`OnePlySearch.choosePayment`), measurement running |
+| PICK_CORPORATION | 6.0 | `CorporationChoice` already carries `(corporationId, input, candidate)`; apply the corporation and its on-built input to a copy | next |
+| BLUE_INPUT | 7.4 | nested under `PERFORM_BLUE_ACTION`: `blueInputDecisions.fill` builds the input map, one slot at a time | after that |
+| BUILD_INPUT | 5.1 | same shape, but the slots form a sequence (phase upgrade / tag / where the animal goes), so the ranking is per slot with the rest filled by the policy | last |
+
+`BUILD_PAYMENT` is first because it is the cheapest (a build usually has one legal plan) and the only one that is literally
+money: restructured/anaerobic/heat plans buy the same card for less.
+
 ### Why the card menus are still the next lever, and what the data says about them
 
 `ml/card_points_data.py` on 40 000 games (320 000 build decisions):

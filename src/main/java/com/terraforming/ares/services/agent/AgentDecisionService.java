@@ -363,6 +363,12 @@ public class AgentDecisionService {
                 decision -> choose(game, player, decision));
         List<BuildPaymentChoice> payments = buildPaymentDecisions.options(game, player, card, input);
         int index = choose(game, player, buildPaymentDecisions.decision(game, player, card, payments));
+        // A discount plan changes what the same card costs, so it is worth a real counterfactual rather than the policy's
+        // guess: the search applies each plan to a copy and keeps the best afterstate (see OnePlySearch.choosePayment).
+        int ranked = onePlySearch.choosePayment(game, player, cardId, input, payments);
+        if (ranked >= 0) {
+            index = ranked;
+        }
         aiTurnService.buildProject(game, player, cardId, payments.get(index).payments(), input);
     }
 
