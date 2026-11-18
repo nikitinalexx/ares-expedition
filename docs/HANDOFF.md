@@ -883,6 +883,22 @@ play as the trained bundle. Every menu is now under the search, so a decision co
 - **COLLECT_INCOME**: the phase-4 double produce; the turn is asynchronous, so the engine's `CollectIncomeTurnProcessor`
   is called directly on the copy.
 
+### Coverage is not the same as deciding: `rankOnly` keeps the policy's "stop"
+
+In `OnePlySearch.search` the default is `rankOnly = true`: the critic only **re-orders** the candidates, and when the menu
+has a stop option the **policy still decides whether to act at all** (`if (policy < 0 || options.get(policy).id() == stop)
+return policy;`). That is deliberate - a build's afterstate is off the distribution V was trained on - but it means that for a
+menu whose policy always says "stop", adding it to `types` changes nothing:
+
+- `MULLIGAN` is declined in 100% of the recorded rows, so a rank-only mulligan is a no-op;
+- `SELL_CARDS` had the same collapse, which is why the earlier ablation found the sell menus worth ~0 *at play time* even
+  though adding them moved the old bundle by 20 points (there the menus were the teacher, and the policy learned them).
+
+The knob for those is `-Dares.agent.search.fullTypes=TYPE,...`: those types are scored against the stop candidate as well, so
+the critic decides "act or not". The afterstate of a mulligan or a sale is a normal game state, so that comparison is fair;
+it is the build menus where it is not. The measured list to try is `MULLIGAN`, `SELL_CARDS`, `UNMI_RT` - each one is a menu
+where the policy's own stop is the known collapse.
+
 ### Known follow-up: the parent menu still completes with the policy
 
 `PERFORM_BLUE_ACTION`'s afterstate (`OnePlySearch.applyOn`) fills the blue inputs with `innerChoice`, i.e. the policy, and
