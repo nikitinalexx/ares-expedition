@@ -816,3 +816,13 @@ variance). The untested ones, cheapest first:
 - bench ledger: `D:/ares/tmp/night_ledger.json`; plateau report of the previous run `D:/ares/tmp/plateau_1117-2001.md`.
 - `ml/train_breakdown.py` (seven channel heads) is kept as a rejected experiment, not part of the pipeline.
 - `night_loop.py` ledger rows now record `types` and `value_scale`, because those two now change the meaning of a score.
+
+### Test state and the one code fix the night needed
+
+`mvn test`: 125 tests, 11 red, none a regression - 3 need an AFTERSTATE row the recipe does not record, 1 expects the old
+1044-column mask, 7 are `MlpPhaseModelTest` fixtures trained on 780-value observations (the encoder is 1256). `docs/BUGS.md`
+has the list.
+
+`DecisionLogs` is a singleton and `abort()` kept its ranking sidecar open; now that every game writes a breakdown line into
+that sidecar, the next recording renamed a path from the previous directory and threw. Fixed with `releaseRankings()` in
+`abort()` and `startRecording()`; `DecisionLogsTest` is 9/9.

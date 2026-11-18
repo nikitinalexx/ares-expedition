@@ -34,3 +34,25 @@ observation's max-single-payment feature with the maximum it measures card by ca
 payment that depends on the other card being on the table) the encoder's shared-copy measurement sees the combined
 payment and the test fails (observed 2026-11-15: expected 0.1, got 0.3, then passed on the next run). The encoder is
 right - the test needs a fixed pair of cards instead of whatever the shuffle deals.
+
+## `DecisionLogs` leaked its ranking sidecar across recordings (fixed 18/11)
+
+`DecisionLogs` is a singleton and `abort()` closed the binary writers but kept `rankingWriter` / `rankingTmp`. Since every
+recorded game now writes one score-breakdown line into that sidecar, the sidecar is opened in games that used to have no
+sidecar at all - and the next recording then tried to rename the *previous* directory's `RANKING.*.tmp`, which no longer
+existed (`NoSuchFileException: PICK_PHASE.000001.ares.tmp -> ...ares`, seen through `closeCurrentChunk`). Symptoms were
+order-dependent: the same test passed alone and failed in the class.
+
+Fix: `abort()` and `startRecording()` both call `releaseRankings()` (close without renaming, forget the path). `DecisionLogsTest`
+is green (9/9) and its whitelist of legal open files now includes `RANKING.000002.jsonl.tmp`.
+
+## `mvn test` after the night: 11 red, none of them a regression
+
+`Tests run: 125, Failures: 4, Errors: 7`. All eleven are pre-existing and belong to two groups:
+
+- **AFTERSTATE is off by design** (`AfterstateRecordingTest` x2, `AgentAllDecisionsTest.everyDecisionTypeIsRecordedAtLeastOnce`):
+  the recipe does not record afterstates, so a test that requires an AFTERSTATE row cannot pass. Either the tests or the
+  recipe has to move; this is an owner decision, not a bug.
+- **stale fixtures of the 1090/1256 encoder change**: `ObservationMaskTest.theMaskIsConsistent` expects 1044 blocks where
+  the encoder now produces 1256, and all seven `MlpPhaseModelTest` cases load a model trained on a 780-value observation
+  and are refused ("retrain it"). Both need the fixtures regenerated, not code fixed.

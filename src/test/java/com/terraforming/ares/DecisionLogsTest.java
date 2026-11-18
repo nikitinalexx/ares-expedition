@@ -320,7 +320,8 @@ class DecisionLogsTest extends EngineTestBase {
             assertTrue(open.containsAll(List.of(
                     "MULLIGAN.000002.ares.tmp", "PICK_CORPORATION.000002.ares.tmp", "PICK_PHASE.000002.ares.tmp")), open.toString());
             assertTrue(open.stream().allMatch(name -> name.matches(
-                    "(MULLIGAN|PICK_CORPORATION|PICK_PHASE|DRAFT_CARDS|DISCARD_CARDS|SELL_CARDS|SELL_CARDS_LAST_ROUND|STANDARD_ACTION|BUILD_CARD|BUILD_PAYMENT|BUILD_INPUT|PERFORM_BLUE_ACTION|BLUE_INPUT|UNMI_RT|COLLECT_INCOME)\\.000002\\.ares\\.tmp")),
+                    "(MULLIGAN|PICK_CORPORATION|PICK_PHASE|DRAFT_CARDS|DISCARD_CARDS|SELL_CARDS|SELL_CARDS_LAST_ROUND|STANDARD_ACTION|BUILD_CARD|BUILD_PAYMENT|BUILD_INPUT|PERFORM_BLUE_ACTION|BLUE_INPUT|UNMI_RT|COLLECT_INCOME)\\.000002\\.ares\\.tmp")
+                    || name.matches("RANKING\\.000002\\.jsonl\\.tmp")),
                     open.toString());
         }
         byte[] chunkOne = java.nio.file.Files.readAllBytes(chunks(dir).getFirst());

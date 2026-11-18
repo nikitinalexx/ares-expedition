@@ -120,6 +120,11 @@ public class DecisionLogs {
             this.gamesInChunk = 0;
             this.writeFailure = null;
             writeQueue.clear();
+            // `this` is a singleton: after an abort the maps may still hold writers and a sidecar path of a directory that
+            // no longer exists. Clearing here is what keeps one recording from renaming the previous one's files.
+            writers.clear();
+            openFiles.clear();
+            releaseRankings();
             try {
                 Files.createDirectories(dir);
             } catch (IOException e) {
@@ -212,6 +217,7 @@ public class DecisionLogs {
             }
             writers.clear();
             openFiles.clear();
+            releaseRankings();
             directory = null;
             writerThread = null;
         }
@@ -263,6 +269,18 @@ public class DecisionLogs {
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
+        }
+    }
+
+    /** Closes and forgets the ranking sidecar of the current chunk, without renaming it. */
+    private void releaseRankings() {
+        if (rankingWriter != null) {
+            try {
+                rankingWriter.close();
+            } catch (IOException ignored) {
+            }
+            rankingWriter = null;
+            rankingTmp = null;
         }
     }
 
