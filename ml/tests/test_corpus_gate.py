@@ -49,5 +49,19 @@ class MenuVerdictTest(unittest.TestCase):
         self.assertEqual(night_loop.menu_verdict(menus, "MULLIGAN:0.9"), [])
 
 
+class GeneratorCallTest(unittest.TestCase):
+
+    def test_the_generator_call_binds_rows_per_type_once(self):
+        # 18/11: play() grew a parameter, the call site still passed phase_critic positionally, and the whole night died on
+        # "play() got multiple values for argument 'rows_per_type'" after one log line. The binding is the contract.
+        import inspect
+        signature = inspect.signature(night_loop.play)
+        bound = signature.bind("/tmp/raw", 10, "policy", "critic", 8, "", "AGENT:AGENT:1", "T1,T2",
+                               phase_critic="phase", generation_symmetric=True, afterstates=True, rows_per_type=12)
+        self.assertEqual(bound.arguments["rows_per_type"], 12)
+        self.assertEqual(bound.arguments["phase_critic"], "phase")
+        self.assertEqual(bound.arguments["types"], "T1,T2")
+
+
 if __name__ == "__main__":
     unittest.main()

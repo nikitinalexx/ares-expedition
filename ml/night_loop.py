@@ -121,13 +121,25 @@ def menu_verdict(menus, explore):
     mulligan = menus.get("mulligan")
     if "MULLIGAN" in spec and mulligan is not None:
         if mulligan < 1.0:
-            reasons.append(f"the mulligan exploration did not reach the rows ({mulligan:.2f} discards per game)")
+            reasons.append(f"MULLIGAN: the exploration did not reach the rows ({mulligan:.2f} discards per game)")
         if (menus.get("mulligan_spread") or 0) < 2:
-            reasons.append("every game discarded the same number of cards, so the count does not follow the hand")
+            reasons.append("MULLIGAN: every game discarded the same number of cards, so the count does not follow the hand")
     sale = menus.get("sale")
     if "SELL_CARDS" in spec and sale is not None and sale > 0.60:
-        reasons.append(f"the sale exploration sells in {100 * sale:.0f}% of games (measured collapse: 89.7% -> 43.1%)")
+        reasons.append(f"SELL_CARDS: the exploration sells in {100 * sale:.0f}% of games "
+                       f"(measured collapse: 89.7% -> 43.1%)")
     return reasons
+
+
+def drop_explore(spec, names):
+    """The exploration spec without the given types. Used when one flag produced a collapsed corpus.
+
+    Why: the gate could otherwise loop. A blocked iteration skipped training, the coverage detector saw the same collapsed
+    menu again, added the same exploration, and the night would repeat the block until the budget ran out - the exact
+    "grinding without learning" the owner forbade. Dropping the flag means the next corpus is generated without it.
+    """
+    keep = [part for part in (spec or "").split(",") if part and part.split(":")[0].strip().upper() not in names]
+    return ",".join(keep)
 
 
 def catastrophic(best, score, drop):
@@ -557,7 +569,7 @@ def main():
 
         phase_critic = (critic.split(",")[0] if isinstance(critic, str) else critic[0]) if args.phase_critic else ""
         code, seconds, summary = play(raw, games, policy, critic, args.threads, args.explore, args.matchups,
-                                      args.types, phase_critic,
+                                      args.types, phase_critic=phase_critic,
                                       generation_symmetric=args.generation_symmetric,
                                       afterstates=args.record_afterstates,
                                       rows_per_type=args.rows_per_type)
@@ -608,6 +620,10 @@ def main():
         if blocked:
             for reason in blocked:
                 log(f"CORPUS GATE: {reason}")
+            before_explore = args.explore
+            args.explore = drop_explore(args.explore, {reason.split(":")[0].strip() for reason in blocked})
+            if args.explore != before_explore:
+                log(f"exploration dropped for the blocked menu: '{before_explore}' -> '{args.explore}'")
             log("skipping the iteration: training on this corpus teaches the collapse again")
             continue
 

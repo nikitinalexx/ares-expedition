@@ -1102,3 +1102,29 @@ and a separate block inside `score()`, used by the normal path). The mulligan wa
 path every mulligan candidate scored as "no opinion" and the agent answered stop in 100% of rows - the very collapse it was
 supposed to fix. Both dispatchers now carry every type; a test that enumerates `DecisionType` and asserts both handle the same
 set is the obvious next guard.
+
+## One dispatcher: the duplication is gone, the extra menus are not free (2026-11-18, measured)
+
+`OnePlySearch` used to apply a candidate in two places: `applyOn` (the batch path) and a switch inside `score()` (the live
+path, because `batch` is off by default). The mulligan was added to the first only, which is why the menu answered stop in
+100% of rows even after it was "covered"; `UNMI_RT` and `COLLECT_INCOME` were missing from the live one for the same reason.
+`score()` now delegates to `applyOn` - one dispatcher, no second copy to forget.
+
+That also made the two missing menus live. Measured on the champion bundle, 1000 games against SMART:
+
+| live path | vs SMART |
+|---|---|
+| champion as it was (the two menus return "no opinion") | 63.93% [62.2, 65.6] |
+| one dispatcher, the two menus ranked | **62.55% [59.5, 65.5]** |
+
+The intervals overlap, so this is not evidence that ranking them hurts - but it is certainly not a gain, so which menus the
+critic ranks stays a flag (`--types`), not a code path. The structural fix is kept; the experiment is closed as
+"no effect, do not repeat".
+
+## The mulligan exploration reaches the rows now (2026-11-18, measured)
+
+`-Dares.agent.explore=MULLIGAN:0.9` on 60 games, recorded with `--max-rows-per-game-type 12`: **mean 5.55 discards** per game,
+max 11, stop in 26.2% of rows, 96.7% of games discarded at least one card. That is the owner's "about half", produced by
+exploration rather than by a constant. Note the row cap: it SAMPLES per type, so at the old cap of 8 the stop row of the
+longest mulligans was dropped at random - the menu being taught was the one being distorted. `--rows-per-type 11+` for any
+run that is supposed to learn the mulligan.

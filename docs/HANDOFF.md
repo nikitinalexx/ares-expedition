@@ -1077,3 +1077,61 @@ Blue inputs turn out to be interdependent exactly like build inputs: `RESEARCH_G
 (Mars University, Viral Enhancers, Decomposers), and `FIBROUS COMPOSITE MATERIAL` asks for a microbe amount and only for
 3 does it then ask for a phase upgrade. `rankBlueSlot` completes each candidate with the policy, so both are evaluated on
 the whole action, but the ordering is greedy per slot.
+
+## Night of 18/19 November: the mulligan is learned, not gated
+
+**Best bundle before this night:** `policy/1118-0058_13` + `v_1118-0058_13_s1..s3`, **63.93% [62.2, 65.6] vs SMART**
+(3000 games), 36.7% vs NETWORK, 92.8% vs RANDOM, profile clean. It is the HoF champion.
+
+### What changed in the code (committed)
+
+1. **One afterstate dispatcher.** `OnePlySearch` had two (`applyOn` for the batch path, a switch inside `score()` for the live
+   path, which is the one that runs because `batch` is off by default). MULLIGAN, UNMI_RT and COLLECT_INCOME were missing from
+   the live one, so they scored as "no opinion" - the mulligan answered stop in 100% of rows even after it was "covered".
+   `score()` now delegates to `applyOn`.
+2. **The mulligan afterstate carries the engine's queue.** The hand is untouched during the loop; the whole set is replaced at
+   stop. Step *k* is now `hand - (queued + candidate) + (k+1) sampled cards`, the stop baseline is
+   `hand - queued + k sampled cards`, and the samples are drawn ONCE per decision (common random numbers) so the gap is the
+   value of one card and not of two different draws. Before this, the loop discarded 6.58/9.10 cards of 10 and looked "free"
+   in 95.9% of decisions.
+3. **The corpus gate** (`night_loop.py`): before any training, the pack is read for the mulligan's per-game discard count and
+   the share of games that sell. A corpus whose mulligan exploration never reached the rows, whose discard count is the same
+   in every game, or whose sale exploration sells in >60% of games is skipped - and its exploration flag is DROPPED, so the
+   next corpus is generated without the flag instead of repeating the block (a gate that only skips would grind the night).
+   Tests: `ml/tests/test_corpus_gate.py`, `test_gate_drop.py`, `test_loop_guards.py` (18 tests).
+4. **`--rows-per-type`** (12 tonight). The cap SAMPLES per type, so at the old 8 the stop row of the longest mulligans was
+   dropped at random - the menu being taught was the one being distorted.
+
+### The measured facts that set tonight's configuration
+
+- A fixed mulligan count is not the answer: 0 -> 63.93%, 2 -> 63.75%, 5 -> 60.25% vs SMART (1000 games each).
+- The critic cannot gate the mulligan in either formulation (95.9% "free" with the correct marginal afterstate, mean 9.94
+  discards): its hand-identity block is masked, so it can only compare hand summaries, and most cards carry no printed points.
+  Documented in `docs/RESULTS.md`; the entry stays in `ml/gap_allowlist.json` until a learned policy passes.
+- Exploration reaches the menu: `MULLIGAN:0.9` gives **mean 5.55 discards** (max 11, stop in 26.2% of rows, 96.7% of games
+  discard at least one) - the owner's "about half", produced by exploration, not by a constant.
+- Ranking UNMI_RT and COLLECT_INCOME on the live path: 62.55% [59.5, 65.5] vs 63.93% - not a gain, so which menus are ranked
+  stays a flag (`--types`), not a code path. Closed, do not repeat.
+- The sale exploration is the measured killer of an iteration (89.7% of games selling -> 43.1%); a no-adv policy on that same
+  corpus gave 43.7%, so it was the corpus, not the advantage weighting. **No sale exploration tonight.**
+
+### The run
+
+```
+py -3 ml/night_loop.py --minutes 415 --games 5000 --threads 14 --critics 3 --patience 3 --max-flat 8   --abort-drop 0.06 --rows-per-type 12   --explore "BUILD_CARD:0.15,MULLIGAN:0.9"   --types BUILD_CARD,DRAFT_CARDS,PICK_PHASE,STANDARD_ACTION,PERFORM_BLUE_ACTION,DISCARD_CARDS,SELL_CARDS,SELL_CARDS_LAST_ROUND,BUILD_PAYMENT,PICK_CORPORATION,BLUE_INPUT,BUILD_INPUT,MULLIGAN   --matchups "AGENT:AGENT:0.85,AGENT:RANDOM:0.15"   --seed-policy D:/ares/runs/policy/1118-0058_13   --seed-critic D:/ares/runs/value/v_1118-0058_13_s1,D:/ares/runs/value/v_1118-0058_13_s2,D:/ares/runs/value/v_1118-0058_13_s3   --generation-symmetric --record-afterstates --critic-afterstates   --policy-replay --replay-packs 2 --policy-adv --phase-critic --value-scale max99
+```
+
+Log: `D:/ares/tmp/night_1118b.log`. Ledger: `D:/ares/tmp/night_ledger.json` (every row now carries `menus`: the corpus's
+mulligan count/spread and sale share, next to the score).
+
+### What the morning must check, in this order
+
+1. **Does the trained player mulligan by itself?** Generate 300 games with NO exploration on the new bundle
+   (`--mode play`, `--matchups AGENT:AGENT:1`), pack it, `py -3 ml/mulligan_report.py --pack <pack>`: the per-game count must
+   spread over several values and average near half the hand. A single spike means the policy learned a constant, which the
+   owner's rule forbids.
+2. **The sale must be rare or absent.** `py -3 ml/sale_report.py --pack <pack>`: a high share of games selling is the measured
+   collapse, not a strategy.
+3. **Profile** (`ml/check_player.py --model <bundle>`): cards built per game, phases, phase-3 standard-project share.
+4. **Then** the win rate. An effect under 1.5 points counts only at 10 000 games.
+5. Promotion only through the HoF gates (profile -> absolute worst benchmark -> duel 2000 games >= 54% -> pool).
