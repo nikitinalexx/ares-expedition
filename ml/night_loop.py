@@ -341,6 +341,9 @@ def main():
                         help="score the opponent's public view while GENERATING too. Measured 18/11: with it the player is "
                              "63.9%% vs SMART at 2.83 games/s, without it 59.7%% at 4.43 games/s (+56%% corpus per night). "
                              "The measurement stage always keeps it, so a weaker generator does not flatter the bundle.")
+    parser.add_argument("--policy-replay", action="store_true",
+                        help="also train the POLICY on the replay set, by merging the packs into one first "
+                             "(ml/pack_merge.py). The merge costs a few minutes and ~15 GiB of temporary disk.")
     parser.add_argument("--replay-packs", type=int, default=2,
                         help="train on the newest pack plus this many older ones of the same encoder (the anti-narrowing "
                              "replay). 1 = newest only, which is the old behaviour.")
@@ -565,12 +568,28 @@ def main():
         new_critic = ",".join(new_critics) if critic_ok else ""
 
         new_policy = f"{POLICY_ROOT}/{name}"
-        policy_args = [sys.executable, os.path.join(HERE, "train_policy_ce.py"), "--packed", pack, "--out", new_policy,
+        policy_pack = pack
+        merged_pack = ""
+        if args.policy_replay and training_data != pack:
+            # The policy cannot concatenate packs (lazy candidate views), so the replay set is merged into one pack on disk
+            # first. It is derived data: deleted right after the training, because the sources stay.
+            merged_pack = f"{PACK_ROOT}/{name}_merged"
+            merge_code = run([sys.executable, os.path.join(HERE, "pack_merge.py"), "--packs", training_data,
+                              "--out", merged_pack], os.path.join(out_dir, "merge.log"))
+            if merge_code == 0:
+                policy_pack = merged_pack
+                log(f"policy replay: merged {len(training_data.split(','))} packs for the policy")
+            else:
+                log("policy replay: the merge failed, the policy trains on the newest corpus alone")
+        policy_args = [sys.executable, os.path.join(HERE, "train_policy_ce.py"), "--packed", policy_pack,
+                       "--out", new_policy,
                        "--epochs", str(args.epochs_policy), "--entropy", str(args.entropy),
                        "--adv-weight-clip", args.adv_weight_clip]
         if args.policy_adv and new_critics:
             policy_args += ["--adv-value-model", new_critics[0]]
         code = run(policy_args, os.path.join(out_dir, "policy.log"))
+        if merged_pack:
+            shutil.rmtree(merged_pack, ignore_errors=True)
         policy_ok = code == 0 and len(glob.glob(os.path.join(new_policy, "*", "model.json"))) > 0
         log(f"policy {'ok' if policy_ok else 'FAILED'}: {tail(os.path.join(out_dir, 'policy.log'), 2).strip()}")
         if not (critic_ok and policy_ok):
@@ -594,6 +613,7 @@ def main():
                "failed": failed, "seconds": round(seconds, 1), "explore": args.explore,
                "types": args.types, "value_scale": args.value_scale,
                "generation_symmetric": bool(args.generation_symmetric),
+               "policy_replay": bool(args.policy_replay),
                "record_afterstates": bool(args.record_afterstates),
                "critic_afterstates": bool(args.critic_afterstates),
                "critic": new_critic, "critics": len(new_critics), "policy": new_policy, **result,
