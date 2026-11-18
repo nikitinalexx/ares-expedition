@@ -899,6 +899,43 @@ the critic decides "act or not". The afterstate of a mulligan or a sale is a nor
 it is the build menus where it is not. The measured list to try is `MULLIGAN`, `SELL_CARDS`, `UNMI_RT` - each one is a menu
 where the policy's own stop is the known collapse.
 
+### Anti-narrowing plan (owner's question, 2026-11-18)
+
+The owner's own NETWORK was also trained over several self-play iterations and it **lost universality**: it converged to one
+narrow line that beat its previous self on average. That is the failure mode this project calls "self-training decays
+silently", and it has already been seen here in miniature: phases 20% -> 7% -> 2.2%, the mulligan declined in 100% of rows,
+the in-phase sale at 100% stop, and the critic's card signal dropping to 0.074. What exists against it: RANDOM at 15% in the
+generation pool, absolute benchmarks with intervals every iteration, the profile gate (builds, phase mix, standard projects),
+the per-type coverage detector with its allowlist, the three-critic ensemble, and `rankOnly` (the critic re-orders a menu
+instead of dictating one line). What is missing, in the order it should be built:
+
+1. **Replay across iterations.** Training sees only the newest corpus, so the moment a style is abandoned the data that
+   taught it is gone and nothing pulls back. Train each iteration on a mixture of the last K packs (the loop already keeps
+   three). Needs `load_packed` in `ml/train_value.py` to accept a comma-separated list of packs and concatenate per type -
+   every pack of one encoder has the same schema, so concatenation is valid. Falsifier: with replay, the drop of a profile
+   dimension across iterations must be smaller than the same drop without it, at equal games.
+2. **A strategy-diversity sensor**, not just action coverage. A player can use all fifteen menus and still play one plan.
+   Per game, build a profile vector (builds per colour, phase picks, TR against card points, resource-card share, sales,
+   mulligans), cluster it, and record the number of live clusters and the largest cluster's share in the ledger. Flag when
+   the corpus collapses into one cluster. Falsifier: the flag must fire on the 16-17/11 corpora (known narrowing) and stay
+   quiet on the clean 18/11 one.
+3. **Acceptance on the worst benchmark, not the best.** SMART encodes the owner's heuristics, so a player can be tuned to
+   beat that one style; today a run is accepted on `max(spread)` implicitly. Report and gate on
+   `min(SMART, NETWORK, RANDOM)` alongside the profile gate.
+4. **A cycle detector.** Every iteration, play the newest bundle against the bundle from two or three iterations back,
+   head to head. A beats B, then A' beats A only on one line - that is a cycle, not progress, and it is invisible in the
+   absolute numbers.
+5. **Make act-vs-stop decidable, in this order** (prerequisite for the two dead menus: the mulligan discards 0 cards in
+   18 000 games, the in-phase sale answers stop in 100%): train V on `AFTERSTATE` rows (`--include-afterstates`, the rows
+   and the pack support already exist) and add one "this is an afterstate" bit to the observation, so `V(state)` and
+   `V(after action)` share a scale; then, for menus that involve the hand, **the policy picks the card and the critic only
+   gates act-vs-stop** (measured: letting the critic pick and gate gave 2.88% vs SMART, because its hand block is masked by
+   design and it cannot see which card is junk). Falsifier: `fullTypes=MULLIGAN` must stop collapsing, the mulligan sensor
+   must show a non-zero discard count, and the win rate must not drop; then 10 000 games.
+
+Order: 1 and 2 immediately after the current retraining, then 3-4, then 5 (which also unlocks the act/stop gate that the
+`fullTypes` experiment needs).
+
 ### Known follow-up: the parent menu still completes with the policy
 
 `PERFORM_BLUE_ACTION`'s afterstate (`OnePlySearch.applyOn`) fills the blue inputs with `innerChoice`, i.e. the policy, and
