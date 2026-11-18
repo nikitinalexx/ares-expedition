@@ -86,3 +86,21 @@ The full candidate list, with what each lever should move and its status, is in 
 `ml/tests/test_pipeline.py` (10 tests) pins the census, the phase mix, the pack roundtrip, the regret signs and the loop's
 parsers; the whole ml suite is 99 tests. A wrong instrument is worse than none: both instruments that changed a conclusion
 were wrong, and both are now covered (`phase_mix` off-by-one, coverage normalisation).
+
+## The cost of a corpus, by how many menus the critic ranks
+
+Measured 18/11: `--mode play`, 14 threads, `--max-rows-per-game-type 8`, `AGENT:AGENT:0.85,AGENT:RANDOM:0.15`.
+
+| ranked menus | games/s | 20 000 games |
+|---|---|---|
+| 3 (BUILD_CARD, DRAFT_CARDS, PICK_PHASE) | ~5 | ~1 h 07 m |
+| 8 (+ STANDARD_ACTION, PERFORM_BLUE_ACTION, DISCARD_CARDS, SELL_CARDS, SELL_CARDS_LAST_ROUND) | 2.6 | ~2 h 10 m |
+
+Every ranked menu costs a `new MarsGame` copy, an observation build and a forward pass **per candidate**, so the generation
+time is roughly linear in the number of ranked menus times the average menu size. `play()` used to cap the corpus at a fixed
+7200 s; the night of 18/11 hit it at 18 772 of 20 000 games and lost two hours. It now scales with the game count
+(`games * 5 + 600`). A 240-minute budget therefore allows two iterations of 6 000-8 000 games with eight menus, or one big
+corpus - not two of 20 000.
+
+When a corpus dies mid-generation, do not regenerate it: pack what exists (`pack_dataset.py` ignores the unfinished chunk),
+check it, and train on that. The raw corpus is the expensive artifact.

@@ -61,7 +61,12 @@ def classpath():
         return "target/classes;" + f.read().strip()
 
 
-def play(out, games, policy, critic, threads, explore, matchups, types, phase_critic="", timeout=7200):
+def play(out, games, policy, critic, threads, explore, matchups, types, phase_critic="", timeout=0):
+    """Generates one corpus. The wall-clock limit scales with the games: the fixed 7200 s was measured on three ranked
+    menus, and eight menus (standard projects, blue actions, the sell menus) generate at 2.6 games/s instead of ~5, so a
+    20 000-game corpus needs ~2 h 10 m - the night of 18/11 lost two hours to exactly that timeout, with the corpus at
+    18 772 of 20 000."""
+    timeout = max(timeout, int(games * 5) + 600)
     os.makedirs(out, exist_ok=True)
     args = [JAVA, "-Xmx10g"] + search_args(types, critic, phase_critic)
     if explore:
