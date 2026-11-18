@@ -936,6 +936,36 @@ instead of dictating one line). What is missing, in the order it should be built
 Order: 1 and 2 immediately after the current retraining, then 3-4, then 5 (which also unlocks the act/stop gate that the
 `fullTypes` experiment needs).
 
+### Speed plan: where the three hours go, and what is measured first (owner, 18/11)
+
+An iteration is **~3.1 h generation and ~15 min for everything else** (packing, three critics, policy, measurement):
+
+| phase | time | share |
+|---|---|---|
+| 20 000 games | ~180 min at 1.8-2.6 games/s | ~93% |
+| packing | ~1 min | <1% |
+| three critics | 20 s each (longer with replay) | ~2% |
+| policy CE | ~1.7 min | 1% |
+| measurement (1000 SMART, 500 RANDOM, scorecard, profile) | ~12 min | 4% |
+
+Inside one decision (~10 ms): observation build 236 us x 7.6 candidates = 1.8 ms, three critics 139 us x 3 x 7.6 = 3.2 ms,
+copy+apply ~600 us x 7.6 = 4.6 ms. So the levers, in the order they are measured:
+
+1. **A/B, no new code**: `-Dares.agent.search.batch=true` (one forward per critic over the whole menu instead of one per
+   candidate; `batchLogits` also skips feature columns that are zero across the menu). Measure games/s **and** the win rate:
+   the decisions must not move, and if they do, the batched path diverges from the single path - stop signal.
+2. **Batched inference service (branch `batcher-experiments`)**: adapted from the owner's `PolicyNNService` on `policy_ai`
+   - a queue, one batcher thread, up to BATCH_ROWS rows per forward, 50 ms backfill, reusable flat arrays, futures, one
+     ND4J/CUDA forward per critic per batch. The plugin point is `OnePlySearch.scoreBatch` (a `ValueScorer` interface), so
+     no per-decision-type hacks. Tests: queue order/chunking/exception propagation, batch-vs-single argmax equality on 100k
+     rows (bit-exactness is physically impossible across GEMV and GEMM kernels; the *observation* stays bit-exact).
+3. **Incremental observation** (the big one): sections with declared data dependencies, recompute only the dirty ones,
+   gated by a differential test that compares against the from-scratch build **bit-exactly** on real corpus decisions of all
+   15 types. That gate is the whole point: a representation that silently loses a bit is worse than a slow one.
+
+Expected ceiling: the neural part is ~1/3 of a decision, so GPU alone cannot beat ~30%; with the observation work a
+1.7-2x speedup on generation is realistic. Nothing here changes the player - it buys iterations per night.
+
 ### Known follow-up: the parent menu still completes with the policy
 
 `PERFORM_BLUE_ACTION`'s afterstate (`OnePlySearch.applyOn`) fills the blue inputs with `innerChoice`, i.e. the policy, and
