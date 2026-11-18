@@ -82,8 +82,11 @@ class MergeTest(unittest.TestCase):
 
     def setUp(self):
         self.tmp = tempfile.mkdtemp(prefix="pack_merge_")
-        self.source_a = "C:/ares/pack/after_smoke"
-        self.source_b = "C:/ares/pack/mull_smoke"
+        # fixtures live OUTSIDE PACK_ROOT: the night's disk guard prunes packs there, and a fixture that disappears turns
+        # the test into a skip (found on 18/11, when the prune removed the corpus packs and left the smoke packs in the
+        # replay set)
+        self.source_a = "D:/ares/fixtures/merge_smoke"
+        self.source_b = "D:/ares/fixtures/mull_smoke"
 
     def tearDown(self):
         shutil.rmtree(self.tmp, ignore_errors=True)

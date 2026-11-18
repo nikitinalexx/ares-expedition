@@ -88,6 +88,30 @@ def search_args(types, critic, phase_critic="", symmetric=True):
     return args
 
 
+def catastrophic(best, score, drop):
+    """True when a single iteration is so far below the best that the configuration is broken, not noisy.
+
+    Why a separate rule (owner, 2026-11-18): the night of 18/11 produced 43.1% against a best of 60.1%, and the loop logged
+    "REGRESSION 1/2" and carried on with the same configuration - it would have repeated it until the budget ran out. A drop
+    that large cannot be noise (the iteration-to-iteration spread is +-3 points), so the run stops, keeps every artifact and
+    says which knobs had changed.
+    """
+    if score is None or best is None:
+        return False
+    return (best - score) > drop
+
+
+def config_summary(args):
+    """The knobs that change what a score means - logged at the start and inside the abort message."""
+    types = args.types.split(",")
+    shown = f"{len(types)} menus" if len(types) > 3 else args.types
+    return (f"types={shown}"
+            f" sym_gen={bool(args.generation_symmetric)}"
+            f" afterstates={bool(args.record_afterstates)}/{bool(args.critic_afterstates)}"
+            f" replay={args.replay_packs}{'+policy' if args.policy_replay else ''}"
+            f" adv={bool(args.policy_adv)} explore='{args.explore}'")
+
+
 def log(message):
     print(f"[{time.strftime('%H:%M:%S')}] {message}", flush=True)
 
@@ -333,6 +357,10 @@ def main():
                         help="critics trained per iteration; the search averages them (ensemble_check.py measured 10.28%% "
                              "against 8.63%% for one, 10 000 games, disjoint intervals)")
     parser.add_argument("--patience", type=int, default=3)
+    parser.add_argument("--abort-drop", type=float, default=0.06,
+                        help="stop the night when ONE iteration is this far below the best (0.06 = 6 points). The measured "
+                             "iteration-to-iteration spread is +-3 points, so a drop this large is a broken configuration "
+                             "and repeating it wastes the night.")
     parser.add_argument("--max-flat", type=int, default=8,
                         help="stop when the best score has not improved for this many iterations, whatever the lever list "
                              "says: a night that grinds the same win rate is worse than a short honest one")
@@ -420,6 +448,7 @@ def main():
     games = args.games
     log(f"night starts: policy {policy}, critic {critic}, {games} games per iteration, "
         f"budget {args.minutes} min, best so far {best:.3f}")
+    log(f"configuration: {config_summary(args)}")
 
     prev_name = ""
     def double_corpus():
@@ -620,6 +649,7 @@ def main():
                "types": args.types, "value_scale": args.value_scale,
                "generation_symmetric": bool(args.generation_symmetric),
                "policy_replay": bool(args.policy_replay),
+               "abort_drop": args.abort_drop,
                "record_afterstates": bool(args.record_afterstates),
                "critic_afterstates": bool(args.critic_afterstates),
                "critic": new_critic, "critics": len(new_critics), "policy": new_policy, **result,
@@ -636,6 +666,12 @@ def main():
         prev_name = name
         policy, critic = new_policy, new_critic
         score = result["score"] or 0.0
+        if catastrophic(best, score, args.abort_drop):
+            log(f"CATASTROPHIC: {score:.3f} against the best {best:.3f} (drop {best - score:.3f} > "
+                f"{args.abort_drop}). A broken configuration, not noise - stopping the night with every artifact kept.")
+            log(f"the bundle {new_policy} + {new_critic} is kept for diagnosis; nothing is deleted")
+            log(f"configuration of this iteration: {config_summary(args)}")
+            break
         # A plateau has a ladder; a REGRESSION has a rollback. The run of 2026-11-17 fell 18.45 -> 11.15 over three
         # iterations because each one was seeded from the previous, worse bundle, and nothing compared them with the best.
         if best - score > 0.03:
