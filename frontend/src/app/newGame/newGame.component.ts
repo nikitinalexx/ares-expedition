@@ -77,9 +77,6 @@ export class NewGameComponent implements OnInit {
     }
     return false;
   }
-    }
-    return false;
-  }
 
   /**
    * AI (v1 and v2) is available only in a 2 player game. AI v2 was trained in one fixed configuration, so while it is
