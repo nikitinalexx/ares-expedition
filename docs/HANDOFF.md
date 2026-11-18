@@ -758,9 +758,8 @@ Critic AUC on the new corpus 0.913-0.917 (was 0.895). Channels, 300 games: resou
 forests 12.29 against 8.54, printed points 11.67 against 17.03, TR 29.2 against 33.44, total 88.2 against 81.14, builds
 33.2 against 31.9. The engine channel is now three times SMART's; printed card points are the only channel still behind.
 
-One inconsistency to resolve before quoting the scorecard: it reports a 49.67% win rate on 300 games where `--mode compare`
-reports 57.45% on 3000. The compare number is the one with the interval; re-run the scorecard on 1000 games to see whether
-the gap is a small-sample artefact or a real difference between the two harnesses.
+Resolved: the scorecard's 49.67% was a 300-game artefact. At 1000 games it reads **55.9%** and a score of 91.11 against
+79.40, which agrees with the compare interval. Use 1000 games as the scorecard's minimum, not 300.
 
 ### Why the card menus are still the next lever, and what the data says about them
 
