@@ -1010,6 +1010,35 @@ Plan, in the order that costs least first:
    discard, draft), where every candidate changes only private state - 31% saved on ~40% of the decisions, gated by a test
    that the public view is byte-identical across the candidates of those menus.
 
+### Hall of fame: promotion against our own champions (owner's idea, 18/11)
+
+`ml/hof.py` keeps a champion list with, per entry, the policy bundle, its critic ensemble **and its search configuration**
+(a bundle without its menu list is meaningless - the list alone moved a bundle by 40 points). A candidate is promoted only
+through three gates, cheapest first:
+
+1. **Absolute**: SMART and RANDOM within 1.5 points of the champion. A candidate may not buy a head-to-head edge by giving up
+   absolute strength.
+2. **Head to head against the current champion**: 2000 games, at least 54%, and the interval must clear 50%. 2000 games give
+   +-2.2 points, so 54% is separable.
+3. **The pool**: against the last three champions, no loss below 45%. Duels are cached per unordered pair, so each is played
+   once and a new iteration adds one row.
+
+The point of gate 3 is the owner's NETWORK lesson: a candidate that beats yesterday's self can be a specialist. Beating the
+recent pool is what "not specialising" looks like when only our own models may be opponents. SMART and NETWORK never enter a
+duel as opponents; they are benchmarks only.
+
+Mechanically a duel needs no engine change: `--mode compare --a AGENT --b AGENT_V2` reads `-Dares.agent.models` for one side
+and `-Dares.agent.models2` for the other, so two policy bundles play each other with the same search flags
+(`ml/hof.py duel`, verified end to end: 100 games, 0 failed). Until `-Dares.agent.valueModel2` exists both sides are judged by
+the same critic ensemble, so a duel is a **policy** comparison; the entry records that.
+
+Seven unit tests (`ml/tests/test_hof.py`) pin the gates: a real regression is refused, a small dip is allowed, a duel needs
+both the estimate and the interval, a missing number fails closed, the pool requires the recent duels, and an existing
+champion is never overwritten. Champion seeded: `1118-0058_13` (63.93 / 92.8).
+
+Next for this thread: `-Dares.agent.valueModel2` so each side carries its own critics, then the league corpus
+(`--matchups AGENT:AGENT:0.7,AGENT:AGENT_V2:0.15,AGENT:RANDOM:0.15`, where `models2` is a sampled old champion).
+
 ### Known follow-up: the parent menu still completes with the policy
 
 `PERFORM_BLUE_ACTION`'s afterstate (`OnePlySearch.applyOn`) fills the blue inputs with `innerChoice`, i.e. the policy, and
