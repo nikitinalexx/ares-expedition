@@ -1030,3 +1030,34 @@ almost no positive examples).
 Consequence: the split is not "policy picks, critic gates". The critic keeps ranking every menu it can rank; the only dead
 part is the *act-vs-stop* of the mulligan and the in-phase sale, and it has to be learned by the policy from explored,
 outcome-weighted games - not moved to another model.
+
+## Exploring the in-phase sale made the generator sell every round, and the player collapsed (2026-11-18)
+
+The iteration that fell to **43.1% [40.1, 46.2] against SMART** changed five things at once (generation without `symmetric`,
+`MULLIGAN:0.4` + `SELL_CARDS:0.3` exploration, AFTERSTATE rows, critic replay, `--policy-adv`). Two things were measured before
+blaming anything:
+
+1. **What the corpus looks like** (`ml/mulligan_report.py` on the new pack, 20 000 games):
+
+```
+MULLIGAN              stop 64.5%  games that discarded 55.6%  mean 1.01 cards  max 8
+SELL_CARDS (in-phase) stop 75.5%  games that discarded 89.7%  mean 1.96 cards  max 7
+SELL_CARDS_LAST_ROUND stop 29.6%  games that discarded 100%   mean 5.45 cards  max 8
+```
+
+Before the exploration the in-phase sale happened in **0%** of the games; with a 30% uniform exploration the generator sold in
+**89.7%** of them. That is the owner's point exactly: selling mid-round is a rare, strong-player decision ("обычно ты
+продаёшь посредине раунда очень мало"), and a generator that sells every round teaches a player that sells every round.
+
+2. **The loop's own rule was too weak to stop it**: it logged `REGRESSION 1/2` and started another identical iteration. Fixed
+with `--abort-drop 0.06` (one iteration 6+ points below the best ends the night, keeps every artifact and logs which knobs had
+changed).
+
+What this does **not** yet say: whether the 43% came from the corpus or from `--policy-adv` (advantage-weighted policy rows,
+used for the first time). The isolating run is a policy trained on the same corpus with the champion's recipe (no
+advantage weighting); and the next corpus drops the sale exploration entirely, keeping only the mulligan at 0.4, generated
+with `symmetric=true` so the generator itself is not weakened.
+
+The lesson recorded for the levers: **exploration is not a safety dial, it is a teaching signal.** A 30% uniform sale teaches
+"always sell"; a useful exploration of that menu has to be far more conservative (or the menu learned from outcomes instead of
+imitation).
