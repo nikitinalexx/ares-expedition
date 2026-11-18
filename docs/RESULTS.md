@@ -927,3 +927,25 @@ What this means for the "zero tolerance" rule: bit equality is achievable **insi
 observation must reproduce the from-scratch build exactly), and against a float64 reference; it is not achievable between
 two *different* implementations. A GPU path therefore needs its own reference check plus a measured count of how many real
 menu decisions flip against the pure-Java path.
+
+## The critic's matvec is already at the compiler's limit (2026-11-18, measured)
+
+`MatvecVariantsBenchTest` compares the model's own forward pass with hand-unrolled variants on identical weights
+(512x256 net, one observation, 2000 rounds, reused buffers):
+
+```
+current            191 us
+unrolled over i, 4  496 us (0.39x)
+unrolled over i, 8  424 us (0.45x)
+unrolled over j, 4  681 us (0.28x)
+unrolled over j, 8  492 us (0.39x)
+```
+
+Every variant is **slower**, and the j-unrolled ones are not even bit-identical (a different association order). Reading
+`MlpValueModel.logit` explains it: the current loop already (a) pre-accumulates the contribution of the zero baseline
+(`aBase`), (b) skips features whose raw value is zero, (c) keeps the inner loop contiguous over `w1T[i*h1 + j]`, and (d) skips
+dead ReLU units in the second layer. That is the memory-optimal order; changing it loses more than unrolling gains.
+
+Consequence for the speed work: **the neural term cannot be improved on CPU**. The two remaining levers are a batched
+GPU/ND4J service (the owner's queue design) or a smaller network - and the latter is a quality decision that must be
+measured, not assumed. The observation (44% of the per-candidate cost) remains a real CPU lever.

@@ -962,6 +962,10 @@ the observation second, the copy irrelevant. The levers, in the order they are m
 1. ~~A/B with `-Dares.agent.search.batch=true`~~ - **measured and rejected (18/11)**: 5x slower (49.1 against 9.4 us/row)
    and not bit-equal to the single-row path (a different float association order). `ValueBatchParityTest` pins both, so it
    cannot be re-enabled as an "optimisation". See `docs/RESULTS.md`.
+1b. ~~Hand-unrolling the critic's matvec~~ - **measured and rejected (18/11)**: every variant is 2-3.5x slower and the
+   j-unrolled ones are not bit-identical. `MlpValueModel.logit` already skips zero features, pre-accumulates the zero
+   baseline and keeps the inner loop contiguous. CPU-side neural work is exhausted; do not retry.
+
 2. **Batched inference service (branch `batcher-experiments`)**: adapted from the owner's `PolicyNNService` on `policy_ai`
    - a queue, one batcher thread, up to BATCH_ROWS rows per forward, 50 ms backfill, reusable flat arrays, futures, one
      ND4J/CUDA forward per critic per batch. The plugin point is `OnePlySearch.scoreBatch` (a `ValueScorer` interface), so
