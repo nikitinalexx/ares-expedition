@@ -1011,3 +1011,22 @@ Mechanically the split exists and is tested end to end: `-Dares.agent.search.pol
 candidate (the critic then only re-orders nothing for those menus), and `-Dares.agent.search.stopMargins=TYPE:N` gives the
 critic an act-despite-stop override per type - the global `stopMargin` cannot be used, because a build's afterstate beats the
 stop by ~1300 units and the same threshold made the player build every offered card (-4.7 points, measured earlier).
+
+## The role swap for the hand menus is refuted (2026-11-18, measured)
+
+`-Dares.agent.search.policyChoice=MULLIGAN,SELL_CARDS,SELL_CARDS_LAST_ROUND,DISCARD_CARDS,DRAFT_CARDS` (the policy picks the
+card, the critic only gates the act), 3000 games against SMART, same bundle and critics as the champion:
+
+| card picker on the five hand menus | vs SMART |
+|---|---|
+| the policy (it sees the hand identities) | 56.87% [55.1, 58.6] |
+| the critic (hand block masked, sees summaries) | **63.93% [62.2, 65.6]** |
+
+Seven points in favour of the model that *cannot* see the cards. The intuition ("give the choice to whoever holds the
+information") was wrong: the critic's "which removal lowers my hand value least" is a better rule than the policy's learned
+pick, presumably because the policy was trained on a corpus where those menus were never exercised properly (100% stop, so
+almost no positive examples).
+
+Consequence: the split is not "policy picks, critic gates". The critic keeps ranking every menu it can rank; the only dead
+part is the *act-vs-stop* of the mulligan and the in-phase sale, and it has to be learned by the policy from explored,
+outcome-weighted games - not moved to another model.

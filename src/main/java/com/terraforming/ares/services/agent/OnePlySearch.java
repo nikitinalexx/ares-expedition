@@ -186,10 +186,15 @@ public class OnePlySearch {
         // cheaper than making one net better and has no shared point of failure.
         String spec = System.getProperty("ares.agent.valueModel", "").trim();
         this.types = parseTypes(System.getProperty("ares.agent.search.types", "BUILD_CARD"));
-        // Menus where the POLICY picks the candidate and the critic only decides "act or not" (with stopMargin). The hands
-        // are the case that needs it: the critic's hand-identity block is masked, so it cannot tell which card is junk,
-        // while the policy can see the cards. Letting the critic choose *and* gate measured 2.88% against SMART; the split
-        // is the design that matches each model to the information it actually has.
+        /**
+         * Menus where the policy's candidate is kept and the critic only gates the act (with stopMargin).
+         * <p>
+         * <b>Measured and rejected for the hand menus (18/11): 56.87% against SMART, 3000 games, against the same bundle's
+         * 63.93% when the critic ranks those cards.</b> The intuition was that the critic cannot see the hand (its
+         * hand-identity block is masked) while the policy can, so the policy should pick. It is the other way round: the
+         * critic's summary-based ranking of "which card costs me least" beats the policy's own choice by seven points. Keep
+         * this property empty unless a menu is measured to need it, and never enable it for the hand menus.
+         */
         this.policyChoiceTypes = parseTypes(System.getProperty("ares.agent.search.policyChoice", ""));
         this.fullTypes = parseTypes(System.getProperty("ares.agent.search.fullTypes", ""));
         int configuredDebug = Integer.parseInt(System.getProperty("ares.agent.search.debug", "0"));
