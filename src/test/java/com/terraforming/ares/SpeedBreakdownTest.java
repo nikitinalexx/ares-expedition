@@ -40,7 +40,7 @@ class SpeedBreakdownTest extends EngineTestBase {
     @Autowired
     ObservationBuilder observationBuilder;
     @Autowired
-    com.terraforming.ares.services.ai.AdvancedAiDataCollectionService baseEncoder;
+    com.terraforming.ares.services.ai.advanced.AdvancedAiDataCollectionService baseEncoder;
 
     @Test
     void printsThePerCandidateCostOfCopyObservationAndCritic() throws IOException {

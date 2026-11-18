@@ -75,11 +75,13 @@ def replay_packs(newest, keep):
     return ",".join(ordered)
 
 
-def search_args(types, critic, phase_critic=""):
+def search_args(types, critic, phase_critic="", symmetric=True):
     """The search flags for one run. `types` decides which menus the critic ranks - PICK_PHASE included means the critic
     chooses the phase, with `phase_critic` as its own model set (Dares.agent.valueModel.phase)."""
     args = [a for a in SEARCH if not a.startswith("-Dares.agent.search.types=")]
     args.append(f"-Dares.agent.search.types={types}")
+    args = [a for a in args if not a.startswith("-Dares.agent.search.symmetric=")]
+    args.append(f"-Dares.agent.search.symmetric={'true' if symmetric else 'false'}")
     args.append(f"-Dares.agent.valueModel={critic}")
     if phase_critic:
         args.append(f"-Dares.agent.valueModel.phase={phase_critic}")
@@ -95,14 +97,15 @@ def classpath():
         return "target/classes;" + f.read().strip()
 
 
-def play(out, games, policy, critic, threads, explore, matchups, types, phase_critic="", timeout=0):
+def play(out, games, policy, critic, threads, explore, matchups, types, phase_critic="", timeout=0,
+         generation_symmetric=False):
     """Generates one corpus. The wall-clock limit scales with the games: the fixed 7200 s was measured on three ranked
     menus, and eight menus (standard projects, blue actions, the sell menus) generate at 2.6 games/s instead of ~5, so a
     20 000-game corpus needs ~2 h 10 m - the night of 18/11 lost two hours to exactly that timeout, with the corpus at
     18 772 of 20 000."""
     timeout = max(timeout, int(games * 5) + 600)
     os.makedirs(out, exist_ok=True)
-    args = [JAVA, "-Xmx10g"] + search_args(types, critic, phase_critic)
+    args = [JAVA, "-Xmx10g"] + search_args(types, critic, phase_critic, symmetric=generation_symmetric)
     if explore:
         args.append(f"-Dares.agent.explore={explore}")
     args += ["-cp", classpath(), "com.terraforming.ares.selfplay.SelfPlayMain", "--mode", "play",
@@ -323,6 +326,10 @@ def main():
                         help="stop when the best score has not improved for this many iterations, whatever the lever list "
                              "says: a night that grinds the same win rate is worse than a short honest one")
     parser.add_argument("--keep-packs", type=int, default=3)
+    parser.add_argument("--generation-symmetric", action="store_true",
+                        help="score the opponent's public view while GENERATING too. Measured 18/11: with it the player is "
+                             "63.9%% vs SMART at 2.83 games/s, without it 59.7%% at 4.43 games/s (+56%% corpus per night). "
+                             "The measurement stage always keeps it, so a weaker generator does not flatter the bundle.")
     parser.add_argument("--replay-packs", type=int, default=2,
                         help="train on the newest pack plus this many older ones of the same encoder (the anti-narrowing "
                              "replay). 1 = newest only, which is the old behaviour.")
@@ -455,7 +462,8 @@ def main():
 
         phase_critic = (critic.split(",")[0] if isinstance(critic, str) else critic[0]) if args.phase_critic else ""
         code, seconds, summary = play(raw, games, policy, critic, args.threads, args.explore, args.matchups,
-                                      args.types, phase_critic)
+                                      args.types, phase_critic,
+                                      generation_symmetric=args.generation_symmetric)
         played = summary.get("gamesPlayed", 0)
         failed = summary.get("gamesFailed", 0)
         # The engine throws loudly when a menu exceeds MAX_CANDIDATES ("menu has N candidates; the decision is sized for M").
@@ -572,6 +580,7 @@ def main():
         row = {"iteration": index, "name": name, "games": played, "rows": summary.get("rows"),
                "failed": failed, "seconds": round(seconds, 1), "explore": args.explore,
                "types": args.types, "value_scale": args.value_scale,
+               "generation_symmetric": bool(args.generation_symmetric),
                "critic": new_critic, "critics": len(new_critics), "policy": new_policy, **result,
                "time": time.strftime("%Y-%m-%dT%H:%M:%S")}
         ledger.append(row)
