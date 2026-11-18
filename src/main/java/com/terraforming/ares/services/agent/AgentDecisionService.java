@@ -413,8 +413,17 @@ public class AgentDecisionService {
 
     public void playBlueAction(MarsGame game, Player player, int cardId) {
         Card card = cardService.getCard(cardId);
-        Map<Integer, List<Integer>> input = blueInputDecisions.fill(game, player, card,
-                decision -> choose(game, player, decision));
+        // The input of a blue action is where the engine is actually played: which card is spent, where the animal goes,
+        // which resource is converted. Each slot is ranked by the search when it has more than one legal option, and the
+        // executed index goes through choose() so the corpus records the action the game really took.
+        Map<Integer, List<Integer>> input = onePlySearch.blueInputs(game, player, card,
+                (decision, choices, partial, slotCard) -> {
+                    int ranked = onePlySearch.rankBlueSlot(game, player, slotCard, choices, partial);
+                    return choose(game, player, decision, ranked);
+                });
+        if (input == null) {
+            input = blueInputDecisions.fill(game, player, card, decision -> choose(game, player, decision));
+        }
         aiTurnService.performBlueAction(game, player, cardId, input);
     }
 

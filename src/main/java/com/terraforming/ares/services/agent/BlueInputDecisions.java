@@ -80,7 +80,28 @@ public class BlueInputDecisions {
 
     public Map<Integer, List<Integer>> fill(MarsGame game, Player player, Card card,
                                             ToIntFunction<Decision> choose) {
-        Map<Integer, List<Integer>> input = new HashMap<>();
+        return fillRanked(game, player, card, new HashMap<>(),
+                (decision, choices, partial, slotCard) -> choose.applyAsInt(decision));
+    }
+
+    /**
+     * One input slot, decided by a caller that can see what has been decided so far - which is what a counterfactual
+     * needs: to score "this input instead of that one", the evaluator has to replay the slots already filled and let the
+     * policy fill the rest (see OnePlySearch.rankBlueSlot).
+     */
+    public interface SlotChooser {
+        int choose(Decision decision, List<BlueInputChoice> choices, Map<Integer, List<Integer>> partial, Card card);
+    }
+
+    /** Fills the slots of a blue action, asking {@code chooser} for every slot. */
+    public Map<Integer, List<Integer>> fillRanked(MarsGame game, Player player, Card card, SlotChooser chooser) {
+        return fillRanked(game, player, card, new HashMap<>(), chooser);
+    }
+
+    /** Fills the remaining slots starting from {@code start}: the afterstate of an input that is already half decided. */
+    public Map<Integer, List<Integer>> fillRanked(MarsGame game, Player player, Card card,
+                                                  Map<Integer, List<Integer>> start, SlotChooser chooser) {
+        Map<Integer, List<Integer>> input = start;
         while (true) {
             Optional<Slot> slot = nextSlot(game, player, card, input);
             if (slot.isEmpty()) {
@@ -89,7 +110,7 @@ public class BlueInputDecisions {
             }
             List<BlueInputChoice> choices = slot.get().choices();
             Decision decision = decision(game, player, choices);
-            int index = choose.applyAsInt(decision);
+            int index = chooser.choose(decision, choices, input, card);
             apply(input, choices.get(index), card, player);
         }
     }

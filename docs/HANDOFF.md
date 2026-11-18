@@ -788,12 +788,24 @@ where 1000 games read 55.9% and 3000 games read 57.45%.
 `BUILD_PAYMENT`, `BUILD_INPUT`, `BLUE_INPUT`, `PICK_CORPORATION`. All four are applied by an existing call the live agent
 already makes, so each is a matter of asking the search instead of the policy:
 
-| menu | mean menu | how the afterstate is produced | status |
+| menu | mean menu | how the afterstate is produced | status (3000 games vs SMART, bundle `1118-0058_13`) |
 |---|---|---|---|
-| BUILD_PAYMENT | 1.4 (p99 10) | `aiTurnService.buildGreen/BlueRedProjectSync(copy, me, card, plan.payments(), input)` - the caller holds the card, so the afterstate is one build per plan | **implemented** (`OnePlySearch.choosePayment`), measurement running |
-| PICK_CORPORATION | 6.0 | `CorporationChoice` already carries `(corporationId, input, candidate)`; apply the corporation and its on-built input to a copy | next |
-| BLUE_INPUT | 7.4 | nested under `PERFORM_BLUE_ACTION`: `blueInputDecisions.fill` builds the input map, one slot at a time | after that |
-| BUILD_INPUT | 5.1 | same shape, but the slots form a sequence (phase upgrade / tag / where the animal goes), so the ranking is per slot with the rest filled by the policy | last |
+| BUILD_PAYMENT | 1.4 (p99 10) | `buildGreen/BlueRedProjectSync(copy, me, card, plan.payments(), input)`; the live build holds the card, so `choosePayment` is called from there | **done**: 57.85% [56.1, 59.6] against 56.23% [54.5, 58.0] |
+| PICK_CORPORATION | 6.0 | `PickCorporationProcessor.processTurn(...)` is already synchronous; `CorporationChoice` carries the on-built input | **done**: 58.00% [56.2, 59.8]; Zetacell's forced discard is now settled (below) |
+| both of the above | | | **59.08% [57.3, 60.8]**, 10 000-game confirmation running |
+| BLUE_INPUT | 7.4 | `blueInputDecisions.fillRanked` hands each slot's partial input to the search, which applies the candidate, lets the policy fill the rest and performs the action on a copy | implemented, not yet measured |
+| BUILD_INPUT | 5.1 | same shape, but the slots form a sequence (phase upgrade / tag / where the animal goes) | not implemented |
+
+The corporation afterstate is now **settled**: Zetacell draws five and forces a discard of four, and the engine applies
+that turn asynchronously during the corporation phase, so on a copy it never happened and V saw five extra cards and none
+of the four given back. `OnePlySearch.settleQueuedDiscards` plays the discards out with the policy (the four it keeps are
+not the critic's business yet; the point is that the position is the one Zetacell really leads to).
+
+MayNi needed nothing: `BuildDto(GREEN_OR_BLUE, 12, 12)` is a build allowance, and the observation already encodes build
+slots per colour (`ObservationBuilder.builds`), so V sees it. Every corporation with `onBuiltEffectApplicableToItself()`
+(Austellar, Apollo, Exocorp, Hyperion, NebuLabs, Modpro, Sultira) has its legal inputs described in
+`CorporationDecisions.templates`, so the corporation menu cannot throw for an unlisted card; the buffed corporations need
+no input. Hyperion's template is `phaseUpgrades(4,5)` = the two upgrade slots of phase 3, which is what its own text says.
 
 `BUILD_PAYMENT` is first because it is the cheapest (a build usually has one legal plan) and the only one that is literally
 money: restructured/anaerobic/heat plans buy the same card for less.

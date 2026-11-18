@@ -132,6 +132,7 @@ public class OnePlySearch {
     private final boolean horizonStop;
     private final int debug;
     private final PickCorporationProcessor pickCorporationProcessor;
+    private final HandCardDecisions handCardDecisions;
     private final ThreadLocal<float[]> lastAfterstate = new ThreadLocal<>();
     /** Re-entrancy guard: the build of a candidate asks the policy for its inner decisions, never the search. */
     private final ThreadLocal<Boolean> busy = ThreadLocal.withInitial(() -> Boolean.FALSE);
@@ -149,7 +150,8 @@ public class OnePlySearch {
 
     public OnePlySearch(ObservationBuilder observationBuilder, NeuralPolicy neuralPolicy,
                         BuildInputDecisions buildInputDecisions, BuildPaymentDecisions buildPaymentDecisions,
-                        BlueInputDecisions blueInputDecisions, AiTurnService aiTurnService, CardService cardService,
+                        BlueInputDecisions blueInputDecisions, HandCardDecisions handCardDecisions,
+                        AiTurnService aiTurnService, CardService cardService,
                         StateTransitionService stateTransitionService, PickPhaseProcessor pickPhaseProcessor,
                         PickCorporationProcessor pickCorporationProcessor,
                         @Lazy SimulationProcessorService simulationProcessorService, WinPointsService winPointsService) {
@@ -158,6 +160,7 @@ public class OnePlySearch {
         this.buildInputDecisions = buildInputDecisions;
         this.buildPaymentDecisions = buildPaymentDecisions;
         this.blueInputDecisions = blueInputDecisions;
+        this.handCardDecisions = handCardDecisions;
         this.aiTurnService = aiTurnService;
         this.cardService = cardService;
         this.stateTransitionService = stateTransitionService;
@@ -379,6 +382,101 @@ public class OnePlySearch {
     }
 
     /**
+     * Plays out the discards a corporation puts in the queue, so the afterstate is the settled position.
+     * <p>
+     * Zetacell draws five cards and then forces a discard of four (`DiscardCardsTurn`, expected as the next turn). The
+     * engine applies that turn asynchronously during the corporation phase, so on a copy it would never happen and V
+     * would see five extra cards and none of the four it has to give back - an afterstate that flatters Zetacell. The
+     * cards are chosen by the policy ({@link HandCardDecisions#build}), because which four to keep is exactly the part the
+     * critic is not trusted with yet; the settlement only has to be the position Zetacell really leads to.
+     */
+    private void settleQueuedDiscards(MarsGame copy, Player me) {
+        for (int guard = 0; guard < 8; guard++) {
+            com.terraforming.ares.model.turn.Turn next = me.getNextTurn();
+            if (!(next instanceof com.terraforming.ares.model.turn.DiscardCardsTurn discard)
+                    || !discard.expectedAsNextTurn()) {
+                return;
+            }
+            List<Integer> chosen = new ArrayList<>();
+            for (int i = 0; i < discard.getSize(); i++) {
+                Decision slot = handCardDecisions.build(DecisionType.DISCARD_CARDS, copy, me,
+                        me.getHand().getCards(), chosen, false);
+                int index = innerChoice(slot);
+                if (index < 0 || index >= slot.candidates().size()) {
+                    break;
+                }
+                int id = slot.candidates().get(index).id();
+                if (id == CardFeatures.STOP_ID || !me.getHand().getCards().contains(id)) {
+                    break;
+                }
+                chosen.add(id);
+            }
+            for (int id : chosen) {
+                me.getHand().removeCard(id);
+            }
+            me.removeNextTurn();
+        }
+    }
+
+    /**
+     * The blue action's input slots, decided by {@code chooser} - which the caller wires to {@link #rankBlueSlot}.
+     * Returns null when the input menus are not ranked, so the caller keeps the policy's own fill.
+     */
+    public Map<Integer, List<Integer>> blueInputs(MarsGame game, Player player, Card card,
+                                                  BlueInputDecisions.SlotChooser chooser) {
+        if (models.isEmpty() || !types.contains(DecisionType.BLUE_INPUT)) {
+            return null;
+        }
+        return blueInputDecisions.fillRanked(game, player, card, chooser);
+    }
+
+    /**
+     * Ranks one slot of a blue action's input by {@code V(afterstate)}: the slots already filled are replayed, the
+     * candidate is applied, the remaining slots are filled by the policy, and the action is performed on the copy.
+     * <p>
+     * This is what "in what order do I press the actions, what do I spend, where does the microbe go" needs: the parent
+     * menu ({@link DecisionType#PERFORM_BLUE_ACTION}) says which action, this says how it is executed.
+     */
+    public int rankBlueSlot(MarsGame game, Player player, Card card, List<BlueInputChoice> choices,
+                            Map<Integer, List<Integer>> partial) {
+        if (models.isEmpty() || !types.contains(DecisionType.BLUE_INPUT) || busy.get() || choices.size() < 2) {
+            return -1;
+        }
+        busy.set(Boolean.TRUE);
+        strongAnswer.set(player.getDifficulty() != null && player.getDifficulty().isStrongAgent());
+        currentNets.set(models);
+        long started = System.nanoTime();
+        try {
+            int best = -1;
+            float bestScore = Float.NEGATIVE_INFINITY;
+            for (int i = 0; i < choices.size(); i++) {
+                try {
+                    MarsGame copy = new MarsGame(game);
+                    Player me = copy.getPlayerByUuid(player.getUuid());
+                    Map<Integer, List<Integer>> input = new HashMap<>(partial);
+                    blueInputDecisions.apply(input, choices.get(i), card, me);
+                    Map<Integer, List<Integer>> full = blueInputDecisions.fillRanked(copy, me, card, input,
+                            (decision, slotChoices, slotInput, slotCard) -> innerChoice(decision));
+                    aiTurnService.performBlueAction(copy, me, card.getId(), full);
+                    float score = logit(observationBuilder.build(copy, me));
+                    if (score > bestScore) {
+                        bestScore = score;
+                        best = i;
+                    }
+                } catch (RuntimeException ignored) {
+                    // an input the engine rejects on a copy is not a candidate for the ranking
+                }
+            }
+            return best;
+        } finally {
+            strongAnswer.set(Boolean.FALSE);
+            busy.set(Boolean.FALSE);
+            currentNets.remove();
+            nanos.addAndGet(System.nanoTime() - started);
+        }
+    }
+
+    /**
      * Ranks the offered corporations (each with the input its on-built effect needs) by {@code V(afterstate)}.
      * <p>
      * The corporation is the opening commitment: it decides the starting bonus, and - as the owner put it - what the
@@ -406,6 +504,7 @@ public class OnePlySearch {
                     CorporationChoice choice = choices.get(i);
                     pickCorporationProcessor.processTurn(new com.terraforming.ares.model.turn.CorporationChoiceTurn(
                             player.getUuid(), choice.corporationId(), choice.input()), copy);
+                    settleQueuedDiscards(copy, me);
                     float score = logit(observationBuilder.build(copy, me));
                     if (score > bestScore) {
                         bestScore = score;
