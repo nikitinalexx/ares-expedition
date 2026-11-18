@@ -260,6 +260,11 @@ def main():
                         help="entropy bonus on the policy (0 = off): without it the trainer sharpens the policy onto one "
                              "option every iteration, which is how phase 5 fell to 2%")
     parser.add_argument("--adv-weight-clip", default="0.2,3.0")
+    parser.add_argument("--policy-adv", action="store_true",
+                        help="weight the policy's rows by outcome - V(s) of the first new critic (train_policy_ce "
+                             "--adv-value-model). Off by default because it is a real change of the objective: without it "
+                             "an explored row teaches the policy the random action that was taken, which is why exploring a "
+                             "collapsed menu (the mulligan) was never safe before.")
     parser.add_argument("--coverage-drop", type=float, default=0.05)
     parser.add_argument("--explore", default="BUILD_CARD:0.15")
     parser.add_argument("--names", default="D:/ares/tmp/names_now.json")
@@ -446,9 +451,12 @@ def main():
         new_critic = ",".join(new_critics) if critic_ok else ""
 
         new_policy = f"{POLICY_ROOT}/{name}"
-        code = run([sys.executable, os.path.join(HERE, "train_policy_ce.py"), "--packed", pack, "--out", new_policy,
-                    "--epochs", str(args.epochs_policy), "--entropy", str(args.entropy),
-                    "--adv-weight-clip", args.adv_weight_clip], os.path.join(out_dir, "policy.log"))
+        policy_args = [sys.executable, os.path.join(HERE, "train_policy_ce.py"), "--packed", pack, "--out", new_policy,
+                       "--epochs", str(args.epochs_policy), "--entropy", str(args.entropy),
+                       "--adv-weight-clip", args.adv_weight_clip]
+        if args.policy_adv and new_critics:
+            policy_args += ["--adv-value-model", new_critics[0]]
+        code = run(policy_args, os.path.join(out_dir, "policy.log"))
         policy_ok = code == 0 and len(glob.glob(os.path.join(new_policy, "*", "model.json"))) > 0
         log(f"policy {'ok' if policy_ok else 'FAILED'}: {tail(os.path.join(out_dir, 'policy.log'), 2).strip()}")
         if not (critic_ok and policy_ok):
