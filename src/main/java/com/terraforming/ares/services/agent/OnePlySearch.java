@@ -6,6 +6,7 @@ import com.terraforming.ares.model.Player;
 import com.terraforming.ares.model.StandardProjectType;
 import com.terraforming.ares.model.StateType;
 import com.terraforming.ares.model.turn.PhaseChoiceTurn;
+import com.terraforming.ares.processors.turn.PickCorporationProcessor;
 import com.terraforming.ares.processors.turn.PickPhaseProcessor;
 import com.terraforming.ares.services.CardService;
 import com.terraforming.ares.services.SimulationProcessorService;
@@ -130,6 +131,7 @@ public class OnePlySearch {
      */
     private final boolean horizonStop;
     private final int debug;
+    private final PickCorporationProcessor pickCorporationProcessor;
     private final ThreadLocal<float[]> lastAfterstate = new ThreadLocal<>();
     /** Re-entrancy guard: the build of a candidate asks the policy for its inner decisions, never the search. */
     private final ThreadLocal<Boolean> busy = ThreadLocal.withInitial(() -> Boolean.FALSE);
@@ -149,6 +151,7 @@ public class OnePlySearch {
                         BuildInputDecisions buildInputDecisions, BuildPaymentDecisions buildPaymentDecisions,
                         BlueInputDecisions blueInputDecisions, AiTurnService aiTurnService, CardService cardService,
                         StateTransitionService stateTransitionService, PickPhaseProcessor pickPhaseProcessor,
+                        PickCorporationProcessor pickCorporationProcessor,
                         @Lazy SimulationProcessorService simulationProcessorService, WinPointsService winPointsService) {
         this.observationBuilder = observationBuilder;
         this.neuralPolicy = neuralPolicy;
@@ -159,6 +162,7 @@ public class OnePlySearch {
         this.cardService = cardService;
         this.stateTransitionService = stateTransitionService;
         this.pickPhaseProcessor = pickPhaseProcessor;
+        this.pickCorporationProcessor = pickCorporationProcessor;
         this.simulationProcessorService = simulationProcessorService;
         this.winPointsService = winPointsService;
         String mode = System.getProperty("ares.agent.search", "off");
@@ -363,6 +367,52 @@ public class OnePlySearch {
                     }
                 } catch (RuntimeException ignored) {
                     // a plan the engine rejects on a copy is simply not a candidate for the ranking
+                }
+            }
+            return best;
+        } finally {
+            strongAnswer.set(Boolean.FALSE);
+            busy.set(Boolean.FALSE);
+            currentNets.remove();
+            nanos.addAndGet(System.nanoTime() - started);
+        }
+    }
+
+    /**
+     * Ranks the offered corporations (each with the input its on-built effect needs) by {@code V(afterstate)}.
+     * <p>
+     * The corporation is the opening commitment: it decides the starting bonus, and - as the owner put it - what the
+     * mulligan keeps and what the first builds aim at (a corporation that marks an award is worth chasing that award).
+     * The engine applies it synchronously in {@code PickCorporationProcessor}, so the afterstate on a copy is exact.
+     * Offered once per game, so the cost is irrelevant.
+     *
+     * @return the index of the corporation with the best afterstate, or -1 when the search does not apply
+     */
+    public int chooseCorporation(MarsGame game, Player player, List<CorporationChoice> choices) {
+        if (models.isEmpty() || !types.contains(DecisionType.PICK_CORPORATION) || busy.get() || choices.size() < 2) {
+            return -1;
+        }
+        busy.set(Boolean.TRUE);
+        strongAnswer.set(player.getDifficulty() != null && player.getDifficulty().isStrongAgent());
+        currentNets.set(models);
+        long started = System.nanoTime();
+        try {
+            int best = -1;
+            float bestScore = Float.NEGATIVE_INFINITY;
+            for (int i = 0; i < choices.size(); i++) {
+                try {
+                    MarsGame copy = new MarsGame(game);
+                    Player me = copy.getPlayerByUuid(player.getUuid());
+                    CorporationChoice choice = choices.get(i);
+                    pickCorporationProcessor.processTurn(new com.terraforming.ares.model.turn.CorporationChoiceTurn(
+                            player.getUuid(), choice.corporationId(), choice.input()), copy);
+                    float score = logit(observationBuilder.build(copy, me));
+                    if (score > bestScore) {
+                        bestScore = score;
+                        best = i;
+                    }
+                } catch (RuntimeException ignored) {
+                    // a corporation the engine rejects on a copy is not a candidate for the ranking
                 }
             }
             return best;

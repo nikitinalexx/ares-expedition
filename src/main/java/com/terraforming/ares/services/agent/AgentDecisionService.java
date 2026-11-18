@@ -234,7 +234,8 @@ public class AgentDecisionService {
 
     public CorporationChoice pickCorporation(MarsGame game, Player player) {
         List<CorporationChoice> choices = corporationDecisions.options(game, player);
-        int index = choose(game, player, corporationDecisions.decision(game, player, choices));
+        int searched = onePlySearch.chooseCorporation(game, player, choices);
+        int index = choose(game, player, corporationDecisions.decision(game, player, choices), searched);
         return choices.get(index);
     }
 
@@ -362,7 +363,10 @@ public class AgentDecisionService {
         Map<Integer, List<Integer>> input = buildInputDecisions.fill(game, player, card,
                 decision -> choose(game, player, decision));
         List<BuildPaymentChoice> payments = buildPaymentDecisions.options(game, player, card, input);
-        int index = choose(game, player, buildPaymentDecisions.decision(game, player, card, payments));
+        // A discount plan changes what the same card costs, so it is worth a real counterfactual rather than the policy's
+        // guess: the search applies each plan to a copy (OnePlySearch.choosePayment) and the row records that plan.
+        int searched = onePlySearch.choosePayment(game, player, cardId, input, payments);
+        int index = choose(game, player, buildPaymentDecisions.decision(game, player, card, payments), searched);
         // A discount plan changes what the same card costs, so it is worth a real counterfactual rather than the policy's
         // guess: the search applies each plan to a copy and keeps the best afterstate (see OnePlySearch.choosePayment).
         int ranked = onePlySearch.choosePayment(game, player, cardId, input, payments);
@@ -531,6 +535,16 @@ public class AgentDecisionService {
     }
 
     private int choose(MarsGame game, Player player, Decision decision) {
+        return choose(game, player, decision, -1);
+    }
+
+    /**
+     * @param searched what the search already decided for this decision when it needed context the decision itself does
+     *                 not carry (a payment plan needs the card), or -1. It is passed IN so that the row records the
+     *                 action that was actually taken: recording the policy's index and then acting differently would
+     *                 teach the policy a choice the game never made.
+     */
+    private int choose(MarsGame game, Player player, Decision decision, int searched) {
         if (RECORD_AFTERSTATES) {
             recordAfterstate(game, player);
             lastDecision.put(key(game, player), decision);
@@ -546,7 +560,7 @@ public class AgentDecisionService {
         if (index < 0) {
             // One-ply search on the state value net (off unless -Dares.agent.search=oneply): the candidate is applied to a
             // copy and V(afterstate) decides. Falls back to the policy for every type / state it does not cover.
-            index = onePlySearch.choose(decision, game, player);
+            index = searched >= 0 ? searched : onePlySearch.choose(decision, game, player);
         }
         if (index < 0) {
             index = neuralPolicy.choose(decision,
