@@ -1629,3 +1629,56 @@ A methodological note worth keeping: the 40-game smoke of this flag showed **32-
 Where that leaves the plan: the phase decision (the PLAN) is the only place where the search has produced a measured gain
 (+5.9), and forcing or lengthening it fails (bias 44%, two-round horizon 65%). The value's accuracy is the remaining lever with
 evidence behind it (breakdown +8.2 at 500 games), and its 5000-game corpus is generating.
+
+## Our V is blind to a different plan - and this is measurable (2026-11-19, owner's question)
+
+The owner asked: run our value over finished games against NETWORK - does it systematically mis-score the other side, because it
+only ever saw phase-3 games? It does, and here is the number. 200 games of AGENT vs NETWORK (we win 37%, mean margin -13), our
+three critics evaluated on every PICK_PHASE row (`ml/value_check.py`):
+
+| | value |
+|---|---|
+| AUC(V -> win) | 0.866 overall, 0.894 / 0.839 per seat |
+| **mean V** | **+0.94 (seat 0) and +1.28 (seat 1) logits** |
+| mean margin on those rows | -13.1 and -4.3 points |
+| "V > +0.8 and lost" | **1 188** of 3 114 confident rows |
+| "V < -0.8 and won" | 5 |
+
+So the value still *ranks* (AUC ~0.87) but its *absolute* calibration is wrong by about a whole logit in the optimistic direction:
+in games we lose two out of three, it reports "winning" on both seats. That is not a bug in the network - `V(s)` is trained as
+"who wins if both sides play our game", and against a different plan the continuation is different. The search then trusts an
+over-optimistic value and keeps its plan while the other one wins.
+
+Two consequences:
+
+1. **The UI now shows exactly this number** (`GameController.winProbability` asks `OnePlySearch.winProbability`), so a human game
+   will display the agent's own, over-optimistic estimate - the same bias the owner can now watch live.
+2. **A value trained against a different strong plan should be less blind**, and the policy need not be touched at all: the
+   earlier failure of the A-vs-champion corpus was the POLICY (it learned the average, 31%); the CRITIC trained on the same games
+   may be exactly what blind-spot removal looks like. Measuring that now: A's policy + the A-vs-champion critics, against SMART
+   and against NETWORK.
+
+## Not blind to stockpiles: the value prices 200 MC, and the old NETWORK was the misleading one (2026-11-19)
+
+The owner played a game in which he held 200 MC and 80 heat and converted them into ~90 points on the last turns; the AI's
+displayed win chance went 85-90% -> 53% (at 90-90) -> 5% after the conversion. He asked whether our value is deaf to large
+numbers (his own NETWORK divided by 100 without clipping and "always worked qualitatively").
+
+Measured on our critics (three-model ensemble, one real state, only the feature changed):
+
+| my MC | V (logit) | | opponent MC | V |
+|---|---|---|---|---|
+| 0 | +0.08 | | 0 | +0.50 |
+| 100 | +1.77 | | 100 | -1.36 |
+| **200** | **+2.92** | | **200** | **-2.20** |
+| 400 | +4.64 | | 400 | -3.43 |
+
+and opponent heat 80 -> -0.54. So the value is not deaf: it prices my stockpile at P~0.95 and the opponent's at P~0.10, and the
+standardisation does not clip there (mean 0, max99 0.326, so 200 MC is z=6.1 against a clip of 40).
+
+**What was deaf was the OLD NETWORK**, whose prediction the UI showed until today (`nnService ... ModelType.SECOND`) - the
+85-90% while losing is its number, not our agent's. The UI now shows our own estimate, so the next game can be compared directly.
+
+What remains true is the PLAY side: the agent does not stop the opponent from accumulating resources in the first place. That is a
+plan question (it plays its own engine and never contests the stockpile), not a pricing bug - and it is the same "contest"
+question the opponent weight could not answer.
