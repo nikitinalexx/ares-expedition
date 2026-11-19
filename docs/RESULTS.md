@@ -1732,3 +1732,19 @@ Same 1250-game corpus, same policy, two critics trained on exactly that data, 10
 So the +8.2 points the breakdown showed at 500 games was noise: at 1250 games both targets are ~30%, and with 5000-game critics
 the same policy reaches 73%. **Corpus size dominates the target**, by more than 40 points. The breakdown remains a noise-reduction
 idea (it cannot price MC or cost reducers anyway), but it is not the lever either.
+
+## The plan preference lives in the VALUE, not in the search (2026-11-19, plan probe)
+
+The cheapest way to ask "can the value prefer a different plan if it is allowed to play one?" is to commit the rollout to the
+candidate phase: `-Dares.agent.search.planProbe=true` makes the played-out round keep our seat on that phase at the next pick, so
+the comparison is "commit to this plan" instead of "play one round as usual".
+
+Neither moves the plan: baseline 10/30/36/6/17, with the probe 8/34/38/3/17. Even when the rollout is FORCED to play the other
+line, the value still prefers phase 3. So the preference is inside V, not in the search structure - which is why every structural
+change (horizon, samples, build playout, plan probe) moves nothing, and why a bigger tree would only execute the same preference
+more precisely.
+
+Everything measured today therefore points at one thing: the preference comes from the corpus (a corpus inherits its generator's
+strength, one corpus = one policy), and the corpus size is the dominant quality factor (500 games -> 11%, 1250 -> 30%, 5000 -> 73%).
+The next high-information experiment is not a new search but **much more of the same data**: one night of 20 000 games with the
+current pipeline, then the same measurements.
