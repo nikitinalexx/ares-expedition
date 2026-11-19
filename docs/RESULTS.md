@@ -1704,3 +1704,18 @@ distribution, so the plan is neither valued nor played.
 
 That is the honest answer to "why did I win with the economy engine": not that the value is blind to money (it prices my 200 MC at
 +2.9 logit and the opponent's at -2.2), but that the player never produces the state in which the conversion exists to be valued.
+
+## Guided exploration: closed (2026-11-19)
+
+Value-guided exploration (`-Dares.agent.explore.guided`, softmax over the search's own scores instead of a uniform draw) produced
+a corpus whose plan is genuinely more diverse - phases 14/25/29/14/18 against the generator's 10/30/35/8/18 - and critics trained
+on it score **14.0% [12.0, 16.3]** against SMART. So softening the exploration was not enough: the games are still weaker than
+the generator's, and a corpus inherits its generator's strength.
+
+That closes the last data-side mechanism. Summary of the closed set: uniform exploration 21%, guided exploration 14%, phase bias
+25-33%, horizon corpus 21%, two strong policies mixed 31%.
+
+What is left is the search, and the owner's framing is the right one: not full MCTS (hidden information, chance, branching 10-40
+per decision over ~500 decisions), but a **PIMC-style targeted deepening** - K determinisations, deeper only on the decisions that
+change the plan (the phase), a policy prior to prune, V at the leaf. The measured asymmetry is the argument: one round on the
+phase +5.9, two rounds -8, one round on a build 0. Search pays where the decision is a plan, not by depth.
