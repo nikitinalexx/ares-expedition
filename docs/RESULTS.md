@@ -1719,3 +1719,16 @@ What is left is the search, and the owner's framing is the right one: not full M
 per decision over ~500 decisions), but a **PIMC-style targeted deepening** - K determinisations, deeper only on the decisions that
 change the plan (the phase), a policy prior to prune, V at the leaf. The measured asymmetry is the argument: one round on the
 phase +5.9, two rounds -8, one round on a build 0. Search pays where the decision is a plan, not by depth.
+
+## The value's target does not matter at this corpus size (2026-11-19, last measurement)
+
+Same 1250-game corpus, same policy, two critics trained on exactly that data, 1000 games each:
+
+| target | vs SMART |
+|---|---|
+| single margin | **30.6% [27.8, 33.5]** |
+| seven-channel breakdown | **27.9% [25.2, 30.7]** |
+
+So the +8.2 points the breakdown showed at 500 games was noise: at 1250 games both targets are ~30%, and with 5000-game critics
+the same policy reaches 73%. **Corpus size dominates the target**, by more than 40 points. The breakdown remains a noise-reduction
+idea (it cannot price MC or cost reducers anyway), but it is not the lever either.
