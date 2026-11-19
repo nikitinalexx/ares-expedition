@@ -1387,3 +1387,38 @@ away because the JVM died is the one thing that must not happen.
 
 The leak itself is still open: ~40 MB per game is retained by something in the rollout path. It is worth fixing in the engine
 (the same rollouts are used at play time), but it no longer stops a night.
+
+## Specialist B failed, and the reason is the recipe (2026-11-19, measured)
+
+Attempt 1 at a phase-1 fighter: a 2000-game corpus from the 73% player with `PICK_PHASE:0.5` and `BUILD_CARD:0.3` exploration,
+then three critics and a policy trained on it, then the same flags as A.
+
+- The corpus was **diverse** as intended: phases 15/24/27/15/19 against the generator's 9/26/38/9/16, and its fingerprint says
+  "phase-3 fighter; phase-4 fighter" (upgrade 3.2 in 98.9% of games).
+- The player: **21.1% [18.7, 23.7] vs SMART** (A is 73.2%).
+- The fingerprint of the new player: phases 10/32/37/7/14 with A's phase critic, 17/32/32/4/15 with its own - a small shift,
+  not a different archetype.
+
+So heavy exploration does not create a specialist, it destroys the corpus: with half the phase picks and a third of the builds
+random, the games are mostly noise, and both the policy and the critics learn it. The same lesson as the 30% sale exploration
+that took an iteration to 43.1%. A specialist must be grown from *competent* games whose **plan** differs, not from games with
+random actions.
+
+Attempt 2 (running): the same player, no phase exploration, and a temporary `phaseBias=1:0.6` during generation - the play is
+still the search's, only the phase choice is pushed. That is a curriculum: the games stay good, the plan differs, and the bias
+disappears at play time.
+
+## The critic's learning curve, controlled (2026-11-19)
+
+Nested packs from one corpus (1/2/4/8 chunks of 250 games), one trainer, one seed:
+
+| chunk | games | train rows | AUC | val loss |
+|---|---|---|---|---|
+| 1 | 250 | 3 616 | 0.776 | 3.77 |
+| 2 | 500 | 7 216 | 0.855 | 1.97 |
+| 4 | 1 000 | 14 416 | 0.822 | 1.46 |
+| 8 | 2 000 | 28 768 | 0.855 | **1.48** |
+
+Calibration plateaus at 1 000-2 000 games; discrimination earlier still. A 5 000-game corpus is a 2.5x reserve for the critic,
+not a requirement - the binding constraint is the *quality and diversity* of the games, which is exactly what attempt 1 above
+broke by exploring too hard: 34 000 rows of noisy play made the player twice as bad.
