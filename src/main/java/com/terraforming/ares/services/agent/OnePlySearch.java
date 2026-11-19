@@ -466,6 +466,17 @@ public class OnePlySearch {
      * @return the index of the candidate with the best afterstate, or -1 when the search does not apply (different
      * decision type, re-entrant call, or every candidate failed)
      */
+    /**
+     * Whether a hypothetical computation is in progress (a candidate build, a rollout). Decision recording must stop there:
+     * a rollout plays hundreds of decisions that the game never took, and recording them both pollutes the corpus with
+     * phantom rows and grows the log queue without bound (measured 19/11: 921k pending rows, 4.6M float[] = 8 GB, and the
+     * self-play JVM died every ~250 games; the phantom rows are also why the corpora generated with rollouts trained weak
+     * players).
+     */
+    public boolean isBusy() {
+        return busy.get();
+    }
+
     /** Tells the search which cards the mulligan loop has already queued (see {@link #mulliganQueued}). */
     public void mulliganContext(List<Integer> queued) {
         mulliganQueued.set(queued == null ? List.of() : List.copyOf(queued));

@@ -1470,3 +1470,40 @@ opponent's income is high (13% vs 10%). So the block is used, but not for the de
 
 Lesson for the plan: a probe on the *loss* is not evidence about behaviour. Any "the model does not use X" claim has to be made by
 playing with X removed, not by training without it.
+
+## H1 (delayed payoff) is half right and closed (2026-11-19)
+
+Theory: the economy plan pays over many rounds, so a one-round rollout cannot see it and the phase pick falls back to what is
+usable now. Test: `horizon=2` on PICK_PHASE only, with the stop played out over the same two rounds
+(`horizonTypes=PICK_PHASE horizonStop=true`).
+
+- **The plan moves exactly as predicted**: phases 16/20/24/18/22 against 10/30/35/8/18 - phase 1 and phase 4 up, phase 3 down.
+- **The player gets worse**: 65.08% [61.2, 68.8] at 600 games against 73.17% [72.3, 74.0].
+
+So the one-round window is not what holds the player back; a longer playout changes the valuation and degrades it (more variance
+in the estimate, and the leaf is read in a state the policy reaches by playing two rounds, not one). The decision rule written in
+the plan - keep it only if the win rate holds - closes H1 at the first honest test. The next hypothesis is H2 (the quality of the
+value itself), which does not change the decision rule, only the numbers it compares.
+
+## The generator's memory was the DECISION LOG, and it was polluting every corpus with phantom rows (2026-11-19)
+
+The owner saw "OUT OF MEMORY" in the generation log. A class histogram of the live JVM (jcmd GC.class_histogram) settled it in one
+look:
+
+| retained | size |
+|---|---|
+| 4 607 040 `float[]` | **8.0 GB** |
+| 3 685 272 `Candidate` | 88 MB |
+| 921 046 `DecisionLogs$Pending` | 37 MB |
+| 921 046 `Decision` | 29 MB |
+
+So the memory was not the rollout's game copies: it was **921k decision-log rows waiting to be written**, each carrying an
+observation vector. Cause: `AgentDecisionService.choose` records every decision it takes, and a rollout is played through the
+full agent, so **every hypothetical decision of every playout was recorded as if the game had taken it**. The corpus was
+therefore polluted with phantom rows (hundreds per game, all labelled with the real game's outcome), and the log queue grew
+until the JVM died - every ~250 games, which is why the pipeline needed restarts.
+
+Fix: `OnePlySearch.isBusy()` exposes "a hypothetical computation is in progress", and all recording in `AgentDecisionService`
+goes through one `record(...)` helper that skips when it is set. Consequence: the corpora generated today *with rollouts*
+(`p1cur`, `p1b`, `h1cur`) contain phantom rows, so specialist B's failure is confounded - the clean retest is in progress. The
+73.17% measurement is not affected: recording does not change how the player decides, only what is written down.

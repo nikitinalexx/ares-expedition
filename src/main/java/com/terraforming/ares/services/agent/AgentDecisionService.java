@@ -77,7 +77,11 @@ public class AgentDecisionService {
         Decision afterstate = new Decision(DecisionType.AFTERSTATE, player.getUuid(),
                 observationBuilder.build(game, player),
                 List.of(new Candidate(0, new float[]{0f})));
-        decisionLogs.record(game, player, afterstate, 0);
+        if (!onePlySearch.isBusy()) {
+            if (!onePlySearch.isBusy()) {
+            decisionLogs.record(game, player, afterstate, 0);
+        }
+        }
     }
     private static final int[] PHASE_PREFERENCE =
             parsePhases(System.getProperty("ares.agent.preferPhase", ""));
@@ -113,6 +117,17 @@ public class AgentDecisionService {
     private static final Map<DecisionType, Double> EXPLORE =
             parseExplore(System.getProperty("ares.agent.explore", ""));
 
+    /**
+     * Records a decision unless a hypothetical computation is in progress (`OnePlySearch.isBusy`): a rollout plays hundreds of
+     * decisions the game never took, and recording them pollutes the corpus with phantom rows and grows the log queue
+     * without bound (measured 19/11: 921k pending rows and 8 GB of observation vectors, the generator dying every ~250 games).
+     */
+    private void record(MarsGame game, Player player, Decision decision, int index) {
+        if (!onePlySearch.isBusy()) {
+            decisionLogs.record(game, player, decision, index);
+        }
+    }
+
     public int pickPhase(MarsGame game, Player player) {
         Decision decision = pickPhaseDecisions.build(game, player);
         int forced = forcedPhase(decision);
@@ -127,7 +142,7 @@ public class AgentDecisionService {
         if (index < 0) {
             return decision.candidates().get(choose(game, player, decision)).id();
         }
-        decisionLogs.record(game, player, decision, index);
+        record(game, player, decision, index);
         return decision.candidates().get(index).id();
     }
 
@@ -351,7 +366,7 @@ public class AgentDecisionService {
         if (BUILD_ALWAYS) {
             for (int i = 0; i < decision.candidates().size(); i++) {
                 if (decision.candidates().get(i).id() != BuildCardDecisions.STOP) {
-                    decisionLogs.record(game, player, decision, i);
+                    record(game, player, decision, i);
                     return Optional.of(decision.candidates().get(i).id());
                 }
             }
@@ -371,7 +386,7 @@ public class AgentDecisionService {
             boolean income = card.getCardMetadata() != null && !card.getCardMetadata().getIncomes().isEmpty();
             boolean nonGreen = card.getColor() != com.terraforming.ares.model.CardColor.GREEN;
             if ((preferIncome && income) || (preferNonGreen && nonGreen)) {
-                decisionLogs.record(game, player, decision, i);
+                record(game, player, decision, i);
                 return Optional.of(candidateId);
             }
         }
@@ -417,7 +432,7 @@ public class AgentDecisionService {
         if (PRESS_BLUE_ACTIONS || (PlanCodes.rollNudge() && PlanCodes.pressBlueActions(player))) {
             for (int i = 0; i < decision.candidates().size(); i++) {
                 if (decision.candidates().get(i).id() != BlueActionDecisions.STOP) {
-                    decisionLogs.record(game, player, decision, i);
+                    record(game, player, decision, i);
                     return Optional.of(decision.candidates().get(i).id());
                 }
             }
@@ -434,7 +449,7 @@ public class AgentDecisionService {
                     break;
                 }
             }
-            decisionLogs.record(game, player, decision, index);
+            record(game, player, decision, index);
             return free;
         }
         int id = decision.candidates().get(choose(game, player, decision)).id();
@@ -494,7 +509,7 @@ public class AgentDecisionService {
         if (guaranteed.isPresent()) {
             for (int i = 0; i < decision.candidates().size(); i++) {
                 if (decision.candidates().get(i).id() == guaranteed.get()) {
-                    decisionLogs.record(game, player, decision, i);
+                    record(game, player, decision, i);
                     return guaranteed;
                 }
             }
@@ -616,7 +631,7 @@ public class AgentDecisionService {
                     + " candidates of " + decision.type());
         }
         if (probe == null) {
-            decisionLogs.record(game, player, decision, index);
+            record(game, player, decision, index);
         } else {
             probe.afterChoice(decision, game, player, index);
         }
