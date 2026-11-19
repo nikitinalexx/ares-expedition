@@ -134,6 +134,14 @@ public class OnePlySearch {
      */
     private final Set<DecisionType> playoutTypes;
     /**
+     * {@code -Dares.agent.search.horizonTypes=PICK_PHASE}: which menus the horizon applies to (empty = all, the old global
+     * behaviour). Why it exists: the economy plan pays over many rounds - a discount or a second build is worth nothing in the
+     * round it is bought - so a one-round rollout cannot see it and the phase pick falls back to "the action I can use right
+     * now" (measured 19/11: phase 3 in 38% of turns, phase 1 in 9%, and the phase pick independent of the opponent's lean).
+     * Playing the phase out over several rounds costs a lot and must not be paid on every card menu.
+     */
+    private final Set<DecisionType> horizonTypes;
+    /**
      * {@code -Dares.agent.search.junkMargin=<milli-logit>}: how close to the stop baseline a removal must be to count as
      * "free". A value function needs a small band (10 = 0.01 of V); a playout is a sampled comparison and needs a wider one,
      * so the band is a property instead of a constant.
@@ -312,6 +320,7 @@ public class OnePlySearch {
             this.stopMargins = new java.util.EnumMap<>(DecisionType.class);
             this.junkGateTypes = EnumSet.noneOf(DecisionType.class);
             this.playoutTypes = EnumSet.noneOf(DecisionType.class);
+            this.horizonTypes = EnumSet.noneOf(DecisionType.class);
             this.junkMargin = JUNK_EPSILON;
             this.phaseBias = java.util.Map.of();
             this.pairs = false;
@@ -331,6 +340,7 @@ public class OnePlySearch {
         this.stopMargins = parseMargins(System.getProperty("ares.agent.search.stopMargins", ""));
         this.junkGateTypes = parseTypes(System.getProperty("ares.agent.search.junkGate", ""));
         this.playoutTypes = parseTypes(System.getProperty("ares.agent.search.playout", ""));
+        this.horizonTypes = parseTypes(System.getProperty("ares.agent.search.horizonTypes", ""));
         this.junkMargin = configuredJunkMargin;
         this.phaseBias = parsePhaseBias(System.getProperty("ares.agent.search.phaseBias", ""));
         this.pairs = configuredPairs;
@@ -349,7 +359,8 @@ public class OnePlySearch {
         }
         log.info("one-ply search: value model {}, types {}, observation hash {}",
                 spec, types, models.get(0).observationHash());
-        System.out.println("[SEARCH] playout " + playoutTypes + ", junk margin " + junkMargin);
+        System.out.println("[SEARCH] playout " + playoutTypes + ", horizon types " + horizonTypes
+                + " x" + horizonTurns + ", junk margin " + junkMargin);
         System.out.println("[SEARCH] junk gate " + junkGateTypes + ", policy choice " + policyChoiceTypes
                 + ", stop margins " + stopMargins + ", symmetric " + symmetric + ", rankOnly " + rankOnly);
         System.out.println("[SEARCH] one-ply on " + types + ", value model " + spec
@@ -788,7 +799,9 @@ public class OnePlySearch {
         float[] scores = new float[options.size()];
         long seed = ThreadLocalRandom.current().nextLong();
         float bestOfStop = logit(stopObs);
-        if (horizonTurns > 0 && horizonStop) {
+        boolean horizonHere = horizonTurns > 0
+                && (horizonTypes.isEmpty() || horizonTypes.contains(decision.type()));
+        if (horizonHere && horizonStop) {
             // Same horizon, same determinizations, no action applied: the honest counterfactual of "do nothing now".
             float h = horizonScore(new MarsGame(game), player, seed);
             if (!Float.isNaN(h)) {
@@ -1128,12 +1141,14 @@ public class OnePlySearch {
             float[] observation = observationBuilder.build(copy, me);
             lastAfterstate.set(observation);
             float mine;
+            boolean horizonThis = horizonTurns > 0
+                    && (horizonTypes.isEmpty() || horizonTypes.contains(type));
             if (playoutTypes.contains(type)) {
                 mine = roundScore(copy, me, seed);
                 if (Float.isNaN(mine)) {
                     return null;
                 }
-            } else if (horizonTurns > 0) {
+            } else if (horizonThis) {
                 mine = horizonScore(copy, me, seed);
             } else if (phasePlayout && type == DecisionType.PICK_PHASE) {
                 mine = roundScore(copy, me, seed);
@@ -1417,6 +1432,9 @@ public class OnePlySearch {
     }
 
     private float playout(MarsGame sim, String uuid) {
+        if (!makeSeatsPlayable(sim)) {
+            return Float.NaN;
+        }
         int target = sim.getTurns() + horizonTurns;
         try {
             simulationProcessorService.processSimulation(sim, game -> {

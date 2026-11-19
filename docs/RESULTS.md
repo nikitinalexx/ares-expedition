@@ -1455,3 +1455,18 @@ Two consequences for the plan:
 
 The adaptive player stays the goal, but its two ingredients have to be strong before mixing them means anything: a mix of a
 73% fighter and a 25% fighter teaches the adaptive player that phase 1 loses.
+
+## Correction: the opponent block IS load-bearing (2026-11-19)
+
+Earlier today I wrote that the player "ignores the opponent" because a critic trained with every `op_` and hand column zeroed had
+almost the same loss (1.11 -> 1.16) and AUC (0.906 -> 0.901). **The loss was the wrong instrument.** The same three blind
+critics in the search, everything else identical, score **57.4% [54.3, 60.4]** against 73.17% - the opponent block is worth
+**15.8 points**. The training loss barely notices because it is dominated by everything else that predicts the final margin; the
+*decision* depends on the differences the block carries.
+
+What remains true is narrower and still useful: the **phase choice** does not respond to the opponent's lean. Across the corpus,
+phase 3 is picked 31% when the opponent has no blue cards, 40% at 0.1-0.3 and 38% at 0.4+; picking phase 4 does not rise when the
+opponent's income is high (13% vs 10%). So the block is used, but not for the decision the owner pointed at.
+
+Lesson for the plan: a probe on the *loss* is not evidence about behaviour. Any "the model does not use X" claim has to be made by
+playing with X removed, not by training without it.
