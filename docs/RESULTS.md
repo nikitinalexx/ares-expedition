@@ -1197,7 +1197,8 @@ phase picks). Same policy and critics as the 66.87% bundle, one flag:
 | champion `1118-0058_13` | 3000 | 63.93% [62.2, 65.6] |
 | night policy + night critics + champion phase critic | 3000 | 66.87% [65.2, 68.5] |
 | the same + `phasePlayout=true` | 1000 | 70.75% [67.9, 73.5] |
-| **the same + `phasePlayout=true`** | **3000** | **72.82% [71.2, 74.4]** |
+| the same + `phasePlayout=true` | 3000 | 72.82% [71.2, 74.4] |
+| **the same + `phasePlayout=true`** | **10 000** | **73.17% [72.3, 74.0]** |
 
 Two other phase variants, same bundle, 1000 games:
 
@@ -1209,9 +1210,22 @@ Two other phase variants, same bundle, 1000 games:
 So it is the *rule* (roll the round) and not the model that moves the number: averaging three critics is worse than the one
 champion seed, and keeping the champion's card critics is not required.
 
-The puzzle is solved by the engine, not by the model: +8.9 points over the champion (63.93 -> 72.82, 3000 games, disjoint
+The puzzle is solved by the engine, not by the model: **+9.2 points** over the champion (63.93 -> 73.17, 10 000 games, disjoint
 intervals), with the player's profile untouched in the ways the owner checks. The profile of this bundle
 (`ml/check_player.py`, 60 games): builds **32.6/game**, build acceptance 76%, phases
 **8.7 / 32.0 / 38.3 / 4.7 / 16.3**, standard projects in phase 3 **16.7%**, no warnings. The nightly bundles that scored 60-63%
 picked phases 2 and 3 in 88% of turns; the rollout restores the balance (the champion was 26/21/23/15/15) and pays 16% of the
 money into phase 5 (the draft), which the policy alone never chose.
+
+**Caveat that must not be lost.** `roundScore` refuses to play when a seat is not a computer
+(`getPlayerUuidToPlayer().values().stream().anyMatch(player -> !player.isComputer())`), because the engine cannot drive a
+human's turns itself. So 72.82% is the **AI-vs-AI** number: in a game against a human the phase playout returns NaN, the
+candidate is "no opinion" and the phase falls back to the critic's V - i.e. the 66.87% behaviour. The benchmark player and the
+human-facing player are not the same player until that fallback is solved (drive the human seat with the policy inside the
+rollout, or evaluate the phase with a rollout over a window that is safe to simulate). Any promotion has to say which of the
+two it promoted.
+
+### The floor moved too
+
+Against RANDOM, same bundle and flags, 1000 games: **98.60% [97.7, 99.2]** (the champion was 92.8%). A player that beats
+RANDOM 98.6% of the time and SMART 72.8% is not a specialist that farms one opponent.

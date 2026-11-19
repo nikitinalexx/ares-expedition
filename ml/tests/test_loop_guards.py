@@ -51,11 +51,12 @@ class ConfigSummaryTest(unittest.TestCase):
             rows_per_type = 12
             phase_critic_model = "D:/ares/runs/value/v_1118-0058_13_s1"
             phase_critic = True
+            phase_playout = True
 
         summary = night_loop.config_summary(Args())
         for piece in ("types=4 menus", "sym_gen=False", "afterstates=True/True", "replay=2",
                       "adv=True", "explore='BUILD_CARD:0.15'", "rows=12",
-                      "phase=D:/ares/runs/value/v_1118-0058_13_s1"):
+                      "phase=D:/ares/runs/value/v_1118-0058_13_s1", "+rollout"):
             self.assertIn(piece, summary)
 
 

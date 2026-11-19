@@ -87,6 +87,21 @@ The full candidate list, with what each lever should move and its status, is in 
 parsers; the whole ml suite is 99 tests. A wrong instrument is worse than none: both instruments that changed a conclusion
 were wrong, and both are now covered (`phase_mix` off-by-one, coverage normalisation).
 
+## The measured effect of the search knobs (19/11)
+
+| knob | effect | evidence |
+|---|---|---|
+| `-Dares.agent.search.phasePlayout=true` | **+5.9 points** (66.87 -> 72.82) | 3000 games each, same policy and critics, `docs/RESULTS.md` |
+| `-Dares.agent.search.stopMargins=BUILD_CARD:0` | **-3.6 points** (63.5 -> 59.9) | 1000 games; the critic must not decide act-vs-stop, even trained on afterstates. `:300` gives 62.4, still below |
+| `-Dares.agent.search.junkGate=MULLIGAN` | discards 9.94 of 10 cards | 95.9% of removals "free" with the correct marginal afterstate; the hand-identity block is masked |
+| `-Dares.agent.search.playout=MULLIGAN` | not usable | the mulligan precedes the corporation pick, so every rollout answers PICK_CORPORATION through the raw policy: 4 of 12 games die on `Corporation X applies an on-built effect to itself` |
+| phase critic = the champion's, not the iteration's | **+3.3 points** | the nightly critics pick phases 2+3 in 88% of turns against 26/21/23/15/15 |
+| `-Dares.agent.valueModel.phase=<s1,s2,s3>` (ensemble) | -1.8 against the one seed (65.05 vs 66.87) | 1000 games |
+
+`phasePlayout` costs about 12% of the generation time (7.5 vs 6.7 CPU-s per game), because a phase menu has five candidates and
+a round is one playout per candidate - it is affordable for a corpus, unlike the mulligan rollout which plays a round for every
+one of the ten mulligan steps.
+
 ## The cost of a corpus, by how many menus the critic ranks
 
 Measured 18/11: `--mode play`, 14 threads, `--max-rows-per-game-type 8`, `AGENT:AGENT:0.85,AGENT:RANDOM:0.15`.

@@ -1142,8 +1142,8 @@ mulligan count/spread and sale share, next to the score).
 
 Champion before the night: `policy/1118-0058_13` + `v_1118-0058_13_s1..s3`, 63.93% [62.2, 65.6] vs SMART (3000 games).
 
-**Now: 72.82% [71.2, 74.4] vs SMART** (3000 games; 70.75% at 1000), from the night's own policy and card critics plus the
-champion's phase critic and one flag (a 10 000-game run was started at 04:30 and is the last number to read):
+**Now: 73.17% [72.3, 74.0] vs SMART** (10 000 games; 72.82% at 3000, 70.75% at 1000), from the night's own policy and card
+critics plus the champion's phase critic and one flag. Against RANDOM: 98.6% (the champion was 92.8%):
 
 ```
 -Dares.agent.search.types=BUILD_CARD,DRAFT_CARDS,PICK_PHASE,STANDARD_ACTION,PERFORM_BLUE_ACTION,DISCARD_CARDS,SELL_CARDS,SELL_CARDS_LAST_ROUND,BUILD_PAYMENT,PICK_CORPORATION,BLUE_INPUT,BUILD_INPUT,MULLIGAN
@@ -1164,7 +1164,8 @@ standard projects in phase 3 **16.7%**, no warnings.
 | champion as it was | 63.93% [62.2, 65.6] | 3000 |
 | night critics + champion phase critic | 66.87% [65.2, 68.5] | 3000 |
 | + the phase pick scored by a round rollout | 70.75% [67.9, 73.5] | 1000 |
-| **+ the phase pick scored by a round rollout** | **72.82% [71.2, 74.4]** | **3000** |
+| + the phase pick scored by a round rollout | 72.82% [71.2, 74.4] | 3000 |
+| **+ the phase pick scored by a round rollout** | **73.17% [72.3, 74.0]** | **10 000** |
 
 The 2x2 that found it (1000 games each): night critics + champion phase critic **66.80**, champion critics + night phase
 critic **58.85**, both night **63.50**. The phase head of a freshly trained critic picks phases 2 and 3 in 88% of turns; the
@@ -1178,6 +1179,12 @@ it restores the balance and pays 16% of picks into phase 5 (the draft), which th
 A purpose-trained `PICK_PHASE` model does not replace it: `ml/train_phase.py` reaches val loss 0.554 against a 0.693 baseline
 but `action_effect 0.0023` - it ignores which phase was chosen. The rollout works because it measures the consequence, not a
 label.
+
+**The caveat that decides how to ship it.** `roundScore` refuses to play when a seat is not a computer, because the engine
+cannot drive a human's turns itself. So 72.82% is the **AI-vs-AI** number. In a game against a human the phase rollout returns
+NaN, the candidate becomes "no opinion", and the phase falls back to the critic's V - the 66.87% player. The benchmark and the
+human-facing player are two different players until that fallback is solved (drive the human seat with the policy inside the
+rollout, or bound the rollout to a window that is safe to simulate). Say which one is being promoted.
 
 **The obvious next lever** is the same recipe applied to the card menus: `-Dares.agent.search.horizon` +
 `-Dares.agent.search.horizonStop` score a candidate and the stop over the same window of policy play. It was never measured
