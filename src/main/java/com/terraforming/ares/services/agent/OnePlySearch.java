@@ -484,6 +484,31 @@ public class OnePlySearch {
      * self-play JVM died every ~250 games; the phantom rows are also why the corpora generated with rollouts trained weak
      * players).
      */
+    /**
+     * The agent's own estimate of winning from this state, for the UI: the ensemble's mean logit through a sigmoid. It is the
+     * SAME number the search uses to rank candidates, not a separate model, so what the owner sees while playing is what drives
+     * the decisions (owner's request, 19/11: "fill winProbability with your agent's own estimate so I can see whether it knew it
+     * was losing").
+     *
+     * @return NaN when no value model is configured, so the caller can fall back to the old network
+     */
+    public float winProbability(MarsGame game, Player player) {
+        if (models.isEmpty()) {
+            return Float.NaN;
+        }
+        try {
+            float[] observation = observationBuilder.build(game, player);
+            float sum = 0f;
+            for (MlpValueModel model : models) {
+                sum += model.logit(observation);
+            }
+            float logit = sum / models.size();
+            return (float) (1.0 / (1.0 + Math.exp(-logit)));
+        } catch (RuntimeException e) {
+            return Float.NaN;
+        }
+    }
+
     public boolean isBusy() {
         return busy.get();
     }

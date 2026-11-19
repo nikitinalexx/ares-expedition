@@ -116,6 +116,17 @@ public class AgentDecisionService {
 
     private static final Map<DecisionType, Double> EXPLORE =
             parseExplore(System.getProperty("ares.agent.explore", ""));
+    /**
+     * {@code -Dares.agent.explore.guided=BUILD_CARD:0.3,PICK_PHASE:0.3}: at the probability given by {@link #EXPLORE}, instead
+     * of a UNIFORM random candidate, sample from {@code softmax(searchScore / temperature)} - the search's own opinion, blurred.
+     * <p>
+     * Why it matters (owner, 19/11): uniform exploration tries a strategy at a random moment with random cards, so the corpus
+     * contains bad play of that strategy, and a corpus inherits the strength of the player that played it - the student ends up
+     * at 21-33%. AlphaZero explores the SEARCH (root noise over plausible moves), which produces competent but different games.
+     * That is the only kind of data that can teach a plan the player does not choose itself.
+     */
+    private static final Map<DecisionType, Double> GUIDED =
+            parseExplore(System.getProperty("ares.agent.explore.guided", ""));
 
     /**
      * Records a decision unless a hypothetical computation is in progress (`OnePlySearch.isBusy`): a rollout plays hundreds of
@@ -244,7 +255,57 @@ public class AgentDecisionService {
         if (probability == null || java.util.concurrent.ThreadLocalRandom.current().nextDouble() >= probability) {
             return -1;
         }
+        Double temperature = GUIDED.get(decision.type());
+        float[] scores = temperature == null ? null : SearchScores.peek(decision);
+        if (scores != null) {
+            int guided = sampleByScores(scores, temperature);
+            if (guided >= 0) {
+                return guided;
+            }
+        }
         return java.util.concurrent.ThreadLocalRandom.current().nextInt(decision.candidates().size());
+    }
+
+    /**
+     * One draw from {@code softmax(score / temperature)} over the candidates the search could score. Returns -1 when no
+     * candidate has a score, so the caller falls back to a uniform draw.
+     */
+    private static int sampleByScores(float[] scores, double temperature) {
+        if (scores == null || scores.length == 0) {
+            return -1;
+        }
+        double best = Double.NEGATIVE_INFINITY;
+        for (float score : scores) {
+            if (!Float.isNaN(score) && !Float.isInfinite(score) && score > best) {
+                best = score;
+            }
+        }
+        if (best == Double.NEGATIVE_INFINITY) {
+            return -1;
+        }
+        double[] weights = new double[scores.length];
+        double total = 0;
+        double scale = Math.max(1e-6, temperature * 1000.0);   // the scores are milli-logits
+        for (int i = 0; i < scores.length; i++) {
+            float score = scores[i];
+            if (Float.isNaN(score) || Float.isInfinite(score)) {
+                weights[i] = 0;
+                continue;
+            }
+            weights[i] = Math.exp((score - best) / scale);
+            total += weights[i];
+        }
+        if (total <= 0) {
+            return -1;
+        }
+        double draw = java.util.concurrent.ThreadLocalRandom.current().nextDouble() * total;
+        for (int i = 0; i < weights.length; i++) {
+            draw -= weights[i];
+            if (draw <= 0 && weights[i] > 0) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     public CorporationChoice pickCorporation(MarsGame game, Player player) {

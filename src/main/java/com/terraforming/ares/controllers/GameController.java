@@ -88,6 +88,8 @@ public class GameController {
     private final CardCombinationCounter cardCombinationCounter;
     private final NNService nnService;
     private final IDataCollect dataCollect;
+    /** The learned agent: the UI's win estimate is ITS estimate, the same number the search ranks with. */
+    private final com.terraforming.ares.services.agent.OnePlySearch onePlySearch;
 
     @PostMapping("/state/test/{networkNumber}")
     public float testGameState(@RequestBody MarsGameRow row, @PathVariable int networkNumber) {
@@ -1136,7 +1138,13 @@ public class GameController {
         } else {
 
 //            winProbability = deepNetwork.testState(game, aiComputer);
-            winProbability = (float) nnService.predictBatch(List.of(dataCollect.collectData(game, aiComputer.getUuid())), NNService.ModelType.SECOND).getFirst().baseProb;
+            // The learned agent's own estimate first: it is the number that actually drives its decisions. The old network is
+            // only the fallback when no value model is configured (owner's request, 19/11: see the agent's own self-assessment
+            // while playing against it).
+            float agentProbability = onePlySearch.winProbability(game, aiComputer);
+            winProbability = Float.isNaN(agentProbability)
+                    ? (float) nnService.predictBatch(List.of(dataCollect.collectData(game, aiComputer.getUuid())), NNService.ModelType.SECOND).getFirst().baseProb
+                    : agentProbability;
         }
 
         Planet phasePlanet = game.getPlanetAtTheStartOfThePhase();

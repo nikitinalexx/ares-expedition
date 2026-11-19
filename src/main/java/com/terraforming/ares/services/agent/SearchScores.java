@@ -20,6 +20,14 @@ public final class SearchScores {
         SCORES.set(scores);
     }
 
+    /**
+     * The scores for exactly this decision without consuming them, or null. Used by the generator's guided exploration: it
+     * samples among the candidates the search considers nearly as good, instead of a uniformly random action.
+     */
+    public static float[] peek(Decision decision) {
+        return OWNER.get() == decision ? SCORES.get() : null;
+    }
+
     /** The scores for exactly this decision, or null. Clears the slot: one decision, one opinion. */
     public static float[] take(Decision decision) {
         if (OWNER.get() != decision) {
