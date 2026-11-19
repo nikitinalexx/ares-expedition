@@ -365,8 +365,13 @@ def measure(policy, critic, games, out_dir, pack, types, phase_critic=""):
     except (OSError, subprocess.SubprocessError):
         pass
     profile = os.path.join(out_dir, "profile.log")
-    subprocess.run([sys.executable, os.path.join(HERE, "check_player.py"), "--model", policy, "--games", "60",
-                    "--opponent", "SMART", "--no-references", "--search", "--value-model", critic],
+    # The profile must describe the player that is being measured: without the phase model it is a different player, and the
+    # acceptance gate would be looking at the wrong one (found 19/11, when the phase critic turned out to be worth 4 points).
+    profile_args = [sys.executable, os.path.join(HERE, "check_player.py"), "--model", policy, "--games", "60",
+                    "--opponent", "SMART", "--no-references", "--search", "--value-model", critic]
+    if phase_critic:
+        profile_args += ["--phase-search", "--phase-value-model", phase_critic]
+    subprocess.run(profile_args,
                    stdout=open(profile, "w", encoding="utf-8"), stderr=subprocess.STDOUT, timeout=3600)
     builds = number_in(profile, "builds_per_game")
     phases = phases_of(profile)

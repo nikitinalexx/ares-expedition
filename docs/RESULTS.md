@@ -1172,3 +1172,43 @@ So the mulligan is not reachable by a rollout at its own stage; it can only be l
 and for that the corpus must contain *sensible* discards (a random discard teaches only that random discards are bad - the
 policy trained on 5.135 explored discards per game answers **stop 100%**, measured). The next step there is exploration that
 forces the act while keeping the card choice informative, not uniform-random.
+
+### Confirmed at 3000 games
+
+The mixed bundle (`policy/1118-2332_17` + `v_1118-2332_17_s1..s3` for ranking + `v_1118-0058_13_s1` for the phase pick):
+
+| bundle | games | vs SMART |
+|---|---|---|
+| champion `1118-0058_13` (all three roles) | 3000 | 63.93% [62.2, 65.6] |
+| **night policy + night critics + champion phase critic** | 3000 | **66.87% [65.2, 68.5]** |
+
++2.9 points, with the intervals overlapping by 0.4 - so this is a real candidate, not yet a promotion. The promotion path is
+the HoF gate: profile, absolute worst benchmark, then a 2000-game duel against the champion, then 10 000 games because the
+margin is close to the 1.5-point rule.
+
+### 70% against SMART: score the phase pick by playing the round out (2026-11-19)
+
+The phase pick was the weak decision, so it was moved from "V after the phase's opening gift" to "play the round out with the
+policy and read V at the next pick" (`-Dares.agent.search.phasePlayout=true`, the `roundScore` path that already existed for
+phase picks). Same policy and critics as the 66.87% bundle, one flag:
+
+| bundle / flag | games | vs SMART |
+|---|---|---|
+| champion `1118-0058_13` | 3000 | 63.93% [62.2, 65.6] |
+| night policy + night critics + champion phase critic | 3000 | 66.87% [65.2, 68.5] |
+| **the same + `phasePlayout=true`** | 1000 | **70.75% [67.9, 73.5]** |
+
+Two other phase variants, same bundle, 1000 games:
+
+| variant | vs SMART |
+|---|---|
+| phase critic ensemble (champion s1+s2+s3) | 65.05% [62.0, 67.9] |
+| night policy + champion card critics + champion phase critic | 65.75% [62.8, 68.6] |
+
+So it is the *rule* (roll the round) and not the model that moves the number: averaging three critics is worse than the one
+champion seed, and keeping the champion's card critics is not required.
+
+The profile of the 70.75% bundle (`ml/check_player.py`, 60 games): builds **32.6/game**, build acceptance 76%, phases
+**8.7 / 32.0 / 38.3 / 4.7 / 16.3**, standard projects in phase 3 **16.7%**, no warnings. The nightly bundles that scored 60-63%
+picked phases 2 and 3 in 88% of turns; the rollout restores the balance (the champion was 26/21/23/15/15) and pays 16% of the
+money into phase 5 (the draft), which the policy alone never chose.
