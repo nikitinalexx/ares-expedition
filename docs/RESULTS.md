@@ -1545,3 +1545,44 @@ optimum: **the cheap form of "contest what he is building" is already in the sea
 
 The expensive form - knowing what the opponent *intends* to build, not merely how good his position is - needs games against a
 genuinely different strong player, which is what the A-vs-old-champion corpus is for.
+
+## H4: mixing two strong policies in one corpus trains the average, and the average is worse (2026-11-19)
+
+The legal way to give the player a different strong opponent: 1000 games of **A (73.17%) vs the previous champion (63.93%)**,
+`--models` A, `-Dares.agent.models2` the champion, `--matchups AGENT:AGENT_V2:1`, A's critics on both seats. The corpus is
+clean (generated after the phantom-row fix), both players are ours, and no benchmark is in it. Fingerprint: phases 16/24/24/17/19
+against A's 10/30/35/8/18 - two plans really are in the data.
+
+Result: the policy trained on it scores **31.2% [28.4, 34.1]** against SMART.
+
+Together with the earlier numbers this is one rule with two faces:
+
+| corpus | whose decisions | trained player |
+|---|---|---|
+| A alone (5 000 games) | one strong policy | 73% (itself) |
+| A weakened (horizon 65%, bias 44%, exploration) | one weak policy | 21-33% |
+| **A + champion (both strong, different)** | **two strong policies** | **31%** |
+
+So a corpus is not a bag of good decisions: the policy trained on it converges to something like the *average* of whoever played,
+and an average of two different strong players is worse than either. The self-play loop improves only because the generator is
+always the current best player and the changes are made on the **search/value side** - which is exactly the class that worked:
+`phasePlayout` +5.9, the champion's phase critic +3.3, `opponentWeight` already optimal, `stopMargins` -3.6, `horizon` -8.
+
+Consequence for the plan: stop generating corpora to grow plans. The remaining levers are (a) a better value on the *same* corpus
+(capacity + data, postponed), and (b) a deeper search (an opponent-response ply instead of the opponent's current value).
+
+### Why the mixed corpus is worse than "the average": the value fit degrades
+
+The h4 corpus is not broken data - both seats are recorded, the rows are balanced (10 974 / 11 026), and the games are 50/50
+(the champion's policy with A's critics is as strong as A, which is why the duel is interesting). What breaks is the *value*:
+
+| corpus | critic AUC | val loss | player trained on it |
+|---|---|---|---|
+| A alone (5 000 games) | 0.906 | **1.11** | 73% |
+| A + champion (1 000 games) | 0.872 | **1.97** | 31% |
+
+The same position is reached by two different play styles whose continuations differ, so a single V has to average two
+continuation distributions - nearly double the loss - and the policy trained on it inherits that blur. **A corpus must come from
+one policy.** That is why the loop works at all (the generator is always the current best) and why every attempt to inject a
+second style through data has failed today: exploration (21%), bias (25-33%), horizon (21%), and now a second strong policy (31%).
+The gains have to come from the search and the value, not from the corpus.
