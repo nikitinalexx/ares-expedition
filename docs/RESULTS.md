@@ -1528,3 +1528,20 @@ opponent weight (about to be measured). What failed was every attempt to grow a 
 That also re-opens H4 in a legal way: the hall of fame holds a *strong, genuinely different* player - the previous champion
 `1118-0058_13` at 63.9% with a balanced phase mix (26/21/23/15/15). A corpus of **A vs the old champion** is interaction data
 between two strong players of our own, with no benchmark in it.
+
+## H5: the opponent's value is already weighted as well as it can be (2026-11-19)
+
+`-Dares.agent.search.opponentWeight=w` makes the candidate score `(V(mine) - w * V(opponent)) / 2`. The default 1 is what
+`symmetric=true` always did; 0 is blind to the opponent, 2 doubles the weight on denying him. 1000 games each:
+
+| weight | vs SMART |
+|---|---|
+| 0 (blind) | 70.80% [67.9, 73.5] |
+| **1 (default)** | **73.17% [72.3, 74.0]** (10 000) |
+| 2 (deny twice) | 71.30% [68.4, 74.0] |
+
+Both directions are worse, so the opponent term is load-bearing (removing it costs 2.4 points) and its weight is already at the
+optimum: **the cheap form of "contest what he is building" is already in the search**, and pushing it further buys nothing.
+
+The expensive form - knowing what the opponent *intends* to build, not merely how good his position is - needs games against a
+genuinely different strong player, which is what the A-vs-old-champion corpus is for.
