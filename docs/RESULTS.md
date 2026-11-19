@@ -1315,3 +1315,46 @@ the two offered corporations, the round is played out with the policy, and the c
 computer, so against a human both rollouts return NaN and the player falls back to the critic's one-action value (no mulligan,
 the phase by V). The benchmark player is now measurably stronger than the human-facing one; that gap is the next structural
 task, not a knob.
+
+### The mulligan at 3000 games: neutral, not proven (2026-11-19)
+
+| mulligan | games | vs SMART |
+|---|---|---|
+| off | 10 000 | 73.17% [72.3, 74.0] |
+| threshold 50 (4.0 per seat) | 1000 | 75.50% [72.7, 78.1] |
+| threshold 50 (4.0 per seat) | **3000** | **73.57% [72.0, 75.1]** |
+
+The +2.3 points at 1000 games did not survive at 3000: the intervals cover the baseline. So the mulligan is now *decided by the
+game* (per card, with the two corporations founded in the afterstate, the round played out, and a critic that sees the hand) and
+it discards a hand-dependent number - but it has **not** been shown to add points. Saying otherwise would be reading noise.
+
+The count is real, though (`ml/mulligan_report.py`, exact flags of the bundle, `--rows-per-type 22`): 13% of games discard
+nothing, the rest spread over 1-9 per seat, mean 4.00. A constant would be one bar.
+
+### What the phase mix actually is: a phase-3 fighter with one blind spot (2026-11-19, 120 games of the 73% bundle)
+
+The owner's reading is right, and it is measurable. Upgrade ownership per game (observation columns `table_phase_N_app_M`):
+
+| phase | upgrade 1 | upgrade 2 | what the upgrades do |
+|---|---|---|---|
+| **1** | **2.5%** | **5.0%** | discount / a second green build - the economy path |
+| 2 | 16.7% | 21.7% | one more blue/red project |
+| 3 | 0.0% | **100%** | upgrade 1 = double activation, upgrade 2 = take 3 blue/red cards |
+| 4 | 25.0% | 10.0% | extra MC / double production |
+| 5 | 1.7% | 60.8% | keep more of the draft |
+
+Phase picks: 1 at 8-10% of turns (stable across the whole game), 3 at 33-42%. Of 553 phase-3 picks, 57% had no blue action that
+round - but 81% of those owned the upgrade that draws three blue/red cards, so the pick still bought something. **10.7%** of
+phase-3 picks had neither an action nor the upgrade: those are the "by habit" picks the owner saw at the table.
+
+So the player is a coherent **phase-3 fighter**: buy the draw upgrade, draft blue/red, build them in phase 2, activate them in
+phase 3. That is a real strategy and it is the current best bundle - it must not be retrained away. The phase-1 economy path is
+almost absent.
+
+### Simultaneity: known in the past, modelled in the rollout, unknown for the current round
+
+The observation carries the *previous* phase of both players and the dummy's remaining pool, not the picks of the same round
+(they are simultaneous - nobody can know them). The simultaneity is instead inside the rollout: `phasePlayout` plays the round
+with the policy, so the other seat and the dummy pick their phases in the simulation and the candidate is valued against that.
+The approximation is that the other seat is played by *our* policy, not by SMART or NETWORK: an opponent model is the missing
+piece, and it is the same piece the human seat needs.

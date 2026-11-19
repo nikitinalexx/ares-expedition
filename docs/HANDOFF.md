@@ -1266,3 +1266,53 @@ gap distribution. Zero there means the two branches are not being explored at al
 
 Measurement order (one variable at a time): does the afterstate found a corporation at all -> does the gap distribution become
 two-sided -> does the per-game discard count become partial and hand-dependent -> only then the win rate, against 73.17%.
+
+## The mulligan works (2026-11-19, second session)
+
+The owner's description of the decision is what made it possible, and it is now the code:
+
+> look at the two offered corporations, throw away what fits neither, then - after seeing the new cards - pick the corporation
+> that fits the hand.
+
+`PickCorporationsState` offers `PICK_CORPORATION` **and** `MULLIGAN` together, so the two corporations are known while the
+mulligan is decided. Three things were missing, and none of them was a threshold:
+
+1. **The afterstate never founded a corporation** - it valued a position the engine never reaches. It now founds the best of
+   the two offers *for that hand* (and the same for the other seat, so the rollout has a playable position). "Best of the two"
+   is the owner's rule: a card useful to either corporation raises the maximum and stays, a card useful to neither is free.
+2. **The critic could not see the hand** - the card critics are trained with `--drop-prefix cards:in_my_hand_`, so only the
+   summary remained, and the gate discarded 8-10 cards. The mulligan has its own model slot and `v_1119_hand` is trained on
+   the same packs without the mask (AUC 0.913).
+3. **The determinizer produced illegal positions** - it pooled the opponent's corporations, the hand, the projects deck and
+   the corporations deck into one shuffle, so a project card could sit in the "offered corporations" slot and every rollout
+   died on `Corporation <a project> applies an on-built effect to itself`. It now shuffles one pool per card kind.
+
+Then the threshold (`junkMargin`, a *required* advantage in milli-logits) is calibrated on the count, not guessed:
+
+| threshold | discards per seat | vs SMART, 1000 games |
+|---|---|---|
+| off | 0 | 73.17% (10 000) |
+| -100 | ~5.5 | 73.35% |
+| 0 | ~5 | 73.70% |
+| **50** | **4.00** | **75.50% [72.7, 78.1]** |
+| 100 | 2.28 | 73.65% |
+
+The count is hand-dependent, not a constant: at threshold 50, 13% of games discard nothing, the rest spread over 1-9 per seat
+(`ml/mulligan_report.py`, which now counts per seat - a corpus records both seats, and the owner caught that the earlier
+"discards per game" figures were double).
+
+Flags of the bundle:
+
+```
+-Dares.agent.search.phasePlayout=true
+-Dares.agent.search.playout=MULLIGAN
+-Dares.agent.search.junkGate=MULLIGAN
+-Dares.agent.search.junkMargin=50
+-Dares.agent.valueModel.mulligan=D:/ares/runs/value/v_1119_hand
+```
+
+**The open structural problem is the human seat.** `roundScore` refuses to play when a seat is not a computer, so both rollouts
+(phase and mulligan) return NaN against a human and the player falls back to the critic's one-action values - i.e. the benchmark
+player is stronger than the one a human meets. Fixing that means driving the human seat with a policy during the rollout (an
+opponent model), which is the next task and is worth more than any knob: it is the difference between the measured player and
+the shipped one.

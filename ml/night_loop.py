@@ -19,6 +19,7 @@ policy (cross-entropy on the search's choices), then measures. The loop is not a
 import argparse
 import glob
 import json
+import math
 import os
 import shutil
 import subprocess
@@ -159,6 +160,50 @@ def drop_explore(spec, names):
     """
     keep = [part for part in (spec or "").split(",") if part and part.split(":")[0].strip().upper() not in names]
     return ",".join(keep)
+
+
+def phase_flags(shares, min_entropy=0.92, min_share=0.10):
+    """Why the phase mix of a corpus is collapsed. Empty list = diverse.
+
+    The owner's diagnosis (19/11) of the 73% player: "you collapsed into a phase-3 fighter". It was true and nothing in the
+    loop could see it - `action_coverage` measures the options INSIDE a decision, not the share of a decision's own answers,
+    so a player that picks phase 3 in 40% of turns and phase 1 in 9% looks perfectly covered.
+
+    The measure is CONCENTRATION, not a single max: a share of 40% is not pathological by itself (the champion picked
+    26/21/23/15/15), but a plan that is 40% one phase and 9% another has lost its alternative. Relative entropy against the
+    uniform mix of the phases actually present catches that; a phase below `min_share` is named separately because "almost
+    absent" is what the owner saw at the table (phase 1 at 8%).
+    """
+    reasons = []
+    if not shares:
+        return reasons
+    total = sum(shares.values()) or 1
+    shares = {phase: count / total for phase, count in shares.items() if count > 0}
+    if len(shares) < 2:
+        return [f"PHASE {next(iter(shares))} takes every pick"]
+    entropy = -sum(share * math.log(share) for share in shares.values())
+    ceiling = math.log(len(shares))
+    if ceiling > 0 and entropy / ceiling < min_entropy:
+        named = " ".join(f"P{phase}:{100 * share:.0f}%" for phase, share in sorted(shares.items()))
+        reasons.append(f"the plan is concentrated ({named}; entropy {entropy / ceiling:.2f} of the maximum)")
+    for phase in range(1, 6):
+        share = shares.get(phase, 0.0)
+        if share < min_share:
+            reasons.append(f"PHASE {phase} is almost never picked ({100 * share:.1f}%)")
+    return reasons
+
+
+def phase_shares(pack):
+    """{phase: picks} from a packed corpus, or None when the pack has no PICK_PHASE."""
+    try:
+        import phase_mix
+        phases = phase_mix.mix_from_pack(pack)
+        counts = {}
+        for value in phases.tolist():
+            counts[int(value)] = counts.get(int(value), 0) + 1
+        return counts
+    except Exception:  # noqa: BLE001 - a sensor must never stop the night
+        return None
 
 
 def catastrophic(best, score, drop):
@@ -444,6 +489,11 @@ def main():
     parser.add_argument("--max-flat", type=int, default=8,
                         help="stop when the best score has not improved for this many iterations, whatever the lever list "
                              "says: a night that grinds the same win rate is worse than a short honest one")
+    parser.add_argument("--phase-entropy-min", type=float, default=0.92,
+                        help="relative entropy of the phase mix below this is a collapsed plan; exploration for PICK_PHASE "
+                             "is added for one generation (owner, 19/11: the 73%% player is a phase-3 fighter)")
+    parser.add_argument("--phase-share-min", type=float, default=0.10,
+                        help="a phase picked less than this is nearly absent from the corpus (phase 1 was at 8%%)")
     parser.add_argument("--auto-explore-rate", type=float, default=0.60,
                         help="rate injected for a menu the coverage detector flags, for ONE generation only. Measured "
                              "19/11: a 0.60 injection left in the spec for every later iteration (COLLECT_INCOME) took the "
@@ -709,6 +759,15 @@ def main():
                     if key not in item:
                         raise KeyError(f"the collapse flag for {item.get('decision')} has no '{key}': the loop and the "
                                        f"detector disagree about the flag format")
+            shares = phase_shares(pack)
+            if shares:
+                total = sum(shares.values())
+                log("phase mix: " + " ".join(f"P{p}:{100 * c / max(total, 1):.0f}%"
+                                             for p, c in sorted(shares.items())))
+                phase_problems = phase_flags(shares, args.phase_entropy_min, args.phase_share_min)
+                for problem in phase_problems:
+                    log(f"PHASE COLLAPSE {problem}")
+                    collapsed.append({"decision": "PICK_PHASE", "kind": "phase-share", "coverage": None})
             added = sorted({item["decision"] for item in collapsed
                             if item["decision"] not in base_explore and item["decision"] not in auto_explore})
             auto_explore = {decision: args.auto_explore_rate for decision in added} if args.auto_explore_rate > 0 else {}

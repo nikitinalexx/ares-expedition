@@ -153,6 +153,9 @@ public class OnePlySearch {
      * gate discards the zero-value cards and stops at the ones that carry points or income.
      */
     private static final float JUNK_EPSILON = 10f;
+    /** {@code -Dares.agent.search.mulliganCorp=false}: the A/B switch for the corporation branch of the mulligan afterstate. */
+    private static final boolean MULLIGAN_CORP =
+            Boolean.parseBoolean(System.getProperty("ares.agent.search.mulliganCorp", "true"));
     /** The gate reads {@link #junkMargin}; this is the default when the property is absent. */
     /**
      * {@code -Dares.agent.search.debugJunk=true}: accumulate the gate's gap ({@code V(best removal) - V(stop)}) for the junk
@@ -1242,6 +1245,12 @@ public class OnePlySearch {
     }
 
     private void applyOfferedCorporation(MarsGame copy, Player me) {
+        if (!MULLIGAN_CORP) {
+            // Measurement switch (`-Dares.agent.search.mulliganCorp=false`): score the hand without founding a corporation.
+            // The difference between the two runs is what the two offers contribute to the mulligan; without it the claim
+            // "the choice correlates with the corporations" would be an assertion.
+            return;
+        }
         if (me.getSelectedCorporationCard() != null) {
             return;
         }
