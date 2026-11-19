@@ -1357,7 +1357,7 @@ public class OnePlySearch {
         String uuid = me.getUuid();
         // A playout needs both seats to be playable by the engine; against a human the search simply has no opinion and
         // the policy decides (the same fallback as an unusable candidate).
-        if (copy.getPlayerUuidToPlayer().values().stream().anyMatch(player -> !player.isComputer())) {
+        if (!makeSeatsPlayable(copy)) {
             return Float.NaN;
         }
         float sum = 0f;
@@ -1372,6 +1372,31 @@ public class OnePlySearch {
             }
         }
         return ok == 0 ? Float.NaN : sum / ok;
+    }
+
+    /**
+     * A rollout has to be able to drive every seat. The simulation only moves players whose difficulty is a computer
+     * (`AiService.waitingAiTurns`/`makeAiTurns` filter on `isComputer`), so a seat with a human behind it used to make the
+     * whole rollout unusable ("the search has no opinion") - which is why the shipped player was weaker than the measured
+     * one: against a human the phase pick fell back to the one-action value and the mulligan to the policy.
+     * <p>
+     * The human seat is driven by OUR OWN agent, i.e. the same assumption the search already makes about the opponent in
+     * every other place: the opponent is as strong as we are. That is the owner's point (19/11) - an opponent model built
+     * from our own player is legitimate, and it makes the benchmark player and the shipped player the same player.
+     *
+     * @return false when a seat could not be made playable at all (then the caller keeps the old "no opinion" behaviour)
+     */
+    private boolean makeSeatsPlayable(MarsGame copy) {
+        try {
+            for (Player seat : copy.getPlayerUuidToPlayer().values()) {
+                if (!seat.isComputer()) {
+                    seat.setDifficulty(com.terraforming.ares.model.PlayerDifficulty.AGENT);
+                }
+            }
+            return true;
+        } catch (RuntimeException e) {
+            return false;
+        }
     }
 
     private float playRound(MarsGame sim, String uuid) {
