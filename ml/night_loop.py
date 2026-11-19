@@ -241,6 +241,19 @@ def classpath():
         return "target/classes;" + f.read().strip()
 
 
+def should_restart(code, done, wanted):
+    """Whether a generated chunk must be followed by another run.
+
+    Why: the rollouts (`phasePlayout`, `playout=MULLIGAN`) make the self-play JVM grow past any heap every ~250 games and exit
+    with code 6 ("OUT OF MEMORY: the self-play JVM exits with code 6 so the pipeline can restart it after the finished
+    chunks"). The finished chunks are on disk, so the honest reaction is to continue from them, not to throw the corpus away -
+    measured 19/11: two 2000-game runs died at 93 and 252 games.
+    """
+    if done >= wanted:
+        return False
+    return code in (0, 6)
+
+
 def play(out, games, policy, critic, threads, explore, matchups, types, rows_per_type=8, phase_critic="", timeout=0,
          generation_symmetric=False, afterstates=False):
     """Generates one corpus. The wall-clock limit scales with the games: the fixed 7200 s was measured on three ranked
@@ -257,14 +270,31 @@ def play(out, games, policy, critic, threads, explore, matchups, types, rows_per
         args.append("-Dares.agent.afterstates=true")
     if explore:
         args.append(f"-Dares.agent.explore={explore}")
+    chunk = min(250, games)
     args += ["-cp", classpath(), "com.terraforming.ares.selfplay.SelfPlayMain", "--mode", "play",
-             "--out", out, "--games", str(games), "--threads", str(threads), "--games-per-chunk", "2000",
+             "--out", out, "--threads", str(threads), "--games-per-chunk", str(chunk),
+             "--count-chunks-from", out,
              "--matchups", matchups, "--max-rows-per-game-type", str(rows_per_type),
              "--models", policy]
     started = time.time()
     log_path = out.rstrip("/\\") + ".play.log"
+    # Chunked and restarted: a rollout-heavy generator dies on memory every few hundred games, and the finished chunks are
+    # the expensive artifact. `--count-chunks-from` makes the numbering continue instead of overwriting chunk 1.
+    played_total = 0
+    result = None
     with open(log_path, "w", encoding="utf-8") as sink:
-        result = subprocess.run(args, stdout=sink, stderr=subprocess.STDOUT, timeout=timeout)
+        while True:
+            left = games - played_total
+            if left <= 0:
+                break
+            run_args = args + ["--games", str(min(chunk, left))]
+            result = subprocess.run(run_args, stdout=sink, stderr=subprocess.STDOUT, timeout=timeout)
+            chunks = len(glob.glob(os.path.join(out, "*.ares")))
+            played_total = chunks * chunk
+            if not should_restart(result.returncode, played_total, games):
+                break
+            log(f"generation: {played_total}/{games} games on disk after exit {result.returncode}; continuing from the "
+                f"finished chunks")
     seconds = time.time() - started
     summary = {}
     try:

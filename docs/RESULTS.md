@@ -1358,3 +1358,32 @@ The observation carries the *previous* phase of both players and the dummy's rem
 with the policy, so the other seat and the dummy pick their phases in the simulation and the candidate is valued against that.
 The approximation is that the other seat is played by *our* policy, not by SMART or NETWORK: an opponent model is the missing
 piece, and it is the same piece the human seat needs.
+
+## How many games: the critic saturates in discrimination long before calibration (2026-11-19)
+
+The owner asked how one knows a corpus is big enough. Same trainer, same flags, three packs of the current encoder:
+
+| corpus | games | train rows | val AUC | val loss |
+|---|---|---|---|---|
+| a 120-game pack | 120 | 1 712 | 0.923 | 3.70 |
+| a 5 000-game pack | 5 000 | 71 968 | 0.906 | **1.11** |
+
+Discrimination (AUC) is already at its ceiling with 120 games - the critic can tell a winning position from a losing one from
+about a thousand rows. What keeps improving with data is **calibration**: the loss falls by a factor of three from 120 to 5 000
+games. That matters because the search compares *values of the same position* (a candidate against the stop), which is a
+difference of two calibrated numbers, not a ranking of distant states. It also explains why tiny corpora produced bundles that
+were good at ordering cards and bad at "act or stop".
+
+So the size of a corpus is not set by "can the critic learn", it is set by "how fine a difference must it resolve", and the
+resolution of a *decision* is measured directly by the play, not by the loss.
+
+## The rollout generator runs out of memory every ~250 games (2026-11-19, fixed in the pipeline)
+
+With `phasePlayout` and `playout=MULLIGAN` the self-play JVM grows past any heap (tried 10, 13 and 18 GB) and exits with code 6
+every few hundred games: two 2 000-game runs died at 93 and 252 games. The engine message says the pipeline is expected to
+restart it after the finished chunks, and `night_loop.play` now does exactly that - 250-game chunks, `--count-chunks-from`, and a
+restart on exit 0 or 6 while games are missing (`should_restart`, 4 tests). The corpus is the expensive artifact; throwing it
+away because the JVM died is the one thing that must not happen.
+
+The leak itself is still open: ~40 MB per game is retained by something in the rollout path. It is worth fixing in the engine
+(the same rollouts are used at play time), but it no longer stops a night.

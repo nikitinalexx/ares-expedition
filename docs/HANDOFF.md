@@ -1316,3 +1316,52 @@ Flags of the bundle:
 player is stronger than the one a human meets. Fixing that means driving the human seat with a policy during the rollout (an
 opponent model), which is the next task and is worth more than any knob: it is the difference between the measured player and
 the shipped one.
+
+## 19 November, third session: the collapse, and two specialists
+
+The owner's reading of the 73% bundle at the table: "you collapsed into a phase-3 fighter". Measured, it is exact
+(`docs/RESULTS.md`): phase 3 takes 33-42% of the picks against 8-10% for phase 1, upgrade 3.2 is bought in **100%** of games
+against 2.5-5% for the phase-1 upgrades, and 10.7% of the phase-3 picks had neither a blue action nor the upgrade - the ones
+that looked like habit.
+
+Three things follow, and they are now instrumented rather than argued:
+
+1. **The loop can see the collapse.** `night_loop.phase_flags` measures the CONCENTRATION of the phase mix (relative entropy
+   below `--phase-entropy-min`, default 0.92) and names a phase under `--phase-share-min` (default 0.10). The measured fighter
+   (9/26/40/9/16) is flagged; the champion's 26/21/23/15/15 is not. On a flag the next generation gets `PICK_PHASE:0.5`
+   exploration for one generation. 7 tests.
+2. **The mulligan has an A/B switch** (`-Dares.agent.search.mulliganCorp=false`): the same player without the corporation
+   branch, so "the choice correlates with the two offers" can be measured instead of asserted.
+3. **A phase handicap exists for diagnosis only** (`-Dares.agent.search.phaseBias=1:0.3`): it answers "what does the win rate
+   do when phase 1 is played more", and it is not a fix - the owner's point, that a push breaks the scheme the player is
+   optimised for, is the reason the specialists are built by *corpus* (exploration + retraining), not by handicap.
+
+### The plan: two specialists, then an adaptive player
+
+- **A - the phase-3 fighter**: `policy/1118-2332_17` + `v_1118-2332_17_s1..s3` + champion phase critic + the rollouts.
+  Measured 73.17% vs SMART (10 000), 73.57% with the mulligan, 39.8% vs NETWORK, 98.6% vs RANDOM. **Frozen** - it is a real
+  strategy and the pool must keep it.
+- **B - the phase-1 fighter**: a corpus generated with `explore=BUILD_CARD:0.3,PICK_PHASE:0.5` so that the economy phases and
+  the upgrade cards are actually *tried* in games whose outcomes teach what they are worth; then policy + critics, then the
+  profile. Success is a DIFFERENT profile (phase 1 >= 25%, upgrade 3.2 < 50%), not a higher score against SMART alone.
+- **Adaptive**: A and B play each other (the duel harness already runs two bundles), the corpus mixes both styles, one policy
+  learns to pick the plan from the cards, and the acceptance is a duel against **both** specialists - the same gate the HoF
+  uses. That is the owner's target: a player that can beat the phase-1 fighter and the phase-3 fighter.
+
+### The opponent model (the human seat, and the rollouts)
+
+`roundScore` refuses to play when a seat is not a computer, so against a human both rollouts return NaN and the shipped player
+is the weaker one. The fix is an opponent model inside the rollout, and it should come from **our own pool** (A and B), not
+from SMART or NETWORK: a corpus generated with a benchmark inside its rollouts would depend on the benchmark, which the owner's
+rule forbids. The same mechanism gives the adaptive player its two opponents.
+
+### How many games (owner's question, 19/11)
+
+Measured rates on this machine with the current flags: **1.0 games/s** with both rollouts, 2.6 (8 menus) to 5 (3 menus)
+without. Reason: the phase rollout plays a full round for each of ~5 phase candidates every round (~115 played rounds per
+game), the mulligan rollout one round per candidate (~50). "6 games/s" was self-play without heavy ranking.
+
+For evaluation the resolution is arithmetic: 1000 games -> +-3 points, 3000 -> +-1.7, 10 000 -> +-0.9, which is why an effect
+under 1.5 points counts only at 10 000. For *training* there is no derived number: the evidence so far is that 1000-game
+corpora produced degenerate bundles (43.1%) and 5000-game corpora 60-73%, and the instrument that settles it is a learning
+curve (the same critic on 60 / 120 / 5000 game packs, val AUC and loss), which is running.
