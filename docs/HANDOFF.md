@@ -1424,3 +1424,73 @@ already optimal, `stopMargins` -3.6, `horizon` -8, wide critics -3.6 at this dat
 3. **Capacity with >= 20 000 games** (postponed by the owner): the wide net lost 3.6 points at 2 000 games of data.
 4. **Ship the 73% bundle against humans**: the rollout now plays a human seat with our own agent, so the interface player is the
    benchmark player (AI-vs-AI regression: 73.4% at 500 games).
+
+## 19 November, session 3 (long): 73.17% stands, and the day closed almost every shortcut
+
+### The number
+
+**73.17% [72.3, 74.0] vs SMART** (10 000), 98.6% RANDOM, 39.8% NETWORK. Morning: 63.93%. Every point came from the SEARCH:
+the phase pick scored by a played-out round (+5.9) on top of the champion's phase critic (+3.3). The mulligan is now a working
+mechanism (per card, mean 4.0 per seat, 13% of games discard nothing) but score-neutral at 3000.
+
+### What the day closed, with numbers
+
+| mechanism | result |
+|---|---|
+| a fixed mulligan count | 2 neutral, 5 -> -3.7 points |
+| the critic gating the mulligan | discards 8-10 of 10, blind to hand identity |
+| the policy learning the mulligan from explored games | discards 0 (random discards teach only that random discards are bad) |
+| forcing a plan (`phaseBias`) | 44.25%, and its corpus trains 25-33% |
+| phase horizon, 2 rounds | 65.08% |
+| phase with 8 determinisations (`samples=8`) | 66.9% |
+| a round playout after a BUILD | 73.15% (identical) |
+| a round playout after a BUILD_INPUT | 71.65% |
+| heavy exploration (`PICK_PHASE:0.5`) | corpus -> player 21% |
+| guided exploration (softmax over search scores) | corpus -> player 14% |
+| two strong policies in one corpus (A vs the old champion) | val loss 1.11 -> 1.97, player 31% (52% in the duel) |
+| critics trained on that mixed corpus with A's policy | 32% |
+| wider critics (768x384) at 2000 games of data | 69.55% (postponed: needs >= 20k games) |
+| opponent weight 0 / 2 | 70.8% / 71.3% (1 is optimal) |
+
+Two rules explain all of it: **a corpus inherits the strength of the player that played it**, and **one corpus = one policy** (two
+styles in one corpus blur V: loss 0.91 -> 1.97).
+
+### The value is better than we thought, and the old network was the liar
+
+- My 200 MC -> V +2.92 logit, the opponent's 200 MC -> -2.20, his 80 heat -> -0.54. No clipping (200 MC is z=6.1 against clip 40).
+- The UI's 85-90% -> 53% -> 5% the owner saw was the OLD network (`nnService ... SECOND`); the UI now shows the learned agent's
+  own estimate (`OnePlySearch.winProbability`), which is the number the search ranks with.
+- Our V on AGENT vs NETWORK games: AUC 0.87-0.89 but mean V **+0.94/+1.28** - it says "winning" in games it loses two out of
+  three. That is the policy-conditional nature of a value, not a bug, and it is the measure of how far the plan is from working
+  against a different style.
+
+### What it builds (1250 games, 27 500 builds, ids now named via `--mode cards`)
+
+StandardTechnology 0.29/game (top six), AntiGravityTechnology 0.29, Herbivores 0.21, **Fish 0.05**, VolcanicSoil 0.011. It builds
+the converters but never the snowball, because its own money distribution is median 3 MC, p95 13 MC, max ~60: the 200 MC state a
+human creates does not exist in its play. That is the honest answer to "why did the human win with the economy engine".
+
+### Repairs (all silent before, all measured after)
+
+- Rollouts recorded phantom decisions: 8 GB, 921k rows, OOM every ~250 games. One `record(...)` guard + `RolloutRecordingTest`.
+- The determinizer mixed card kinds (corporations, hands, decks) and broke the mulligan rollout.
+- The generator chunks and resumes (`should_restart`, 4 tests).
+- The loop sees a collapsed plan (phase entropy + an absent phase, 7 tests), holds the phase pick on a fixed model, and its
+  auto-exploration lasts one generation.
+- The human seat is played by our own agent in the rollout, so the UI player is the benchmark player (73.4% at 500 games).
+- `--mode cards` writes id -> name; `ml/value_check.py` measures V against actual outcomes; `ml/specialist_report.py` is the
+  archetype fingerprint; `ml/mulligan_report.py` counts per seat.
+
+### The measured cost of everything (for the throughput work)
+
+Menus: SELL_CARDS_LAST_ROUND 13.2 (max 32), DISCARD 13.1, SELL_CARDS 12.4, BUILD_INPUT 6.7, BLUE_INPUT 6.3, PICK_CORPORATION
+6.2, MULLIGAN 5.7, PICK_PHASE 4.0, BUILD_CARD 3.9. Per-candidate cost: copy 4%, my observation 32%, opponent public 31%, critics
+33%. So: pruning to top-k on the sell/discard/input menus is ~1.5-2x for free; incremental observation is 1.8-2.5x; a
+micro-batcher + GPU 1.3-1.5x (bounded by Amdahl, more after the observation work). A rewrite in another language is ~2x for an
+enormous cost - not the lever; GraalVM is the cheap 1.2-1.5x.
+
+### Untested, ready
+
+`-Dares.agent.search.planProbe=true`: the phase rollout keeps our seat on the candidate phase at the next pick, so the comparison
+becomes "commit to this plan" instead of "play one round as usual". That is the cheapest way to see whether the value can prefer
+a different plan without any imitation - the one question the day could not answer.

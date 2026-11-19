@@ -77,23 +77,50 @@ public class AdvancedAiDataCollectionService implements IDataCollect {
         Player player = game.getPlayerByUuid(playerUuid);
         Player anotherPlayer = (players.get(0).getUuid().equals(player.getUuid())) ? players.get(1) : players.get(0);
 
-        FeatureWriter featureWriter = new FeatureWriter(AiConstants.TABLE_VECTOR_SIZE + AiConstants.HAND_VECTOR_SIZE);
+        // A FRESH array for every caller: many call sites store the result (statesToAdd.add(collectData(...)), the dataset
+        // collectors, the projections), so a shared buffer here would alias them and corrupt data silently. The hot path
+        // (ObservationBuilder, once per candidate) uses collectDataInto with its own per-thread buffer instead.
+        int size = AiConstants.TABLE_VECTOR_SIZE + AiConstants.HAND_VECTOR_SIZE;
+        float[] buffer = new float[size];
+        FeatureWriter featureWriter = new FeatureWriter(buffer).reset();
 
         tableEncoder.encodeTable(game, player, anotherPlayer, featureWriter);
         handEncoder.encodeHand(game, player, anotherPlayer, featureWriter);
 
-        return normalize(featureWriter.getData(), AiConstants.NORMALIZATION_VECTOR);
+        return normalize(buffer, AiConstants.NORMALIZATION_VECTOR);
     }
 
+    /**
+     * Encodes into a caller-owned buffer, normalising in place, and returns that same buffer. Only for call sites that
+     * CONSUME the vector immediately (the observation builder copies out of it straight away): the legacy callers store the
+     * array, so they must keep the allocating {@link #collectData(MarsGame, String)}.
+     */
+    public float[] collectDataInto(MarsGame game, String playerUuid, float[] buffer) {
+        List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
+        Player player = game.getPlayerByUuid(playerUuid);
+        Player anotherPlayer = (players.get(0).getUuid().equals(player.getUuid())) ? players.get(1) : players.get(0);
+        FeatureWriter featureWriter = new FeatureWriter(buffer).reset();
+        tableEncoder.encodeTable(game, player, anotherPlayer, featureWriter);
+        handEncoder.encodeHand(game, player, anotherPlayer, featureWriter);
+        return normalize(buffer, AiConstants.NORMALIZATION_VECTOR);
+    }
+
+    /**
+     * Normalises IN PLACE: {@code state} is overwritten with {@code state / maxVec} and returned, so the caller's per-thread
+     * buffer is reused and no array is allocated per observation. The finiteness check moves behind
+     * {@code -Dares.data.checkFinite=true}: on the hot path it was one branch per feature, and a non-finite value cannot come
+     * from integer game state (a zero scale is still caught by the max <= 0 check below).
+     */
     public static float[] normalize(float[] state, float[] maxVec) {
         int n = state.length;
-        float[] normalized = new float[n];
+        boolean checkFinite = Boolean.getBoolean("ares.data.checkFinite");
+        float[] normalized = state;
 
         for (int i = 0; i < n; i++) {
             float max = maxVec[i];
             float value = state[i];
 
-            if (!Float.isFinite(value)) {
+            if (checkFinite && !Float.isFinite(value)) {
                 throw new IllegalStateException(
                         "state[" + i + "] is not finite: " + value
                 );

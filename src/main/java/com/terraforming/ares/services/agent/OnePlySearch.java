@@ -164,6 +164,19 @@ public class OnePlySearch {
      */
     private final java.util.Map<Integer, Float> phaseBias;
     /**
+     * {@code -Dares.agent.search.planProbe=true}: when the PHASE pick is scored by a played-out round, the rollout keeps OUR
+     * seat on that same phase at the next pick as well.
+     * <p>
+     * Why (owner, 19/11): a deeper rollout of the same policy only measures the SAME plan more precisely - it cannot compare two
+     * plans, because the playout always plays what the policy would play. Committing the rollout to the candidate phase turns
+     * the comparison into "plan A versus plan B": if the value prefers the economy line, it starts choosing it, without a single
+     * imitated game.
+     */
+    private final boolean planProbe;
+    /** The phase and the seat a plan probe is committed to, set only inside a phase playout on this thread. */
+    private final ThreadLocal<Integer> planProbePhase = new ThreadLocal<>();
+    private final ThreadLocal<String> planProbeSeat = new ThreadLocal<>();
+    /**
      * Tolerance of the junk gate, in milli-logits of V. Removing a card that contributes nothing to the hand summary
      * leaves V unchanged up to float noise (a few milli); a card worth half a printed point moves V by more. 10 milli
      * (0.01 of V, i.e. a fraction of a victory point) is the "it costs me nothing" band - measured: with this band the
@@ -333,6 +346,7 @@ public class OnePlySearch {
             this.junkMargin = JUNK_EPSILON;
             this.opponentWeight = 1f;
             this.phaseBias = java.util.Map.of();
+            this.planProbe = false;
             this.pairs = false;
             this.horizonTurns = 0;
             this.samples = 1;
@@ -354,6 +368,7 @@ public class OnePlySearch {
         this.junkMargin = configuredJunkMargin;
         this.opponentWeight = Float.parseFloat(System.getProperty("ares.agent.search.opponentWeight", "1"));
         this.phaseBias = parsePhaseBias(System.getProperty("ares.agent.search.phaseBias", ""));
+        this.planProbe = Boolean.parseBoolean(System.getProperty("ares.agent.search.planProbe", "false"));
         this.pairs = configuredPairs;
         this.horizonTurns = Math.max(0, configuredHorizon);
         this.samples = configuredSamples;
@@ -507,6 +522,14 @@ public class OnePlySearch {
         } catch (RuntimeException e) {
             return Float.NaN;
         }
+    }
+
+    /**
+     * The phase this seat is committed to inside a plan probe, or null. Read by the decision service while a phase playout is
+     * running, so the rollout plays the candidate plan instead of whatever the policy would pick.
+     */
+    public Integer planProbePhaseFor(String playerUuid) {
+        return planProbeSeat.get() != null && planProbeSeat.get().equals(playerUuid) ? planProbePhase.get() : null;
     }
 
     public boolean isBusy() {
@@ -1211,7 +1234,16 @@ public class OnePlySearch {
             } else if (horizonThis) {
                 mine = horizonScore(copy, me, seed);
             } else if (phasePlayout && type == DecisionType.PICK_PHASE) {
-                mine = roundScore(copy, me, seed);
+                if (planProbe) {
+                    planProbePhase.set(cardId);
+                    planProbeSeat.set(me.getUuid());
+                }
+                try {
+                    mine = roundScore(copy, me, seed);
+                } finally {
+                    planProbePhase.remove();
+                    planProbeSeat.remove();
+                }
             } else {
                 mine = valueAt(copy, me, observation);
             }

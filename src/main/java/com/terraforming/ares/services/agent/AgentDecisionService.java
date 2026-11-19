@@ -140,6 +140,18 @@ public class AgentDecisionService {
     }
 
     public int pickPhase(MarsGame game, Player player) {
+        Integer committed = onePlySearch.planProbePhaseFor(player.getUuid());
+        if (committed != null) {
+            // A plan probe (see OnePlySearch.planProbe): the rollout is asked "if I commit to this phase", so it must not be
+            // talked out of it by the policy. The engine rejects a repeat of the previous phase, so the commitment is only
+            // used when it is legal.
+            Decision probe = pickPhaseDecisions.build(game, player);
+            for (int i = 0; i < probe.candidates().size(); i++) {
+                if (probe.candidates().get(i).id() == committed) {
+                    return committed;
+                }
+            }
+        }
         Decision decision = pickPhaseDecisions.build(game, player);
         int forced = forcedPhase(decision);
         int index = forced >= 0 ? forced : -1;

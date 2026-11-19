@@ -407,6 +407,9 @@ public class ObservationBuilder {
      * the name list (cached) - capturing a position mid-build put the zeroing window on the wrong block and the test that
      * checks every private column caught the leak (2026-11-16).
      */
+    /** Per-thread scratch for the legacy V2 block (see build): it is copied out immediately and never retained. */
+    private static final ThreadLocal<float[]> V2_SCRATCH = new ThreadLocal<>();
+
     private static volatile int handBitsStart = -1;
 
     public static int handBitsStart() {
@@ -423,7 +426,16 @@ public class ObservationBuilder {
         long started = System.nanoTime();
         Player opponent = game.getPlayerUuidToPlayer().values().stream().filter(p -> !p.getUuid().equals(player.getUuid())).findFirst().orElseThrow();
 
-        float[] v2 = baseEncoder.collectData(game, player.getUuid());
+        // The hot path: this vector is copied into the observation immediately, so it lives in a per-thread scratch buffer
+        // (the builder runs hundreds of times per game and thousands of times inside a rollout).
+        float[] v2Scratch = V2_SCRATCH.get();
+        int v2Size = com.terraforming.ares.services.ai.AiConstants.TABLE_VECTOR_SIZE
+                + com.terraforming.ares.services.ai.AiConstants.HAND_VECTOR_SIZE;
+        if (v2Scratch == null || v2Scratch.length != v2Size) {
+            v2Scratch = new float[v2Size];
+            V2_SCRATCH.set(v2Scratch);
+        }
+        float[] v2 = baseEncoder.collectDataInto(game, player.getUuid(), v2Scratch);
         float[] observation = new float[size()];
         int pos = 0;
         for (int column : KEEP) {
