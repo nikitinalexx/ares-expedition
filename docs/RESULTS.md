@@ -1607,3 +1607,25 @@ Two things at once:
 
 Next session's first experiment, with a number behind it: a clean 5 000-game corpus of A carrying the RANKING sidecar, then
 breakdown vs margin at that size, 1000 games each.
+
+## P2: playing the round out after a build changes nothing (2026-11-19)
+
+The owner's hypothesis, stated precisely: a one-ply value should already see "money out, tags and income in", so why is depth
+needed? If the myopia of the build decision were the bottleneck, scoring a build by playing the round out with the policy
+(`playout=BUILD_CARD`, the same trick that gave +5.9 for the phase pick) would help.
+
+| bundle | vs SMART |
+|---|---|
+| baseline (one-action afterstate for builds) | 73.17% [72.3, 74.0] (10 000) |
+| **build scored by a played-out round** | **73.15% [70.3, 75.8]** (1 000) |
+
+Identical, at twice the CPU cost. So the build decision's myopia is **not** the bottleneck: the round playout neither helps nor
+hurts, which means the choice between building and not building (where `rankOnly` keeps the policy's stop) dominates whatever the
+ranking of the cards could add.
+
+A methodological note worth keeping: the 40-game smoke of this flag showed **32-8 (80%)**; the 1000-game measurement put it at
+73.15%. Small samples flatter any change that touches many decisions.
+
+Where that leaves the plan: the phase decision (the PLAN) is the only place where the search has produced a measured gain
+(+5.9), and forcing or lengthening it fails (bias 44%, two-round horizon 65%). The value's accuracy is the remaining lever with
+evidence behind it (breakdown +8.2 at 500 games), and its 5000-game corpus is generating.
