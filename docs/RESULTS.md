@@ -1586,3 +1586,24 @@ continuation distributions - nearly double the loss - and the policy trained on 
 one policy.** That is why the loop works at all (the generator is always the current best) and why every attempt to inject a
 second style through data has failed today: exploration (21%), bias (25-33%), horizon (21%), and now a second strong policy (31%).
 The gains have to come from the search and the value, not from the corpus.
+
+## The value target matters most when the data is scarce (2026-11-19, last measurement of the day)
+
+One fresh clean corpus of A (500 games, generated after every fix), one policy (A's), two critics trained on exactly that data:
+
+| value target | vs SMART, 1000 games |
+|---|---|
+| the single final margin (what the loop uses) | **11.6% [9.7, 13.7]** |
+| the game's seven-channel breakdown, exported as V = sum | **19.8% [17.4, 22.3]** |
+
+Two things at once:
+
+1. **The target matters a lot when the data is small**: the breakdown decomposition is worth +8.2 points from 500 games. It splits
+   the credit per channel (terraforming, forests, printed points, resources, milestones, awards, extra), so a card that scores two
+   printed points teaches something even in a game lost on tempo.
+2. **Data size dominates for play**: the same policy with the night's critics (5 000 games + replay) scores 73.17%, while critics
+   from 500 games score 11.6%. The learning curve measured on the *loss* plateaued at 1 000-2 000 games, but the *play* needs far
+   more - the loss is not the instrument, again.
+
+Next session's first experiment, with a number behind it: a clean 5 000-game corpus of A carrying the RANKING sidecar, then
+breakdown vs margin at that size, 1000 games each.
