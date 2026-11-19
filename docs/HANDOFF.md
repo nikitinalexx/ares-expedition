@@ -1372,3 +1372,55 @@ For evaluation the resolution is arithmetic: 1000 games -> +-3 points, 3000 -> +
 under 1.5 points counts only at 10 000. For *training* there is no derived number: the evidence so far is that 1000-game
 corpora produced degenerate bundles (43.1%) and 5000-game corpora 60-73%, and the instrument that settles it is a learning
 curve (the same critic on 60 / 120 / 5000 game packs, val AUC and loss), which is running.
+
+## 19 November, evening: what the day proved, and the two rules that close the data path
+
+### The number
+
+**73.17% [72.3, 74.0] vs SMART** (10 000 games), 98.6% vs RANDOM, 39.8% vs NETWORK. Champion before the day: 63.93%. The gain
+came from the search, not from data:
+
+| change | vs SMART |
+|---|---|
+| champion | 63.93% |
+| night policy + night card critics + **the champion's phase critic** | 66.87% |
+| **+ the phase pick scored by a round playout** | **72.82% (3000) / 73.17% (10 000)** |
+
+The mulligan is now decided by the game (per card, the two offered corporations founded in the afterstate, the round played out,
+a critic that sees the hand): mean **4.0 discards per seat**, 13% of games discard nothing - but it is **score-neutral at 3000
+games** (73.57% [72.0, 75.1] against 73.17%). It is a working mechanism, not yet a point gain.
+
+### The two rules that close the data path (each measured, each reproducible)
+
+1. **A corpus inherits the strength of the player that played it.** A as it plays (73%) trains 73%. The horizon player (65%)
+   trains 21%. The phase-biased player (44%) trains 25-33%. Fifty percent random phases trains 21%.
+2. **One corpus = one policy.** A (73%) vs the previous champion (64%), a clean corpus, 50/50 games: the critic's val loss goes
+   1.11 -> **1.97** and the student scores **31%** vs SMART (52% in a duel against that champion - a universal average, i.e.
+   mediocre everywhere).
+
+Mechanism: V(s) is one number per position. If two styles reach the same position with different continuations, V averages them;
+the policy trains on the blur. A weakened generator produces positions whose continuations are weak, and the student learns them.
+
+So: **plans cannot be grown from data here.** The levers that remain are the decision rule (search, value) on the *current best
+player's own corpus* - the class that produced every gain today (`phasePlayout` +5.9, phase critic +3.3, `opponentWeight`
+already optimal, `stopMargins` -3.6, `horizon` -8, wide critics -3.6 at this data size).
+
+### Repairs made today (both were silent, both cost the night's time)
+
+- **Rollouts recorded phantom decisions.** The generator wrote every hypothetical decision of every playout into the corpus
+  (labelled with the real outcome) and the queue grew to 921k rows / 8 GB, killing the JVM every ~250 games. Fixed with one
+  `record(...)` guard on `OnePlySearch.isBusy()`; pinned by `RolloutRecordingTest` (2 tests). Heap after: 0.6 GB.
+- **The determinizer mixed card kinds** (corporations, hands, both decks in one shuffle), putting project cards into the
+  "offered corporations" slot; fixed to one pool per kind. This is what made the mulligan rollout crash.
+- **The generator chunks and resumes** on exit 6 (`should_restart`, 4 tests) instead of losing the corpus.
+- The loop can now see a **collapsed plan** (phase concentration by entropy + an absent phase), and the phase pick can be held
+  on a fixed model (`--phase-critic-model`), and the auto-exploration is one generation, not cumulative.
+
+### What is left, in order
+
+1. **The value's target and resolution** (running): seven-channel breakdown vs the single margin, same corpus, same policy.
+2. **A real opponent response** in the search (a reply ply instead of the opponent's current value) - expensive, the only
+   structural search change not yet tried.
+3. **Capacity with >= 20 000 games** (postponed by the owner): the wide net lost 3.6 points at 2 000 games of data.
+4. **Ship the 73% bundle against humans**: the rollout now plays a human seat with our own agent, so the interface player is the
+   benchmark player (AI-vs-AI regression: 73.4% at 500 games).
