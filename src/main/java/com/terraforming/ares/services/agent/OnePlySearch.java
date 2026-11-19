@@ -148,6 +148,15 @@ public class OnePlySearch {
      */
     private final float junkMargin;
     /**
+     * {@code -Dares.agent.search.opponentWeight=1.0}: how much of the opponent's value is subtracted from a candidate's score,
+     * {@code (V(mine) - w * V(opponent)) / 2}. The default 1 is what {@code symmetric=true} has always done; 0 is blind to the
+     * opponent ("play my own game"), 2 doubles the weight on denying him.
+     * <p>
+     * The owner's game (19/11) was won by building the engine the agent leaves alone: in a two-player game a card the opponent
+     * wants is worth more to him than to me, and that only enters through the opponent's side of the comparison.
+     */
+    private final float opponentWeight;
+    /**
      * {@code -Dares.agent.search.phaseBias=1:0.3,5:-0.1}: a measurement handicap added to a PHASE candidate's score, in
      * logits. It is not a rule of the player - it is the instrument for "is the phase picked too rarely", the same way
      * {@code ares.agent.mulligan.cards} measures the mulligan count: push the phase's share up and read the win rate. The
@@ -322,6 +331,7 @@ public class OnePlySearch {
             this.playoutTypes = EnumSet.noneOf(DecisionType.class);
             this.horizonTypes = EnumSet.noneOf(DecisionType.class);
             this.junkMargin = JUNK_EPSILON;
+            this.opponentWeight = 1f;
             this.phaseBias = java.util.Map.of();
             this.pairs = false;
             this.horizonTurns = 0;
@@ -342,6 +352,7 @@ public class OnePlySearch {
         this.playoutTypes = parseTypes(System.getProperty("ares.agent.search.playout", ""));
         this.horizonTypes = parseTypes(System.getProperty("ares.agent.search.horizonTypes", ""));
         this.junkMargin = configuredJunkMargin;
+        this.opponentWeight = Float.parseFloat(System.getProperty("ares.agent.search.opponentWeight", "1"));
         this.phaseBias = parsePhaseBias(System.getProperty("ares.agent.search.phaseBias", ""));
         this.pairs = configuredPairs;
         this.horizonTurns = Math.max(0, configuredHorizon);
@@ -397,7 +408,7 @@ public class OnePlySearch {
         List<MlpValueModel> nets = nets();
         float sum = 0f;
         for (MlpValueModel model : nets) {
-            sum += (model.logit(mine) - model.logit(opponent)) * 0.5f;
+            sum += (model.logit(mine) - opponentWeight * model.logit(opponent)) * 0.5f;
         }
         return sum / nets.size();
     }
@@ -1079,7 +1090,7 @@ public class OnePlySearch {
                 otherLogits = model.batchLogits(compactOther, count);
             }
             for (int k = 0; k < count; k++) {
-                float value = needOther ? (mineLogits[k] - otherLogits[k]) * 0.5f : mineLogits[k];
+                float value = needOther ? (mineLogits[k] - opponentWeight * otherLogits[k]) * 0.5f : mineLogits[k];
                 // The one-candidate path returns Math.round(V * 1000) and the pair logic compares raw numbers, so the
                 // batch path must use the same scale - mixing them silently made every pair outrank every batch score
                 // (measured: 8.4% instead of 44%, 2026-11-16).

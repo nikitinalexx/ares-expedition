@@ -69,6 +69,47 @@ against **both** specialists plus SMART. This is the adaptive player.
 - Nothing is deleted; every experiment goes into `docs/RESULTS.md` with its number, including the failures.
 - The loop keeps the anti-narrowing guards (phase-concentration detector, corpus gate, one-generation exploration).
 
+## Log of the plan (keep it current)
+
+**19/11, session 3**
+
+- The generator's memory and data corruption were one bug: rollouts recorded phantom decisions (8 GB, 921k pending rows, OOM every
+  ~250 games). Fixed with a single `record(...)` guard on `OnePlySearch.isBusy()`, and pinned by `RolloutRecordingTest` (2 tests).
+  Heap after the fix: 370k `float[]` (0.6 GB) against 4.6M (8 GB).
+- **Every corpus generated today with rollouts is polluted** (p1cur, p1b, h1cur) - specialist B's failure is confounded and is being
+  re-run on a clean corpus.
+- H1 (delayed payoff): the horizon moves the plan as predicted (16/20/24/18/22) but the player drops to 65.08% - closed at the
+  first honest test, per the rule.
+- H2a (wider critics, 768x384): **69.55%** against 73.17% - worse at the current corpus size. **Postponed, not closed** (owner,
+  19/11: capacity may simply need more games). Re-open only together with a corpus of >= 20 000 games, and never as a separate
+  variable before the obvious ones are checked.
+- Correction to my own claim: the opponent block is NOT ignored - with it removed the player scores 57.4% against 73.17%. The loss
+  metric was the wrong instrument; behaviour has to be measured by playing.
+
+### Result of the ordered list
+
+- **H1b (retrain on the clean horizon corpus)**: dead. With the horizon 21.0%, without 16.0%. The corpus was regenerated after
+  the phantom-row fix, so this is not a data artefact: **a corpus inherits the strength of the player that played it** (the
+  horizon player is 65%, its corpus trains 21%). This is the single rule that explains every failure today.
+- **H3 (specialist on a clean corpus)**: predicted to fail by the same rule (the biased player is 44%); the corpus is
+  generated but the result would confirm the rule rather than test a new idea - not run.
+- **H5 (contest the opponent - the owner's idea in mechanism form)**: NEW and next in line. `-Dares.agent.search.opponentWeight`
+  (default 1 = what `symmetric` always did): the candidate score is `(V(mine) - w * V(opponent)) / 2`. w=0 is blind ("play my
+  own game"), w=2 doubles the weight on denying him. This is a decision-rule change, which is the class of change that has
+  worked all day.
+- **H4 (interaction) re-opened legally**: the hall of fame holds a strong, genuinely different player - the previous champion
+  `1118-0058_13` (63.9%, phases 26/21/23/15/15). A corpus of **A vs the old champion** (`--models` A, `-Dares.agent.models2`
+  champion, `--matchups AGENT:AGENT_V2:1`) is interaction data between two of our own strong players, with no benchmark in it.
+  Generating now.
+
+## Order after the first results (owner, 19/11: "check the obvious things first")
+
+1. **H1b** - retrain on the clean horizon corpus and measure with and without the horizon (running).
+2. **H2b** - 5 critics instead of 3 (cheap, no new corpus).
+3. **H3 clean** - the phase-1 specialist retested on a *clean* corpus (the earlier failure is confounded by the phantom rows).
+4. **H2c** - the seven-channel breakdown target, on a corpus that carries the RANKING sidecar.
+5. **H4** - the interaction: A vs B corpus, then one policy that must beat both.
+
 ## Stop rules for this plan
 
 - If H1 does not move either the mix or the win rate at two horizons, H1 is closed and H2 starts.

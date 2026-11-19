@@ -1507,3 +1507,24 @@ Fix: `OnePlySearch.isBusy()` exposes "a hypothetical computation is in progress"
 goes through one `record(...)` helper that skips when it is set. Consequence: the corpora generated today *with rollouts*
 (`p1cur`, `p1b`, `h1cur`) contain phantom rows, so specialist B's failure is confounded - the clean retest is in progress. The
 73.17% measurement is not affected: recording does not change how the player decides, only what is written down.
+
+## The rule that explains every failure today: a corpus inherits the strength of the player that played it
+
+| generator | its own score | corpus it produced | player trained on it |
+|---|---|---|---|
+| A as it plays | 73.17% | 5 000 games | 73.17% (itself) |
+| A + `phaseBias=1:0.6` (forced into phase 1) | 44.25% | 2 000 games | 32.9% / 25.3% (B) |
+| A + `horizon=2` on the phase | 65.08% | 1 000 games, clean | **21.0%** (H1b) |
+| A + `PICK_PHASE:0.5` exploration | ~50% (random phases) | 2 000 games | 21.1% |
+
+The horizon corpus was regenerated *after* the phantom-row bug was fixed, so H1b is not a data artefact: the corpus is clean,
+its fingerprint shows the horizon's plan (phases 15/24/24/17/20 against A's 10/30/35/8/18), and the player trained on it scores
+**21.0%**. A weaker player's games teach a weaker player, at any corpus size.
+
+Consequence for the plan: **self-play can only improve the decision RULE, not the plan, when the generator is the best player.**
+What worked all day was exactly that: `phasePlayout` (+5.9), the phase critic (+3.3), the mulligan machinery (neutral), the
+opponent weight (about to be measured). What failed was every attempt to grow a plan from a deliberately weakened generator.
+
+That also re-opens H4 in a legal way: the hall of fame holds a *strong, genuinely different* player - the previous champion
+`1118-0058_13` at 63.9% with a balanced phase mix (26/21/23/15/15). A corpus of **A vs the old champion** is interaction data
+between two strong players of our own, with no benchmark in it.
