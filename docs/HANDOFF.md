@@ -1135,3 +1135,96 @@ mulligan count/spread and sale share, next to the score).
 3. **Profile** (`ml/check_player.py --model <bundle>`): cards built per game, phases, phase-3 standard-project share.
 4. **Then** the win rate. An effect under 1.5 points counts only at 10 000 games.
 5. Promotion only through the HoF gates (profile -> absolute worst benchmark -> duel 2000 games >= 54% -> pool).
+
+## Morning report, 19 November: 63.9 -> 70.8 by playing the phase out; the mulligan is closed, with reasons
+
+### The number
+
+Champion before the night: `policy/1118-0058_13` + `v_1118-0058_13_s1..s3`, 63.93% [62.2, 65.6] vs SMART (3000 games).
+
+**Now: 72.82% [71.2, 74.4] vs SMART** (3000 games; 70.75% at 1000), from the night's own policy and card critics plus the
+champion's phase critic and one flag (a 10 000-game run was started at 04:30 and is the last number to read):
+
+```
+-Dares.agent.search.types=BUILD_CARD,DRAFT_CARDS,PICK_PHASE,STANDARD_ACTION,PERFORM_BLUE_ACTION,DISCARD_CARDS,SELL_CARDS,SELL_CARDS_LAST_ROUND,BUILD_PAYMENT,PICK_CORPORATION,BLUE_INPUT,BUILD_INPUT,MULLIGAN
+-Dares.agent.search=oneply -Dares.agent.search.symmetric=true -Dares.agent.search.pairs=true
+-Dares.agent.search.phasePlayout=true
+-Dares.agent.valueModel=D:/ares/runs/value/v_1118-2332_17_s1,D:/ares/runs/value/v_1118-2332_17_s2,D:/ares/runs/value/v_1118-2332_17_s3
+-Dares.agent.valueModel.phase=D:/ares/runs/value/v_1118-0058_13_s1
+--models D:/ares/runs/policy/1118-2332_17
+```
+
+Profile (60 games, the same flags): builds **32.6/game**, build acceptance 76%, phases **8.7 / 32.0 / 38.3 / 4.7 / 16.3**,
+standard projects in phase 3 **16.7%**, no warnings.
+
+### What produced it, one step at a time
+
+| change | vs SMART | games |
+|---|---|---|
+| champion as it was | 63.93% [62.2, 65.6] | 3000 |
+| night critics + champion phase critic | 66.87% [65.2, 68.5] | 3000 |
+| + the phase pick scored by a round rollout | 70.75% [67.9, 73.5] | 1000 |
+| **+ the phase pick scored by a round rollout** | **72.82% [71.2, 74.4]** | **3000** |
+
+The 2x2 that found it (1000 games each): night critics + champion phase critic **66.80**, champion critics + night phase
+critic **58.85**, both night **63.50**. The phase head of a freshly trained critic picks phases 2 and 3 in 88% of turns; the
+champion's critic picks 26/21/23/15/15. The phase pick is the one decision whose action IS the phase, so mis-ranking it costs
+points every round of every game.
+
+Two variants show the *rule* matters more than the model: a phase-critic ensemble gives 65.05, and keeping the champion's card
+critics gives 65.75. Playing the round out (`roundScore`, already implemented for phase picks) is what adds the last 4 points:
+it restores the balance and pays 16% of picks into phase 5 (the draft), which the policy alone never chose (0% of its argmax).
+
+A purpose-trained `PICK_PHASE` model does not replace it: `ml/train_phase.py` reaches val loss 0.554 against a 0.693 baseline
+but `action_effect 0.0023` - it ignores which phase was chosen. The rollout works because it measures the consequence, not a
+label.
+
+**The obvious next lever** is the same recipe applied to the card menus: `-Dares.agent.search.horizon` +
+`-Dares.agent.search.horizonStop` score a candidate and the stop over the same window of policy play. It was never measured
+*after* the phase rollout changed the player; the gap it closes is the documented one ("an expensive action lowers V
+immediately, money out, nothing in yet"). Given that the phase analogue was worth +3.9, this is where the next points are.
+
+### The mulligan: three routes measured, all closed
+
+The owner's rule: "discard the junk; sometimes there is a lot of it, sometimes little; on average about half".
+
+1. **A fixed count is not the answer.** 0 -> 63.93%, 2 -> 63.75%, 5 -> **60.25%** (1000 games). Discarding a fixed number
+   throws good cards away.
+2. **The critic cannot gate it.** With the engine's replacement draw: 91.8% of removals "free", mean 6.58 discards. With the
+   corrected marginal afterstate (accumulation + common random numbers): 95.9% "free", mean **9.94** of 10. The critic's
+   hand-identity block is masked, so it can only compare hand summaries, and most hand cards carry no printed points.
+3. **The policy learned "stop".** Trained on a corpus with `MULLIGAN:0.9` exploration (mean 5.14 discards per game, 13 distinct
+   counts), the resulting player discards **0 cards in 100% of games** - correct learning: a *random* discard teaches only that
+   random discards are bad, not which card is junk.
+4. **The rollout is impossible at that stage.** `-Dares.agent.search.playout=MULLIGAN` (score a candidate by playing the round
+   out) was implemented and fails structurally: the mulligan precedes the corporation pick, so every rollout must answer
+   `PICK_CORPORATION` through the raw policy, which does not validate a corporation's on-built inputs. Measured: **4 of 12**
+   games die with `Corporation PoliticalInfluence/HeatReflectiveGlass applies an on-built effect to itself, but the legal
+   inputs...` against 0 of 12 without the rollout.
+
+So the player keeps the whole hand. That is not "a working mulligan" in the owner's sense - it is the measured best of the
+three available behaviours tonight, and the remaining route is a corpus where the *act* is explored while the card choice
+stays informative (the policy head does see card identity; the label needs games where a plausible discard happened).
+
+### The sale
+
+Voluntary sales are **zero**: `SELL_CARDS` answers stop in 100% of rows in every corpus tonight. The sales that do happen are
+the hand-limit trim (`SELL_CARDS_LAST_ROUND`, minimum = hand - 10): **74.5 cards per game for 223.6 MC** (3.5 cards and
+10.5 MC per round, correlation with the final margin -0.095, i.e. neutral). That is the rule, not a habit: the player builds
+32 cards a game and draws more than it can hold, so the only choice is *which* cards leave.
+
+### The night loop was fixed, and it mattered
+
+- **The corpus gate**: before any training the pack is read for the mulligan's per-game count and the sale share; a collapsed
+  menu skips the iteration and its exploration flag is DROPPED (a gate that only skips would grind the night).
+- **The auto exploration is one generation, not cumulative.** It used to stay in the spec forever: the detector added
+  `COLLECT_INCOME:0.60` at 02:01 and iteration 18 fell to **53.05%**; the abort guard then stopped the night at 02:33.
+- **`--phase-critic-model`** holds the phase pick on a fixed model while the card critics retrain (the finding above).
+- **`--rows-per-type`**: the cap SAMPLES per type, so at 8 the stop row of the longest mulligans was dropped at random.
+- **The profile check now passes the phase model**, so the acceptance gate measures the player it promotes.
+
+### What is not done
+
+- 3000/10 000-game confirmation of the 70.75% bundle, and the HoF duel against the champion (2000 games, >= 54%).
+- `-Dares.agent.valueModel2` (per-side critics for HoF duels) is still not implemented.
+- The mulligan route above (act explored, card choice informative).

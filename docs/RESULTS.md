@@ -1196,7 +1196,8 @@ phase picks). Same policy and critics as the 66.87% bundle, one flag:
 |---|---|---|
 | champion `1118-0058_13` | 3000 | 63.93% [62.2, 65.6] |
 | night policy + night critics + champion phase critic | 3000 | 66.87% [65.2, 68.5] |
-| **the same + `phasePlayout=true`** | 1000 | **70.75% [67.9, 73.5]** |
+| the same + `phasePlayout=true` | 1000 | 70.75% [67.9, 73.5] |
+| **the same + `phasePlayout=true`** | **3000** | **72.82% [71.2, 74.4]** |
 
 Two other phase variants, same bundle, 1000 games:
 
@@ -1208,7 +1209,9 @@ Two other phase variants, same bundle, 1000 games:
 So it is the *rule* (roll the round) and not the model that moves the number: averaging three critics is worse than the one
 champion seed, and keeping the champion's card critics is not required.
 
-The profile of the 70.75% bundle (`ml/check_player.py`, 60 games): builds **32.6/game**, build acceptance 76%, phases
+The puzzle is solved by the engine, not by the model: +8.9 points over the champion (63.93 -> 72.82, 3000 games, disjoint
+intervals), with the player's profile untouched in the ways the owner checks. The profile of this bundle
+(`ml/check_player.py`, 60 games): builds **32.6/game**, build acceptance 76%, phases
 **8.7 / 32.0 / 38.3 / 4.7 / 16.3**, standard projects in phase 3 **16.7%**, no warnings. The nightly bundles that scored 60-63%
 picked phases 2 and 3 in 88% of turns; the rollout restores the balance (the champion was 26/21/23/15/15) and pays 16% of the
 money into phase 5 (the draft), which the policy alone never chose.
