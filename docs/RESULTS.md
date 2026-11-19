@@ -1422,3 +1422,36 @@ Nested packs from one corpus (1/2/4/8 chunks of 250 games), one trainer, one see
 Calibration plateaus at 1 000-2 000 games; discrimination earlier still. A 5 000-game corpus is a 2.5x reserve for the critic,
 not a requirement - the binding constraint is the *quality and diversity* of the games, which is exactly what attempt 1 above
 broke by exploring too hard: 34 000 rows of noisy play made the player twice as bad.
+
+## Why a phase-1 specialist cannot be forced into existence (2026-11-19, measured)
+
+Three measurements settle it, and the owner's prediction ("a pure push in isolation will only hurt him, he is optimised for
+his own scheme") was right:
+
+| attempt | what changed | vs SMART |
+|---|---|---|
+| A as it plays | nothing | 73.17% [72.3, 74.0] |
+| A with `phaseBias=1:0.6` | the phase CHOICE, nothing else | **44.25% [41.2, 47.3]** |
+| B from a `PICK_PHASE:0.5` exploration corpus | the whole corpus | 21.1% |
+| B from a `phaseBias=1:0.6` curriculum corpus (phases 37/17/20/13/14) | the corpus, competent play | 32.9% with A's phase critic, 25.3% with its own |
+
+So the weakness is not the phase *choice*: forcing A to pick phase 1 costs 29 points, because **A cannot play phase 1 well** -
+its builds, discounts and draft picks inside that plan are untutored. The curriculum corpus inherits exactly that, which is why B
+is a different player (phases 15/29/18/15/23 - phase 3 down from 37%) and a much worse one.
+
+What the owner's own game proved, then, is subtler and more important than "phase 1 is strong": he built the income/discount
+engine and beat the AI *because the AI does not contest it* - the sweetest green cards came to him unopposed. In a two-player
+game that is value created by the opponent's indifference, and a one-ply value net cannot see it: the card is worth the same
+whether or not the other seat wants it.
+
+Two consequences for the plan:
+
+1. A phase-1 specialist must LEARN the plan (its play, not only its pick), which needs a corpus of good phase-1 play - and no
+   such corpus exists yet. Forcing the pick produces bad phase-1 play, and training on it reproduces the bad play.
+2. The delayed payoff of the economy plan is outside a one-round rollout: a discount or a second build pays over many rounds.
+   The instrument for that is already in the engine (`-Dares.agent.search.horizon`, `horizonStop`) but it is global; what is
+   needed is a per-type horizon so the PHASE decision can be played out over several rounds without paying for it on every
+   card menu.
+
+The adaptive player stays the goal, but its two ingredients have to be strong before mixing them means anything: a mix of a
+73% fighter and a 25% fighter teaches the adaptive player that phase 1 loses.

@@ -1311,7 +1311,14 @@ Flags of the bundle:
 -Dares.agent.valueModel.mulligan=D:/ares/runs/value/v_1119_hand
 ```
 
-**The open structural problem is the human seat.** `roundScore` refuses to play when a seat is not a computer, so both rollouts
+**The human seat is fixed (19/11, same day).** `roundScore` used to return NaN when any seat was not a computer, so against a
+human the phase pick fell back to the one-action value and the mulligan to the policy - the shipped player was the weaker one.
+The copy now gives a human seat `PlayerDifficulty.AGENT`, i.e. the rollout plays it with our own agent: the opponent is assumed
+to be as strong as we are, which is the assumption the search already makes everywhere. The determinizer still shuffles the
+human's hand, corporations and both decks first, so the search sees nothing it should not. AI-vs-AI is untouched (73.4%
+[69.4, 77.1] at 500 games). This is the opponent model the adaptive player needs as well - one mechanism, two uses.
+
+**The remaining structural problem (historical note).** `roundScore` refuses to play when a seat is not a computer, so both rollouts
 (phase and mulligan) return NaN against a human and the player falls back to the critic's one-action values - i.e. the benchmark
 player is stronger than the one a human meets. Fixing that means driving the human seat with a policy during the rollout (an
 opponent model), which is the next task and is worth more than any knob: it is the difference between the measured player and
