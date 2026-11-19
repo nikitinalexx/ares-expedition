@@ -1682,3 +1682,25 @@ standardisation does not clip there (mean 0, max99 0.326, so 200 MC is z=6.1 aga
 What remains true is the PLAY side: the agent does not stop the opponent from accumulating resources in the first place. That is a
 plan question (it plays its own engine and never contests the stockpile), not a pricing bug - and it is the same "contest"
 question the opponent weight could not answer.
+
+## What the agent actually builds, by name (2026-11-19)
+
+`--mode cards` now also writes `id -> name` (`cards_by_expansion.ids.json`); without it the corpus's card ids could not be
+named (the names list was sorted, which drops them). On 1250 games of the current player (27 500 build decisions):
+
+| card | built | per game |
+|---|---|---|
+| StandardTechnology | 357 | 0.29 |
+| AntiGravityTechnology | 365 | 0.29 |
+| Herbivores | 260 | 0.21 |
+| **Fish** | 64 | **0.05** |
+| MoholeArea | 7 | 0.006 |
+| **VolcanicSoil** | 14 | **0.011** |
+
+So it does build the converters - StandardTechnology is among its six most-built cards - but it never plays the snowball: Fish
+appears once in twenty games. The reason is in the money distribution of its own states: **median 3 MC, 95th percentile 13 MC,
+maximum ~60** (`mc` normalised by 100). A human who saves 200 MC and converts it in one turn lives entirely outside that
+distribution, so the plan is neither valued nor played.
+
+That is the honest answer to "why did I win with the economy engine": not that the value is blind to money (it prices my 200 MC at
++2.9 logit and the opponent's at -2.2), but that the player never produces the state in which the conversion exists to be valued.

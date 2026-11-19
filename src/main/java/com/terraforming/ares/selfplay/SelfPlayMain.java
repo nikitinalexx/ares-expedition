@@ -306,7 +306,21 @@ public final class SelfPlayMain {
             byExpansion.put(expansion.name(), names);
         }
         new ObjectMapper().writeValue(file.toFile(), byExpansion);
-        System.out.println("[CARDS] " + byExpansion.size() + " expansions -> " + file);
+        // id -> name as well: the corpus stores card IDS, so "does the agent ever build Fish / StandardTechnology" cannot be
+        // answered without this map (owner's question, 19/11). The names list above is sorted, which drops the ids.
+        java.util.Map<Integer, String> byId = new java.util.TreeMap<>();
+        for (var expansion : com.terraforming.ares.model.Expansion.values()) {
+            var cards = projects.get(expansion);
+            if (cards == null) {
+                continue;
+            }
+            for (var entry : cards.entrySet()) {
+                byId.put(entry.getKey(), entry.getValue().getClass().getSimpleName());
+            }
+        }
+        Path ids = Path.of(file.toString().replaceFirst("\\.json$", "") + ".ids.json");
+        new ObjectMapper().writeValue(ids.toFile(), byId);
+        System.out.println("[CARDS] " + byExpansion.size() + " expansions -> " + file + " (ids -> " + ids + ")");
         return 0;
     }
 
