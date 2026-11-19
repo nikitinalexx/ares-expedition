@@ -116,3 +116,60 @@ against **both** specialists plus SMART. This is the adaptive player.
 - If two consecutive changes move nothing, the *measurement* is re-examined before a third change (that is how the phase critic
   and the mulligan units were found).
 - No experiment runs twice in the same shape (the night's 43.1% and today's 21.1% are the same mistake: heavy exploration).
+
+# The global plan (owner, 19/11: "I don't see a plan that could produce a result")
+
+## The diagnosis the plan follows from
+
+Our loop is "the search picks, the policy imitates what the search picked". That only improves anything if the search is
+**materially stronger than the policy it imitates** - that is the AlphaZero mechanism (hundreds of simulations behind every
+target). Our search is one ply with a noisy value, so the target is barely better than the imitator and the loop sits at a fixed
+point. Every gain of the last two days came from exactly this: making the search stronger (`phasePlayout` +5.9, the champion's
+phase critic +3.3). Every failure came from trying to change the *data* instead (`docs/RESULTS.md`: the inheritance rule, the
+one-policy rule).
+
+A human beats the 73% player with a phase-1 economy engine "one-handed". That is not a different corpus, it is **sight over more
+than one round**: a discount and a second build pay over many rounds, and our rollout sees one.
+
+## The plan, in order of expected value per hour
+
+### P1 - the value's target (the search's foundation)
+
+The seven-channel breakdown target (`terraforming, forests, printed points, resources, milestones, awards, extra`) beats the single
+margin by **+8.2 points** on the same 500-game corpus (19.8% vs 11.6%). It splits the credit, so a card that scores teaches
+something even in a game lost on tempo.
+
+Work: a clean 5 000-game corpus of A carrying the RANKING sidecar, then breakdown vs margin at that size, 1000 games each. If it
+holds, the loop switches its target and every later experiment sits on a sharper V.
+
+### P2 - depth where it is cheap (the human's advantage, mechanised)
+
+`playout=BUILD_CARD`: score a build by **playing the round out** with the policy and reading V at the next pick - the same trick
+that gave +5.9 on the phase pick. Never tried. The build menu is larger (10-40 candidates against 5 phases), so it is a play-time
+flag first: at ~3 ms per played round and ~30 build decisions a game it costs a couple of seconds per game, which is acceptable
+against a human and too slow for generation.
+
+If it pays, the next step is the same trick for the *stop* side of the build decision (act vs stop is where 41% of offered cards
+are declined on a one-ply hunch).
+
+### P3 - interaction without destroying the value
+
+The corpus of A vs the previous champion (two strong, different players) collapsed because the policy learned the average of the
+two. The fix is now in place: `train_policy_ce --seat 0` trains on OUR seat's rows only - the opponent's different play stays in
+the *states* (which is the point) while the action target stays our own policy. Measuring now.
+
+If it works, the loop can generate each game with one policy per seat, from a pool of our own champions, and the value finally
+sees what a different plan does to a position - which is the only route to "contest what he is building" that does not violate
+the rule about SMART/NETWORK.
+
+### P4 - the loop and the gates
+
+Run P1-P3 in `night_loop.py` (it already has the collapse detector, the corpus gate, the one-generation exploration, the chunked
+generator and the abort guard). Acceptance is the **worst** benchmark, not SMART: currently NETWORK 39.8% is the wall, and a
+player that cannot beat NETWORK is not a stronger player, only a better rung on the same ladder.
+
+## What would make 80% plausible
+
+Measured today: the decision gap that matters (build vs stop, this card vs that) is 0.05-0.2 logits, and the value's error is of
+the same order. 80% needs either (a) a value whose error on that scale is 3-4x smaller - P1 with 5-10x more data - or (b) a search
+that looks far enough ahead to be right without a precise value - P2. Both are in the plan; neither is a promise.

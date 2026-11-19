@@ -103,7 +103,7 @@ def load_type(directory, decision, rows_per_game, max_chunks, seed):
     return data
 
 
-def load_packed_type(directory, decision, manifest, rows_per_game=0, max_chunks=0, seed=1):
+def load_packed_type(directory, decision, manifest, rows_per_game=0, max_chunks=0, seed=1, seat=-1):
     """The same dict as load_type, from a pack: real candidates only, no padding to the menu maximum.
 
     The raw loader allocates [rows, maxCand, features] (for BUILD_INPUT that is 12 x 269 for a row that usually has 7),
@@ -130,6 +130,14 @@ def load_packed_type(directory, decision, manifest, rows_per_game=0, max_chunks=
         print(f"  {decision:22s} note: --max-chunks-per-type is applied when packing (ml/pack_dataset.py), not here")
     if not keep.any():
         return None
+    if seat >= 0:
+        # The interaction corpus is generated with ONE policy per seat and two different ones. Training the policy on both
+        # seats' rows teaches the average of the two policies, and the average of two strong players is worse than either
+        # (measured 19/11: val loss 1.11 -> 1.97, 31% against SMART). Training only on OUR seat keeps the opponent's
+        # different play in the states (which is the point) while the action target stays our own policy.
+        keep = keep & (np.asarray(data["seat"]) == seat)
+        if not keep.any():
+            return None
     for key in ("obs", "cands", "ids", "chosen", "count", "outcome", "game", "margin"):
         data[key] = data[key][keep]
     return data
@@ -260,6 +268,10 @@ def main():
     parser.add_argument("--adv-value-model", default="",
                         help="value model folder: weight every row by (outcome - V(s)), i.e. a policy-gradient step on "
                              "the real objective instead of pure imitation")
+    parser.add_argument("--seat", type=int, default=-1,
+                        help="train on one seat's rows only (-1 = all). The loop's corpora are AGENT vs AGENT with the same "
+                             "policy, so both seats are the same teacher and all rows are useful; a corpus of two DIFFERENT "
+                             "policies must be filtered, or the policy learns their average")
     parser.add_argument("--hidden", default="256,128")
     parser.add_argument("--lr", type=float, default=3e-4)
     parser.add_argument("--batch", type=int, default=512)
@@ -301,7 +313,7 @@ def main():
     for decision in decisions:
         if pack_dirs:
             data = load_packed_type(pack_dirs[0], decision, manifest, args.rows_per_game,
-                                    args.max_chunks_per_type, args.seed)
+                                    args.max_chunks_per_type, args.seed, args.seat)
         else:
             data = load_type(args.data, decision, args.rows_per_game, args.max_chunks_per_type, args.seed)
         if data is None or len(data["obs"]) < 100:
