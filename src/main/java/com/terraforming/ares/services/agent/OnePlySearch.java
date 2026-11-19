@@ -477,6 +477,19 @@ public class OnePlySearch {
         return busy.get();
     }
 
+    /**
+     * Marks a hypothetical computation (a rollout, a simulated candidate) for callers outside this class: decision recording
+     * must be suspended between these two calls. Used by the regression test for exactly the bug that polluted a day of
+     * corpora, and by any future code that drives the agent inside a simulation.
+     */
+    public void beginHypothetical() {
+        busy.set(Boolean.TRUE);
+    }
+
+    public void endHypothetical() {
+        busy.set(Boolean.FALSE);
+    }
+
     /** Tells the search which cards the mulligan loop has already queued (see {@link #mulliganQueued}). */
     public void mulliganContext(List<Integer> queued) {
         mulliganQueued.set(queued == null ? List.of() : List.copyOf(queued));

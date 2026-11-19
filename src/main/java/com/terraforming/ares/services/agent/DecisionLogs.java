@@ -68,6 +68,12 @@ public class DecisionLogs {
     private final AtomicLong gameCounter = new AtomicLong();
     private final AtomicLong rowsWritten = new AtomicLong();
     private final AtomicLong chunksFinished = new AtomicLong();
+    /**
+     * How many decisions were accepted for recording. A counter, not a debug print: a rollout plays hundreds of decisions the
+     * game never took, and one of them reaching this method is the bug that cost 8 GB and polluted a day of corpora
+     * (2026-11-19). The regression test asserts that a decision taken inside a hypothetical computation does not move it.
+     */
+    private final AtomicLong rowsAccepted = new AtomicLong();
     private final BlockingQueue<Object> writeQueue = new ArrayBlockingQueue<>(WRITE_QUEUE_CAPACITY);
     private volatile Path directory;
     private volatile Thread writerThread;
@@ -304,10 +310,16 @@ public class DecisionLogs {
         }
     }
 
+    /** Decisions accepted for recording so far (see {@link #rowsAccepted}). */
+    public long rowsAccepted() {
+        return rowsAccepted.get();
+    }
+
     public void record(MarsGame game, Player player, Decision decision, int chosen) {
         if (directory == null) {
             return;
         }
+        rowsAccepted.incrementAndGet();
         Buffer buffer = pending.computeIfAbsent(game, g -> new Buffer());
         // The search's opinion on this decision's candidates, if it had one (see SearchScores).
         float[] scores = SearchScores.take(decision);
