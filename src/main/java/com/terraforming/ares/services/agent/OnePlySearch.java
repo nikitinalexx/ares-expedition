@@ -116,12 +116,29 @@ public class OnePlySearch {
      */
     private final Set<DecisionType> junkGateTypes;
     /**
+     * {@code -Dares.agent.search.playout=TYPE,...}: score a candidate by PLAYING it out with the policy for one round and
+     * reading V at the next pick, instead of reading V at the one-action afterstate.
+     * <p>
+     * Why: the mulligan cannot be judged by V(hand minus a card) - the critic's hand-identity block is masked, so all it can
+     * compare is the hand summary, and it then discards the whole hand (measured 19/11: 95.9% of removals "free", 9.94 of 10
+     * cards). A playout puts the consequence of the hand into the state - the card that actually got built, the income that
+     * actually arrived - which is the same trick {@code phasePlayout} uses for the phase pick.
+     */
+    private final Set<DecisionType> playoutTypes;
+    /**
+     * {@code -Dares.agent.search.junkMargin=<milli-logit>}: how close to the stop baseline a removal must be to count as
+     * "free". A value function needs a small band (10 = 0.01 of V); a playout is a sampled comparison and needs a wider one,
+     * so the band is a property instead of a constant.
+     */
+    private final float junkMargin;
+    /**
      * Tolerance of the junk gate, in milli-logits of V. Removing a card that contributes nothing to the hand summary
      * leaves V unchanged up to float noise (a few milli); a card worth half a printed point moves V by more. 10 milli
      * (0.01 of V, i.e. a fraction of a victory point) is the "it costs me nothing" band - measured: with this band the
      * gate discards the zero-value cards and stops at the ones that carry points or income.
      */
     private static final float JUNK_EPSILON = 10f;
+    /** The gate reads {@link #junkMargin}; this is the default when the property is absent. */
     /**
      * {@code -Dares.agent.search.debugJunk=true}: accumulate the gate's gap ({@code V(best removal) - V(stop)}) for the junk
      * types and print its distribution in the search summary. Without this number the gate is a guess: a gap that never
@@ -256,6 +273,8 @@ public class OnePlySearch {
                 Boolean.parseBoolean(System.getProperty("ares.agent.search.projectBuilds", "false"));
         boolean configuredHorizonStop =
                 Boolean.parseBoolean(System.getProperty("ares.agent.search.horizonStop", "false"));
+        float configuredJunkMargin =
+                Float.parseFloat(System.getProperty("ares.agent.search.junkMargin", "10"));
         if (!mode.equals("oneply") || spec.isEmpty()) {
             this.models = List.of();
             this.phaseModels = List.of();
@@ -267,6 +286,8 @@ public class OnePlySearch {
             this.stopMargin = 0f;
             this.stopMargins = new java.util.EnumMap<>(DecisionType.class);
             this.junkGateTypes = EnumSet.noneOf(DecisionType.class);
+            this.playoutTypes = EnumSet.noneOf(DecisionType.class);
+            this.junkMargin = JUNK_EPSILON;
             this.pairs = false;
             this.horizonTurns = 0;
             this.samples = 1;
@@ -283,6 +304,8 @@ public class OnePlySearch {
         this.stopMargin = Math.max(0f, configuredStopMargin);
         this.stopMargins = parseMargins(System.getProperty("ares.agent.search.stopMargins", ""));
         this.junkGateTypes = parseTypes(System.getProperty("ares.agent.search.junkGate", ""));
+        this.playoutTypes = parseTypes(System.getProperty("ares.agent.search.playout", ""));
+        this.junkMargin = Math.max(0f, configuredJunkMargin);
         this.pairs = configuredPairs;
         this.horizonTurns = Math.max(0, configuredHorizon);
         this.samples = configuredSamples;
@@ -297,6 +320,7 @@ public class OnePlySearch {
         }
         log.info("one-ply search: value model {}, types {}, observation hash {}",
                 spec, types, models.get(0).observationHash());
+        System.out.println("[SEARCH] playout " + playoutTypes + ", junk margin " + junkMargin);
         System.out.println("[SEARCH] junk gate " + junkGateTypes + ", policy choice " + policyChoiceTypes
                 + ", stop margins " + stopMargins + ", symmetric " + symmetric + ", rankOnly " + rankOnly);
         System.out.println("[SEARCH] one-ply on " + types + ", value model " + spec
@@ -736,6 +760,14 @@ public class OnePlySearch {
                 bestOfStop = h;
             }
         }
+        if (playoutTypes.contains(decision.type())) {
+            // A playout candidate is compared against a playout of the same position: V(now) would put the one-action
+            // afterstate and a whole played round on one scale, which is the mismatch this mode exists to avoid.
+            float h = roundScore(new MarsGame(game), player, seed);
+            if (!Float.isNaN(h)) {
+                bestOfStop = Math.round(h * 1000f);
+            }
+        }
         int best = -1;
         float bestScore = Float.NEGATIVE_INFINITY;
         int failed = 0;
@@ -856,7 +888,7 @@ public class OnePlySearch {
                         && bestCardScore - bestOfStop > margin;
                 // "the removal is free, so the card is junk": the gap is zero (within float noise) rather than positive.
                 boolean gated = junkGateTypes.contains(decision.type()) && bestCard >= 0;
-                boolean freeRemoval = gated && bestCardScore >= bestOfStop - JUNK_EPSILON;
+                boolean freeRemoval = gated && bestCardScore >= bestOfStop - junkMargin;
                 if (gated && debugJunk) {
                     long gap = Math.round(bestCardScore - bestOfStop);
                     junkSamples.incrementAndGet();
@@ -1056,7 +1088,12 @@ public class OnePlySearch {
             float[] observation = observationBuilder.build(copy, me);
             lastAfterstate.set(observation);
             float mine;
-            if (horizonTurns > 0) {
+            if (playoutTypes.contains(type)) {
+                mine = roundScore(copy, me, seed);
+                if (Float.isNaN(mine)) {
+                    return null;
+                }
+            } else if (horizonTurns > 0) {
                 mine = horizonScore(copy, me, seed);
             } else if (phasePlayout && type == DecisionType.PICK_PHASE) {
                 mine = roundScore(copy, me, seed);

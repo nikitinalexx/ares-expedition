@@ -63,5 +63,29 @@ class GeneratorCallTest(unittest.TestCase):
         self.assertEqual(bound.arguments["types"], "T1,T2")
 
 
+class ExploreSpecTest(unittest.TestCase):
+
+    def test_the_spec_is_parsed_and_written_back(self):
+        found = night_loop.parse_explore("BUILD_CARD:0.15,MULLIGAN:0.9")
+        self.assertEqual(found, {"BUILD_CARD": 0.15, "MULLIGAN": 0.9})
+        self.assertEqual(night_loop.spec_of(found), "BUILD_CARD:0.15,MULLIGAN:0.9")
+
+    def test_an_empty_spec_is_empty(self):
+        self.assertEqual(night_loop.parse_explore(""), {})
+        self.assertEqual(night_loop.spec_of({}), "")
+
+    def test_the_injected_type_overrides_only_itself(self):
+        # 19/11: the injection was cumulative, so COLLECT_INCOME:0.60 stayed in every later corpus and took the night from
+        # 63.5% to 53.0%. The merge is per type, and the auto set is rebuilt every iteration from that iteration's flags.
+        base = night_loop.parse_explore("BUILD_CARD:0.15,MULLIGAN:0.9")
+        auto = {"COLLECT_INCOME": 0.25}
+        self.assertEqual(night_loop.spec_of({**base, **auto}),
+                         "BUILD_CARD:0.15,MULLIGAN:0.9,COLLECT_INCOME:0.25")
+        self.assertEqual(night_loop.spec_of({**base, **{}}), "BUILD_CARD:0.15,MULLIGAN:0.9")
+
+    def test_a_zero_rate_is_written_out_of_the_spec(self):
+        self.assertEqual(night_loop.spec_of({"COLLECT_INCOME": 0.0, "BUILD_CARD": 0.15}), "BUILD_CARD:0.15")
+
+
 if __name__ == "__main__":
     unittest.main()

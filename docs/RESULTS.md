@@ -1128,3 +1128,47 @@ max 11, stop in 26.2% of rows, 96.7% of games discarded at least one card. That 
 exploration rather than by a constant. Note the row cap: it SAMPLES per type, so at the old cap of 8 the stop row of the
 longest mulligans was dropped at random - the menu being taught was the one being distorted. `--rows-per-type 11+` for any
 run that is supposed to learn the mulligan.
+
+## The phase critic is worth 4-5 points, in both directions (2026-11-19, measured)
+
+The nightly iterations retrain the policy and the critics, and the loop hands the phase pick to the iteration's first new
+critic (`--phase-critic`). That turned out to be the whole difference between the champion and the night's bundles. A 2x2,
+1000 games against SMART each:
+
+| ranking critics | phase critic | vs SMART |
+|---|---|---|
+| champion (`v_1118-0058_13_s1..s3`) | champion (`s1`) | 63.93% [62.2, 65.6] |
+| night (`v_1118-2332_17_s1..s3`) | night (`s1`) | 63.50% [60.5, 66.4] |
+| **night** | **champion** | **66.80% [63.8, 69.7]** |
+| champion | night | 58.85% [55.8, 61.9] |
+
+The phase mix explains it: the night's critics pick phases 2 and 3 in **88%** of turns (iterations 16-18: 39/44, 45/43,
+48/47), the champion's critic picks 26/21/23/15/15. The phase pick is the one decision where the phase itself is the action,
+so a critic that mis-ranks it costs points in every round of every game - the same critic is fine as a card ranker.
+
+`night_loop.py` now has `--phase-critic-model DIR`: hold the phase pick on a fixed model while the card critics are retrained.
+
+**A purpose-trained phase model does not replace it.** `ml/train_phase.py --decision PICK_PHASE` on the champion-era pack
+gives val loss 0.554 against a 0.693 baseline, but `action_effect 0.0023` - swapping which phase was chosen between rows
+barely changes the loss, i.e. the model predicts the game from the state and ignores the candidate. The candidate features of
+a phase pick carry almost nothing on their own; the champion's critic works because it scores the *afterstate* of the phase
+(the extra build, the income, the draft), not the phase label.
+
+## The mulligan cannot be played out from where it happens (2026-11-19, measured)
+
+The remaining honest way to judge "is this card junk" is to let the game answer: play the round out with the policy and read
+the value at the next pick (`-Dares.agent.search.playout=MULLIGAN`, implemented, `roundScore` as for the phase pick). It does
+not work at the mulligan, for a structural reason:
+
+- 12 games without the playout: 0 failed. 12 games with it: **4 failed**, 18 games earlier: 10 failed.
+- The failures are `IllegalStateException: Corporation <X> applies an on-built effect to itself, but the legal inputs ...`
+  for `PoliticalInfluence`, `HeatReflectiveGlass` and friends.
+- Cause: the mulligan happens BEFORE the corporation is chosen, so every rollout from a mulligan afterstate must answer
+  `PICK_CORPORATION`, and inside a rollout the decisions are answered by the raw policy (`innerChoice`), which does not
+  validate a corporation's on-built inputs the way `chooseCorporation` does. The rollout then dies on the first corporation
+  that needs them.
+
+So the mulligan is not reachable by a rollout at its own stage; it can only be learned by the policy head from the corpus,
+and for that the corpus must contain *sensible* discards (a random discard teaches only that random discards are bad - the
+policy trained on 5.135 explored discards per game answers **stop 100%**, measured). The next step there is exploration that
+forces the act while keeping the card choice informative, not uniform-random.
