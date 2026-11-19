@@ -241,6 +241,16 @@ def classpath():
         return "target/classes;" + f.read().strip()
 
 
+def chunks_on_disk(out):
+    """How many finished chunks a raw directory holds: ONE type's files, not "*.ares".
+
+    Why: `glob("*.ares")` counts the TYPE files of a chunk (16 of them), so the loop believed 16 chunks were done after the first
+    one, computed 4 000 games instead of 250, skipped the training and finished the night (19/11, 22:03). A chunk of every type
+    is written together, so PICK_PHASE's count is the chunk count.
+    """
+    return len(glob.glob(os.path.join(out, "PICK_PHASE.*.ares")))
+
+
 def should_restart(code, done, wanted):
     """Whether a generated chunk must be followed by another run.
 
@@ -289,8 +299,9 @@ def play(out, games, policy, critic, threads, explore, matchups, types, rows_per
                 break
             run_args = args + ["--games", str(min(chunk, left))]
             result = subprocess.run(run_args, stdout=sink, stderr=subprocess.STDOUT, timeout=timeout)
-            chunks = len(glob.glob(os.path.join(out, "*.ares")))
-            played_total = chunks * chunk
+            # ONE TYPE's files = one chunk. Counting "*.ares" counts the TYPE files of a chunk (16 of them), so the loop
+            # believed 16 chunks were done after the first one, skipped the training and finished the night (19/11, 22:03).
+            played_total = chunks_on_disk(out) * chunk
             if not should_restart(result.returncode, played_total, games):
                 break
             log(f"generation: {played_total}/{games} games on disk after exit {result.returncode}; continuing from the "
