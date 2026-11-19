@@ -77,6 +77,14 @@ public class OnePlySearch {
      * ordinary decision states. One net for both questions averages two different answers.
      */
     private final List<MlpValueModel> phaseModels;
+    /**
+     * {@code -Dares.agent.valueModel.mulligan=DIR,...}: a critic for the mulligan only.
+     * <p>
+     * Why it is a separate set: the mulligan is the one menu whose judgement needs the HAND IDENTITIES (which card is useless
+     * for both offered corporations), and the card critics are trained with that block masked so they generalise. A critic
+     * trained without the mask can say "this card adds nothing", and it is only asked here.
+     */
+    private final List<MlpValueModel> mulliganModels;
     /** The nets of the decision currently being scored; empty = the ordinary {@link #models} (see {@link #nets()}). */
     private final ThreadLocal<List<MlpValueModel>> currentNets = new ThreadLocal<>();
     private final Set<DecisionType> types;
@@ -132,6 +140,13 @@ public class OnePlySearch {
      */
     private final float junkMargin;
     /**
+     * {@code -Dares.agent.search.phaseBias=1:0.3,5:-0.1}: a measurement handicap added to a PHASE candidate's score, in
+     * logits. It is not a rule of the player - it is the instrument for "is the phase picked too rarely", the same way
+     * {@code ares.agent.mulligan.cards} measures the mulligan count: push the phase's share up and read the win rate. The
+     * owner's hypothesis (19/11) is that phase 1 - green cards, income - is under-played at 8.7% of picks.
+     */
+    private final java.util.Map<Integer, Float> phaseBias;
+    /**
      * Tolerance of the junk gate, in milli-logits of V. Removing a card that contributes nothing to the hand summary
      * leaves V unchanged up to float noise (a few milli); a card worth half a printed point moves V by more. 10 milli
      * (0.01 of V, i.e. a fraction of a victory point) is the "it costs me nothing" band - measured: with this band the
@@ -150,6 +165,8 @@ public class OnePlySearch {
     private final AtomicLong junkMin = new AtomicLong(Long.MAX_VALUE);
     private final AtomicLong junkMax = new AtomicLong(Long.MIN_VALUE);
     private final AtomicLong junkSum = new AtomicLong();
+    /** How many mulligan afterstates founded a corporation. Zero means the two branches are not being explored at all. */
+    private final AtomicLong mulliganCorps = new AtomicLong();
     /** Two builds deep: score card A together with the best follow-up card B (synergies), not only A alone. */
     private final boolean pairs;
     /** Generations to play out before the leaf value is read (0 = score the immediate afterstate, the original search). */
@@ -187,6 +204,8 @@ public class OnePlySearch {
     private final boolean horizonStop;
     private final int debug;
     private final PickCorporationProcessor pickCorporationProcessor;
+    /** The offered corporations with their legal on-built inputs: the two branches the mulligan is judged against. */
+    private final CorporationDecisions corporationDecisions;
     private final HandCardDecisions handCardDecisions;
     private final com.terraforming.ares.processors.turn.CollectIncomeTurnProcessor collectIncomeTurnProcessor;
     private final ThreadLocal<float[]> lastAfterstate = new ThreadLocal<>();
@@ -226,6 +245,7 @@ public class OnePlySearch {
                         AiTurnService aiTurnService, CardService cardService,
                         StateTransitionService stateTransitionService, PickPhaseProcessor pickPhaseProcessor,
                         PickCorporationProcessor pickCorporationProcessor,
+                        com.terraforming.ares.services.agent.CorporationDecisions corporationDecisions,
                         com.terraforming.ares.processors.turn.CollectIncomeTurnProcessor collectIncomeTurnProcessor,
                         @Lazy SimulationProcessorService simulationProcessorService, WinPointsService winPointsService) {
         this.observationBuilder = observationBuilder;
@@ -239,6 +259,7 @@ public class OnePlySearch {
         this.stateTransitionService = stateTransitionService;
         this.pickPhaseProcessor = pickPhaseProcessor;
         this.pickCorporationProcessor = pickCorporationProcessor;
+        this.corporationDecisions = corporationDecisions;
         this.collectIncomeTurnProcessor = collectIncomeTurnProcessor;
         this.simulationProcessorService = simulationProcessorService;
         this.winPointsService = winPointsService;
@@ -274,10 +295,11 @@ public class OnePlySearch {
         boolean configuredHorizonStop =
                 Boolean.parseBoolean(System.getProperty("ares.agent.search.horizonStop", "false"));
         float configuredJunkMargin =
-                Float.parseFloat(System.getProperty("ares.agent.search.junkMargin", "10"));
+                Float.parseFloat(System.getProperty("ares.agent.search.junkMargin", "0"));
         if (!mode.equals("oneply") || spec.isEmpty()) {
             this.models = List.of();
             this.phaseModels = List.of();
+            this.mulliganModels = List.of();
             this.debug = 0;
             this.rankOnly = true;
             this.shuffle = false;
@@ -288,6 +310,7 @@ public class OnePlySearch {
             this.junkGateTypes = EnumSet.noneOf(DecisionType.class);
             this.playoutTypes = EnumSet.noneOf(DecisionType.class);
             this.junkMargin = JUNK_EPSILON;
+            this.phaseBias = java.util.Map.of();
             this.pairs = false;
             this.horizonTurns = 0;
             this.samples = 1;
@@ -305,7 +328,8 @@ public class OnePlySearch {
         this.stopMargins = parseMargins(System.getProperty("ares.agent.search.stopMargins", ""));
         this.junkGateTypes = parseTypes(System.getProperty("ares.agent.search.junkGate", ""));
         this.playoutTypes = parseTypes(System.getProperty("ares.agent.search.playout", ""));
-        this.junkMargin = Math.max(0f, configuredJunkMargin);
+        this.junkMargin = configuredJunkMargin;
+        this.phaseBias = parsePhaseBias(System.getProperty("ares.agent.search.phaseBias", ""));
         this.pairs = configuredPairs;
         this.horizonTurns = Math.max(0, configuredHorizon);
         this.samples = configuredSamples;
@@ -315,6 +339,8 @@ public class OnePlySearch {
         this.models = loadNets(spec);
         String phaseSpec = System.getProperty("ares.agent.valueModel.phase", "").trim();
         this.phaseModels = phaseSpec.isEmpty() ? List.of() : loadNets(phaseSpec);
+        String mulliganSpec = System.getProperty("ares.agent.valueModel.mulligan", "").trim();
+        this.mulliganModels = mulliganSpec.isEmpty() ? List.of() : loadNets(mulliganSpec);
         if (models.isEmpty()) {
             throw new IllegalStateException("ares.agent.valueModel has no directory: " + spec);
         }
@@ -437,7 +463,13 @@ public class OnePlySearch {
         }
         busy.set(Boolean.TRUE);
         strongAnswer.set(player.getDifficulty() != null && player.getDifficulty().isStrongAgent());
-        currentNets.set(decision.type() == DecisionType.PICK_PHASE && !phaseModels.isEmpty() ? phaseModels : models);
+        List<MlpValueModel> netsForThis = models;
+        if (decision.type() == DecisionType.PICK_PHASE && !phaseModels.isEmpty()) {
+            netsForThis = phaseModels;
+        } else if (decision.type() == DecisionType.MULLIGAN && !mulliganModels.isEmpty()) {
+            netsForThis = mulliganModels;
+        }
+        currentNets.set(netsForThis);
         long started = System.nanoTime();
         try {
             return search(decision, game, player);
@@ -888,7 +920,12 @@ public class OnePlySearch {
                         && bestCardScore - bestOfStop > margin;
                 // "the removal is free, so the card is junk": the gap is zero (within float noise) rather than positive.
                 boolean gated = junkGateTypes.contains(decision.type()) && bestCard >= 0;
-                boolean freeRemoval = gated && bestCardScore >= bestOfStop - junkMargin;
+                // The margin is a REQUIRED ADVANTAGE, not a tolerance: discard only when removing the card improves V by
+                // more than the noise of the comparison. The gate compares the MAX over ~10 noisy candidates against one
+                // baseline, and a maximum of ten noisy estimates is biased upward (measured mean +0.18 logit at zero true
+                // effect), so a threshold of 0 fires almost always. A negative margin would accept a removal that costs
+                // that much; the default 0 is the owner's literal rule "it costs me nothing".
+                boolean freeRemoval = gated && bestCardScore >= bestOfStop + junkMargin;
                 if (gated && debugJunk) {
                     long gap = Math.round(bestCardScore - bestOfStop);
                     junkSamples.incrementAndGet();
@@ -1100,6 +1137,9 @@ public class OnePlySearch {
             } else {
                 mine = valueAt(copy, me, observation);
             }
+            if (type == DecisionType.PICK_PHASE) {
+                mine += phaseBias.getOrDefault(cardId, 0f);
+            }
             return Math.round(mine * 1000f);
         } catch (RuntimeException e) {
             boolean report = (debug > 0 && failures.get() < 8
@@ -1138,6 +1178,9 @@ public class OnePlySearch {
             }
             List<Integer> draws = mulliganDraws.get();
             me.getHand().addCards(draws.subList(0, Math.min(queued.size(), draws.size())));
+            // The baseline must found a corporation too: a candidate afterstate that has one and a stop baseline that does
+            // not differ by the corporation's whole starting bonus, and every discard would look free.
+            applyOfferedCorporations(copy, me);
             return observationBuilder.build(copy, me);
         } catch (RuntimeException e) {
             return null;
@@ -1174,6 +1217,94 @@ public class OnePlySearch {
             // No sampled set (a decision that never went through search): fall back to the engine's own draw.
             me.getHand().addCards(cardService.dealCards(copy, queued.size() + 1));
         }
+        applyOfferedCorporations(copy, me);
+    }
+
+    /**
+     * The mulligan is decided while the two corporations are already on the table: `PickCorporationsState` offers
+     * `PICK_CORPORATION` and `MULLIGAN` together (the owner's description of how a player does it, 19/11 - look at the two
+     * corporations, throw away what fits neither, then take the one that fits the hand).
+     * <p>
+     * So the value of a hand is the value of the hand WITH the best of the two corporations, not of a hand alone: without this
+     * the afterstate is a position the engine never reaches (a player who never founds a corporation), and the comparison
+     * cannot express "this card fits corporation A".
+     */
+    private void applyOfferedCorporations(MarsGame copy, Player me) {
+        applyOfferedCorporation(copy, me);
+        Player other = otherPlayer(copy, me);
+        if (other != null) {
+            // The other seat's corporation is still unchosen in the copy, and a rollout would ask the policy for it - the
+            // policy does not fill a corporation's on-built inputs and the engine throws ("Corporation X applies an on-built
+            // effect to itself, but the legal inputs..."). Founding it from that seat's own two offers is the same kind of
+            // determinization the search already does for hidden cards: the position has to be playable for both seats.
+            applyOfferedCorporation(copy, other);
+        }
+    }
+
+    private void applyOfferedCorporation(MarsGame copy, Player me) {
+        if (me.getSelectedCorporationCard() != null) {
+            return;
+        }
+        List<CorporationChoice> choices;
+        try {
+            choices = corporationDecisions.options(copy, me);
+        } catch (RuntimeException e) {
+            return;
+        }
+        if (choices.isEmpty()) {
+            return;
+        }
+        int best = -1;
+        float bestScore = Float.NEGATIVE_INFINITY;
+        for (int i = 0; i < choices.size(); i++) {
+            try {
+                MarsGame probe = new MarsGame(copy);
+                Player seat = probe.getPlayerByUuid(me.getUuid());
+                CorporationChoice choice = choices.get(i);
+                pickCorporationProcessor.processTurn(new com.terraforming.ares.model.turn.CorporationChoiceTurn(
+                        me.getUuid(), choice.corporationId(), choice.input()), probe);
+                settleQueuedDiscards(probe, seat);
+                float score = logit(observationBuilder.build(probe, seat));
+                if (score > bestScore) {
+                    bestScore = score;
+                    best = i;
+                }
+            } catch (RuntimeException ignored) {
+                // a corporation the engine rejects on this hand is not a candidate for this hand
+            }
+        }
+        if (best < 0) {
+            return;
+        }
+        CorporationChoice choice = choices.get(best);
+        pickCorporationProcessor.processTurn(new com.terraforming.ares.model.turn.CorporationChoiceTurn(
+                me.getUuid(), choice.corporationId(), choice.input()), copy);
+        settleQueuedDiscards(copy, me);
+        mulliganCorps.incrementAndGet();
+    }
+
+    /** {@code "1:0.3,5:-0.1"} - phase number to logit handicap. Unknown numbers are a hard error, never ignored. */
+    private static java.util.Map<Integer, Float> parsePhaseBias(String spec) {
+        if (spec == null || spec.isBlank()) {
+            return java.util.Map.of();
+        }
+        java.util.Map<Integer, Float> parsed = new java.util.HashMap<>();
+        for (String part : spec.split(",")) {
+            String trimmed = part.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            int colon = trimmed.indexOf(':');
+            if (colon <= 0) {
+                throw new IllegalArgumentException("phaseBias entry must look like PHASE:LOGITS, got '" + trimmed + "'");
+            }
+            int phase = Integer.parseInt(trimmed.substring(0, colon).trim());
+            if (phase < 1 || phase > 5) {
+                throw new IllegalArgumentException("phaseBias phase out of 1..5: '" + trimmed + "'");
+            }
+            parsed.put(phase, Float.parseFloat(trimmed.substring(colon + 1).trim()));
+        }
+        return java.util.Map.copyOf(parsed);
     }
 
     private static boolean isGiveUpCard(DecisionType type) {
@@ -1435,7 +1566,9 @@ public class OnePlySearch {
         }
         long n = decisions.get();
         if (debugJunk && junkSamples.get() > 0) {
-            System.out.printf(Locale.ROOT, "[JUNK] %d gated decisions, free %d (%.1f%%), gap min %d mean %.1f max %d milli%n",
+            System.out.printf(Locale.ROOT, "[JUNK] %d mulligan afterstates founded a corporation; %d gated decisions, "
+                            + "free %d (%.1f%%), gap min %d mean %.1f max %d milli%n",
+                    mulliganCorps.get(),
                     junkSamples.get(), junkFree.get(), 100.0 * junkFree.get() / junkSamples.get(),
                     junkMin.get(), (double) junkSum.get() / junkSamples.get(), junkMax.get());
         }

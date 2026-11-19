@@ -38,13 +38,25 @@ public final class Determinizer {
         if (other == null) {
             return;
         }
-        List<List<Integer>> slots = new ArrayList<>();
-        slots.add(other.getHand().getCards());
-        slots.add(other.getCorporations().getCards());
-        slots.add(game.getProjectsDeck().getCards());
+        // Two pools, one per CARD KIND: the project cards (the opponent's hand + the projects deck) and the corporations
+        // (the opponent's offers + the corporations deck). Cards of one kind are exchangeable among the slots of that kind;
+        // cards of different kinds are not, and mixing them produced illegal positions - a project card sitting in the
+        // "offered corporations" slot, which any rollout that then asks that seat for a corporation dies on
+        // ("Corporation <a project> applies an on-built effect to itself, but the legal inputs are not described").
+        List<List<Integer>> projects = new ArrayList<>();
+        projects.add(other.getHand().getCards());
+        projects.add(game.getProjectsDeck().getCards());
+        List<List<Integer>> corporations = new ArrayList<>();
+        corporations.add(other.getCorporations().getCards());
         if (game.getCorporationsDeck() != null) {
-            slots.add(game.getCorporationsDeck().getCards());
+            corporations.add(game.getCorporationsDeck().getCards());
         }
+        shuffleWithinKind(projects, seed);
+        shuffleWithinKind(corporations, seed + 1);
+    }
+
+    /** Shuffles the cards of one kind across the slots of that kind, keeping every slot's size. */
+    private static void shuffleWithinKind(List<List<Integer>> slots, long seed) {
         int total = 0;
         for (List<Integer> slot : slots) {
             total += slot.size();

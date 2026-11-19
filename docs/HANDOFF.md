@@ -1235,3 +1235,34 @@ the hand-limit trim (`SELL_CARDS_LAST_ROUND`, minimum = hand - 10): **74.5 cards
 - 3000/10 000-game confirmation of the 70.75% bundle, and the HoF duel against the champion (2000 games, >= 54%).
 - `-Dares.agent.valueModel2` (per-side critics for HoF duels) is still not implemented.
 - The mulligan route above (act explored, card choice informative).
+
+## 19 November, second session: the mulligan, from the owner's description of how it is actually played
+
+The owner's correction (19/11) settles what the decision is:
+
+> the player sees the two offered corporations, mulligans away what fits neither of them, and only then - looking at the new
+> cards - picks the corporation that fits the hand.
+
+The engine agrees with the order: `PickCorporationsState.getPossibleTurns` returns `PICK_CORPORATION **and** MULLIGAN` together
+when the mulligan is still available (choosing the corporation ends the opening, so not mulliganning is a legal choice).
+
+Two things were missing, and both were structural, not thresholds:
+
+1. **The afterstate never founded a corporation.** `applyMulligan` removed the cards and dealt the replacements, and the value
+   was read on a position the engine never reaches - a player with no corporation. Now every mulligan afterstate founds the
+   **best of the two offered corporations** for that hand (`applyOfferedCorporation`: apply on a probe, `settleQueuedDiscards`,
+   take the higher V, apply it to the copy). The stop baseline founds one as well - otherwise the candidate carries the whole
+   starting bonus and every discard looks free. That "best of the two" is exactly the owner's rule: a card that is useful to
+   *either* corporation raises the maximum and is kept, a card useful to neither is free to discard.
+2. **The critic could not see the hand.** The card critics are trained with `--drop-prefix cards:in_my_hand_`, so hand
+   identities are zeroed and only the summary remains - that is why the gate called 95.9% of removals "free" and discarded
+   9.94 of 10 cards. The mulligan now has its own model slot, `-Dares.agent.valueModel.mulligan=DIR`, and the first candidate
+   for it is `v_1119_hand`: the same trainer on the same packs (2332_17 + 2332_18) **without** the mask, AUC 0.913, val loss
+   0.991 against a 2.449 constant, 144k rows, 31 s. It is only asked at the mulligan, so the rest of the player (the 73%
+   bundle) is untouched.
+
+Instrumentation: `-Dares.agent.search.debugJunk=true` now prints how many mulligan afterstates founded a corporation next to the
+gap distribution. Zero there means the two branches are not being explored at all and the numbers mean nothing.
+
+Measurement order (one variable at a time): does the afterstate found a corporation at all -> does the gap distribution become
+two-sided -> does the per-game discard count become partial and hand-dependent -> only then the win rate, against 73.17%.

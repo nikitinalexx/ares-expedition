@@ -1243,3 +1243,75 @@ RANDOM 98.6% of the time and SMART 72.8% is not a specialist that farms one oppo
 The trim is the one menu that discards a hand-dependent number, and it is the rule, not a choice. The mulligan discards nothing:
 the three routes to choosing cards there are measured out (fixed count, critic gate, learned policy on explored games), and a
 rollout is impossible at that stage. It stays open with a named next step, not with an invented fix.
+
+## Correction (2026-11-19, owner's question): the mulligan counts were per GAME, not per seat
+
+The owner asked how "10.66 of 12" is possible when the opening hand is 10 cards. It is not: **a corpus records both seats**
+(`--mode play` with `AGENT:AGENT`), so every "discards per game" number in this file was about twice the real one, and
+`ml/mulligan_report.py` counted it that way. The sensor now prints **discards per seat** and the seats per game, so the error
+cannot recur.
+
+Re-read per seat (`mean_discards_per_seat`, the same packs, no new games):
+
+| configuration | discards per seat | seats per game in the corpus |
+|---|---|---|
+| the 73% bundle, no gate | **0.00** | 2.00 |
+| `junkGate` + `valueModel.mulligan` (hand identity), no playout | **7.97** | 1.34 |
+| `junkGate` + `playout=MULLIGAN` + hand identity | **4.77** | 1.77 |
+
+So the gate without a rollout really does discard almost the whole hand (7.97 of 10), while with the rollout it discards
+**about half** - the owner's description - which is also what the forced-count probe measured as the *worse* half: 5 forced
+discards cost 3.7 points against 0 (1000 games). A plausible count is not a good mulligan; the choice inside it still has to be
+right.
+
+A second unit: the recording cap of 12 rows per type per game **truncates the stop rows** when both seats mulligan long
+(`1.34` and `1.77` stops per game instead of 2), so per-seat means are slightly overestimated. Any study of this menu must run
+`--rows-per-type 22` (two seats times eleven rows).
+
+## The mulligan gate, calibrated (2026-11-19)
+
+With the owner's rule implemented - the afterstate founds the best of the two offered corporations, the rollout plays the
+round out, and the critic sees the hand (`valueModel.mulligan`) - the gate's threshold is a **required advantage**: discard
+only when removing the card improves V by more than that many milli-logits. Measured on 60-game corpora of the 73% player,
+`AGENT:AGENT`, `--rows-per-type 22` (two seats times eleven rows; at 12 the stop rows of long mulligans are truncated):
+
+| required advantage | "free" removals | discards per seat | games that discard |
+|---|---|---|---|
+| 0 (no threshold) | ~93% | ~5 | ~98% |
+| 50 | 87.6% | **4.00** | 86.7% |
+| 100 | 74.3% | **2.28** | 70.0% |
+| 150 | 72.9% | 2.08 | 61.7% |
+| 200 | 53.6% | 1.04 | 41.7% |
+| 300 | 48.3% | 0.85 | 28.3% |
+| 700 | - | 0.10 | 2.5% |
+
+The distribution is bimodal rather than a spike: at threshold 50, 13% of games discard nothing, most discard 7-9 (both seats
+together) and 20% discard 8 per seat. That is a hand-dependent shape - a fixed number would be one bar - and it separates the
+two kinds of opening the owner described: a hand that is fine, and a hand clogged with cards that fit neither corporation.
+
+Why a threshold at all: the gate compares the best of ~10 noisy candidates against one baseline, and a maximum of ten noisy
+estimates is biased upward (the measured mean gap at zero true effect is +0.25 logit), so a threshold of 0 discards almost
+everything. The threshold is the selection-bias correction, and it is calibrated on the count, not guessed.
+
+### The calibrated mulligan pays (2026-11-19, 1000 games each)
+
+The threshold is not cosmetic: it is the difference between "keep everything" and a mulligan that pays.
+
+| mulligan | discards per seat | vs SMART |
+|---|---|---|
+| off (the 73.17% bundle) | 0 | 73.17% [72.3, 74.0] (10 000) |
+| threshold 100 | 2.28 | 73.65% [70.8, 76.3] |
+| **threshold 50** | **4.00** | **75.50% [72.7, 78.1]** |
+
+The direction is the owner's: fewer, timid discards barely move the score; the aggressive setting that discards about four of
+ten - the junk that fits neither corporation - is the one that pays. The count is not a constant: at threshold 50, 13% of games
+discard nothing and the rest spread over 1-9 per seat, because the gate answers per card.
+
+This is the first time the mulligan has been decided by the game rather than by a constant: the afterstate founds the best of
+the two offered corporations, the round is played out with the policy, and the card critic *with the hand identities*
+(`v_1119_hand`) judges the difference.
+
+**The same caveat as the phase rollout applies.** These are AI-vs-AI games: `roundScore` refuses to play when a seat is not a
+computer, so against a human both rollouts return NaN and the player falls back to the critic's one-action value (no mulligan,
+the phase by V). The benchmark player is now measurably stronger than the human-facing one; that gap is the next structural
+task, not a knob.

@@ -29,18 +29,28 @@ def behaviour(pack, decision, stop_id=0xFFFF):
     per_game = {}
     for value, game_id in zip(stopped.tolist(), game.tolist()):
         entry = per_game.setdefault(int(game_id), [0, 0])
-        entry[0] += 1
-        entry[1] += 0 if value else 1
+        entry[0] += 0 if value else 1     # discards
+        entry[1] += 1 if value else 0     # stops = seats that finished their mulligan
     discarded = np.array([v[1] for v in per_game.values()], dtype=np.float64)
     # The whole point of a "discard the junk" rule is that the COUNT follows the hand: a fixed number would show up as one
     # spike in this distribution, while a hand-dependent rule spreads over several values.
+    #
+    # PER SEAT, not per game. A corpus records BOTH seats (`--mode play` with AGENT:AGENT), so "discards per game" was
+    # double the real number and made a five-card mulligan look like "the whole hand" (owner, 19/11: the opening hand is 10
+    # cards, so one seat cannot discard more than 10). The stop rows are the seats: every seat that mulligans ends its
+    # sequence with one.
+    stops = np.array([v[1] for v in per_game.values()], dtype=np.float64)   # per game: the stop rows = seats
+    discarded = np.array([v[0] for v in per_game.values()], dtype=np.float64)
+    per_seat = float(discarded.sum() / stops.sum()) if stops.sum() > 0 else 0.0
     histogram = {int(k): int(v) for k, v in zip(*np.unique(discarded, return_counts=True))}
     return {
         "rows": len(chosen),
         "games": len(per_game),
         "stop_share": float(stopped.mean()),
+        "stops_per_game": float(stops.mean()),
         "games_with_a_discard": float((discarded > 0).mean()),
         "mean_discards_per_game": float(discarded.mean()),
+        "mean_discards_per_seat": per_seat,
         "max_discards_in_a_game": int(discarded.max()) if len(discarded) else 0,
         "by_count": histogram,
     }
@@ -62,7 +72,9 @@ def main():
         print(f"  {decision:22s} rows {found['rows']:7d} games {found['games']:6d} "
               f"stop {100 * found['stop_share']:5.1f}% "
               f"games that discarded {100 * found['games_with_a_discard']:5.1f}% "
-              f"mean {found['mean_discards_per_game']:.2f} max {found['max_discards_in_a_game']}")
+              f"mean {found['mean_discards_per_seat']:.2f} PER SEAT "
+              f"({found['mean_discards_per_game']:.2f} per game over {found['stops_per_game']:.2f} seats) "
+              f"max {found['max_discards_in_a_game']}")
         spread = " ".join(f"{count}:{100 * games / found['games']:.0f}%"
                           for count, games in sorted(found["by_count"].items()))
         print(f"  {'':22s} per game: {spread}")
