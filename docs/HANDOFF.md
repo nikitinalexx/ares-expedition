@@ -1,5 +1,9 @@
 ﻿# HANDOFF -- new AI for Expedition Ares
 
+> **Current state lives in `docs/PLAN.md`; the experiment index and the status of every conclusion are in `docs/LEDGER.md`; the rules are in
+> `docs/METHOD.md`.** This file is the long history (sessions, repairs, file map, commands). Where this file and the ledger disagree, the ledger
+> wins, because every row there carries its measurement.
+
 For the next assistant. Also read AGENTS.md, docs/AI_PLAN.md, docs/NIGHTLY.md, docs/EXPERIMENTS.md.
 Talk to the owner in Russian. Code/identifiers in English. Branch: nn-pure-java-verify.
 Owner commits; do not commit or push unless asked.

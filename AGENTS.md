@@ -1,6 +1,8 @@
 # AGENTS.md — ares-expedition
 
-> Continuing the new AI? Read `docs/HANDOFF.md` first (state, owner rules, file map, commands, task queue).
+> Continuing the new AI? Read in this order: `docs/PLAN.md` (the current plan), `docs/LEDGER.md` (every experiment we ran, what it showed, and
+> whether the conclusion still stands), `docs/METHOD.md` (the rules we paid for), then `docs/HANDOFF.md` (state, owner rules, file map, commands).
+> The ledger exists so that no one repeats a closed line and every conclusion can be overturned only with a measurement.
 
 Online port of *Terraforming Mars: Expedition Ares* (Spring Boot 3 + PostgreSQL, Angular in `frontend/`),
 with computer players of different strength. Production is Heroku (auto-deploy from `main`).

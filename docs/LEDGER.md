@@ -1,0 +1,67 @@
+# LEDGER — every experiment we ran, what it showed, and what we concluded
+
+**Read this before proposing anything.** Its purpose is twofold: (1) not to repeat work we already did; (2) to keep each conclusion auditable, so a
+future analysis can overturn it with evidence instead of an opinion.
+
+The detailed record (dates, raw numbers, caveats) is `docs/RESULTS.md`; each row points at its section there. The rules learned from our own
+mistakes are `docs/METHOD.md`. The current plan is `docs/PLAN.md`.
+
+Status column:
+
+* **STANDS** — the measurement and the conclusion are still accepted.
+* **CORRECTED** — the measurement is real, the *conclusion* was wrong. The corrected reading is given, and why it changed.
+* **OPEN** — measured, but not settled (a curve in progress, a partial result).
+* **— (no result)** — was started or planned and produced no measurement; must not be quoted as evidence either way.
+
+| # | experiment | result | conclusion | status |
+|---|---|---|---|---|
+| 1 | one-ply ranker: `V(afterstate)` per candidate, phase pick by a played-out round | **73.17%** [72.3, 74.0] vs SMART, 10 000 games; 98.6% RANDOM; 39.8% [37.7, 42.0] NETWORK | the deployed champion | STANDS |
+| 2 | phase pick scored by playing the round out (`phasePlayout`) | +5.9 points on the way 63.9 -> 70.8 | the only search change that ever paid | STANDS |
+| 3 | separate phase critic | +3.3 points | entering a phase is not a one-action question | STANDS |
+| 4 | phase horizon 2 rounds | 65.08% (-8) | deeper is worse here: the leaf is the same V | STANDS |
+| 5 | 8 determinisations per candidate (`samples=8`) | 66.9% (-6.3) | more worlds do not fix a biased value | STANDS |
+| 6 | a round played out after a BUILD | 73.15% (0) | no effect | STANDS |
+| 7 | a round played out after a BUILD_INPUT | 71.65% (-1.5) | no effect | STANDS |
+| 8 | flat tree, PUCT + policy prior, 32 samples | 71.65% [68.8, 74.4] | a better allocation over the same V does not help | STANDS |
+| 9 | line tree over 3-4 of our decisions | 0.03 games/s, depth cap verified (`[TREE] our decisions taken 4`) | real search, real cost; stopped by the owner before a result | — (no result) |
+| 10 | corpus volume: 500 / 1 250 / 5 000 / 10 000 games | 11.6% / 30% / 73% / 72.72% | saturation at 5 000; volume is not the lever | STANDS |
+| 11 | wider critics (768x384) at 2 000 games | 69.55% | capacity without data is worse | STANDS |
+| 12 | 10 000-game corpus, better critic (AUC 0.934, loss 1.07) | 72.72%, NETWORK 42.0% | a better critic on the same plan does not move the plan | STANDS |
+| 13 | score-breakdown target at 1 250 games | 27.9% vs margin 30.6% | decomposing the final score does not help at this volume | STANDS |
+| 14 | margin target vs 3-step TD target, flat search | 73.17% vs **72.50%** [69.7, 75.2] | the target's shape is not the missing resolution | STANDS |
+| 15 | V's price of stockpiles and the opponent's | my 200 MC +2.92 logits, the opponent's -2.20, his heat 80 -0.54 | V is not blind to the delayed state | STANDS |
+| 16 | V against NETWORK | mean margin +0.94/+1.28 in games it loses two of three | V is calibrated for one opponent distribution | STANDS |
+| 17 | price of +1 income by corpus (`ml/price_report.py`) | 6.5 MC (policy), 9.0 (forced builds), 12.1 (random), rules ~15 | there is no strategy-independent price; the value is plan-conditional | STANDS |
+| 18 | plan probe (hold our seat on the candidate phase next pick) | 8/34/38/3/17 vs 10/30/36/6/17 | the plan preference lives in V, not in the search | STANDS |
+| 19 | same two policies under their own critics vs the champion's | p1 76.5% / p2 66.25% under the champion's critics; 44.75% / 54.4% under their own | plan-conditional value, measured by swapping only the critics | STANDS |
+| 20 | forcing a plan (`phaseBias`) | 44.25%, and its corpus trains 25-33% | **CORRECTED**: this measured a phase-3 player forced to pick phase 1, not a phase-1 specialist. It must never be quoted as "the plan is bad". The rule: a plan is judged by a specialist trained for it | CORRECTED |
+| 21 | mulligan learned from explored games | 0 discards learned | **CORRECTED**: random discards in games where discarding was never a plan. Same confound as #20 | CORRECTED |
+| 22 | heavy action-level exploration | its corpus trains 21% | **CORRECTED reading**: it shows random single decisions destroy coherence, not that "phase diversity does not pay" | CORRECTED |
+| 23 | guided exploration (softmax over search scores) | 14% | V cannot arbitrate exploration: it rejects an untrained plan by construction | STANDS |
+| 24 | two strong policies in one corpus | val loss 1.11 -> 1.97, player 31% | one corpus = one policy | STANDS |
+| 25 | latent plan codes with generator nudges | control 37.8%; 3 epochs 33.1%; 10 epochs 30.8%, chi2 2367, build spread 2.5; the tax is 4.7-7.1 points | a shared trunk pays for several styles; the code channel itself works mechanically | STANDS (mechanism), superseded in role: per-plan specialists avoid the shared trunk, and the tax may belong to the nudges rather than to conditioning |
+| 26 | thrift instrument (`saveAbove`) | money p95 unchanged at 15 MC | spending behaviour does not create a production economy | STANDS |
+| 27 | opponent weight 0 / 1 / 2 | 70.8% / 73.17% / 71.3% | 1 is optimal, the dial is closed | STANDS |
+| 28 | the pack's `breakdown` field used for a per-round chart | 100% of points "in round 0" | **CORRECTED**: `breakdown` is the final score replicated on every row; the live score is in the observation (`score:my_winning_points`) | CORRECTED |
+| 29 | "the same world for two candidates" (paired rollouts) | - | **CORRECTED**: one shifted choice changes every later draw, so pairing does not survive divergence; variance questions are answered by holding the policy and varying the world | CORRECTED |
+| 30 | when are the points created (18 498 game-seats) | 11.1 rounds; 50.9 points during rounds + **33.6 (39.6%)** settled at the end; per-round creation 1.2 -> 16.5 | the score is settled late but created by the position: a whole-game plan is the right object | STANDS |
+| 31 | behaviour cells (score composition, 4x4) | 8 of 16 occupied, strong games in 5, cell margins +16.5 to -36.8 | **CORRECTED**: descriptive only. Grading a cell by the current player's games is the #20 confound, and the descriptor is endogenous - margins never enter a gate | CORRECTED |
+| 32 | corporations actually played in a 5 000-game corpus | 25 distinct, median 414 games each (max 786, min 1) | the enumerable, balanced, exogenous axis the game provides | STANDS |
+| 33 | specialist curve, corporation-free probe (forced commitment) | iteration 1 **44.75%** [40.0, 49.0]; iteration 2 **54.4%** [49.5, 59.3] (400 games each, matched stacks) | the first mechanism in weeks that climbs; the gate is the derivative | OPEN (iteration 3 running) |
+| 34 | specialist with the phase decided by its policy (`PICK_PHASE` out of `search.types`) | 22.5% [17.3, 28.8] | its own plan, as learned, is weak; the 44.75% was the search re-deciding the phase | STANDS |
+| 35 | `phasePlayout=false` for the specialist | 20.0% [15.0, 26.1] | **CORRECTED (method)**: this is ONE-STEP V deciding the phase, not the policy - `PICK_PHASE` was still in `search.types`; it is #34 that tests the policy | CORRECTED |
+| 36 | line tree with TD vs matched margin critics | - | stopped on the owner's instruction before producing a result | — (no result) |
+
+## Infrastructure faults found and fixed (each would have silently poisoned a corpus)
+
+* Rollouts recorded phantom decisions: 8 GB, 921k rows, OOM every ~250 games -> recording guard + `RolloutRecordingTest`.
+* The determinizer mixed card kinds (corporations, hands, decks) -> illegal positions in rollouts.
+* The generator's chunk counter counted 16 type files and reported the last chunk -> `ml/tests/test_chunk_count.py`.
+* The human seat was played by the policy in rollouts, so the benchmark and the shipped player were different players -> our own agent drives it.
+* The mulligan counts were per game, not per seat -> corrected, `ml/mulligan_report.py` counts per seat.
+* A silent policy-replay misalignment (18/11) -> caught and closed.
+
+## How to overturn a row
+
+Only with a measurement, and the measurement must satisfy `docs/METHOD.md`: change the DATA (or train a model), not just the behaviour; gate on the
+derivative; effect sizes under 1.5 points need 10 000 games; and the quantity must not be produced by the player whose competence is the question.

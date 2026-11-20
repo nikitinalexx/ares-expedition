@@ -1,5 +1,10 @@
 # Results ledger (2026-11-15, all measured against SMART unless stated)
 
+> **Index first:** `docs/LEDGER.md` lists every experiment with its result, the conclusion we drew, and the STATUS of that conclusion
+> (STANDS / CORRECTED / OPEN / no result), with a pointer to the section below. This file is the detailed record kept for audit; the current
+> plan is `docs/PLAN.md`, older plans are in `docs/archive/`. A conclusion is overturned only by a measurement that satisfies `docs/METHOD.md`.
+
+
 One place for every configuration measured during the day, with the number of games it was measured on. Read it with the
 error bar in mind: **evaluation** noise is +/- 1 point at 10 000 games, but **critic training** variance is about +/- 3
 points win rate (two critics with the same recipe on different 100k samples scored 42.98% and 39.38%, see
