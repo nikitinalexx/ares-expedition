@@ -101,7 +101,7 @@ public class ObservationBuilder {
     public static final int CARDS_SIZE = 2 * TABLE_CARDS.size() + 2 * SCIENCE_CARDS.size() + HAND_CARDS.size();
 
     /**
-     * Phase 4 can make ONE played card pay again, and 130 cards can do that — flagging them all would cost 260 columns
+     * Phase 4 can make ONE played card pay again, and 130 cards can do that вЂ” flagging them all would cost 260 columns
      * for information that is only ever used as "what is the best single double payment available". So the state carries
      * the maximum double payment per dimension instead (owner's design, 2026-11-14): the best MC a card can pay again,
      * the best plants, heat, cards, TR and each income. It is computed by actually playing {@code payAgain} on a copy for
@@ -424,7 +424,16 @@ public class ObservationBuilder {
 
     private float[] build(MarsGame game, Player player, boolean includeHand) {
         long started = System.nanoTime();
-        Player opponent = game.getPlayerUuidToPlayer().values().stream().filter(p -> !p.getUuid().equals(player.getUuid())).findFirst().orElseThrow();
+        Player opponent = null;
+        for (Player candidate : game.getPlayerUuidToPlayer().values()) {
+            if (!candidate.getUuid().equals(player.getUuid())) {
+                opponent = candidate;
+                break;
+            }
+        }
+        if (opponent == null) {
+            throw new IllegalStateException("no opponent for " + player.getUuid());
+        }
 
         // The hot path: this vector is copied into the observation immediately, so it lives in a per-thread scratch buffer
         // (the builder runs hundreds of times per game and thousands of times inside a rollout).
@@ -472,8 +481,19 @@ public class ObservationBuilder {
         // The score, one number per player, from the engine's own total.
         observation[pos++] = winPointsService.countWinPoints(player, game);
         observation[pos++] = winPointsService.countWinPoints(opponent, game);
+        List<Card> heldCards = new ArrayList<>(player.getHand().getCards().size());
+        for (Integer id : player.getHand().getCards()) {
+            heldCards.add(cardService.getCard(id));
+        }
         for (Class<? extends Card> card : HAND_CARDS) {
-            observation[pos++] = player.getHand().getCards().stream().anyMatch(id -> card.isInstance(cardService.getCard(id))) ? 1f : 0f;
+            boolean held = false;
+            for (Card held0 : heldCards) {
+                if (card.isInstance(held0)) {
+                    held = true;
+                    break;
+                }
+            }
+            observation[pos++] = held ? 1f : 0f;
         }
 
         // ---- extras: history and the dummy pool
@@ -721,8 +741,21 @@ public class ObservationBuilder {
     }
 
     private int onTable(float[] target, int pos, Player player) {
+        // Resolve the played cards ONCE: the obvious form asked cardService for every (card in TABLE_CARDS) x (card on the
+        // table) pair, and the observation is built tens of thousands of times per game.
+        List<Card> played = new ArrayList<>(player.getPlayed().getCards().size());
+        for (Integer id : player.getPlayed().getCards()) {
+            played.add(cardService.getCard(id));
+        }
         for (Class<? extends Card> card : TABLE_CARDS) {
-            target[pos++] = player.getPlayed().getCards().stream().anyMatch(id -> card.isInstance(cardService.getCard(id))) ? 1f : 0f;
+            boolean down = false;
+            for (Card down0 : played) {
+                if (card.isInstance(down0)) {
+                    down = true;
+                    break;
+                }
+            }
+            target[pos++] = down ? 1f : 0f;
         }
         return pos;
     }

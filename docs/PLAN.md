@@ -132,3 +132,21 @@ lambda-return are the challengers.
 
 **Falsifiable prediction:** a gate built on V0 beats a gate built on any specialist's value or on the champion's value at equal data. If it does
 not, the "two targets" decomposition is wrong and the gate has to be learned directly on outcomes (a contextual bandit over plans).
+
+## Throughput: only changes that cannot change a decision (owner, 20/11)
+
+Measured baseline (practice2 run, 14 threads): **1.07 games/s**, 26 485 observation builds per game, and the perf counters split the CPU as
+**observation 36 007 s against critics 7 476 s** - 83% versus 17%. The network is not the bottleneck; the observation is.
+
+Done, and both are semantics-preserving:
+
+* **streams removed from the hot path** (`ObservationBuilder`): the opponent lookup, the hand identity bits (83 x hand with a `getCard` per pair) and
+  `onTable` now resolve the card instances once and then loop;
+* **flat `Card[] byId` table in `CardService`**: `getCard` used to walk every expansion map plus four more maps per call (up to eight hash lookups,
+  millions of calls per game); it is now one array index, with the old method kept as `slowGetCard` and an equivalence test over ids 0..11 000.
+
+**Rejected by the owner, and not to be re-proposed:** dropping the public (opponent) observation, and pruning candidate menus by the policy prior.
+Both change what the search sees, i.e. they buy speed with quality.
+
+Still allowed if needed, because neither can change a decision: JVM/GC flags (young generation, G1 tuning), thread count, and hoisting repeated work.
+Anything that alters the candidate set, the observation or the value is out of scope for throughput.

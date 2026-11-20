@@ -28,6 +28,8 @@ public class CardService {
     private final Set<Integer> crysisExcludedCards;
     private final Map<Integer, CrysisCard> crysisCards;
     private final Map<Integer, Card> specialDummyCards;
+    /** Flat id -> card table (see {@link #buildById}): the hot-path lookup. */
+    private final Card[] byId;
 
     private final Set<Integer> crysisCardsTier1;
     private final Set<Integer> crysisCardsTier2;
@@ -56,6 +58,52 @@ public class CardService {
         this.crysisCardsTier3 = getCrysisCardsByTier(cardFactory, CardTier.T3);
         this.crysisCardsTier4 = getCrysisCardsByTier(cardFactory, CardTier.T4);
         this.crysisCardsTier5 = getCrysisCardsByTier(cardFactory, CardTier.T5);
+        this.byId = buildById();
+    }
+
+    /**
+     * One flat id -> card table, built once at startup.
+     *
+     * <p>Why (owner, 20/11): `getCard` was iterating every expansion's map plus four more maps per call, and the observation builder calls it for
+     * every card in the hand and on the table, tens of thousands of times per game. A single array index removes the eight hash lookups and the
+     * boxing on the hottest path in the simulator. The fill order mirrors the check order of {@link #slowGetCard}: the source checked first is
+     * written LAST, so it wins where two sources carry the same id.
+     */
+    private Card[] buildById() {
+        int max = 0;
+        for (Map<Integer, Card> cards : projects.values()) {
+            for (Integer id : cards.keySet()) {
+                max = Math.max(max, id);
+            }
+        }
+        for (Map<Integer, Card> cards : List.of(discoveryCorporations, baseCorporations, buffedProjects,
+                specialDummyCards, buffedCorporations)) {
+            for (Integer id : cards.keySet()) {
+                max = Math.max(max, id);
+            }
+        }
+        Card[] table = new Card[max + 1];
+        for (Map.Entry<Integer, Card> entry : buffedCorporations.entrySet()) {
+            table[entry.getKey()] = entry.getValue();
+        }
+        for (Map.Entry<Integer, Card> entry : specialDummyCards.entrySet()) {
+            table[entry.getKey()] = entry.getValue();
+        }
+        for (Map.Entry<Integer, Card> entry : buffedProjects.entrySet()) {
+            table[entry.getKey()] = entry.getValue();
+        }
+        for (Map.Entry<Integer, Card> entry : baseCorporations.entrySet()) {
+            table[entry.getKey()] = entry.getValue();
+        }
+        for (Map.Entry<Integer, Card> entry : discoveryCorporations.entrySet()) {
+            table[entry.getKey()] = entry.getValue();
+        }
+        for (Map<Integer, Card> cards : projects.values()) {
+            for (Map.Entry<Integer, Card> entry : cards.entrySet()) {
+                table[entry.getKey()] = entry.getValue();
+            }
+        }
+        return table;
     }
 
     private Set<Integer> getCrysisCardsByTier(CardFactory cardFactory, CardTier tier) {
@@ -187,6 +235,20 @@ public class CardService {
     }
 
     public Card getCard(int id) {
+        if (id >= 0 && id < byId.length) {
+            Card fast = byId[id];
+            if (fast != null) {
+                return fast;
+            }
+        }
+        return slowGetCard(id);
+    }
+
+    /**
+     * The original lookup, kept for the ids the flat table does not carry (an unknown id must still return null rather than throw) and as the
+     * reference the equivalence test compares the fast path against.
+     */
+    Card slowGetCard(int id) {
         Card card;
 
         for (Map.Entry<Expansion, Map<Integer, Card>> expansionEntry : projects.entrySet()) {

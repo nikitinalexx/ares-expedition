@@ -86,6 +86,16 @@ public class AgentDecisionService {
     private static final int[] PHASE_PREFERENCE =
             parsePhases(System.getProperty("ares.agent.preferPhase", ""));
     /**
+     * Colour practice of the data generator (off by default): {@code -Dares.agent.preferColor=red|green|blue} takes the first offered card of that
+     * colour at the build and draft menus, so a corpus exists in which the plan was actually played. Not a rule of the player: it is off unless
+     * asked for, and the shipped bundle never sets it. See {@link ColourNudge}.
+     */
+    private static final String PREFER_COLOUR = System.getProperty("ares.agent.preferColor", "").trim();
+    private static final double COLOUR_NUDGE_RATE =
+            Math.max(0.0, Math.min(1.0, Double.parseDouble(System.getProperty("ares.agent.colorNudgeRate", "1"))));
+    private static final java.util.Set<DecisionType> COLOUR_NUDGE_TYPES =
+            java.util.EnumSet.of(DecisionType.BUILD_CARD, DecisionType.DRAFT_CARDS);
+    /**
      * Exploration of the DATA GENERATOR, not of the player: {@code -Dares.agent.explore=BUILD_CARD:0.3,PICK_PHASE:0.5}
      * replaces the decision by a uniformly random candidate for the given decision type with the given probability.
      * <p>
@@ -283,6 +293,30 @@ public class AgentDecisionService {
             }
         }
         return -1;
+    }
+
+    /**
+     * Colour practice of the data generator (off unless {@code -Dares.agent.preferColor=red|green|blue} is set).
+     *
+     * <p>Why (owner, 20/11): the NETWORK gap is measured on events - NETWORK plays 8.6 red cards a game against our 4.2 - and a plan can only be
+     * learned from games in which it was played. This is the same kind of instrument as the plan nudges: it changes which games are produced, not
+     * what the player is allowed to do, and it is off by default.
+     */
+    private static int colourNudge(Decision decision) {
+        if (PREFER_COLOUR.isEmpty() || !COLOUR_NUDGE_TYPES.contains(decision.type())) {
+            return -1;
+        }
+        if (COLOUR_NUDGE_RATE < 1
+                && java.util.concurrent.ThreadLocalRandom.current().nextDouble() >= COLOUR_NUDGE_RATE) {
+            return -1;
+        }
+        CardColor wanted;
+        try {
+            wanted = CardColor.valueOf(PREFER_COLOUR.toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException unknown) {
+            return -1;
+        }
+        return ColourNudge.indexOfColour(decision.candidates(), wanted);
     }
 
     private static int explore(Decision decision) {
@@ -725,6 +759,11 @@ public class AgentDecisionService {
             // Measured exploration of the data generator (off unless -Dares.agent.explore is set): a uniformly random
             // candidate for this decision type, so the recorded games contain lines the greedy player never plays.
             index = probe == null ? explore(decision) : -1;
+        }
+        if (index < 0) {
+            // Colour practice of the data generator (off unless -Dares.agent.preferColor is set): take the first offered card
+            // of that colour, so a corpus exists in which the player actually plays that plan. See ColourNudge.
+            index = colourNudge(decision);
         }
         if (index < 0) {
             // One-ply search on the state value net (off unless -Dares.agent.search=oneply): the candidate is applied to a
