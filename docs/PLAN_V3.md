@@ -114,6 +114,58 @@ flat search's win rate with the new V (1000 games); (c) the profile (builds, pha
 **Decision rule:** if (a) does not improve, or (b) is below 73.17% by more than noise, S1 is closed and the project stays at the
 current champion - no rescaling of the same idea.
 
+### S0. The owner's objection (20/11) is right, and it demotes S1: TD cannot fix a BIASED value
+
+Three separate things were being conflated. Naming them changes the plan:
+
+1. **Resolution**: can V tell two candidates apart at the scale that matters (3-5 points)? S1 addresses this, and only this.
+2. **Variance of the judge**: does one game's margin carry enough information to rank a decision? Answered by pairing, not by
+   smoothing.
+3. **Bias of the judge**: does the quantity being optimised point at the right thing at all? **TD cannot fix this.** `target =
+   reward + V(next)` hands the bias to the label through the bootstrap, and fitted value iteration then converges to the same
+   preference with less variance - a more confident version of the same mistake (the deadly triad, already written in S1 as a risk;
+   the owner's examples show it is the whole problem, not a footnote).
+
+**The diagnosis that makes the owner's examples one problem.** `V(x)` is not the value of the position, it is
+`E[outcome | x, our policy keeps playing]` - a *policy-conditional* value. Measured evidence: V does see stockpiles (my 200 MC
++2.92 logits, the opponent's -2.20), so the blind spot is not in the input; and against NETWORK it says +0.94 margin while we lose
+two of three. So "5 steel income + 5 titanium income, money spent" is scored as a loss because *our player* will buy one more blue
+card next round and convert nothing. V is right about our play and wrong about the position, and **every deeper search asks it the
+same question.** That, not noise, is why depth never paid.
+
+**The arithmetic that closes the whole short-horizon family** (all of 19/20 November): a production card pays over 10-15 rounds.
+The horizons we measured were 1 round (phase playout, build playout, input playout), 2 rounds (-8) and 3-4 of our decisions (the
+line tree). **A horizon shorter than the payoff's time scale cannot see the payoff at all, whatever V is.** So the only horizon
+that contains the delayed value is the end of the game - which is exactly what the owner said, and exactly what the last-round
+90 -> 180 objection is about.
+
+### S1'. The only judge that cannot be biased: a PAIRED end-of-game rollout, at plan-level decisions only
+
+- **Judge**: play each candidate to `GAME_END` and read the final score difference. No V, so no policy-conditional bias.
+- **Variance**: the owner's objection is real for independent rollouts (sd of the level ~25-30 points, a human jumps 90 -> 180
+  in the last round). The answer is **pairing**: every candidate is played in the SAME determinised world (the same seeds), so
+  everything not caused by the choice - including the last-round leap - cancels. The quantity becomes the paired difference.
+  This is already how the phase pick is ranked (one `seed` for all candidates, `OnePlySearch` line ~1112); the PUCT path is the
+  one that breaks pairing (`baseSeed + step` per step) and that is a defect to remove, not a design.
+- **Where it is allowed to judge**: plan-level decisions only (PICK_PHASE, the plan-defining builds). Judging every decision is
+  both unaffordable and pointless: the effect of a discard is not a 3-point plan question.
+- **Competent exploration is a precondition, not a detail**: if the continuation is the policy, the judge says "production loses"
+  and is right, because the continuation does not convert (measured: a forced plan 44.25%, its corpus trains 25-33%). So inside a
+  chosen plan the decisions must be searched too, or the exploring games teach the wrong lesson.
+- **What it buys if it works**: the corpus of judged games carries production plans the judge endorsed, with the game's own label.
+  V finally sees those states labelled "won" - the only mechanism that removes the bias instead of entrenching it. V then returns
+  to its correct role: prior and cheap play, not judge.
+
+**Instrument, in this order (all affordable, all falsifiable):**
+
+| step | measurement | stop rule |
+|---|---|---|
+| A | `-Dares.agent.search.judgeAudit=true`: per candidate, per paired world, the final margin on real phase states - sd(level) against sd(paired difference), and the paired se at K = 1, 2, 4, 8, 16 | if the paired se at an affordable K stays above the 3-5 point effect, the path is closed by a measured variance floor - not rescaled |
+| B | the judge decides PICK_PHASE only, 1 000 games vs SMART, everything else identical | not above 73.17% -> closed |
+| C | if B pays: judged games become the corpus, V retrained on their outcomes | the 5-steel/5-titanium probe must flip, and the profile gate (32.5 builds, 0.77 acceptance) must hold |
+
+A is a pure diagnostic: the flag prints the matrix and changes no decision (`auditEndJudge` in `OnePlySearch`).
+
 ### S2. Spend the resolution on the search
 
 Only if S1 resolves the differences: re-run the measured set (flat one ply, one round on the phase, the line tree) with the new V.
@@ -137,9 +189,20 @@ incremental observation (1.8-2.5x). Not before.
 - No imitation of SMART, NETWORK or the owner's games (owner's rule).
 - No plan-forcing bias: measured to produce weak play in the generated corpus (25-33%).
 
-## 5. Why this is the most probable remaining path
+## 5. Why this ordering, after the owner's objection (20/11)
 
-Every failure so far has one shape: something downstream cannot see a difference that V cannot represent. The search, the
-determinisation, the tree, the phase rollout and the mulligan all inherit V's resolution. The one thing never changed is the
-quantity V predicts. Changing it is cheap (a recorder field, a pack field, a trainer target), it needs no new data source, and its
-success is directly measurable (within-menu ranking, then the win rate).
+Every failure so far has one shape: something downstream asks `V` a question `V` answers for a player who cannot execute the line.
+The search, the determinisation, the tree, the phase rollout and the mulligan all inherit that, and so does the TD target through
+its bootstrap. So the ordering is by what can possibly remove the CAUSE, not by what is cheapest:
+
+1. **S1' (paired end-of-game judge)** - the only judge that carries no policy-conditional bias, and pairing is the only known
+   answer to its variance. First the variance audit (A), because if a paired se cannot resolve 3-5 points at an affordable K,
+   nothing downstream matters and this is closed with a number.
+2. **S1 (the target's shape)** stays as a resolution measurement only. Its flat half already read 72.50% against 73.17% - a
+   measured "no", which is why it is not allowed to grow into a second attempt at another corpus size.
+3. **Nothing here is scaled on hope**: each step has a number that closes it, and the only thing that may be rescaled is a
+   mechanism that has already beaten 73.17% at 1 000 games.
+
+The claim S1' makes, stated so it can fail: with the judge playing the whole game in paired worlds, the phase/plan choice stops
+being a vote for "the plan our value likes" and becomes a measurement of the plan's actual final score - and the production line
+our value rejects today becomes visible as soon as the continuation can execute it.

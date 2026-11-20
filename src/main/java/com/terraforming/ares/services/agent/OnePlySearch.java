@@ -227,6 +227,24 @@ public class OnePlySearch {
      */
     private final boolean phasePlayout;
     /**
+     * {@code -Dares.agent.search.judgeAudit=true}: the variance audit of an END-OF-GAME judge (owner's question, 20/11).
+     * <p>
+     * Every other comparison in this class is a comparison of {@code V}, and {@code V} is policy-conditional: it answers
+     * "what does this position turn into when WE keep playing", so a production economy our player cannot convert is
+     * scored as a loss - correctly, for our player. The game's own final score is the only judge that cannot carry that
+     * bias, and the owner's objection to it is variance (a human jumps 90 -> 180 in the last round).
+     * <p>
+     * The answer to variance is not a biased estimator, it is PAIRING: every candidate is played to GAME_END in the same
+     * determinised world, so everything that is not caused by the choice cancels. This flag measures that, and nothing
+     * else: it prints the per-world margins per candidate and does not change a single decision.
+     */
+    private final boolean judgeAudit;
+    /** Paired worlds per candidate in the audit (the same seeds for every candidate - that is what makes it paired). */
+    private final int judgeWorlds;
+    /** How many decisions to audit; the audit is ~4 candidates x K full games per decision. */
+    private final int judgeMax;
+    private final java.util.concurrent.atomic.AtomicInteger judgeDone = new java.util.concurrent.atomic.AtomicInteger();
+    /**
      * {@code -Dares.agent.search.projectBuilds=true}: after applying a candidate, ADVANCE the game to the player's next
      * decision before reading V, instead of reading the value of a mid-turn afterstate.
      * <p>
@@ -335,6 +353,10 @@ public class OnePlySearch {
         int configuredSamples = Math.max(1, Integer.parseInt(System.getProperty("ares.agent.search.samples", "1")));
         boolean configuredPhasePlayout =
                 Boolean.parseBoolean(System.getProperty("ares.agent.search.phasePlayout", "false"));
+        boolean configuredJudgeAudit =
+                Boolean.parseBoolean(System.getProperty("ares.agent.search.judgeAudit", "false"));
+        int configuredJudgeWorlds = Math.max(1, Integer.parseInt(System.getProperty("ares.agent.search.judgeWorlds", "8")));
+        int configuredJudgeMax = Math.max(1, Integer.parseInt(System.getProperty("ares.agent.search.judgeMax", "200")));
         boolean configuredProjectBuilds =
                 Boolean.parseBoolean(System.getProperty("ares.agent.search.projectBuilds", "false"));
         boolean configuredHorizonStop =
@@ -369,6 +391,9 @@ public class OnePlySearch {
             this.horizonTurns = 0;
             this.samples = 1;
             this.phasePlayout = false;
+            this.judgeAudit = false;
+            this.judgeWorlds = 1;
+            this.judgeMax = 1;
             this.projectBuilds = false;
             this.horizonStop = false;
             return;
@@ -397,6 +422,9 @@ public class OnePlySearch {
         this.horizonTurns = Math.max(0, configuredHorizon);
         this.samples = configuredSamples;
         this.phasePlayout = configuredPhasePlayout;
+        this.judgeAudit = configuredJudgeAudit;
+        this.judgeWorlds = configuredJudgeWorlds;
+        this.judgeMax = configuredJudgeMax;
         this.projectBuilds = configuredProjectBuilds;
         this.horizonStop = configuredHorizonStop;
         this.models = loadNets(spec);
@@ -1063,6 +1091,9 @@ public class OnePlySearch {
         }
         float[] scores = new float[options.size()];
         long seed = ThreadLocalRandom.current().nextLong();
+        if (judgeAudit && decision.type() == DecisionType.PICK_PHASE) {
+            auditEndJudge(game, player, options, seed);
+        }
         float bestOfStop = logit(stopObs);
         boolean horizonHere = horizonTurns > 0
                 && (horizonTypes.isEmpty() || horizonTypes.contains(decision.type()));
@@ -1661,6 +1692,92 @@ public class OnePlySearch {
             }
         }
         return ok == 0 ? Float.NaN : sum / ok;
+    }
+
+    /**
+     * Variance audit of the end-of-game judge (see {@link #judgeAudit}). For every candidate: apply it, then play the
+     * WHOLE game out in each of {@code judgeWorlds} determinised worlds, with the SAME seeds for every candidate.
+     * <p>
+     * Why the matrix is printed instead of a verdict: the usable number is not the level of the scores but the PAIRED
+     * difference. If sd(paired difference) is close to sd(level) (~25 points here) then no affordable number of worlds
+     * resolves a 3-5 point effect, and the path is closed for a measured reason instead of being rescaled later.
+     */
+    private void auditEndJudge(MarsGame game, Player player, List<Candidate> options, long seed) {
+        if (judgeDone.incrementAndGet() > judgeMax) {
+            return;
+        }
+        int count = options.size();
+        float[][] margins = new float[judgeWorlds][count];
+        for (int k = 0; k < judgeWorlds; k++) {
+            for (int c = 0; c < count; c++) {
+                margins[k][c] = Float.NaN;
+                MarsGame copy = new MarsGame(game);
+                Player me = copy.getPlayerByUuid(player.getUuid());
+                if (me == null || !applyOn(copy, me, options.get(c).id(), DecisionType.PICK_PHASE, seed + k)) {
+                    continue;
+                }
+                margins[k][c] = endMargin(copy, player.getUuid(), seed + k);
+            }
+        }
+        StringBuilder line = new StringBuilder("[JUDGE] turns=").append(game.getTurns())
+                .append(" cands=").append(count).append(" worlds=").append(judgeWorlds);
+        for (int k = 0; k < judgeWorlds; k++) {
+            line.append(" w").append(k).append('=');
+            for (int c = 0; c < count; c++) {
+                if (c > 0) {
+                    line.append(',');
+                }
+                line.append(Float.isNaN(margins[k][c]) ? "na" : String.format(Locale.ROOT, "%.1f", margins[k][c]));
+            }
+        }
+        float[] sum = new float[count];
+        int[] ok = new int[count];
+        for (int k = 0; k < judgeWorlds; k++) {
+            for (int c = 0; c < count; c++) {
+                if (!Float.isNaN(margins[k][c])) {
+                    sum[c] += margins[k][c];
+                    ok[c]++;
+                }
+            }
+        }
+        line.append(" mean=");
+        for (int c = 0; c < count; c++) {
+            if (c > 0) {
+                line.append(',');
+            }
+            line.append(ok[c] == 0 ? "na" : String.format(Locale.ROOT, "%.1f", sum[c] / ok[c]));
+        }
+        System.out.println(line);
+    }
+
+    /**
+     * Plays a copy to GAME_END in one determinised world and returns MY final margin in points (NaN when it did not end).
+     * The safety limit is a guard against a state machine that never reaches GAME_END on a copy, not a horizon.
+     */
+    private float endMargin(MarsGame copy, String uuid, long seed) {
+        if (!makeSeatsPlayable(copy)) {
+            return Float.NaN;
+        }
+        MarsGame sim = new MarsGame(copy);
+        Determinizer.shuffle(sim, uuid, seed);
+        int limit = sim.getTurns() + 400;
+        try {
+            simulationProcessorService.processSimulation(sim, game -> {
+                if (game.getStateType() == StateType.GAME_END || game.getTurns() > limit) {
+                    throw new StopPlayout();
+                }
+            });
+        } catch (StopPlayout stop) {
+            // the game is over (or the safety limit fired): the leaf is the terminal score
+        } catch (RuntimeException e) {
+            return Float.NaN;
+        }
+        Player mine = sim.getPlayerByUuid(uuid);
+        Player other = mine == null ? null : otherPlayer(sim, mine);
+        if (other == null || sim.getStateType() != StateType.GAME_END) {
+            return Float.NaN;
+        }
+        return winPointsService.countWinPoints(mine, sim) - winPointsService.countWinPoints(other, sim);
     }
 
     /**
