@@ -1,4 +1,4 @@
-# One practice arm end to end: generate -> fine-tune -> measure -> health panel.
+﻿# One practice arm end to end: generate -> fine-tune -> measure -> health panel.
 #
 # Why a script: the R (red) and E (economy) arms must be identical except for the colour, or the comparison is worthless. Every step is the one
 # used by the practice loop; nothing here changes the player, only which games are produced.
@@ -6,12 +6,14 @@
 #   powershell -File ml/run_arm.ps1 -Name red -Colour red -Rate 0.3 -Games 5000
 param(
     [Parameter(Mandatory = $true)][string]$Name,
-    [Parameter(Mandatory = $true)][string]$Colour,
+    [string]$Colour = "",
+    [string]$Set = "",
     [double]$Rate = 0.3,
     [int]$Games = 5000,
     [string]$Base = "D:/ares/runs/policy/1120_clean5000",
     [string]$Out = "",
-    [int]$Threads = 14
+    [int]$Threads = 14,
+    [int]$Measure = 5000
 )
 
 $ErrorActionPreference = "Continue"
@@ -32,9 +34,10 @@ $flags = @(
 )
 
 New-Item -ItemType Directory -Force -Path $Out | Out-Null
-Write-Output "=== $Name arm: colour $Colour at rate $Rate, $Games games, base $Base"
+Write-Output "=== $Name arm: colour=$Colour set=$Set at rate $Rate, $Games games, base $Base"
 $t0 = Get-Date
-& $java -Xmx10g @flags "-Dares.agent.preferColor=$Colour" "-Dares.agent.colorNudgeRate=$Rate" -cp "target/classes;$cp" `
+if ($Colour -ne "") { $extra = @("-Dares.agent.preferColor=$Colour", "-Dares.agent.colorNudgeRate=$Rate") } else { $extra = @("-Dares.agent.preferSet=$Set", "-Dares.agent.tagNudgeRate=$Rate") }
+& $java -Xmx10g @flags @extra -cp "target/classes;$cp" `
     com.terraforming.ares.selfplay.SelfPlayMain --mode play --out $Out --threads $Threads --games-per-chunk 250 `
     --count-chunks-from $Out --matchups "AGENT:AGENT:1.0" --max-rows-per-game-type 8 --models $Base --games $Games *> "D:/ares/tmp/arm_$Name.play.log"
 $playSeconds = [math]::Round(((Get-Date) - $t0).TotalSeconds, 0)
@@ -45,7 +48,7 @@ Write-Output "  fine-tune on the whole corpus"
 
 Write-Output "  measure vs SMART, 5000"
 & $java -Xmx10g @flags -cp "target/classes;$cp" com.terraforming.ares.selfplay.SelfPlayMain --mode compare `
-    --a AGENT --b SMART --games 5000 --concurrency 12 --out "D:/ares/tmp/arm_$Name.smart.json" --models $policy *> "D:/ares/tmp/arm_$Name.smart.log"
+    --a AGENT --b SMART --games $Measure --concurrency 12 --out "D:/ares/tmp/arm_$Name.smart.json" --models $policy *> "D:/ares/tmp/arm_$Name.smart.log"
 $smart = (Select-String -Path "D:/ares/tmp/arm_$Name.smart.log" -Pattern "\[COMPARE\] RESULT" | Select-Object -Last 1).Line
 Write-Output "  SMART: $smart"
 

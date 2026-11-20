@@ -103,6 +103,20 @@ public class AgentDecisionService {
             java.util.EnumSet.of(DecisionType.MULLIGAN, DecisionType.DISCARD_CARDS,
                     DecisionType.SELL_CARDS, DecisionType.SELL_CARDS_LAST_ROUND);
     /**
+     * Tag practice of the data generator (off by default): {@code -Dares.agent.preferTag=microbe} takes cards carrying that tag at the build and draft
+     * menus and keeps them where a card has to be given up. Reason (owner, 20/11): microbes are too few to be a strategy, but they may complement a
+     * good result, and a plan can only be learned from games in which it was played. See {@link TagNudge}.
+     */
+    private static final String PREFER_TAG = System.getProperty("ares.agent.preferTag", "").trim();
+    /**
+     * Set practice of the data generator (off by default): {@code -Dares.agent.preferSet=microbe} chases the cards that hold, produce, consume or hand
+     * over a microbe (see {@link MicrobeCards}). The owner's correction (20/11): the MICROBE TAG is the wrong definition - the plan is the resource.
+     */
+    private static final String PREFER_SET = System.getProperty("ares.agent.preferSet", "").trim();
+    private static final double TAG_NUDGE_RATE = Math.max(0.0, Math.min(1.0,
+            Double.parseDouble(System.getProperty("ares.agent.tagNudgeRate",
+                    System.getProperty("ares.agent.colorNudgeRate", "1")))));
+    /**
      * Exploration of the DATA GENERATOR, not of the player: {@code -Dares.agent.explore=BUILD_CARD:0.3,PICK_PHASE:0.5}
      * replaces the decision by a uniformly random candidate for the given decision type with the given probability.
      * <p>
@@ -328,6 +342,53 @@ public class AgentDecisionService {
         return keep
                 ? ColourNudge.indexOfNotColour(decision.candidates(), wanted)
                 : ColourNudge.indexOfColour(decision.candidates(), wanted);
+    }
+
+    /**
+     * Tag practice of the data generator (off unless {@code -Dares.agent.preferTag=microbe} is set): build and draft a card carrying the tag, and give
+     * up untagged cards where a card must leave. Not a rule of the player - off by default, and the shipped bundle never sets it.
+     */
+    private int tagNudge(Decision decision) {
+        boolean build = COLOUR_NUDGE_TYPES.contains(decision.type());
+        boolean keep = COLOUR_KEEP_TYPES.contains(decision.type());
+        if (PREFER_TAG.isEmpty() || (!build && !keep)) {
+            return -1;
+        }
+        if (TAG_NUDGE_RATE < 1
+                && java.util.concurrent.ThreadLocalRandom.current().nextDouble() >= TAG_NUDGE_RATE) {
+            return -1;
+        }
+        com.terraforming.ares.model.Tag wanted;
+        try {
+            wanted = com.terraforming.ares.model.Tag.valueOf(PREFER_TAG.toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException unknown) {
+            return -1;
+        }
+        return TagNudge.index(decision.candidates(),
+                id -> {
+                    Card card = cardService.getCard(id);
+                    return card != null && card.getTags().contains(wanted);
+                },
+                keep);
+    }
+
+    /**
+     * Set practice of the data generator (off unless {@code -Dares.agent.preferSet=microbe} is set): build and draft a card of the microbe economy, and
+     * give up the others where a card must leave. A supplement, not a strategy - off by default.
+     */
+    private int setNudge(Decision decision) {
+        boolean build = COLOUR_NUDGE_TYPES.contains(decision.type());
+        boolean keep = COLOUR_KEEP_TYPES.contains(decision.type());
+        if (!"microbe".equalsIgnoreCase(PREFER_SET) || (!build && !keep)) {
+            return -1;
+        }
+        if (TAG_NUDGE_RATE < 1
+                && java.util.concurrent.ThreadLocalRandom.current().nextDouble() >= TAG_NUDGE_RATE) {
+            return -1;
+        }
+        return TagNudge.index(decision.candidates(),
+                id -> MicrobeCards.isMicrobe(cardService.getCard(id)),
+                keep);
     }
 
     private static int explore(Decision decision) {
@@ -775,6 +836,14 @@ public class AgentDecisionService {
             // Colour practice of the data generator (off unless -Dares.agent.preferColor is set): take the first offered card
             // of that colour, so a corpus exists in which the player actually plays that plan. See ColourNudge.
             index = colourNudge(decision);
+        }
+        if (index < 0) {
+            // Tag practice of the data generator (off unless -Dares.agent.preferTag is set): see TagNudge.
+            index = tagNudge(decision);
+        }
+        if (index < 0) {
+            // Set practice of the data generator (off unless -Dares.agent.preferSet is set): see MicrobeCards.
+            index = setNudge(decision);
         }
         if (index < 0) {
             // One-ply search on the state value net (off unless -Dares.agent.search=oneply): the candidate is applied to a

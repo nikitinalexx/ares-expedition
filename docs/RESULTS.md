@@ -2467,3 +2467,25 @@ which is a useful control that the measurement is honest rather than a different
 
 What remains on the table would cost quality and is rejected by the owner: dropping the public observation (31% of the observation cost) and pruning
 the candidate menus by the prior (1.3-1.6x on the big menus). No further optimization is planned unless it is provably decision-neutral.
+
+## The red/event arm is negative on both benchmarks (night of 20/21)
+
+Protocol: `ml/run_arm.ps1 -Name red -Colour red -Rate 0.3` - the clean fine-tune (75.16%) generated 5 000 games with a red preference at rate 0.3
+(the smoke put the corpus at **35% red** against 14% in the reference, with builds at 2.37), the policy was fine-tuned on the whole corpus, and both
+benchmarks plus the health panel were measured.
+
+| measurement | red arm | champion (clean fine-tune) |
+|---|---|---|
+| vs SMART, 5 000 | **72.05% [70.79, 73.28]** | 75.16% [73.94, 76.23] |
+| vs NETWORK, 1 000 | **39.15% [36.2, 42.2]** | 43.25% [40.2, 46.4] (practice 2) |
+| builds per game | 2.33 (-28%) | 3.26 |
+| build acceptance | 0.582 (-28%) | 0.814 |
+| distinct cards per game | 2.33 (-29%) | 3.25 |
+| red share of its games | 35% | 14% |
+
+So more red cards **cost** 3 points against SMART and 4 against NETWORK, and the health panel classifies the arm as a degenerate specialist (builds,
+acceptance and card variety all collapse). The manipulation worked and the hypothesis failed in this form: the NETWORK gap is not "the player does
+not play enough events".
+
+What this does **not** settle: whether the economy is the cause (the owner's objection) - that is the green arm, running next. If green also loses,
+forcing a colour is simply the wrong instrument; if green holds or gains, the owner's "more red follows from a stronger economy" is supported.

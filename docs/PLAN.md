@@ -163,3 +163,21 @@ bundle (the clean fine-tune at 75.16%), the critics, the corpus size (5 000), th
   the interesting outcomes are R > E (red is causal), E > R (the economy is the cause, as the owner suspected), or R ~ E ~ champion (the NETWORK gap
   is not in card colour).
 * **Every arm goes through the health panel** (generalist vs specialist/gatekeeper) and is measured against both benchmarks.
+
+### Microbes are a RESOURCE plan, not a tag (owner's correction, 20/11)
+
+The first attempt used the MICROBE tag, and the owner rejected the definition: the tag says almost nothing, because the cards that matter are defined by
+the microbe RESOURCE they hold, produce, consume or hand over. The set is now explicit (`MicrobeCards`), built from the owner's list plus the code:
+
+* holders and producers: AnaerobicMicroorganisms, ConservedBiome, Decomposers, DecomposingFungus, ExtremeColdFungus, FilterFeeders,
+  GhgProductionBacteria, NitriteReductingBacteria, RegolithEaters, SelfReplicatingBacteria, SymbioticFungus, Tardigrades, ViralEnhancers;
+* consumers: Worms, BacterialAggregates;
+* red one-shots with `CardAction.ADD_MICROBE`: ControlledBloom, Cyanobacteria, ImportedNitrogen, ImportedNutrients;
+* the buffed variants of the same cards.
+
+Instrument: `-Dares.agent.preferSet=microbe` (with `-Dares.agent.tagNudgeRate`), same rated-preference protocol as the colour arms.
+Metric: `ml/tag_metric.py --microbes`, which sums the nine microbe counters of `TableResourcesFeature` at each seat's last round - the microbe resource
+actually held on cards, not the number of tags played.
+
+Why this matters beyond microbes: it is the first axis defined by a card's *mechanism* rather than by its label, which is what the plan's content axis
+was supposed to be.
