@@ -18,5 +18,5 @@ A reviewer's claim has the same status as ours: it is a hypothesis until measure
 Files:
 
 * `LETTER_1.md` — the first brief (state of 20/11).
-* `CRITIQUE_1.md` — expected.
+* `CRITIQUE_1.md` — written 20/11 (reviewer: Claude Opus 5.5, same model family as the author - see its header).
 * `REPLY_1.md` — expected.
