@@ -34,6 +34,20 @@ public final class ColourNudge {
         return -1;
     }
 
+    /**
+     * @return the index of the first candidate NOT of {@code wanted} colour, or -1 when every card in the menu has it (or the menu has no cards).
+     *         Used where the action REMOVES a card - mulligan, discard, sell - so that "practice red" means keeping the red cards.
+     */
+    public static int indexOfNotColour(List<Candidate> candidates, CardColor wanted) {
+        for (int i = 0; i < candidates.size(); i++) {
+            Class<? extends Card> card = cardOf(candidates.get(i));
+            if (card != null && colourOf(card) != null && colourOf(card) != wanted) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     /** The card class a candidate's identity bit stands for, or null when the candidate is the stop flag / not a card. */
     static Class<? extends Card> cardOf(Candidate candidate) {
         float[] features = candidate.features();

@@ -96,6 +96,13 @@ public class AgentDecisionService {
     private static final java.util.Set<DecisionType> COLOUR_NUDGE_TYPES =
             java.util.EnumSet.of(DecisionType.BUILD_CARD, DecisionType.DRAFT_CARDS);
     /**
+     * Menus where the action REMOVES a card: there the colour nudge keeps the preferred colour and gives up the others, so "practice red" means
+     * "keep the red cards and discard/sell the rest". Separate set because the direction of the nudge is inverted.
+     */
+    private static final java.util.Set<DecisionType> COLOUR_KEEP_TYPES =
+            java.util.EnumSet.of(DecisionType.MULLIGAN, DecisionType.DISCARD_CARDS,
+                    DecisionType.SELL_CARDS, DecisionType.SELL_CARDS_LAST_ROUND);
+    /**
      * Exploration of the DATA GENERATOR, not of the player: {@code -Dares.agent.explore=BUILD_CARD:0.3,PICK_PHASE:0.5}
      * replaces the decision by a uniformly random candidate for the given decision type with the given probability.
      * <p>
@@ -303,7 +310,9 @@ public class AgentDecisionService {
      * what the player is allowed to do, and it is off by default.
      */
     private static int colourNudge(Decision decision) {
-        if (PREFER_COLOUR.isEmpty() || !COLOUR_NUDGE_TYPES.contains(decision.type())) {
+        boolean build = COLOUR_NUDGE_TYPES.contains(decision.type());
+        boolean keep = COLOUR_KEEP_TYPES.contains(decision.type());
+        if (PREFER_COLOUR.isEmpty() || (!build && !keep)) {
             return -1;
         }
         if (COLOUR_NUDGE_RATE < 1
@@ -316,7 +325,9 @@ public class AgentDecisionService {
         } catch (IllegalArgumentException unknown) {
             return -1;
         }
-        return ColourNudge.indexOfColour(decision.candidates(), wanted);
+        return keep
+                ? ColourNudge.indexOfNotColour(decision.candidates(), wanted)
+                : ColourNudge.indexOfColour(decision.candidates(), wanted);
     }
 
     private static int explore(Decision decision) {

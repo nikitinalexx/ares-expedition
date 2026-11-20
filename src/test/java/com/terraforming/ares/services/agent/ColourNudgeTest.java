@@ -64,6 +64,13 @@ class ColourNudgeTest {
     }
 
     @Test
+    void findsACardThatIsNotThePreferredColour() {
+        List<Candidate> menu = List.of(candidateOf(AssortedEnterprises.class), candidateOf(Blueprints.class));
+        assertEquals(1, ColourNudge.indexOfNotColour(menu, CardColor.RED));
+        assertEquals(-1, ColourNudge.indexOfNotColour(List.of(candidateOf(AssortedEnterprises.class), stop()), CardColor.RED));
+    }
+
+    @Test
     void colourComesFromTheCardPackageNotTheName() {
         assertEquals(CardColor.BLUE, ColourNudge.colourOf(GreenHouses.class));
         assertEquals(CardColor.GREEN, ColourNudge.colourOf(Blueprints.class));

@@ -150,3 +150,16 @@ Both change what the search sees, i.e. they buy speed with quality.
 
 Still allowed if needed, because neither can change a decision: JVM/GC flags (young generation, G1 tuning), thread count, and hoisting repeated work.
 Anything that alters the candidate set, the observation or the value is out of scope for throughput.
+
+## Night of 20/21: the R/E arm protocol (autonomous run, owner asleep)
+
+Run with `ml/run_arm.ps1 -Name red -Colour red -Rate R` and the same for `green`; everything is identical except the colour, including the base
+bundle (the clean fine-tune at 75.16%), the critics, the corpus size (5 000), the training recipe and the two benchmarks.
+
+* **Manipulation strength is a measured parameter, not a setting of taste.** At rate 1.0 the colour nudge is a compulsion: the smoke corpus came out
+  97.6% red with 0.8 builds a game, i.e. the player stops building anything else and starves. The arms therefore run at a rated preference (0.3 or
+  0.5, chosen by a 100-game smoke that keeps the red share in a plausible band ~25-35% and the build count off the floor).
+* **Success is not "R wins"**: the owner's objection is that more red cards may simply follow from a stronger economy. So E (green) is not optional -
+  the interesting outcomes are R > E (red is causal), E > R (the economy is the cause, as the owner suspected), or R ~ E ~ champion (the NETWORK gap
+  is not in card colour).
+* **Every arm goes through the health panel** (generalist vs specialist/gatekeeper) and is measured against both benchmarks.
