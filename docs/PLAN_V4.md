@@ -149,3 +149,75 @@ It requires no guess about which strategies exist: it requires an archive, a fix
 is a measurement that is worth having even if the rest fails (how many behaviours do we actually have, and is our critic trained on a
 style-weighted sample). Its failure modes are all measurable, and each one changes the shape of the project in a defined way instead of
 inviting "one more knob".
+
+## 10. The honest case for and against this plan (owner's demand, 20/11)
+
+### 10.1 Every previous approach changed the estimator, not the data distribution
+
+| approach | what it changed | why it could not move the number |
+|---|---|---|
+| more corpus (5k -> 10k) | the size of one distribution | 73.17% -> 72.72%; the distribution was identical, so the value learned the same plan more precisely |
+| deeper search (2 rounds, 8 determinisations, trees, playouts) | how the same V is queried | every variant 71-73%; the leaf is evaluated by a value conditioned on the same continuation |
+| target shape (margin, channels, 3-step TD) | the label on the same states | 73.17% / 72.50%; a blend of two ~73% estimators stays at 73% |
+| wider nets | capacity on the same data | 69.55% at 2 000 games: capacity without data is worse |
+| action-level exploration | randomness on single decisions | the explored games are incoherent, so their labels teach "this is bad": forced plan 44.25%, its corpus trains 25-33%; the mulligan learned 0 discards |
+| thrift instrument (saveAbove) | spending behaviour | money p95 unchanged at 15 MC: thrift does not create a production economy |
+| imitation of SMART/NETWORK/human | the source of labels | forbidden by the owner's rule, and it would import a style rather than our strength |
+
+One sentence covers the column: **none of them changed which states the corpus contains.** Everything was a better way to read the same
+games.
+
+### 10.2 The four measurements that say where the bottleneck actually is
+
+1. The phase mix barely moves across corpora and bundles: 10/30/36/6/17. One plan, reproduced by every mechanism we built.
+2. Force a different plan and it plays at 44.25%, and its corpus trains 25-33%: the plan space is not empty, it is unexplored and
+   incompetent.
+3. Mix two strong policies in one corpus and the value collapses (loss 1.11 -> 1.97, player 31%): one value cannot serve two plans. This is
+   the measured form of "the value is plan-conditional" - and it means a population needs one value per plan, not one value for all.
+4. 73.17% against SMART and 39.8% against NETWORK, with V's mean margin +0.94/+1.28 in games it loses two out of three: the value is
+   calibrated for one opponent distribution and misprices another entirely.
+
+Points 1-3 say the binding constraint is the plan space; point 4 says the second constraint is opponent/style coverage. Both are
+**distribution** problems, and both are what coverage addresses. No estimator or search change addresses either.
+
+### 10.3 Blocker by blocker: what this plan closes, and what it only hopes to close
+
+| blocker | closed by | status |
+|---|---|---|
+| the corpus contains one plan | coverage iterations force different behaviours, per-cell corpora | mechanism is sound; risk = weak specialists (10.4) |
+| exploring a plan is punished before it is learned | sandbox for cells whose plan the plain policy cannot execute | partial: only cells that need it, and the sandbox is one environment inside the cell, not the frame |
+| one value cannot serve two plans | one corpus = one policy per cell | measured to be necessary; the cost is that selection becomes a separate problem |
+| targets and weights depend on how many decisions a plan makes | round-grid labels, per-round loss normalisation | fully closed, arithmetic |
+| style/opponent coverage (the 39%) | a league of our own specialists as opponents | weakest link: coverage is measured on OUR behaviour space, not on the opponent's |
+| selection among plans | learned selector or a cell-conditioned policy | not solved by coverage; it is G2, and it is data-hungry |
+
+### 10.4 The weakest joint, stated plainly
+
+**Coverage without competence fills the archive with weak strategies.** A cell can be filled by exploration noise; if we then train on
+those games, we imitate bad play - the exact trap of the forced-plan experiment (44.25%). The defence is the gate: a cell counts as
+filled only when its specialist beats the incumbent INSIDE that cell, not when a game merely lands there. The consequence is honest:
+some cells will never fill, and the archive will be smaller than the behaviour space. That is a result, not a failure of the gate.
+
+The second weak joint is selection: choosing a plan from a hand and a board is the original problem in miniature, and at our data scale it
+may be unsolvable by learning. If it is, the shape changes to "a book of players, one per opening family", which is still a real product
+and still measurable.
+
+### 10.5 Why this can cross 73% and why 39% is the harder number
+
+For SMART: the mechanism is ordinary strength - more competent plans, each with its own value, and a selector that picks one. Every
+component has a measured counterpart (plans exist, competence is the missing part, the value is plan-conditional). Nothing in it needs
+SMART.
+
+For NETWORK: our 39.8% is a style-calibration failure, and the honest mechanism is a league of our OWN specialists playing each other,
+which is diversity without imitation. But the coverage is over our behaviour space: if NETWORK's plan is a plan our archive never
+contains, coverage does not help against it. So the 39% number is the one this plan may NOT move, and it should be the last gate, not the
+first promise.
+
+### 10.6 What would make me drop the plan early
+
+- G0 shows the archive already occupied by many cells: then diversity is not the binding constraint and this plan is aimed at the wrong
+  target.
+- G1 fails on three different cells: coverage is not reachable at our skill or our descriptors do not separate behaviours.
+- G2 fails while G1 succeeds: coverage exists but selection (or strength of specialists) does not convert it into play.
+
+Each of these is cheap and each has a defined consequence, which is the whole reason this plan is worth running instead of another knob.
