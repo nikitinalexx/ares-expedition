@@ -2169,3 +2169,21 @@ never as a ranking.
 
 **The rule this produces, and it goes into METHOD.md:** no alternative may be ranked by the results of a player whose competence at that
 alternative is the thing in question.
+
+## Which axis is enumerable in this game? Corporations: 25, already balanced (2026-11-20)
+
+The owner's question - "why five arms, you said 16 cells?" - exposed that I was mixing two different spaces, and neither of them is the right
+one:
+
+| number | what it is | status |
+|---|---|---|
+| 16 | 4x4 bins of an OUTCOME descriptor (terraforming share x card-point share) | retired as a ranking axis: it grades plans by a player who cannot play them, and the descriptor is endogenous |
+| 5 | the legal phases; "prefer this phase when legal" | a cheap ACTION axis, good only as a mechanism probe |
+| **25** | **the corporations actually played in the 5 000-game probe corpus** | **the axis the game already enumerates and the corpus already balances** |
+
+Measured on the probe corpus (5 000 games, both seats): 25 distinct corporations played, median **414** games each (max 786, min 1; only two
+below 100). So a per-corporation natural experiment already exists in the data, with no forcing at all: a corporation is dealt and chosen
+before any strategy is played, and it determines which strategies are even possible (a microbe plan needs microbe-enabling cards).
+
+Consequence: the coverage axis is the corporation, specialists are trained from the existing corpus (no shove), and the phase preference is
+then part of what each specialist discovers. The five phase arms stay as a mechanism probe; the 16 outcome cells stay as an inventory.
