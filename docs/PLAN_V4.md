@@ -295,3 +295,35 @@ variance, not a paired difference.
 5. **Order of work:** the three cheap premise measurements (points by round; behaviour regions of the 10k corpus; world-vs-skill variance
    by varying the world), then one specialist end-to-end (2-5 iterations, ~2-4 h each), then the comparison between two specialists. No
    archive infrastructure before a specialist has climbed.
+
+## 13. What changed on the second deep review (owner, 20/11)
+
+Six changes, each with a reason that comes from a measurement, not from taste.
+
+1. **Force ONE seat and train on that seat's rows - do not force both.** The pack already stores `seat` (`train_value` orders the pool by
+   `(game, seat, step)` and links rows within a seat), so the corpus can be homogeneous from the learner's point of view without teaching
+   the opponent's seat a plan it will never play. The "force both seats" version would have produced a specialist trained against a
+   mirrored opponent - a transfer gap disguised as a curriculum. Cost: record which seat was forced (derivable from the per-seat phase
+   mix, which `mulligan_report.py` already does per seat; better to log it).
+2. **Two-stage forcing, and the first stage is a probe, not a plan.** Stage 1: force the phase for the whole game (the hardest, most
+   homogeneous corpus that exists) and ask one question - does the curve climb at all from 44%? This is the decisive test of "competence is
+   learnable for a forced plan", and it is cheap. Stage 2: relax to the first commitment(s) only, which is the real plan. A probe result
+   is never quoted as a plan result.
+3. **The selector is Monte-Carlo, not learned.** At the first commitment, evaluate each specialist by its expected final margin over K
+   determinised worlds (no pairing: an expectation over worlds, not a difference between two lines). Cost with 4 plans x 8 worlds x ~80 ms
+   is ~2.5 s ONCE per game - affordable at play time, unlike per-move judging. A learned selector stays as the fallback if the MC
+   estimate's variance is too large, and the measured "two policies in one corpus -> 31%" warns that a single model over plans is the
+   riskier branch.
+4. **The league is the answer to the 39%, and it needs only two specialists to start.** Each specialist trains on ITS OWN rows while
+   playing the other one: diversity of opponents without imitation of anyone (both are ours). Gate: the worst benchmark (NETWORK) before
+   and after, not just SMART.
+5. **A budget and a stop rule, because cost is per plan.** Three specialists x up to three iterations is roughly two days of compute at
+   the measured 1.5-4 h per iteration. At that point: review, with the curves in hand. Three iterations without a climb = the plan is
+   recorded as unreachable at our skill, with the number.
+6. **Forcing needs a unit test before a single game is generated.** The forced seat's phase distribution must be exactly the forced phase
+   and the other seat's must not be. A silent failure of the forcing mechanism would recreate the original confound - the corpus would
+   look homogeneous while measuring the old player - and that is precisely the error this plan exists to correct.
+
+Unchanged, and deliberately: the three premise measurements come first (points by round; behaviour regions of the 10k corpus; world-vs-skill
+variance by varying the world with the policy held); no analytic valuation; no named strategy; no deeper search; no corpus volume for the
+sake of volume; no imitation.

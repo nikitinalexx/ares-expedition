@@ -41,6 +41,12 @@ the record the moment it starts; finding gaps is the loop's job, not the owner's
 Nobody’s claims (owner or AI) are axioms: they are hypotheses checked by nightly runs, one variable at a time.
 See `docs/EXPERIMENTS.md`.
 
+**Read `docs/METHOD.md` before designing an experiment.** Its first rule came from a mistake that cost weeks: *a treatment that changes
+BEHAVIOUR without changing the TRAINING DATA is a statement about the current player, not about the thing being tried.* Forcing a plan
+onto a player trained for another plan (44.25%) was recorded as "that plan is bad" - it measured only that our player cannot play it, and
+that misreading closed three directions that were never actually tested. Two corollaries: the value may not arbitrate exploration (it
+rejects an untrained plan by construction), and a new plan is gated on the **derivative** of its curve, not on its level.
+
 **Accepting a new network (owner's rule, 2026-11-14).** Win rate alone hides a degenerate player: a model beat RANDOM 95%
 while a human playing it saw "picks phase 3, buys standard projects, 0-2 cards per game". So every new model is first
 measured on **cards built per game** and **which phases it picks** — `py -3 ml/check_player.py --model DIR` prints both,
