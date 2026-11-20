@@ -17,8 +17,9 @@ Heroku/prod out of scope until local AI is strong.
 ## Machine
 
 Windows, ~32 GB RAM, NVIDIA GPU (PyTorch training). D: ~590 GB free.
-JDK 21+. Maven: -s .mvn/settings.xml. Python in ml/.venv (falls back to `py -3`; there is no venv on this machine and
-torch is CPU-only 2.8.0). Train ~30s.
+JDK 21+. Maven: -s .mvn/settings.xml. Python in ml/.venv (falls back to `py -3`; there is no venv on this machine). **Measured 20/11: torch
+2.8.0+cu128, `torch.cuda.is_available()` = True, 1 device** - the earlier "CPU-only" note was stale. The main trainers (`train_value.py`,
+`train_policy_ce.py`) are numpy/CPU anyway, and training takes minutes, so the GPU is not the bottleneck (generation in Java is). Train ~30s.
 With the trained night7 model, one AGENT vs AGENT game is **58 ms** (2 seats, one thread, 510-560 decisions) and
 `--mode compare` does **202 games/s vs RANDOM** at concurrency 24.
 

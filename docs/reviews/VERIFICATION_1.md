@@ -73,3 +73,33 @@ downgraded to a hypothesis until the size-matched control runs (P4).**
    one-step-optimal.
 5. **P2, flagged nudges** (engine change + test + 1 h generation): regenerate one iteration with a `forced` flag and train the policy with forced rows
    masked. If it recovers ≥ 5 points, A1's mechanism is confirmed and the annealing was a workaround for a label bug.
+6. **The data-augmentation control** (10 min training + 15 min measurement): fine-tune the champion's policy on 5 000 *clean* champion games with the
+   same recipe, then measure it with the champion's critics. If it also reaches ~77%, the gain of p1 is the fine-tuning, not the perturbation or the
+   plan.
+## E. Row-19 replication — the improvement is real but small, and the second benchmark does not confirm it
+
+| stack | vs SMART | vs NETWORK |
+|---|---|---|
+| p1 + the champion's critics, 1 000 games | 77.3% [74.6, 80.0] | — |
+| **p1 + the champion's critics, 5 000 games** | **74.88% [73.66, 76.10]** | — |
+| p1 + the champion's critics, 1 000 games | — | **41.84% [38.8, 45.0]** |
+| champion (10 000 / 2 000 games) | 73.17% [72.3, 74.0] | 39.8% [37.7, 42.0] |
+| p2 + the champion's critics, 1 000 games | 70.2% [67.3, 73.0] | — |
+
+So: (a) the reviewer's "maximum of noisy cells" warning was right — 77.3% at 1 000 regressed to **74.88%** at 5 000, i.e. **+1.7 points** over
+the champion (z ≈ 2.3, borderline); (b) against NETWORK the difference (+2.0) is **inside the noise** (z ≈ 1.1); (c) p2 with the same critics is
+*worse* than the champion, so this is not a monotone improvement of the loop.
+
+The reviewer's main reading still stands and is now the important part: the specialist's **policy** is fine and its **own critics** were the weak
+part (+21.8 points main effect). But the size of the policy gain is small, and the second benchmark does not show it.
+
+**Decision that follows:** this is not a new champion yet. Before any claim, two things are needed: (1) 10 000 games against SMART (the project's
+rule for a 1.5-point effect), and (2) the clean-fine-tune control, which is now running: 5 000 games of the champion's own unperturbed play, the
+same fine-tune recipe, the same critics. If the clean control also reaches ~75%, the gain is the extra fine-tuning (or plain noise), not the
+perturbation and not the plan.
+
+## F. The reviewer's independence note is based on a wrong premise
+
+It states that it shares my model family. It does not: this assistant is DeepSeek V4.1 Flash, the reviewer is Claude (Anthropic). Its arguments were
+verified against the files and the numbers regardless, which is the rule for any reviewer.
+
