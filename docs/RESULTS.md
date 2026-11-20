@@ -2353,3 +2353,29 @@ The comparison between p1 and the clean control is still fair (same defaults, sa
 "generated 5 000, trained on ~2 500". Raising `--max-chunks-per-type` to 20 and testing it is a separate, cheap experiment.
 
 
+
+## The lever is practice, not plans (the clean-fine-tune control, 2026-11-20)
+
+The decisive control: the champion's policy fine-tuned on 5 000 **unperturbed** games of its own play (plan code 0, the same recipe, the champion's
+critics, 5 000 games against SMART).
+
+| run | vs SMART |
+|---|---|
+| champion | 73.17% [72.3, 74.0] (10 000) |
+| p1: fine-tune on the **nudged** corpus (plan code 8) | 74.88% [73.66, 76.10] (5 000) |
+| **clean fine-tune: fine-tune on the champion's own play** | **75.16% [73.94, 76.23] (5 000)** |
+
+The two fine-tunes are **identical within noise** (0.28 points apart). So the phase perturbation contributed **nothing**: what helps is
+**one more round of fine-tuning on 5 000 fresh self-play games** (+2 points, z ~ 2.7 against the champion, and reproducible in two independent
+runs).
+
+**This settles the reviewer's strongest objection.** His warning was that we diagnosed an ordinary approximate-policy-iteration problem as a
+plan-level pathology and then built the cure on the components the data said were weakest. The control says exactly that: no plan machinery is
+needed for the +2; practice is.
+
+**What it does not settle.** Both runs trained on ~2 500 of the 5 000 games (the trainer's defaults, see the caveat above), and neither was
+measured against NETWORK. The +2 may be the first step of a long curve or a one-off; only iteration 2 answers that.
+
+**The obvious loop, and it is cheap:** generate 5 000 games with the current best -> fine-tune the champion's policy on them -> measure at 5 000
+against SMART (and 1 000 against NETWORK) -> keep if better -> repeat. ~2 h per iteration. That is the plan now; the specialist/gate/two-target
+machinery is shelved until the practice loop stops paying.

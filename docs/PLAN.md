@@ -5,54 +5,35 @@ in `docs/archive/` and are not current.
 
 ## Where we stand
 
-* **Champion**: one plan at **73.17%** [72.3, 74.0] vs SMART (10 000 games), 98.6% RANDOM, **39.8%** vs NETWORK. Every later attempt to improve it
-  in place - more data, deeper search, other targets, wider nets, the tree - landed at 71-73% (LEDGER rows 4-14).
-* **Why**: the value is **plan-conditional**. It estimates the futures of the plan the policy already plays, so it rejects any other plan, and the
-  corpus contains only its own states. Measured directly: the same policy scores +10 points under critics trained for its plan and -10 under the
-  champion's (LEDGER row 19). Prices confirm it: +1 income costs 6.5 / 9.0 / 12.1 MC in three corpora, against ~15 by the rules (row 17).
-* **What changed today**: a specialist trained on a corpus of one committed plan **climbs**: 44.75% -> **54.4%** [49.5, 59.3] vs SMART over two
-  iterations, then falls back to 44.6% at the third (LEDGER 33). It is far below the champion, and it is the first mechanism in weeks that does
-  not sit at 73%.
-* **No mechanism above 73.17% has been demonstrated yet.** The champion and the pipeline (generate -> pack -> train -> measure) work; the
-  *improvement loop* does not, yet. The plan below is a hypothesis with mechanism-level support and cheap gates, not a demonstrated path - and it
-  must be read that way.
+* **Champion**: one plan at **73.17%** [72.3, 74.0] vs SMART (10 000 games), 98.6% RANDOM, **39.8%** vs NETWORK.
+* **The first measured improvement, and it is not a plan**: one more round of fine-tuning on 5 000 fresh self-play games gives **74.88%** (on a
+  nudged corpus) and **75.16%** (on the champion's own unperturbed play) over 5 000 games - **identical within noise**. The perturbation added
+  nothing; the practice added **+2 points** (LEDGER 42). This confirms the outside reviewer's objection: our stall was ordinary approximate policy
+  iteration, not a plan-level pathology.
+* **The NETWORK gap is tempo, not conversion**: NETWORK plays twice the red cards (8.6 vs 4.2 per game) and wins TR, printed points, milestones and
+  awards; p1 wins the resource-card channel by 10 points. So the missing content is *events and tempo*, not the animal/microbe economy.
+* **Why the old readings were wrong**: the value is plan-conditional *by definition*, but the 30-point gap between a specialist's own critics and
+  the champion's was critic quality (10k games, AUC 0.934) and off-policy labels, not plan conditioning (LEDGER 41, VERIFICATION_1 A).
 
-## What is learned
+## The plan
 
-A set of **specialists** ("options"). Each is a policy **plus its own value**, trained on a corpus where that plan was actually played, and shipped
-together - never as a policy dropped into another plan's search.
+**One loop, and it is the practice loop.**
 
-## The axis (exogenous, enumerated, not chosen by belief)
+1. Generate 5 000 games with the current best player (~1 h).
+2. Fine-tune the champion's policy on them (~1 min), **with `--max-chunks-per-type` set to use the whole corpus**, and later with forced rows masked
+   (P2) once the flag exists.
+3. Measure at 5 000 against SMART and 1 000 against NETWORK (~1.5 h).
+4. Keep the new bundle if it is better; repeat. Stop when two consecutive iterations are flat within the noise model (±4 points at 5 000 games).
 
-1. **Commitment** - the only axis with a measured climb, and its limit is now known: the champion already mixes the five phases (10/30/36/6/17), so
-   forcing a phase biases the existing plan instead of creating a new one (LEDGER 40). The phase arm is therefore a *mechanism test* only, and it has
-   served that purpose (the oscillation at rate 1.0, the hold at 0.5).
-2. **The plan's CONTENT - the next axis.** Which economy is built (microbes, animals, energy, steel/titanium, plants, card draw) is determined by the
-   cards, and the player does not cover it (Herbivores 0.21, Fish 0.05 per game). Two implementable routes, to be chosen by cost:
-   * **filter by the deal** (no forcing): group game-seats by the opening hand's tags and train a specialist per group - needs a tag dump and a
-     clustering rule, no engine change;
-   * **a tag-preference nudge** (forcing, like the existing generator nudges): prefer cards of tag X at the draft/build menus - needs one engine change
-     and a test, and it is the same kind of instrument as the phase nudge.
-3. **Corporation - screened out at 2.4%** (LEDGER 39): endogenous, and it barely explains the outcome at the current skill.
-4. **Outcome cells** (score composition) - an **inventory** of what our player does. Never a ranking (rows 20, 31).
+Three things to fix inside the loop, in order, each cheap:
 
-## The player
+* **the half-corpus default** (`--max-chunks-per-type 10` on a 20-chunk corpus): one run tells whether the full corpus trains better;
+* **the flag and mask for forced rows** (P2): required before any nudge is used again, including the red/event one;
+* **the red/event practice arm** (R), and the economy arm (E) as its control: same size, same recipe, same critics, both benchmarks - because the
+  owner's objection is right that more red cards may simply be a consequence of a stronger economy.
 
-A **mixture with a gate**: specialists are the parts; the gate chooses the option at plan points (the corporation offer, the phase pick). The gate's
-value may be trained on a mix of corpora **including random play**, because random play visits states our policy never reaches - and the gate role is
-the one place where a shared slope does not cancel (it was never tested there; only in the ranker role, where it correctly showed nothing).
-
-**The seed anneals**: a generator nudge at rate 1.0 -> 0.5 -> 0.25 -> 0, and the final measurement is made with the nudge OFF. If a build-phase
-specialist ends up playing the draft, that is its finding.
-
-## Gates and stop rules
-
-| gate | measurement | stop rule |
-|---|---|---|
-| G1 | a specialist's curve over iterations | must keep **climbing**; three iterations flat -> that arm is recorded unreachable and is not rescaled |
-| G2 | profile at play time (builds, build acceptance, standard projects in the phase the player calls) | no degeneration ("learned not to build"). **The phase mix is not a criterion**: phase 4 is shared, so declining it can be the strong move when ahead on income, and picking phase 1 a lot is a plan, not a defect (`docs/GAME_RULES.md`) |
-| G3 | the gate vs the best single specialist, then vs the champion (1 000 games) | must win, else the mixture earns nothing |
-| G4 | the league of our own specialists (cross-play, own rows only) | answer to the NETWORK style gap; the **last** gate, not the first promise |
+The specialist/gate/two-target machinery is **shelved** until the practice loop stops paying. None of it is needed for the +2, and the control
+says the plan was the wrong unit.
 
 ## Invariants
 
@@ -65,20 +46,24 @@ specialist ends up playing the draft, that is its finding.
 
 ## Next steps, with cost
 
-1. **Annealing** (running): generation at nudge rate 0.5 from the best specialist (p2), 5 000 games (~1 h), then training and a 400-game
-   measurement. It tests whether the oscillation (44.75 -> 54.4 -> 44.6) was the compulsion or the mechanism.
-2. **The menu oracle** (next, ~10 min of labels + ~5 min per target): extend the existing end-of-game audit to all decision types with a
-   plan-neutral continuation (random), then score each candidate target by its agreement with the oracle on held-out menus. This is what turns "the
-   right target" into a measurement (`## The target question` above).
-3. **If annealing climbs**: continue to rate 0.25 and 0, and measure with the nudge off - that is the ship-ready shape.
-4. **If annealing also oscillates**: the single-specialist mechanism is recorded as not climbing at our data volume, and the next candidate is the
-   starting HAND axis (clustered by the cards' own tags), not more corporations (LEDGER 39) and not more volume.
-5. **Gate** over the plan points (the phase pick, and later the corporation offer), then G3 against the best single specialist and the champion.
-6. **Row weighting**: the per-round normalisation of the target/loss stays (LEDGER 38), and it must be applied when the annealed corpus is
-   trained, because this is the last measurement that touches every corpus we make.
+1. **Iteration 2 of the practice loop** (~2.5 h): generate 5 000 games with the clean fine-tune (75.16%), fine-tune the champion's policy on them,
+   measure at 5 000 vs SMART and 1 000 vs NETWORK. This decides whether the +2 is the first step of a curve or a one-off. **This is the only
+   experiment that matters right now.**
+2. **The whole corpus** (~30 min): the same run with `--max-chunks-per-type 20` (the trainer reads half of a 20-chunk corpus by default). Cheap, and
+   it may make every later iteration stronger.
+3. **P2, the forced-row flag and mask** (engine change + test + 1 h): required before any nudge is used again; it also tests the reviewer's explanation
+   of the oscillation (off-policy labels), and it is the last thing standing between us and the red/event arm.
+4. **The R / E arms** (2 x 2.5 h): red/event preference and economy preference, same size, same recipe, same critics, both benchmarks - the owner's
+   objection (red cards may be a consequence of a stronger economy) is the reason E is not optional.
+5. **The 10 000-game confirmation** (4 h) of whatever bundle is leading, by the project's rule for effects under 1.5 points.
 
-**External review:** the plan, the ledger and the method are under adversarial review by an outside model - see `docs/reviews/README.md` and
-`docs/reviews/LETTER_1.md`; its critique and our reply are kept there. A reviewer's objection is handled like any other claim: with a measurement.
+Shelved until the loop stops paying: specialists, the gate, the two targets, the menu oracle as costed (the reviewer showed K=2 with a random
+continuation cannot rank), the commitment axis, the corporation axis.
+
+**External review:** the plan, the ledger and the method are under adversarial review by an outside model - see `docs/reviews/README.md`,
+`LETTER_1.md`, `CRITIQUE_1.md` and `VERIFICATION_1.md`. A reviewer's objection is handled like any other claim: with a measurement. The first
+round has already changed the plan (the critic main effect, the off-policy nudges, the corpus-size confound, V0's failure), and its strongest
+objection - "you diagnosed API as a plan pathology" - is now confirmed by the clean-fine-tune control.
 
 ## What is deliberately not in this plan
 
