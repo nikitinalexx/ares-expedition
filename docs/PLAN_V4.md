@@ -69,112 +69,83 @@ will use it" - i.e. a value conditional on a PLAN, not on a state alone. Which r
 conditioned on exactly ONE continuation (our current policy), so it can describe one plan and cannot compare plans. The fixed point is a
 *plan* fixed point, and the owner's "V thinks the blue player is a genius" is V measuring the plan it knows.
 
-**What replaces the arithmetic:** nothing analytic. The two objects that can be learned from the game itself, without imitation, are
-- the value **of a plan** (a continuation that actually executes it), and
-- the comparison between plans, which needs each plan to be executable - otherwise the comparison is "my plan vs my inability", which is
-  the failure we have been measuring since 19/11 (forced plan 44.25%).
+**What replaces the arithmetic:** not a better price, and not a strategy I choose. The owner's question of 20/11 is the right one:
+"what about a microbe strategy, or a mixed 1-2-3, or 4-5? How does your plan reveal strategies instead of looking for the ones you
+imagine exist?" Any plan that NAMES a strategy ("the economic plan") is my imagination with a schedule. So the mechanism must be one
+that does not need the strategies named.
 
-The only setting in which a plan can be brought to competence without being punished for it is the sandbox of section 4: no adaptive
-opponent, same rules, same clock, same card pool, the game's own score as the objective. That is now the single mechanism in the plan,
-not a fallback.
+## 4. The mechanism: discovery by coverage (an archive of behaviours)
 
-## 4. The mechanism: a sandbox curriculum (conversion without denial)
+The only class of mechanisms that finds strategies without naming them is **diversity pressure with an archive**: quality-diversity /
+MAP-Elites, and at scale the AlphaStar league. The principle is one line: the objective of an iteration is not "beat the champion", it
+is **"fill a behaviour cell that is empty"** - and an empty cell can only be filled by playing *differently*, which is exactly what a
+single self-play loop never does.
 
-**Definition, precisely.** The same engine, the same rules, the same clock (rounds and terraforming end conditions), the same card
-pool, the same scoring - with a **non-adaptive opponent** (RANDOM is already supported: `SelfPlayMain --a AGENT --b RANDOM`). The
-objective is the score **margin**, not the win bit. No human, SMART or NETWORK game is used anywhere.
+- **Descriptions come from the game, not from me.** A game is placed in the archive by numbers the engine already produces: the share of
+  the final points that came from TR / from card VP / from production-driven conversions, the phase-mix vector, the resource profile at
+  round 8, the cards actually built. Coarse (2-3 dimensions), and derived from the game's own scoring structure - the same channels
+  `ml/specialist_report.py` already fingerprints.
+- **A cell is a behaviour mode, not a personality.** In this game the strategy is a map from the dealt cards to a plan, so one policy can
+  land in several cells across games, and the archive stores "which policy produced a game in this cell", not a single labelled style.
+- **The honest caveat, stated because it is the known weakness of the method:** the descriptors shape what can be discovered. The defence
+  is that they come from the game's scoring/phase structure rather than from my idea of a strategy, they stay coarse, and a strategy
+  counts as real only if it survives a second, differently chosen coarse descriptor set.
 
-**Why the fixed point does not exist there.** In the full game, deviating towards an economy is *punished* by an adaptive opponent:
-you lose the terraforming race while your income is still small. That punishment is real, and it is why the exploring games were bad
-and the critic was right to call them bad. In the sandbox there is no adaptive punishment: a deviation shows its own consequence,
-and the credit for *converting* resources into points is clean, because nobody denies the conversion. That makes the task a
-single-agent MDP with a stationary environment - the setting in which policy improvement is known to work, and the exact skill the
-owner's examples are about: **what a position is worth if it is converted**.
+### 4.1 The loop
 
-**What the sandbox preserves, and what it does not.** It preserves the clock (a slow player still runs out of rounds), the card pool
-(scarcity of cards, tiers, drafts), the rules of conversion (money -> cards and standard projects, steel/titanium -> builds, plants
--> greeneries, heat -> temperature, microbes/animals -> points) and the game's own scoring. It does not preserve adversarial denial:
-nobody takes the card or the tile you need on purpose. That is the known limitation, and it is exactly why the sandbox is a
-*curriculum*, not the final player.
+1. **Inventory (a measurement, not a build).** Take the existing 10 000-game corpus, place every game in the archive, and count the
+   occupied cells. This is the honest answer to "how many strategies did we actually find in a month" - probably one to three - and it is
+   the baseline every later iteration is measured against.
+2. **Coverage iteration.** Choose the least-covered cell by a fixed rule (round-robin over cells below a target count: no cell is
+   privileged), generate games with pressure aimed at that cell, keep the games that land in it, and train that cell's policy on them
+   (`one corpus = one policy`, which we measured: two policies in one corpus -> loss 1.11 -> 1.97, player 31%).
+3. **Competence where it is needed.** A cell whose plan cannot be executed by the plain policy (the microbe chain, the economy) is trained
+   in the sandbox - same rules, same clock, same card pool, non-adaptive opponent - because that is the only setting where the deviation
+   is not punished before it is learned (the forced-plan measurement: 44.25%, corpus 25-33%).
+4. **Selection.** A general player must pick a cell from a hand and a board. Two candidate answers, measured against each other, not
+   chosen by taste: (a) a learned selector over cells, trained on which cell won from which opening; (b) one policy conditioned on the
+   cell id, trained on all cell corpora - which is also the direct test of whether conditioning survives at our data scale, the question
+   left open by the "mixing destroys value" measurement.
+5. **Duel.** The selector against the champion, 1 000 games, then NETWORK, then the 10 000-game rule if it is within 1.5 points.
 
-## 4b. The label-maker inside the curriculum: the lambda-return (owner's suggestion, 20/11)
+## 5. Why coverage breaks the fixed point
 
-The owner's description - the terminal result propagated backwards, `1`, then `1 - delta`, then `1 - delta - delta` - is TD(lambda):
-the lambda-return, i.e. the eligibility-trace view of the same idea. Its standard form is **geometric**, not linear.
+The fixed point exists because the objective is "improve the current policy" and the only evaluator is that policy's value. Coverage
+changes the objective: a cell is empty precisely because the current behaviour never produces it, so the iteration is forced to produce a
+different plan - and then to learn *that* plan's value, which is the object the price measurement says is the real one (6.5 / 9.0 / 12.1
+MC for the same income in three worlds). Nothing in the loop requires me to guess which strategies exist; it requires only that the
+archive reports what is missing.
 
-**The owner's correction of 20/11, and it is a defect in the target rather than a parameter to tune: the number of decisions is a
-function of the STRATEGY.** A blue-action/Helion player has ~500 decisions a game; a green-card player ~100. A trace measured in
-decision rows therefore gives the same game a different decay depending on the plan, and the loss weights rows the same way - the
-decision-rich style dominates both the target and the gradient. Both must be measured on the **round grid**, which is the only clock
-that is the same for every strategy:
-
-```
-target(row in round r) = SUM_{k=1..K-1} (1-lambda) lambda^(k-1) * (S(r+k) - S(r))  +  lambda^(K-1) * (final margin)
-K = rounds from r to the end  (<= ~15), S = the exact score at a round boundary
-```
-
-With K <= 15, `lambda = 0.9` keeps ~23% of the terminal weight in round 1 (half-life ~6.6 rounds), which is the analogue of 0.99 on
-150 rows. Two consequences, both cheap: (a) the target no longer depends on how many decisions a plan happens to produce; (b) the
-critic's loss must be normalised per round (one sample per round per game, or weight 1/rows-in-that-round), otherwise the
-decision-rich style is over-represented by a factor we have never measured.
-
-**What TD(lambda) does and does not fix.** It is the dial between "biased but smooth" (Bootstrap) and "right but noisy" (the final
-score). Its two endpoints are already measured here (margin 73.17%, 3-step TD 72.50%), so as an estimator change it is a blend of two
-~73% answers. It cannot create competence: for a state our player never plays well, both ends of the dial say "bad". So it is the
-label-maker inside the curriculum, not the escape from the fixed point.
-
-## 5. The causal chain to the real game (why this can move 73.17%)
-
-1. **Sandbox iteration** produces a policy `π_s` that executes conversions well (it is the only thing it is rewarded for, and it is
-   not punished for investing).
-2. `π_s` is used as the **continuation** in the plan-level end-of-game judge, and as the **initialisation** of the real-game loop. The
-   plan-level judge no longer says "production loses" for the trivial reason that its continuation cannot convert; that was the
-   precondition named in PLAN_V3 §S1'.
-3. The real-game corpus now contains production plans **played competently**, labelled by the real game's own outcome. `V` finally
-   sees those states as wins, so the delayed value becomes visible to the search, and the plan preference can shift.
-4. Only then do the ordinary levers (search depth, data) become amplifiers of a *better* value instead of a more precise biased one.
-
-This is the only ordering in which each step's precondition is met by the previous step. It also answers the owner's objection to
-the round playout: the horizon is the whole game, and the variance of the judge is handled by averaging over states and by the
-unbiased label argument (PLAN_V3 §S1', RESULTS "Pairing does not survive the first divergence").
-
-## 6. Gates — each one cheap and able to kill the plan
+## 6. Gates
 
 | gate | measurement | rule |
 |---|---|---|
-| **G1. Does the game reward conversion at all?** | sandbox: own score per game, builds per game, production at round 5/10, and the share of points from card VP vs TR, over ~5 000 games vs RANDOM (one iteration) | if the score does not rise clearly above the current player's own score in the same setting, the sandbox teaches nothing and the plan dies here (and it dies cheap: ~1.5 h of generation) |
-| **G2. Did the bias move?** | the owner's probe: V on a production position (5 steel + 5 titanium income, money spent) against a blue-points position, before and after `π_s` | if the gap does not shrink, the sandbox competence does not transfer to V, and step 3 of the chain is false |
-| **G3. Does the real loop improve its plan?** | real-game iteration initialised from `π_s`: phase mix, builds, acceptance, and the plan-level judge's preference | the profile gate first (it catches "learned not to build"); then the mix must move towards the plans the judge endorses |
-| **G4. Does it beat the champion?** | 1 000 games vs SMART, then NETWORK, then the duel | not above 73.17% -> closed; above and < 1.5 points -> 10 000 games, the usual rule |
+| **G0. Inventory** (hours, Python only) | occupied cells in the 10k corpus; plus the row-weighting audit from the decision-count observation (rows per round, share of the loss on blue-action rows) | no gate - it is the baseline, and it also says whether our critic has been trained on a style-weighted sample |
+| **G1. A cell can be filled** (1-3 iterations, ~2-4 h each) | the target cell's occupancy, and the specialist's score *inside that cell* against the current player's score in the same cell, profile gate first | filled and better inside the cell -> the mechanism works; three iterations without filling -> the cell is recorded as unreachable at our skill, with the number |
+| **G2. Coverage pays** (1 000 games) | the selector (or the conditioned policy) against the champion | not above 73.17% -> coverage without selection is worthless; closed, and that is a real answer |
+| **G3. The duel** | 1 000 -> 10 000 against SMART, NETWORK | the usual rule |
 
-**Cost of G1** (the decisive one): ~5 000 sandbox games at ~1 game/s on 14 threads is ~1.5 h, plus one critic/policy pass on the
-packed corpus (~10 min each). It is the same pipeline we already run; no new infrastructure.
+## 7. How this can fail, and what each failure means
 
-## 7. What this plan does not promise, and how it would fail
-
-- **Denial may outweigh conversion.** A player that converts well but loses the terraforming race to SMART can still be below 73.17%.
-  Caught at G4, and it is informative: it would say the cap is adversarial play, not the delayed value, which is a different project.
-- **The sandbox optimum may be rushing, not building.** Then G1 shows points rising without production rising, and the plan is dead
-  with a number.
-- **The transfer may not happen.** Then G2 stays flat while G1 rose: the competence exists but does not reach V. That would point at
-  the observer/label interface, not at the theory.
-- **Night 7 already trained against RANDOM and stalled at ~68 points.** That is a real precedent against this plan, and the
-  difference must be stated: night 7 used a win/loss objective with a saturated reward (the "68-point ceiling" diagnosis in
-  `HANDOFF.md`), no critic, no margin and no search. The sandbox proposed here optimises the margin with the current value/policy
-  infrastructure. If G1 does not separate the two, the precedent wins and the plan is closed.
+- **Descriptor artefacts**: cells fill, but the "strategies" are just noise in the descriptors. Caught by the second descriptor set.
+- **Specialists are individually weaker**: expected; G2 is about the selector, not about the parts.
+- **Selection fails** (conditioning does not survive mixing at our data scale): then the answer is one champion per opening family, and
+  the project's shape changes from "one player" to "a book of players". Still a real product, and measurable.
+- **Compute**: each iteration is 1.5-4 h of generation at ~1 game/s; filling tens of cells is weeks, not days. This is the honest size of
+  the plan, and it is smaller than the AlphaZero route it replaces.
+- **Night 7's precedent** (training against RANDOM stalled at ~68 points) applies to the sandbox step only, and the difference is named:
+  win-bit objective with a saturated reward, no critic, no margin, no search. Inside a cell, the sandbox is a tool, not the frame.
 
 ## 8. What is deliberately not in this plan
 
-- No further knob-tuning of the current bundle (each has a measured negative or neutral result).
-- No new corpus volume beyond what a gate needs (10 000 already showed saturation).
-- No imitation, no distillation, no distillation-from-search without a stronger search.
-- No per-move end-of-game judging (the pairing breaks at the first divergence; see RESULTS "Pairing does not survive the first
-  divergence").
-- No step started before the previous gate's number exists.
+- No analytic valuation (section 3b) and no named strategy, including "the economic plan".
+- No corpus volume beyond what a cell needs; no deeper search; no target-shape variants.
+- No imitation of SMART, NETWORK or human games.
+- No rescaling of a mechanism that failed its gate.
 
 ## 9. Why this is a plan and not another experiment
 
-It has one claim — **conversion skill is learnable without an adversary, and that skill is what the value is missing** — and one
-cheap test of that claim (G1), whose possible outcomes each close or open the rest in a defined way. If G1 fails, we stop with a
-reason instead of trying the next idea; if G1 passes, the chain has a mechanism at every step, and the only remaining uncertainty is
-the ordinary one (whether the improved player beats the current champion).
+It requires no guess about which strategies exist: it requires an archive, a fixed coverage rule, and a cell-by-cell gate. Its first step
+is a measurement that is worth having even if the rest fails (how many behaviours do we actually have, and is our critic trained on a
+style-weighted sample). Its failure modes are all measurable, and each one changes the shape of the project in a defined way instead of
+inviting "one more knob".
