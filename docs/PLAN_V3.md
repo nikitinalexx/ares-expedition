@@ -38,13 +38,36 @@ this action give me soon") without external data and without imitating anyone.
 
 ## 3. The plan
 
-### S1. Record per-row score channels, then train an n-step target
+### S1. Record per-row score channels, then train a MIXED target (n-step with bootstrap + a terminal anchor)
+
+**The naive version is wrong and must not be implemented** (owner's question, 20/11: a build lowers the near-term score and
+raises the income, so "score in H rounds minus now" would teach V not to build). Two corrections:
+
+1. **The target is not a truncated return, it is a bootstrapped one:**
+   `target(t) = [reward(t..t+H)] + V(s(t+H))`, where `reward` is the score-difference change over the window and `V(s(t+H))` is the
+   network's own prediction H rounds later. The delayed payoff enters through the bootstrap: a build hurts `reward` and helps
+   `V(s(t+H))`, and the target is roughly neutral for a good build. The window H only reduces the variance of the sampled part; it
+   does not cut the horizon.
+2. **Tempo is not lost**: the bootstrap is read on a state of a LATER round, and the round number is in the observation, so V can
+   represent "the same card pays 18 times in round 5 and 3 times in round 20". It learns that recursively from the terminal.
+
+**The risk this creates, and the mandatory remedy:** bootstrapping an inaccurate V amplifies its own bias (the deadly triad). If V
+believes building is bad, the n-step target confirms it. So the objective is MIXED: a share of the rows (a `--anchor` fraction,
+e.g. 0.5) keeps the true terminal outcome as the label (the Monte-Carlo anchor we already train on today), the rest use the n-step
+bootstrap. That is TD(lambda) with lambda < 1 in practice, and it is the only version worth testing.
+
+**The failure mode is measured, not hoped away:** if the target learns "do not build", the profile gate catches it - builds per
+game and build acceptance collapse (today 32.5 and 0.77). So S1 is judged by the profile FIRST, then by the within-menu ranking,
+then by the win rate.
+
+### S1b. Record per-row score channels (the data this needs)
 
 - `DecisionLogs` writes my and the opponent's seven score channels for EVERY row (the game's own `ScoreBreakdown`, called at the
   state of that row). 14 floats per row; the pack carries them in `labels`.
-- `train_value --target scoretd:H` sets the label to
-  `[score_me(t+H) - score_me(t)] - [score_op(t+H) - score_op(t)]` from rows of the same game H rounds later (the pack already
-  stores `round` and `game`).
+- `train_value --target scoretd:H --anchor 0.5` sets the label to
+  `([score_me(t+H) - score_me(t)] - [score_op(t+H) - score_op(t)]) + gap(t+H)` for the bootstrap share, where `gap(t+H)` is the
+  critic's own current prediction at the later row (computed once per corpus pass with the frozen critic, not during training),
+  and to the true final gap for the anchor share. The pack already stores `round` and `game`, so the windows are joinable.
 - Why it should work: the target is a few points wide, its variance is far smaller than the final margin's, and it describes
   exactly the horizon the search can see (a round or two). If V cannot resolve 3 points over 4 rounds, nothing downstream can.
 
