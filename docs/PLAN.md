@@ -35,8 +35,34 @@ Three things to fix inside the loop, in order, each cheap:
 The specialist/gate/two-target machinery is **shelved** until the practice loop stops paying. None of it is needed for the +2, and the control
 says the plan was the wrong unit.
 
-## Invariants
+## The health panel: strength must not be bought with degeneration, but a strong degenerate is KEPT
 
+Owner's rule (20/11): keep the hand on the pulse, and do not let strength come from collapse - but if a degenerate player is stronger, keep it anyway,
+because it becomes a **gatekeeper** for testing generalists later.
+
+Instrument: `ml/health.py` (13 unit tests). Five families of numbers, computed from the corpus each iteration generates: profile (builds, acceptance,
+standard projects), phase diversity (per-game entropy), card diversity (colour entropy, distinct cards, HHI), **adaptation to the corporation**
+(how far each corporation's phase mix moves from the global mix - 0 means the deal is ignored), and the score composition spread.
+
+**It is a classifier, not a veto:**
+
+| outcome | classification | what happens |
+|---|---|---|
+| wins and no metric collapsed | **generalist improvement** | becomes the new best and the reference for the next panel |
+| wins but a metric collapsed beyond tolerance | **specialist / gatekeeper** | kept and labelled; it becomes a fixed strong opponent for testing generalists; it does NOT become the reference, and it does not close the search for a general player |
+| does not win, panel fine | an ordinary failed iteration | archived |
+| does not win, panel collapsed | a degenerate dead end | archived with the numbers |
+
+The thresholds are relative to the reference (builds ±20%, acceptance ±10%, standard projects ±30%, phase entropy ±20%, colour entropy ±15%, distinct
+cards ±20%, adaptation ±30%). They exist to detect *collapse*, not to define a good player: there is no healthy profile in this project, and a
+measured count never becomes a norm.
+
+**First panel (p1's corpus against the champion's):** acceptance 0.711 vs 0.814 (**collapse, -13%**), phase entropy 0.468 vs 0.531 (-12%, inside
+tolerance), colour entropy 0.864 vs 0.893, distinct cards 2.84 vs 3.25 (-13%, inside), standard projects 1.03 vs 0.91, and **adaptation to the
+corporation 0.041 in both** - the player barely changes its plan with the deal, which is the owner's "dynamic specialist" question and the next
+thing the panel makes measurable.
+
+## Invariants
 * No analytic valuation of a position (microbe chains cannot be priced; the same resource has different prices for different plans).
 * No imitation of SMART, NETWORK or human games; they are benchmarks only.
 * No ranking of an alternative by a player incompetent at it.
