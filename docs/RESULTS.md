@@ -2306,3 +2306,38 @@ the answer to).
 is determined by the cards, and the player does not cover it: it builds Herbivores 0.21 and Fish 0.05 per game (the microbial/animal economies are
 almost absent), so those cells are genuinely empty. A hand/tag-based commitment is therefore the honest axis, and it is also what the owner described
 from the start: "given my starting hand I decide which specialist to become".
+
+## The NETWORK gap is tempo and events, not conversion (scorecard, 2026-11-20)
+
+Instrument: `--mode scorecard --a AGENT(p1) --b NETWORK --games 1000`, which counts the cards each seat actually PLAYED
+(`player.getPlayed().getCards()`), so it is free of the per-type recording cap that distorts corpus counts. Colours come from the card packages
+(`cards/green|blue|red`, 348 classes matched to the 318 ids).
+
+| per game | p1 | NETWORK |
+|---|---|---|
+| cards played | 34.8 | **42.1** |
+| green | 13.2 (37.8%) | **19.3 (45.8%)** |
+| blue | **17.5 (50.2%)** | 14.2 (33.8%) |
+| **red (events)** | **4.2 (12.0%)** | **8.6 (20.4%)** |
+| points | 90.3 | **96.9** |
+| win rate | **40.7%** | - |
+
+Score channels (mean per game):
+
+| channel | p1 | NETWORK |
+|---|---|---|
+| terraforming rating | 29.3 | **34.9** |
+| forests | 9.9 | **11.2** |
+| printed card points | 12.5 | **17.5** |
+| **resource cards** (animals/microbes) | **25.9** | 15.8 |
+| milestones | 3.4 | **5.9** |
+| awards | 9.4 | **11.7** |
+
+**Reading.** p1 is the conversion player: it wins the resource-card channel by **10 points** (the Fish/animal economy the owner saw in his game).
+NETWORK is the tempo player: twice the events, more green, and it wins terraforming rating (+5.6), printed points (+5.0), milestones (+2.5) and
+awards (+2.3). So the gap to NETWORK is **not** conversion - p1 already beats it there - it is **tempo and one-shot effects**.
+
+**Consequence for the plan:** the next practice regime is now obvious and exogenous: a *red/event* preference (a tag nudge on the draft and build
+menus). It is a card type, not a strategy of mine, and it targets exactly the channel where the agent is four cards per game short. The same
+instrument measures the result, and the opponent is the benchmark.
+
