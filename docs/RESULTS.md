@@ -1964,3 +1964,37 @@ Consequence, and it is a reframing rather than a doubt about the data: the value
 resources, not on the state. Our `V` is conditioned on exactly one continuation - our own policy - so it can describe one plan and
 cannot compare plans, which is the fixed point. Any analytic proxy would be a fourth price, roughly 10x coarser than the chains it
 pretends to price, and it would fail in the same direction as the bias it was meant to remove.
+
+### The confound that produced a month of "closed" results (owner, 20/11)
+
+Re-reading the 44.25% forced-plan measurement exposed a defect that is not specific to it: **a treatment that changes behaviour without
+changing the training data is a statement about the current player, not about the thing being tried.** The player was trained on one
+plan; forcing another plan onto it measures its incompetence at the second plan, and the corpus then honestly labels those games as
+losses. Applied to the ledger, three rows are confounded in exactly this way:
+
+| row | what it actually measured |
+|---|---|
+| forcing a plan (`phaseBias`) -> 44.25%, corpus 25-33% | a phase-3 player forced to pick phase 1. Never a phase-1 specialist |
+| the mulligan learned from explored games -> 0 discards | random discards in games where discards were never a plan; the label "this game was lost" is honest and useless |
+| heavy action-level exploration -> corpus -> 21% | that random single decisions destroy coherence - true, but it was also read as "phase diversity does not pay", which it does not show |
+
+Rows that stay valid, and this matters for honesty: the search and target experiments (2-round horizon -8, 8 determinisations -6.3, build
+/input playout 0/-1.5, tree -1.5, margin vs 3-step TD) changed the estimator on the SAME trained player, so they are clean measurements of
+"more search on this value". The wide-net and data-volume results are clean too. The confound is limited to "force a behaviour onto a
+policy trained for another behaviour" - and that is precisely the class of experiment that would have discovered other plans.
+
+**Operational rules that follow.**
+
+1. **No conclusion about a plan from games where the policy was not trained for it.** A plan is judged only by a specialist that converged
+   on it. This is the rule the plan's specialist loop is built on.
+2. **The value may not arbitrate exploration.** `V` and any search on it will reject an untrained plan by construction - that is the fixed
+   point restated. Exploration at the plan level must be value-blind; the value's role is to play well the plan it was trained for.
+3. **The gate moves from the level to the derivative.** For a new plan the question is not "is it at 73.17%" but "is its curve still
+   climbing" (44% -> ? after each iteration). A specialist that flattens below the champion is a real negative result; one that is still
+   rising is not.
+4. **Cost is per plan, not per project.** Since the value is plan-conditional, each plan needs its own bootstrap (2-5 iterations at
+   ~1.5-4 h), i.e. roughly a day of compute per specialist. The portfolio question ("how many plans can we afford to own") becomes a real,
+   computable budget instead of a hope.
+5. **Saturation is per plan.** 500 -> 1 250 -> 5 000 games climbed 11.6% -> 30% -> 73% and then stopped: that is the saturation of ONE
+   plan's corpus. A new plan starts its own curve, and the fact that 10 000 games of the old plan added nothing says nothing about how
+   many games a new plan needs.
