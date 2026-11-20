@@ -1,8 +1,29 @@
 ﻿# HANDOFF -- new AI for Expedition Ares
 
 > **Current state lives in `docs/PLAN.md`; the experiment index and the status of every conclusion are in `docs/LEDGER.md`; the rules are in
-> `docs/METHOD.md`.** This file is the long history (sessions, repairs, file map, commands). Where this file and the ledger disagree, the ledger
-> wins, because every row there carries its measurement.
+> `docs/METHOD.md`; the outside review and its verification are in `docs/reviews/`.** This file is the long history (sessions, repairs, file map,
+> commands). Where this file and the ledger disagree, the ledger wins, because every row there carries its measurement.
+
+## 20/11 evening: the lever is practice, not plans (read this before anything else)
+
+The day ended with a measured, reproducible improvement and a corrected diagnosis:
+
+* **Champion 73.17%**, unchanged for weeks. Every in-place attempt (depth, targets, volume, capacity, trees) landed at 71-73%.
+* **The first gain came from practice**: fine-tuning the champion's policy on 5 000 fresh self-play games scores **75.16%** [73.94, 76.23] at 5 000
+  games. The same fine-tune on a *nudged* corpus scores 74.88% - **identical within noise** - so a "plan" contributed nothing; the extra practice did
+  (+2 points, z~2.7, reproduced twice).
+* **Why the old story was wrong**: the 30-point gap between a specialist's own critics and the champion's is critic quality (10k games, AUC 0.934,
+  vs AUC 0.896 on 456k rows) and off-policy labels, not "plan-conditionality". The value is plan-conditional *by definition*; it was never the
+  binding constraint.
+* **The NETWORK gap is tempo, not conversion** (scorecard, both seats): NETWORK plays 8.6 red cards per game against 4.2, wins TR / printed points /
+  milestones / awards; the agent wins the resource-card channel by 10 points (the animal/Fish economy).
+* **The practice loop is the plan now**: generate 5 000 games with the current best -> fine-tune -> measure at 5 000 vs SMART and 1 000 vs NETWORK ->
+  keep if better -> repeat. `ml/health.py` (13 tests) classifies each candidate as generalist or specialist/gatekeeper - a strong degenerate is KEPT,
+  never deleted, and becomes a fixed opponent.
+* **Two traps found**: `train_policy_ce` reads about half of a 20-chunk corpus by default (`--max-chunks-per-type 10`), and the pack's `breakdown`
+  field is the FINAL score replicated on every row (the live score is the observation's `score:my_winning_points`).
+* **Open**: iteration 2 of the loop (running, does the curve continue), 10 000-game confirmation, the clean fine-tune vs NETWORK, the forced-row flag
+  (P2, needed before any nudge), the size-matched control (P4), and the reviewer's `Q^champ` oracle (P1).
 
 For the next assistant. Also read AGENTS.md, docs/AI_PLAN.md, docs/NIGHTLY.md, docs/EXPERIMENTS.md.
 Talk to the owner in Russian. Code/identifiers in English. Branch: nn-pure-java-verify.
