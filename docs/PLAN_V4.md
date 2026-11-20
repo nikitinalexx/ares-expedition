@@ -342,3 +342,27 @@ What stays, and what changes:
   be contaminated by the player's competence in the way outcome cells are.
 * **Gate unchanged in form, corrected in content:** a plan is judged by its specialist's curve and by the specialist's win rate against
   SMART, never by the mean margin of the champion's games that resemble it.
+
+## 15. The axis must be an ENUMERATION, not my pick - and the seed must be allowed to anneal (owner, 20/11)
+
+The owner's objection: "the plan was to let it explore all the strategies; why are you pushing it into phase 1 by hand? What if a phase-1 player
+actually plays phase 5 a lot?" The distinction he is asking for is real, and it has two operational tests.
+
+**Test 1 - is the axis enumerated or picked?** Forcing "phase 1" is legitimate only as ONE ARM of an enumeration of the game's own
+commitments (5 phases, and later the corporation offer / the first card), where every arm gets the same treatment and the arms are compared by
+their specialists' curves. Then no commitment is preferred by me; the loop is "run all arms, read which ones climb". Picking one arm because
+I believe in it - which is what the current probe does - is a shove, and it may only be used to test the MECHANISM (does a
+commitment-trained specialist climb at all), never to rank strategies.
+
+**Test 2 - may the specialist leave the seed?** A shove means the specialist is clamped to the seed forever. A discovery means the seed is a
+BOOTSTRAP CONDITION that the specialist is allowed to outgrow: the nudge rate must anneal across iterations (1.0 -> 0.5 -> 0.25 -> 0) and the
+final measurement is made with the nudge OFF. If a "phase-1 specialist" ends up playing phase 5 a lot, that is the player voting, and it must
+be allowed - the seed's only job was to make the first corpus coherent.
+
+**The evidence that annealing is the right shape, already in hand:** p2's play-time profile is 24/23/18/4/31 - it was trained on a 65% build
+corpus and plays 47% build with the draft at 31%. It is already outgrowing the seed. Clamping it would have hidden that.
+
+**Consequence for the plan, stated plainly:** the current run answers "does the specialist loop climb under a forced commitment", and its
+54.4% must never be quoted as "phase 1 is a 54% strategy". The ship-ready form is: enumerate the commitments, anneal the seed, measure each arm
+with the nudge off, and let the arms' own curves decide which plans exist. The archive remains an inventory of what the specialists became,
+not a ranking of what I guessed.
