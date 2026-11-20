@@ -260,3 +260,38 @@ that closes a specific gap.
 **Which of these can kill the plan:** 1, 2, 3 and 4. If points are made late (1), if deals dominate (2), if strong games are behaviourally
 identical (3), or if the draft already supplies the diversity (4), then coverage is aimed at the wrong target - and all four are cheap
 measurements on data we already own. That is why they belong BEFORE the first coverage iteration, not after.
+
+### 11a. Correction: the skill-vs-deal test cannot be paired (owner, 20/11, second time)
+
+"One and the same world for two policies" does not exist: one shifted choice changes every later draw, so the two branches do not share a
+world after the first divergence. The test must therefore be built the other way round - **hold the POLICY, vary the WORLD**:
+
+- take real states (say 100, spread over rounds 3/6/9), and from each one play the game to the end K times with the SAME policy and
+  different determinisations of the hidden cards (no pairing is needed: we are measuring a spread, not a difference);
+- the spread of the final margins is the world's contribution at that state, given our play;
+- compare it with the spread of real margins of games sampled at the same round. If the two are comparable, the deal dominates and plan
+  choice cannot move 73% much; if the world's spread is much smaller, decisions and plans are where the variance lives.
+
+The earlier wording in this document used the paired framing and is wrong; the instrument is `judgeAudit`-like but its statistic is a
+variance, not a paired difference.
+
+## 12. Conclusions (owner, 20/11) - drawn from the answers to my own questions
+
+1. **73% is not the architectural ceiling; it is the ceiling of one distribution.** Direct evidence from our own history: the same net,
+   the same pipeline climbed **11.6% (500 games) -> 30% (1 250) -> 73% (5 000)** as the corpus became homogeneous and self-consistent. The
+   architecture did not change across those three points; the data did. Therefore the question "can the same architecture and the same
+   volume produce a phase-1 player instead of a phase-3 player" has an answer: **yes, by the same mechanism, applied to a corpus of
+   phase-1 play.**
+2. **The 44.25% "forced plan" result is confounded and must not be read as "phase 1 is bad".** It measured a player trained on one plan
+   forced to pick another, with a corpus that trains 25-33%. It says our player cannot execute the other plan - which is trivially true
+   and is exactly the missing competence. We have never trained a specialist ON the alternative plan.
+3. **The unit of work is a specialist per first-round commitment, not an archive.** The archive stays as a *measurement* of coverage (how
+   many behaviour regions we occupy), but the machinery that produces competence is the one we already have: self-play with the
+   commitment forced for BOTH seats (a legal game - both players may pick the same phase), which keeps the corpus homogeneous (the
+   measured requirement: two policies in one corpus -> loss 1.11 -> 1.97, player 31%), iterate like the bootstrap, and then compare
+   specialists.
+4. **Minimal forcing, maximal learning.** A specialist's identity is its first commitment (the round-1 phase pick and/or the first pick);
+   everything after that is learned, so the plan is not a hand-written script but a seed the policy grows from.
+5. **Order of work:** the three cheap premise measurements (points by round; behaviour regions of the 10k corpus; world-vs-skill variance
+   by varying the world), then one specialist end-to-end (2-5 iterations, ~2-4 h each), then the comparison between two specialists. No
+   archive infrastructure before a specialist has climbed.
