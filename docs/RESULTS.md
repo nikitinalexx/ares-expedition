@@ -2341,3 +2341,15 @@ awards (+2.3). So the gap to NETWORK is **not** conversion - p1 already beats it
 menus). It is a card type, not a strategy of mine, and it targets exactly the channel where the agent is four cards per game short. The same
 instrument measures the result, and the opponent is the benchmark.
 
+### Caveats on how much data the policy trainer actually reads (20/11)
+
+Two defaults in `ml/train_policy_ce.py` silently shrink the corpus, and they apply to every "5 000-game specialist" reported here:
+
+* `--rows-per-game 8` keeps at most 8 rows per decision type per game;
+* `--max-chunks-per-type 10` picks a random subset of 10 chunk files per type. A 5 000-game corpus is 20 chunks, so **the policy trains on about
+  half of it** (the subset is seeded, so two runs with the same seed use the same chunks).
+
+The comparison between p1 and the clean control is still fair (same defaults, same seed), but "trained on 5 000 games" is wrong as stated: it is
+"generated 5 000, trained on ~2 500". Raising `--max-chunks-per-type` to 20 and testing it is a separate, cheap experiment.
+
+
