@@ -75,6 +75,10 @@ thing the panel makes measurable.
 1. **Iteration 2 of the practice loop** (~2.5 h): generate 5 000 games with the clean fine-tune (75.16%), fine-tune the champion's policy on them,
    measure at 5 000 vs SMART and 1 000 vs NETWORK. This decides whether the +2 is the first step of a curve or a one-off. **This is the only
    experiment that matters right now.**
+1b. **The activatable-blue feature** (~1 h with tests, then a re-measurement): per side, the count of played blue cards that carry an action - the
+   feature the `ObservationBuilder` docstring claims to have and does not (`RESULTS.md`, 20/11). The current phase-3 blind spot was measured on
+   *all* blues (`blue_cards_count`), which is the wrong quantity; the fix is rule arithmetic on the card data, and it is the kind of thing practice
+   cannot discover (an aggregate that does not exist).
 2. **The whole corpus** (~30 min): the same run with `--max-chunks-per-type 20` (the trainer reads half of a 20-chunk corpus by default). Cheap, and
    it may make every later iteration stronger.
 3. **P2, the forced-row flag and mask** (engine change + test + 1 h): required before any nudge is used again; it also tests the reviewer's explanation

@@ -2409,3 +2409,26 @@ The information is present in the observation (`blue_cards_count`, `op_blue_card
 problem: it is either a value that does not weigh the shared gain, or a playout that does not carry the opponent's activations to the leaf. The
 diagnostic that separates them: on the "no upgrade, mine = 0, opponent >= 2" states, compare the end-of-game margin that the phase playout gives
 phase 3 against its alternatives.
+
+## The "activatable blue cards" feature does not exist, and the docstring says it does (owner, 20/11)
+
+The owner's objection, verified in code: `blue_cards_count` does not distinguish a passive blue card from one with an action, and the opponent's
+*activated* counter is meaningless against a human because the AI presses first.
+
+* **`blue_cards_count` is all blue cards played.** `PlayerIncomesFeature.encode` (line 51): `player.getPlayed().getCards()...filter(color == BLUE).count()`.
+  It is the NETWORK_V2 vector's original meaning, deliberately not redefined.
+* **There is no activatable count anywhere.** `names_now.json` contains no such column; the only "activation" features are
+  `ctx:my/opponent_extra_blue_activations` and `ctx:my/opponent_activated_blue_cards`, which are counts of actions already performed.
+* **The `ObservationBuilder` docstring (lines 139-144) claims the opposite** - "the number of activatable blue cards each side has" and even the
+  reasoning that motivated it ("an engine of three activatable cards makes the next activatable card worth more, because phase 3 then fires a whole
+  chain"). That feature was never implemented: only the identity bits were.
+* **What does exist:** 83 identity bits per side for the blue cards on the table (`ObservationBuilder` 562-570, public, kept by `buildPublic`). That is
+  the signal the owner asked for, and it is there - but nothing tells the model which of those 83 cards have an action, so it has to learn it from 83
+  correlated bits.
+* **`ctx:opponent_activated_blue_cards` is order-dependent.** It is the size of `player.getActivatedBlueCards()`, a deck of actions already taken.
+  Against a human the AI decides before the human presses, so the opponent's value is 0 by construction.
+
+**Consequence.** My earlier sentence "the information is in the observation, so this is a value problem, not a feature problem" was half wrong: the
+*aggregate* the search would need does not exist, and the phase-3 blind spot was measured with all-blues instead of activatable ones. The fix is a
+small, rule-derived feature: per side, the count of played blue cards that have an action (and their resource load). Then the phase-3 diagnostic is
+re-run on the real quantity.
