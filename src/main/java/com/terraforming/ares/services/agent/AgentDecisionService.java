@@ -698,6 +698,17 @@ public class AgentDecisionService {
      *                 teach the policy a choice the game never made.
      */
     private int choose(MarsGame game, Player player, Decision decision, int searched) {
+        // A tree line in progress (see services.agent.tree.TreeDriver): the SEARCH chooses at our nodes, not the policy. This is
+        // what makes the tree span several of our decisions instead of one menu. Recording is already off (the driver runs
+        // inside OnePlySearch's hypothetical section), so these choices cannot reach the corpus.
+        com.terraforming.ares.services.agent.tree.TreeDriver tree =
+                com.terraforming.ares.services.agent.tree.TreeDriver.current();
+        if (tree != null) {
+            int fromTree = tree.chooseIndex(decision, player);
+            if (fromTree >= 0) {
+                return fromTree;
+            }
+        }
         if (RECORD_AFTERSTATES) {
             recordAfterstate(game, player);
             lastDecision.put(key(game, player), decision);

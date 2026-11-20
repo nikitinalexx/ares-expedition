@@ -143,8 +143,16 @@ public class OnePlySearch {
     private final Set<DecisionType> horizonTypes;
     /** {@code -Dares.agent.search.tree=TYPE,...}: menus whose choice is made by the budgeted tree instead of one score each. */
     private final Set<DecisionType> treeTypes;
-    /** {@code -Dares.agent.search.tree.budget=N}: samples per decision for the tree (default 32). */
+    /** {@code -Dares.agent.search.tree.budget=N}: samples per decision for the flat tree (default 32). */
     private final int treeBudget;
+    /** {@code -Dares.agent.search.tree.turn=true}: the TREE OVER A LINE (docs/TREE_SEARCH.md) instead of the flat allocation. */
+    private final boolean treeTurn;
+    /** {@code -Dares.agent.search.tree.depth=N}: how many of OUR decisions the line spans (default 4). */
+    private final int treeTurnDepth;
+    /** {@code -Dares.agent.search.tree.breadth=N}: candidates kept per node, by the policy's prior (default 4). */
+    private final int treeTurnBreadth;
+    /** {@code -Dares.agent.search.tree.budget=N} is shared: iterations per decision for the line tree too. */
+    private final int treeTurnBudget;
     /**
      * {@code -Dares.agent.search.junkMargin=<milli-logit>}: how close to the stop baseline a removal must be to count as
      * "free". A value function needs a small band (10 = 0.01 of V); a playout is a sampled comparison and needs a wider one,
@@ -349,6 +357,10 @@ public class OnePlySearch {
             this.horizonTypes = EnumSet.noneOf(DecisionType.class);
             this.treeTypes = EnumSet.noneOf(DecisionType.class);
             this.treeBudget = 32;
+            this.treeTurn = false;
+            this.treeTurnDepth = 4;
+            this.treeTurnBreadth = 4;
+            this.treeTurnBudget = 32;
             this.junkMargin = JUNK_EPSILON;
             this.opponentWeight = 1f;
             this.phaseBias = java.util.Map.of();
@@ -373,6 +385,10 @@ public class OnePlySearch {
         this.horizonTypes = parseTypes(System.getProperty("ares.agent.search.horizonTypes", ""));
         this.treeTypes = parseTypes(System.getProperty("ares.agent.search.tree", ""));
         this.treeBudget = Math.max(1, Integer.parseInt(System.getProperty("ares.agent.search.tree.budget", "32")));
+        this.treeTurn = Boolean.parseBoolean(System.getProperty("ares.agent.search.tree.turn", "false"));
+        this.treeTurnDepth = Math.max(1, Integer.parseInt(System.getProperty("ares.agent.search.tree.depth", "4")));
+        this.treeTurnBreadth = Math.max(1, Integer.parseInt(System.getProperty("ares.agent.search.tree.breadth", "4")));
+        this.treeTurnBudget = Math.max(1, Integer.parseInt(System.getProperty("ares.agent.search.tree.iterations", "32")));
         this.junkMargin = configuredJunkMargin;
         this.opponentWeight = Float.parseFloat(System.getProperty("ares.agent.search.opponentWeight", "1"));
         this.phaseBias = parsePhaseBias(System.getProperty("ares.agent.search.phaseBias", ""));
@@ -602,6 +618,65 @@ public class OnePlySearch {
             }
         }
         return best;
+    }
+
+    /**
+     * A tree over a LINE of our decisions (see docs/TREE_SEARCH.md): every iteration copies the game, determinises the hidden part,
+     * and lets {@link com.terraforming.ares.services.agent.tree.TreeDriver} answer our decisions while the policy answers the
+     * opponent's and the dummy's. The leaf value is V, backed up along the line. The returned index is the root's best candidate.
+     * <p>
+     * This is the difference from every earlier attempt: the horizon and the flat rollouts played the POLICY forward, so they
+     * could only measure the same plan more precisely; here the SEARCH chooses at our nodes, which is what allows one line to be
+     * compared with another.
+     */
+    private int treeTurnChoice(Decision decision, MarsGame game, Player player) {
+        int budget = Math.max(1, treeTurnBudget);
+        int depth = Math.max(1, treeTurnDepth);
+        int breadth = Math.max(1, treeTurnBreadth);
+        float value = logit(decision.observation());
+        com.terraforming.ares.services.agent.tree.TreeDriver last = null;
+        long baseSeed = ThreadLocalRandom.current().nextLong();
+        for (int i = 0; i < budget; i++) {
+            MarsGame copy = new MarsGame(game);
+            Player me = copy.getPlayerByUuid(player.getUuid());
+            if (me == null) {
+                break;
+            }
+            makeSeatsPlayable(copy);
+            Determinizer.shuffle(copy, player.getUuid(), baseSeed + i);
+            com.terraforming.ares.services.agent.tree.TreeDriver driver =
+                    new com.terraforming.ares.services.agent.tree.TreeDriver(
+                            d -> neuralPolicy == null ? null : neuralPolicy.probabilities(d, strongAnswer.get()),
+                            player.getUuid(), depth, breadth, 0.5f, value);
+            last = driver;
+            beginHypothetical();
+            com.terraforming.ares.services.agent.tree.TreeDriver.set(driver);
+            try {
+                simulationProcessorService.processSimulation(copy, g -> {
+                    if (driver.decisionsMade() >= depth) {
+                        throw new StopPlayout();
+                    }
+                });
+            } catch (StopPlayout stop) {
+                // the depth cap: read V here
+            } catch (RuntimeException e) {
+                driver.rejectLast();
+                continue;
+            } finally {
+                com.terraforming.ares.services.agent.tree.TreeDriver.clear();
+                endHypothetical();
+            }
+            Player leaf = copy.getPlayerByUuid(player.getUuid());
+            if (leaf == null) {
+                continue;
+            }
+            driver.backup(valueAt(copy, leaf, observationBuilder.build(copy, leaf)));
+        }
+        if (last == null || last.root() == null) {
+            return -1;
+        }
+        int best = last.root().best();
+        return best < 0 ? -1 : last.root().candidateAt(best);
     }
 
     /** PUCT: exploit the running mean, explore by the policy's prior and the visit count. */
@@ -950,7 +1025,11 @@ public class OnePlySearch {
     }
 
     private int search(Decision decision, MarsGame game, Player player) {
-        if (treeTypes.contains(decision.type())) {
+        if (treeTypes.contains(decision.type()) && treeTurn) {
+            int fromTurn = treeTurnChoice(decision, game, player);
+            if (fromTurn >= 0) {
+                return fromTurn;
+            }
             int chosen = treeChoice(decision, game, player, treeBudget);
             if (chosen >= 0) {
                 return chosen;
