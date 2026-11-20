@@ -404,3 +404,32 @@ production on round 8)? If it does not, the policy is not learning the switching
 **So: yes, this is plausibly the final form** - specialists as the parts, a gate as the player, a value per part, trained on outcomes, with an
 unbiased component in the value so the gate can look at plans the policy does not yet play. The corporation axis is how we produce the parts
 without authoring strategies; the gate is how they combine into a dynamic player.
+
+## 17. Should every corporation have its own specialist? (owner's musing, 20/11)
+
+The argument for it is strong and comes from the game, not from taste: a corporation is dealt and chosen BEFORE any strategy is played, it is
+finite (25 played in the probe corpus), it biases the whole economy (Helion: heat as money; Ecoline: plants; Phobolog: titanium; Mining Guild:
+steel; UNMI: TR; Inventrix: cards), and the corpus is already close to balanced (median 414 games per corporation). In the owner's NETWORK_V2
+the same thing showed up as "my starting condition decides which specialist I become".
+
+Four honest caveats, each with a consequence:
+
+1. **The corporation is not the strategy, only its currency.** Helion can play microbes or steel. So a per-corporation specialist is a first
+   LEVEL of specialisation, and the phase plan remains its output - which is exactly why the seed must anneal.
+2. **The corporation is CHOSEN, not merely dealt.** At the offer the player picks one of two or three, so the final player needs a gate over the
+   offer as well: corporation specialists are the parts, and the choice among the offered parts is a (small) gate.
+3. **414 games per corporation is thin for training a policy plus a critic** (our champion used 5 000). Two ways, and the second is cheaper:
+   generate ~5 000 games per corporation (25 x 45 min = ~19 h per iteration), or train one base on all games and FINE-TUNE a copy per
+   corporation on that corporation's games - which is standard transfer and exploits the 414 games we already have.
+4. **The measured 7-point tax of one trunk carrying several styles does not condemn conditioning.** The latent-code experiment conflated the code
+   with the generator's NUDGES, so the tax may be the nudge's, not the conditioning's. That is worth one measurement, because if conditioning is
+   cheap, one model with the corporation as an input beats 25 models.
+
+**The decisive comparison, and it is cheap:** at the SAME total number of games, (a) N per-corporation specialists (fine-tuned from one base)
+against (b) one policy conditioned on the corporation. If (a) does not beat (b), the per-corporation axis is unnecessary and the smaller model
+wins on maintenance. If (a) wins, the answer to the owner's musing is yes - and the final player is a mixture indexed by the corporation with a
+gate at the offer.
+
+**What would falsify the whole idea cheaply:** if the final margin barely varies across corporations at the same total game length, the axis is
+not worth a specialist each. The variance-by-corporation number is computable from the existing corpus in minutes - with the caveat that the
+corporation choice is endogenous (our player picked it), so it is a screen, not a proof.
