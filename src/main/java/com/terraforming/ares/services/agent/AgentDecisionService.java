@@ -117,6 +117,16 @@ public class AgentDecisionService {
     private static final Map<DecisionType, Double> EXPLORE =
             parseExplore(System.getProperty("ares.agent.explore", ""));
     /**
+     * {@code -Dares.agent.generation.saveAbove=N}: a MEASUREMENT instrument for the data, not a rule of the player. While
+     * generating, a build is declined while the player holds more than N MC, so the corpus contains the state the player never
+     * produces on its own: a large stockpile and, later in the same game, its conversion into points.
+     * <p>
+     * Why (owner, 19/11, from a human game): the value prices money correctly (200 MC -> +2.9 logit) but the player's own states
+     * never exceed ~60 MC (p95 13), so the conversion line is outside its experience and it never contests the opponent's. The
+     * games stay competent - only the spending is deferred. Negative (default) disables the instrument.
+     */
+    private static final int SAVE_ABOVE = Integer.parseInt(System.getProperty("ares.agent.generation.saveAbove", "-1"));
+    /**
      * {@code -Dares.agent.explore.guided=BUILD_CARD:0.3,PICK_PHASE:0.3}: at the probability given by {@link #EXPLORE}, instead
      * of a UNIFORM random candidate, sample from {@code softmax(searchScore / temperature)} - the search's own opinion, blurred.
      * <p>
@@ -262,6 +272,19 @@ public class AgentDecisionService {
      * A uniformly random candidate for the configured decision types, or -1 to play as usual. Measured exploration only:
      * it runs while games are generated for the data, and it is not part of the player.
      */
+    /** Index of the STOP candidate of a build menu while the save instrument is on and the player is rich, else -1. */
+    private static int saveProbeIndex(Decision decision, Player player) {
+        if (SAVE_ABOVE < 0 || decision.type() != DecisionType.BUILD_CARD || player.getMc() <= SAVE_ABOVE) {
+            return -1;
+        }
+        for (int i = 0; i < decision.candidates().size(); i++) {
+            if (decision.candidates().get(i).id() == BuildCardDecisions.STOP) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     private static int explore(Decision decision) {
         Double probability = EXPLORE.get(decision.type());
         if (probability == null || java.util.concurrent.ThreadLocalRandom.current().nextDouble() >= probability) {
@@ -682,6 +705,11 @@ public class AgentDecisionService {
         // Measurement / search harnesses (services.agent.DecisionProbe) see the state before the action is applied.
         DecisionProbe.Hook probe = DecisionProbe.current();
         int index = probe == null ? -1 : probe.beforeChoice(decision, game, player);
+        if (index < 0) {
+            // Corpus instrument (see SAVE_ABOVE): decline the build and keep the money, so the generated games enter the
+            // stockpile states (and their conversion later) that the player never reaches by itself.
+            index = saveProbeIndex(decision, player);
+        }
         if (index < 0) {
             // Measured exploration of the data generator (off unless -Dares.agent.explore is set): a uniformly random
             // candidate for this decision type, so the recorded games contain lines the greedy player never plays.

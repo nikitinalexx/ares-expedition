@@ -1783,3 +1783,31 @@ That closes the last structural idea the measurements allowed. Everything at pla
 The explanation is now uniform and measured three ways (2-round horizon, 8 determinisations, plan probe, tree): **the preference is
 inside V, V's preference comes from the corpus, and the corpus comes from the player.** More search on the same V cannot leave
 that loop, and more of the same data does not move it either.
+
+## The stockpile cannot be created by spending behaviour (2026-11-20, save instrument closed)
+
+The owner's observation: the player never reaches 200 MC, so it never learns the conversion line. Instrument:
+`-Dares.agent.generation.saveAbove=25` - during generation a build is declined while the player holds more than 25 MC, so the
+games should enter stockpile states.
+
+It does not work, and the reason is structural: the money distribution does not move. p95 **0.15 (15 MC)** in both corpora, the
+maximum even lower than usual (0.54 against 0.71). Declining builds only redirects the money into other spends; the player's
+*income* (~10-20 MC a round) never produces a 200 MC stockpile. A human's 200 MC is the product of a production economy, not of
+thrift: production cards raise the income, the income accumulates, the stockpile converts.
+
+So the missing plan is "build the production economy", and the player does not build it (phase 4 = 4% of picks, the phase-4
+upgrade in 28%/14% of games). That is a plan, and plans live in the value - exactly the loop we could not break by data or search.
+
+## Where the night leaves the project (2026-11-20, 05:40)
+
+| bundle | vs SMART | vs NETWORK |
+|---|---|---|
+| champion (5 000-game critics, phase playout) | **73.17%** [72.3, 74.0] (10 000) | 39.8% [37.7, 42.0] (2 000) |
+| 10 000-game bundle (better critic: AUC 0.934, loss 1.07) | 72.72% [69.9, 75.4] (1 000) | 42.0% [37.8, 46.4] (500) |
+| the tree (PUCT + prior, budget 32) | 71.65% [68.8, 74.4] (1 000) | - |
+
+Four independent mechanisms now say the same thing - more search on the same value does not move the plan, and more of the same
+data does not move the value's preference: a 2-round horizon (-8), 8 determinisations (-6.3), the plan probe (no shift), the tree
+(-1.5). The remaining levers are not knobs: a plan-conditioned policy set (which needs a corpus of good alternative play that does
+not exist), a full AlphaZero with values trained on search returns (days, unproven), or throughput work so a 50-100k-game loop is
+affordable and the plan is given a chance to appear on its own.
