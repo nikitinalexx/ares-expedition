@@ -1998,3 +1998,51 @@ policy trained for another behaviour" - and that is precisely the class of exper
 5. **Saturation is per plan.** 500 -> 1 250 -> 5 000 games climbed 11.6% -> 30% -> 73% and then stopped: that is the saturation of ONE
    plan's corpus. A new plan starts its own curve, and the fact that 10 000 games of the old plan added nothing says nothing about how
    many games a new plan needs.
+
+## When the points are created (premise 1, 2026-11-20, 10 000-game pack)
+
+Instrument: `ml/points_by_round.py` + `ml/round_scores.py`, 19 unit tests (`ml/tests/test_round_scores.py`). The round grid is the
+PICK_PHASE row of each seat in each round (it happens exactly once per round), with the live score from the observation columns
+`score:my_winning_points` / `score:opponent_winning_points`.
+
+**A discovery on the way, and it matters for every future measurement:** the pack's `breakdown` field is the FINAL score of the game,
+replicated on every row - not the score at that row. A "points per round" chart built from it shows 100% of the points in round 0, which
+is an artefact. The live score is in the observation.
+
+| quantity | value (18 498 game-seats) |
+|---|---|
+| rounds per seat | mean 11.1, median 10, p10 8, p90 14 |
+| final score | mean 84.5, sd 24.6 |
+| points made during the rounds | mean 50.9 |
+| **points settled at the end** | **mean 33.6 = 39.6% of the final score** (median 37.5%, p90 57.1%) |
+
+Points created per round, counted from the end: last round (settlement) 33.6, -1: 10.9, -2: 9.1, -3: 7.0, -4: 5.3, -5: 3.8. Counted from
+the start, the average rises monotonically: 1.2, 1.2, 1.9, 2.9, 4.1, 5.8, 8.1, 10.3, 12.7, 14.7, 16.5 - the economy compounds, as a
+production-driven game should.
+
+**Reading.** Both readings the plan considered are now separated: the score is *settled* late (40% of it) but *created* by the position
+over ~11 rounds, with the per-round contribution roughly doubling every three rounds. So "the last round decides" is a statement about
+settlement, not about decisions, and a whole-game plan is the right object - the end-game-sequence variant is not needed. The owner's
+90 -> 180 jump is consistent with the 40% settlement share.
+
+## Does the behaviour space have separate regions? (premise 2, same pack)
+
+Instrument: `ml/behaviour_regions.py`. Descriptor: the share of the final score from terraforming (TR + forests) and from card points
+(printed + resource cards), 4 bins each, from the game's own channels.
+
+| cell (tr_bin, card_bin) | n | share | mean score | mean margin |
+|---|---|---|---|---|
+| 1, 1 | 9 054 | 48.9% | 92.1 | +16.1 |
+| 2, 1 | 3 996 | 21.6% | 84.4 | +1.7 |
+| 2, 0 | 3 824 | 20.7% | 66.1 | -17.8 |
+| 1, 2 | 1 010 | 5.5% | 100.1 | +16.5 |
+| 3, 0 | 310 | 1.7% | 51.7 | -36.8 |
+| 0, 2 | 177 | 1.0% | 84.8 | -5.5 |
+
+8 of 16 cells are occupied; the top quartile by score spreads over **5 of the 8** cells, with 64.7% in the single most populated one; the
+sd of mean margins across cells is 19.4 points. So the space is not one-dimensional and the cells are not equivalent - coverage has
+something to cover.
+
+**Caveat, stated because it limits the claim:** the descriptor is built from the score composition, which is itself an outcome (a losing
+player collects fewer card points). So part of the separation is endogenous; the honest reading is "strong games are composed in at least
+two different ways (terraforming-heavy and card-heavy)", not "we have found N strategies".
