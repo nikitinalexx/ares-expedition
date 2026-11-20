@@ -221,3 +221,42 @@ first promise.
 - G2 fails while G1 succeeds: coverage exists but selection (or strength of specialists) does not convert it into play.
 
 Each of these is cheap and each has a defined consequence, which is the whole reason this plan is worth running instead of another knob.
+
+## 11. Questions I would ask myself in the owner's place (20/11)
+
+Grouped by what they can do to the plan: **P** = could change the plan, **H** = hygiene (must be true, cheap to check), **D** = diagnostic
+that closes a specific gap.
+
+1. **P - When are the points actually created?** If most of the final score is produced in the last 2-3 rounds (the owner's 90 -> 180
+   jump), then long-horizon plan choice is secondary and end-game sequencing is primary, and the archive would optimise the wrong thing.
+   Test: per-round score deltas by channel over the 10k corpus. Python only.
+2. **P - How much of the margin is skill and how much is the deal?** Test: the same dealt world, two different policies (the paired
+   determinisation we already have); if the paired difference is small relative to the total spread, decisions barely matter and no plan
+   can move 73% much. Needs the engine, ~minutes.
+3. **P - Does the behaviour space even have separate regions at high score?** If all strong games look alike in the descriptors, coverage
+   chases ghosts. Test: descriptors of the 10k corpus against the final score. Python only.
+4. **P - Is the draft the real seed of the plan, making the archive unnecessary?** The first picks commit the deck you will play; sampling
+   first picks and then playing consistently might produce the diversity the archive is built to buy, at a fraction of the cost. Test:
+   sample first picks, measure behaviour spread and win rate. This is a genuine alternative to the central mechanism and must be settled
+   before building the archive.
+5. **D - What exactly does NETWORK do that we do not?** Losses by score channel (TR / card VP / awards / milestones), plus its phase mix
+   and build profile from the games we play against it. Benchmark analysis, not imitation: it tells us whether the gap is tempo or
+   conversion, and therefore whether a plan-space attack is even aimed at the right gap.
+6. **H - Are we capacity- or representation-limited at 10k?** Train a materially larger critic on the same pack: if validation loss improves
+   and play does not, capacity is not the limit; if it does not improve, we are data/representation-bound. The earlier "wider nets are worse"
+   was measured at 2 000 games, not at 10k.
+7. **H - Is the margin the right objective for a WIN-RATE goal?** A 1-point win and a 50-point win count the same; the target is clipped at
+   +/-6 logits. Compare margin vs clipped margin vs sign-with-margin-tiebreak on the same pack; the cost is a few trainings.
+8. **H - Is the +5.9 of the phase playout real?** It carries the champion's structure. Re-run the ablation on the current corpus at 2 000+
+   games; if it does not reproduce, our explanation of why we are at 73.17% is wrong even though the number is right.
+9. **H - Is the corpus weighted by decision count?** (the owner's point) rows per round per game, share of the loss on blue-action rows.
+   Python only; already in G0.
+10. **D - What would the owner name as the three most frequent obvious mistakes of the player?** He watches games; the instruments do not
+    see "wastes the last action of the round" or "buys a card it cannot pay to play". Measuring the frequency of those three is free
+    diagnostic data, and it is not imitation: it describes our player, not his.
+11. **H - Do we ever verify that a mechanism's gain survives a different seed set?** Attribution has been done on smaller runs than the
+    73.17% measurement; the CI of the champion is +/-0.85, of the ablations often +/-3.
+
+**Which of these can kill the plan:** 1, 2, 3 and 4. If points are made late (1), if deals dominate (2), if strong games are behaviourally
+identical (3), or if the draft already supplies the diversity (4), then coverage is aimed at the wrong target - and all four are cheap
+measurements on data we already own. That is why they belong BEFORE the first coverage iteration, not after.
