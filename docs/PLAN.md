@@ -64,12 +64,18 @@ specialist ends up playing the draft, that is its finding.
 
 1. **Annealing** (running): generation at nudge rate 0.5 from the best specialist (p2), 5 000 games (~1 h), then training and a 400-game
    measurement. It tests whether the oscillation (44.75 -> 54.4 -> 44.6) was the compulsion or the mechanism.
-2. **If annealing climbs**: continue to rate 0.25 and 0, and measure with the nudge off - that is the ship-ready shape.
-3. **If annealing also oscillates**: the single-specialist mechanism is recorded as not climbing at our data volume, and the next candidate is the
+2. **The menu oracle** (next, ~10 min of labels + ~5 min per target): extend the existing end-of-game audit to all decision types with a
+   plan-neutral continuation (random), then score each candidate target by its agreement with the oracle on held-out menus. This is what turns "the
+   right target" into a measurement (`## The target question` above).
+3. **If annealing climbs**: continue to rate 0.25 and 0, and measure with the nudge off - that is the ship-ready shape.
+4. **If annealing also oscillates**: the single-specialist mechanism is recorded as not climbing at our data volume, and the next candidate is the
    starting HAND axis (clustered by the cards' own tags), not more corporations (LEDGER 39) and not more volume.
-4. **Gate** over the plan points (the phase pick, and later the corporation offer), then G3 against the best single specialist and the champion.
-5. **Row weighting**: the per-round normalisation of the target/loss stays (LEDGER 38), and it must be applied when the annealed corpus is
+5. **Gate** over the plan points (the phase pick, and later the corporation offer), then G3 against the best single specialist and the champion.
+6. **Row weighting**: the per-round normalisation of the target/loss stays (LEDGER 38), and it must be applied when the annealed corpus is
    trained, because this is the last measurement that touches every corpus we make.
+
+**External review:** the plan, the ledger and the method are under adversarial review by an outside model - see `docs/reviews/README.md` and
+`docs/reviews/LETTER_1.md`; its critique and our reply are kept there. A reviewer's objection is handled like any other claim: with a measurement.
 
 ## What is deliberately not in this plan
 
