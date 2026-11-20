@@ -60,7 +60,35 @@ bootstrap. That is TD(lambda) with lambda < 1 in practice, and it is the only ve
 game and build acceptance collapse (today 32.5 and 0.77). So S1 is judged by the profile FIRST, then by the within-menu ranking,
 then by the win rate.
 
-### S1b. Record per-row score channels (the data this needs)
+### S1 is not new code: TD already exists, and the change is the ROLE and the CHECK (found by re-reading 16/11)
+
+`train_value --td-bootstrap <model> --td-steps N` already implements the bootstrapped target: the reward per step is the EXACT
+score change (the score is visible at every state, `pool["score"]`), the bootstrap is the value of the state N steps later, and the
+last rows of a game keep the exact final margin. On 16/11 it was measured in the DECIDER role: it priced +1 income at 7.7 MC
+(9.3 / 7.5 / 6.4 by round) against the policy critic's flat 6.5 and the random critic's 12.1, and it was **not adopted** because
+that same night showed a well-calibrated critic moved the RANKER's win rate by nothing (43.59% -> 42.98%): in a ranker the shared
+slope cancels.
+
+What changes now is the role, and this is the whole argument:
+
+* a ranker compares two afterstates of ONE position, so a shared bias cancels;
+* a TREE sums values along a LINE (the bootstrapped returns on the path), so a shared bias no longer cancels - it accumulates.
+
+That gives a sharp, falsifiable prediction, which is what makes the experiment worth an hour:
+
+| measurement | prediction if TD is the missing resolution |
+|---|---|
+| within-menu ranking of V vs the rollout-best | improves |
+| the LINE tree's win rate (same critics) | improves above 73.17% |
+| the FLAT search's win rate (same critics) | unchanged (72-73%) |
+
+If the tree improves AND the flat does not, the mechanism is confirmed and the search gets its resolution. If both stay flat, or
+both move together, the hypothesis is dead - and S1 closes without a second attempt at another corpus size.
+
+### S1b. (Cancelled) Recording per-row score channels
+
+Not needed: the states already carry the score and the pack already links rows to the next row of the same game (`pool["next"]`),
+which is what the existing `--td-steps` walks.
 
 - `DecisionLogs` writes my and the opponent's seven score channels for EVERY row (the game's own `ScoreBreakdown`, called at the
   state of that row). 14 floats per row; the pack carries them in `labels`.
