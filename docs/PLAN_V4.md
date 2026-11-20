@@ -366,3 +366,41 @@ corpus and plays 47% build with the draft at 31%. It is already outgrowing the s
 54.4% must never be quoted as "phase 1 is a 54% strategy". The ship-ready form is: enumerate the commitments, anneal the seed, measure each arm
 with the nudge off, and let the arms' own curves decide which plans exist. The archive remains an inventory of what the specialists became,
 not a ranking of what I guessed.
+
+## 16. Mixed and dynamic strategies: specialists are the parts, the GATE is the player (owner, 20/11)
+
+The owner's question: what if the ideal strategy lies at the intersection of phases 1-2-3, or is dynamic - "given my starting hand I decide whether to go
+1, 2, 3 or 5"? And his own observation from NETWORK_V2: playing a move to the end (a whole phase) and evaluating the post-state with V, trained
+initially on RANDOM data, produced exactly that behaviour - "I have several blue, I build blue; and since I already have many blue actions, I
+build more blue actions", or "I have few blue, I have played green with income, I build more green". Is that a dynamic decision about which
+specialist to become, and can we train it?
+
+**Yes, and the architecture has a name: it is a mixture of options with a gate.** Three components, and only one of them is new to us:
+
+1. **Specialists (options).** Each is a policy with its own value, trained on a corpus where its plan was actually played. This is what the
+   corporation axis gives us, and what the probe already started.
+2. **A gate (option selection).** At each plan point (the phase pick, a build decision), the player chooses WHICH option to continue with. This
+   is exactly the owner's "play the phase to the end and evaluate the post-state": our `phasePlayout` is the same mechanism and it is the only
+   thing that ever paid in our search (+5.9).
+3. **A value per option** (the specialists' critics), because one value cannot serve several plans - measured directly: the same policy scores
+   +10 points under its own critics and -10 under the champion's when the critics are swapped and nothing else changes.
+
+**Why his V could do it and ours could not.** His NETWORK_V2 trained its value, at least initially, on RANDOM games. Random play visits states
+our policy never reaches, so its errors are unbiased about those states; our value is trained only on our own games, so it is
+policy-conditional and rejects any plan it has not played (the fixed point). This is consistent with what we measured from the other side: a
+random-data critic in the RANKER role changed nothing (43.59% -> 42.98%), because there the shared slope cancels - but the GATE role compares
+two plans from one state, where the slope does not cancel. So "add random-data value to the ensemble" was tested in the wrong role.
+
+**Is the switching learned or gated?** Both are possible and they are different:
+* the specialist's own policy already conditions on the state (hand, production, blue-action count, corporation) and can learn "many blue -> keep
+  building blue" inside its own corpus - that is what the owner saw;
+* the gate can be explicit and learned on gate decisions ("from this state, which option's rollout ends better"), which is cheaper and does not
+  depend on one trunk carrying several styles (the latent-code experiment measured that tax at ~7 points).
+
+**The acceptance test, so this is not another promise:** with at least two specialists, a gate beats the best single specialist, and it beats the
+champion. And a direct diagnostic of the dynamic part: within one specialist's corpus, does the phase choice correlate with the state (blue count,
+production on round 8)? If it does not, the policy is not learning the switching and the gate must be explicit.
+
+**So: yes, this is plausibly the final form** - specialists as the parts, a gate as the player, a value per part, trained on outcomes, with an
+unbiased component in the value so the gate can look at plans the policy does not yet play. The corporation axis is how we produce the parts
+without authoring strategies; the gate is how they combine into a dynamic player.
