@@ -112,6 +112,42 @@ public class NeuralPolicy {
      * @param strongAnswer use the second model set ({@code ares.agent.models2}) when it has a model for this type
      * @return the index of the chosen candidate, or -1 when there is no model for this decision
      */
+    /**
+     * The policy's distribution over the candidates of this decision (softmax of its logits at unit temperature), or null when
+     * there is no model for the type.
+     * <p>
+     * It is the PRIOR the tree search and the pruning need: today the policy only answers "which index", and a search that wants
+     * to explore alternatives (or to skip the obviously hopeless ones) needs the whole distribution. Kept separate from
+     * {@link #choose} so the flat search path is untouched.
+     */
+    public float[] probabilities(Decision decision, boolean strongAnswer) {
+        MlpPhaseModel current = (strongAnswer && !strongModels.isEmpty() ? strongModels : models).get(decision.type());
+        if (current == null) {
+            return null;
+        }
+        float[] logits = current.logits(decision.observation(), decision.candidates());
+        float best = Float.NEGATIVE_INFINITY;
+        for (float logit : logits) {
+            if (logit > best) {
+                best = logit;
+            }
+        }
+        float[] probabilities = new float[logits.length];
+        double total = 0;
+        for (int i = 0; i < logits.length; i++) {
+            double weight = Math.exp(logits[i] - best);
+            probabilities[i] = (float) weight;
+            total += weight;
+        }
+        if (total <= 0) {
+            return null;
+        }
+        for (int i = 0; i < probabilities.length; i++) {
+            probabilities[i] /= (float) total;
+        }
+        return probabilities;
+    }
+
     public int choose(Decision decision, boolean strongAnswer) {
         MlpPhaseModel current = (strongAnswer && !strongModels.isEmpty() ? strongModels : models).get(decision.type());
         if (current == null) {

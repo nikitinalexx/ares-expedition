@@ -141,6 +141,10 @@ public class OnePlySearch {
      * Playing the phase out over several rounds costs a lot and must not be paid on every card menu.
      */
     private final Set<DecisionType> horizonTypes;
+    /** {@code -Dares.agent.search.tree=TYPE,...}: menus whose choice is made by the budgeted tree instead of one score each. */
+    private final Set<DecisionType> treeTypes;
+    /** {@code -Dares.agent.search.tree.budget=N}: samples per decision for the tree (default 32). */
+    private final int treeBudget;
     /**
      * {@code -Dares.agent.search.junkMargin=<milli-logit>}: how close to the stop baseline a removal must be to count as
      * "free". A value function needs a small band (10 = 0.01 of V); a playout is a sampled comparison and needs a wider one,
@@ -343,6 +347,8 @@ public class OnePlySearch {
             this.junkGateTypes = EnumSet.noneOf(DecisionType.class);
             this.playoutTypes = EnumSet.noneOf(DecisionType.class);
             this.horizonTypes = EnumSet.noneOf(DecisionType.class);
+            this.treeTypes = EnumSet.noneOf(DecisionType.class);
+            this.treeBudget = 32;
             this.junkMargin = JUNK_EPSILON;
             this.opponentWeight = 1f;
             this.phaseBias = java.util.Map.of();
@@ -365,6 +371,8 @@ public class OnePlySearch {
         this.junkGateTypes = parseTypes(System.getProperty("ares.agent.search.junkGate", ""));
         this.playoutTypes = parseTypes(System.getProperty("ares.agent.search.playout", ""));
         this.horizonTypes = parseTypes(System.getProperty("ares.agent.search.horizonTypes", ""));
+        this.treeTypes = parseTypes(System.getProperty("ares.agent.search.tree", ""));
+        this.treeBudget = Math.max(1, Integer.parseInt(System.getProperty("ares.agent.search.tree.budget", "32")));
         this.junkMargin = configuredJunkMargin;
         this.opponentWeight = Float.parseFloat(System.getProperty("ares.agent.search.opponentWeight", "1"));
         this.phaseBias = parsePhaseBias(System.getProperty("ares.agent.search.phaseBias", ""));
@@ -385,6 +393,7 @@ public class OnePlySearch {
         }
         log.info("one-ply search: value model {}, types {}, observation hash {}",
                 spec, types, models.get(0).observationHash());
+        System.out.println("[SEARCH] tree " + treeTypes + " budget " + treeBudget);
         System.out.println("[SEARCH] playout " + playoutTypes + ", horizon types " + horizonTypes
                 + " x" + horizonTurns + ", junk margin " + junkMargin);
         System.out.println("[SEARCH] junk gate " + junkGateTypes + ", policy choice " + policyChoiceTypes
@@ -530,6 +539,89 @@ public class OnePlySearch {
      */
     public Integer planProbePhaseFor(String playerUuid) {
         return planProbeSeat.get() != null && planProbeSeat.get().equals(playerUuid) ? planProbePhase.get() : null;
+    }
+
+    /**
+     * {@code -Dares.agent.search.tree=TYPE,...} with {@code -Dares.agent.search.tree.budget=N}: instead of scoring every
+     * candidate once, spend N samples on the menu, allocated by PUCT on the POLICY's prior, and take the candidate with the
+     * highest mean value.
+     * <p>
+     * Why this is the next step and not another depth knob (measured, 19/11): every FLAT deepening failed - a played-out round on
+     * the phase +5.9 was the only win, two rounds -8, eight determinisations -6.3, a build playout 0, an input playout -1.5. A flat
+     * deepening replays the same plan more precisely; an allocation with a prior spends the budget where the policy thinks something
+     * is happening, and averages over determinisations, which is the MCTS-like behaviour the owner asked for.
+     * <p>
+     * Deliberately first-cut: one level (the menu), the leaf is the existing {@link #score} (afterstate or playout, per the other
+     * flags), each sample with its own determinisation seed so the mean is over worlds. Deeper trees need the throughput work
+     * described in docs/TREE_SEARCH.md.
+     */
+    private int treeChoice(Decision decision, MarsGame game, Player player, int budget) {
+        List<Candidate> options = decision.candidates();
+        int count = options.size();
+        if (count == 0) {
+            return -1;
+        }
+        int stopId = decision.type() == DecisionType.STANDARD_ACTION
+                ? StandardActionDecisions.STOP : BuildCardDecisions.STOP;
+        float[] prior = neuralPolicy == null ? null : neuralPolicy.probabilities(decision, strongAnswer.get());
+        if (prior == null || prior.length != count) {
+            prior = new float[count];
+            for (int i = 0; i < count; i++) {
+                prior[i] = 1f / count;
+            }
+        }
+        float stopValue = logit(decision.observation());
+        float[] sum = new float[count];
+        int[] visits = new int[count];
+        long baseSeed = ThreadLocalRandom.current().nextLong();
+        int best = -1;
+        float bestMean = Float.NEGATIVE_INFINITY;
+        for (int step = 0; step < Math.max(1, budget); step++) {
+            int pick = selectByPuct(sum, visits, prior, step, stopValue);
+            if (pick < 0) {
+                break;
+            }
+            int id = options.get(pick).id();
+            float value;
+            if (id == stopId) {
+                value = stopValue;
+            } else {
+                Integer milli = score(game, player, id, decision.type(), baseSeed + step);
+                if (milli == null) {
+                    sum[pick] = Float.NaN;   // a candidate the engine rejects on a copy is out of the menu for good
+                    continue;
+                }
+                value = milli / 1000f;
+            }
+            sum[pick] += value;
+            visits[pick]++;
+            float mean = sum[pick] / visits[pick];
+            if (mean > bestMean) {
+                bestMean = mean;
+                best = pick;
+            }
+        }
+        return best;
+    }
+
+    /** PUCT: exploit the running mean, explore by the policy's prior and the visit count. */
+    static int selectByPuct(float[] sum, int[] visits, float[] prior, int step, float stopValue) {
+        int best = -1;
+        double bestScore = Double.NEGATIVE_INFINITY;
+        double exploration = 0.5;   // c: how much an unvisited candidate is worth relative to a known one
+        for (int i = 0; i < visits.length; i++) {
+            if (Float.isNaN(sum[i])) {
+                continue;   // a candidate whose afterstate the engine rejects
+            }
+            double mean = visits[i] == 0 ? stopValue : sum[i] / visits[i];
+            double bonus = exploration * prior[i] * Math.sqrt(step + 1) / (1 + visits[i]);
+            double score = mean + bonus;
+            if (score > bestScore) {
+                bestScore = score;
+                best = i;
+            }
+        }
+        return best;
     }
 
     public boolean isBusy() {
@@ -858,6 +950,12 @@ public class OnePlySearch {
     }
 
     private int search(Decision decision, MarsGame game, Player player) {
+        if (treeTypes.contains(decision.type())) {
+            int chosen = treeChoice(decision, game, player, treeBudget);
+            if (chosen >= 0) {
+                return chosen;
+            }
+        }
         List<Candidate> options = decision.candidates();
         // STANDARD_ACTION codes its stop as kind 0, the card decisions use the shared STOP id.
         int stopId = decision.type() == DecisionType.STANDARD_ACTION

@@ -315,6 +315,10 @@ def play(out, games, policy, critic, threads, explore, matchups, types, rows_per
                     summary = json.loads(line[line.index("{"):])
     except (OSError, ValueError):
         pass
+    # The summary belongs to the LAST chunk run (250 games), not to the corpus: report the corpus. Without this the caller's
+    # "played < games * 0.5" check threw away a complete 10 000-game night at 00:49 ("played 250 games in 165.1 min").
+    if played_total > 0:
+        summary["gamesPlayed"] = max(int(summary.get("gamesPlayed") or 0), played_total)
     return result.returncode, seconds, summary
 
 

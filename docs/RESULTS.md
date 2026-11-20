@@ -1748,3 +1748,38 @@ Everything measured today therefore points at one thing: the preference comes fr
 strength, one corpus = one policy), and the corpus size is the dominant quality factor (500 games -> 11%, 1250 -> 30%, 5000 -> 73%).
 The next high-information experiment is not a new search but **much more of the same data**: one night of 20 000 games with the
 current pipeline, then the same measurements.
+
+## Night of 19/20: 10 000 games, a better critic, and the same player (2026-11-20)
+
+The 10 000-game corpus (the day's bundle generating itself with the phase rollout, 40 chunks, 46.7 GB):
+
+| quantity | before (5 000 games) | after (10 000 games) |
+|---|---|---|
+| critic AUC | 0.906 | **0.934** |
+| critic val loss | 1.11 | **1.07** |
+| vs SMART | 73.17% [72.3, 74.0] (10 000) | **72.72% [69.9, 75.4]** (1 000) |
+| vs NETWORK | 39.8% [37.7, 42.0] (2 000) | 42.0% [37.8, 46.4] (500) |
+| phase mix | 10/30/36/6/17 | 10/31/40/4/16 |
+| builds, standard projects in phase 3 | 32.6, 16.7% | 32.4, 15.7% |
+
+So the critic got measurably better and the player did not move. The corpus-size effect saturates between 1 250 games (30%) and
+5 000 games (73%); doubling again adds nothing to the play. The phase mix does not shift either - 10x more of the same data from
+the same policy is 10x more of the same plan.
+
+## The tree does not beat the flat search either (2026-11-20)
+
+`-Dares.agent.search.tree=PICK_PHASE -Dares.agent.search.tree.budget=32` - the PUCT allocation with the policy's prior
+(`NeuralPolicy.probabilities`), 32 samples per phase decision, each with its own determinisation: **71.65% [68.8, 74.4]** against
+73.17%. Unit-tested selection rule (`TreeSelectionTest`, 4 tests), but at play time it is the same plateau.
+
+That closes the last structural idea the measurements allowed. Everything at play time lands between 71 and 73:
+
+| change | vs SMART |
+|---|---|
+| champion (one ply, phase by a played-out round) | **73.17%** |
+| tree on the phase (budget 32) | 71.65% |
+| tree/horizon variants, samples=8, build playout, input playout | 65-73.15% |
+
+The explanation is now uniform and measured three ways (2-round horizon, 8 determinisations, plan probe, tree): **the preference is
+inside V, V's preference comes from the corpus, and the corpus comes from the player.** More search on the same V cannot leave
+that loop, and more of the same data does not move it either.
