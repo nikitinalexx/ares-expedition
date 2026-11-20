@@ -75,3 +75,37 @@ specialist ends up playing the draft, that is its finding.
 
 More sampling depth, more determinisations, the flat/line tree as a play-time default, other value targets, wider nets at this data volume,
 analytic valuations, imitation, and any ranking produced by the player whose competence is the question.
+
+## The target question: two targets, not one (20/11)
+
+Everything measured today says a single value cannot serve both jobs it is given:
+
+* as a **tactical critic** it must know the plan it is finishing (measured: the same policy is +10 points under its own critics and -10 under
+  another plan's);
+* as a **judge between plans** it must be neutral about which plan is being executed, or it will always prefer its own.
+
+Our single `V` (final margin, trained on our own games) is plan-conditional, so it does the first job only. The fix is not a third target for the
+same network; it is **two targets for two roles**:
+
+1. **The specialist's value: Q(s, plan).** Target = the final margin of games where that plan was committed. This is what the specialist loop
+   already trains, and it is the right target *for executing the plan*.
+2. **The gate's value: V0(s).** Target = the mean final margin when, from `s`, **both seats play a fixed, plan-neutral policy** (uniform random) to
+   the end. Unbiased by construction: the reference policy is not the learning policy, so the label carries no plan. It ignores competence on
+   purpose - the gate compares what the position holds, and the specialists supply the skill.
+
+**Why this is the plan's answer to "find the right target", and not another guess.** It is the only formulation in which the two measured failures
+disappear at once: the label no longer depends on our plan (so it is valid across plans), and it is unbiased (the continuation is fixed). It is also
+exactly what the owner's NETWORK_V2 did: a value trained on random play, then a phase played out to the end and evaluated with it - which produced
+dynamic switching between styles.
+
+**The instrument that decides it (`menu oracle`).** For a sample of real states, for every candidate of the menu, play the game to the end with the
+random continuation in K determinised worlds and record the mean margin. This is plan-neutral ground truth for ranking candidates. Then the question
+"which target is right" becomes measurable: train `V` on each candidate target from the SAME corpus, and score each by its agreement with the
+oracle on held-out menus (top-1 and rank correlation). The current target (final margin) is the baseline; the neutral target and the round-grid
+lambda-return are the challengers.
+
+**Cost.** The oracle labels one state per round per seat: 2 000 games x 11 rounds x K = 22 000K full games; with K = 2 and 14 threads that is
+~10 minutes. Training one critic per target is ~5 minutes; the agreement script is seconds.
+
+**Falsifiable prediction:** a gate built on V0 beats a gate built on any specialist's value or on the champion's value at equal data. If it does
+not, the "two targets" decomposition is wrong and the gate has to be learned directly on outcomes (a contextual bandit over plans).
