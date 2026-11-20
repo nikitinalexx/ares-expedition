@@ -2290,3 +2290,19 @@ indistinguishable from the best point at rate 1.0, which is the expected shape i
 
 Still **20 points below the champion**: this is a second plan at ~53%, not a replacement for the 73.17%. Its use is the gate and the league, so the
 next step is not more annealing of the same plan but the **enumeration of other commitments**, without which there is no gate to test.
+
+### Correction (owner, 20/11): the phase axis cannot create a distinct plan - the champion already mixes phases
+
+The champion's own phase mix is **10/30/36/6/17**: phase 3 (blue actions) is already its largest share and phase 2 (blue/red builds) the second. So
+"arm phase 3" does not test a different commitment - it forces a MORE BIASED version of the player we already have, and its corpus will be a variant
+of the champion's own play. The same holds for every phase: the champion occupies all five, with a bias, and its search re-decides the phase every
+round.
+
+The general form: **a commitment axis that the current player already covers cannot produce a new plan.** The five phase arms are therefore not five
+strategies; they are five settings of one bias, and the phase-3 run was stopped before generating (it would have answered a question we already know
+the answer to).
+
+**What the axis must be instead:** the plan's CONTENT - which economy gets built (microbes, animals, energy, steel/titanium, plants, card draw). That
+is determined by the cards, and the player does not cover it: it builds Herbivores 0.21 and Fish 0.05 per game (the microbial/animal economies are
+almost absent), so those cells are genuinely empty. A hand/tag-based commitment is therefore the honest axis, and it is also what the owner described
+from the start: "given my starting hand I decide which specialist to become".

@@ -24,13 +24,16 @@ together - never as a policy dropped into another plan's search.
 
 ## The axis (exogenous, enumerated, not chosen by belief)
 
-1. **Commitment** - the only axis with a measured climb. Which phase you prefer when legal; forced in generation, and the specialist's curve is
-   the gate. Its numbers must never be quoted as a strategy's strength, and the seed must anneal.
-2. **Corporation - a screen said no.** Dealt and chosen before any strategy, 25 played with a median of 414 games each, so it looked like the
-   natural axis - but it explains only **2.4%** of the margin's variance at the current skill (LEDGER 39). Endogenous (we chose it), so it is a
-   screen rather than a refutation; still, 25 specialists (~19 h per iteration) are not justified.
-3. **Starting hand** - the next candidate. It is what actually determines which strategies are possible; it cannot be enumerated, so it has to be
-   clustered by the cards' own tags, not by my choice of strategy.
+1. **Commitment** - the only axis with a measured climb, and its limit is now known: the champion already mixes the five phases (10/30/36/6/17), so
+   forcing a phase biases the existing plan instead of creating a new one (LEDGER 40). The phase arm is therefore a *mechanism test* only, and it has
+   served that purpose (the oscillation at rate 1.0, the hold at 0.5).
+2. **The plan's CONTENT - the next axis.** Which economy is built (microbes, animals, energy, steel/titanium, plants, card draw) is determined by the
+   cards, and the player does not cover it (Herbivores 0.21, Fish 0.05 per game). Two implementable routes, to be chosen by cost:
+   * **filter by the deal** (no forcing): group game-seats by the opening hand's tags and train a specialist per group - needs a tag dump and a
+     clustering rule, no engine change;
+   * **a tag-preference nudge** (forcing, like the existing generator nudges): prefer cards of tag X at the draft/build menus - needs one engine change
+     and a test, and it is the same kind of instrument as the phase nudge.
+3. **Corporation - screened out at 2.4%** (LEDGER 39): endogenous, and it barely explains the outcome at the current skill.
 4. **Outcome cells** (score composition) - an **inventory** of what our player does. Never a ranking (rows 20, 31).
 
 ## The player
