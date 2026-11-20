@@ -143,12 +143,19 @@ that contains the delayed value is the end of the game - which is exactly what t
 
 - **Judge**: play each candidate to `GAME_END` and read the final score difference. No V, so no policy-conditional bias.
 - **Variance**: the owner's objection is real for independent rollouts (sd of the level ~25-30 points, a human jumps 90 -> 180
-  in the last round). The answer is **pairing**: every candidate is played in the SAME determinised world (the same seeds), so
-  everything not caused by the choice - including the last-round leap - cancels. The quantity becomes the paired difference.
-  This is already how the phase pick is ranked (one `seed` for all candidates, `OnePlySearch` line ~1112); the PUCT path is the
-  one that breaks pairing (`baseSeed + step` per step) and that is a defect to remove, not a design.
-- **Where it is allowed to judge**: plan-level decisions only (PICK_PHASE, the plan-defining builds). Judging every decision is
-  both unaffordable and pointless: the effect of a discard is not a 3-point plan question.
+  in the last round), and the owner's second objection (20/11) is also real: **pairing does not survive the first divergence** -
+  `Determinizer` fixes the world at the root, but the tier decks, the dummy hand and the draft rows are shuffled with an unseeded
+  `ThreadLocalRandom` (`ShuffleService` 18, `CardService` 134-160, `MarsGame` 338), and a draw is a pop, so a shifted count changes
+  every later card. So the judge is NOT a per-move decider:
+  * as a **ruler** it averages the paired difference over ~100 states, and the per-state noise averages out (sd ~20 / sqrt(100) ~ 2
+    points, enough for a 3-5 point effect) without needing pairing;
+  * as a **label source** it produces unbiased but noisy targets, which is exactly what a critic's regression tolerates (noise
+    averages out over thousands of rows; bias does not);
+  * real pairing, if it is ever needed, requires LOGICAL seeding (seed each random event by round + event kind + slot, not by its
+    position in a stream), which is a refactor and is not paid for before the ruler shows a gain.
+  This is why the phase pick's existing shared-seed comparison is a *convenience*, not a guarantee.
+- **Where it is allowed to judge**: plan-level decisions only (PICK_PHASE, the plan-defining builds), and per the divergence above,
+  **never as the decider of a single move** until logical seeding exists. Judging every decision is unaffordable anyway.
 - **Competent exploration is a precondition, not a detail**: if the continuation is the policy, the judge says "production loses"
   and is right, because the continuation does not convert (measured: a forced plan 44.25%, its corpus trains 25-33%). So inside a
   chosen plan the decisions must be searched too, or the exploring games teach the wrong lesson.
@@ -160,17 +167,18 @@ that contains the delayed value is the end of the game - which is exactly what t
 
 | step | measurement | stop rule |
 |---|---|---|
-| A | `-Dares.agent.search.judgeAudit=true`: per candidate, per paired world, the final margin on real phase states - sd(level) against sd(paired difference), and the paired se at K = 1, 2, 4, 8, 16 | if the paired se at an affordable K stays above the 3-5 point effect, the path is closed by a measured variance floor - not rescaled |
-| B | the judge decides PICK_PHASE only, 1 000 games vs SMART, everything else identical | not above 73.17% -> closed |
-| C | if B pays: judged games become the corpus, V retrained on their outcomes | the 5-steel/5-titanium probe must flip, and the profile gate (32.5 builds, 0.77 acceptance) must hold |
+| A | `-Dares.agent.search.judgeAudit=true`: per candidate, per world, the final margin on ~100 real phase states - the MEAN paired difference (se ~ sd/sqrt(100)), and sd(level) vs sd(paired) reported so the pairing's real strength is on the record | if the averaged judge-vs-V difference is inside noise, V is not the problem and S1' ends here |
+| B | only if A shows V's preference disagreeing with the game: judged games become the corpus (unbiased, noisy labels), V retrained on their outcomes | the 5-steel/5-titanium probe must flip, and the profile gate (32.5 builds, 0.77 acceptance) must hold |
+| C | real pairing, only if a per-decision judge is ever wanted | logical seeding of every random event; measured sd(paired) must drop well below sd(level) or it is not paid for |
 
 A is a pure diagnostic: the flag prints the matrix and changes no decision (`auditEndJudge` in `OnePlySearch`).
 
 ### S1'c. Where the judge is used, exactly, and what it buys (owner's question, 20/11)
 
 **What it adds is not "the result"** - we already have the result of every game we play. It adds the **counterfactual**: the result of
-the plan we did NOT choose, in the same world. That is the one quantity a policy-conditional V cannot produce, and it is produced
-for four candidates at once, i.e. several plan comparisons per game instead of one outcome.
+the plan we did NOT choose. That is the one quantity a policy-conditional V cannot produce, and it is produced for four candidates
+at once, i.e. several plan comparisons per game instead of one outcome. The worlds are only *partially* common (the divergence
+above), which is why the product is an average over states, never a verdict on one move.
 
 **It is never a per-decision judge.** Cost, measured ingredients: inside a rollout the search is bypassed (`choose()` returns -1 while
 `busy`), so a full game costs ~60-100 ms; a judged decision is `candidates x K` full games; PICK_PHASE has ~4 candidates and occurs
@@ -179,7 +187,7 @@ once per round per seat (~12-15 times a game).
 | use | cost | where |
 |---|---|---|
 | 100 phase states, 4 candidates, K = 8 | ~3 200 games ~ 5 minutes | offline, once (instrument A) |
-| judge at one plan decision per game | 4 x 8 x ~80 ms = ~2.5 s per decision | play time, 1-3 decisions a game |
+| judge at one plan decision per game | 4 x 8 x ~80 ms = ~2.5 s per decision | NOT justified until logical seeding: per-move noise ~ the effect |
 | judge at all 12-15 phase picks | ~30-40 s per game | rejected: 30-40x the game's own cost for decisions whose effect is not a plan |
 
 **The decision this plan makes:** the judge is first a **ruler**, not a player. It answers "is V's plan preference right?" on 100

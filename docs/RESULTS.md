@@ -1892,7 +1892,37 @@ Two measurements already in this document say the same thing from the other side
 
 **What is left, stated as a measurement rather than a hope.** The only judge that carries no policy-conditional bias is the game's own
 final score. Its problem is variance (the owner's 90 -> 180 last round), and the answer to variance is *pairing*: both candidates
-played in the same determinised world, so everything not caused by the choice cancels. And there is a hard precondition: if the
+played from the same determinised world, so the variance of the world's initial assignment is common. **How far that pairing actually
+holds is measured below and it is much weaker than "the same world"** - the owner's objection of 20/11.
+
+### Pairing does not survive the first divergence (owner's objection, 20/11)
+
+The owner's point, in his words: one decision can change who draws first, so every later draw shifts by one and almost every card the
+two branches see differs. A shared seed and a "similar world" therefore buy nothing.
+
+**He is right, and the code says so.** `Determinizer.shuffle` (agent search) fixes the hidden assignment at the ROOT with a seed, so
+all candidates of one menu start from the same world. But every shuffle generated DURING the game is unseeded:
+`ShuffleService.shuffle` uses `ThreadLocalRandom.current()` (line 18), and that is what builds the tier decks (`CardService` 134-160),
+the dummy hand (`MarsGame.updateDummyHand` 338) and the draft rows. Draws themselves are pops from a deck, so a different number of
+pops at a different time changes which card each branch receives even without a re-shuffle.
+
+Consequences, and they change the design:
+
+- **Per-decision judging is not defended by pairing.** After a few rounds the branches are effectively independent, so the difference
+  between two candidates carries roughly the variance of two independent games. The judge may not decide a single move on that.
+- **Averaging over states is the same trick at a coarser level, and it does work.** The ruler question is "on average, does the plan V
+  prefers end with more points?" With a per-state difference sd of ~20 points and 100 states, the standard error of the mean is
+  ~20 / sqrt(100) = 2 points - enough to see a 3-5 point effect - and it does not require pairing at all. Only the *per-state* use
+  requires it.
+- **Noisy but unbiased labels are acceptable for training V, and only for that.** A critic's regression target tolerates noise (it
+  averages out over thousands of rows); what it cannot tolerate is bias. So the judge's legitimate product is the label set, not the
+  move.
+- **If real pairing is ever needed** (only after the ruler shows V is wrong), the fix is not a better seed but logical indexing:
+  seed each random event by its identity in the world (round, event kind, slot) instead of by its position in a stream. A single
+  seeded stream does not fix it either - the k-th shuffle of one branch is the draft of the other. That is a refactor of
+  `ShuffleService`/`CardService`/`MarsGame` plus the copy construction, and it is not paid for until the ruler says there is
+  something to gain.
+ And there is a hard precondition: if the
 continuation is the plain policy, the judge says "production loses" and is right, because the continuation does not convert it -
 measured as a forced plan at 44.25% whose corpus trains 25-33%. So the judge is only informative together with a continuation that
 can execute the plan.

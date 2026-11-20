@@ -1708,6 +1708,7 @@ public class OnePlySearch {
         }
         int count = options.size();
         float[][] margins = new float[judgeWorlds][count];
+        float[] values = new float[count];
         for (int k = 0; k < judgeWorlds; k++) {
             for (int c = 0; c < count; c++) {
                 margins[k][c] = Float.NaN;
@@ -1715,6 +1716,11 @@ public class OnePlySearch {
                 Player me = copy.getPlayerByUuid(player.getUuid());
                 if (me == null || !applyOn(copy, me, options.get(c).id(), DecisionType.PICK_PHASE, seed + k)) {
                     continue;
+                }
+                // V's own reading of the SAME afterstate, computed exactly as the live ranking does. The ruler compares these
+                // two rankings on the same state; without V in the line the script would have nothing to compare against.
+                if (k == 0) {
+                    values[c] = leafValue(copy, player.getUuid());
                 }
                 margins[k][c] = endMargin(copy, player.getUuid(), seed + k);
             }
@@ -1746,6 +1752,13 @@ public class OnePlySearch {
                 line.append(',');
             }
             line.append(ok[c] == 0 ? "na" : String.format(Locale.ROOT, "%.1f", sum[c] / ok[c]));
+        }
+        line.append(" v=");
+        for (int c = 0; c < count; c++) {
+            if (c > 0) {
+                line.append(',');
+            }
+            line.append(String.format(Locale.ROOT, "%.2f", values[c]));
         }
         System.out.println(line);
     }
