@@ -20,11 +20,14 @@ together - never as a policy dropped into another plan's search.
 
 ## The axis (exogenous, enumerated, not chosen by belief)
 
-1. **Corporation** - primary. Dealt and chosen before any strategy; it sets the economy's currency. In our own 5 000-game corpus: **25 played,
-   median 414 games each** (row 32). No forcing needed: the natural experiment is in the data.
-2. **Commitment** (which phase you prefer when legal) - a cheap ACTION axis, used to probe the *mechanism* (does a specialist loop climb at all).
-   Its numbers must never be quoted as a strategy's strength.
-3. **Outcome cells** (score composition) - an **inventory** of what our player does. Never a ranking (rows 20, 31).
+1. **Commitment** - the only axis with a measured climb. Which phase you prefer when legal; forced in generation, and the specialist's curve is
+   the gate. Its numbers must never be quoted as a strategy's strength, and the seed must anneal.
+2. **Corporation - a screen said no.** Dealt and chosen before any strategy, 25 played with a median of 414 games each, so it looked like the
+   natural axis - but it explains only **2.4%** of the margin's variance at the current skill (LEDGER 39). Endogenous (we chose it), so it is a
+   screen rather than a refutation; still, 25 specialists (~19 h per iteration) are not justified.
+3. **Starting hand** - the next candidate. It is what actually determines which strategies are possible; it cannot be enumerated, so it has to be
+   clustered by the cards' own tags, not by my choice of strategy.
+4. **Outcome cells** (score composition) - an **inventory** of what our player does. Never a ranking (rows 20, 31).
 
 ## The player
 
@@ -55,13 +58,14 @@ specialist ends up playing the draft, that is its finding.
 
 ## Next steps, with cost
 
-1. **Screen** (minutes): how much does the final margin vary by corporation in the existing corpus? A screen only - the choice of corporation is
-   endogenous.
-2. **Corporation specialists** (cheapest path): one base model, then a fine-tuned copy per corporation on its ~414 games, then measure each curve.
-   Alternative at equal total games: one model conditioned on the corporation - the decisive A/B, because the measured 7-point "tax" (row 25) may
-   belong to the generator's nudges rather than to conditioning.
-3. **Gate** over the corporation offer and the phase pick; measure G3.
-4. **Annealing** schedule and a final measurement with the nudge off.
+1. **Annealing** (running): generation at nudge rate 0.5 from the best specialist (p2), 5 000 games (~1 h), then training and a 400-game
+   measurement. It tests whether the oscillation (44.75 -> 54.4 -> 44.6) was the compulsion or the mechanism.
+2. **If annealing climbs**: continue to rate 0.25 and 0, and measure with the nudge off - that is the ship-ready shape.
+3. **If annealing also oscillates**: the single-specialist mechanism is recorded as not climbing at our data volume, and the next candidate is the
+   starting HAND axis (clustered by the cards' own tags), not more corporations (LEDGER 39) and not more volume.
+4. **Gate** over the plan points (the phase pick, and later the corporation offer), then G3 against the best single specialist and the champion.
+5. **Row weighting**: the per-round normalisation of the target/loss stays (LEDGER 38), and it must be applied when the annealed corpus is
+   trained, because this is the last measurement that touches every corpus we make.
 
 ## What is deliberately not in this plan
 

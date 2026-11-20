@@ -2230,3 +2230,29 @@ phase"):
 
 **And the play-time profile confirms the corpus artefact:** p3 with the nudge OFF picks 17/25/14/**29**/15 - income is back to 29% at play time
 while the corpus that trained it had 0%. The 0% belongs to the forced generator, not to the player.
+
+## Two cheap screens before the next hour of compute (2026-11-20)
+
+Instrument: `ml/corpus_audit.py` + 6 unit tests (`ml/tests/test_corpus_audit.py`). Both read labels (the corporation screen reads the raw
+PICK_CORPORATION rows, which carry the margin), so they run in minutes.
+
+### Row weighting (the owner's decision-count observation, measured)
+
+On the 5 000-game probe pack: 225 011 (game, seat, round) groups, 430 918 rows, **1.92 rows per round** (p10 1, median 1, p90 4, max 13),
+p90/p10 = **4.0**, and the busiest **decile of rounds carries 26% of all rows** (uniform would be 10%). So the critic's loss over-weights the
+decision-rich style by about 2.6x in the tail.
+
+Caveat that matters: this corpus was generated with `--max-rows-per-game-type 8`, which caps each decision type per game. Without the cap the
+skew would be larger, NOT smaller - the cap compresses exactly the tail this screen measures. So the 4x is a lower bound for this corpus, and the
+per-round normalisation in the training target stays justified.
+
+### Corporation screen: 2.4% of the margin's variance
+
+25 corporations, 10 000 seats, mean margins from -13.3 to +12.4 but within-corporation sd of 41-48: **eta squared = 2.4%**. The corporation
+barely explains the observed outcome.
+
+**What this does and does not say.** It does not say the corporation is irrelevant: the choice is endogenous (our player picked it) and a player
+who cannot exploit a corporation's economy gets nothing from it - the same confound as the behaviour cells. What it does say is that, at the
+current skill, **a specialist per corporation is not justified by the data**, so the plan's step 2 (25 specialists, ~19 h per iteration) is not
+where the next hour should go. The only axis with a measured climb remains the commitment; the next candidate axis after that is the starting
+HAND (which is what actually determines which strategies are possible), and it needs clustering by the cards' own tags rather than by my choice.
