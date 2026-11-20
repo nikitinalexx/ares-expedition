@@ -2452,3 +2452,18 @@ HHI 0.388 vs 0.388, adaptation to the corporation 0.040 vs 0.040 - no collapse, 
 half-corpus default was not the binding constraint (iteration 2 used the whole corpus and did not beat iteration 1). The next lever has to be a
 different one: the value (the reviewer's main effect) or the concrete NETWORK gap (twice the red/event cards), and any nudge used for that needs the
 forced-row flag before it can be trusted.
+
+### Throughput after two semantics-preserving changes: 1.07 -> 1.44 games/s (+35%), 20/11
+
+| step | games/s (500 games) | observation CPU per game | critics CPU per game |
+|---|---|---|---|
+| baseline (practice2 run, 5 000 games) | 1.07 | 7.20 s | 1.50 s |
+| streams removed from the observation path | 1.31 | 4.63 s | 1.50 s |
+| + flat `Card[] byId` in `CardService` | **1.44** | **3.74 s** | 1.47 s |
+
+Both changes are semantics-preserving: the streams were replaced by the same loops with the card instances resolved once, and the flat table is
+checked against the original lookup for **every id from 0 to 11 000** (`CardServiceTest`, 4 tests). The critics' cost is unchanged, as it should be,
+which is a useful control that the measurement is honest rather than a different workload.
+
+What remains on the table would cost quality and is rejected by the owner: dropping the public observation (31% of the observation cost) and pruning
+the candidate menus by the prior (1.3-1.6x on the big menus). No further optimization is planned unless it is provably decision-neutral.
