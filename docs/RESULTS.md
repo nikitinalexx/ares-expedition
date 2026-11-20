@@ -1931,3 +1931,22 @@ can execute the plan.
 end-of-game judge's preference on the same states? On 100 real phase decisions (~5 minutes of compute: 4 candidates x 8 paired worlds
 x ~80 ms per policy game) this gives a number where we only have an argument today. If they agree, V is not the problem and the plan
 is wrong; if they disagree, the bias is real, measured, and the judge becomes the label source V is missing.
+
+### The decision count is a function of the strategy - and our target ignored that (owner, 20/11)
+
+The owner's observation: a blue-action/Helion player makes ~500 decisions a game, a green-card player ~100. Any target or loss
+measured per DECISION ROW is therefore not strategy-invariant - the same game gets a different decay, and the decision-rich style
+contributes several times more rows to the critic's loss than the decision-poor one. Two separate defects follow, and neither was
+ever controlled:
+
+1. **The target.** A trace/λ-return counted in rows weights the terminal outcome by `λ^(number of rows)`, which is a quantity of the
+   plan. Measured on the round grid it is not: with λ = 0.9 and ≤ 15 rounds, the terminal keeps ~23% of its weight from round 1,
+   independent of how many blue actions the plan presses.
+2. **The loss.** Rows are not equally informative: a round in which 20 blue actions are pressed contributes 20 rows of the same
+   position, a quiet round contributes 2. If the critic is trained unweighted, the blue-heavy style dominates the gradient by that
+   ratio. **This is a candidate mechanism for the very preference the owner described** ("V thinks the blue player is a genius"),
+   and it is measurable in one pass over the pack: rows per round per game, and the share of the loss carried by blue-action rows.
+
+Neither is a knob: both are errors in how the data is defined. The fix for (1) is arithmetic (round grid, exact scores at round
+boundaries); the fix for (2) is a per-round normalisation, i.e. one sample per round per game, which is also a smaller corpus for
+the same information.

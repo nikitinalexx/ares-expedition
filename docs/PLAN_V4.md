@@ -75,31 +75,28 @@ nobody takes the card or the tile you need on purpose. That is the known limitat
 ## 4b. The label-maker inside the curriculum: the lambda-return (owner's suggestion, 20/11)
 
 The owner's description - the terminal result propagated backwards, `1`, then `1 - delta`, then `1 - delta - delta` - is TD(lambda):
-the lambda-return, i.e. the eligibility-trace view of the same idea. Its standard form is **geometric**, not linear, and in our game
-(with the score visible at every row and rewards almost always zero) it collapses to something very clean:
+the lambda-return, i.e. the eligibility-trace view of the same idea. Its standard form is **geometric**, not linear.
+
+**The owner's correction of 20/11, and it is a defect in the target rather than a parameter to tune: the number of decisions is a
+function of the STRATEGY.** A blue-action/Helion player has ~500 decisions a game; a green-card player ~100. A trace measured in
+decision rows therefore gives the same game a different decay depending on the plan, and the loss weights rows the same way - the
+decision-rich style dominates both the target and the gradient. Both must be measured on the **round grid**, which is the only clock
+that is the same for every strategy:
 
 ```
-G^lambda(t) = (1 - lambda) * SUM_{n < D} lambda^(n-1) * V(s(t+n))  +  lambda^(D-1) * (final margin)
-D = number of decision rows from t to the end of the game
+target(row in round r) = SUM_{k=1..K-1} (1-lambda) lambda^(k-1) * (S(r+k) - S(r))  +  lambda^(K-1) * (final margin)
+K = rounds from r to the end  (<= ~15), S = the exact score at a round boundary
 ```
 
-So the terminal outcome enters row `t` with weight `lambda^D`, and the bootstrap fills the near term. `lambda = 1` is the pure final
-margin (today's target), `lambda = 0` is one step plus a bootstrap (`--td-bootstrap`), and everything in between is the blend the
-owner is describing. It is computed in ONE backward pass per game (`G_t = r + (1 - lambda) V(s_{t+1}) + lambda G_{t+1}`, gamma = 1 in an
-undiscounted game), and the pack already links rows to the next row of the same game.
+With K <= 15, `lambda = 0.9` keeps ~23% of the terminal weight in round 1 (half-life ~6.6 rounds), which is the analogue of 0.99 on
+150 rows. Two consequences, both cheap: (a) the target no longer depends on how many decisions a plan happens to produce; (b) the
+critic's loss must be normalised per round (one sample per round per game, or weight 1/rows-in-that-round), otherwise the
+decision-rich style is over-represented by a factor we have never measured.
 
-**The quantitative point that decides its value here.** A game is ~150 decision rows, so "the terminal signal reaches the start"
-requires `lambda^150` to be non-trivial: lambda = 0.99 gives 22%, lambda = 0.995 gives 47%, lambda = 0.9 gives 0.0000001. The values
-used in RL benchmarks (0.9-0.95) correspond to episodes of tens of steps, not 150. In other words: *propagating the result to the
-beginning means lambda close to 1, which means nearly Monte Carlo, which means nearly the variance the owner objected to.* The tradeoff
-curve is not free, and its two endpoints are already measured here: pure margin 73.17% and 3-step TD 72.50%. A blend of two
-estimators that are both ~73% is still ~73% - **it is an estimator change, not a capability.**
-
-**What it does fix, and it is worth having:** the two objections the owner raised are about opposite ends of this curve (a biased V is
-smooth but wrong; the final score is right but a 90 -> 180 jump noisy). TD(lambda) is precisely the dial between them, and inside the
-sandbox curriculum (section 5) the dial is genuinely useful, because there the bootstrap is trained on the same distribution and the
-label has to reach back ~150 rows without paying full Monte-Carlo variance. So it goes into the plan as the **label-maker of G1**, not
-as the escape from the fixed point: it cannot create competence, and only competence changes what V can see.
+**What TD(lambda) does and does not fix.** It is the dial between "biased but smooth" (Bootstrap) and "right but noisy" (the final
+score). Its two endpoints are already measured here (margin 73.17%, 3-step TD 72.50%), so as an estimator change it is a blend of two
+~73% answers. It cannot create competence: for a state our player never plays well, both ends of the dial say "bad". So it is the
+label-maker inside the curriculum, not the escape from the fixed point.
 
 ## 5. The causal chain to the real game (why this can move 73.17%)
 
