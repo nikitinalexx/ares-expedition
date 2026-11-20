@@ -40,7 +40,7 @@ specialist ends up playing the draft, that is its finding.
 | gate | measurement | stop rule |
 |---|---|---|
 | G1 | a specialist's curve over iterations | must keep **climbing**; three iterations flat -> that arm is recorded unreachable and is not rescaled |
-| G2 | profile at play time (builds, phase mix) | no degeneration ("learned not to build") |
+| G2 | profile at play time (builds, build acceptance, standard projects in the phase the player calls) | no degeneration ("learned not to build"). **The phase mix is not a criterion**: phase 4 is shared, so declining it can be the strong move when ahead on income, and picking phase 1 a lot is a plan, not a defect (`docs/GAME_RULES.md`) |
 | G3 | the gate vs the best single specialist, then vs the champion (1 000 games) | must win, else the mixture earns nothing |
 | G4 | the league of our own specialists (cross-play, own rows only) | answer to the NETWORK style gap; the **last** gate, not the first promise |
 

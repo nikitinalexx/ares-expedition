@@ -2207,3 +2207,26 @@ The nudge pins phase 1 at 50% (it is forced whenever legal, and the rule forbids
 income 5% -> 17% -> 0%, draft 5% -> 5% -> 22%. Income disappearing entirely is a degeneracy signal to watch: without the income phase the economy
 depends on the dummy's choices and on card income alone. If iteration 3's specialist degrades its profile, this is the first place to look, and it
 is the kind of collapse the annealing schedule (rate -> 0.5) is meant to prevent.
+
+### Iteration 3 result and the correction about income (2026-11-20)
+
+p3 (trained on the iteration-3 corpus) + its critics, 400 games vs SMART: **44.6% [39.8, 49.5]**. The curve is therefore
+
+**44.75% -> 54.4% -> 44.6%**: not a climb, an oscillation, and the middle point is real (its lower bound 49.5 touches the third point's upper
+bound 49.5).
+
+The corpus explains part of it: the iteration-3 corpus has phase 4 (income) at **0%** and the draft at 22%, and its critics are worse (loss
+1.61-1.65 against 1.33-1.40 in iteration 2). So quality degraded, and per the plan this is the point where the SEED must anneal (rate 1.0 -> 0.5)
+rather than where a fourth 5 000-game run at 1.0 is justified.
+
+**But the "0% income" must not be read as degeneration, and the owner's correction of 20/11 is why** (`docs/GAME_RULES.md`, "Phase 4 is a SHARED
+phase"):
+
+* phase 4 resolves for everyone, so picking it buys a small extra for the picker while a build phase buys an extra build or a discount;
+* with a dominating income the marginal value of one more income collection is low, and the opponent who spends their pick on it "buries
+  themselves" - so declining phase 4 can be the strong move;
+* consequently "does not pick phase 4" - and also "picks phase 1 a lot" - are NOT degeneracy signals. The profile gate judges outcomes and
+  build/standard-project behaviour, not the phase mix.
+
+**And the play-time profile confirms the corpus artefact:** p3 with the nudge OFF picks 17/25/14/**29**/15 - income is back to 29% at play time
+while the corpus that trained it had 0%. The 0% belongs to the forced generator, not to the player.

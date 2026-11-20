@@ -61,3 +61,19 @@ Consequences that matter for the agent:
 
 - Exact draft counts with every combination of upgrades and special effects (`DraftCardsService` is the source of truth).
 - Crisis / co-op modes, infrastructure, experimental cards: out of scope for the agent.
+
+### Phase 4 is a SHARED phase, and declining it can be correct (owner, 20/11)
+
+The table above says what everyone gets; the strategic consequence is the owner's point and it is not obvious from the table:
+
+* **Phase 4 resolves for everyone.** If phase 4 is picked - by either player or by the dummy - everybody collects income. If nobody picks it,
+  nobody collects.
+* **The pick costs an opportunity.** There are five phases and one pick; picking income buys a *small extra* income for the picker while a build
+  phase buys an extra build or a -6 discount. So the marginal value of picking 4 falls as income grows.
+* **When you dominate income, declining 4 can be the strong move.** The opponent then either wastes their pick on a small income (they "bury
+  themselves": their extra is small while your pick goes into a build), or the round collects no income for anyone, which costs you little
+  relatively because your lead comes from buildings, not from one more income collection.
+* **Corollary for the agent:** "does not pick phase 4" is NOT a degeneracy signal, and neither is "picks phase 1 a lot". The phase pick is a
+  first-class decision whose value depends on the opponent's income and on the alternative use of the pick.
+
+This is why the profile gate judges outcomes and build/standard-project behaviour, not the phase mix alone.
