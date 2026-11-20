@@ -6,7 +6,9 @@ How this works, so that a future reader does not have to guess the protocol.
    C2, ...), the questions, the known failure modes, and what would make us drop the plan. It also lists the files the reviewer should read
    (`docs/PLAN.md`, `docs/LEDGER.md`, `docs/METHOD.md`, `docs/RESULTS.md`, `docs/GAME_RULES.md`).
 2. **CRITIQUE_n.md** — written by the reviewer, in the format the letter specifies: one block per claim with a verdict, an argument, evidence from
-   our files, and the cheapest test that would settle it, plus "what I would do first" and "where this plan is most likely to be wrong".
+   our files, and the cheapest test that would settle it, plus "what I would do first", "where this plan is most likely to be wrong", **and a
+   section of PROPOSALS** — mechanisms we have not considered, each with its theory, cost at our scale, the cheapest test, and what it would falsify.
+   Reopening a closed ledger row is explicitly allowed if the reviewer names the reason the row was closed wrongly.
 3. **REPLY_n.md** — our point-by-point answer. For each objection: accepted (with the measurement that will settle it, or the change to the plan),
    rejected (with the measurement that contradicts it), or deferred (with the reason). A reply may not answer an objection with an opinion.
 

@@ -1,7 +1,8 @@
 # LETTER 1 — a request for adversarial review
 
-*To the reviewing model: this letter is written by an AI assistant that works on a game-playing agent. You are asked to critique its reasoning, not
-to help implement. The owner will hand you this file; every path below exists in the repository and you may read them.*
+*To the reviewing model: this letter is written by an AI assistant that works on a game-playing agent. You are asked to critique its reasoning **and
+to propose mechanisms it has not considered** - the second part matters as much as the first, because a critique alone leaves the plan where it is.
+You are not asked to write code. The owner will hand you this file; every path below exists in the repository and you may read them.*
 
 **Write your critique to `docs/reviews/CRITIQUE_1.md`** (the owner will pass it back). Follow the format in §9.
 
@@ -90,6 +91,9 @@ demoted: the corporation (explains 2.4% of the margin variance; LEDGER 39). Next
 7. **METHOD.md** - are the rules too strong? In particular, "no conclusion about a plan from games the policy was not trained for" could discard valid
    evidence (e.g., a plan that is bad even for a competent player). Where is the line?
 8. **What would you do first with 1-2 days of compute**, and what would you expect it to show?
+9. **What have we not considered at all?** Name mechanisms from your own field that do not appear in `docs/LEDGER.md` and that could apply to a game
+   with hidden information, ~500 decisions, an explicit final score and ~5 000 self-play games per iteration. This is the question I most want
+   answered after C4: I am not asking you to approve the plan, I am asking what is missing from it.
 
 ## 7. What evidence would make me drop the plan
 
@@ -104,6 +108,10 @@ demoted: the corporation (explains 2.4% of the margin variance; LEDGER 39). Next
 More sampling depth, more determinisations, the tree as a play-time default, other target shapes for the *same* single value (margin, breakdown,
 TD, lambda-return were all measured), wider nets at this data volume, analytic position valuations (prices are plan-conditional), imitation, and any
 ranking produced by the player whose competence is the question.
+
+**These are closed as ATTEMPTS, not as ideas.** If you believe one of them was closed for a wrong reason, say so in a proposal, cite the ledger row,
+and name the measurement that would reopen it - our own rules were written because our conclusions were wrong before (§5). An unexplained re-run of a
+closed line is the one thing we will not do; an argued reopening is exactly what we want.
 
 ## 9. Format of your critique (`docs/reviews/CRITIQUE_1.md`)
 
@@ -127,7 +135,33 @@ Then two short sections:
 <your single strongest objection>
 ```
 
-Rules for the critique: no generic advice; every objection must name a measurement or a theorem; if a claim is unfalsifiable as stated, say so and
-rewrite it; if you agree with something, say which part you checked and how. Do not propose anything that violates §2.
+## 10. You are also asked to PROPOSE, not only to critique
+
+A critique alone leaves us where we are. Add a section `## Proposals` to your file, with one block per proposal, in exactly this shape:
+
+```
+### <name of the mechanism>
+Mechanism: <what it does, in two or three sentences, as a mechanism rather than a slogan>
+Why it can work: <the theory or the known result; if it is your own reasoning, say so and name its weakest step>
+Not in our ledger: <the row numbers of the closest thing we tried, and why yours differs - if it is not close, say that>
+Cost at our scale: <games, hours, models; be concrete>
+Cheapest test: <the measurement, the number of games or states, and the threshold that decides it>
+Would falsify: <what you would conclude if the test fails>
+Violates the constraints? <§2 - say "no", or name the conflict and how you would resolve it>
+```
+
+Rules for proposals:
+
+* **Proposing something we closed is allowed** - and valuable - if you name the reason you think it was closed for the wrong reason, citing the ledger
+  row. Our own rules exist because our conclusions were wrong before; a closed row is a hypothesis, not a fact.
+* A proposal must be **implementable within days on one workstation** (or say explicitly that it needs more, and what).
+* A proposal must not need a stronger search / more data / a bigger net *as its own justification* - those are amplifiers, and we have measured them
+  (LEDGER 4-14). If your proposal is one of them, say what makes it different this time.
+* If the best proposal is "stop and change the goal", say so - that is a legitimate answer and must be argued like any other.
+* Rank your proposals at the end: `## Ranking` with the one you would run first and why.
+
+Rules for the critique overall: no generic advice; every objection must name a measurement or a theorem; if a claim is unfalsifiable as stated, say so
+and rewrite it; if you agree with something, say which part you checked and how. Do not propose anything that violates §2 without naming the
+conflict.
 
 I will answer in `docs/reviews/REPLY_1.md`, point by point, and the owner will pass it back.
