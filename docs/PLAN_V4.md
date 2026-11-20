@@ -53,6 +53,31 @@ operator. Enumerating the possibilities:
 | hand-written rules ("buy production first") | forbidden: measured to produce 44.25% and a corpus that trains 25-33% |
 | **a reduced game where the missing skill is learnable without an adversary** | **untested, and the only one left** |
 
+## 3b. Why an analytic valuation is not an option (owner's objection, 20/11) — and what replaces it
+
+The proposal "compute the position's potential arithmetically" is dead, and the owner's argument is decisive on two independent grounds:
+
+1. **Combinatorics.** The value lives in chains: a microbe card, a card that consumes microbes, a card that pays per microbe, a forest that
+   comes out of it. Pricing each microbe at 3 MC prices none of that. The number of such chains is exactly why this game is interesting.
+2. **The price is contextual.** The owner's own sentence: "in your player's world steel income is worth 5 MC; in my NETWORK's world it is
+   worth 10". That is not an opinion - it is already measured here (`ml/price_report.py`): the same +1 income is priced 6.5 MC by the
+   policy's corpus, 9.0 by forced-build play, 12.1 by random play, against the rules' ~15. Three different prices for one resource, and
+   each is right for its own player.
+
+**So there is no strategy-independent position value in this game.** The only value that exists is "this position, for the player who
+will use it" - i.e. a value conditional on a PLAN, not on a state alone. Which reframes everything measured so far: our `V` is
+conditioned on exactly ONE continuation (our current policy), so it can describe one plan and cannot compare plans. The fixed point is a
+*plan* fixed point, and the owner's "V thinks the blue player is a genius" is V measuring the plan it knows.
+
+**What replaces the arithmetic:** nothing analytic. The two objects that can be learned from the game itself, without imitation, are
+- the value **of a plan** (a continuation that actually executes it), and
+- the comparison between plans, which needs each plan to be executable - otherwise the comparison is "my plan vs my inability", which is
+  the failure we have been measuring since 19/11 (forced plan 44.25%).
+
+The only setting in which a plan can be brought to competence without being punished for it is the sandbox of section 4: no adaptive
+opponent, same rules, same clock, same card pool, the game's own score as the objective. That is now the single mechanism in the plan,
+not a fallback.
+
 ## 4. The mechanism: a sandbox curriculum (conversion without denial)
 
 **Definition, precisely.** The same engine, the same rules, the same clock (rounds and terraforming end conditions), the same card

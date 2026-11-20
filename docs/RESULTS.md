@@ -1950,3 +1950,17 @@ ever controlled:
 Neither is a knob: both are errors in how the data is defined. The fix for (1) is arithmetic (round grid, exact scores at round
 boundaries); the fix for (2) is a per-round normalisation, i.e. one sample per round per game, which is also a smaller corpus for
 the same information.
+
+### There is no strategy-independent position value (owner, 20/11)
+
+The owner's objection to any analytic valuation, recorded because it closes a whole family of ideas: card chains (microbes -> animals ->
+points, a chain that ends in a 20 MC forest) cannot be priced per resource, and the price of the same resource differs by player - "in
+your world steel income is worth 5 MC, in my NETWORK's world 10".
+
+Our own measurement already agrees, from `ml/price_report.py`: +1 income is priced **6.5 MC** by the policy's corpus, **9.0** by
+forced-build play, **12.1** by random play, against the rules' ~**15**. Three prices for one resource, each correct for its own player.
+
+Consequence, and it is a reframing rather than a doubt about the data: the value is conditional on the plan that will spend the
+resources, not on the state. Our `V` is conditioned on exactly one continuation - our own policy - so it can describe one plan and
+cannot compare plans, which is the fixed point. Any analytic proxy would be a fourth price, roughly 10x coarser than the chains it
+pretends to price, and it would fail in the same direction as the bias it was meant to remove.
