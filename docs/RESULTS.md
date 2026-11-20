@@ -2144,3 +2144,28 @@ behaviour of a preference that the policy can outvote, and the reason stage 2 wi
 
 **Next:** iteration 3 with p2 as the generator. The gate is unchanged: it must climb again. If it lands at 54 +/- noise, the curve has
 plateaued below the champion and the honest next question is the nudge rate (0.35-0.5) or closing this plan, not a fourth 5 000-game run.
+
+### Correction (owner, 20/11): a behaviour cell cannot be graded by the player who cannot play it
+
+The premise-2 table above is wrong as an EVALUATION, and the error is the same one the whole plan exists to avoid. The cells were graded by
+the mean margin of the games the CURRENT player played in them. But a cell is a way of playing; if the player cannot play microbes, its
+games that land in a microbe-shaped cell are bad *because the player is bad at it*, not because the cell is bad. A player who could play
+microbes would take microbe cards, pick the phases for them and manage them, and the cell would then be at the top - with a different
+player.
+
+Two consequences, and the second is structural:
+
+1. **The measurement is descriptive, not evaluative.** "8 of 16 cells occupied, strong games spread over 5" describes the champion's own
+   distribution. It says nothing about which plans are strong. The mean margins per cell must not be quoted as evidence about plans, and
+   they never enter a gate.
+2. **The axis itself is endogenous.** The descriptor is built from the composition of the final score, which is an outcome: a weak player
+   produces a different composition than a strong one, so the cell assignment changes with competence. An outcome-defined cell cannot rank
+   plans, by construction.
+
+**What replaces it.** The axis of the loop is the **commitment** (the first-round plan: which phase the seat commits to, which card it
+takes first), because a commitment is an ACTION - exogenous, defined before the outcome, and it can be forced in generation and then graded
+by the specialist's own curve. The outcome cells stay only as an inventory of observed behaviour ("what does our player actually do"),
+never as a ranking.
+
+**The rule this produces, and it goes into METHOD.md:** no alternative may be ranked by the results of a player whose competence at that
+alternative is the thing in question.

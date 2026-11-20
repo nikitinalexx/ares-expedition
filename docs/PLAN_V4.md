@@ -327,3 +327,18 @@ Six changes, each with a reason that comes from a measurement, not from taste.
 Unchanged, and deliberately: the three premise measurements come first (points by round; behaviour regions of the 10k corpus; world-vs-skill
 variance by varying the world with the policy held); no analytic valuation; no named strategy; no deeper search; no corpus volume for the
 sake of volume; no imitation.
+
+## 14. The axis of the loop is a commitment, not an outcome cell (owner's correction, 20/11)
+
+The owner's objection closes the last piece of the archive design: a behaviour cell built from the score composition is an OUTCOME, and a
+player that cannot play the style loses in it - so the cell is graded by incompetence and would be dismissed exactly as the forced plan was.
+The archive's margins therefore mean nothing about plans, and the cell assignment itself moves with competence.
+
+What stays, and what changes:
+
+* **Stays:** the inventory of observed behaviour ("what does our player actually do") - it is a description, and it is cheap.
+* **Changes:** the axis of the loop is the **commitment** - the first-round phase and the first card taken. A commitment is an action: it is
+  defined before the outcome, it can be forced in generation, and its specialist is graded by its own curve. Cells defined by actions cannot
+  be contaminated by the player's competence in the way outcome cells are.
+* **Gate unchanged in form, corrected in content:** a plan is judged by its specialist's curve and by the specialist's win rate against
+  SMART, never by the mean margin of the champion's games that resemble it.

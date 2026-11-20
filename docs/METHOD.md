@@ -68,3 +68,17 @@ ESTIMATOR on the same trained player, so each is a clean statement about that pl
 
 It contains only rules that were paid for with a wrong conclusion. Add to it when a new mistake is found - with the measurement that
 exposed it, and with the boundary of what was actually shown.
+
+## 6. The same error in a new costume: grading an alternative by an incompetent player
+
+The behaviour-cell table of 20/11 ranked cells by the mean margin of the CURRENT player's games in them. It is the 44.25% mistake again: a
+cell is a way of playing, and a player that cannot play it loses in it - so the cell "looks bad" and would be dismissed, while a
+specialist trained for it could put it at the top. Worse, the descriptor is built from the score composition, which is an outcome, so the
+cell assignment itself changes with competence.
+
+**The rule:** no alternative is ranked by the results of a player whose competence at that alternative is the thing in question. Alternatives
+are ranked by a specialist trained for each of them, and the axis of any comparison must be an ACTION defined before the outcome (a
+commitment: first phase, first card), not an outcome-derived property.
+
+Checklist addition: *is the quantity that ranks the alternatives produced by the same player whose competence is being tested?* If yes, the
+ranking is a statement about the player, not about the alternatives.
