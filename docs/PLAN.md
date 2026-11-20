@@ -5,15 +5,14 @@ in `docs/archive/` and are not current.
 
 ## Where we stand
 
-* **Champion**: one plan at **73.17%** [72.3, 74.0] vs SMART (10 000 games), 98.6% RANDOM, **39.8%** vs NETWORK.
-* **The first measured improvement, and it is not a plan**: one more round of fine-tuning on 5 000 fresh self-play games gives **74.88%** (on a
-  nudged corpus) and **75.16%** (on the champion's own unperturbed play) over 5 000 games - **identical within noise**. The perturbation added
-  nothing; the practice added **+2 points** (LEDGER 42). This confirms the outside reviewer's objection: our stall was ordinary approximate policy
-  iteration, not a plan-level pathology.
+* **Champion**: 73.17% [72.3, 74.0] vs SMART (10 000), **39.8%** vs NETWORK.
+* **The practice lever is real but bounded**: one fine-tune on 5 000 fresh self-play games gives **75.16%** [73.94, 76.23], and the second iteration
+  **74.53%** [73.30, 75.75] - flat, and the health panel shows a *behaviourally identical* player (LEDGER 43). So +2 once, then a converged fixed
+  point. It is the first measured gain over the champion, and it is not a loop that keeps paying.
 * **The NETWORK gap is tempo, not conversion**: NETWORK plays twice the red cards (8.6 vs 4.2 per game) and wins TR, printed points, milestones and
-  awards; p1 wins the resource-card channel by 10 points. So the missing content is *events and tempo*, not the animal/microbe economy.
-* **Why the old readings were wrong**: the value is plan-conditional *by definition*, but the 30-point gap between a specialist's own critics and
-  the champion's was critic quality (10k games, AUC 0.934) and off-policy labels, not plan conditioning (LEDGER 41, VERIFICATION_1 A).
+  awards; the agent wins the resource-card channel by 10 points. Against NETWORK the agent is 43.25% [40.2, 46.4] after two practice steps.
+* **Why the old readings were wrong**: the 30-point gap between a specialist's own critics and the champion's is critic quality and off-policy
+  labels, not plan-conditionality (VERIFICATION_1). The value is plan-conditional by definition; it was never the binding constraint.
 
 ## The plan
 

@@ -2432,3 +2432,23 @@ The owner's objection, verified in code: `blue_cards_count` does not distinguish
 *aggregate* the search would need does not exist, and the phase-3 blind spot was measured with all-blues instead of activatable ones. The fix is a
 small, rule-derived feature: per side, the count of played blue cards that have an action (and their resource load). Then the phase-3 diagnostic is
 re-run on the real quantity.
+
+## The practice loop converges after one step (iteration 2, 2026-11-20)
+
+| iteration | vs SMART (5 000) | vs NETWORK (1 000) |
+|---|---|---|
+| champion | 73.17% [72.3, 74.0] (10 000) | 39.8% [37.7, 42.0] (2 000) |
+| fine-tune 1 (clean 5 000) | 75.16% [73.94, 76.23] | - |
+| **fine-tune 2 (clean 5 000, whole corpus)** | **74.53% [73.30, 75.75]** | **43.25% [40.2, 46.4]** |
+
+So the +2 is **one step, not a curve**: the second iteration is 0.6 points below the first, well inside noise. The NETWORK number creeps up
+39.8 -> 41.8 -> 43.25 over the two iterations, but each step is inside its own interval.
+
+**The health panel says the same thing, and it is the stronger evidence:** iteration 2's corpus is *behaviourally identical* to iteration 1's
+(builds 3.233 vs 3.255, acceptance 0.808 vs 0.814, phase entropy 0.532 vs 0.531, colour shares 34/52/13 vs 34/52/14, distinct cards 3.232 vs 3.253,
+HHI 0.388 vs 0.388, adaptation to the corporation 0.040 vs 0.040 - no collapse, no change). The second fine-tune converged to the same player.
+
+**Consequences.** The practice lever is real but bounded: it buys ~+2 points once and then stops, and it does not add diversity either. The
+half-corpus default was not the binding constraint (iteration 2 used the whole corpus and did not beat iteration 1). The next lever has to be a
+different one: the value (the reviewer's main effect) or the concrete NETWORK gap (twice the red/event cards), and any nudge used for that needs the
+forced-row flag before it can be trusted.
