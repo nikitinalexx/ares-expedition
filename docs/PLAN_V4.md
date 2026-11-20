@@ -1,8 +1,40 @@
-# PLAN V4 — the theory of change: break the fixed point by separating conversion from adversarial play
+﻿# PLAN V4 вЂ” the theory of change: break the fixed point by separating conversion from adversarial play
 
 Written 20/11 at the owner's instruction: stop testing theories one by one and state a plan that is theoretically capable of
 working, with the reason it can work and the reason each earlier attempt could not. Everything below is either a measurement
 already in `RESULTS.md` or an explicit hypothesis with a gate that can kill it cheaply.
+
+## 0. CURRENT PLAN (authoritative as of 20/11, after the owner's four corrections)
+
+Read this first; the sections below are the reasoning that produced it, and a few of them are marked superseded.
+
+**What is learned:** a set of SPECIALISTS ("options"). Each is a policy plus its own value, trained on a corpus where that plan was actually
+played. One value cannot serve several plans - measured: the same policy scores +10 points under its own critics and -10 under another plan's
+when only the critics are swapped.
+
+**The axis is exogenous and enumerated, not chosen by me:**
+1. **Corporation** (25 played, median 414 games each): dealt and chosen before any strategy, it sets the economy's currency. Primary axis.
+2. **Commitment** (which phase you prefer when legal): the cheap ACTION axis, used as a mechanism probe.
+3. **Outcome cells** (score composition): an INVENTORY of what our player does. Never a ranking - it grades plans with the player who cannot
+   play them, and it is endogenous.
+
+**The player is a mixture with a gate:** specialists are the parts; the gate chooses the option at plan points (the corporation offer, the phase
+pick). The gate's value may be trained on a mix of corpora including random play, because random play visits states our policy never reaches and
+the gate role is where a shared slope does not cancel.
+
+**The seed anneals, the player may outgrow it:** a nudge rate 1.0 -> 0.5 -> 0.25 -> 0, final measurement with the nudge OFF. If a "build-phase
+specialist" ends up playing the draft, that is its finding, not a failure.
+
+**Gates, in order:** (a) the specialist's curve must keep CLIMBING (not the level); (b) its profile (builds, phase mix) must not degenerate;
+(c) the gate must beat the best single specialist, then the champion; (d) the league of our own specialists is the answer to the opponent-style
+gap (NETWORK), and it is the LAST gate, not the first promise.
+
+**Invariants:** no analytic valuation (prices are plan-conditional: 6.5 / 9.0 / 12.1 MC for the same income); no imitation of SMART, NETWORK or
+human games; no ranking of an alternative by a player incompetent at it; no volume for volume's sake (10 000 games of one plan added nothing).
+
+**State on 20/11 evening:** specialist curve 44.75% -> 54.4% against SMART (400 games each, matched stacks), the first mechanism that climbs in
+weeks; the plan-conditional value is measured directly by swapping critics only; iteration 3 was running. Cells and their margins are never used
+as a gate.
 
 ## 1. The object
 
@@ -12,26 +44,26 @@ reason.
 
 ## 2. Why the loop cannot leave 73.17% (the fixed point, stated exactly)
 
-Let `π_k` be the policy, `V_k(s) = E[u | s, a ~ π_k from s]` the value, `u` the final score difference, and `D_k` the corpus of games
-`π_k` played against itself. Our loop is:
+Let `ПЂ_k` be the policy, `V_k(s) = E[u | s, a ~ ПЂ_k from s]` the value, `u` the final score difference, and `D_k` the corpus of games
+`ПЂ_k` played against itself. Our loop is:
 
 ```
 V_k    = regress u on the states of D_k
 search = argmax_a  V_k(afterstate(s, a))      (+ noise, determinisations, deeper lines)
-π_k+1  = imitate the search's choices
-D_k+1  = games of π_k+1 vs π_k+1
+ПЂ_k+1  = imitate the search's choices
+D_k+1  = games of ПЂ_k+1 vs ПЂ_k+1
 ```
 
 Three facts, all measured, and together they prove the loop is closed at the current point:
 
-1. `V_k` is an estimate of `π_k`'s futures. It is not an estimate of the position; it is an estimate of the position *as our player
+1. `V_k` is an estimate of `ПЂ_k`'s futures. It is not an estimate of the position; it is an estimate of the position *as our player
    plays it onwards* (the owner's two examples: 5 steel + 5 titanium income, and AssetLiquidation with TR 0 and many green cards).
    The features are not blind - V prices a 200 MC stockpile at +2.92 logits - the conditioning is the problem.
 2. The search's ranking of an action is `V_k` of its afterstate. So the search cannot prefer an action whose value is only realised by
-   a continuation `π_k` does not play: it scores it as "our player, in this position, later" - which is bad. Hence search improves the
+   a continuation `ПЂ_k` does not play: it scores it as "our player, in this position, later" - which is bad. Hence search improves the
    choice *within* the current class of plans and cannot leave it. Measured five ways: 2-round horizon -8, 8 determinisations -6.3,
    build playout 0, input playout -1.5, the line tree -1.5, all at or below 73.17%.
-3. `D_k` contains only states `π_k` reaches, and the label of a state is the outcome of `π_k`'s continuation. So the corpus cannot
+3. `D_k` contains only states `ПЂ_k` reaches, and the label of a state is the outcome of `ПЂ_k`'s continuation. So the corpus cannot
    teach the value of a plan our player does not execute: the exploring games, when forced, are weak (44.25%, and their corpus trains
    25-33%), which the critic honestly learns as "this plan loses".
 
@@ -41,8 +73,8 @@ conditional value more precise. 10 000 games of the same policy is 10 000 games 
 
 ## 3. The precondition for any escape
 
-To learn that a plan is good we need data in which that plan was played **competently**; competent play cannot come from `π_k` (by
-§2.2) and may not come from another player (owner's rule: no imitation of SMART, NETWORK or human games, no distillation). So the
+To learn that a plan is good we need data in which that plan was played **competently**; competent play cannot come from `ПЂ_k` (by
+В§2.2) and may not come from another player (owner's rule: no imitation of SMART, NETWORK or human games, no distillation). So the
 competence must be *learned*, and the only place it can be learned is a task whose optimum is reachable by our own improvement
 operator. Enumerating the possibilities:
 
@@ -53,7 +85,7 @@ operator. Enumerating the possibilities:
 | hand-written rules ("buy production first") | forbidden: measured to produce 44.25% and a corpus that trains 25-33% |
 | **a reduced game where the missing skill is learnable without an adversary** | **untested, and the only one left** |
 
-## 3b. Why an analytic valuation is not an option (owner's objection, 20/11) — and what replaces it
+## 3b. Why an analytic valuation is not an option (owner's objection, 20/11) вЂ” and what replaces it
 
 The proposal "compute the position's potential arithmetically" is dead, and the owner's argument is decisive on two independent grounds:
 
@@ -75,6 +107,10 @@ imagine exist?" Any plan that NAMES a strategy ("the economic plan") is my imagi
 that does not need the strategies named.
 
 ## 4. The mechanism: discovery by coverage (an archive of behaviours)
+
+> **Partly superseded (20/11):** the coverage principle stands, but the AXIS is no longer an outcome cell (§14) - it is a corporation
+> or a commitment (§15-§17) - and the archive is an inventory, never a ranking. The cell machinery below is kept for the record.
+
 
 The only class of mechanisms that finds strategies without naming them is **diversity pressure with an archive**: quality-diversity /
 MAP-Elites, and at scale the AlphaStar league. The principle is one line: the objective of an iteration is not "beat the champion", it
@@ -118,6 +154,10 @@ archive reports what is missing.
 
 ## 6. Gates
 
+> **Superseded in wording (20/11):** G0-G3 below are stated for outcome cells. The current gates are in §0: a specialist's curve, its
+> profile, then the gate over options. G0's row-weighting audit remains valid.
+
+
 | gate | measurement | rule |
 |---|---|---|
 | **G0. Inventory** (hours, Python only) | occupied cells in the 10k corpus; plus the row-weighting audit from the decision-count observation (rows per round, share of the loss on blue-action rows) | no gate - it is the baseline, and it also says whether our critic has been trained on a style-weighted sample |
@@ -126,6 +166,10 @@ archive reports what is missing.
 | **G3. The duel** | 1 000 -> 10 000 against SMART, NETWORK | the usual rule |
 
 ## 7. How this can fail, and what each failure means
+
+> **Note (20/11):** the failure modes below are about coverage of outcome cells; the analogues for the current plan are in §10.5-§10.6
+> and §17.
+
 
 - **Descriptor artefacts**: cells fill, but the "strategies" are just noise in the descriptors. Caught by the second descriptor set.
 - **Specialists are individually weaker**: expected; G2 is about the selector, not about the parts.
