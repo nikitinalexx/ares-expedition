@@ -1494,3 +1494,41 @@ enormous cost - not the lever; GraalVM is the cheap 1.2-1.5x.
 `-Dares.agent.search.planProbe=true`: the phase rollout keeps our seat on the candidate phase at the next pick, so the comparison
 becomes "commit to this plan" instead of "play one round as usual". That is the cheapest way to see whether the value can prefer
 a different plan without any imitation - the one question the day could not answer.
+
+## 20 November, morning: the plan changed from "what search" to "what V predicts" (PLAN_V3)
+
+State: champion 73.17% [72.3, 74.0] vs SMART (10 000), 39.8% vs NETWORK. Nothing is pushed; the branch is `nn-pure-java-verify`.
+
+The owner's question that shaped the day: *why does search not pay, and does MCTS not work differently?* Answer, measured: MCTS
+works in AlphaZero because the search is STRONGER than the network, and ours is not - five independent variants all land at or
+below the flat 73.17%. The reason is resolution: one-step V noise ~0.4 logit against an effect of 0.05-0.2 logit, so a tree
+aggregates V's errors more precisely instead of ranking lines better.
+
+`docs/PLAN_V3.md` therefore changes WHAT V predicts - and the correction the owner demanded is in it: the n-step target must be
+BOOTSTRAPPED (`reward(t..t+H) + V(s(t+H))`), not truncated, or it teaches "do not build", and it must keep a terminal anchor
+(part of the rows on the true final outcome) against the deadly triad. The profile gate is the first instrument, because "learned
+not to build" shows there first.
+
+Re-reading the log showed TD already exists (`train_value --td-bootstrap/--td-steps`, 16/11) and was measured as a DECIDER
+(income priced 7.7 MC) and dropped, because a RANKER's shared slope cancels. So S1 is a role change with a falsifiable prediction:
+
+| measurement | prediction if TD is the missing resolution |
+|---|---|
+| flat search, TD critics | unchanged |
+| the LINE tree, TD critics | improves above the tree with margin critics |
+
+The first half is measured and confirmed: **flat search with TD critics 72.50% [69.7, 75.2]** (1 000), i.e. nothing - as expected.
+The TD critics are `D:/ares/runs/value/v_td_s1..s3` (AUC 0.905/0.904/0.903, loss 1.577/1.578/1.574).
+
+The tree half is running: `-Dares.agent.search.tree=PICK_PHASE -Dares.agent.search.tree.turn=true`, depth 3, breadth 4, 8
+iterations, 400 games with margin critics and 400 with TD critics (same flags otherwise). Cost is real, not a bug: the depth cap
+fires (`[TREE] ... our decisions taken 4`), the simulation between 4 of our decisions is ~150 engine decisions, hence 0.03 games/s.
+
+### What the morning must check, in this order
+
+1. The two tree arms. TD > margin and the flat unchanged -> the mechanism is confirmed; then train the policy on the TD-target
+   critics and run the gates (profile -> worst benchmark -> duel 2 000 -> 10 000 only if < 1.5 points).
+2. Both arms at 71-73% -> S1 is closed with a negative result; no rescaling, no 50k, no "one more knob".
+3. The profile gate first on any candidate (builds ~32.5, acceptance 0.77): it is the instrument that catches the degenerate
+   learner before the win rate looks fine.
+4. Throughput (S4) only after the tree proves itself at play time.

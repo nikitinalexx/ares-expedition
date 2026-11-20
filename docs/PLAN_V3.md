@@ -21,8 +21,9 @@ Measured here, on this value:
 
 Every one of them is at or below the flat 73.17%. The reason is the resolution mismatch we measured: the one-step V difference
 carries noise of ~0.4 logit (the mulligan gate's gap distribution at zero true effect) while a card or a plan choice is worth
-0.05-0.2 logit in the same units, and the margin target's error is tens of points. **A tree on that value aggregates its errors
-more precisely; it cannot rank lines better.** So the search is not the lever until V resolves the difference.
+0.05-0.2 logit in the same units, and the margin target's error is tens of points. **More search reads the same V at states that
+are further apart; if V does not resolve the difference, the extra lookahead has nothing to read.** So the search is not the lever
+until V resolves the difference.
 
 ## 2. Why the value does not resolve it (the target, not the capacity)
 
@@ -34,7 +35,9 @@ more precisely; it cannot rank lines better.** So the search is not the lever un
 
 **The untested lever is the shape of the target:** predict the *local* consequence - the score change over the next H rounds -
 instead of the final result. This is n-step TD, and it is the only change that targets exactly what the search reads ("what does
-this action give me soon") without external data and without imitating anyone.
+this action give me soon") without external data and without imitating anyone. Note what it does NOT claim: it adds no information
+the final margin lacks (the margin already contains the local change plus the rest). It claims **variance**: one sample per state
+means the margin critic learns a near-constant value over a menu, and a tighter target lets the same corpus support a sharper V.
 
 ## 3. The plan
 
@@ -71,8 +74,14 @@ slope cancels.
 
 What changes now is the role, and this is the whole argument:
 
-* a ranker compares two afterstates of ONE position, so a shared bias cancels;
-* a TREE sums values along a LINE (the bootstrapped returns on the path), so a shared bias no longer cancels - it accumulates.
+* a ranker compares two afterstates of ONE position, so the errors are almost common-mode and cancel;
+* the LINE tree does **not** sum values along the path (`TreeDriver.backup` pushes ONE leaf value to every node on the line, by
+  design - summing V would need a reward model in the engine). What changes is the DISTANCE between the compared states: the
+  leaves of two lines are a round or more apart, so the critic's error is no longer common-mode and stops cancelling. That is
+  weaker than summing, and it is said here because the experiment must be judged on what the code actually does;
+* and the reason a different TARGET can matter at all is variance, not information: the final margin is one sample per state
+  (huge variance), so the critic can only learn a near-constant function of the menu; the n-step target's variance is much
+  smaller, so the same corpus can support a genuinely state-dependent V. Higher resolution from the same data, no new data.
 
 That gives a sharp, falsifiable prediction, which is what makes the experiment worth an hour:
 

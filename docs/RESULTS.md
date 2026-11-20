@@ -1811,3 +1811,47 @@ data does not move the value's preference: a 2-round horizon (-8), 8 determinisa
 (-1.5). The remaining levers are not knobs: a plan-conditioned policy set (which needs a corpus of good alternative play that does
 not exist), a full AlphaZero with values trained on search returns (days, unproven), or throughput work so a 50-100k-game loop is
 affordable and the plan is given a chance to appear on its own.
+
+## TD critics in the flat search: 72.50%, i.e. nothing - and that was the prediction (2026-11-20, morning)
+
+Three TD critics (`--td-bootstrap` on the day's margin critic, 3 steps, exact per-step score reward, exact final margin on the last
+rows): AUC 0.905 / 0.904 / 0.903, loss 1.577 / 1.578 / 1.574 - the same quality as the margin critics (0.934 / 1.07) on a
+different target.
+
+| search | critics | vs SMART |
+|---|---|---|
+| flat one ply (champion setup) | margin | 73.17% (10 000) |
+| flat one ply, identical flags | TD | **72.50% [69.7, 75.2]** (1 000) |
+
+Why this is the expected outcome and not a failure of the target: a ranker compares two afterstates of ONE position, so a shared
+slope (the calibration TD fixes) cancels out. The 16/11 decider measurement already said the same: a well-calibrated critic moved
+the ranker by nothing (43.59% -> 42.98%).
+
+The open half of the prediction is the line tree, where values are SUMMED along a path and a shared slope no longer cancels. It is
+being measured against the same flags with margin critics (400 games per arm).
+
+## The line tree's cost is real, not a depth-cap bug (2026-11-20, morning)
+
+The first smoke ran 40 games in 1 007 s (0.03 games/s, 30x the flat search). Diagnosis with `-Dares.agent.search.debug=1`:
+
+- the cap DOES fire: `[TREE] iteration i: our decisions taken 4` - the driver answers exactly `depth` of our decisions per line;
+- the price is the simulation between them: to reach 4 of our decisions the engine resolves ~150 decisions of both seats (the
+  opponent's policy play, blue actions, discards, builds).
+
+So a line tree is a genuine search and costs what a genuine search costs; it is affordable at play time (0.03 games/s is still
+faster than a human) and unaffordable for corpus generation, which is why throughput work (S4 in `PLAN_V3.md`) stays behind the
+tree proving itself.
+
+**The confound was found before the result was believed.** The first tree run had TD critics trained on 10 000 games and margin
+critics from 5 000, so a TD win could have been a data win - and the day already knows extra data does nothing (10 000 -> 72.72%).
+The run was stopped and a MATCHED control trained: identical packs (`1119-2204_22`, `1118-2332_17`, `1118-2332_18`), identical
+seeds 1..3, identical recipe, only `--td-bootstrap` absent.
+
+| critics (same data, same seeds) | AUC | val loss |
+|---|---|---|
+| matched margin `v_m10k_s1..s3` | 0.933 / 0.931 / 0.931 | 1.073 / 1.116 / 1.093 |
+| TD `v_td_s1..s3` | 0.905 / 0.904 / 0.903 | 1.577 / 1.578 / 1.574 |
+
+The TD critic orders final outcomes WORSE (it does not fit the final margin by construction - it fits the local change plus a
+bootstrap). That is expected and it is why the test is not "which AUC is higher": the question is whether the tree can rank lines
+with each of them. Both arms now run with the matched pair (400 games each, same seeds, so the games are pairable).

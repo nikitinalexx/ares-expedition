@@ -666,6 +666,11 @@ public class OnePlySearch {
                 com.terraforming.ares.services.agent.tree.TreeDriver.clear();
                 endHypothetical();
             }
+            if (debug > 0 && i < 4) {
+                // Diagnosis of the line tree's cost: if the driver answered nothing, the simulation ran to the end of the game
+                // (the depth cap never fired), which is exactly the 30x slowdown measured on 20/11.
+                System.out.println("[TREE] iteration " + i + ": our decisions taken " + driver.decisionsMade());
+            }
             Player leaf = copy.getPlayerByUuid(player.getUuid());
             if (leaf == null) {
                 continue;
