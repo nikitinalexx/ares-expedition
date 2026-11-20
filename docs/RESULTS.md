@@ -2046,3 +2046,26 @@ something to cover.
 **Caveat, stated because it limits the claim:** the descriptor is built from the score composition, which is itself an outcome (a losing
 player collects fewer card points). So part of the separation is endogenous; the honest reading is "strong games are composed in at least
 two different ways (terraforming-heavy and card-heavy)", not "we have found N strategies".
+
+## The probe corpus: a forced plan, and the forcing verified before training (2026-11-20)
+
+Purpose: the first point of the specialist curve. Not "does phase 1 win" - that question is confounded and will stay confounded until a
+specialist is trained on it - but "can a forced plan produce a corpus at all, and does the corpus actually contain that plan".
+
+Generation: the champion bundle (policy `1118-2332_17`, its three critics, the phase and mulligan critics) with
+`-Dares.agent.planCode=8 -Dares.agent.planNudges=true -Dares.agent.planNudgeRate=1.0`, both seats, self-play, 5 000 games, 14 threads,
+3 621 s (~1.4 games/s), 20 chunks, 8.9 GB raw, 456 116 rows before de-duplication, pack 1.1 GiB (5.6 s).
+
+**Forcing verified on the corpus itself** (`ml/plan_report.py`), because a silent failure here would recreate exactly the confound the
+plan exists to remove:
+
+| corpus | phase 1 | phase 2 | phase 3 | phase 4 | phase 5 |
+|---|---|---|---|---|---|
+| champion (10k corpus) | 10% | 30% | 36% | 6% | 17% |
+| probe code 8 (5k) | **49%** | **15%** | 25% | 5% | 5% |
+
+Build phases go from 10% to 64% of the picks; acceptance 0.72, drafts 8.0, blue actions 5.87 per game. The plan is in the data.
+
+Next: a specialist policy trained on this corpus from the champion (`train_policy_ce --prev`), critics trained on the same corpus, and a
+1 000-game measurement against SMART. That number is the first point of the curve; the gate is whether the curve climbs, not where it
+starts.
