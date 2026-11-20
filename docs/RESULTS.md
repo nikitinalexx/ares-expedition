@@ -2379,3 +2379,33 @@ measured against NETWORK. The +2 may be the first step of a long curve or a one-
 **The obvious loop, and it is cheap:** generate 5 000 games with the current best -> fine-tune the champion's policy on them -> measure at 5 000
 against SMART (and 1 000 against NETWORK) -> keep if better -> repeat. ~2 h per iteration. That is the plan now; the specialist/gate/two-target
 machinery is shelved until the practice loop stops paying.
+
+## The phase-3 blind spot, measured (2026-11-20, owner's observation)
+
+The owner played the new champion and reported: it called phase 3 while it had one activatable blue card and no phase-3 upgrade, against three on the
+other side - "it does not understand that I can act in phase 3 too". Phase 3 is a **shared** phase (like phase 4): calling it lets both players
+activate.
+
+Measured on 4 000 phase decisions of the champion's corpus (4 chunks, plan code 0), counting the blue cards in play from the observation
+(`blue_cards_count`, `op_blue_cards_count`, both stored divided by 25):
+
+| situation | n | P(phase 3) |
+|---|---|---|
+| my blue cards > opponent's | 3 291 | 39.5% |
+| equal | 1 509 | 31.7% |
+| my blue cards < opponent's | 3 200 | 34.3% |
+| **no reveal-cards upgrade, mine = 0, opponent >= 2** | **31** | **35.5%** |
+| no upgrade, mine < opponent's | 833 | 26.7% |
+| no upgrade, mine > opponent's | 550 | 34.9% |
+
+So the decision is only weakly sensitive to who benefits from the shared phase: 5-8 points between "I have more" and "I have less". In the exact case
+the owner described it still calls phase 3 about a third of the time.
+
+Two facts that matter for the interpretation, one of which corrects an earlier claim of mine. The reveal-cards upgrade is bought by **88.2%** of
+game-seats, so it is usually available - but it yields only **~1.3-1.4 cards** (it reveals three and keeps blue/red; the rest are discarded,
+`docs/GAME_RULES.md`), not three. So "the upgrade justifies calling phase 3 while behind" is a much weaker argument than I first wrote.
+
+The information is present in the observation (`blue_cards_count`, `op_blue_cards_count`, `ctx:opponent_activated_blue_cards`), so this is not a data
+problem: it is either a value that does not weigh the shared gain, or a playout that does not carry the opponent's activations to the leaf. The
+diagnostic that separates them: on the "no upgrade, mine = 0, opponent >= 2" states, compare the end-of-game margin that the phase playout gives
+phase 3 against its alternatives.

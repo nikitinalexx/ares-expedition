@@ -77,3 +77,23 @@ The table above says what everyone gets; the strategic consequence is the owner'
   first-class decision whose value depends on the opponent's income and on the alternative use of the pick.
 
 This is why the profile gate judges outcomes and build/standard-project behaviour, not the phase mix alone.
+
+### The phase-3 "reveal cards" upgrade, as the code actually implements it (owner, 20/11)
+
+`StateTransitionService` (lines 220-237) does not give three cards. It does this:
+
+```java
+List<Integer> cards = cardService.dealCards(game, 3);        // three cards are REMOVED from the project deck
+for (Integer id : cards) {
+    Card card = cardService.getCard(id);
+    if (card.getColor() == BLUE || card.getColor() == RED) player.getHand().addCard(id);
+}                                                             // the others are discarded, not returned
+```
+
+so the picker **sees three and keeps only the blue/red ones**; the rest leave the game. With blue (101) + red (55) against green (192) in the card
+pool, the expected keep is about **1.3-1.4 cards per activation**, plus ~1.6 cards removed from the shared deck (a denial effect, not just a draw).
+
+Not broken, and the pieces are consistent: the upgrade id is 8 (`PHASE_3_UPGRADE_REVEAL_CARDS`), `hasPhaseUpgrade(8)` is `phaseCards[2] == 2`, the
+observation column `table_phase_3_app_2` is exactly that flag, and only the player who chose phase 3 receives it. What was wrong was my sentence "the
+picker gets three cards": that overstates the payoff by more than a factor of two, and it weakens the argument that picking phase 3 while behind on
+activations is justified.
