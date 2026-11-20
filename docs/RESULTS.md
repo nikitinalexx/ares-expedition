@@ -2069,3 +2069,30 @@ Build phases go from 10% to 64% of the picks; acceptance 0.72, drafts 8.0, blue 
 Next: a specialist policy trained on this corpus from the champion (`train_policy_ce --prev`), critics trained on the same corpus, and a
 1 000-game measurement against SMART. That number is the first point of the curve; the gate is whether the curve climbs, not where it
 starts.
+
+## Specialist iteration 1: the first point of the curve, and a test that measured the wrong thing (2026-11-20)
+
+Pipeline: probe corpus (5 000 games, plan code 8, nudges 1.0) -> specialist policy (`train_policy_ce --prev champion`, 27.8 s) -> critics
+on the same corpus (AUC 0.896/0.900/0.899, loss ~2.04) -> 100 then 400 games against SMART, search as in the champion.
+
+| measurement | result |
+|---|---|
+| specialist vs SMART, 100 games | 42.5% [33.3, 52.3] |
+| specialist vs SMART, 400 games | **44.75% [40.0, 49.0]** |
+
+44.75% is, to within noise, the old forced-plan number (44.25%). So iteration 1 does not yet separate "the plan is bad" from "the player is
+incompetent": it is the first point, and the gate is the derivative.
+
+**Profile, and the one that matters for the design:** trained on a corpus with 64% build phases, the specialist picks build phases only
+**44%** (phase 1: 18% against the champion's 10%, phase 2: 26%), and phase 4 (income) rises to **24%** (champion 6%, training corpus 5%).
+The policy learned part of the plan; the play-time search re-ranked the phase back towards income.
+
+**A test that measured the wrong thing, recorded so it is not repeated.** Setting `phasePlayout=false` for the specialist gave
+**20.0% [15.0, 26.1]** (200 games), and the tempting reading is "the plan policy alone is weak". It is wrong: with phasePlayout off,
+PICK_PHASE is still in `search.types`, so the phase is decided by ONE-STEP V - not by the policy. The champion's +5.9 was measured by
+replacing exactly that one-step V with a played-out round, so 20% is a measurement of one-step V for the phase, not of the policy's plan.
+The correct test of "the plan belongs to the policy" is to REMOVE PICK_PHASE from `search.types`, and it is the next measurement.
+
+**Design consequence.** For a specialist, the phase decision is the plan commitment and must come from its own policy; the search should
+rank tactics (builds, drafts, inputs), not the phase. Otherwise a generic value re-decides the plan every round, which is the fixed point
+wearing a specialist's clothes.
