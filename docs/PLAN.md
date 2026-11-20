@@ -11,7 +11,11 @@ in `docs/archive/` and are not current.
   corpus contains only its own states. Measured directly: the same policy scores +10 points under critics trained for its plan and -10 under the
   champion's (LEDGER row 19). Prices confirm it: +1 income costs 6.5 / 9.0 / 12.1 MC in three corpora, against ~15 by the rules (row 17).
 * **What changed today**: a specialist trained on a corpus of one committed plan **climbs**: 44.75% -> **54.4%** [49.5, 59.3] vs SMART over two
-  iterations (row 33). It is far below the champion, and it is the first mechanism in weeks that does not sit at 73%.
+  iterations, then falls back to 44.6% at the third (LEDGER 33). It is far below the champion, and it is the first mechanism in weeks that does
+  not sit at 73%.
+* **No mechanism above 73.17% has been demonstrated yet.** The champion and the pipeline (generate -> pack -> train -> measure) work; the
+  *improvement loop* does not, yet. The plan below is a hypothesis with mechanism-level support and cheap gates, not a demonstrated path - and it
+  must be read that way.
 
 ## What is learned
 
