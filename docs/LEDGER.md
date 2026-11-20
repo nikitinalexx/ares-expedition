@@ -1,4 +1,4 @@
-# LEDGER — every experiment we ran, what it showed, and what we concluded
+﻿# LEDGER вЂ” every experiment we ran, what it showed, and what we concluded
 
 **Read this before proposing anything.** Its purpose is twofold: (1) not to repeat work we already did; (2) to keep each conclusion auditable, so a
 future analysis can overturn it with evidence instead of an opinion.
@@ -8,10 +8,10 @@ mistakes are `docs/METHOD.md`. The current plan is `docs/PLAN.md`.
 
 Status column:
 
-* **STANDS** — the measurement and the conclusion are still accepted.
-* **CORRECTED** — the measurement is real, the *conclusion* was wrong. The corrected reading is given, and why it changed.
-* **OPEN** — measured, but not settled (a curve in progress, a partial result).
-* **— (no result)** — was started or planned and produced no measurement; must not be quoted as evidence either way.
+* **STANDS** вЂ” the measurement and the conclusion are still accepted.
+* **CORRECTED** вЂ” the measurement is real, the *conclusion* was wrong. The corrected reading is given, and why it changed.
+* **OPEN** вЂ” measured, but not settled (a curve in progress, a partial result).
+* **вЂ” (no result)** вЂ” was started or planned and produced no measurement; must not be quoted as evidence either way.
 
 | # | experiment | result | conclusion | status |
 |---|---|---|---|---|
@@ -23,7 +23,7 @@ Status column:
 | 6 | a round played out after a BUILD | 73.15% (0) | no effect | STANDS |
 | 7 | a round played out after a BUILD_INPUT | 71.65% (-1.5) | no effect | STANDS |
 | 8 | flat tree, PUCT + policy prior, 32 samples | 71.65% [68.8, 74.4] | a better allocation over the same V does not help | STANDS |
-| 9 | line tree over 3-4 of our decisions | 0.03 games/s, depth cap verified (`[TREE] our decisions taken 4`) | real search, real cost; stopped by the owner before a result | — (no result) |
+| 9 | line tree over 3-4 of our decisions | 0.03 games/s, depth cap verified (`[TREE] our decisions taken 4`) | real search, real cost; stopped by the owner before a result | вЂ” (no result) |
 | 10 | corpus volume: 500 / 1 250 / 5 000 / 10 000 games | 11.6% / 30% / 73% / 72.72% | saturation at 5 000; volume is not the lever | STANDS |
 | 11 | wider critics (768x384) at 2 000 games | 69.55% | capacity without data is worse | STANDS |
 | 12 | 10 000-game corpus, better critic (AUC 0.934, loss 1.07) | 72.72%, NETWORK 42.0% | a better critic on the same plan does not move the plan | STANDS |
@@ -47,10 +47,10 @@ Status column:
 | 30 | when are the points created (18 498 game-seats) | 11.1 rounds; 50.9 points during rounds + **33.6 (39.6%)** settled at the end; per-round creation 1.2 -> 16.5 | the score is settled late but created by the position: a whole-game plan is the right object | STANDS |
 | 31 | behaviour cells (score composition, 4x4) | 8 of 16 occupied, strong games in 5, cell margins +16.5 to -36.8 | **CORRECTED**: descriptive only. Grading a cell by the current player's games is the #20 confound, and the descriptor is endogenous - margins never enter a gate | CORRECTED |
 | 32 | corporations actually played in a 5 000-game corpus | 25 distinct, median 414 games each (max 786, min 1) | the enumerable, balanced, exogenous axis the game provides | STANDS |
-| 33 | specialist curve, corporation-free probe (forced commitment, nudge rate 1.0) | iteration 1 **44.75%** [40.0, 49.0]; iteration 2 **54.4%** [49.5, 59.3]; iteration 3 **44.6%** [39.8, 49.5] (400 games each, matched stacks) | at rate 1.0 the arm OSCILLATES rather than climbs: one real gain, then a fall back to the baseline as the corpus drifts (phase 4 at 0%, critics loss 1.61 against 1.33). The planned next step is the annealing schedule (rate -> 0.5), not a fourth run at 1.0 | OPEN (oscillates at 1.0; annealing is the test) |
+| 33 | specialist curve, corporation-free probe (forced commitment) | rate 1.0: **44.75%** [40.0, 49.0] -> **54.4%** [49.5, 59.3] -> **44.6%** [39.8, 49.5]; rate 0.5 (annealed): **52.5%** [47.6, 57.3] (400 games each, matched stacks) | at the full nudge the arm OSCILLATES: the corpus drifts into a corner (phase 1 pinned at 50%, income 0%) and quality falls; halving the nudge holds the good level (52.5, indistinguishable from the best point). So the compulsion caused the oscillation, not the mechanism - but the specialist is still ~20 points below the champion, so its use is the gate and the league, which needs OTHER commitments enumerated | OPEN (level ~53%, no gate yet) |
 | 34 | specialist with the phase decided by its policy (`PICK_PHASE` out of `search.types`) | 22.5% [17.3, 28.8] | its own plan, as learned, is weak; the 44.75% was the search re-deciding the phase | STANDS |
 | 35 | `phasePlayout=false` for the specialist | 20.0% [15.0, 26.1] | **CORRECTED (method)**: this is ONE-STEP V deciding the phase, not the policy - `PICK_PHASE` was still in `search.types`; it is #34 that tests the policy | CORRECTED |
-| 36 | line tree with TD vs matched margin critics | - | stopped on the owner's instruction before producing a result | — (no result) |
+| 36 | line tree with TD vs matched margin critics | - | stopped on the owner's instruction before producing a result | вЂ” (no result) |
 | 37 | phase mix as a degeneracy signal | the iteration-3 corpus has phase 4 (income) at 0% and draft at 22%; the same specialist at play time (nudge off) picks 17/25/14/**29**/15 | **CORRECTED**: phase 4 is a SHARED phase - it resolves for everyone, so with a dominating income declining it can be the strong move (an opponent who spends a pick on it "buries themselves"), and the corpus's 0% was a property of the forced generator, not of the player. "No phase 4" and "lots of phase 1" are NOT degeneracy signals; the profile gate judges outcomes and build behaviour | CORRECTED |
 
 ## Infrastructure faults found and fixed (each would have silently poisoned a corpus)
