@@ -1855,3 +1855,49 @@ seeds 1..3, identical recipe, only `--td-bootstrap` absent.
 The TD critic orders final outcomes WORSE (it does not fit the final margin by construction - it fits the local change plus a
 bootstrap). That is expected and it is why the test is not "which AUC is higher": the question is whether the tree can rank lines
 with each of them. Both arms now run with the matched pair (400 games each, same seeds, so the games are pairable).
+
+## V is policy-conditional, not "biased towards blue cards" (2026-11-20, owner's example)
+
+The owner's two examples, recorded verbatim in substance because they name the failure exactly:
+
+1. **Production, no points yet.** A player builds 5 steel income and 5 titanium income and spends a lot of money. His opponent
+   builds blue actions and presses them, collecting money and points. Our value calls the first position much worse and the second
+   one "genius - lots of blue buildings, lots of points". The first player is the owner, and he beats the "phase-3 brawler" with one
+   hand.
+2. **AssetLiquidation.** After four rounds TR is down to 0, but there are many green cards. The owner would win; our value says he
+   will lose.
+
+**What is actually happening.** `V(x)` is not the value of the position. It is `E[final margin | x, OUR POLICY keeps playing]` - a
+*policy-conditional* value. In example 1 the production position loses **under our continuation**, because our player will spend
+next round's money on one more blue card and convert none of the income. So V is right about our play and wrong about the position.
+That is not a bias towards blue cards in the features; it is the conditioning.
+
+Two measurements already in this document say the same thing from the other side:
+
+- V **sees** the delayed state: my 200 MC -> +2.92 logits, the opponent's 200 MC -> -2.20, his 80 heat -> -0.54. No blind spot in
+  the input.
+- Against NETWORK, V's mean margin is **+0.94/+1.28** in games it loses two out of three: a value fitted to our own policy's games
+  answers "what would WE do from here", not "what is this position worth".
+
+**Two consequences that close most of what we tried:**
+
+- **Depth cannot fix it.** Every deeper search evaluates a leaf with the same V, i.e. asks the same question about a state our policy
+  cannot play out. This is why 2 rounds (-8), 8 determinisations (-6.3), a build playout (0), an input playout (-1.5) and the line
+  tree all landed at or below 73.17%: not noise, a different question.
+- **Horizon cannot fix it either, and this is arithmetic:** a production card pays over 10-15 rounds. Our horizons were 1 round, 2
+  rounds, 3-4 decisions. A horizon shorter than the payoff's time scale cannot see the payoff at any value quality. The only horizon
+  that contains the delayed value is the end of the game.
+- **TD cannot fix it.** `reward + V(next)` carries the bias into the label through the bootstrap and then converges to the same
+  preference with less variance - a more confident version of the same mistake.
+
+**What is left, stated as a measurement rather than a hope.** The only judge that carries no policy-conditional bias is the game's own
+final score. Its problem is variance (the owner's 90 -> 180 last round), and the answer to variance is *pairing*: both candidates
+played in the same determinised world, so everything not caused by the choice cancels. And there is a hard precondition: if the
+continuation is the plain policy, the judge says "production loses" and is right, because the continuation does not convert it -
+measured as a forced plan at 44.25% whose corpus trains 25-33%. So the judge is only informative together with a continuation that
+can execute the plan.
+
+**The open question this creates, and it is now the first thing to measure:** does V's plan preference agree with the paired
+end-of-game judge's preference on the same states? On 100 real phase decisions (~5 minutes of compute: 4 candidates x 8 paired worlds
+x ~80 ms per policy game) this gives a number where we only have an argument today. If they agree, V is not the problem and the plan
+is wrong; if they disagree, the bias is real, measured, and the judge becomes the label source V is missing.

@@ -166,6 +166,30 @@ that contains the delayed value is the end of the game - which is exactly what t
 
 A is a pure diagnostic: the flag prints the matrix and changes no decision (`auditEndJudge` in `OnePlySearch`).
 
+### S1'c. Where the judge is used, exactly, and what it buys (owner's question, 20/11)
+
+**What it adds is not "the result"** - we already have the result of every game we play. It adds the **counterfactual**: the result of
+the plan we did NOT choose, in the same world. That is the one quantity a policy-conditional V cannot produce, and it is produced
+for four candidates at once, i.e. several plan comparisons per game instead of one outcome.
+
+**It is never a per-decision judge.** Cost, measured ingredients: inside a rollout the search is bypassed (`choose()` returns -1 while
+`busy`), so a full game costs ~60-100 ms; a judged decision is `candidates x K` full games; PICK_PHASE has ~4 candidates and occurs
+once per round per seat (~12-15 times a game).
+
+| use | cost | where |
+|---|---|---|
+| 100 phase states, 4 candidates, K = 8 | ~3 200 games ~ 5 minutes | offline, once (instrument A) |
+| judge at one plan decision per game | 4 x 8 x ~80 ms = ~2.5 s per decision | play time, 1-3 decisions a game |
+| judge at all 12-15 phase picks | ~30-40 s per game | rejected: 30-40x the game's own cost for decisions whose effect is not a plan |
+
+**The decision this plan makes:** the judge is first a **ruler**, not a player. It answers "is V's plan preference right?" on 100
+states, which is the one question the project has argued about without a number. Only if the ruler shows V is wrong does the judge
+become the **label source** for V (the judged games carry the endorsed plan with the game's own outcome), and only then does the
+continuation have to be searched inside the chosen plan - because otherwise the exploration teaches "do not build" (44.25%).
+
+So the order is: (1) ruler on 100 states, (2) if V disagrees with the game, judge-guided generation + retrain, (3) if V agrees,
+the bias hypothesis is dead and the plan returns to the data/search question - with a number instead of an opinion.
+
 ### S2. Spend the resolution on the search
 
 Only if S1 resolves the differences: re-run the measured set (flat one ply, one round on the phase, the line tree) with the new V.

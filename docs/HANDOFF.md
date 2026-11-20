@@ -1532,3 +1532,14 @@ fires (`[TREE] ... our decisions taken 4`), the simulation between 4 of our deci
 3. The profile gate first on any candidate (builds ~32.5, acceptance 0.77): it is the instrument that catches the degenerate
    learner before the win rate looks fine.
 4. Throughput (S4) only after the tree proves itself at play time.
+
+**20/11, the owner's diagnosis (recorded in RESULTS.md, section "V is policy-conditional"):** the value is not biased towards
+blue cards in its features - it sees stockpiles (+2.92 / -2.20 logits for 200 MC) - it is POLICY-CONDITIONAL: `V(x) = E[margin | x,
+our policy keeps playing]`. A production economy our player cannot convert is scored as a loss, correctly for our player. Depth
+cannot fix it (the leaf is evaluated with the same V), the horizon cannot (a 10-15 round payoff against 1-2 round horizons), and TD
+cannot (the bootstrap carries the bias). Only the game's own final score can judge, and only PAIRED (same world for every candidate)
+at plan-level decisions - 4 candidates x 8 worlds ~ 2.5 s per judged decision, ~5 minutes for 100 states offline.
+
+The plan therefore starts with a RULER, not a player: `-Dares.agent.search.judgeAudit=true` on 100 phase states compares V's plan
+preference with the paired end-of-game judge's. If they agree, the bias hypothesis is dead (and the plan returns to data/search);
+if they disagree, the judge becomes the label source V is missing.
