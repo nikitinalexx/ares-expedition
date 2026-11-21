@@ -2531,3 +2531,21 @@ last round (`ml/tag_metric.py --microbes`), not the tag count.
 So the nudge does seed microbe play (the share of games with microbes rises 2.5x at 0.15 and 4x at 0.6), but at 0.3 and above it also destroys the build
 count. **0.15 is the rate that "seeps in" without collapsing the player**, and that is the rate the arm runs at - the owner's framing ("microbes as a
 supplement, not a strategy") rules out the higher rates by construction.
+
+## The microbe arm: seeded, not compelled - and still negative (night of 20/21)
+
+Protocol: `-Set microbe -Rate 0.15` (the rate the smoke chose: builds 2.81, microbe games 1.5% against 0.6% in the reference), 5 000 games, the same
+base and critics, whole-corpus fine-tune.
+
+| measurement | microbe arm | champion | red arm | green arm |
+|---|---|---|---|---|
+| vs SMART, 5 000 | **72.46% [71.20, 73.68]** | 75.16% | 72.05% | 70.23% |
+| vs NETWORK, 1 000 | **37.65% [34.7, 40.7]** | 43.25% | 39.15% | 34.38% |
+| panel | one collapse (acceptance 0.697, -14%); builds and card variety inside tolerance | reference | 3 collapses | 3 collapses |
+
+Microbes are the gentlest of the three interventions (only the build acceptance drops beyond tolerance, the colour mix and card variety stay close to the
+reference), and they still cost ~2.7 points on SMART and ~5.6 on NETWORK.
+
+**The night's conclusion, from three arms and both benchmarks:** perturbing the corpus's card mix - towards events, towards the economy, or towards the
+microbe resource - does not add strength, and the gentler the perturbation the smaller the loss. The only measured gain over the champion remains the
+practice itself (+2, once, LEDGER 42-43). The NETWORK gap did not move in any arm.
