@@ -256,6 +256,13 @@ public class OnePlySearch {
     private final int judgeWorlds;
     /** How many decisions to audit; the audit is ~4 candidates x K full games per decision. */
     private final int judgeMax;
+    /**
+     * The display calibration of {@link #winProbability}: {@code -Dares.agent.winProbability.a} and {@code .b} turn the critics' raw output into a
+     * probability, {@code sigmoid(a * logit + b)}. Default a=1, b=0 keeps the raw sigmoid; a margin critic uses the pair fitted by
+     * `ml/value_calibration.py --margin-scale 20` (self-play 1.76 / -0.83). Display only - the search ranks with {@code logit} and never reads this.
+     */
+    private static final double winProbabilityA = Double.parseDouble(System.getProperty("ares.agent.winProbability.a", "1"));
+    private static final double winProbabilityB = Double.parseDouble(System.getProperty("ares.agent.winProbability.b", "0"));
     private final java.util.concurrent.atomic.AtomicInteger judgeDone = new java.util.concurrent.atomic.AtomicInteger();
     /**
      * {@code -Dares.agent.search.projectBuilds=true}: after applying a candidate, ADVANCE the game to the player's next
@@ -592,10 +599,24 @@ public class OnePlySearch {
                 sum += model.logit(observation);
             }
             float logit = sum / models.size();
-            return (float) (1.0 / (1.0 + Math.exp(-logit)));
+            return calibratedProbability(logit, winProbabilityA, winProbabilityB);
         } catch (RuntimeException e) {
             return Float.NaN;
         }
+    }
+
+    /**
+     * The win probability shown to a human, from the critics' raw output.
+     * <p>
+     * Why the two coefficients (owner's question, 21/11: "the agent shows 26% in a position it has lost 89-132"): the critics are trained with
+     * {@code --target margin}, so their output is the predicted score difference divided by {@code margin_scale} (20), NOT a log-odds of winning.
+     * {@code sigmoid(logit)} is therefore not a probability - at a predicted margin of -20 it shows 27%, while the measured rate in that bin is 7% in
+     * self-play and 4% against NETWORK (ml/value_calibration.py). The honest transform is a fitted logistic on the critic's own distribution; the
+     * default (a=1, b=0) keeps the old behaviour, and a margin critic is shown with the fitted pair from `ml/value_calibration.py --margin-scale 20`
+     * (self-play: a=1.76, b=-0.83).
+     */
+    static float calibratedProbability(float logit, double a, double b) {
+        return (float) (1.0 / (1.0 + Math.exp(-(a * logit + b))));
     }
 
     /**

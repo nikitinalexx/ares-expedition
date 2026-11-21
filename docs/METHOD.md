@@ -113,3 +113,13 @@ reported a 49% win rate against a true 44% - a plausible-looking table that cont
 
 Rule: a per-seat quantity must be oriented by the recorded seat, and the winner must be the engine's own result (`WinPointsService.ScoreBreakdown`), never
 the sign of the last recorded score. A trajectory tells you how a game was going; only the engine tells you how it ended.
+
+## 10. A critic's calibration is not its strength
+
+Measured (21/11). The champion's critics predict a mean margin of **+24.2** in positions whose true mean is **-6.74** (their "even" point is an actual -25). Three
+critics retrained on the champion's own balanced corpus fixed half of that (+9.7) and played **31.85%** against NETWORK over 1 000 games, against the old critics'
+41.7% - because their ranking was worse (AUC 0.885 against 0.925).
+
+Rule: the search compares candidates inside ONE state, where a state-wide bias cancels; what drives play is the ranking, not the level. Fix calibration where the
+level is used - a displayed probability, a gate, a cross-state plan decision - and never trade ranking quality for it. The 26% the owner saw is a sigmoid of a
+margin, not a probability: a display issue at least, and never evidence that the moves were wrong.

@@ -2944,3 +2944,109 @@ judge is now wired into it (same `[JUDGE]` line format, so `ml/judge_report.py` 
 
 So the corporation choice is one-step-optimal under our continuation, and the 27-63% spread by chosen corporation is the **deal and the hand**, not a choice error. The
 69% world share is the largest measured so far (phase vs NETWORK 43%) - the corporation decision is almost entirely a statement about the deal.
+
+## The value is systematically optimistic, and it was trained on the wrong corpus (21/11)
+
+The owner's observation: the agent "shows 26%" in a position it has already lost 89-132, and against strong players it overrates its own position. Measured with a new
+instrument (`ml/value_calibration.py`, 4 tests; the forward pass is pinned to the trainer's own `reference.json`, so a wrong layer order cannot produce a plausible
+curve).
+
+**The critics are margin models, not probabilities.** All three champion critics report `"target": "margin"` (and the phase and mulligan critics too), so `sigmoid`
+of their output is not a win probability - it is a squashed `margin / 20`. Measured in their own units, on 12 000 phase rows of the 1 000-game NETWORK corpus:
+
+| predicted margin | rows | mean predicted | **mean actual** |
+|---|---|---|---|
+| -19.5 | 2 000 | -19.5 | **-44.9** |
+| +5.5 | 2 000 | +5.5 | **-23.4** |
+| +19.2 | 2 000 | +19.2 | **-13.7** |
+| +31.5 | 2 000 | +31.5 | **-1.4** |
+| +44.5 | 2 000 | +44.5 | **+10.0** |
+| +64.0 | 2 000 | +64.0 | **+33.0** |
+
+Mean: **predicted +24.2 against an actual -6.74**. The critic's "even position" is an actual margin of about **-25**: it thinks a losing position is a winning one,
+which is exactly the owner's reading.
+
+**Why: the training corpora.** The champion's critics were trained on the packs `1118-2332_17` (outcome 55.9%, margin +4.8) and `1118-2332_16` (56.5%, +9.2) - games
+where the recorded seat is the stronger model. The champion's OWN corpus is balanced: `1120_clean5000` has outcome **50.5%** and margin **+0.02**. So the critics do
+not describe the policy's own games at all; they describe "new model beats old model", and against a stronger opponent the optimism only grows.
+
+**What it does and does not explain.** Within one decision the search compares candidates in the SAME state, so a state-wide bias cancels and the ranking is not
+automatically wrong. What it does distort: every decision that compares DIFFERENT states (the phase pick, any plan/gate use), and any place that reads the output as
+a probability (the 26% display is a sigmoid of a margin - a presentation bug at least).
+
+**Not the fix:** an ensemble of probability critics trained on a mix of styles (`--target outcome`, clean + red + green + microbe) scored **30.4%** against NETWORK
+over 500 games, against the margin ensemble's **41.1%** on the same sample. Diversity with the wrong target is worse, not better.
+
+**The cheap test now running:** three critics trained on the champion's OWN balanced corpus (`target=margin`, same architecture), to see whether the label bias is
+the part that matters.
+
+### The draft does not hand cards to the opponent - the DECK does (21/11, owner's correction)
+
+The passing-draft branch in `DiscardCardsProcessor` (`nextPlayer.getHand().addCards(leftCards)`) is not the mode we play. The real mechanic is in
+`CardService.dealCards`:
+
+```java
+if (game.getProjectsDeck().size() < count) {
+    Deck newProjectsDeck = createProjectsDeck(game.getExpansions());  // the FULL card set again
+    game.mergeDeck(newProjectsDeck);   // minus what is currently in hands, on tables and in the deck
+}
+```
+
+So when the deck runs low, a fresh full card set is merged in, minus the cards currently held, built or still in the deck. **A discarded card comes back into
+the pool; a held or built card does not.** Denial is therefore "hold or build it", not "draft it".
+
+Measured on the 1 000-game corpus: we hold **5.13 green cards in hand at the last round** (100% of games hold at least one) and build 10.6, against NETWORK's
+16.2. The number of green cards we DRAFT and pass (~19 per game in the sampled drafts) predicts neither NETWORK's green count (r = 0.007) nor the outcome
+(r = -0.025): the exchange is symmetric and the pool is large. The difference is that NETWORK **builds** the greens, which is the phase-1 result (LEDGER 54),
+not a drafting gift.
+
+### The value is systematically optimistic - and calibration is NOT what drives play (21/11)
+
+Measured with `ml/value_calibration.py` (4 tests; the forward pass is pinned to the trainer's `reference.json`). The critics are margin models (`target=margin`),
+so their output is `margin/20`, and `sigmoid` of it is not a probability. In margin units, on 12 000 phase rows of the 1 000-game NETWORK corpus:
+
+| predicted margin | mean predicted | mean actual |
+|---|---|---|
+| -19.5 | -19.5 | -44.9 |
+| +5.5 | +5.5 | -23.4 |
+| +19.2 | +19.2 | -13.7 |
+| +31.5 | +31.5 | -1.4 |
+| +44.5 | +44.5 | +10.0 |
+| +64.0 | +64.0 | +33.0 |
+
+Mean **+24.2 against an actual -6.74**: the critic's "even position" is about -25. Two measured contributors: (a) the critics were trained on the packs
+`1118-2332_17/16`, where the recorded seat wins **55.9-56.5%** with a margin of **+4.8/+9.2** (games of a newer model against an older one), while the champion's
+own corpus is 50.5%/+0.02; (b) for the inner decision types the recorded rows are win-biased - a game where only one seat has a `BLUE_INPUT` decision has a
+mean margin of +14.6 against +1.0 for games with both seats, because the winner simply builds more.
+
+**The decisive test.** Three critics trained on the champion's own balanced corpus fixed half the bias (mean predicted **+9.7** instead of +24.2) and played
+**31.85%** against NETWORK over 1 000 games - ten points WORSE than the champion's 41.7%. The reason is visible in their metrics: AUC 0.885-0.890 against the old
+critics' **0.925**. The search compares candidates inside one state, where a state-wide bias cancels; what matters is the ranking, and the old critics rank
+better. **Calibration is a presentation and cross-state issue, not the lever for strength.** (A probability-target ensemble on a mix of styles scored 30.4% over
+500 games - also worse.)
+
+### The old critics were trained on more data than the champion has (21/11)
+
+The champion's critics: 143 936 training rows from 10 000 games, AUC 0.925. The champion's own corpus gives ~458 000 rows over 5 000 games, but critic quality
+follows the number of games/labels. This is the cheapest remaining critic experiment: train on the old packs PLUS the champion's own games (`--packed
+n10k_merged,1120_clean5000`, same margin target), which is exactly the reason `--replay-packs` exists.
+
+### The displayed "win probability": a margin shown as a probability (21/11, owner's question)
+
+`GameController` fills `GameDto.winProbability` from `OnePlySearch.winProbability`, which returned `sigmoid(mean logit)`. The critics are margin models, so
+their `logit` is `margin / 20`; the number was a squashed margin, not a probability. The fallback branch (`NNService ... baseProb`) is a real probability, so the
+two branches were even on different scales.
+
+Fitted conversions from `ml/value_calibration.py --margin-scale 20` (12 000 phase rows):
+
+| predicted margin | the old display | honest, self-play | honest, vs NETWORK |
+|---|---|---|---|
+| -40 | 11.9% | 1.3% | 1.3% |
+| -20 | **26.9%** | 6.9% | 4.1% |
+| 0 | **50.0%** | 30.5% | 12.5% |
+| +20 | 73.1% | 72.0% | 32.3% |
+| +40 | 88.1% | 93.8% | 61.5% |
+
+The owner's 26% is the row "predicted margin about -20". Fix: `sigmoid(a * logit + b)` with `-Dares.agent.winProbability.a/.b`, default 1/0 (unchanged); a margin
+critic uses the self-play pair **1.76 / -0.83**. Display only - the search ranks with the raw logit and never reads these coefficients (`WinProbabilityCalibrationTest`,
+2 tests). The honest number is still optimistic against NETWORK, because no calibration can fix a value that has never seen a strong opponent.
