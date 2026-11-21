@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Created by oleksii.nikitin
@@ -40,17 +41,30 @@ public class SyntheticCatastrophe implements BaseExpansionRedCard {
     @Override
     public void postProjectBuiltEffect(MarsContext marsContext, Card project, Map<Integer, List<Integer>> inputParams) {
         List<Integer> cardInput = inputParams.get(InputFlag.SYNTHETIC_CATASTROPHE_CARD.getId());
+        if (cardInput == null || cardInput.isEmpty()) {
+            return;
+        }
 
         int targetCardId = cardInput.get(0);
+        // The AI's own build-params service answers SKIP_ACTION when there is no red card to return (AiCardBuildParamsService),
+        // and the projection path builds cards without running the validator. getCard(SKIP) is null, and countCardTagsWithDynamic
+        // then threw `Cannot invoke Card.getTags() because "card" is null` - which killed a whole 2 000-game measurement at game 1 408.
+        if (targetCardId == InputFlag.SKIP_ACTION.getId()) {
+            return;
+        }
 
         Card targetCard = marsContext.getCardService().getCard(targetCardId);
+        if (targetCard == null) {
+            return; // an id that is not in the catalog has no tags to revert
+        }
+
         final Player player = marsContext.getPlayer();
 
         player.getPlayed().removeCards(List.of(targetCardId));
         player.getHand().addCard(targetCardId);
 
 
-        player.getPlayed().getCards().stream().map(marsContext.getCardService()::getCard).forEach(
+        player.getPlayed().getCards().stream().map(marsContext.getCardService()::getCard).filter(Objects::nonNull).forEach(
                 card -> card.revertPlayedTags(marsContext.getCardService(), targetCard, player)
         );
 
