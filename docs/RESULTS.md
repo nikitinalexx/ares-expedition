@@ -2549,3 +2549,16 @@ reference), and they still cost ~2.7 points on SMART and ~5.6 on NETWORK.
 **The night's conclusion, from three arms and both benchmarks:** perturbing the corpus's card mix - towards events, towards the economy, or towards the
 microbe resource - does not add strength, and the gentler the perturbation the smaller the loss. The only measured gain over the champion remains the
 practice itself (+2, once, LEDGER 42-43). The NETWORK gap did not move in any arm.
+
+## The 10 000-game confirmation: the +2 is real (night of 20/21)
+
+| bundle | vs SMART | vs NETWORK |
+|---|---|---|
+| old champion (`1118-2332_17`) | 73.17% [72.3, 74.0] (10 000) | 39.8% [37.7, 42.0] (2 000) |
+| **new champion (`1120_clean5000`)** | **75.16% [74.30, 76.00] (9 999)** | **41.72% [39.6, 43.9] (1 998)** |
+
+At the project's own resolution the new bundle is **+2.0 points on SMART, with non-overlapping intervals**, and **+1.9 on NETWORK**, where the intervals
+still touch (39.6 against 42.0) - so SMART is confirmed and NETWORK is a trend, not a result.
+
+The new champion is therefore: the old champion's policy, fine-tuned once on 5 000 fresh unperturbed self-play games. Nothing else changed - not the
+critics, not the search, not the observation.

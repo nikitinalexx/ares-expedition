@@ -1,10 +1,10 @@
-# MORNING REPORT — night of 20/21 November
+﻿# MORNING REPORT вЂ” night of 20/21 November
 
 Everything below is measured; the detailed records are in `docs/RESULTS.md` and the statuses in `docs/LEDGER.md` (rows 41-46).
 
 ## One line
 
-Three card-content arms — events, economy, microbes — were run overnight on both benchmarks; **all three are negative**, the gentler the
+Three card-content arms вЂ” events, economy, microbes вЂ” were run overnight on both benchmarks; **all three are negative**, the gentler the
 perturbation the smaller the loss, so "make the player play more of X" is closed as a way to add strength. What did improve is the tooling: the
 simulator is **35% faster** with no decision changed, and the instruments for a content experiment (colour/set nudges, a microbe definition by
 resource, a health panel, a tag metric) are now tested and reusable.
@@ -20,15 +20,15 @@ Base: the clean fine-tune, **75.16% [73.94, 76.23]** vs SMART and **43.25% [40.2
 | **microbe** (resource, not tag), rate 0.15 | 1.5% of game-seats hold microbes against 0.6% | **72.46% [71.20, 73.68]** | **37.65% [34.7, 40.7]** | one collapse: acceptance 0.697 (-14%) |
 
 Read together: the *content* of the forcing matters far less than the *forcing*; a compelled player builds less, accepts fewer builds and plays a
-narrower card set, and the corpus inherits exactly that (the 19/11 rule, now measured from the other direction). Green — the economy — is the worst of
+narrower card set, and the corpus inherits exactly that (the 19/11 rule, now measured from the other direction). Green вЂ” the economy вЂ” is the worst of
 the three, so the owner's "more red is a consequence of a stronger economy" is **not** supported by this instrument: forcing the economy costs more
 than forcing the events.
 
 ## What this closes, and what it leaves
 
 * **Closed:** "teach it to play more events / more economy / more microbes and it will get stronger". It does not, on either benchmark, at any of the
-  rates tried (0.15, 0.3, 0.5, 0.6 — the higher rates were measured in the smokes and destroy the build count first).
-* **Not closed:** the *idea* that a plan is worth having — only the instrument, forcing, is. The microbe arm in particular shows the gentlest
+  rates tried (0.15, 0.3, 0.5, 0.6 вЂ” the higher rates were measured in the smokes and destroy the build count first).
+* **Not closed:** the *idea* that a plan is worth having вЂ” only the instrument, forcing, is. The microbe arm in particular shows the gentlest
   intervention loses least; whether a *learned* plan (a corpus produced by a player who chose it for its own reasons) would pay is a different question,
   and the only way to answer it is the measurement path from the review.
 * **Unchanged:** the champion is the practice bundle: one fine-tune on 5 000 fresh self-play games, +2 points over the old champion, and a **second**
@@ -36,19 +36,25 @@ than forcing the events.
 
 ## Tooling built overnight (all tested)
 
-* `ml/run_arm.ps1` — one command per arm: generate -> fine-tune on the whole corpus -> 5 000 vs SMART -> 1 000 vs NETWORK -> health panel.
+* `ml/run_arm.ps1` вЂ” one command per arm: generate -> fine-tune on the whole corpus -> 5 000 vs SMART -> 1 000 vs NETWORK -> health panel.
 * `ColourNudge` (6 tests): prefer a colour at build/draft, keep it at mulligan/discard/sell.
-* `TagNudge` (5 tests) and `MicrobeCards` (5 tests): the microbe family is defined by the **resource** — 13 holders/producers from the owner's list,
-  Worms and BacterialAggregates, the four red `ADD_MICROBE` one-shots, the buffed variants — not by the MICROBE tag, which the owner correctly called
+* `TagNudge` (5 tests) and `MicrobeCards` (5 tests): the microbe family is defined by the **resource** вЂ” 13 holders/producers from the owner's list,
+  Worms and BacterialAggregates, the four red `ADD_MICROBE` one-shots, the buffed variants вЂ” not by the MICROBE tag, which the owner correctly called
   meaningless.
 * `ml/tag_metric.py --microbes` (8 tests): the microbe resource actually held on cards, summed over the nine counters of `TableResourcesFeature`.
 * `ml/health.py` (13 tests): the generalist-vs-specialist classifier; a strong degenerate is kept as a gatekeeper, never deleted.
 * **Throughput:** 1.07 -> **1.44 games/s** (+35%), observation CPU per game 7.20 -> 3.74 s, critics unchanged; streams removed from the observation
   path and a flat `Card[] byId` replaced up to eight hash lookups per `getCard` (equivalence tested over ids 0..11 000).
 
-## The 10 000-game confirmation
+## The 10 000-game confirmation: the +2 is real
 
-Running at the end of the night (the champion, clean fine-tune, 10 000 vs SMART and 2 000 vs NETWORK); the result is appended below when it lands.
+| bundle | vs SMART | vs NETWORK |
+|---|---|---|
+| old champion `1118-2332_17` | 73.17% [72.3, 74.0] (10 000) | 39.8% [37.7, 42.0] (2 000) |
+| **new champion `1120_clean5000`** | **75.16% [74.30, 76.00]** (9 999) | **41.72% [39.6, 43.9]** (1 998) |
+
+SMART is confirmed at the project resolution (non-overlapping intervals, +2.0). NETWORK is a trend (+1.9, intervals touching). The new champion is the
+old champion fine-tuned once on 5 000 fresh unperturbed self-play games - nothing else changed.
 
 ## What I would do next (in order)
 
@@ -66,4 +72,4 @@ Running at the end of the night (the champion, clean fine-tune, 10 000 vs SMART 
 
 No pruning, no public-observation removal (they buy speed with quality, the owner's call). No second microbe rate at the arm scale (the smokes showed
 the direction: higher rates only add the build collapse). No reply written to the reviewer yet: the owner asked to verify first, and the verification is
-`docs/reviews/VERIFICATION_1.md` — with the red/green/microbe arms now added to it as evidence.
+`docs/reviews/VERIFICATION_1.md` вЂ” with the red/green/microbe arms now added to it as evidence.
