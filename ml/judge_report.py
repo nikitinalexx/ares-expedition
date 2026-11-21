@@ -135,6 +135,32 @@ def read_lines(path):
         return handle.readlines()
 
 
+def decompose(rows, split=4):
+    """How much of the outcome's variation is the WORLD, and how much the POSITION.
+
+    For the candidate the value chose, the per-world margins of one decision differ only by the determinisation (and the opponent's play). The pooled sd of
+    those differences is the world's contribution; the sd of the per-decision means is how much different positions differ. No new run is needed - the
+    audit already printed the whole matrix.
+    """
+    within = []
+    means = []
+    for row in rows:
+        v_best = argmax(row["v"])
+        if v_best < 0:
+            continue
+        values = [world[v_best] for world in row.get("worlds", []) if v_best < len(world) and world[v_best] is not None]
+        if len(values) < 2:
+            continue
+        mean = sum(values) / len(values)
+        means.append(mean)
+        within.extend((value - mean) ** 2 for value in values)
+    if len(means) < 2 or not within:
+        return {"decisions": 0}
+    within_sd = (sum(within) / (len(within) - len(means))) ** 0.5
+    mean_sd = (sum((m - sum(means) / len(means)) ** 2 for m in means) / (len(means) - 1)) ** 0.5
+    return {"decisions": len(means), "world_sd": within_sd, "position_sd": mean_sd}
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--log", required=True)
@@ -164,6 +190,12 @@ def main():
                   f"agreement {honest['agreement'] * 100:.1f}%, "
                   f"advantage {honest['mean_advantage']:+.2f} points "
                   f"(se {honest['se_advantage']:.2f}, n {honest['decisions']})")
+        spread = decompose(group, args.split)
+        if spread["decisions"] > 0:
+            share = spread["world_sd"] ** 2 / (spread["world_sd"] ** 2 + spread["position_sd"] ** 2)
+            print(f"    VARIANCE: the world moves one decision by sd {spread['world_sd']:.1f} points, "
+                  f"the position by sd {spread['position_sd']:.1f} "
+                  f"-> about {share * 100:.0f}% of the variation is the deal")
 
 
 if __name__ == "__main__":

@@ -104,3 +104,12 @@ Found by the owner's check (21/11), in the decision audit:
 Rule: before believing an oracle, name (a) who plays the other seat and (b) what continuation plays our seat. If the answer is "us" and "us", the oracle
 can only confirm us. The audit now takes {@code -Dares.agent.search.judgeOpponent=SMART} so the other seat is the benchmark; the continuation question
 stays open for plan decisions, and any claim there must say so.
+
+## 9. The result comes from the engine, not from the player's own trajectory
+
+Found while measuring the shape of the NETWORK loss (21/11). The first version of the channel table read `RANKING.*.jsonl` as `breakdown[0]` = us. The corpus
+records only the agent's seat, and the agent plays seat 0 in 46 of 100 games. Mixing the two seats flattened every channel (TR +1.0, resources -1.3) and
+reported a 49% win rate against a true 44% - a plausible-looking table that contradicted the scorecard and would have supported the wrong conclusion.
+
+Rule: a per-seat quantity must be oriented by the recorded seat, and the winner must be the engine's own result (`WinPointsService.ScoreBreakdown`), never
+the sign of the last recorded score. A trajectory tells you how a game was going; only the engine tells you how it ended.

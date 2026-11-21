@@ -81,3 +81,20 @@ class SummariseTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DecomposeTest(unittest.TestCase):
+
+    def test_world_and_position_spread(self):
+        # two decisions; the first's worlds are 10, 20, the second's 0, 10 -> world sd 5, position sd 5
+        rows = [
+            {"v": [1.0, 0.0], "mean": [0.0, 0.0], "worlds": [[10.0, 0.0], [20.0, 0.0]]},
+            {"v": [1.0, 0.0], "mean": [0.0, 0.0], "worlds": [[0.0, 0.0], [10.0, 0.0]]},
+        ]
+        stats = judge_report.decompose(rows, split=1)
+        self.assertEqual(stats["decisions"], 2)
+        self.assertAlmostEqual(stats["world_sd"], 7.0710678, places=4)
+        self.assertAlmostEqual(stats["position_sd"], 7.0710678, places=4)
+
+    def test_empty(self):
+        self.assertEqual(judge_report.decompose([])["decisions"], 0)

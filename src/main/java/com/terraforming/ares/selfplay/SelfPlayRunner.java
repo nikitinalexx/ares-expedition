@@ -63,7 +63,47 @@ public class SelfPlayRunner {
     }
 
     public record Summary(String stoppedReason, int gamesRequested, int gamesPlayed, int gamesFailed, long rows, long chunks,
-                          double seconds, int threads, Map<String, Integer> matchups, AgentPerfStats.Snapshot perf) {
+                          double seconds, int threads, Map<String, Integer> matchups, AgentPerfStats.Snapshot perf,
+                          RoundStats rounds) {
+        /** Backwards-compatible construction for callers that do not track the length (tests, old tools). */
+        public Summary(String stoppedReason, int gamesRequested, int gamesPlayed, int gamesFailed, long rows, long chunks,
+                       double seconds, int threads, Map<String, Integer> matchups, AgentPerfStats.Snapshot perf) {
+            this(stoppedReason, gamesRequested, gamesPlayed, gamesFailed, rows, chunks, seconds, threads, matchups, perf,
+                    new RoundStats(0, 0, 0, 0));
+        }
+    }
+
+    /**
+     * How long the games were, in rounds ({@code MarsGame.getTurns()} at GAME_END).
+     * <p>
+     * Why it exists (owner's question, 21/11): whether a player wins by ending the game early or by a bigger late game is invisible in a win rate. The
+     * length is a property of the MATCHUP (the planet maxes when both players' terraforming adds up), so it belongs in the summary of every run, not in a
+     * special experiment.
+     */
+    public record RoundStats(int min, int max, double mean, int games) {
+    }
+
+    /** Thread-safe accumulator for {@link RoundStats}: many games finish in parallel. */
+    public static final class RoundAccumulator {
+        private final java.util.concurrent.atomic.AtomicInteger min = new java.util.concurrent.atomic.AtomicInteger(Integer.MAX_VALUE);
+        private final java.util.concurrent.atomic.AtomicInteger max = new java.util.concurrent.atomic.AtomicInteger(Integer.MIN_VALUE);
+        private final java.util.concurrent.atomic.AtomicLong sum = new java.util.concurrent.atomic.AtomicLong();
+        private final java.util.concurrent.atomic.AtomicInteger count = new java.util.concurrent.atomic.AtomicInteger();
+
+        public void add(int rounds) {
+            min.accumulateAndGet(rounds, Math::min);
+            max.accumulateAndGet(rounds, Math::max);
+            sum.addAndGet(rounds);
+            count.incrementAndGet();
+        }
+
+        public RoundStats snapshot() {
+            int n = count.get();
+            if (n == 0) {
+                return new RoundStats(0, 0, 0, 0);
+            }
+            return new RoundStats(min.get(), max.get(), sum.get() / (double) n, n);
+        }
     }
 
     private final GameService gameService;
@@ -85,6 +125,7 @@ public class SelfPlayRunner {
         AtomicInteger played = new AtomicInteger();
         AtomicInteger failed = new AtomicInteger();
         AtomicInteger attempted = new AtomicInteger();
+        RoundAccumulator rounds = new RoundAccumulator();
         Map<String, AtomicInteger> perMatchup = new TreeMap<>();
         for (Matchup matchup : options.matchups()) {
             perMatchup.put(label(matchup), new AtomicInteger());
@@ -120,6 +161,7 @@ public class SelfPlayRunner {
                                 .dummyHand(true)
                                 .build());
                         simulationProcessorService.processSimulation(game);
+                        rounds.add(game.getTurns());
                         decisionLogs.finish(game);
                         perMatchup.get(label(matchup)).incrementAndGet();
                         played.incrementAndGet();
@@ -157,7 +199,8 @@ public class SelfPlayRunner {
         perMatchup.forEach((k, v) -> counts.put(k, v.get()));
         double seconds = (System.nanoTime() - start) / 1e9;
         Summary summary = new Summary(stoppedReason, options.games(), played.get(), failed.get(), decisionLogs.rowsWritten(),
-                decisionLogs.chunksFinished(), seconds, options.threads(), counts, AgentPerfStats.snapshot());
+                decisionLogs.chunksFinished(), seconds, options.threads(), counts, AgentPerfStats.snapshot(),
+                rounds.snapshot());
         writeSummary(options.out(), summary);
         double gamesPerSecond = summary.gamesPlayed() / Math.max(seconds, 1e-9);
         System.out.printf(Locale.ROOT, "[SELFPLAY] done: %s | %s%n", summary.stoppedReason(),
@@ -232,6 +275,17 @@ public class SelfPlayRunner {
         }
     }
 
+    /**
+     * The {@code rounds} block of the summary JSON. Separate and package-private so a test can check that the field actually reaches the file: the hand-built
+     * JSON is exactly where a new record component silently disappears (found on 21/11 - the first version of this field was in the record and in no summary).
+     */
+    static String roundsJson(RoundStats rounds) {
+        return "\"rounds\":{\"min\":" + rounds.min()
+                + ",\"max\":" + rounds.max()
+                + ",\"mean\":" + String.format(Locale.ROOT, "%.2f", rounds.mean())
+                + ",\"games\":" + rounds.games() + "},";
+    }
+
     private static void writeSummary(Path out, Summary summary) throws IOException {
         double gamesPerSecond = summary.gamesPlayed() / Math.max(summary.seconds(), 1e-9);
         int cpus = Math.max(1, Runtime.getRuntime().availableProcessors());
@@ -244,6 +298,7 @@ public class SelfPlayRunner {
         json.append("\"gamesFailed\":").append(summary.gamesFailed()).append(',');
         json.append("\"rows\":").append(summary.rows()).append(',');
         json.append("\"chunks\":").append(summary.chunks()).append(',');
+        json.append(roundsJson(summary.rounds()));
         json.append("\"seconds\":").append(String.format(Locale.ROOT, "%.1f", summary.seconds())).append(',');
         json.append("\"threads\":").append(summary.threads()).append(',');
         json.append("\"gamesPerSecond\":").append(String.format(Locale.ROOT, "%.2f", gamesPerSecond)).append(',');

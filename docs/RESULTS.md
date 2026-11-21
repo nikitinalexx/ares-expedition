@@ -2710,3 +2710,112 @@ not lose points** - under the continuation of our own policy.
 
 The next audit is the one the owner asked for: the same phase audit against NETWORK, the benchmark we actually lose to. If the number is positive and clear
 there, it is the first measured place where we lose *that* opponent, and it can be attacked without waiting for the expensive plan experiments.
+
+### The phase audit against NETWORK: no headroom there either (400 decisions, 8 worlds)
+
+| statistic | vs SMART | vs NETWORK |
+|---|---|---|
+| the value's choice agrees with the end-of-game judge | 29.8% | 39.0% |
+| the judge's pick, in-sample | +7.42 | +6.83 |
+| **the judge's pick, out-of-sample** (4 worlds select, 4 pay) | **+0.56 (se 0.75)** | **-0.24 (se 0.76)** |
+
+So the one-step conclusion holds against the benchmark we actually lose to: at the phase pick, under our own continuation, the judge's alternatives are worth
+nothing measurable. `ml/judge_report.py` also decomposes the spread of the SAME decision across determinisations: against NETWORK the world moves a decision
+by sd 23.7 points and the position by sd 27.4, i.e. **about 43% of the variation is the deal** (against SMART 26%). That is the price of beating NETWORK with
+better decisions alone: the deal weighs almost as much as the position.
+
+## Where the NETWORK gap actually is: an early lead is the losing sign (21/11)
+
+Two instruments, both reading what the corpus already contains (`ml/round_gap.py`, `ml/lead_test.py`):
+
+* `round_gap.py` prints the score gap (and any observation channel) at the end of every round, in GAME units: the V2 block is stored normalised by
+  `AiConstants.NORMALIZATION_VECTOR` and masked by `v3_mask.json`, so a raw 0.1 is 52 MC or 6 cards depending on the column. `--units` maps a column back
+  through the mask.
+* `lead_test.py` takes the winner from the ENGINE (`RANKING.*.jsonl`, the `WinPointsService.ScoreBreakdown` of both seats) instead of from the trajectory.
+  The corpus records the agent's seat only, and the agent is seat 0 in 46 of 100 games, so the breakdown must be read at that seat's index - reading row 0
+  flattens every channel (the first, wrong run gave TR +1.0, resources -1.3 and a 49% win rate).
+
+**The channels, 100 games each, engine breakdown per game:**
+
+| channel | vs SMART (76% wins) | vs NETWORK (44% wins) | swing |
+|---|---|---|---|
+| terraforming rating | +2.12 | **-5.92** | -8.0 |
+| forests | +3.90 | **-1.46** | -5.4 |
+| printed card points | -4.61 | -4.77 | -0.2 |
+| resource cards | +16.90 | +12.19 | -4.7 |
+| milestones | -0.15 | **-1.89** | -1.7 |
+| awards | +3.75 | **-2.16** | -6.0 |
+| **total** | **+21.91** | **-4.01** | -25.9 |
+
+The swing between beating SMART and losing to NETWORK is **entirely the tempo channels** (TR, forests, milestones, awards: 21 points). Printed card points are
+equally bad against both, and the resource engine works against both (it is the only reason the NETWORK total is -4 rather than -16).
+
+**The shape of the loss is not "we lose the second half".** The mean gap is level until round ~14 and then diverges - but it diverges in BOTH directions:
+in the games we win it climbs to +16.8 by round 28, in the games we lose it falls to -21.1. The second half amplifies whoever is ahead; it does not create
+the gap.
+
+**What does create it: the sign of the early lead is inverted.**
+
+| where we stood at round 5 | games | won against NETWORK | won against SMART |
+|---|---|---|---|
+| ahead | 54 | **33.3%** | 65% |
+| behind | 46 | **56.5%** | 83% |
+
+Difference against NETWORK **-23.2 points, 95% bootstrap CI [-42.2, -3.7]** (corr(gap at 5, won) = -0.26). It is not a seat artefact: seat 0 reads 0.36 vs
+0.52, seat 1 reads 0.31 vs 0.60. The inversion is present against SMART too, but weaker and it reverses at round ~11; against NETWORK it reverses only at
+round ~14, and by round 20 being ahead is worth 0.65 against 0.30.
+
+**Reading, and what it rules out.** An early lead is bought with tempo spending (TR and forests are the only score sources that early). The games where the
+player spends early are the games it later loses; the games where it invests (and trails) are the games it wins, on the resource channel. So "we lose the
+late game" is not a defect of the late game: the line is chosen by the early allocation, and the tempo line loses to NETWORK because NETWORK is not
+out-resourced (only +12 against SMART's +17) while it takes every tempo channel.
+
+What this does NOT say: that being ahead causes losing (it is a marker of the line, not a cause), or that the player should be forced to trail. What it does
+say: the remaining gap is a **plan/allocation** difference, which is exactly the thing a one-step judge cannot price - its continuation is our own policy,
+which chooses the same line. That closes the loop with the three audits above instead of contradicting them.
+
+**Dose-response, not a threshold.** The bigger the early lead, the worse the outcome (round-5 gap -> won, NETWORK / SMART):
+
+| gap at round 5 | games (NETWORK) | won (NETWORK) | won (SMART) |
+|---|---|---|---|
+| below -3 | 3 | 67% | 100% (n 4) |
+| -3 to -1 | 11 | 64% | 100% (n 15) |
+| -1 to +1 | 32 | 53% | 75% (n 44) |
+| +1 to +3 | 41 | 37% | 68% (n 28) |
+| above +3 | 13 | 23% | 56% (n 9) |
+
+Monotone in both matchups, steeper against NETWORK. So the inverted sign is not one bad bucket or a few outliers; it is the shape of the player's line.
+
+### The corporation is a real decision and it splits the outcome (1 000 games, 21/11)
+
+`PICK_CORPORATION` in the 1 000-game corpus: **913 of 1 000 games offered a choice of two corporations** (87 were forced). So this is a decision, not a
+deal detail the player cannot influence.
+
+Outcome by the CHOSEN corporation (956 games with a mapped corporation, ids resolved through the chosen candidate; 24 corporations, no id conflicts):
+
+| chosen | won | of |
+|---|---|---|
+| modpro | 63% | 73 |
+| devtechs | 56% | 39 |
+| interplanetary | 56% | 45 |
+| launcstar | 52% | 61 |
+| exocorp | 50% | 50 |
+| hyperion | 42% | 77 |
+| zetacell | 41% | 85 |
+| helion | 28% | 39 |
+| inventrix | 27% | 45 |
+| sultira | 0% | 11 |
+
+A permutation test on the weighted spread of the per-corporation win rates gives **p = 0.0006** (5 000 shuffles), so this is not small-sample noise.
+
+**What it does not say.** The corporation is chosen FROM THE HAND, so this is not a randomised experiment: part of the spread is the hand-corporation fit, and
+part is the player's competence with that corporation - the same distinction as METHOD rule 1. It is not evidence that "picking modpro wins"; it is evidence
+that the corporation is a first-class decision with a large measured spread, and that the player's competence is very uneven across the 24 corporations.
+The cheap next test is the audit at this decision (`judgeTypes=PICK_CORPORATION`, opponent NETWORK, out of sample): if it shows no headroom, the choice is
+fine under our own line and the spread is a plan/deal effect, not a decision error.
+
+**Confirmation at 1 000 games (21/11).** The same measurement on the 1 000-game corpus (408 games had a round-5 row - the recorder keeps 12 random rows per
+type, so this is an unbiased subsample, not all games): **ahead at round 5 -> 37.3% (n 220), behind -> 52.1% (n 188), difference -14.9 points, 95% CI
+[-24.2, -5.3]**. The sign and the significance survive the tenfold sample; the size is smaller than the 100-game estimate (-23), as a small sample should
+be. Engine breakdown on all 1 000 games matches the independent 1 000-game scorecard: TR -5.5, forests -1.3, printed -5.5, resources +10.1, milestones
+-2.5, awards -2.1, total -6.7 against the scorecard's -6.6.

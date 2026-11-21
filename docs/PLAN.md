@@ -71,23 +71,33 @@ thing the panel makes measurable.
 
 ## Next steps, with cost
 
-1. **Iteration 2 of the practice loop** (~2.5 h): generate 5 000 games with the clean fine-tune (75.16%), fine-tune the champion's policy on them,
-   measure at 5 000 vs SMART and 1 000 vs NETWORK. This decides whether the +2 is the first step of a curve or a one-off. **This is the only
-   experiment that matters right now.**
-1b. **The activatable-blue feature** (~1 h with tests, then a re-measurement): per side, the count of played blue cards that carry an action - the
-   feature the `ObservationBuilder` docstring claims to have and does not (`RESULTS.md`, 20/11). The current phase-3 blind spot was measured on
-   *all* blues (`blue_cards_count`), which is the wrong quantity; the fix is rule arithmetic on the card data, and it is the kind of thing practice
-   cannot discover (an aggregate that does not exist).
-2. **The whole corpus** (~30 min): the same run with `--max-chunks-per-type 20` (the trainer reads half of a 20-chunk corpus by default). Cheap, and
-   it may make every later iteration stronger.
-3. **P2, the forced-row flag and mask** (engine change + test + 1 h): required before any nudge is used again; it also tests the reviewer's explanation
-   of the oscillation (off-policy labels), and it is the last thing standing between us and the red/event arm.
-4. **The R / E arms** (2 x 2.5 h): red/event preference and economy preference, same size, same recipe, same critics, both benchmarks - the owner's
-   objection (red cards may be a consequence of a stronger economy) is the reason E is not optional.
-5. **The 10 000-game confirmation** (4 h) of whatever bundle is leading, by the project's rule for effects under 1.5 points.
+**Closed by measurement, do not re-open without a new number:**
 
-Shelved until the loop stops paying: specialists, the gate, the two targets, the menu oracle as costed (the reviewer showed K=2 with a random
-continuation cannot rank), the commitment axis, the corporation axis.
+* *more search* and *a better one-step critic*: the corrected audit (benchmark as the rollout opponent, split sample) shows **+0.56 +- 0.75** at the phase
+  against SMART, **-0.24 +- 0.76** against NETWORK, and **+0.01 +- 0.62** at the build (LEDGER 50).
+* *forcing card content*: red, green and microbe arms all lose on both benchmarks (LEDGER 44-46).
+* *practice beyond one step*: iteration 2 on the whole corpus is flat (74.53 vs 75.16), and the 10 000-game volume conclusion is confounded by the
+  trainer's `--max-chunks-per-type` default; iteration 2 used the whole corpus and still converged (LEDGER 43, 47).
+* *the late game as a defect*: the second-half drift is symmetric (wins +16.8, losses -21.1). What is asymmetric is the **early lead**, which predicts
+  LOSING to NETWORK: -14.9 points at 1 000 games (LEDGER 51).
+
+**Open, in order of cost:**
+
+1. **The corporation audit** (~30 min): `judgeTypes=PICK_CORPORATION`, opponent NETWORK, split sample, on the 1 000-game corpus. The corporation is a real
+   decision in 913/1 000 games and the outcome spans 63% to 27% by chosen corporation (p = 0.0006, LEDGER 52). If the audit shows no headroom, the
+   choice is fine under our own line and the spread is the deal/plan, not a decision error.
+2. **The early-investment arm** (~2.5 h): nudge toward production/cards in the FIRST rounds only, generate 5 000 games, fine-tune, measure **without** the
+   nudge on both benchmarks. This is the direct test of the measured mechanism (LEDGER 51); the three colour arms are the reason the prior is low, and
+   the timing is the one dimension they did not vary.
+3. **A rush arm** (~2.5 h): the rules allow a rush - the game ends when the planet is maxed and only the raiser gets TR - but **no game in 100 ended before
+   round 23**, so the strategy is absent from the population. It must be generated before it can be judged; one-step search will reject it by construction
+   (its continuation is our own non-rushing policy).
+4. **The specialist / two-line corpus with a plan-neutral gate V0** (the expensive path, owner-postponed): the only version where the line is not forced.
+
+**Measurement rules that came out of this week:** the result comes from the engine's `ScoreBreakdown`, never from the trajectory; a per-seat quantity is
+oriented by the recorded seat (the agent is seat 0 in 46/100 games); the same-policy continuation cannot judge a plan, so any plan claim must say which
+continuation judged it.
+
 
 **External review:** the plan, the ledger and the method are under adversarial review by an outside model - see `docs/reviews/README.md`,
 `LETTER_1.md`, `CRITIQUE_1.md` and `VERIFICATION_1.md`. A reviewer's objection is handled like any other claim: with a measurement. The first
