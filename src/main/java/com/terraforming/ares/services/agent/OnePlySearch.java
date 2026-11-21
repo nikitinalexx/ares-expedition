@@ -244,6 +244,14 @@ public class OnePlySearch {
      * candidates x worlds full games per decision, so it is a measurement budget, not a play-time feature.
      */
     private final java.util.Set<DecisionType> judgeTypes;
+    /**
+     * Who plays the OTHER seat during an audit rollout ({@code -Dares.agent.search.judgeOpponent=SMART|AGENT|NETWORK}).
+     * <p>
+     * Why it matters (owner's check, 21/11): with both seats left as AGENT the rollout is SELF-PLAY, so the margin the judge reports is exactly the
+     * quantity V was trained on - the audit then only proves that V agrees with itself, which is the fixed point restated. Pointing the other seat at
+     * the benchmark turns the question into "would this choice have been better against SMART", which is the question we actually ask.
+     */
+    private final com.terraforming.ares.model.PlayerDifficulty judgeOpponent;
     /** Paired worlds per candidate in the audit (the same seeds for every candidate - that is what makes it paired). */
     private final int judgeWorlds;
     /** How many decisions to audit; the audit is ~4 candidates x K full games per decision. */
@@ -400,6 +408,7 @@ public class OnePlySearch {
             this.phasePlayout = false;
             this.judgeAudit = false;
             this.judgeTypes = java.util.EnumSet.noneOf(DecisionType.class);
+            this.judgeOpponent = null;
             this.judgeWorlds = 1;
             this.judgeMax = 1;
             this.projectBuilds = false;
@@ -432,6 +441,9 @@ public class OnePlySearch {
         this.phasePlayout = configuredPhasePlayout;
         this.judgeAudit = configuredJudgeAudit;
         this.judgeTypes = configuredJudgeTypes;
+        String judgeOpponentName = System.getProperty("ares.agent.search.judgeOpponent", "").trim();
+        this.judgeOpponent = judgeOpponentName.isEmpty() ? null
+                : com.terraforming.ares.model.PlayerDifficulty.valueOf(judgeOpponentName.toUpperCase(java.util.Locale.ROOT));
         this.judgeWorlds = configuredJudgeWorlds;
         this.judgeMax = configuredJudgeMax;
         this.projectBuilds = configuredProjectBuilds;
@@ -1721,9 +1733,25 @@ public class OnePlySearch {
         for (int k = 0; k < judgeWorlds; k++) {
             for (int c = 0; c < count; c++) {
                 margins[k][c] = Float.NaN;
+                int candidateId = options.get(c).id();
+                boolean stop = candidateId == CardFeatures.STOP_ID
+                        || candidateId == StandardActionDecisions.STOP;
                 MarsGame copy = new MarsGame(game);
                 Player me = copy.getPlayerByUuid(player.getUuid());
-                if (me == null || !applyOn(copy, me, options.get(c).id(), decision.type(), seed + k)) {
+                if (me == null) {
+                    continue;
+                }
+                boolean applied;
+                if (stop) {
+                    applied = true;   // "build nothing" is the current state, played out to the end
+                } else {
+                    try {
+                        applied = applyOn(copy, me, candidateId, decision.type(), seed + k);
+                    } catch (RuntimeException rejected) {
+                        applied = false;   // the engine refused the candidate: no outcome to compare
+                    }
+                }
+                if (!applied) {
                     continue;
                 }
                 // V's own reading of the SAME afterstate, computed exactly as the live ranking does. The ruler compares these
@@ -1783,6 +1811,13 @@ public class OnePlySearch {
         }
         MarsGame sim = new MarsGame(copy);
         Determinizer.shuffle(sim, uuid, seed);
+        if (judgeOpponent != null) {
+            Player mine2 = sim.getPlayerByUuid(uuid);
+            Player other2 = mine2 == null ? null : otherPlayer(sim, mine2);
+            if (other2 != null) {
+                other2.setDifficulty(judgeOpponent);
+            }
+        }
         int limit = sim.getTurns() + 400;
         try {
             simulationProcessorService.processSimulation(sim, game -> {
@@ -2053,3 +2088,4 @@ public class OnePlySearch {
         }
     }
 }
+

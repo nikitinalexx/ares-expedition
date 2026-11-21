@@ -90,3 +90,17 @@ because it picked the maximum of eight noisy estimates. Made to choose on 4 worl
 
 Rule: any oracle-based label or claim must select on one set of worlds and be evaluated on a disjoint set. An in-sample maximum is not evidence; it is
 the winner's curse, and here it was 7.5 points of it.
+
+## 8. An evaluator that continues with the same policy, against the same opponent, cannot judge that policy
+
+Found by the owner's check (21/11), in the decision audit:
+
+* **The rollout was self-play.** `makeSeatsPlayable` only converts human seats, so in an AGENT-vs-SMART comparison both rollout seats played OUR policy. The
+  "end-of-game margin" the judge reported was therefore the self-play margin - exactly the quantity V was trained on. The audit then only proves that V
+  agrees with itself: the fixed point restated, not a measurement.
+* **The continuation is the policy.** For a decision whose payoff needs a different continuation (a plan), a one-step rollout cannot see it by
+  construction.
+
+Rule: before believing an oracle, name (a) who plays the other seat and (b) what continuation plays our seat. If the answer is "us" and "us", the oracle
+can only confirm us. The audit now takes {@code -Dares.agent.search.judgeOpponent=SMART} so the other seat is the benchmark; the continuation question
+stays open for plan decisions, and any claim there must say so.

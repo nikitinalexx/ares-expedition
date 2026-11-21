@@ -2670,3 +2670,13 @@ Two consequences:
 
 What the audit does NOT cover: the continuation is the policy (the search is bypassed inside a rollout), not the champion-with-search - that version costs
 ~100x and was not run. And it covers PICK_PHASE only; the other menus cost more per decision (more candidates) and are the next thing to check.
+
+### Correction to the audit (owner's check, 21/11): it was measuring self-play
+
+The audit above left both rollout seats as AGENT, and `makeSeatsPlayable` only converts human seats - so the opponent in every rollout was OUR policy. The
+margins it compared were self-play margins, i.e. exactly the target V was trained on, which is why the value looked one-step-optimal: the audit was a
+consistency check of the fixed point, not a measurement against the benchmark.
+
+Fixed: `-Dares.agent.search.judgeOpponent=SMART` points the other seat at the benchmark, so the question becomes "would this choice have been better
+against SMART". The corrected run replaces the -0.26 figure below; until it lands, the only part of the earlier result that stands is the winner's-curse
+demonstration (in-sample +7.49 vs out-of-sample ~0 under the SAME opponent, which is a property of the split, not of the opponent).
