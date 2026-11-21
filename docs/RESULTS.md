@@ -2680,3 +2680,18 @@ consistency check of the fixed point, not a measurement against the benchmark.
 Fixed: `-Dares.agent.search.judgeOpponent=SMART` points the other seat at the benchmark, so the question becomes "would this choice have been better
 against SMART". The corrected run replaces the -0.26 figure below; until it lands, the only part of the earlier result that stands is the winner's-curse
 demonstration (in-sample +7.49 vs out-of-sample ~0 under the SAME opponent, which is a property of the split, not of the opponent).
+
+### Corrected decision audit (opponent = SMART in the rollout, out-of-sample selection)
+
+| statistic | self-play rollout (superseded) | **SMART rollout (corrected)** |
+|---|---|---|
+| agreement with the end-of-game judge | 30.2% | 29.8% |
+| the judge's pick, in-sample | +7.49 | +7.42 |
+| **the judge's pick, out-of-sample** | -0.26 (se 0.79) | **+0.56 (se 0.75)** |
+
+So with the right opponent the answer does not change: the judge's preferred phase is worth **+0.56 +- 0.75 points** over the value's choice, i.e. no
+measurable headroom at the phase decision against SMART under our own continuation (any effect is below ~2 points). The in-sample +7.42 is the winner's
+curse, exactly as the split predicts.
+
+What this now legitimately says: **the champion is one-step-optimal at the phase pick against SMART, given that it keeps playing the way it plays.** It
+does not say anything about a plan that needs a different continuation - that caveat is structural, not a defect of the run.
