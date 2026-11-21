@@ -1830,3 +1830,40 @@ thousand builds per class, split over every board state in which the card can ap
 The measured card-advantage signal says the information is there and stable: 169 of 227 cards keep the sign of their
 advantage in both halves of the games (best +4.1 points, worst -4.8), computed against the critic's own expectation rather
 than a raw win rate.
+
+## 2026-11-21 - the owner's batch size, applied to OUR critics (the question he asked: "did you ever check it?")
+
+**Why this section exists.** Every theory we tested (architecture, normalisation, dropout, TD targets, calibration) sat on a
+critic trained with `--batch 4096` on 143 936 rows: 35 updates per epoch, 140 in total, **14.2 seconds** of training. The
+batch size was never a variable. The owner's recipe is the opposite: batch at most 64 (best at 1), one pass over each state.
+The record below is one variable at a time, on the champion's flags, against NETWORK (the discriminating benchmark; RANDOM
+saturates at ~90% for a model this size).
+
+**Training rows (the second cap that was never questioned).** The packs hold 958 705 rows each (190-290 per game), while the
+critic selected 143 936 (14.4 per game) because of `--rows-per-game 16`. `--rows-per-game 0` uses all rows of the same games:
+1 097 610 rows for the champion's two packs (7.6x).
+
+| variant (3 critics, champion flags) | rows | games | batch | epochs | best val AUC | vs NETWORK |
+|---|---|---|---|---|---|---|
+| champion: cap 16, batch 4096 | 143 936 | 10 000 | 4096 | 4 | 0.9251 | 41.5% (2 000, re-measured) |
+| all rows, batch 4096 | 1 097 610 | 10 000 | 4096 | 4 | 0.9226 | not measured (AUC says nothing moved) |
+| cap 16, batch 64 | 143 936 | 10 000 | 64 | 4 | 0.9251 | pending |
+| 9 packs, cap 16, batch 4096 | 327 664 | 22 750 | 4096 | 4 | 0.9241 | measuring |
+| 9 packs, cap 16, batch 64 | 327 664 | 22 750 | 64 | 4 | pending | pending |
+| afterstates mixed in, cap 16, batch 4096 | 143 936 | 10 000 | 4096 | 4 | 0.9244-0.9264 | pending |
+
+**What the numbers already say (training side).** Neither more rows per game (0.9226 vs 0.9251) nor more games (0.9241 vs
+0.9251) moves the val AUC: the critic's discrimination on this representation is saturated at ~0.925 by the corpus mix, not
+by the sample count. That is why the benchmark numbers are the ones that decide - a saturated AUC says nothing about whether
+the value ranks a phase pick against a build.
+
+**A second distribution bug found on the way.** The one-ply search scores AFTERSTATES (the state after the candidate action),
+while the champion's critic was trained on decision states only (`rows 143 936`, `afterstates=false`). The trainer has
+`--include-afterstates` for exactly this, and the help text already said the afterstates are "what the critic is deployed on".
+The afterstate run above is that mixture; its benchmark is pending.
+
+**The corpus size of the whole night, for scale.** The owner: 10 000 games minimum, 5-20 million states, generated in
+chunks of ~10 M. Our recorder was writing one state per round: 66 rows per game (33 per player) against his 300-400 per
+player, because the hook sat outside the step loops. It now fires after every step: 1123 post-states per game, 427 distinct
+after the per-game dedup he also used (measured on 100 games). A detailed 10 000-game corpus is therefore ~4.3 M rows, not
+0.7 M, and it needs the binary writer (`netdata.bin`: int32 id, float16 label, float16 x 898) rather than a 15 GB text CSV.

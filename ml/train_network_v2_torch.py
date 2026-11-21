@@ -19,7 +19,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from train_network_v2 import HAND, H1, H2, H3, TABLE, read_csv  # noqa: E402
+from train_network_v2 import HAND, H1, H2, H3, TABLE, read_dataset  # noqa: E402
 
 
 class Towers(nn.Module):
@@ -101,6 +101,8 @@ def main():
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--holdout", type=float, default=0.1)
+    parser.add_argument("--optimizer", choices=("adam", "sgd"), default="adam")
+    parser.add_argument("--momentum", type=float, default=0.9)
     args = parser.parse_args()
 
     torch.manual_seed(args.seed)
@@ -110,7 +112,7 @@ def main():
         label, x, ids = z["label"], z["x"], z["ids"]
         print(f"loaded {cache}", flush=True)
     else:
-        label, x, ids = read_csv(args.csv, dtype=np.float16)
+        label, x, ids = read_dataset(args.csv, dtype=np.float16)
         np.savez(cache, label=label, x=x, ids=ids)
         print(f"cached {cache}", flush=True)
     label = label.astype(np.float32)
@@ -135,7 +137,10 @@ def main():
     va = torch.from_numpy(np.flatnonzero(~train_mask))
 
     model = Towers().to(device)
-    opt = torch.optim.Adam(model.parameters(), lr=args.lr)
+    if args.optimizer == "sgd":
+        opt = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
+    else:
+        opt = torch.optim.Adam(model.parameters(), lr=args.lr)
     loss_fn = nn.BCEWithLogitsLoss()
     best_val = float("inf")
     best_state = None

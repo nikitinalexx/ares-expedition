@@ -59,6 +59,56 @@ class ReadCsvTest(unittest.TestCase):
             self.read(["1,1.0,0.5,0.5"])
 
 
+class BinaryTest(unittest.TestCase):
+    """The binary corpus is the default now (tens of millions of states do not fit in text), so its layout is pinned.
+
+    The CSV float16 id bug is the reason the id is int32 here, and the reason this test uses an id above 2048.
+    """
+
+    def write(self, tmp, records, dimension=t.TABLE + t.HAND, truncate=0):
+        path = os.path.join(tmp, "netdata.bin")
+        with open(path, "wb") as f:
+            f.write(t.MAGIC)
+            f.write(struct.pack("<H", dimension))
+            for game_id, label, values in records:
+                f.write(struct.pack("<i", game_id))
+                f.write(struct.pack("<e", label))
+                f.write(struct.pack(f"<{len(values)}e", *values))
+        if truncate:
+            with open(path, "r+b") as f:
+                f.truncate(os.path.getsize(path) - truncate)
+        return path
+
+    def test_round_trip_keeps_the_game_id_above_2048_and_the_labels(self):
+        features = [0.0] * (t.TABLE + t.HAND)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self.write(tmp, [(5001, 1.0, features), (5001, 0.0, features), (2, 0.5, features)])
+            label, x, ids = t.read_dataset(path)
+        self.assertEqual(ids.tolist(), [5001, 5001, 2])
+        self.assertEqual(label.tolist(), [1.0, 0.0, 0.5])
+        self.assertEqual(x.shape, (3, t.TABLE + t.HAND))
+
+    def test_a_truncated_file_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self.write(tmp, [(1, 1.0, [0.0] * (t.TABLE + t.HAND))], truncate=100)
+            with self.assertRaises(ValueError):
+                t.read_dataset(path)
+
+    def test_a_wrong_dimension_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self.write(tmp, [], dimension=123)
+            with self.assertRaises(ValueError):
+                t.read_dataset(path)
+
+    def test_a_csv_is_still_detected_by_content(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "netdata.csv")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(line_with_id(3, 1.0, [0.0] * (t.TABLE + t.HAND)) + "\n")
+            label, x, ids = t.read_dataset(path)
+        self.assertEqual(ids.tolist(), [3])
+
+
 class ExportTest(unittest.TestCase):
 
     def test_the_export_round_trips_the_layout_the_loader_reads(self):

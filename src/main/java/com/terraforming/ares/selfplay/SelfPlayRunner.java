@@ -194,6 +194,11 @@ public class SelfPlayRunner {
         } finally {
             decisionLogs.stopRecording(); // finishes the last chunk
             netDataWriter.close();
+            if (netDataWriter.enabled()) {
+                System.out.printf(Locale.ROOT, "[NETDATA] %d post-states seen, %d rows written (dedup keeps %.2f)%n",
+                        netDataWriter.steps(), netDataWriter.rows(),
+                        netDataWriter.steps() == 0 ? 0.0 : (double) netDataWriter.rows() / netDataWriter.steps());
+            }
         }
         if (stoppedReason.equals("COMPLETED") && failed.get() > 0 && failureRatioTooHigh(options, failed.get(), attempted.get())) {
             stoppedReason = "TOO_MANY_FAILURES";

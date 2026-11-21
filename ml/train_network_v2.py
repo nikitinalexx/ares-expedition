@@ -25,6 +25,48 @@ H2 = 512
 H3 = 1024
 
 
+MAGIC = b"ND2BIN01"
+RECORD = np.dtype([("game", "<i4"), ("label", "<f2"), ("x", "<f2", (TABLE + HAND,))])
+
+
+def read_binary(path, limit=0, dtype=np.float32):
+    """Read `netdata.bin` (NetDataWriter's default): magic `ND2BIN01`, uint16 dimension, then little-endian records
+    `int32 gameId, float16 label, float16 x dim`.
+
+    The id is an integer here, which is what the float16 CSV parse got wrong; the writer stores it as int32 for that reason.
+    """
+    with open(path, "rb") as f:
+        magic = f.read(len(MAGIC))
+        if magic != MAGIC:
+            raise ValueError(f"{path}: not a {MAGIC!r} file (got {magic!r})")
+        dimension = int.from_bytes(f.read(2), "little")
+        if dimension != TABLE + HAND:
+            raise ValueError(f"{path}: dimension {dimension}, expected {TABLE + HAND}")
+        payload = os.path.getsize(path) - len(MAGIC) - 2
+        if payload < 0 or payload % RECORD.itemsize:
+            raise ValueError(f"{path}: {payload} payload bytes is not a whole number of {RECORD.itemsize}-byte records "
+                             f"- a truncated or wrong-endian write")
+        count = payload // RECORD.itemsize
+        if limit:
+            count = min(count, limit)
+        records = np.fromfile(f, dtype=RECORD, count=count)
+    if count and len(records) != count:
+        raise ValueError(f"{path}: {len(records)} records read, {count} expected - a truncated write")
+    labels = records["label"].astype(dtype)
+    if labels.size and (labels.min() < 0.0 or labels.max() > 1.0):
+        raise ValueError(f"{path}: labels outside [0,1] ({labels.min()}..{labels.max()}) - the file layout is wrong")
+    return labels, records["x"].astype(dtype), records["game"].astype(np.int64)
+
+
+def read_dataset(path, limit=0, dtype=np.float32):
+    """CSV or binary by content, so a mixed directory of old and new corpora still trains."""
+    with open(path, "rb") as f:
+        head = f.read(len(MAGIC))
+    if head == MAGIC:
+        return read_binary(path, limit=limit, dtype=dtype)
+    return read_csv(path, limit=limit, dtype=dtype)
+
+
 def read_csv(path, limit=0, dtype=np.float32):
     rows = []
     ids = []
@@ -80,7 +122,7 @@ class Towers:
 
 
 def train(csv, out, epochs=3, batch=4096, lr=1e-3, seed=1, limit=0, holdout=0.1):
-    label, x, ids = read_csv(csv, limit)
+    label, x, ids = read_dataset(csv, limit)
     table, hand = x[:, :TABLE], x[:, TABLE:]
     rng = np.random.default_rng(seed)
     print(f"rows {len(label)}, games {len(np.unique(ids)) if (ids >= 0).all() else 'n/a'}, label mean {label.mean():.4f}", flush=True)

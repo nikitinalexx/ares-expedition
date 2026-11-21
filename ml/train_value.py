@@ -39,6 +39,10 @@ KIND = "value_mlp"
 FORMAT_VERSION = 1
 BLOCK_ROWS = 200_000
 
+# The owner's recipe (21/11): batch at most 64, best at 1; 5 M+ states, ONE pass. It was never applied to the critics -
+# they ran at 4096, i.e. 140 optimiser updates for the whole champion (14 s), which caps the model regardless of the data.
+DEFAULT_BATCH = 64
+
 
 def value_weight_layout(obs_size, hidden):
     h1, h2 = hidden
@@ -176,7 +180,7 @@ def standardize(obs, index=None):
 def fit_value(obs, outcome, hidden=(256, 128), epochs=6, lr=1e-3, weight_decay=1e-5, batch=4096,
               seed=1, device="cpu", val_fraction=0.1, steps=0, label_mean=None, verbose=True,
               train_idx=None, val_idx=None, target=None, target_kind="outcome", stats_idx=None,
-              clip=40.0, scale="mean"):
+              clip=40.0, scale="mean", optimizer="adam", momentum=0.9):
     """Trains V on (obs f16/f32 [n, obsSize], outcome f32 [n]). Returns the best epoch as numpy parameters.
 
     The split is by game (`train_idx` / `val_idx` from the caller, or a hash of the row's game id), so the same game
@@ -185,6 +189,9 @@ def fit_value(obs, outcome, hidden=(256, 128), epochs=6, lr=1e-3, weight_decay=1
     `target_kind="margin"` trains on the final score difference instead of the win, as a regression: the score is the
     game's own objective and carries how *dominant* a position was, which a binary label throws away. `outcome` is still
     used for the reported AUC, so both targets are compared on the same footing.
+
+    `optimizer="sgd"` with `momentum` is the owner's optimiser (SGD 0.01 + momentum 0.9): the critic trainer could not
+    express it before, so every "batch size does not help" measurement was made with Adam, a different update rule.
     """
     rng = np.random.default_rng(seed)
     device = torch.device(device)
@@ -206,7 +213,8 @@ def fit_value(obs, outcome, hidden=(256, 128), epochs=6, lr=1e-3, weight_decay=1
     if len(val_idx) < 10:
         train_idx, val_idx = np.arange(len(obs)), np.arange(min(len(obs), 1000))
     model = ValueNet(obs.shape[1], list(hidden), mean, std, clip=clip).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+    optimizer = (torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum) if optimizer == "sgd"
+                 else torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay))
     regression = target_kind in ("margin", "myscore")
     loss_fn = nn.MSELoss() if regression else nn.BCEWithLogitsLoss()
     steps = steps or (len(train_idx) + batch - 1) // batch
@@ -230,12 +238,13 @@ def fit_value(obs, outcome, hidden=(256, 128), epochs=6, lr=1e-3, weight_decay=1
     history, best = [], {"val_loss": float("inf"), "epoch": 0, "state": None}
     for epoch in range(1, epochs + 1):
         model.train()
-        running, seen = 0.0, 0
+        running, seen, batches = 0.0, 0, 0
         permutation = rng.permutation(train_idx)
         for b in range(steps):
             slice_ = permutation[b * batch:(b + 1) * batch]
             if len(slice_) < 2:
                 break
+            batches += 1
             logits = model(tensor(obs, slice_))
             loss = loss_fn(logits, tensor(target, slice_))
             if not torch.isfinite(loss):
@@ -255,7 +264,8 @@ def fit_value(obs, outcome, hidden=(256, 128), epochs=6, lr=1e-3, weight_decay=1
                 torch.from_numpy(val_logits), torch.from_numpy(outcome[val_idx].astype(np.float32))))
         row = {"epoch": epoch, "train_loss": running / max(seen, 1), "val_loss": val_loss,
                "constant_val_loss": constant, "auc": auc(val_logits, outcome[val_idx]),
-               "brier": float(np.mean((1 / (1 + np.exp(-val_logits)) - outcome[val_idx]) ** 2))}
+               "brier": float(np.mean((1 / (1 + np.exp(-val_logits)) - outcome[val_idx]) ** 2)),
+               "batches": batches}
         history.append(row)
         if verbose:
             print(json.dumps({k: (round(v, 4) if isinstance(v, float) else v) for k, v in row.items()}), flush=True)
@@ -275,7 +285,8 @@ def fit_value(obs, outcome, hidden=(256, 128), epochs=6, lr=1e-3, weight_decay=1
 
 
 def fit_stream(data_dirs, rows_per_game, hidden, epochs, lr, weight_decay, batch, seed, device,
-               target_kind="outcome", margin_scale=20.0, val_every=10, stats_per_type=2, verbose=True):
+               target_kind="outcome", margin_scale=20.0, val_every=10, stats_per_type=2, verbose=True,
+               optimizer="adam", momentum=0.9):
     """Trains V by streaming the chunk files: read one file, take its rows, update, throw it away.
 
     The dataset of a serious night does not fit in RAM (30 000 games with every decision is ~58 GB). Nothing about the
@@ -326,7 +337,8 @@ def fit_stream(data_dirs, rows_per_game, hidden, epochs, lr, weight_decay, batch
     std[std < 1e-6] = 1.0
 
     model = ValueNet(sums.shape[0], list(hidden), mean, std).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+    opt = (torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum) if optimizer == "sgd"
+           else torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay))
     regression = target_kind == "margin"
     loss_fn = nn.MSELoss() if regression else nn.BCEWithLogitsLoss()
 
@@ -388,10 +400,10 @@ def fit_stream(data_dirs, rows_per_game, hidden, epochs, lr, weight_decay, batch
                 loss = loss_fn(model(x), y)
                 if not torch.isfinite(loss):
                     raise SystemExit(f"the value loss is {float(loss)} in epoch {epoch}: the training diverged")
-                optimizer.zero_grad()
+                opt.zero_grad()
                 loss.backward()
                 nn.utils.clip_grad_norm_(model.parameters(), 5.0)
-                optimizer.step()
+                opt.step()
                 running += float(loss) * len(x)
                 seen += len(x)
                 batches += 1
@@ -700,7 +712,11 @@ def main():
     parser.add_argument("--hidden", default="256,128")
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--weight-decay", type=float, default=1e-5)
-    parser.add_argument("--batch", type=int, default=4096)
+    parser.add_argument("--batch", type=int, default=DEFAULT_BATCH)
+    parser.add_argument("--optimizer", choices=("adam", "sgd"), default="adam",
+                        help="the owner's optimiser was SGD 0.01 + momentum 0.9; ours was always Adam, so a batch-size "
+                             "comparison made with Adam is not the recipe he measured")
+    parser.add_argument("--momentum", type=float, default=0.9)
     parser.add_argument("--rows-per-game", type=int, default=16,
                         help="at most this many states of one game (0 = all); the label is the same for all of them")
     parser.add_argument("--val-fraction", type=float, default=0.1)
@@ -773,7 +789,8 @@ def main():
     if args.stream:
         fitted = fit_stream(args.data, args.rows_per_game, hidden, epochs=args.epochs, lr=args.lr,
                             weight_decay=args.weight_decay, batch=args.batch, seed=args.seed, device=device,
-                            target_kind=args.target, margin_scale=args.margin_scale, val_every=args.val_every)
+                            target_kind=args.target, margin_scale=args.margin_scale, val_every=args.val_every,
+                            optimizer=args.optimizer, momentum=args.momentum)
         # one validation file supplies the export reference (the Java loader replays it against the exported weights)
         reference_rows, reference_scores = None, None
         for decision in discover_decisions(args.data):
@@ -919,7 +936,7 @@ def main():
                        train_idx=train_idx, val_idx=np.flatnonzero(split),
                        label_mean=None if args.target != "outcome" else float(pool["outcome"][~split].mean()),
                        target=target, target_kind=args.target, stats_idx=stats_idx, clip=args.clip,
-                       scale=args.scale)
+                       scale=args.scale, optimizer=args.optimizer, momentum=args.momentum)
     params, history = fitted["params"], fitted["history"]
     if drop:
         # The A/B may drop a block; then the DEPLOYED model must ignore it, not just the training rows.

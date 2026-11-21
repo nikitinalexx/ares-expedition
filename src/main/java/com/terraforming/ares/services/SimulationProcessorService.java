@@ -76,16 +76,26 @@ public class SimulationProcessorService extends BaseProcessorService {
     }
 
     /**
-     * @param afterStep optional callback invoked after every processed step (used by invariant tests)
+     * @param afterStep optional callback invoked after every processed step (used by invariant tests and by the dataset
+     *                  recorder). It fires after EVERY AI step, not once per round: the owner logged a post-state after
+     *                  each blue action and each discard of phase 5, which is 300-400 states per player per game. A hook
+     *                  outside the inner loop collapses them into one per round (measured: 33 per player), and that is a
+     *                  different training corpus at the same game count.
      */
     public void processSimulation(MarsGame game, java.util.function.Consumer<MarsGame> afterStep) {
         while (game.getStateType() != StateType.GAME_END) {
             while (aiService.waitingAiTurns(game)) {
                 aiService.makeAiTurns(game);
+                if (afterStep != null) {
+                    afterStep.accept(game);
+                }
             }
 
             while (processFinalTurns(game)) {
                 stateFactory.getCurrentState(game).updateState();
+                if (afterStep != null) {
+                    afterStep.accept(game);
+                }
             }
             if (afterStep != null) {
                 afterStep.accept(game);
