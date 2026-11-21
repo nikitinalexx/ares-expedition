@@ -58,6 +58,21 @@ class BatchSize(unittest.TestCase):
         self.assertLessEqual(train_value.DEFAULT_BATCH, 256)
 
 
+class NestedSubset(unittest.TestCase):
+    """The 1 000-game run must be a subset of the 5 000-game run: that is what makes a volume comparison a volume test."""
+
+    def test_smaller_limits_are_nested_and_ascending(self):
+        ids = np.repeat(np.arange(100, 0 - 1, -1), 3)  # unsorted ids, several rows per game
+        small = train_value.nested_games_subset(ids, 10)
+        large = train_value.nested_games_subset(ids, 50)
+        np.testing.assert_array_equal(small, np.arange(0, 10))
+        self.assertTrue(set(small.tolist()) <= set(large.tolist()), "the small corpus must be inside the large one")
+        self.assertEqual(len(large), 50)
+
+    def test_no_limit_keeps_everything(self):
+        self.assertIsNone(train_value.nested_games_subset(np.arange(10), 0))
+
+
 class OptimizerChoice(unittest.TestCase):
     """The owner's recipe is SGD 0.01 + momentum 0.9, and the critic trainer only had Adam.
 

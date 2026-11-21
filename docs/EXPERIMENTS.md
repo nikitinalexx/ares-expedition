@@ -1867,3 +1867,16 @@ chunks of ~10 M. Our recorder was writing one state per round: 66 rows per game 
 player, because the hook sat outside the step loops. It now fires after every step: 1123 post-states per game, 427 distinct
 after the per-game dedup he also used (measured on 100 games). A detailed 10 000-game corpus is therefore ~4.3 M rows, not
 0.7 M, and it needs the binary writer (`netdata.bin`: int32 id, float16 label, float16 x 898) rather than a 15 GB text CSV.
+
+### Correction to the report of 21/11 (the NPE did not kill the run)
+
+The champion-vs-NETWORK measurement printed a `NullPointerException` stack (`SyntheticCatastrophe` -> `getTags()` on a
+null card) and I reported that the run died. It did not: `runCompare` catches per game, so the print was one FAILED game
+and the run continued to 1 997 games. The bug is real (3 failed games of 2 000, each a lost game) and is fixed, but the
+baseline is valid:
+
+| run | score vs NETWORK | games |
+|---|---|---|
+| champion, critics cap 16 batch 4096 | **40.51% [38.4, 42.7]** | 1 997 (3 failed) |
+
+The lesson is mine, not the engine's: I read a stack trace as a dead run without checking the process or the progress line.

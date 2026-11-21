@@ -213,7 +213,8 @@ def fit_value(obs, outcome, hidden=(256, 128), epochs=6, lr=1e-3, weight_decay=1
     if len(val_idx) < 10:
         train_idx, val_idx = np.arange(len(obs)), np.arange(min(len(obs), 1000))
     model = ValueNet(obs.shape[1], list(hidden), mean, std, clip=clip).to(device)
-    optimizer = (torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum) if optimizer == "sgd"
+    optimizer = (torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
+                 if optimizer == "sgd"
                  else torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay))
     regression = target_kind in ("margin", "myscore")
     loss_fn = nn.MSELoss() if regression else nn.BCEWithLogitsLoss()
@@ -580,7 +581,7 @@ def load_pool(data_dirs, rows_per_game, rng, val_fraction, keep_round=False, dro
 
 
 def load_packed(directory, rows_per_game, rng, val_fraction, drop_columns=None, score_columns=None,
-                include_afterstates=False, with_breakdown=False):
+                include_afterstates=False, with_breakdown=False, games_limit=0):
     """The same pool as load_pool, read from a pack (ml/pack_dataset.py) instead of the raw chunks.
 
     Two costs dominated every earlier run and both are gone here: the raw files are 78% candidate blocks, which a value
@@ -635,6 +636,11 @@ def load_packed(directory, rows_per_game, rng, val_fraction, drop_columns=None, 
     label = {field: np.concatenate(values) for field, values in collected.items()}
     keep = np.concatenate(keeps)
     index = np.flatnonzero(keep)  # global row numbers that survive de-duplication
+    if games_limit:
+        # A deterministic, NESTED subset: the first `games_limit` game ids in ascending order, so the 1 000-game run is a
+        # strict subset of the 5 000-game run and the only thing that changes between the two volumes is the volume.
+        wanted = nested_games_subset(label["game"], games_limit)
+        index = index[np.isin(label["game"][index], wanted)]
     game = label["game"][index]
     if rows_per_game:
         picked = cap_per_game(game.astype(np.uint64), rows_per_game, rng)
@@ -685,6 +691,18 @@ def load_packed(directory, rows_per_game, rng, val_fraction, drop_columns=None, 
             "observationHash": first_manifest["observationHash"], "totalRows": total}
 
 
+def nested_games_subset(game_ids, limit):
+    """The first `limit` game ids in ascending order, or None for no limit.
+
+    A nested subset is what makes two volume runs comparable: the 1 000-game corpus is then a strict subset of the
+    5 000-game one, so the only variable between them is the volume, not a different sample. Two packs with independently
+    numbered games still yield a nested subset of the concatenation, which is all the comparison needs.
+    """
+    if not limit:
+        return None
+    return np.unique(game_ids)[:limit]
+
+
 def dropped_columns(names_file, prefix):
     """Column indices to zero: the block can then be removed from the input without touching the data on disk.
 
@@ -719,6 +737,9 @@ def main():
     parser.add_argument("--momentum", type=float, default=0.9)
     parser.add_argument("--rows-per-game", type=int, default=16,
                         help="at most this many states of one game (0 = all); the label is the same for all of them")
+    parser.add_argument("--games-limit", type=int, default=0,
+                        help="keep only the first N game ids (ascending), a NESTED subset: the 1 000-game run is a strict "
+                             "subset of the 5 000-game run, so the only variable between two volumes is the volume")
     parser.add_argument("--val-fraction", type=float, default=0.1)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--stats", choices=("random", "head"), default="random",
@@ -854,7 +875,8 @@ def main():
         pool = load_packed(args.packed, args.rows_per_game, rng, args.val_fraction,
                            drop_columns=drop, score_columns=score_columns,
                            include_afterstates=args.include_afterstates,
-                           with_breakdown=args.target == "myscore")
+                           with_breakdown=args.target == "myscore",
+                           games_limit=args.games_limit)
         print(f"  packed pool: {len(pool['obs'])} rows of {pool['totalRows']} packed, "
               f"{pool['obsSize']} observation features", flush=True)
         megabytes = len(pool["obs"]) * pool["obsSize"] * 2 / 2 ** 20
@@ -996,8 +1018,18 @@ def main():
                 "epoch": fitted["best_epoch"], "target": args.target}, os.path.join(args.out, "model.pt"))
     metrics = {"rows_train": train_count, "rows_val": val_count, "target": args.target,
                "games": int(len(np.unique(pool["game"]))), "label_mean": round(fitted["label_mean"], 4),
+               # The training config is part of the artifact: without it a comparison is reconstructed from memory, which
+               # is exactly how the batch size stayed at 4096 for months.
+               "config": {"batch": args.batch, "epochs": args.epochs, "lr": args.lr, "optimizer": args.optimizer,
+                          "momentum": args.momentum, "weight_decay": args.weight_decay, "seed": args.seed,
+                          "rows_per_game": args.rows_per_game, "games_limit": args.games_limit,
+                          "include_afterstates": args.include_afterstates, "scale": args.scale, "clip": args.clip},
                "constant_val_loss": round(fitted["constant_loss"], 4),
                "best_epoch": fitted["best_epoch"], "best_val_loss": round(val_loss, 4),
+               # The value is a regression on the margin: the loss (MSE against the constant predictor) is the objective,
+               # and AUC only ranks win/loss states. They move independently (same AUC 0.925, val 1.67 vs 1.33), so R2 is
+               # reported next to it instead of letting a flat AUC hide a better fit.
+               "val_r2": round(1.0 - val_loss / fitted["constant_loss"], 4) if fitted["constant_loss"] else None,
                "auc": round(auc_of_prediction, 4),
                "brier": round(float(np.mean((predicted - y_val) ** 2)), 4) if args.target == "outcome" else None,
                "export_check": worst, "calibration": calibration, "rows_per_game_cap": args.rows_per_game,
@@ -1010,6 +1042,8 @@ def main():
         json.dump(history, f, indent=1)
     print(json.dumps({k: v for k, v in metrics.items() if k != "calibration"}, indent=1), flush=True)
     print(json.dumps(metrics["calibration"], indent=1), flush=True)
+    print(f"VAL mse {metrics['best_val_loss']:.4f} (constant {metrics['constant_val_loss']:.4f}) "
+          f"R2 {metrics['val_r2']} auc {metrics['auc']} epoch {metrics['best_epoch']}", flush=True)
     return 0
 
 

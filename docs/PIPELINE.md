@@ -200,3 +200,22 @@ Two consequences that matter more than the arithmetic:
 2. **The sale is different.** In-phase selling is a rare, strong-player decision (owner, 18/11). A 30% exploration made the
    generator sell in 89.7% of games and the iteration collapsed to 43.1%. If that menu is explored at all, it has to be
    conservative (a few percent), and the reason must be written down in `ml/gap_allowlist.json`.
+
+## 4a. Check the corpus identity BEFORE training (21/11)
+
+A pack is not "games": it is games of a particular player. A corpus mixed from different policies - or from a documented
+bad generation - produces a number nobody can attribute. On 21/11 a "22 750 games" experiment was built from nine packs
+and had to be discarded: two of them (`p1b`, `p1cur`) are recorded as polluted in `docs/PLAN_STRONGER.md` (phantom rows),
+and the others came from colour/microbe practice arms, not from the phase-3 fighter whose critics were being retrained.
+
+`ml/pack_who.py C:/ares/pack` prints, per pack: rows, the row-weighted outcome mean and margin mean, and the source. Read it
+before a training run:
+
+* **outcome ~0.50, margin ~0**: a self-play corpus. Both seats are the same player.
+* **outcome 0.55-0.62**: the recorded seat beat the other one more often - the pack is "stronger model vs weaker model", and
+  the critic learns the winner's side. That is what the champion's packs 16/17/18 are. It is usable, but it is NOT the
+  distribution of a game against a stronger opponent, and the miscalibration against NETWORK (+24 measured) comes from here.
+* a pack whose source does not say which policy produced it does not go into a run that is meant to answer a question.
+
+The clean corpus for the champion's critics is packs 16/17/18 (15 000 games of the 1118-2332 night, the phase-3 fighter).
+Everything else in `C:/ares/pack` is an arm corpus, and `p1b`/`p1cur` are polluted.
