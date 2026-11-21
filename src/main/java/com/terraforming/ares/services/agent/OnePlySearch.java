@@ -239,6 +239,11 @@ public class OnePlySearch {
      * else: it prints the per-world margins per candidate and does not change a single decision.
      */
     private final boolean judgeAudit;
+    /**
+     * Which decision types the audit covers ({@code -Dares.agent.search.judgeTypes}, default PICK_PHASE). One type at a time: the audit costs
+     * candidates x worlds full games per decision, so it is a measurement budget, not a play-time feature.
+     */
+    private final java.util.Set<DecisionType> judgeTypes;
     /** Paired worlds per candidate in the audit (the same seeds for every candidate - that is what makes it paired). */
     private final int judgeWorlds;
     /** How many decisions to audit; the audit is ~4 candidates x K full games per decision. */
@@ -357,6 +362,8 @@ public class OnePlySearch {
                 Boolean.parseBoolean(System.getProperty("ares.agent.search.judgeAudit", "false"));
         int configuredJudgeWorlds = Math.max(1, Integer.parseInt(System.getProperty("ares.agent.search.judgeWorlds", "8")));
         int configuredJudgeMax = Math.max(1, Integer.parseInt(System.getProperty("ares.agent.search.judgeMax", "200")));
+        java.util.Set<DecisionType> configuredJudgeTypes =
+                parseTypes(System.getProperty("ares.agent.search.judgeTypes", "PICK_PHASE"));
         boolean configuredProjectBuilds =
                 Boolean.parseBoolean(System.getProperty("ares.agent.search.projectBuilds", "false"));
         boolean configuredHorizonStop =
@@ -392,6 +399,7 @@ public class OnePlySearch {
             this.samples = 1;
             this.phasePlayout = false;
             this.judgeAudit = false;
+            this.judgeTypes = java.util.EnumSet.noneOf(DecisionType.class);
             this.judgeWorlds = 1;
             this.judgeMax = 1;
             this.projectBuilds = false;
@@ -423,6 +431,7 @@ public class OnePlySearch {
         this.samples = configuredSamples;
         this.phasePlayout = configuredPhasePlayout;
         this.judgeAudit = configuredJudgeAudit;
+        this.judgeTypes = configuredJudgeTypes;
         this.judgeWorlds = configuredJudgeWorlds;
         this.judgeMax = configuredJudgeMax;
         this.projectBuilds = configuredProjectBuilds;
@@ -1091,8 +1100,8 @@ public class OnePlySearch {
         }
         float[] scores = new float[options.size()];
         long seed = ThreadLocalRandom.current().nextLong();
-        if (judgeAudit && decision.type() == DecisionType.PICK_PHASE) {
-            auditEndJudge(game, player, options, seed);
+        if (judgeAudit && judgeTypes.contains(decision.type())) {
+            auditEndJudge(game, player, decision, options, seed);
         }
         float bestOfStop = logit(stopObs);
         boolean horizonHere = horizonTurns > 0
@@ -1702,7 +1711,7 @@ public class OnePlySearch {
      * difference. If sd(paired difference) is close to sd(level) (~25 points here) then no affordable number of worlds
      * resolves a 3-5 point effect, and the path is closed for a measured reason instead of being rescaled later.
      */
-    private void auditEndJudge(MarsGame game, Player player, List<Candidate> options, long seed) {
+    private void auditEndJudge(MarsGame game, Player player, Decision decision, List<Candidate> options, long seed) {
         if (judgeDone.incrementAndGet() > judgeMax) {
             return;
         }
@@ -1714,7 +1723,7 @@ public class OnePlySearch {
                 margins[k][c] = Float.NaN;
                 MarsGame copy = new MarsGame(game);
                 Player me = copy.getPlayerByUuid(player.getUuid());
-                if (me == null || !applyOn(copy, me, options.get(c).id(), DecisionType.PICK_PHASE, seed + k)) {
+                if (me == null || !applyOn(copy, me, options.get(c).id(), decision.type(), seed + k)) {
                     continue;
                 }
                 // V's own reading of the SAME afterstate, computed exactly as the live ranking does. The ruler compares these
@@ -1725,7 +1734,8 @@ public class OnePlySearch {
                 margins[k][c] = endMargin(copy, player.getUuid(), seed + k);
             }
         }
-        StringBuilder line = new StringBuilder("[JUDGE] turns=").append(game.getTurns())
+        StringBuilder line = new StringBuilder("[JUDGE] type=").append(decision.type())
+                .append(" turns=").append(game.getTurns())
                 .append(" cands=").append(count).append(" worlds=").append(judgeWorlds);
         for (int k = 0; k < judgeWorlds; k++) {
             line.append(" w").append(k).append('=');

@@ -7,10 +7,14 @@
 param(
     [Parameter(Mandatory = $true)][string]$Name,
     [string]$Colour = "",
+    [string]$PreferPhase = "",
+    [double]$PreferPhaseRate = 1.0,
     [string]$Set = "",
     [double]$Rate = 0.3,
     [int]$Games = 5000,
     [string]$Base = "D:/ares/runs/policy/1120_clean5000",
+    [string]$Critics = "D:/ares/runs/value/v_1118-2332_17_s1,D:/ares/runs/value/v_1118-2332_17_s2,D:/ares/runs/value/v_1118-2332_17_s3",
+    [string]$PhaseCritic = "D:/ares/runs/value/v_1118-0058_13_s1",
     [string]$Out = "",
     [int]$Threads = 14,
     [int]$Measure = 5000
@@ -27,8 +31,8 @@ $flags = @(
     "-Dares.agent.search=oneply", "-Dares.agent.search.symmetric=true", "-Dares.agent.search.pairs=true",
     "-Dares.agent.search.phasePlayout=true", "-Dares.agent.search.playout=MULLIGAN",
     "-Dares.agent.search.junkGate=MULLIGAN", "-Dares.agent.search.junkMargin=50",
-    "-Dares.agent.valueModel=$critics",
-    "-Dares.agent.valueModel.phase=D:/ares/runs/value/v_1118-0058_13_s1",
+    "-Dares.agent.valueModel=$Critics",
+    "-Dares.agent.valueModel.phase=$PhaseCritic",
     "-Dares.agent.valueModel.mulligan=D:/ares/runs/value/v_1119_hand",
     "-Dares.agent.search.types=$types"
 )
@@ -36,7 +40,8 @@ $flags = @(
 New-Item -ItemType Directory -Force -Path $Out | Out-Null
 Write-Output "=== $Name arm: colour=$Colour set=$Set at rate $Rate, $Games games, base $Base"
 $t0 = Get-Date
-if ($Colour -ne "") { $extra = @("-Dares.agent.preferColor=$Colour", "-Dares.agent.colorNudgeRate=$Rate") } else { $extra = @("-Dares.agent.preferSet=$Set", "-Dares.agent.tagNudgeRate=$Rate") }
+if ($Colour -ne "") { $extra = @("-Dares.agent.preferColor=$Colour", "-Dares.agent.colorNudgeRate=$Rate") } elseif ($Set -ne "") { $extra = @("-Dares.agent.preferSet=$Set", "-Dares.agent.tagNudgeRate=$Rate") } else { $extra = @() }
+if ($PreferPhase -ne "") { $extra += @("-Dares.agent.preferPhase=$PreferPhase", "-Dares.agent.preferPhaseRate=$PreferPhaseRate") }
 & $java -Xmx10g @flags @extra -cp "target/classes;$cp" `
     com.terraforming.ares.selfplay.SelfPlayMain --mode play --out $Out --threads $Threads --games-per-chunk 250 `
     --count-chunks-from $Out --matchups "AGENT:AGENT:1.0" --max-rows-per-game-type 8 --models $Base --games $Games *> "D:/ares/tmp/arm_$Name.play.log"

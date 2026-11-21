@@ -113,6 +113,12 @@ public class AgentDecisionService {
      * over a microbe (see {@link MicrobeCards}). The owner's correction (20/11): the MICROBE TAG is the wrong definition - the plan is the resource.
      */
     private static final String PREFER_SET = System.getProperty("ares.agent.preferSet", "").trim();
+    /**
+     * How often the phase preference is allowed to fire (1 = always). Below 1 it becomes a preference rather than a compulsion, which is what a
+     * corpus of "this phase is played more" needs if the player is to keep its own judgement in the other rounds (owner, 20/11).
+     */
+    private static final double PREFER_PHASE_RATE = Math.max(0.0, Math.min(1.0,
+            Double.parseDouble(System.getProperty("ares.agent.preferPhaseRate", "1"))));
     private static final double TAG_NUDGE_RATE = Math.max(0.0, Math.min(1.0,
             Double.parseDouble(System.getProperty("ares.agent.tagNudgeRate",
                     System.getProperty("ares.agent.colorNudgeRate", "1")))));
@@ -195,6 +201,12 @@ public class AgentDecisionService {
         }
         Decision decision = pickPhaseDecisions.build(game, player);
         int forced = forcedPhase(decision);
+        if (forced >= 0 && PREFER_PHASE_RATE < 1
+                && java.util.concurrent.ThreadLocalRandom.current().nextDouble() >= PREFER_PHASE_RATE) {
+            // A phase preference is a preference, not a compulsion (owner, 20/11): at a rate below 1 the player keeps its own choice in the rounds
+            // where the dice do not fire, so a corpus of "phase 5 play" is produced without clamping the player to it.
+            forced = -1;
+        }
         int index = forced >= 0 ? forced : -1;
         if (index < 0 && PlanCodes.rollNudge() && PlanCodes.preferBuildPhases(player)) {
             // Coverage nudge of the generator (bit 8), not a rule of the player: without it no recorded game of the policy
@@ -388,6 +400,25 @@ public class AgentDecisionService {
         }
         return TagNudge.index(decision.candidates(),
                 id -> MicrobeCards.isMicrobe(cardService.getCard(id)),
+                keep);
+    }
+
+    /**
+     * The same instrument for the draft-bonus card family ({@code -Dares.agent.preferSet=draft}): build ExtendedResources, Interns,
+     * UnitedPlanetaryAlliance and BacterialAggregates, keep them where a card must leave. See {@link DraftBonusCards}.
+     */
+    private int draftNudge(Decision decision) {
+        boolean build = COLOUR_NUDGE_TYPES.contains(decision.type());
+        boolean keep = COLOUR_KEEP_TYPES.contains(decision.type());
+        if (!"draft".equalsIgnoreCase(PREFER_SET) || (!build && !keep)) {
+            return -1;
+        }
+        if (TAG_NUDGE_RATE < 1
+                && java.util.concurrent.ThreadLocalRandom.current().nextDouble() >= TAG_NUDGE_RATE) {
+            return -1;
+        }
+        return TagNudge.index(decision.candidates(),
+                id -> DraftBonusCards.isDraftBonus(cardService.getCard(id)),
                 keep);
     }
 
@@ -844,6 +875,10 @@ public class AgentDecisionService {
         if (index < 0) {
             // Set practice of the data generator (off unless -Dares.agent.preferSet is set): see MicrobeCards.
             index = setNudge(decision);
+        }
+        if (index < 0) {
+            // Draft-bonus practice (off unless -Dares.agent.preferSet=draft): see DraftBonusCards.
+            index = draftNudge(decision);
         }
         if (index < 0) {
             // One-ply search on the state value net (off unless -Dares.agent.search=oneply): the candidate is applied to a
