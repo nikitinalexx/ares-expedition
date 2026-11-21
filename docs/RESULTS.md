@@ -3050,3 +3050,142 @@ Fitted conversions from `ml/value_calibration.py --margin-scale 20` (12 000 phas
 The owner's 26% is the row "predicted margin about -20". Fix: `sigmoid(a * logit + b)` with `-Dares.agent.winProbability.a/.b`, default 1/0 (unchanged); a margin
 critic uses the self-play pair **1.76 / -0.83**. Display only - the search ranks with the raw logit and never reads these coefficients (`WinProbabilityCalibrationTest`,
 2 tests). The honest number is still optimistic against NETWORK, because no calibration can fix a value that has never seen a strong opponent.
+
+### The 25% lost to SMART: no early warning, the same mid-game stagnation (21/11)
+
+SMART is a weak benchmark (we win 76%), so the lost games are our own collapse, not its strength. Measured on the 100 recorded games:
+
+| channel | in the wins | in the losses |
+|---|---|---|
+| terraforming rating | +5.9 | **-10.0** |
+| forests | +6.3 | -3.8 |
+| printed card points | -2.6 | **-10.9** |
+| resource cards | +20.8 | **+4.7** |
+| milestones | +1.0 | -3.9 |
+| awards | +4.9 | 0.0 |
+| **total** | **+36.4** | **-23.8** |
+
+The losses are not a single channel: everything falls at once, including our own resource engine (+20.8 -> +4.7), and the game is shorter (27.4 rounds against 29.3).
+
+**No early warning.** At rounds 5/10/15 the two groups are almost identical: cards played 4.1/3.8 -> 8.7/7.5 -> 14.2/12.2, green 1.4/1.3 -> 3.1/3.0 -> 4.8/4.6, MC income 6.4/7.4 -> 8.6/9.8 -> 11.6/12.4. The divergence appears after round 15 - the same shape as against NETWORK. A policy or a gate cannot fix it from the opening, because nothing is visibly wrong there.
+
+**Consequence for the "train on SMART" idea.** Training the value on SMART games would teach the price of a game we already win three times out of four; it does not contain the missing term (a strong opponent's economy). The losing signature is the same mid-game stagnation, not a SMART-specific mistake.
+
+### The critic is saturated: calibration, diversity and volume all tested (21/11)
+
+Three independent attempts to improve the champion by changing only its value, 1 000 games against NETWORK each where noted:
+
+| critics | AUC | result vs NETWORK |
+|---|---|---|
+| champion's (old packs, margin) | 0.925 | **41.72%** (1 998 games) |
+| same data volume on the champion's balanced corpus | 0.885-0.890 | **31.85%** (1 000) |
+| probability target on a mix of styles | 0.857 | **30.4%** (500) |
+| old packs + the champion's own games (more data) | **0.927** | **41.45%** (1 000) |
+
+The last row is the informative one: +25% training rows and a slightly better AUC change nothing (41.45 against 41.72, inside the CI). Calibration, diversity and volume are all consumed. What is left is the **distribution**: the critics have never seen states produced by a stronger opponent, and that is what the NETWORK-outcome experiment (owner's permission, 21/11) tests.
+
+### The owner's NETWORK recipe, reproduced on our encoder: the price law holds (21/11)
+
+The owner's training code (`C:\Users\user\Desktop\deep\...\learning`) is a 321 -> 321 ReLU -> 1 sigmoid network trained with CROSS-ENTROPY
+(binary outcome), MaxScaler, SGD 1 epoch, warm-started over iterations. Our reconstruction had differed in three ways: the label (margin vs outcome),
+the features (1256 vs 321) and the training. The label part is now tested on OUR encoder, with the same corpus:
+
+1. **20 000 uniform-random games** (`AGENT_R:AGENT_R`, 8 rows per type): **364 s, 55 games/s**, 1 325 218 rows. The owner's "50k is 5 minutes" is right for
+   the game generator.
+2. Critics on that corpus, `--scale max`:
+   - **BCE** (`--target outcome`): label_mean **0.518-0.520** (balanced), AUC 0.865-0.868, val loss 0.447-0.461;
+   - **margin** control: label_mean 0.019, AUC 0.860, val loss 0.096.
+3. **The price of +1 income** (`--mode audit`, 100 games, 600 captures):
+
+| critics | +1 income | by round (0-4 / 5-8 / 9-12) |
+|---|---|---|
+| BCE, random data | **17.7 MC** | 19.2 / 18.1 / 15.9 |
+| margin, random data | 15.8 MC | 17.7 / 15.5 / 14.2 |
+| our policy's critics | 6.5 MC | flat |
+| the rules | ~15 MC | falls with the round |
+
+So the **price law holds with a BCE label and `--scale max`**: random data gives the rules' price (17.7 against ~15) with the correct round profile,
+and the label is not what sets it. What remains is whether such a critic can RANK well enough to play - the test running now (the champion's policy with
+these critics, 1 000 games against NETWORK).
+
+### The owner's MaxScaler is feature-dependent: `scale max` collapses the ranker on our encoder (21/11)
+
+The owner's NETWORK uses MaxScaler with fixed maxima on 321 features. On our 1256-feature vector the same scheme (our `--scale max`) is catastrophic,
+and it is NOT the label:
+
+| critics (20 000 random games) | price +1 income | ranker vs NETWORK |
+|---|---|---|
+| BCE, `scale max` | 17.7 MC | **2.15%** (1 000) |
+| margin, `scale max` | 15.8 MC | **3.7%** (1 000) |
+| margin, `scale max99` (our default) | 12.1 MC | **22.8%** (old 3 000-game measurement) |
+| our policy's critics, `scale max99` | 6.5 MC | **41.7%** (champion) |
+
+`max99` is the same max-scheme with the 99.9th percentile as the divisor, which is exactly the guard the 321-feature vector did not need: one freak
+maximum in a sparse block compresses the working range of the whole feature, the model still fits (AUC 0.86) and still prices income right, and its
+*ordering* at real decisions collapses. So "MaxScaler" is not a property to port blindly; it is tied to the feature set.
+
+The label, meanwhile, is not what moves the price: BCE and margin agree (17.7 / 15.8 against the rules' ~15). Whether the label matters for the
+RANKING is the test still running (`scale max99`, the default, with the BCE target).
+
+## The owner's NETWORK pipeline, rebuilt on his processors (21/11, owner's direction)
+
+The goal: a player that PLAYS THROUGH THE OWNER'S PROCESSORS (`network2` + `NNService`), with a value trained by his recipe (games first, value after),
+not through our `OnePlySearch`.
+
+**Data.** `NetDataWriter` (new, `-Dares.netdata.dir=DIR`) records, after every round of every game, the **898-value V2 vector** of both players
+(`AdvancedAiDataCollectionService`: table 417 + **hand 481** - the part the owner says makes the player strong), deduplicated per game and labelled with
+the winner at GAME_END. This is the app-side half of `advanced_ai`'s `runSimulationWithDataset`. It is player-agnostic: RANDOM games produce the
+"spending" data of iteration 0, NETWORK_V2 games produce the self-play data of iteration 1.
+
+**Training/export.** `ml/train_network_v2.py`: two towers (417->512, 481->512, LeakyReLU 0.01, concat -> 1024 -> 1, sigmoid), BCE with draws as 0.5,
+Adam; exports a `coefficients.bin` in exactly the ND4J layout `PureJavaValueNetwork.load` reads (f-order per layer, topological order), packed into a
+zip that `NNService` loads with `-Dares.nn.model=PATH` (the property added earlier).
+
+**First result (iteration 0: 5 000 RANDOM-vs-RANDOM games, 329 572 rows):**
+
+| player | vs RANDOM |
+|---|---|
+| NETWORK_V2 + the new value | **76.2%** (959 games; 41 failed) |
+| NETWORK_V2 + the shipped `iter4` value | **99.7%** (1 000 games) |
+
+So the pipeline works end to end - the zip loads, the owner's processors play, the value learned - and the first model is far below his shipped one, as
+expected for random-only data. The 41 failures are an existing `NullPointerException` in `network2/buildParams` (`DecisionWithPrediction` null) that the
+new value triggers and the shipped one does not; it is a bug in that path, not in the training.
+
+Caveat: the CSV has no game id, so the reported validation AUC (0.9945) leaks states across the split; the play numbers above are not affected.
+
+### NETWORK_V2 value loop: 80.5% against RANDOM at 20k games, and the bugs found on the way (21/11)
+
+The pipeline from the previous note, iterated:
+
+| value trained on | vs RANDOM |
+|---|---|
+| shipped `iter4` (the baseline) | **99.7%** (1 000) |
+| 5 000 random games (row split - the AUC was memorisation) | 76.2% (959, 41 failed) |
+| 5 000 self-play games of that player (iteration 1) | 73.8% (954, 46 failed) |
+| 20 000 random games, game-level split, no clipping | 69.9% (1 000) |
+| 20 000 random games, game-level split, gradient clipping, lr 5e-4 | **80.5%** (1 000) |
+
+So the volume helps and the optimisation mattered more than the volume at 20k: without clipping the same corpus trained to train-loss ~12-31 and played 69.9%. The honest validation AUC of the random-data value is **~0.81-0.84** once the split is by game; the 0.995 of the first runs was states of the same game on both sides of the split (memorisation), which is why the trainer now refuses a label outside [0, 1] and prints the label mean and the number of games.
+
+Bugs found and fixed on the owner's code path (with his permission):
+* `Network2ThirdPhaseActionProcessor` and `Network2ThirdPhaseActionProjector` did `getBestPhaseUpgradeOverall().getValue()` with no null check. When all five phases already have an upgrade the optimizer has nothing to simulate, the field stays null, and the whole game was counted as failed (41-46 per 1 000). Fix: play the card anyway (for its tags) with an input that re-applies the phase's current upgrade - `UpgradePhaseHelper` has no "no upgrade" value, but re-applying the same type is a no-op. `PhaseUpgradeFallbackTest` pins the encoding. The same guard is in `Network2CorporationInputService` (Nebu Labs).
+* The owner's projection flags are now properties, so the behaviour can be measured without a rebuild: `-Dares.network2.projectOpponent=false` (do not project the opponent's phase-3 actions), `-Dares.network2.mineFromOpponentView=true`, `-Dares.network2.opponentFromOpponentView=false`.
+
+The results of the four projection variants against NETWORK are running.
+
+### The owner's projection flags, measured on the shipped value (21/11)
+
+The two `applyPlayerActions` calls in `Network2ThirdPhaseActionProjector.processTurn` were hardcoded (ours from our view, the opponent's from his). They are
+now properties, and four variants ran on the SHIPPED `iter4` value, 1 000 games each against NETWORK:
+
+| variant | score | 95% CI |
+|---|---|---|
+| shipped | 34.90% | [32.0, 37.9] |
+| **do not project the opponent's actions** | **37.65%** | [34.7, 40.7] |
+| opponent's actions scored from our view | 35.05% | [32.2, 38.1] |
+| our actions scored from the opponent's view | 35.60% | [32.7, 38.6] |
+
+Only "skip the opponent's projection" is positive (+2.75 points, about 1 sigma at 1 000 games - a trend, not a result, and it is cheaper as well). The
+perspective swaps are noise. The properties: `-Dares.network2.projectOpponent=false`, `-Dares.network2.mineFromOpponentView=true`,
+`-Dares.network2.opponentFromOpponentView=false`.

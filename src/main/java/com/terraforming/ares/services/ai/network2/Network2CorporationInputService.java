@@ -92,7 +92,10 @@ public class Network2CorporationInputService {
         } else if (corporationCardAction == CardAction.MODPRO_CORPORATION) {
             return Map.of(InputFlag.TAG_INPUT.getId(), List.of(inputDecisions.getBestTagDecision().getFirst().getValue().ordinal()));
         } else if (corporationCardAction == CardAction.NEBU_LABS_CORPORATION) {
-            return Map.of(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(inputDecisions.getBestPhaseUpgradeOverall().getValue()));
+            int upgrade = inputDecisions.getBestPhaseUpgradeOverall() != null
+                    ? inputDecisions.getBestPhaseUpgradeOverall().getValue()
+                    : PhaseUpgradeFallback.noOp(player);
+            return Map.of(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(upgrade));
         } else if (corporationCardAction == CardAction.SULTIRA_CORPORATION) {
             return Map.of(InputFlag.PHASE_UPGRADE_CARD.getId(), List.of(inputDecisions.getPhaseUpgradeDecisions().get(BUILD_GREEN_PROJECTS_PHASE - 1).getValue()));
         }

@@ -33,6 +33,12 @@ import java.util.stream.Collectors;
 public class Network2ThirdPhaseActionProjector extends AbstractPhaseProcessor {
     private static final double EPS = 5e-4;
     private static final int BEST_NODES_TO_CHECK_FROM_PLAYER = 4;
+    /** {@code -Dares.network2.projectOpponent=false}: skip projecting the opponent's phase-3 actions (owner's experiment, 21/11). */
+    private static final boolean PROJECT_OPPONENT_ACTIONS = Boolean.parseBoolean(System.getProperty("ares.network2.projectOpponent", "true"));
+    /** {@code -Dares.network2.mineFromOpponentView=true}: score OUR actions from the opponent's view (the shipped behaviour is false). */
+    private static final boolean MINE_FROM_OPPONENT_VIEW = Boolean.parseBoolean(System.getProperty("ares.network2.mineFromOpponentView", "false"));
+    /** {@code -Dares.network2.opponentFromOpponentView=false}: score the OPPONENT's actions from our view (the shipped behaviour is true). */
+    private static final boolean OPPONENT_FROM_OPPONENT_VIEW = Boolean.parseBoolean(System.getProperty("ares.network2.opponentFromOpponentView", "true"));
 
     private final CardService cardService;
     private final AiTurnService aiTurnService;
@@ -59,8 +65,13 @@ public class Network2ThirdPhaseActionProjector extends AbstractPhaseProcessor {
 
     public double processTurn(MarsGame game, Player player, Player anotherPlayer) {
         NNService.ModelType modelType = player.isFirstBot() ? NNService.ModelType.FIRST : NNService.ModelType.SECOND;
-        Map<Class<?>, Card> playerBlueCards = applyPlayerActions(game, player, anotherPlayer, false);
-        applyPlayerActions(game, anotherPlayer, player, true);
+        // Owner's experiment (21/11): whether the opponent's actions are projected at all, and from whose view each side is scored. The defaults are
+        // the shipped behaviour (project the opponent, each side from its own view); the properties exist to measure the alternatives on the SAME
+        // trained value instead of guessing.
+        Map<Class<?>, Card> playerBlueCards = applyPlayerActions(game, player, anotherPlayer, MINE_FROM_OPPONENT_VIEW);
+        if (PROJECT_OPPONENT_ACTIONS) {
+            applyPlayerActions(game, anotherPlayer, player, OPPONENT_FROM_OPPONENT_VIEW);
+        }
 
         List<ScoredNode> bestRegularFutureOptions = getBestFutureOptions(game, player);
         List<ScoredNode> bestOpponentRegularFutureOptions = getOpponentBestFutureOptions(game, player, anotherPlayer);
@@ -599,7 +610,12 @@ public class Network2ThirdPhaseActionProjector extends AbstractPhaseProcessor {
         OptimizedInputDecisions optimizedDecisions = aiInputOptimizer.optimizeInputDecisions(game, player, sharedInputAnalysis, projectByOpponent);
 
         // Тут берем лучший апгрейд фазы из оптимизатора
-        var bestPhaseUpgrade = optimizedDecisions.getBestPhaseUpgradeOverall().getValue();
+        // Если все пять фаз уже апгрейднуты, getAllAvailableUpgrades() пуст, PhaseUpgradeStep не применим, и
+        // bestPhaseUpgradeOverall остаётся null (в policy_ai тот же код падал так же). Карту всё равно играем ради тегов:
+        // подставляем текущий апгрейд, повторное применение - no-op.
+        int bestPhaseUpgrade = optimizedDecisions.getBestPhaseUpgradeOverall() != null
+                ? optimizedDecisions.getBestPhaseUpgradeOverall().getValue()
+                : PhaseUpgradeFallback.noOp(player);
 
         List<float[]> simulationData = new ArrayList<>();
         List<Runnable> actions = new ArrayList<>();

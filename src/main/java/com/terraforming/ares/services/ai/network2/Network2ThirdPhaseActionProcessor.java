@@ -742,7 +742,11 @@ public class Network2ThirdPhaseActionProcessor extends AbstractPhaseProcessor {
         OptimizedInputDecisions optimizedDecisions = aiInputOptimizer.optimizeInputDecisions(game, player, sharedInputAnalysis);
 
         // Тут берем лучший апгрейд фазы из оптимизатора
-        var bestPhaseUpgrade = optimizedDecisions.getBestPhaseUpgradeOverall().getValue();
+        // Если все пять фаз уже апгрейднуты, bestPhaseUpgradeOverall == null (в policy_ai тот же код падал NPE). Карту всё равно играем ради
+        // тегов: подставляем текущий апгрейд, повторное применение - no-op, апгрейды остаются как есть.
+        int bestPhaseUpgrade = optimizedDecisions.getBestPhaseUpgradeOverall() != null
+                ? optimizedDecisions.getBestPhaseUpgradeOverall().getValue()
+                : PhaseUpgradeFallback.noOp(player);
 
         List<float[]> simulationData = new ArrayList<>();
         List<Runnable> actions = new ArrayList<>();

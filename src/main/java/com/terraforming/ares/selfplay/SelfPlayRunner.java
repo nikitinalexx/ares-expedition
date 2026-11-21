@@ -109,6 +109,7 @@ public class SelfPlayRunner {
     private final GameService gameService;
     private final SimulationProcessorService simulationProcessorService;
     private final DecisionLogs decisionLogs;
+    private final com.terraforming.ares.services.agent.NetDataWriter netDataWriter;
 
     public Summary run(Options options) throws IOException, InterruptedException {
         Files.createDirectories(options.out());
@@ -160,7 +161,9 @@ public class SelfPlayRunner {
                                 .expansion(Expansion.BASE).expansion(Expansion.BUFFED_CORPORATION).expansion(Expansion.DISCOVERY)
                                 .dummyHand(true)
                                 .build());
-                        simulationProcessorService.processSimulation(game);
+                        simulationProcessorService.processSimulation(game,
+                                netDataWriter.enabled() ? netDataWriter::afterStep : null);
+                        netDataWriter.finish(game);
                         rounds.add(game.getTurns());
                         decisionLogs.finish(game);
                         perMatchup.get(label(matchup)).incrementAndGet();
@@ -190,6 +193,7 @@ public class SelfPlayRunner {
             }
         } finally {
             decisionLogs.stopRecording(); // finishes the last chunk
+            netDataWriter.close();
         }
         if (stoppedReason.equals("COMPLETED") && failed.get() > 0 && failureRatioTooHigh(options, failed.get(), attempted.get())) {
             stoppedReason = "TOO_MANY_FAILURES";
