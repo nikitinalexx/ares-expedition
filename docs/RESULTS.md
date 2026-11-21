@@ -2577,3 +2577,20 @@ policy, which is the dominant part of the stack): the reviewer's prediction of â
 
 What the control does show is that size matters *at the margin*: 2 000 games give 72.6, 5 000 give 75.16 - about +2.5 points for 2.5x the data, which is
 consistent with the volume curve flattening.
+
+## Profile gate on the new champion: passes (no warnings)
+
+`ml/check_player.py --model D:/ares/runs/policy/1120_clean5000 --games 60 --search --phase-search ...`:
+
+| quantity | value | the gate |
+|---|---|---|
+| builds per game | **33.5** | not degenerate (floor 3) |
+| build acceptance | 0.730 | close to the old 0.77 |
+| phases | 5.4 / 40.0 / 44.5 / 2.8 / 7.5 | no phase above 80% |
+| standard projects in phase 3 | 15.1% | below the 50% degenerate line |
+| warnings | **none** | - |
+
+The phase mix moved away from the old champion (draft 7.5% against 17%, income 2.8% against 6%, blue/red builds 40% against 30%): the fine-tune shifted
+the player towards building blue/red and towards phase 3. Phase 4 being low is **not** a defect (the owner's 20/11 point: phase 4 is shared, and declining
+it can be correct). The win rate this instrument prints (53.3% over 60 games) is not comparable to the 75.16% measurement: `check_player` runs its own
+smaller search stack, so only the profile numbers are meaningful here.
