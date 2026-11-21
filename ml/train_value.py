@@ -180,7 +180,8 @@ def standardize(obs, index=None):
 def fit_value(obs, outcome, hidden=(256, 128), epochs=6, lr=1e-3, weight_decay=1e-5, batch=4096,
               seed=1, device="cpu", val_fraction=0.1, steps=0, label_mean=None, verbose=True,
               train_idx=None, val_idx=None, target=None, target_kind="outcome", stats_idx=None,
-              clip=40.0, scale="mean", optimizer="adam", momentum=0.9):
+              clip=40.0, scale="mean", optimizer="adam", momentum=0.9, game=None, batch_probe=0,
+              shuffle=True):
     """Trains V on (obs f16/f32 [n, obsSize], outcome f32 [n]). Returns the best epoch as numpy parameters.
 
     The split is by game (`train_idx` / `val_idx` from the caller, or a hash of the row's game id), so the same game
@@ -237,10 +238,11 @@ def fit_value(obs, outcome, hidden=(256, 128), epochs=6, lr=1e-3, weight_decay=1
         return np.concatenate(logits)
 
     history, best = [], {"val_loss": float("inf"), "epoch": 0, "state": None}
+    probe = []
     for epoch in range(1, epochs + 1):
         model.train()
         running, seen, batches = 0.0, 0, 0
-        permutation = rng.permutation(train_idx)
+        permutation = rng.permutation(train_idx) if shuffle else np.asarray(train_idx)
         for b in range(steps):
             slice_ = permutation[b * batch:(b + 1) * batch]
             if len(slice_) < 2:
@@ -250,6 +252,18 @@ def fit_value(obs, outcome, hidden=(256, 128), epochs=6, lr=1e-3, weight_decay=1
             loss = loss_fn(logits, tensor(target, slice_))
             if not torch.isfinite(loss):
                 raise SystemExit(f"the value loss is {float(loss)} in epoch {epoch}: the training diverged")
+            if batch_probe and epoch == 1 and len(probe) < batch_probe:
+                # Batch-to-batch jumpiness is the visible sign of a broken shuffle: if consecutive batches carry rows of the
+                # same game, their labels are nearly identical and the loss swings with whichever game is in front. Counting
+                # the distinct games in the batch is the direct measure; the swing is what it looks like.
+                labels = outcome[slice_]
+                both = 0.0 < float(labels.mean()) < 1.0
+                probe.append({"batch": b,
+                              "loss": round(float(loss), 4),
+                              "games": int(len(np.unique(game[slice_]))) if game is not None else None,
+                              "label": round(float(labels.mean()), 3),
+                              "row_game": int(game[slice_][0]) if game is not None else None,
+                              "auc": round(float(auc(logits.detach().cpu().numpy(), labels)), 4) if both else None})
             optimizer.zero_grad()
             loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), 5.0)
@@ -282,7 +296,7 @@ def fit_value(obs, outcome, hidden=(256, 128), epochs=6, lr=1e-3, weight_decay=1
               "w3": state["w3.weight"].numpy().reshape(-1), "b3": state["w3.bias"].numpy()}
     return {"params": params, "state": state, "hidden": list(hidden), "mean": mean, "std": std,
             "history": history, "best_epoch": best["epoch"], "best_val_loss": best["val_loss"],
-            "label_mean": label_mean, "constant_loss": constant, "device": str(device)}
+            "label_mean": label_mean, "constant_loss": constant, "device": str(device), "probe": probe}
 
 
 def fit_stream(data_dirs, rows_per_game, hidden, epochs, lr, weight_decay, batch, seed, device,
@@ -735,6 +749,12 @@ def main():
                         help="the owner's optimiser was SGD 0.01 + momentum 0.9; ours was always Adam, so a batch-size "
                              "comparison made with Adam is not the recipe he measured")
     parser.add_argument("--momentum", type=float, default=0.9)
+    parser.add_argument("--batch-probe", type=int, default=0,
+                        help="record the loss, label mean, distinct games and AUC of the first K batches of epoch 1: the "
+                             "batch-to-batch swing is how a broken shuffle shows itself")
+    parser.add_argument("--no-shuffle", action="store_true",
+                        help="iterate the rows in order instead of permuting them (a diagnostic: rows of one game then sit "
+                             "together in every batch, which is what the probe is meant to catch)")
     parser.add_argument("--rows-per-game", type=int, default=16,
                         help="at most this many states of one game (0 = all); the label is the same for all of them")
     parser.add_argument("--games-limit", type=int, default=0,
@@ -958,7 +978,8 @@ def main():
                        train_idx=train_idx, val_idx=np.flatnonzero(split),
                        label_mean=None if args.target != "outcome" else float(pool["outcome"][~split].mean()),
                        target=target, target_kind=args.target, stats_idx=stats_idx, clip=args.clip,
-                       scale=args.scale, optimizer=args.optimizer, momentum=args.momentum)
+                       scale=args.scale, optimizer=args.optimizer, momentum=args.momentum,
+                       game=pool["game"], batch_probe=args.batch_probe, shuffle=not args.no_shuffle)
     params, history = fitted["params"], fitted["history"]
     if drop:
         # The A/B may drop a block; then the DEPLOYED model must ignore it, not just the training rows.
@@ -1033,6 +1054,7 @@ def main():
                "auc": round(auc_of_prediction, 4),
                "brier": round(float(np.mean((predicted - y_val) ** 2)), 4) if args.target == "outcome" else None,
                "export_check": worst, "calibration": calibration, "rows_per_game_cap": args.rows_per_game,
+               "batch_probe": fitted.get("probe", []),
                "data": args.packed or args.data, "observation_hash": pool["observationHash"],
                "dropped_columns": len(drop), "masked_gain": masked_gain,
                "seconds": round(time.time() - started, 1), "weightsSha256": meta["weightsSha256"]}
@@ -1042,6 +1064,14 @@ def main():
         json.dump(history, f, indent=1)
     print(json.dumps({k: v for k, v in metrics.items() if k != "calibration"}, indent=1), flush=True)
     print(json.dumps(metrics["calibration"], indent=1), flush=True)
+    if fitted.get("probe"):
+        print("BATCH PROBE (epoch 1): batch, loss, distinct games, label mean, row's game, batch auc", flush=True)
+        for row in fitted["probe"]:
+            print(f"  {row['batch']:3d}  loss {row['loss']:.4f}  games {row['games']}  "
+                  f"label {row['label']:.3f}  game {row['row_game']}  auc {row['auc']}", flush=True)
+        losses = [r["loss"] for r in fitted["probe"]]
+        print(f"  loss mean {float(np.mean(losses)):.4f} "
+              f"cv {float(np.std(losses) / max(np.mean(losses), 1e-9)):.3f}", flush=True)
     print(f"VAL mse {metrics['best_val_loss']:.4f} (constant {metrics['constant_val_loss']:.4f}) "
           f"R2 {metrics['val_r2']} auc {metrics['auc']} epoch {metrics['best_epoch']}", flush=True)
     return 0

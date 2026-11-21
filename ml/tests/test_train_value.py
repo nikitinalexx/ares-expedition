@@ -101,6 +101,35 @@ class OptimizerChoice(unittest.TestCase):
                          "momentum 0 and 0.9 gave identical weights: it is not passed to the optimiser")
 
 
+class BatchProbe(unittest.TestCase):
+    """The probe exists to answer "does a batch contain rows of one game or of many?" - the property a permutation of rows
+    does NOT by itself guarantee. It must report the distinct games of every probed batch."""
+
+    def test_the_probe_reports_distinct_games_per_batch(self):
+        rng = np.random.default_rng(5)
+        games = np.repeat(np.arange(40), 10)          # 400 rows, 40 games, sorted like a pack
+        obs = rng.normal(size=(400, 8)).astype(np.float32)
+        outcome = (rng.random(400) > 0.5).astype(np.float32)
+        fitted = train_value.fit_value(obs, outcome, hidden=(8, 6), epochs=1, batch=16, seed=2, device="cpu",
+                                       verbose=False, game=games, batch_probe=5)
+        probe = fitted["probe"]
+        self.assertEqual(len(probe), 5)
+        self.assertTrue(all(row["games"] >= 8 for row in probe),
+                        f"a batch of 16 rows over 40 games held {[r['games'] for r in probe]} distinct games: the rows are "
+                        f"not being shuffled across games")
+
+    def test_an_unshuffled_run_collapses_to_one_game_per_batch(self):
+        rng = np.random.default_rng(5)
+        games = np.repeat(np.arange(40), 10)
+        obs = rng.normal(size=(400, 8)).astype(np.float32)
+        outcome = (rng.random(400) > 0.5).astype(np.float32)
+        fitted = train_value.fit_value(obs, outcome, hidden=(8, 6), epochs=1, batch=16, seed=2, device="cpu",
+                                       verbose=False, game=games, batch_probe=5, shuffle=False)
+        self.assertTrue(all(row["games"] <= 3 for row in fitted["probe"]),
+                        f"without the shuffle consecutive rows stay grouped by game and a 16-row batch should hold 2-3 "
+                        f"games, got {[row['games'] for row in fitted['probe']]}: this is what the probe must catch")
+
+
 class MaskedColumns(unittest.TestCase):
     def test_a_masked_model_is_invariant_to_the_block_and_the_plain_one_is_not(self):
         params = random_params()
