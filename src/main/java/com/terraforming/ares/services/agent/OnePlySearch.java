@@ -1069,6 +1069,9 @@ public class OnePlySearch {
                     // a corporation the engine rejects on a copy is not a candidate for the ranking
                 }
             }
+            if (judgeAudit && judgeTypes.contains(DecisionType.PICK_CORPORATION)) {
+                auditCorporation(game, player, choices, game.getTurns() * 31L + 17);
+            }
             return best;
         } finally {
             strongAnswer.set(Boolean.FALSE);
@@ -1763,6 +1766,81 @@ public class OnePlySearch {
             }
         }
         StringBuilder line = new StringBuilder("[JUDGE] type=").append(decision.type())
+                .append(" turns=").append(game.getTurns())
+                .append(" cands=").append(count).append(" worlds=").append(judgeWorlds);
+        for (int k = 0; k < judgeWorlds; k++) {
+            line.append(" w").append(k).append('=');
+            for (int c = 0; c < count; c++) {
+                if (c > 0) {
+                    line.append(',');
+                }
+                line.append(Float.isNaN(margins[k][c]) ? "na" : String.format(Locale.ROOT, "%.1f", margins[k][c]));
+            }
+        }
+        float[] sum = new float[count];
+        int[] ok = new int[count];
+        for (int k = 0; k < judgeWorlds; k++) {
+            for (int c = 0; c < count; c++) {
+                if (!Float.isNaN(margins[k][c])) {
+                    sum[c] += margins[k][c];
+                    ok[c]++;
+                }
+            }
+        }
+        line.append(" mean=");
+        for (int c = 0; c < count; c++) {
+            if (c > 0) {
+                line.append(',');
+            }
+            line.append(ok[c] == 0 ? "na" : String.format(Locale.ROOT, "%.1f", sum[c] / ok[c]));
+        }
+        line.append(" v=");
+        for (int c = 0; c < count; c++) {
+            if (c > 0) {
+                line.append(',');
+            }
+            line.append(String.format(Locale.ROOT, "%.2f", values[c]));
+        }
+        System.out.println(line);
+    }
+
+    /**
+     * The same audit as {@link #auditEndJudge}, for the corporation choice: the corporation is taken on a copy, then the WHOLE game is played out in each of
+     * {@code judgeWorlds} determinised worlds with the same seeds. The line has the same {@code [JUDGE]} format, so {@code ml/judge_report.py} reads it.
+     * <p>
+     * Why it is separate from the generic judge: the corporation is not a {@link Candidate} with an id that {@code applyOn} knows - it is a card plus the
+     * input its on-built effect needs, applied by {@code pickCorporationProcessor}. Everything after the application is identical.
+     */
+    private void auditCorporation(MarsGame game, Player player, List<CorporationChoice> choices, long seed) {
+        if (judgeDone.incrementAndGet() > judgeMax) {
+            return;
+        }
+        int count = choices.size();
+        float[][] margins = new float[judgeWorlds][count];
+        float[] values = new float[count];
+        for (int k = 0; k < judgeWorlds; k++) {
+            for (int c = 0; c < count; c++) {
+                margins[k][c] = Float.NaN;
+                MarsGame copy = new MarsGame(game);
+                Player me = copy.getPlayerByUuid(player.getUuid());
+                if (me == null) {
+                    continue;
+                }
+                try {
+                    CorporationChoice choice = choices.get(c);
+                    pickCorporationProcessor.processTurn(new com.terraforming.ares.model.turn.CorporationChoiceTurn(
+                            player.getUuid(), choice.corporationId(), choice.input()), copy);
+                    settleQueuedDiscards(copy, me);
+                } catch (RuntimeException rejected) {
+                    continue;
+                }
+                if (k == 0) {
+                    values[c] = leafValue(copy, player.getUuid());
+                }
+                margins[k][c] = endMargin(copy, player.getUuid(), seed + k);
+            }
+        }
+        StringBuilder line = new StringBuilder("[JUDGE] type=").append(DecisionType.PICK_CORPORATION)
                 .append(" turns=").append(game.getTurns())
                 .append(" cands=").append(count).append(" worlds=").append(judgeWorlds);
         for (int k = 0; k < judgeWorlds; k++) {

@@ -82,15 +82,19 @@ thing the panel makes measurable.
   LOSING to NETWORK: -14.9 points at 1 000 games (LEDGER 51).
 * *a better NETWORK_V2 in `advanced_ai`*: the committed model is the best of the five and scores 37.75% against NETWORK (behind our 41.7%); the documented
   25-round player is the older single-tower generation (LEDGER 56).
+* *the corporation choice*: the audit (now wired into `chooseCorporation`) gives **-0.16 +- 1.45** out of sample - the 27-63% spread is the deal and the hand,
+  not a choice error (LEDGER 57).
+* *the conditional build-phase arm*: already run (`PlanCodes` 8, 64% build phases). The specialist went 44.75 -> 54.4 -> 44.6 on its own critics, and the
+  fine-tune on that corpus is 74.88% against the clean fine-tune's 75.16% - the plan contributes nothing (LEDGER 42, RESULTS 21/11).
 
 **Open, in order of cost:**
 
-1. **The corporation audit** (~30 min): `judgeTypes=PICK_CORPORATION`, opponent NETWORK, split sample, on the 1 000-game corpus. The corporation is a real
-   decision in 913/1 000 games and the outcome spans 63% to 27% by chosen corporation (p = 0.0006, LEDGER 52). If the audit shows no headroom, the
-   choice is fine under our own line and the spread is the deal/plan, not a decision error.
-2. **The early-investment arm** (~2.5 h): nudge toward production/cards in the FIRST rounds only, generate 5 000 games, fine-tune, measure **without** the
-   nudge on both benchmarks. This is the direct test of the measured mechanism (LEDGER 51); the three colour arms are the reason the prior is low, and
-   the timing is the one dimension they did not vary.
+1. **Value diversity screen** (running, ~40 min): play the champion with an ensemble of 2 own critics + 1 critic trained on ANOTHER style (build-phase, anneal05,
+   microbe). The value is plan-conditional; the question is whether its errors are uncorrelated enough for the ensemble to price the tempo line better. 500 games
+   against NETWORK per variant, baseline on the same sample. A screen, not a claim (effects under 1.5 points need 10 000 games).
+2. **A population corpus** (~2.5 h): generate self-play with a DIFFERENT plan code per seat (`PlanCodes` is already in the observation, so the value can learn
+   Q(s, code)), then train policy and critics and evaluate **without** codes on both benchmarks. This is the legitimate way to add style diversity without using
+   SMART/NETWORK as teachers, and it attacks the measured cause: the corpus is a mirror, so the value never learns the price of adapting.
 3. **A rush arm** (~2.5 h): the rules allow a rush - the game ends when the planet is maxed and only the raiser gets TR - and the measured lengths say why it
    matters: the agent's own games end at **26.7** rounds, NETWORK's at **30.3**, and the matchup at **29.2** (LEDGER 53). A rush needs ~1.2 parameter
    steps/round from one player (all 31 steps) against the agent's current 0.58; **no game in any corpus ends before round 23**, so the strategy is absent

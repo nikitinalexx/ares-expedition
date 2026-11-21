@@ -2929,3 +2929,18 @@ fact of that generation. It cannot run in the current NETWORK_V2 path (different
 **The flags.** Between `86e29c0` and `540bcce`, `AiConstants` changed `ENABLE_AI_EXPLORATION` and `EXPLORATION_ON_CORP_PICK` from `true` to `false`, and removed
 `WP_DENOMINATOR_FOR_FRONTIER = 6` (which divided the opponent's points in the frontier by six). Those are the flags that degraded advanced_ai's play; HEAD
 already has them off, so the current build plays without them.
+
+### The corporation audit: no headroom either (200 decisions, opponent NETWORK, split sample)
+
+The first run returned **0 judge lines** because the corporation is chosen by a separate ranker (`OnePlySearch.chooseCorporation`), which the audit never touched. The
+judge is now wired into it (same `[JUDGE]` line format, so `ml/judge_report.py` reads it unchanged).
+
+| statistic | value |
+|---|---|
+| the value's choice agrees with the end-of-game judge | 53.0% |
+| the judge's pick, in-sample | +8.50 points (sd 12.8) |
+| **out-of-sample** (select on 4 worlds, pay on 4) | **-0.16 (se 1.45, n 200)** |
+| variation that is the deal | **69%** (world sd 36.7 against position sd 24.6) |
+
+So the corporation choice is one-step-optimal under our continuation, and the 27-63% spread by chosen corporation is the **deal and the hand**, not a choice error. The
+69% world share is the largest measured so far (phase vs NETWORK 43%) - the corporation decision is almost entirely a statement about the deal.
