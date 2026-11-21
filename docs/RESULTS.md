@@ -2562,3 +2562,18 @@ still touch (39.6 against 42.0) - so SMART is confirmed and NETWORK is a trend, 
 
 The new champion is therefore: the old champion's policy, fine-tuned once on 5 000 fresh unperturbed self-play games. Nothing else changed - not the
 critics, not the search, not the observation.
+
+## P4, the size-matched control: the reviewer's confound hypothesis is refuted (night of 20/21)
+
+The review claimed that the rule "a corpus inherits the strength of its generator" is confounded with corpus SIZE: every weak-generator corpus in that
+table had 1 000-2 000 games, and a 1 250-game champion corpus trains a 30% player. The control: train the champion's policy on only **2 000** games of
+the champion's own play (8 chunks of the clean corpus, the same recipe, the champion's critics), then measure.
+
+**Result: 72.60% [69.75, 75.27] vs SMART at 1 000 games.**
+
+So a 2 000-game corpus from a strong generator trains a strong player (72.6, against the generator's own 73.17 and the 5 000-game fine-tune's 75.16).
+The weak-generator corpora at the same size scored 21-33% - so size was not what made them weak; their generator was. **The rule stands** (for the
+policy, which is the dominant part of the stack): the reviewer's prediction of ≤ 40% is refuted by 32 points.
+
+What the control does show is that size matters *at the margin*: 2 000 games give 72.6, 5 000 give 75.16 - about +2.5 points for 2.5x the data, which is
+consistent with the volume curve flattening.

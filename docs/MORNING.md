@@ -56,6 +56,12 @@ than forcing the events.
 SMART is confirmed at the project resolution (non-overlapping intervals, +2.0). NETWORK is a trend (+1.9, intervals touching). The new champion is the
 old champion fine-tuned once on 5 000 fresh unperturbed self-play games - nothing else changed.
 
+## P4, the size-matched control: the reviewer's confound is refuted
+
+The review predicted that a 2 000-game champion corpus would train a 25-40% player, making our "a corpus inherits its generator's strength" rule a
+volume artefact. Measured: **72.60% [69.75, 75.27]** - 32 points above the prediction. So the weak-generator corpora were weak because of their
+generator, not their size; the rule stands for the policy, and size matters only at the margin (2 000 -> 72.6, 5 000 -> 75.16).
+
 ## What I would do next (in order)
 
 1. **The `Q^champ` oracle** (the review's #2, ~2 h at the new speed): on ~200 phase decisions, play every legal phase to the end with the champion as the
