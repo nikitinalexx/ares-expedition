@@ -2695,3 +2695,18 @@ curse, exactly as the split predicts.
 
 What this now legitimately says: **the champion is one-step-optimal at the phase pick against SMART, given that it keeps playing the way it plays.** It
 does not say anything about a plan that needs a different continuation - that caveat is structural, not a defect of the run.
+
+### BUILD_CARD audit against SMART: no headroom either (300 decisions, 8 worlds)
+
+| statistic | value |
+|---|---|
+| the value's choice agrees with the end-of-game judge | 49.3% (chance for a build menu of ~6 candidates is ~17%) |
+| the judge's pick, in-sample | +4.70 points |
+| **the judge's pick, out-of-sample** (select on 4 worlds, pay on 4) | **+0.01 points (se 0.62)** |
+
+So at the build decisions the value ranks well above chance (49% against 17%) and still leaves nothing on the table: the in-sample +4.7 was again the
+winner's curse. Together with the phase result (+0.56 +- 0.75), the picture is consistent: **at the one-step decision level, against SMART, the search does
+not lose points** - under the continuation of our own policy.
+
+The next audit is the one the owner asked for: the same phase audit against NETWORK, the benchmark we actually lose to. If the number is positive and clear
+there, it is the first measured place where we lose *that* opponent, and it can be attacked without waiting for the expensive plan experiments.
