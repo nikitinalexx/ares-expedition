@@ -79,3 +79,24 @@ generator, not their size; the rule stands for the policy, and size matters only
 No pruning, no public-observation removal (they buy speed with quality, the owner's call). No second microbe rate at the arm scale (the smokes showed
 the direction: higher rates only add the build collapse). No reply written to the reviewer yet: the owner asked to verify first, and the verification is
 `docs/reviews/VERIFICATION_1.md` вЂ” with the red/green/microbe arms now added to it as evidence.
+
+## The decision audit (the last measurement of the night): the phase pick has no headroom
+
+400 real phase decisions of the new champion against SMART, every candidate played to the END of the game in 8 determinised worlds, with V's own reading
+beside the final margins.
+
+| statistic | value |
+|---|---|
+| V agrees with the end-of-game judge | 30.2% (chance 20% for 5 candidates) |
+| the judge's pick, selected and paid on the same 8 worlds | **+7.49 points** |
+| the judge's pick, selected on 4 worlds and paid on the other 4 | **-0.26 points (se 0.79)** |
+
+So the +7.5 was the winner's curse in full. The honest statement: **the champion's phase choice is one-step-optimal within ~1.6 points**, and the
+disagreement between V and the game's own outcome there is noise.
+
+**What it does NOT say, and this matters:** the continuation inside the rollout is the POLICY, so the audit measures "is there a better single step, given
+that we keep playing the way we play". A plan (a production economy) requires a *different continuation*, which no one-step evaluator can see - this is
+the same wall as everything else. The audit closes the "the search is losing points at the phase" hypothesis; it does not open the plan one.
+
+A new method rule came out of it (`docs/METHOD.md` 7): any oracle-based claim must select on one set of worlds and be evaluated on a disjoint set - an
+in-sample maximum is worth zero, and here it was worth 7.5 points of nothing.
