@@ -2819,3 +2819,28 @@ type, so this is an unbiased subsample, not all games): **ahead at round 5 -> 37
 [-24.2, -5.3]**. The sign and the significance survive the tenfold sample; the size is smaller than the 100-game estimate (-23), as a small sample should
 be. Engine breakdown on all 1 000 games matches the independent 1 000-game scorecard: TR -5.5, forests -1.3, printed -5.5, resources +10.1, milestones
 -2.5, awards -2.1, total -6.7 against the scorecard's -6.6.
+
+## Game length: the agent is the FAST player, NETWORK is the long one (21/11)
+
+The owner's question: if NETWORK plays the long game, why cannot a hard tempo player finish the planet before NETWORK's engine pays? First the lengths, measured with the
+same instrument (`MarsGame.getTurns()` at GAME_END; `turns++` happens exactly on entering `PICK_PHASE`, so it is the round number), 100 games each:
+
+| matchup | mean | min | max |
+|---|---|---|---|
+| agent vs agent | **26.73** | 20 | 33 |
+| agent vs NETWORK | **29.2** | 23 | 38 |
+| NETWORK vs NETWORK | **30.28** | 25 | 37 |
+
+The owner's guess (NETWORK ~30, agent ~25) was right on both; my opposite prediction was wrong.
+
+**Reading.** The game ends when the planet's 31 parameter steps are raised, so the length is 31 divided by the SUM of the two players' rates: the agent alone
+raises ~0.58 steps/round, NETWORK ~0.51. Neither can set the clock alone. Against NETWORK the game lasts 29.2 rounds - 2.5 rounds longer than our natural
+pace and almost NETWORK's own - because NETWORK declines to terraform and the game stretches back toward its pace. The additive prediction (31 / 1.09 =
+28.4) is close to the measured 29.2; the residual says our player raises slightly less when facing NETWORK, i.e. it slows down exactly where NETWORK wants
+it to.
+
+**What this does NOT mean.** Not that the agent "has tempo and NETWORK has not": 0.58 against 0.51 is a 14% difference, not a rush. To end a game by round 26
+against NETWORK, one player would have to raise nearly ALL 31 steps itself (~1.2 steps/round, double our rate) - that is the "brutal tempo" plan the owner
+described, and it is absent from every corpus we have (no game in the 1 000-game NETWORK corpus ends before round 23). It is a legitimate, untested plan,
+and the reason it is not chosen is structural: the value's label is our own final margin, in which "the game will end sooner" has no term, and the one-step
+judge continues with our own non-rushing policy.

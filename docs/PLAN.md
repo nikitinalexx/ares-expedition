@@ -89,9 +89,10 @@ thing the panel makes measurable.
 2. **The early-investment arm** (~2.5 h): nudge toward production/cards in the FIRST rounds only, generate 5 000 games, fine-tune, measure **without** the
    nudge on both benchmarks. This is the direct test of the measured mechanism (LEDGER 51); the three colour arms are the reason the prior is low, and
    the timing is the one dimension they did not vary.
-3. **A rush arm** (~2.5 h): the rules allow a rush - the game ends when the planet is maxed and only the raiser gets TR - but **no game in 100 ended before
-   round 23**, so the strategy is absent from the population. It must be generated before it can be judged; one-step search will reject it by construction
-   (its continuation is our own non-rushing policy).
+3. **A rush arm** (~2.5 h): the rules allow a rush - the game ends when the planet is maxed and only the raiser gets TR - and the measured lengths say why it
+   matters: the agent's own games end at **26.7** rounds, NETWORK's at **30.3**, and the matchup at **29.2** (LEDGER 53). A rush needs ~1.2 parameter
+   steps/round from one player (all 31 steps) against the agent's current 0.58; **no game in any corpus ends before round 23**, so the strategy is absent
+   and must be generated before it can be judged. One-step search will reject it by construction (its continuation is our own non-rushing policy).
 4. **The specialist / two-line corpus with a plan-neutral gate V0** (the expensive path, owner-postponed): the only version where the line is not forced.
 
 **Measurement rules that came out of this week:** the result comes from the engine's `ScoreBreakdown`, never from the trajectory; a per-seat quantity is
