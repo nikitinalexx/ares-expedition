@@ -181,3 +181,16 @@ actually held on cards, not the number of tags played.
 
 Why this matters beyond microbes: it is the first axis defined by a card's *mechanism* rather than by its label, which is what the plan's content axis
 was supposed to be.
+
+## Current step (21/11): the decision audit, and the 10k cycles postponed by the owner
+
+The owner's decision: 10 000-game specialist cycles are postponed - they are long, and their outcome is vague. So the next step is the cheapest direct
+measurement we can still make: **the decision audit**, which answers "is our value ranking the plan decision the way the game's own outcome does" on real
+decisions of the champion.
+
+* `judgeTypes` (default PICK_PHASE) lets the audit cover any decision type, and `ml/judge_report.py` (9 tests) turns the log into two numbers per type: the
+  agreement between the value's ranking and the end-of-game judge's, and the points the judge's preferred candidate gains over the value's choice.
+* First run: the champion, PICK_PHASE, 8 worlds, 400 decisions, 200 games vs SMART.
+* What each outcome means: high agreement and a small advantage -> the champion is already one-step-optimal at the phase pick, and the search has no
+  headroom there (the review's C1 holds, and the plan must look elsewhere); low agreement and a positive advantage -> there are decisions where the value
+  is wrong in a way the game's own outcome sees, and that is the first measured target for a better value or a better label.
