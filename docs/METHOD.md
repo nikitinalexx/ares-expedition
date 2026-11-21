@@ -82,3 +82,11 @@ commitment: first phase, first card), not an outcome-derived property.
 
 Checklist addition: *is the quantity that ranks the alternatives produced by the same player whose competence is being tested?* If yes, the
 ranking is a statement about the player, not about the alternatives.
+
+## 7. An oracle's argmax is worthless without a split sample
+
+The audit of 400 phase decisions: an end-of-game judge, asked to pick the best phase over 8 worlds, "gained" **+7.49 points** over the value's choice -
+because it picked the maximum of eight noisy estimates. Made to choose on 4 worlds and paid on the other 4, the same judge gained **-0.26 +- 0.79**.
+
+Rule: any oracle-based label or claim must select on one set of worlds and be evaluated on a disjoint set. An in-sample maximum is not evidence; it is
+the winner's curse, and here it was 7.5 points of it.

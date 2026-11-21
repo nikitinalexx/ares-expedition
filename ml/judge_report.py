@@ -29,10 +29,59 @@ def parse_line(line):
     if not mean or not value:
         return None
     kind = re.search(r"type=(\S+)", line)
+    worlds = []
+    for match in re.finditer(r"w(\d+)=([^\s]+)", line):
+        worlds.append((int(match.group(1)), parse_values(match.group(2))))
+    worlds.sort(key=lambda pair: pair[0])
     return {
         "type": kind.group(1) if kind else "?",
         "mean": parse_values(mean.group(1)),
         "v": parse_values(value.group(1)),
+        "worlds": [values for _, values in worlds],
+    }
+
+
+def out_of_sample(rows, split):
+    """Select the judge's candidate on the first `split` worlds, evaluate it on the remaining ones.
+
+    Why: the judge's argmax over noisy means is biased upward (the winner's curse), so the in-sample advantage says nothing about whether the phase it
+    prefers would really have gained anything. Selecting on one half of the worlds and measuring on the other removes most of that bias.
+    """
+    advantages = []
+    agree = 0
+    n = 0
+    for row in rows:
+        worlds = row.get("worlds", []) if row else []
+        if len(worlds) <= split:
+            continue
+        v_best = argmax(row["v"])
+        if v_best < 0:
+            continue
+        in_sample = []
+        for c in range(len(row["v"])):
+            values = [world[c] for world in worlds[:split] if c < len(world) and world[c] is not None]
+            in_sample.append(sum(values) / len(values) if values else None)
+        j_best = argmax(in_sample)
+        if j_best < 0:
+            continue
+        tail_j = [world[j_best] for world in worlds[split:] if j_best < len(world) and world[j_best] is not None]
+        tail_v = [world[v_best] for world in worlds[split:] if v_best < len(world) and world[v_best] is not None]
+        if not tail_j or not tail_v:
+            continue
+        n += 1
+        if j_best == v_best:
+            agree += 1
+        advantages.append(sum(tail_j) / len(tail_j) - sum(tail_v) / len(tail_v))
+    if n == 0:
+        return {"decisions": 0}
+    mean_advantage = sum(advantages) / len(advantages)
+    variance = sum((a - mean_advantage) ** 2 for a in advantages) / max(len(advantages) - 1, 1)
+    return {
+        "decisions": n,
+        "agreement": agree / n,
+        "mean_advantage": mean_advantage,
+        "sd_advantage": variance ** 0.5,
+        "se_advantage": (variance / len(advantages)) ** 0.5,
     }
 
 
@@ -77,16 +126,26 @@ def summarise(rows):
     }
 
 
+def read_lines(path):
+    """Read a log whatever PowerShell wrote it in: `*>` redirects produce UTF-16 with a BOM, python's own writes are UTF-8."""
+    with open(path, "rb") as handle:
+        head = handle.read(2)
+    encoding = "utf-16" if head in (b"\xff\xfe", b"\xfe\xff") else "utf-8"
+    with open(path, encoding=encoding, errors="ignore") as handle:
+        return handle.readlines()
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--log", required=True)
+    parser.add_argument("--split", type=int, default=4,
+                        help="worlds used to SELECT the judge's candidate; the remaining worlds evaluate it")
     args = parser.parse_args()
     rows = []
-    with open(args.log, encoding="utf-8", errors="ignore") as handle:
-        for line in handle:
-            parsed = parse_line(line)
-            if parsed:
-                rows.append(parsed)
+    for line in read_lines(args.log):
+        parsed = parse_line(line)
+        if parsed:
+            rows.append(parsed)
     by_type = {}
     for row in rows:
         by_type.setdefault(row["type"], []).append(row)
@@ -99,6 +158,12 @@ def main():
         print(f"    value's choice agrees with the end-of-game judge: {stats['agreement'] * 100:.1f}%")
         print(f"    judge's preferred candidate gains {stats['mean_advantage']:+.2f} points "
               f"(sd {stats['sd_advantage']:.1f}, se {stats['se_advantage']:.2f}) over the value's choice")
+        honest = out_of_sample(group, args.split)
+        if honest["decisions"] > 0:
+            print(f"    OUT OF SAMPLE (select on {args.split} worlds, evaluate on the rest): "
+                  f"agreement {honest['agreement'] * 100:.1f}%, "
+                  f"advantage {honest['mean_advantage']:+.2f} points "
+                  f"(se {honest['se_advantage']:.2f}, n {honest['decisions']})")
 
 
 if __name__ == "__main__":

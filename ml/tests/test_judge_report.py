@@ -16,6 +16,22 @@ LINE = ("[JUDGE] type=PICK_PHASE turns=5 cands=4 worlds=2 w0=1.0,2.0,na,4.0 w1=2
         "mean=1.5,-1.0,na,4.5 v=0.10,0.30,0.20,0.05")
 
 
+class ReadLinesTest(unittest.TestCase):
+
+    def test_reads_utf16_and_utf8(self):
+        import tempfile
+        for encoding in ("utf-16", "utf-8"):
+            with tempfile.NamedTemporaryFile("w", suffix=".log", delete=False, encoding=encoding) as handle:
+                handle.write(LINE + "\n")
+                path = handle.name
+            try:
+                lines = judge_report.read_lines(path)
+                self.assertEqual(len(lines), 1, encoding)
+                self.assertIsNotNone(judge_report.parse_line(lines[0]), encoding)
+            finally:
+                os.unlink(path)
+
+
 class ParseTest(unittest.TestCase):
 
     def test_values_with_na(self):
