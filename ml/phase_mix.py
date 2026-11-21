@@ -1,9 +1,14 @@
-"""The phase mix of a raw corpus or a pack, by the phase id the player actually chose.
+"""The phase mix of BOTH seats, read from the observation (the picks are revealed, so the opponent's are public).
 
-The previous version of ml/phase_value.py looped over range(5) while the ids are 1..5, so every column was shifted and one
-phase (5) was never counted. Ids are read from the data here, not assumed.
+Why: the owner's NETWORK_V2 profile is "phase 1 (cheap green builds) + multiply income, finish by ~25". Whether the current benchmark does the same is a
+measurable fact, not a guess: every row carries the previous round's picks for each side (`extra:my_previous_phase_*`, `extra:opponent_previous_phase_*`),
+because the picks are simultaneous and then revealed. This tool averages those one-hot vectors into a mix per seat.
+
+    py -3 ml/phase_mix.py --data D:/ares/data/1120_vs_network_full
 """
+import argparse
 import glob
+import json
 import os
 import sys
 
@@ -12,49 +17,68 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ares_data  # noqa: E402
 
-
-def mix_from_pack(pack):
-    manifest = ares_data.open_pack(pack)
-    data = ares_data.open_packed_type(pack, 'PICK_PHASE', manifest)
-    if 'chosen' not in data:
-        raise SystemExit(f"{pack}: PICK_PHASE was packed without candidates; pack with `--candidates`")
-    chosen = np.asarray(data['chosen'])
-    ids = data['ids']
-    phase = np.empty(len(chosen), dtype=np.int32)
-    for start in range(0, len(chosen), 4096):
-        block = np.arange(start, min(start + 4096, len(chosen)))
-        rows = ids[block]
-        phase[block] = rows[np.arange(len(block)), chosen[block]]
-    return phase
+PHASES = 5
 
 
-def mix_from_raw(directory, chunks=8):
-    phases = []
-    files = sorted(glob.glob(os.path.join(directory, 'PICK_PHASE.*.ares')))[:chunks]
+def columns(names):
+    index = {name: i for i, name in enumerate(names)}
+    mine = [index[f"extra:my_previous_phase_{p}"] for p in range(1, PHASES + 1)]
+    theirs = [index[f"extra:opponent_previous_phase_{p}"] for p in range(1, PHASES + 1)]
+    return mine, theirs
+
+
+def mix(rows, mine_columns, theirs_columns, min_round=2):
+    """Mean pick distribution per seat. Rows before `min_round` have no revealed picks, and empty vectors are skipped."""
+    ours = np.zeros(PHASES)
+    theirs = np.zeros(PHASES)
+    used = 0
+    for row in rows:
+        if int(row["round"]) < min_round:
+            continue
+        a = np.array([float(row["obs"][i]) for i in mine_columns])
+        b = np.array([float(row["obs"][i]) for i in theirs_columns])
+        if a.sum() <= 0 or b.sum() <= 0:
+            continue
+        ours += a / a.sum()
+        theirs += b / b.sum()
+        used += 1
+    if used == 0:
+        return np.zeros(PHASES), np.zeros(PHASES), 0
+    return ours / used, theirs / used, used
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--data", required=True)
+    parser.add_argument("--names", default="D:/ares/tmp/names_now.json")
+    parser.add_argument("--chunks", type=int, default=0, help="0 = every chunk")
+    args = parser.parse_args()
+
+    names = json.load(open(args.names, encoding="utf-8"))
+    mine_columns, theirs_columns = columns(names)
+
+    files = sorted(glob.glob(os.path.join(args.data, "PICK_PHASE.*.ares")))
+    if args.chunks:
+        files = files[:args.chunks]
+    ours = np.zeros(PHASES)
+    theirs = np.zeros(PHASES)
+    used = 0
     for path in files:
         _, rows = ares_data.read_decisions(path)
-        if not len(rows):
+        a, b, n = mix(rows, mine_columns, theirs_columns)
+        if n == 0:
             continue
-        chosen = rows['chosen'].astype(np.int64)
-        ids = rows['ids']
-        phases.append(ids[np.arange(len(rows)), chosen])
-    return np.concatenate(phases) if phases else np.empty(0, dtype=np.int32)
+        ours += a * n
+        theirs += b * n
+        used += n
+    if used == 0:
+        raise SystemExit("no revealed phase picks in this corpus")
+
+    print(f"{args.data}: {used} decisions with revealed picks")
+    print("  phase   ours    opponent")
+    for p in range(PHASES):
+        print(f"  {p + 1:>5}  {100 * ours[p] / used:5.1f}%  {100 * theirs[p] / used:7.1f}%")
 
 
-def show(label, phase):
-    if not len(phase):
-        print(f'{label:28s} (no rows)')
-        return
-    values, counts = np.unique(phase, return_counts=True)
-    shares = dict(zip(values.tolist(), (counts / counts.sum()).round(4).tolist()))
-    print(f'{label:28s} n={len(phase):7d}  ' + '  '.join(f'{k}:{v * 100:5.1f}%' for k, v in shares.items()))
-
-
-if __name__ == '__main__':
-    for argument in sys.argv[1:]:
-        if os.path.isdir(argument) and glob.glob(os.path.join(argument, 'manifest.json')):
-            show(os.path.basename(argument), mix_from_pack(argument))
-        elif os.path.isdir(argument):
-            show(os.path.basename(argument) + ' (raw)', mix_from_raw(argument))
-        else:
-            print(f'{argument}: not found')
+if __name__ == "__main__":
+    main()

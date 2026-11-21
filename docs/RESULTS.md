@@ -2844,3 +2844,60 @@ against NETWORK, one player would have to raise nearly ALL 31 steps itself (~1.2
 described, and it is absent from every corpus we have (no game in the 1 000-game NETWORK corpus ends before round 23). It is a legitimate, untested plan,
 and the reason it is not chosen is structural: the value's label is our own final margin, in which "the game will end sooner" has no term, and the one-step
 judge continues with our own non-rushing policy.
+
+## The benchmark's phase mix, measured (21/11)
+
+The phase picks are revealed, so the opponent's mix is public: `extra:opponent_previous_phase_*` in every row (`ml/phase_mix.py`, 6 tests; a round has
+exactly one pick per side - verified, every revealed vector sums to 1). Against NETWORK, 2 825 decisions:
+
+| phase | what it is | ours | NETWORK |
+|---|---|---|---|
+| 1 | green project, picker gets -6 **or** -3 and a second green at -12 | **9.2%** | **32.5%** |
+| 2 | blue/red project, picker gets one more | 30.8% | 37.7% |
+| 3 | activate blue actions, picker gets double or draws 3 | **38.4%** | 2.0% |
+| 4 | income (shared, the picker gets a little extra) | 5.6% | 2.9% |
+| 5 | draft, picker sees/keeps more | 15.9% | 24.9% |
+
+**Reading.** NETWORK is the production/card-throughput player: it buys green projects at a discount almost every third round, builds in phase 2, and drafts.
+The champion is the activation player: it picks phase 3 in 38% of rounds and phase 1 in 9%. This is the owner's NETWORK_V2 profile ("optimise phase 1 and
+multiply the income") showing up in the current benchmark.
+
+**What it does not say.** The mix is measured while playing US and is not a recipe: METHOD rule 1 applies (a player forced into another line measures that
+player's incompetence). The earlier phase-1 experiment is the evidence - forcing the pick cost 29 points - and it forced phase 1 at rate 1.0, including
+rounds with nothing worth building, whereas NETWORK picks it selectively (32%).
+
+**The synthesis it enables.** Our own games end at 26.7 rounds and NETWORK's at 30.3: the agent has the speed but not the income, NETWORK has the income but
+not the speed. The historical NETWORK_V2 had both (income and ~25 rounds), which is why it beat NETWORK. That combination - phase 1's discount and card
+throughput **plus** the clock - is the target, and neither current player has it.
+
+### NETWORK_V2's phase profile is intact; its weakness is conversion (21/11)
+
+100 games champion vs NETWORK_V2 (the opponent's picks are revealed in our rows; `ml/phase_mix.py`):
+
+| phase | champion | NETWORK_V2 | NETWORK |
+|---|---|---|---|
+| 1 (green build, -6) | 10.0% | **30.6%** | **32.5%** |
+| 2 (blue/red build, +1) | 30.9% | 33.5% | 37.7% |
+| 3 (blue activation) | 37.8% | 7.0% | 2.0% |
+| 4 (income, shared) | 5.2% | **13.9%** | 2.9% |
+| 5 (draft) | 16.1% | 15.0% | 24.9% |
+
+So the phase POLICY survived whatever happened to the weights: on the three phases that matter it is nearly NETWORK's (phase 1 within 2 points, phase 3 within
+5). The differences are phase 4 (it picks the shared income phase 14% of rounds against NETWORK's 3%) and phase 5 (it drafts less).
+
+**The weak weights show up in conversion, not in the pick.** Score channels, same instrument:
+
+| | champion | NETWORK_V2 | NETWORK |
+|---|---|---|---|
+| TR | 29.7 | **35.5** | 34.9 |
+| printed card points | 11.4 | **10.5** | **17.9** |
+| resource cards | 24.1 | **9.0** | **16.2** |
+| total | **88.8** | 81.9 | 98.7 |
+
+The champion beats NETWORK_V2 **52.0%** and by 6.95 points, but is still behind it on TR (-5.8). NETWORK_V2 reaches NETWORK's TR in a SHORTER game (27.5
+rounds against 29.2) - so the owner's memory is right, this player does have "phase 1 + income + speed". What it does not have is the conversion: half of
+NETWORK's printed points and half of its resource points.
+
+**Consequence for the target.** The profile to aim at is now two measured things, not one: NETWORK_V2's phase mix (phase 1 ~31%, phase 3 low) *and* NETWORK's
+conversion (17.9 printed + 16.2 resource points). NETWORK_V2 proves the mix is learnable and survives bad weights; NETWORK proves the conversion is what turns
+the mix into a score. Neither player has both.
