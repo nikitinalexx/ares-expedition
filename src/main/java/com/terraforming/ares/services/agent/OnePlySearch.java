@@ -258,11 +258,15 @@ public class OnePlySearch {
     private final int judgeMax;
     /**
      * The display calibration of {@link #winProbability}: {@code -Dares.agent.winProbability.a} and {@code .b} turn the critics' raw output into a
-     * probability, {@code sigmoid(a * logit + b)}. Default a=1, b=0 keeps the raw sigmoid; a margin critic uses the pair fitted by
-     * `ml/value_calibration.py --margin-scale 20` (self-play 1.76 / -0.83). Display only - the search ranks with {@code logit} and never reads this.
+     * probability, {@code sigmoid(a * logit + b)}. The default is the pair fitted on the champion's own distribution by
+     * `ml/value_calibration.py --margin-scale 20` (1.76 / -0.83), because this project's critics are trained with {@code --target margin} and their raw
+     * output is a margin, not a log-odds: without it a predicted margin of 0 is shown as 50% where the measured rate is 30.5%, and -20 as 27% where the
+     * measured rate is 7%. Set {@code -Dares.agent.winProbability.a=1 -Dares.agent.winProbability.b=0} for a probability-trained critic.
+     * <p>
+     * Display only - the search ranks with {@code logit} and never reads these.
      */
-    private static final double winProbabilityA = Double.parseDouble(System.getProperty("ares.agent.winProbability.a", "1"));
-    private static final double winProbabilityB = Double.parseDouble(System.getProperty("ares.agent.winProbability.b", "0"));
+    private static final double winProbabilityA = Double.parseDouble(System.getProperty("ares.agent.winProbability.a", "1.76"));
+    private static final double winProbabilityB = Double.parseDouble(System.getProperty("ares.agent.winProbability.b", "-0.83"));
     private final java.util.concurrent.atomic.AtomicInteger judgeDone = new java.util.concurrent.atomic.AtomicInteger();
     /**
      * {@code -Dares.agent.search.projectBuilds=true}: after applying a candidate, ADVANCE the game to the player's next
@@ -599,10 +603,15 @@ public class OnePlySearch {
                 sum += model.logit(observation);
             }
             float logit = sum / models.size();
-            return calibratedProbability(logit, winProbabilityA, winProbabilityB);
+            return defaultWinProbability(logit);
         } catch (RuntimeException e) {
             return Float.NaN;
         }
+    }
+
+    /** The configured display calibration (the fields above), separated so a test can pin the default pair. */
+    static float defaultWinProbability(float logit) {
+        return calibratedProbability(logit, winProbabilityA, winProbabilityB);
     }
 
     /**
