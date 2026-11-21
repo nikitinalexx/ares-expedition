@@ -2489,3 +2489,26 @@ not play enough events".
 
 What this does **not** settle: whether the economy is the cause (the owner's objection) - that is the green arm, running next. If green also loses,
 forcing a colour is simply the wrong instrument; if green holds or gains, the owner's "more red follows from a stronger economy" is supported.
+
+## The green arm: forcing the economy is WORSE than forcing red (night of 20/21)
+
+Protocol identical to the red arm (`-Colour green -Rate 0.3`, 5 000 games, the same base and critics, whole-corpus fine-tune).
+
+| measurement | green arm | red arm | champion |
+|---|---|---|---|
+| vs SMART, 5 000 | **70.23% [68.95, 71.48]** | 72.05% [70.79, 73.28] | 75.16% [73.94, 76.23] |
+| vs NETWORK, 1 000 | **34.38% [31.5, 37.4]** | 39.15% [36.2, 42.2] | 43.25% [40.2, 46.4] |
+| builds per game | 2.31 (-29%) | 2.33 (-28%) | 3.26 |
+| build acceptance | 0.579 | 0.582 | 0.814 |
+| distinct cards | 2.31 (-29%) | 2.33 (-29%) | 3.25 |
+
+Both arms collapse the profile in the same way and both lose 3-9 points, with green *worse*. So:
+
+* the owner's competing hypothesis ("more red cards are a consequence of a stronger economy") is **not supported by this instrument** - forcing the
+  economy is the worst of the three;
+* the shared cause is the forcing itself: a compelled player is a narrower player (fewer builds, lower acceptance, half the card variety), and a corpus
+  inherits that weakness - the rule measured on 19/11, now confirmed from the other direction.
+
+**Consequence:** the colour-forcing instrument is closed as a way to add strength. It is still useful as a *probe* of what a narrowed player looks like,
+and its corpora are legitimate negative controls. The microbe arm is the last content test; the next real candidates are the measurements from the
+review (the `Q^champ` oracle) and the 10 000-game confirmation of the practice gain.
