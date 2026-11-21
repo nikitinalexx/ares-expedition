@@ -137,6 +137,8 @@ def main():
     model = Towers().to(device)
     opt = torch.optim.Adam(model.parameters(), lr=args.lr)
     loss_fn = nn.BCEWithLogitsLoss()
+    best_val = float("inf")
+    best_state = None
 
     for epoch in range(1, args.epochs + 1):
         model.train()
@@ -168,7 +170,15 @@ def main():
             pos = vy > 0.5
             auc = float((ranks[pos].float().mean() - (pos.sum() - 1) / 2) / max(int((~pos).sum()), 1))
         print(f"epoch {epoch}: train {total / len(tr):.4f}  val {val:.4f}  auc {auc:.4f}", flush=True)
+        if val < best_val:
+            best_val = val
+            best_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
+            print(f"  best so far (val {val:.4f})", flush=True)
 
+    # Early stopping: the corpus has ~66 rows per game, so after one epoch the model starts memorising games and the validation loss rises.
+    if best_state is not None:
+        model.load_state_dict(best_state)
+        print(f"using the best epoch (val {best_val:.4f})", flush=True)
     export(model, args.out)
 
 

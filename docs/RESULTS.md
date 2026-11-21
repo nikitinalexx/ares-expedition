@@ -3189,3 +3189,25 @@ now properties, and four variants ran on the SHIPPED `iter4` value, 1 000 games 
 Only "skip the opponent's projection" is positive (+2.75 points, about 1 sigma at 1 000 games - a trend, not a result, and it is cheaper as well). The
 perspective swaps are noise. The properties: `-Dares.network2.projectOpponent=false`, `-Dares.network2.mineFromOpponentView=true`,
 `-Dares.network2.opponentFromOpponentView=false`.
+
+### The owner's NETWORK pipeline: 90.85% against RANDOM at 50k, and what each fix was worth (21/11)
+
+| value | vs RANDOM | avg turns |
+|---|---|---|
+| shipped `iter4` | **99.7%** (1 000) | 27.3 |
+| 5k random, row split | 76.2% (959) | 34.4 |
+| 5k self-play of that player | 73.8% (954) | 34.3 |
+| 20k random, game split, numpy + clipping (4 epochs) | 80.5% (1 000) | 33.7 |
+| 50k random, game split, torch, LAST epoch | 78.0% (1 000) | 33.0 |
+| **50k random, game split, torch, EARLY STOP (epoch 1)** | **90.85%** (1 000) | **32.0** |
+
+The single biggest lever was **early stopping**, not volume: the corpus has ~66 states per game, so after one epoch the model memorises games (train
+0.45 -> 0.16) while validation loss rises (0.52 -> 0.90) and play drops from 90.9% to 78.0%. The best model is epoch 1 (val 0.520, AUC 0.840), which is
+also close to the owner's NETWORK (AUC 0.872).
+
+Errors found by the new tests on the way, both silent before:
+* the game id parsed as float16 rounded every id above 2048 (50 000 games became 6 682, the split leaked, the model played 4.85%);
+* the torch export transposed W1/W2 relative to the loader's f-order (numpy stores (in, out), torch (out, in)) - the round-trip test caught it.
+
+The profile still differs from the owner's shipped player: our models end at 32-34 turns, `iter4` at 27.3 - our player does not push the end of the game,
+which is the same "no tempo" signature measured against NETWORK.
