@@ -2512,3 +2512,22 @@ Both arms collapse the profile in the same way and both lose 3-9 points, with gr
 **Consequence:** the colour-forcing instrument is closed as a way to add strength. It is still useful as a *probe* of what a narrowed player looks like,
 and its corpora are legitimate negative controls. The microbe arm is the last content test; the next real candidates are the measurements from the
 review (the `Q^champ` oracle) and the 10 000-game confirmation of the practice gain.
+
+## The microbe arm's manipulation check (night of 20/21)
+
+The microbe family is defined by the RESOURCE, not the tag (`MicrobeCards`: 13 holders/producers from the owner's list, Worms and BacterialAggregates,
+the four red `ADD_MICROBE` one-shots, the buffed variants). The metric is the sum of the nine microbe counters of `TableResourcesFeature` at each seat's
+last round (`ml/tag_metric.py --microbes`), not the tag count.
+
+100-game smokes, base = the clean fine-tune:
+
+| rate | builds per game | microbe resources per game-seat | game-seats with >= 1 |
+|---|---|---|---|
+| 0 (reference corpus) | 3.26 | 0.13 | 0.6% |
+| 0.15 | 2.81 (-14%) | 0.16 | 1.5% |
+| 0.3 | 2.05 (-37%) | 0.21 | 2.0% |
+| 0.6 | 1.09 (-67%) | 0.15 | 2.5% |
+
+So the nudge does seed microbe play (the share of games with microbes rises 2.5x at 0.15 and 4x at 0.6), but at 0.3 and above it also destroys the build
+count. **0.15 is the rate that "seeps in" without collapsing the player**, and that is the rate the arm runs at - the owner's framing ("microbes as a
+supplement, not a strategy") rules out the higher rates by construction.

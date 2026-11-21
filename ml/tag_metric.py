@@ -77,7 +77,10 @@ def main():
 
     names = json.load(open(args.names, encoding="utf-8"))
     rows = []
-    for path in sorted(glob.glob(os.path.join(args.data, "PICK_PHASE.*.ares")))[:args.chunks]:
+    files = sorted(glob.glob(os.path.join(args.data, "PICK_PHASE.*.ares")))
+    if args.chunks:
+        files = files[:args.chunks]
+    for path in files:
         _, chunk = ares_data.read_decisions(path)
         rows.append(chunk)
     all_rows = [row for chunk in rows for row in chunk]
@@ -92,7 +95,10 @@ def main():
 
     column = names.index(f"table_played_{args.tag}")
     rows = []
-    for path in sorted(glob.glob(os.path.join(args.data, "PICK_PHASE.*.ares")))[:args.chunks]:
+    files = sorted(glob.glob(os.path.join(args.data, "PICK_PHASE.*.ares")))
+    if args.chunks:
+        files = files[:args.chunks]
+    for path in files:
         _, chunk = ares_data.read_decisions(path)
         rows.append(chunk)
     all_rows = [row for chunk in rows for row in chunk]
