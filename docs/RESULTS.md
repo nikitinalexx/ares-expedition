@@ -2901,3 +2901,31 @@ NETWORK's printed points and half of its resource points.
 **Consequence for the target.** The profile to aim at is now two measured things, not one: NETWORK_V2's phase mix (phase 1 ~31%, phase 3 low) *and* NETWORK's
 conversion (17.9 printed + 16.2 resource points). NETWORK_V2 proves the mix is learnable and survives bad weights; NETWORK proves the conversion is what turns
 the mix into a score. Neither player has both.
+
+## NETWORK_V2: the committed model is the best available, and none of them beats NETWORK (21/11)
+
+**First, a footgun.** The working-tree `iter4_epoch_2_93.zip` was a DIFFERENT file from the committed one - same size (11 909 881 bytes), same timestamp, so git
+reported it clean and the substitution was invisible. Restored with `git checkout --`; the restored model plays the same (44% vs the champion against 52% for
+the local one over 100 games, inside the noise). Player `-Dares.nn.model=PATH` now selects a model without touching the tree (2 tests).
+
+**The five models of `advanced_ai` (`540bcce`), all the same architecture (417/481 -> 512/512 -> 1024 -> 1), 200 games each against NETWORK:**
+
+| model | wins | score | 95% CI | avg turns | points (V2 : NETWORK) |
+|---|---|---|---|---|---|
+| iter1_epoch_2_65 | 36/200 | 18.25% | [13.5, 24.2] | 29.86 | 71.9 : 97.6 |
+| iter2_epoch_1_200 | 59/200 | 29.50% | [23.6, 36.2] | 29.47 | 77.4 : 94.2 |
+| iter3_epoch_1_205 | 61/200 | 30.75% | [24.8, 37.5] | 29.59 | 79.3 : 95.6 |
+| iter3_epoch_4_30 | 71/200 | 36.75% | [30.4, 43.6] | 28.93 | 79.3 : 93.1 |
+| **iter4_epoch_2_93** (committed) | **74/200** | **37.75%** | [31.3, 44.6] | **28.44** | 81.5 : 91.3 |
+
+The committed model is the best of the five, the training curve is monotone, and every interval is below 50%: **the "good NETWORK_V2 that beats NETWORK" is not in
+this branch.** Against our champion (41.7% vs NETWORK) it is also behind. Its average game is 28.4 rounds, not 25.
+
+**Where the 25-round player actually is.** `f303481` ("network2 extra fixes", 12 February) carries twelve models whose `configuration.json` is a SINGLE tower on
+`TABLE_VECTOR_SIZE = 436` (table only, no hand): 436 -> 768 -> 768 -> 1 for the six `*_win` checkpoints, 436 -> 512 -> 512 -> 1 for `iter7/iter8`, and a small
+436 -> 256 -> 128 -> 64 -> 1 for `self_play_iter_1`. `251_win/config` documents **"Average win points 73. Avg turns 25"** - the owner's memory is a recorded
+fact of that generation. It cannot run in the current NETWORK_V2 path (different vector, different topology); reproducing it needs a worktree of that commit.
+
+**The flags.** Between `86e29c0` and `540bcce`, `AiConstants` changed `ENABLE_AI_EXPLORATION` and `EXPLORATION_ON_CORP_PICK` from `true` to `false`, and removed
+`WP_DENOMINATOR_FOR_FRONTIER = 6` (which divided the opponent's points in the frontier by six). Those are the flags that degraded advanced_ai's play; HEAD
+already has them off, so the current build plays without them.

@@ -37,8 +37,18 @@ public class NNService {
         SECOND
     }
 
-    private static final String FIRST_MODEL = "iter4_epoch_2_93.zip";
-    private static final String SECOND_MODEL = "iter4_epoch_2_93.zip";
+    /**
+     * The NETWORK_V2 weights. The committed model is the default; {@code -Dares.nn.model=PATH} selects another file for a sweep (the models of the
+     * `advanced_ai` branch share one architecture, so they are interchangeable - verified against every zip's configuration.json).
+     */
+    private static final String FIRST_MODEL = modelName();
+    private static final String SECOND_MODEL = FIRST_MODEL;
+
+    static final String DEFAULT_MODEL = "iter4_epoch_2_93.zip";
+
+    static String modelName() {
+        return System.getProperty("ares.nn.model", DEFAULT_MODEL);
+    }
 
     // Architecture of the trained graph (see configuration.json in the model zip)
     private static final int DENSE_TABLE = 512;

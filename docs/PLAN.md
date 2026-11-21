@@ -80,6 +80,8 @@ thing the panel makes measurable.
   trainer's `--max-chunks-per-type` default; iteration 2 used the whole corpus and still converged (LEDGER 43, 47).
 * *the late game as a defect*: the second-half drift is symmetric (wins +16.8, losses -21.1). What is asymmetric is the **early lead**, which predicts
   LOSING to NETWORK: -14.9 points at 1 000 games (LEDGER 51).
+* *a better NETWORK_V2 in `advanced_ai`*: the committed model is the best of the five and scores 37.75% against NETWORK (behind our 41.7%); the documented
+  25-round player is the older single-tower generation (LEDGER 56).
 
 **Open, in order of cost:**
 
