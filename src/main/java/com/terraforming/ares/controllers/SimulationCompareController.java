@@ -47,6 +47,7 @@ public class SimulationCompareController {
     private final SimulationProcessorService simulationProcessorService;
     private final WinPointsService winPointsService;
     private final NNService nnService;
+    private final com.terraforming.ares.services.agent.DecisionLogs decisionLogs;
 
     public record CompareResult(
             String a, String b, int games, int failedGames,
@@ -118,12 +119,20 @@ public class SimulationCompareController {
         AtomicLong lastLog = new AtomicLong(System.currentTimeMillis());
         long start = System.currentTimeMillis();
         Semaphore permits = new Semaphore(Math.max(1, concurrency));
+        // The benchmark games are the exact distribution the critic is deployed on (our player against this opponent), so
+        // they can be recorded as a corpus at no extra generation cost: -Dares.compare.record=DIR writes the agent's
+        // decisions with the game outcome as the label, via the same DecisionLogs the play mode uses.
+        String record = System.getProperty("ares.compare.record", "").trim();
+        if (!record.isEmpty()) {
+            decisionLogs.startRecordingAfterExisting(java.nio.file.Path.of(record));
+        }
 
         try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
             for (int i = 0; i < games; i++) {
                 final boolean aFirst = i % 2 == 0; // alternate seats
                 permits.acquire();
                 executor.submit(() -> {
+                    MarsGame game = null;
                     try {
                         List<PlayerDifficulty> difficulties = aFirst ? List.of(a, b) : List.of(b, a);
                         GameParameters parameters = GameParameters.builder()
@@ -136,8 +145,11 @@ public class SimulationCompareController {
                                 .dummyHand(true)
                                 .build();
 
-                        MarsGame game = gameService.createNewSimulation(parameters);
+                        game = gameService.createNewSimulation(parameters);
                         simulationProcessorService.processSimulation(game);
+                        if (!record.isEmpty()) {
+                            decisionLogs.finish(game);
+                        }
 
                         int aWp = -1, bWp = -1;
                         for (Player player : game.getPlayerUuidToPlayer().values()) {
@@ -164,6 +176,9 @@ public class SimulationCompareController {
                     } catch (Throwable t) {
                         com.terraforming.ares.selfplay.FatalErrors.haltIfOutOfMemory(t);
                         failed.increment();
+                        if (!record.isEmpty() && game != null) {
+                            decisionLogs.discard(game);
+                        }
                         t.printStackTrace();
                     } finally {
                         permits.release();
@@ -182,8 +197,10 @@ public class SimulationCompareController {
             }
         }
 
-        int played = (int) (aWins.sum() + bWins.sum() + draws.sum());
-        double score = played == 0 ? 0 : (aWins.sum() + 0.5 * draws.sum()) / played;
+        if (!record.isEmpty()) {
+            decisionLogs.stopRecording(); // seal the last chunk, otherwise it stays a .tmp the packer cannot read
+        }
+        int played = (int) (aWins.sum() + bWins.sum() + draws.sum());        double score = played == 0 ? 0 : (aWins.sum() + 0.5 * draws.sum()) / played;
         double[] ci = wilson(score, played);
         double z = played == 0 ? 0 : (score - 0.5) / Math.sqrt(0.25 / played);
 
