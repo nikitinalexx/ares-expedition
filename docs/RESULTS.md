@@ -3306,3 +3306,22 @@ The two NETWORK intervals overlap: doubling the games from 20k to 40k bought 0.2
 against RANDOM and improved both training metrics again. So the random corpus saturates at ~5% against NETWORK: from here the
 limiting factor is the QUALITY of the player that generated the games (a random opponent, iteration 1), not the number of
 states. That is the owner's prediction measured, and it is why the next step is the self-play loop, not more random games.
+
+### The first self-play loop: 5.45% -> 7.65% against NETWORK (22/11)
+
+Iteration 1 was the random corpus (40k games, 16.6M states, fine-tuned in two 20k stages): **5.45% [4.2, 7.0]** against
+NETWORK and 94.35% against RANDOM. The loop then generated 5 000 games of that model against itself with every state
+recorded (1.94M rows, label mean 0.5003 - the seats are balanced), and fine-tuned the same model on them (warm start, lr
+5e-5, dropout 0.1, early stop at step 4 500, val 0.3835 on the self-play games):
+
+| player | vs RANDOM | vs NETWORK |
+|---|---|---|
+| random corpus, 10k games | 86.95% | 1.65% |
+| random corpus, 20k games | 92.95% | 5.25% [4.0, 6.8] |
+| random corpus, 40k games (two stages) | 94.35% | 5.45% [4.2, 7.0] |
+| **+ one self-play loop (5k games of the 40k model)** | **97.00% [95.7, 97.9]** | **7.65% [6.2, 9.5]** |
+
+The loop is worth +2.2 points against NETWORK from a corpus of 5 000 games - more than doubling the random corpus from 20k
+to 40k gave. That is the owner's architecture: the value has to learn the positions the PLAYER creates, and a random opponent
+never creates them. It is still iteration 2 of ours against an unknown number of NETWORK's, and the honest next step is
+iteration 3 with more self-play games (the same 5k took ~1.5 h at 0.9 games/s), not a claim about NETWORK being beaten.

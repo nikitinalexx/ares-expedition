@@ -1569,3 +1569,41 @@ at plan-level decisions - 4 candidates x 8 worlds ~ 2.5 s per judged decision, ~
 The plan therefore starts with a RULER, not a player: `-Dares.agent.search.judgeAudit=true` on 100 phase states compares V's plan
 preference with the paired end-of-game judge's. If they agree, the bias hypothesis is dead (and the plan returns to data/search);
 if they disagree, the judge becomes the label source V is missing.
+
+## 2026-11-22, morning - where the NETWORK_V2 line stands (read this first)
+
+**Best model so far:** `D:/ares/runs/network3/net_sp_it2.zip`
+- vs RANDOM **97.00% [95.7, 97.9]** (1 000), vs NETWORK **7.65% [6.2, 9.5]** (1 000).
+- It is the 40k random-corpus model (`net40k_ft.zip`, 94.35% / 5.45%) fine-tuned on 5 000 self-play games of itself.
+
+**How it was produced (the owner's recipe, measured):**
+1. Random games, every state of both players after every step (`-Dares.netdata.dir`, binary `netdata.bin`).
+   10k games -> 4.15M rows, 20k -> 8.28M, self-play 5k -> 1.94M. No row caps (distillation banned, `docs/EXPERIMENTS.md`).
+2. Value = the two-tower BCE model (target = outcome), `ml/train_network_v2_torch.py`:
+   - random corpus: lr **1e-4**, batch **64**, dropout **0.1**, one pass;
+   - mid-epoch validation every 500 steps on a 50k val subset, patience 8, best checkpoint kept
+     (`--val-steps/--val-rows/--patience`); without this the epoch-end val is 2.06 against 0.55 at step 1 000;
+   - incremental: `--warm-start` from the previous zip (round-trip pinned by a test);
+   - `--in-ram` for a 14 GB corpus (the memmap is fine only when RAM is free).
+3. Play: `-Dares.nn.model=PATH`; measure with `ml/measure_bundle.ps1` (agent) or direct `SelfPlayMain --mode compare
+   --a NETWORK_V2`.
+
+**Corpora on disk:** `D:/ares/data/netd_step10k_A`, `netd_step20k`, `netd_step20k_B`, `netd_sp40k_it1` (self-play).
+
+**What each factor was worth (NETWORK target, random corpus unless stated):**
+
+| factor | measurement |
+|---|---|
+| games 1k -> 5k -> 20k -> 40k | AUC 0.740 -> 0.831 -> 0.876 -> 0.897; NETWORK 1.65% (10k) -> 5.25% (20k) -> 5.45% (40k, saturates) |
+| lr 1e-3 -> 1e-4 (20k) | best step 1 500 -> 5 500, val 0.467 -> 0.440, NETWORK 4.20% -> 5.25% |
+| dropout 0 -> 0.1 (10k) | val 0.548 -> 0.487, NETWORK 1.05% -> 1.65% |
+| batch 10 / 64 / 256 (20k, lr 1e-4) | 0.4612 / 0.4397 / 0.4387 val - 64 and 256 equal, 10 worse |
+| one self-play loop (5k games) | NETWORK 5.45% -> 7.65%, RANDOM 94.35% -> 97.00% |
+
+**Next (in order):**
+1. Iteration 3: 10k self-play games of `net_sp_it2` (~3 h at 0.9 games/s under load), fine-tune, measure. The loop is the
+   only comparable axis against NETWORK's unknown number of iterations.
+2. The agent's critic line is closed for now (row 60/62/63): batch 4096 > 64 at 1k/5k/10k on both metrics, "all rows" is
+   worse than the cap 16 (35.30% vs 40.51%), BCE loses to margin (R2 -0.26 vs +0.49).
+3. The next value corpus worth building is games AGAINST NETWORK (`-Dares.compare.record=DIR` records them during any
+   benchmark, `CompareRecordingTest` pins the sealing) - the owner authorised the value to learn from NETWORK's outcomes.
