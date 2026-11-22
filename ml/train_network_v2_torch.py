@@ -106,23 +106,41 @@ def export(model, path):
 
 
 def read_params(path):
-    """Read back a `coefficients.bin` as one float array (the loader's view), for round-trip tests."""
+    """Read a `coefficients.bin` as one float array, exactly as PureJavaValueNetwork does.
+
+    The ND4J file is a shape buffer (UTF name, long length, UTF type, length elements) followed by a float buffer. Our own
+    export writes "HEAP"/"INT"/"HEAP"/"FLOAT", the owner's DL4J files write "MIXED_DATA_TYPES"/"LONG"/"MIXED_DATA_TYPES"/
+    "FLOAT"; the Java loader skips the first buffer by its declared type and size, so this parses both. The old version
+    assumed `length * 4` for the shape buffer, which is why the recovered iter2 model could be PLAYED but not used as a
+    warm start.
+    """
     with zipfile.ZipFile(path) as z:
         raw = z.read("coefficients.bin")
     b = io.BytesIO(raw)
 
     def utf(f):
         n = struct.unpack(">H", f.read(2))[0]
-        return f.read(n).decode()
+        return f.read(n).decode("utf-8", "replace")
 
-    utf(b)
-    shape_len = struct.unpack(">q", b.read(8))[0]
-    utf(b)
-    b.read(shape_len * 4)
+    def skip_buffer(f):
+        utf(f)
+        length = struct.unpack(">q", f.read(8))[0]
+        kind = utf(f)
+        elem = {"LONG": 8, "DOUBLE": 8, "INT": 4, "FLOAT": 4}.get(kind)
+        if elem is None:
+            raise ValueError(f"{path}: unsupported shape buffer type {kind}")
+        f.seek(length * elem, io.SEEK_CUR)
+
+    skip_buffer(b)
     utf(b)
     length = struct.unpack(">q", b.read(8))[0]
-    utf(b)
-    return np.frombuffer(b.read(length * 4), dtype=">f4").astype(np.float32)
+    kind = utf(b)
+    if kind != "FLOAT":
+        raise ValueError(f"{path}: expected FLOAT parameters, got {kind}")
+    data = b.read(length * 4)
+    if len(data) != length * 4:
+        raise ValueError(f"{path}: {len(data)} parameter bytes, expected {length * 4} - a truncated write")
+    return np.frombuffer(data, dtype=">f4").astype(np.float32)
 
 
 def main():

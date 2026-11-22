@@ -83,8 +83,14 @@ public class AgentDecisionService {
         }
         }
     }
-    private static final int[] PHASE_PREFERENCE =
-            parsePhases(System.getProperty("ares.agent.preferPhase", ""));
+    private static final int[] PHASE_PREFERENCE = parsePhases(System.getProperty("ares.agent.preferPhase", ""));
+    /** Owner's A/B (22/11): no phase 3 when no active card on the table can be used, even with the phase upgrade. */
+    private static final boolean NO_EMPTY_PHASE3 =
+            Boolean.parseBoolean(System.getProperty("ares.agent.heuristic.noEmptyPhase3", "false"));
+    /** Owner's A/B (22/11): pick phase 5 with this probability when it is legal. */
+    private static final boolean APPLY_TO_AGENT = Boolean.parseBoolean(System.getProperty("ares.agent.heuristic.applyToAgent", "false"));
+    private static final double PHASE5_RATE =
+            Math.max(0.0, Math.min(1.0, Double.parseDouble(System.getProperty("ares.agent.heuristic.phase5Rate", "0"))));
     /**
      * Colour practice of the data generator (off by default): {@code -Dares.agent.preferColor=red|green|blue} takes the first offered card of that
      * colour at the build and draft menus, so a corpus exists in which the plan was actually played. Not a rule of the player: it is off unless
@@ -186,6 +192,66 @@ public class AgentDecisionService {
         }
     }
 
+    /**
+     * Targeted heuristics of the owner's A/B (22/11), applied only to {@link com.terraforming.ares.model.PlayerDifficulty#AGENT_V2}
+     * so one seat of a self-play match can have them and the other cannot (models2 is pointed at the same bundle, so the only
+     * difference is the rule):
+     * <ul>
+     *   <li>{@code -Dares.agent.heuristic.noEmptyPhase3=true}: never pick phase 3 when no active card on the table can be
+     *       used, even with the phase upgrade - the owner's reading is that an empty phase 3 bought for the upgrade cards
+     *       is a losing habit;</li>
+     *   <li>{@code -Dares.agent.heuristic.phase5Rate=P}: pick phase 5 with probability P when it is legal (the owner's
+     *       "1-2% more often").</li>
+     * </ul>
+     */
+    private int heuristicPhase(MarsGame game, Player player, Decision decision, int id) {
+        int phase = id;
+        if (NO_EMPTY_PHASE3 && phase == 3 && !hasActivatableCard(game, player)) {
+            phase = candidatePhase(decision, 5);
+            if (phase < 0) {
+                phase = candidatePhase(decision, 1);
+            }
+            if (phase < 0) {
+                phase = candidatePhase(decision, 2);
+            }
+            if (phase < 0) {
+                phase = candidatePhase(decision, 4);
+            }
+            if (phase < 0) {
+                phase = id;
+            }
+        }
+        if (PHASE5_RATE > 0 && phase != 5 && java.util.concurrent.ThreadLocalRandom.current().nextDouble() < PHASE5_RATE) {
+            int five = candidatePhase(decision, 5);
+            if (five >= 0) {
+                phase = five;
+            }
+        }
+        return phase;
+    }
+
+    private boolean hasActivatableCard(MarsGame game, Player player) {
+        for (Integer playedId : player.getPlayed().getCards()) {
+            Card card = cardService.getCard(playedId);
+            if (card == null || !card.isActiveCard()) {
+                continue;
+            }
+            if (blueInputDecisions.canActivate(game, player, card)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static int candidatePhase(Decision decision, int phase) {
+        for (int i = 0; i < decision.candidates().size(); i++) {
+            if (decision.candidates().get(i).id() == phase) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     public int pickPhase(MarsGame game, Player player) {
         Integer committed = onePlySearch.planProbePhaseFor(player.getUuid());
         if (committed != null) {
@@ -216,7 +282,13 @@ public class AgentDecisionService {
             index = buildPhaseWithWork(decision, player);
         }
         if (index < 0) {
-            return decision.candidates().get(choose(game, player, decision)).id();
+            int chosen = choose(game, player, decision);
+            int id = decision.candidates().get(chosen).id();
+            if ((player.getDifficulty() == com.terraforming.ares.model.PlayerDifficulty.AGENT_V2 || (APPLY_TO_AGENT && player.getDifficulty() == com.terraforming.ares.model.PlayerDifficulty.AGENT))) {
+                int nudged = heuristicPhase(game, player, decision, chosen);
+                return decision.candidates().get(nudged).id();
+            }
+            return id;
         }
         record(game, player, decision, index);
         return decision.candidates().get(index).id();
@@ -760,7 +832,7 @@ public class AgentDecisionService {
 
     /**
      * After terraforming is complete: sell the hand (forced), buy remaining affordable standard projects one at a time
-     * (no stop — the engine forbids confirming while a project is still affordable), then confirm. Returns true when a
+     * (no stop Р Р†Р вЂљРІР‚Сњ the engine forbids confirming while a project is still affordable), then confirm. Returns true when a
      * turn was made.
      */
     public boolean endgame(MarsGame game, Player player, List<TurnType> possibleTurns) {
@@ -904,3 +976,7 @@ public class AgentDecisionService {
         return index;
     }
 }
+
+
+
+
