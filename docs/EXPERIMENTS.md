@@ -1911,3 +1911,21 @@ minutes, before anything is spent on self-play games.
 **Training protocol for every cell:** one pass, mid-epoch validation every 500 steps on a 50k-row val subset, patience 8
 validations, best checkpoint kept. The 40k-game cell needs ~30 GB of rows, so it is trained as two 20k stages (fine-tune)
 rather than by capping rows - the row cap is banned by rule 2.
+
+## 2026-11-22 - the curriculum the owner actually used (and that our corpora were missing)
+
+Our first corpora were `RANDOM:RANDOM`: BOTH seats random. The owner's recipe is different, and it explains the wall we hit:
+
+1. **Games of the MODEL against SMART** (the model plays, SMART is the opponent) - the corpus contains the player's own
+   states against a real opponent.
+2. **Games of the model against RANDOM.**
+3. **Self-play on a large volume** (20k+ games per iteration, several iterations), each from the best current model.
+4. Only then compare with NETWORK, which had all of that and on 50-100k games - not with our iteration 2.
+
+A random-vs-random corpus prices every phase at zero (measured: win rate by phase 49/49/49/48/49%) and contains no state a
+strong player reaches, so its value saturates at ~5% against NETWORK however many rows it has (20k -> 40k moved 5.25 ->
+5.45). The missing "circle" is the model's own games against SMART/RANDOM; that is the next corpus, then the big self-play
+iteration.
+
+The comparison rule that follows: a model is compared with NETWORK only at a comparable number of iterations, and the
+iteration count is part of every report line.

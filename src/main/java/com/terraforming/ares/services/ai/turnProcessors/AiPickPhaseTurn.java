@@ -134,7 +134,19 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                 }
             }
 
-            if (mayPlayPhaseThree(game, player).isPickPhase()) {
+            boolean phaseThreeGate = mayPlayPhaseThree(game, player).isPickPhase();
+            // The game forbids the SAME phase two rounds in a row ("This phase already picked in previous round"), and
+            // mayPlayPhaseThree enforces that; the exploration must respect it too or it produces failed games (measured:
+            // 69 of 100 with the guard missing).
+            boolean notPrevious = player.getPreviousChosenPhase() == null || player.getPreviousChosenPhase() != 3;
+            // -Dares.gen.phase3NoHeuristics=true removes the isUsablePlayAction filter for the RANDOM difficulty: phase 3
+            // enters the pool every round it is allowed, exactly like our own random agent, so the owner's flow and ours
+            // are trained on the SAME phase distribution. This is the controlled test of "does the drift come from the
+            // generator's heuristics or from the value".
+            boolean phaseThreeExplore = phaseThreeNoHeuristics()
+                    ? notPrevious
+                    : (notPrevious && ThreadLocalRandom.current().nextDouble() < phaseThreeExploration());
+            if (phaseThreeGate || phaseThreeExplore) {
                 possiblePhases.add(3);
             }
 
@@ -201,7 +213,7 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
      * {@code --mode phasedist} turns it on.
      */
     private void submit(Player player, int phaseId) {
-        com.terraforming.ares.services.PhaseCensus.record(player.getDifficulty(), player.getPreviousChosenPhase(), phaseId);
+        com.terraforming.ares.services.PhaseCensus.record(player, player.getPreviousChosenPhase(), phaseId);
         aiTurnService.choosePhaseTurn(player, phaseId);
     }
 
@@ -482,6 +494,28 @@ public class AiPickPhaseTurn implements AiTurnProcessor {
                 .filter(card -> aiCardActionHelper.isUsablePlayAction(game, player, card))
                 .limit(requiredActiveCardsCount)
                 .count() == requiredActiveCardsCount;
+    }
+
+    /**
+     * The random generator's phase-3 gate is a heuristic FILTER ({@code mayPlayPhaseThreeRandom} + {@code isUsablePlayAction}),
+     * so the games it creates contain phase 3 only where the filter allows it - never an empty phase 3. The owner's case:
+     * with an upgraded third phase a player may play it just for the upgrade cards, which his NETWORK calls empty and never
+     * picks, while a value trained on the filtered corpus cannot price that move. Setting {@code -Dares.gen.phase3Rate=P}
+     * adds phase 3 to the random pool with probability P even when the filter says no, so the corpus contains those
+     * positions. 0 (default) leaves the generator unchanged.
+     */
+    private static final double PHASE_THREE_EXPLORATION =
+            Double.parseDouble(System.getProperty("ares.gen.phase3Rate", "0"));
+
+    private static double phaseThreeExploration() {
+        return PHASE_THREE_EXPLORATION;
+    }
+
+    private static final boolean PHASE_THREE_NO_HEURISTICS =
+            Boolean.parseBoolean(System.getProperty("ares.gen.phase3NoHeuristics", "false"));
+
+    private static boolean phaseThreeNoHeuristics() {
+        return PHASE_THREE_NO_HEURISTICS;
     }
 
     private boolean mayPlayPhaseThreeRandom(MarsGame game, Player player) {

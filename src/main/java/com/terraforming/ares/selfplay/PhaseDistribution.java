@@ -39,18 +39,26 @@ import java.util.concurrent.atomic.LongAdder;
 public class PhaseDistribution {
     private final GameService gameService;
     private final SimulationProcessorService simulationProcessorService;
+    private final com.terraforming.ares.services.WinPointsService winPointsService;
 
     public record Report(int games, int failedGames, double avgTurns, List<Side> sides,
-                         Map<String, Map<String, Long>> transitions) {
+                         Map<String, Map<String, Long>> transitions,
+                         Map<String, Map<Integer, PhaseOutcome>> phaseOutcomes) {
     }
 
     public record Side(String difficulty, long picks, double picksPerGame, Map<Integer, Double> share) {
+    }
+
+    /** How often a phase was used by a player, and in how many of those games the player won. */
+    public record PhaseOutcome(long used, long won, double winRate) {
     }
 
     public Report run(Path out, int games, PlayerDifficulty a, PlayerDifficulty b, int concurrency) throws Exception {
         PhaseCensus.enable();
         LongAdder failed = new LongAdder();
         DoubleAdder turns = new DoubleAdder();
+        Map<String, Map<Integer, LongAdder>> used = new java.util.concurrent.ConcurrentHashMap<>();
+        Map<String, Map<Integer, LongAdder>> won = new java.util.concurrent.ConcurrentHashMap<>();
         AtomicInteger done = new AtomicInteger();
         Semaphore permits = new Semaphore(Math.max(1, concurrency));
         try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
@@ -71,6 +79,28 @@ public class PhaseDistribution {
                                 .build());
                         simulationProcessorService.processSimulation(game);
                         turns.add(game.getTurns());
+                        // Which phases did each seat use, and did that seat win? A phase's picks are attributed to the
+                        // game's result, so "phase 3 is used 18% of the time" becomes "phase 3 was used by the winner
+                        // how often" - the difference between a plan that is rare and a plan that loses.
+                        for (com.terraforming.ares.model.Player player : game.getPlayerUuidToPlayer().values()) {
+                            long[] picks = PhaseCensus.picks(player.getUuid());
+                            int mine = winPointsService.countWinPoints(player, game);
+                            int other = game.getPlayerUuidToPlayer().values().stream()
+                                    .filter(p -> !p.getUuid().equals(player.getUuid()))
+                                    .mapToInt(p -> winPointsService.countWinPoints(p, game)).max().orElse(0);
+                            String difficulty = player.getDifficulty() == null ? "UNKNOWN" : player.getDifficulty().name();
+                            for (int phase = 1; phase <= 5; phase++) {
+                                if (picks[phase - 1] == 0) {
+                                    continue;
+                                }
+                                used.computeIfAbsent(difficulty, key -> new java.util.concurrent.ConcurrentHashMap<>())
+                                        .computeIfAbsent(phase, key -> new LongAdder()).increment();
+                                if (mine > other) {
+                                    won.computeIfAbsent(difficulty, key -> new java.util.concurrent.ConcurrentHashMap<>())
+                                            .computeIfAbsent(phase, key -> new LongAdder()).increment();
+                                }
+                            }
+                        }
                     } catch (Throwable t) {
                         FatalErrors.haltIfOutOfMemory(t);
                         failed.increment();
@@ -97,7 +127,18 @@ public class PhaseDistribution {
         Map<String, Map<String, Long>> transitions = PhaseCensus.transitions();
         PhaseCensus.disable();
 
-        Report report = new Report(games, (int) failed.sum(), round(turns.sum() / played), sides, transitions);
+        Map<String, Map<Integer, PhaseOutcome>> outcomes = new LinkedHashMap<>();
+        used.forEach((difficulty, byPhase) -> {
+            Map<Integer, PhaseOutcome> row = new LinkedHashMap<>();
+            byPhase.forEach((phase, uses) -> {
+                long u = uses.sum();
+                long w = won.getOrDefault(difficulty, Map.of()).getOrDefault(phase, new LongAdder()).sum();
+                row.put(phase, new PhaseOutcome(u, w, round(w / (double) Math.max(u, 1))));
+            });
+            outcomes.put(difficulty, row);
+        });
+
+        Report report = new Report(games, (int) failed.sum(), round(turns.sum() / played), sides, transitions, outcomes);
         if (out.getParent() != null) {
             Files.createDirectories(out.getParent());
         }
@@ -109,6 +150,15 @@ public class PhaseDistribution {
             }
             System.out.println("[PHASEDIST] " + side.difficulty() + ": " + side.picksPerGame() + " picks/game, " + sb);
         }
+        outcomes.forEach((difficulty, byPhase) -> {
+            StringBuilder sb = new StringBuilder();
+            for (Map.Entry<Integer, PhaseOutcome> entry : byPhase.entrySet()) {
+                PhaseOutcome value = entry.getValue();
+                sb.append(entry.getKey()).append(": used ").append(value.used())
+                        .append(", won ").append(Math.round(value.winRate() * 100)).append("%  ");
+            }
+            System.out.println("[PHASEDIST] " + difficulty + " win rate by phase used: " + sb);
+        });
         System.out.println("[PHASEDIST] " + games + " games, " + played + " played, avg turns " + report.avgTurns());
         return report;
     }

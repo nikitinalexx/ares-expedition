@@ -18,6 +18,7 @@ public final class PhaseCensus {
 
     private static final Map<String, LongAdder> CALLS = new ConcurrentHashMap<>();
     private static final Map<String, LongAdder> TRANSITIONS = new ConcurrentHashMap<>();
+    private static final Map<String, long[]> PICKS = new ConcurrentHashMap<>();
     private static volatile boolean enabled;
 
     private PhaseCensus() {
@@ -27,20 +28,29 @@ public final class PhaseCensus {
         enabled = true;
         CALLS.clear();
         TRANSITIONS.clear();
+        PICKS.clear();
     }
 
     public static void disable() {
         enabled = false;
     }
 
-    public static void record(PlayerDifficulty difficulty, Integer previousPhase, int phase) {
+    /** How many times this player picked each phase (index 0 = phase 1) in the census window. */
+    public static long[] picks(String player) {
+        return PICKS.getOrDefault(player, new long[5]);
+    }
+
+    public static void record(com.terraforming.ares.model.Player player, Integer previousPhase, int phase) {
         if (!enabled) {
             return;
         }
-        String name = difficulty == null ? "UNKNOWN" : difficulty.name();
+        String name = player.getDifficulty() == null ? "UNKNOWN" : player.getDifficulty().name();
         CALLS.computeIfAbsent(name + "|" + phase, key -> new LongAdder()).increment();
         if (previousPhase != null) {
             TRANSITIONS.computeIfAbsent(name + "|" + previousPhase + ">" + phase, key -> new LongAdder()).increment();
+        }
+        if (phase >= 1 && phase <= 5) {
+            PICKS.computeIfAbsent(player.getUuid(), key -> new long[5])[phase - 1]++;
         }
     }
 
@@ -65,3 +75,4 @@ public final class PhaseCensus {
         return result;
     }
 }
+
