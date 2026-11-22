@@ -3262,3 +3262,47 @@ pass only memorises.
 The first "22 750 games" run was discarded: it mixed nine packs, two of them (`p1b`, `p1cur`) are recorded as polluted in
 `docs/PLAN_STRONGER.md`, and the rest are colour/microbe practice arms - not the phase-3 fighter. `ml/pack_who.py` prints
 per pack the rows, the outcome/margin means and the source, and `docs/PIPELINE.md` now says to read it before a run.
+
+### NETWORK_V2 on the dense random corpus: volume is the lever, and the learning rate was hiding it (22/11-22/11)
+
+Every state of both players after every step, no row caps, binary corpus, BCE on the outcome (the owner's target), dropout 0.1,
+mid-epoch validation every 500 steps, patience 8, best checkpoint kept.
+
+| games | rows | lr | best step | val BCE | AUC | vs RANDOM | vs NETWORK |
+|---|---|---|---|---|---|---|---|
+| 1 000 | 0.41M | 1e-4 | 500 | 0.6216 | 0.7396 | - | - |
+| 5 000 | 2.07M | 1e-4 | 2 000 | 0.5213 | 0.8312 | - | - |
+| 10 000 | 4.15M | 1e-3 | 1 000 | 0.4871 | 0.8444 | 86.95% | 1.65% (1 000) |
+| 20 000 | 8.28M | 1e-3 | 1 500 | 0.4669 | 0.8552 | 91.25% | 4.20% (1 000) |
+| 20 000 | 8.28M | 1e-4 | 5 500 | 0.4397 | 0.8761 | 92.95% | 5.25% [4.0, 6.8] (1 000) |
+| 20 000 | 8.28M | 5e-5 | 8 500 | 0.4344 | 0.8781 | 92.00% | 5.20% (1 000) |
+| 40 000 (20k, then fine-tuned on 20k more) | 16.6M | 5e-5 | 8 500 | **0.3983** | **0.8968** | measuring | measuring |
+
+What it says:
+* **Volume is real.** 1k games cannot be saved by dropout or lr (AUC 0.740); 5k -> 0.831, 20k -> 0.876, and the play against
+  NETWORK follows: 1.65% (10k) -> 4.20% (20k, same lr) -> 5.25% (20k, right lr). The effective sample of a dense corpus is
+  the number of GAMES, because ~400 rows of a game share one label.
+* **The learning rate was the hidden variable.** At lr 1e-3 the best checkpoint is step 1 500 of 8.28M rows (1%), which looks
+  like "the data is too small"; at lr 1e-4 it is 5 500 and at 5e-5 8 500, with val 0.4669 -> 0.4397 -> 0.4344 and AUC
+  0.855 -> 0.876 -> 0.878. The val gain at 5e-5 does not turn into play (5.2% against 5.25%), so lr 1e-4 is the useful point.
+* **Dropout helps**: at 20k/lr 1e-4, val 0.4442 (0) -> 0.4397 (0.1) -> 0.4404 (0.25); at 10k it gave +0.9 points of play
+  (1.05% -> 1.65%).
+* **The incremental recipe works**: 20k + fine-tune on 20k more (warm start, lr 5e-5) gives val 0.3983 / AUC 0.897, and no
+  sign of forgetting the first chunk.
+* Batch 10 is worse than 64 at lr 1e-4 (0.4612/0.8666 against 0.4397/0.876); batch 256 untested.
+
+This is **iteration 1** (random opponents, no self-play loop). NETWORK has had loops we do not have, so the comparison that
+counts is after our first loop, which is generating now.
+
+### The random-corpus wall: 20k -> 40k games doubles the volume and moves nothing against NETWORK (22/11)
+
+| games | rows | val BCE | AUC | vs RANDOM | vs NETWORK |
+|---|---|---|---|---|---|
+| 10 000 | 4.15M | 0.487 | 0.844 | 86.95% | 1.65% |
+| 20 000 | 8.28M | 0.440 | 0.876 | 92.95% | 5.25% [4.0, 6.8] |
+| 40 000 (fine-tuned in two 20k stages) | 16.6M | **0.398** | **0.897** | **94.35%** | **5.45% [4.2, 7.0]** |
+
+The two NETWORK intervals overlap: doubling the games from 20k to 40k bought 0.2 points there while it bought 1.4 points
+against RANDOM and improved both training metrics again. So the random corpus saturates at ~5% against NETWORK: from here the
+limiting factor is the QUALITY of the player that generated the games (a random opponent, iteration 1), not the number of
+states. That is the owner's prediction measured, and it is why the next step is the self-play loop, not more random games.
