@@ -13,7 +13,7 @@ git checkout night-sim
 ./ml/night_run.sh
 ```
 
-That is the only command. Defaults: **50 000 games** (all self-play), chunks of 5 000, threads = cores-2, then one training
+That is the only command. Defaults: **50 000 games** (all self-play), chunks of 5 000, threads = every core, then one training
 pass, then two measurements (NETWORK and RANDOM, 1 000 games each). Everything goes under `./night/`:
 
 ```
@@ -34,7 +34,7 @@ in flight. To start over, delete `./night` (or set `WORK`).
 | `GAMES` | 50000 | total games to generate |
 | `CHUNK` | 5000 | games per generation run (resume unit) |
 | `NET_SHARE` | **0** | percent of chunks played against NETWORK; the rest is self-play |
-| `THREADS` | cores-2 | generation/eval threads |
+| `THREADS` | **all cores** | generation/eval threads |
 | `WORK` | ./night | output directory |
 | `EVAL_GAMES` | 1000 | games per benchmark at the end |
 | `MODEL` | models/net_s3_e1.zip | the value the games are generated with |

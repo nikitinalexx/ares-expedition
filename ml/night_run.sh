@@ -29,7 +29,7 @@ else
     read -r -a PY_CMD <<<"$PY"
 fi
 CONCURRENCY=${CONCURRENCY:-$( (nproc 2>/dev/null || echo 8) )}
-THREADS=${THREADS:-$(( CONCURRENCY > 2 ? CONCURRENCY - 2 : 1 ))}
+THREADS=${THREADS:-$CONCURRENCY}   # all cores by default (the owner's ask: take every core the CPU has)
 MIN_FREE_GB=${MIN_FREE_GB:-100}
 EVAL_GAMES=${EVAL_GAMES:-1000}
 
