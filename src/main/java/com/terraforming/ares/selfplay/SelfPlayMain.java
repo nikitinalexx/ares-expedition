@@ -150,6 +150,8 @@ public final class SelfPlayMain {
                     return rolloutTest(context, arguments);
                 case "phasedist":
                     return phaseDist(context, arguments);
+                case "cardaudit":
+                    return cardAudit(context, arguments);
                 default:
                     throw new IllegalArgumentException("unknown --mode " + mode);
             }
@@ -335,8 +337,17 @@ public final class SelfPlayMain {
         return 0;
     }
 
-    private static int scorecard(ConfigurableApplicationContext context, Map<String, String> a) throws Exception {
-        context.getBean(com.terraforming.ares.selfplay.Scorecard.class).run(
+    private static int cardAudit(ConfigurableApplicationContext context, Map<String, String> a) throws Exception {
+        context.getBean(com.terraforming.ares.selfplay.CardResourceAudit.class).run(
+                Path.of(required(a, "out")),
+                Integer.parseInt(required(a, "games")),
+                PlayerDifficulty.valueOf(a.getOrDefault("a", "NETWORK_V2")),
+                PlayerDifficulty.valueOf(a.getOrDefault("b", "NETWORK")),
+                Integer.parseInt(a.getOrDefault("concurrency", "16")));
+        return 0;
+    }
+
+    private static int scorecard(ConfigurableApplicationContext context, Map<String, String> a) throws Exception {        context.getBean(com.terraforming.ares.selfplay.Scorecard.class).run(
                 Path.of(required(a, "out")),
                 Integer.parseInt(required(a, "games")),
                 PlayerDifficulty.valueOf(a.getOrDefault("a", "AGENT")),
