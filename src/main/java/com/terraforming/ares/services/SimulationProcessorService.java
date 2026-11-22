@@ -102,10 +102,13 @@ public class SimulationProcessorService extends BaseProcessorService {
             }
         }
 
+        // The owner's end-game check (22/11): who raised the last parameter, and did that player lose? Logged only when
+        // -Dares.endaudit=true, and only when the game was ended while behind.
+        EndGameAudit.check(game, winPointsService);
+
         List<Player> players = new ArrayList<>(game.getPlayerUuidToPlayer().values());
         int firstPlayerPoints = winPointsService.countWinPoints(players.get(0), game);
-        int secondPlayerPoints = winPointsService.countWinPoints(players.get(1), game);
-        cardPickStatistics.collectFromGame(firstPlayerPoints == secondPlayerPoints ? 0 : (firstPlayerPoints > secondPlayerPoints ? 1 : 2), players);
+        int secondPlayerPoints = winPointsService.countWinPoints(players.get(1), game);        cardPickStatistics.collectFromGame(firstPlayerPoints == secondPlayerPoints ? 0 : (firstPlayerPoints > secondPlayerPoints ? 1 : 2), players);
     }
 
 }

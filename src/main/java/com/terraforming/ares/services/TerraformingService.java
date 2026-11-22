@@ -64,6 +64,7 @@ public class TerraformingService {
         }
 
         player.setTerraformingRating(player.getTerraformingRating() + 1);
+        EndGameAudit.record(game, player);
 
         player.getPlayed().getCards().stream().map(cardService::getCard).forEach(
                 projectCard -> projectCard.onOceanFlippedEffect(context)
@@ -96,6 +97,7 @@ public class TerraformingService {
         game.getPlanet().increaseOxygen();
 
         player.setTerraformingRating(player.getTerraformingRating() + 1);
+        EndGameAudit.record(game, player);
 
         onOxygenChangedEffect(context);
     }
@@ -120,6 +122,7 @@ public class TerraformingService {
         game.getPlanet().increaseTemperature();
 
         player.setTerraformingRating(player.getTerraformingRating() + 1);
+        EndGameAudit.record(game, player);
 
         player.getPlayed()
                 .getCards()
@@ -146,6 +149,7 @@ public class TerraformingService {
         game.getPlanet().increaseInfrastructure();
 
         player.setTerraformingRating(player.getTerraformingRating() + 1);
+        EndGameAudit.record(game, player);
 
         player.getPlayed()
                 .getCards()
@@ -206,3 +210,4 @@ public class TerraformingService {
     }
 
 }
+
