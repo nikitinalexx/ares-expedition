@@ -111,8 +111,9 @@ if [ "$SKIP_GEN" = 0 ]; then
 fi
 du -h "$WORK/data/all.bin"
 
-log "=== train (one pass, early stop on a 50k validation slice)"
+log "=== train (one pass, warm start from $MODEL, early stop on a 50k validation slice)"
 "${PY_CMD[@]}" ml/train_network_v2_torch.py --csv "$WORK/data/all.bin" --out "$WORK/models/trained.zip" \
+    --warm-start "$MODEL" \
     --epochs 1 --batch 64 --lr 0.00005 --seed 1 --val-steps 500 --val-rows 50000 --patience 8 --dropout 0.1 \
     >"$WORK/logs/train.log" 2>&1 || fail "training failed; see $WORK/logs/train.log"
 tail -3 "$WORK/logs/train.log"

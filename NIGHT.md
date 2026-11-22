@@ -14,7 +14,8 @@ git checkout night-sim
 ```
 
 That is the only command. Defaults: **50 000 games** (all self-play), chunks of 5 000, threads = every core, then one training
-pass, then two measurements (NETWORK and RANDOM, 1 000 games each). Everything goes under `./night/`:
+pass **that continues from the same model** (`MODEL`, not from scratch), then two measurements (NETWORK and RANDOM, 1 000
+games each). Everything goes under `./night/`:
 
 ```
 night/data/chunk_*/netdata.bin   the raw corpora (one per chunk)
@@ -27,6 +28,10 @@ night/summary.txt                the two CompareResult lines
 **Re-running resumes**: a chunk whose `netdata.bin` already exists is skipped, so a crash or a reboot costs only the chunk
 in flight. To start over, delete `./night` (or set `WORK`).
 
+**If you started a run before 22/11 20:00 UTC:** that script trained from scratch, which is not the self-play ladder. The
+games it generated are still valid - update the branch, re-run the same command, and it skips generation and the merge and
+only redoes the training, this time warm-started from `MODEL`.
+
 ## Knobs (environment variables)
 
 | variable | default | meaning |
@@ -37,7 +42,7 @@ in flight. To start over, delete `./night` (or set `WORK`).
 | `THREADS` | **all cores** | generation/eval threads |
 | `WORK` | ./night | output directory |
 | `EVAL_GAMES` | 1000 | games per benchmark at the end |
-| `MODEL` | models/net_s3_e1.zip | the value the games are generated with |
+| `MODEL` | models/net_s3_e1.zip | the value the games are generated with **and that training continues from** |
 | `MIN_FREE_GB` | 60 | refuse to start below this free space |
 
 Examples:
