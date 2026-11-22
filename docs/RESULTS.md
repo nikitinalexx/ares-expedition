@@ -3211,3 +3211,54 @@ Errors found by the new tests on the way, both silent before:
 
 The profile still differs from the owner's shipped player: our models end at 32-34 turns, `iter4` at 27.3 - our player does not push the end of the game,
 which is the same "no tempo" signature measured against NETWORK.
+
+## 2026-11-21/22, night: the critic matrix, and why "more records" was not the answer either
+
+### The corpus was six times thinner than the owner's, at the same game count
+
+`NetDataRecorderDensityTest` now pins it: the afterStep hook used to fire once per iteration of the state loop, i.e. once per
+round - 66 rows per game (33 per player). The owner logged a post-state after every step (every blue action, every phase-5
+discard) and got 300-400 per player, ~1 000 per game. The hook is now inside the step loops: measured on 100 RANDOM games,
+**1 123 post-states per game, 427 distinct** after the per-game dedup he also used. A 10 000-game corpus is therefore 4.15 M
+rows (`netd_step10k_A`: 4 153 898 rows, label mean 0.5002), not 0.7 M.
+
+### "All rows" on the same games is worse than the 16-rows cap: 35.30% against 40.51%
+
+| critics (3 seeds, champion policy and phase critic, same tests) | rows | games | batch | val MSE | val AUC | vs NETWORK |
+|---|---|---|---|---|---|---|
+| champion: cap 16, batch 4096, 4 epochs | 143 936 | 10 000 | 4096 | 1.40 ±0.39 | 0.925 | **40.51% [38.4, 42.7]** (1 997) |
+| all rows, batch 4096, 4 epochs | 1 097 610 | 10 000 | 4096 | 1.75 | 0.923 | **35.30% [33.2, 37.4]** (2 000) |
+| cap 16, batch 64, 4 epochs | 143 936 | 10 000 | 64 | 1.77 | 0.901→0.925 | pending |
+
+The two intervals do not overlap. The cap does not lose information: it samples 16 states per game ACROSS the decision
+types, and that balance is what the cap buys. Taking every row weights the corpus by the types that have many rows per
+game (sells, discards), and the value ranks worse with more records of the same games.
+
+### The batch is not a lever on our critic either, and the missing cell was measured
+
+| same pack `1118-2332_17`, 3 seeds, Adam, cap 0 | rows | batch | val MSE | val AUC |
+|---|---|---|---|---|
+| 1 000 games (nested subset) | ~128k | 4096 | **1.14** | **0.874** |
+| 1 000 games | ~128k | 64 | 1.20 | 0.862 |
+| 5 000 games | ~640k | 4096 | **1.11** | **0.906** |
+| 5 000 games | ~640k | 64 | pending | pending |
+| 10 000 games (16+17) | 1 097 610 | 4096 | 1.75 | 0.923 |
+| 10 000 games | 1 097 610 | 64 | 2.03 | 0.901 |
+
+At both volumes batch 4096 is better on BOTH metrics (the owner's warning: look at AUC and loss together - here they move in
+the same direction). The one-pass effect is visible: at 5 000 games the best epoch is 1 for all three seeds, so the second
+pass only memorises.
+
+### Two pipeline bugs found while measuring
+
+* **Synthetic Catastrophe** killed games with `Card.getTags()` on a null card: the AI answers SKIP_ACTION when it has no red
+  card, `getCard(SKIP_ACTION)` is null and the projection path builds without the validator. Fixed and pinned; 3 of 2 000
+  games failed with it before the fix.
+* **The export gate rejected a healthy probability model** because it compared log-odds of a saturated sigmoid (+-20.7) with
+  the raw logit (+-30): 21.98 "disagreement". The reference is now the raw logit (as the loader reads it), tolerance 5e-3.
+
+### Corpus identity is part of the experiment
+
+The first "22 750 games" run was discarded: it mixed nine packs, two of them (`p1b`, `p1cur`) are recorded as polluted in
+`docs/PLAN_STRONGER.md`, and the rest are colour/microbe practice arms - not the phase-3 fighter. `ml/pack_who.py` prints
+per pack the rows, the outcome/margin means and the source, and `docs/PIPELINE.md` now says to read it before a run.

@@ -83,10 +83,23 @@ class BinaryTest(unittest.TestCase):
         features = [0.0] * (t.TABLE + t.HAND)
         with tempfile.TemporaryDirectory() as tmp:
             path = self.write(tmp, [(5001, 1.0, features), (5001, 0.0, features), (2, 0.5, features)])
-            label, x, ids = t.read_dataset(path)
+            label, x, ids = t.read_dataset(path, in_ram=True)
         self.assertEqual(ids.tolist(), [5001, 5001, 2])
         self.assertEqual(label.tolist(), [1.0, 0.0, 0.5])
         self.assertEqual(x.shape, (3, t.TABLE + t.HAND))
+
+    def test_the_memmap_path_reads_the_same_rows_and_releases_the_file(self):
+        # The default path is a memmap (a 40k-game corpus is 30 GB). On Windows an open map blocks the directory cleanup,
+        # so the test releases it explicitly - that is also what a caller that re-reads a corpus must do.
+        import gc
+        features = [0.25] * (t.TABLE + t.HAND)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self.write(tmp, [(5001, 1.0, features)])
+            label, x, ids = t.read_dataset(path)
+            self.assertEqual(ids.tolist(), [5001])
+            self.assertAlmostEqual(float(x[0, 0]), 0.25, places=3)
+            del label, x, ids
+            gc.collect()
 
     def test_a_truncated_file_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -107,6 +120,31 @@ class BinaryTest(unittest.TestCase):
                 f.write(line_with_id(3, 1.0, [0.0] * (t.TABLE + t.HAND)) + "\n")
             label, x, ids = t.read_dataset(path)
         self.assertEqual(ids.tolist(), [3])
+
+
+class WarmStartTest(unittest.TestCase):
+
+    def test_an_exported_model_loads_back_into_an_identical_forward(self):
+        # The incremental recipe depends on this: train on one chunk, then continue from the exported file on the next.
+        import torch
+        import train_network_v2_torch as tt
+
+        model = tt.Towers()
+        torch.manual_seed(11)
+        for parameter in model.parameters():
+            with torch.no_grad():
+                parameter.copy_(torch.randn_like(parameter) * 0.02)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "model.zip")
+            tt.export(model, path)
+            state = tt.load_exported(path)
+        resumed = tt.Towers()
+        resumed.load_state_dict(state)
+        rows = torch.randn(8, t.TABLE + t.HAND)
+        with torch.no_grad():
+            before = model(rows[:, :t.TABLE], rows[:, t.TABLE:])
+            after = resumed(rows[:, :t.TABLE], rows[:, t.TABLE:])
+        np.testing.assert_allclose(before.numpy(), after.numpy(), rtol=1e-6, atol=1e-6)
 
 
 class ExportTest(unittest.TestCase):

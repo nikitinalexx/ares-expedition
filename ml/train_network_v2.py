@@ -29,41 +29,56 @@ MAGIC = b"ND2BIN01"
 RECORD = np.dtype([("game", "<i4"), ("label", "<f2"), ("x", "<f2", (TABLE + HAND,))])
 
 
-def read_binary(path, limit=0, dtype=np.float32):
-    """Read `netdata.bin` (NetDataWriter's default): magic `ND2BIN01`, uint16 dimension, then little-endian records
-    `int32 gameId, float16 label, float16 x dim`.
+def read_binary(path, limit=0, dtype=np.float32, in_ram=False):
+    """Read `netdata.bin`. By default it is a MEMMAP (a 40 000-game corpus is 30 GB, never copied); with `in_ram=True` the
+    rows are read in chunks into one preallocated float16 array, so the peak is the corpus itself and not twice it.
 
-    The id is an integer here, which is what the float16 CSV parse got wrong; the writer stores it as int32 for that reason.
+    `in_ram` exists because the corpus disk is ~24 MB/s: gathering 64-row batches from a memmap there is a random read per
+    batch, while one sequential pass into RAM is minutes and then every batch is memory-speed.
     """
     with open(path, "rb") as f:
         magic = f.read(len(MAGIC))
         if magic != MAGIC:
             raise ValueError(f"{path}: not a {MAGIC!r} file (got {magic!r})")
         dimension = int.from_bytes(f.read(2), "little")
-        if dimension != TABLE + HAND:
-            raise ValueError(f"{path}: dimension {dimension}, expected {TABLE + HAND}")
-        payload = os.path.getsize(path) - len(MAGIC) - 2
-        if payload < 0 or payload % RECORD.itemsize:
-            raise ValueError(f"{path}: {payload} payload bytes is not a whole number of {RECORD.itemsize}-byte records "
-                             f"- a truncated or wrong-endian write")
-        count = payload // RECORD.itemsize
-        if limit:
-            count = min(count, limit)
-        records = np.fromfile(f, dtype=RECORD, count=count)
-    if count and len(records) != count:
-        raise ValueError(f"{path}: {len(records)} records read, {count} expected - a truncated write")
+    if dimension != TABLE + HAND:
+        raise ValueError(f"{path}: dimension {dimension}, expected {TABLE + HAND}")
+    payload = os.path.getsize(path) - len(MAGIC) - 2
+    if payload < 0 or payload % RECORD.itemsize:
+        raise ValueError(f"{path}: {payload} payload bytes is not a whole number of {RECORD.itemsize}-byte records "
+                         f"- a truncated or wrong-endian write")
+    count = payload // RECORD.itemsize
+    if limit:
+        count = min(count, limit)
+    if in_ram:
+        labels = np.empty(count, dtype=dtype)
+        ids = np.empty(count, dtype=np.int64)
+        features = np.empty((count, TABLE + HAND), dtype=np.float16)
+        with open(path, "rb") as f:
+            f.seek(len(MAGIC) + 2)
+            block = 65536
+            for start in range(0, count, block):
+                take = min(block, count - start)
+                buffer = np.frombuffer(f.read(take * RECORD.itemsize), dtype=RECORD, count=take)
+                labels[start:start + take] = buffer["label"]
+                ids[start:start + take] = buffer["game"]
+                features[start:start + take] = buffer["x"]
+        if labels.size and (labels.min() < 0.0 or labels.max() > 1.0):
+            raise ValueError(f"{path}: labels outside [0,1] ({labels.min()}..{labels.max()})")
+        return labels, features, ids
+    records = np.memmap(path, dtype=RECORD, mode="r", offset=len(MAGIC) + 2, shape=(count,))
     labels = records["label"].astype(dtype)
     if labels.size and (labels.min() < 0.0 or labels.max() > 1.0):
         raise ValueError(f"{path}: labels outside [0,1] ({labels.min()}..{labels.max()}) - the file layout is wrong")
-    return labels, records["x"].astype(dtype), records["game"].astype(np.int64)
+    return labels, records["x"], records["game"].astype(np.int64)
 
 
-def read_dataset(path, limit=0, dtype=np.float32):
+def read_dataset(path, limit=0, dtype=np.float32, in_ram=False):
     """CSV or binary by content, so a mixed directory of old and new corpora still trains."""
     with open(path, "rb") as f:
         head = f.read(len(MAGIC))
     if head == MAGIC:
-        return read_binary(path, limit=limit, dtype=dtype)
+        return read_binary(path, limit=limit, dtype=dtype, in_ram=in_ram)
     return read_csv(path, limit=limit, dtype=dtype)
 
 

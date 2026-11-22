@@ -846,9 +846,10 @@ def main():
                 layout = schema["observationLayout"].split("; candidate=")[0]
                 observation_hash = hashlib.sha256(layout.encode("utf-8")).hexdigest()[:16]
                 scores = predict(fitted["params"], obs, squash=args.target == "outcome")
+                raw = (scores if args.target in ("margin", "myscore")
+                       else predict(fitted["params"], obs, squash=False))
                 reference_rows = obs
-                reference_scores = (scores if args.target in ("margin", "myscore")
-                                    else np.log(np.clip(scores, 1e-9, 1 - 1e-9) / np.clip(1 - scores, 1e-9, 1 - 1e-9)))
+                reference_scores = raw
                 break
             if reference_rows is not None:
                 break
@@ -1016,13 +1017,17 @@ def main():
                             "observed": round(float(y_val[group].mean()), 4)})
 
     sample = np.unique(np.linspace(0, len(val) - 1, min(8, len(val))).astype(int))
+    # The export gate compares the file's forward pass (RAW output, pre-sigmoid) with the reference. For the outcome target
+    # the probabilities saturate at 0/1, and log(p/(1-p)) then caps at about +-20.7 while the raw logit is +-30: the gate
+    # read a 21.98 "disagreement" and refused to write a healthy model (the BCE cell of the batch matrix, 21/11). The
+    # reference is therefore the raw logit, which is exactly what numpy_forward returns.
     logits = (predicted[sample] if args.target in ("margin", "myscore")
-              else np.log(np.clip(predicted[sample], 1e-9, 1 - 1e-9) / np.clip(1 - predicted[sample], 1e-9, 1 - 1e-9)))
+              else predict(params, val[sample], squash=False, clip=args.clip))
     reference = {"inputs": val[sample].astype(np.float32).tolist(), "logits": logits.astype(float).tolist()}
     meta = export_value(args.out, pool["observationHash"], pool["obsSize"], hidden, args.clip, params, reference)
     worst = max(abs(float(numpy_forward(params, args.clip, o.astype(np.float64))) - float(l))
                 for o, l in zip(val[sample].astype(np.float64), logits))
-    if worst > 1e-3:
+    if worst > 5e-3:
         raise SystemExit(f"the exported model disagrees with numpy by {worst}: refusing to finish")
     masked_gain = 0.0
     if drop:

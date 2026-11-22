@@ -1880,3 +1880,34 @@ baseline is valid:
 | champion, critics cap 16 batch 4096 | **40.51% [38.4, 42.7]** | 1 997 (3 failed) |
 
 The lesson is mine, not the engine's: I read a stack trace as a dead run without checking the process or the progress line.
+
+## 2026-11-22 - the volume/batch/dropout plan for NETWORK_V2, on random data first
+
+**Why random data first.** 20 000 random games with every state take ~10 minutes to generate (32 games/s measured) and
+produce 8 M rows. Every basic factor (volume, records, batch, dropout) is therefore screened there, where a cell costs
+minutes, before anything is spent on self-play games.
+
+**Rules of comparability (owner, 22/11).**
+1. Same architecture, same target (BCE on the outcome, like his NETWORK), same game-level split, same evaluation flags and
+   policy. Volume cells are NESTED subsets of one corpus (`--games-limit`), so the only variable is the volume.
+2. **No distillation.** Every state of every decision step, no per-type caps: we cannot justify an N per type without
+   modelling how often that type occurs, and guessing the frequency is exactly the silent bias that a cap introduces.
+   (The critic's `--rows-per-game 16` was such a cap and cost 5 points of play: 40.51% -> 35.30% at 7.6x the rows.)
+3. **Memorisation control.** A dense corpus has ~400 rows per game with ONE label, so the effective sample is the number of
+   GAMES. The diagnostics are the best checkpoint step (how long it trains before overfitting), val BCE against the
+   constant (the entropy of the base rate) and val AUC. A model whose val BCE is above the constant has memorised.
+4. A random-corpus model is **iteration 1** and is NOT a verdict on the agent against NETWORK: NETWORK has had self-play
+   loops on corpora we do not have. The comparable measurement is after one loop of ours.
+
+**Stages.**
+| stage | factor | cells | question |
+|---|---|---|---|
+| A | volume | 1k / 5k / 20k games, batch 64, dropout 0.1 | does the best step and the val improve with games? |
+| B | batch | 10 / 64 / 256 at the best volume, dropout 0.1 | the owner's small batch, on comparable data |
+| C | dropout | 0 / 0.1 / 0.25 at the best volume and batch | is dropout the lever the batch was thought to be? |
+| D | play | the best 2-3 cells vs RANDOM (300) and NETWORK (1 000) | does a val improvement become points? |
+| E | self-play | one loop from the winner (10k games), retrain, measure | the only comparable number against NETWORK |
+
+**Training protocol for every cell:** one pass, mid-epoch validation every 500 steps on a 50k-row val subset, patience 8
+validations, best checkpoint kept. The 40k-game cell needs ~30 GB of rows, so it is trained as two 20k stages (fine-tune)
+rather than by capping rows - the row cap is banned by rule 2.
