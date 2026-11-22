@@ -79,12 +79,13 @@ public class CardResourceAudit {
     }
 
     public record Report(int games, int failed, double avgTurns, double avgTemperature, double avgOxygen,
-                         double avgOceans, List<Side> sides) {
+                         double avgOceans, double avgWinnerPoints, List<Side> sides) {
     }
 
     public Report run(Path out, int games, PlayerDifficulty a, PlayerDifficulty b, int concurrency) throws Exception {
         LongAdder failed = new LongAdder();
         DoubleAdder turns = new DoubleAdder(), temperature = new DoubleAdder(), oxygen = new DoubleAdder(), oceans = new DoubleAdder();
+        DoubleAdder winnerPoints = new DoubleAdder();
         Map<String, Map<String, long[]>> stats = new ConcurrentHashMap<>(); // difficulty -> card -> [g1, w1, g2, w2]
         Map<String, long[]> total = new ConcurrentHashMap<>();              // difficulty -> [games, wins]
         Map<String, long[]> fish = new ConcurrentHashMap<>();               // difficulty -> [withBoth, used, usedWins, skipped, skippedWins]
@@ -107,6 +108,7 @@ public class CardResourceAudit {
                                 .build());
                         simulationProcessorService.processSimulation(game);
                         turns.add(game.getTurns());
+                        winnerPoints.add(Math.max(winPointsService.countWinPoints(game.getPlayerUuidToPlayer().values().iterator().next(), game), winPointsService.countWinPoints(game.getPlayerUuidToPlayer().values().stream().skip(1).findFirst().orElseThrow(), game)));
                         temperature.add(game.getPlanet().getTemperatureValue());
                         oxygen.add(game.getPlanet().getOxygenValue());
                         oceans.add(game.getPlanet().getOceans().size());
@@ -197,11 +199,12 @@ public class CardResourceAudit {
         });
         sides.sort((l, r) -> l.difficulty().compareTo(r.difficulty()));
         Report report = new Report(games, (int) failed.sum(), round(turns.sum() / played),
-                round(temperature.sum() / played), round(oxygen.sum() / played), round(oceans.sum() / played), sides);
+                round(temperature.sum() / played), round(oxygen.sum() / played), round(oceans.sum() / played),
+                round(winnerPoints.sum() / played), sides);
         Files.createDirectories(out.getParent());
         new ObjectMapper().writeValue(out.toFile(), report);
-        System.out.printf("[CARDAUDIT] games %d, turns %.1f, temperature %.1f, oxygen %.1f, oceans %.1f%n",
-                played, report.avgTurns(), report.avgTemperature(), report.avgOxygen(), report.avgOceans());
+        System.out.printf("[CARDAUDIT] games %d, turns %.1f, temperature %.1f, oxygen %.1f, oceans %.1f, winner points %.1f%n",
+                played, report.avgTurns(), report.avgTemperature(), report.avgOxygen(), report.avgOceans(), report.avgWinnerPoints());
         for (Side side : sides) {
             System.out.printf("[CARDAUDIT] %s: %d/%d won (%.0f%%)%n", side.difficulty(), side.wins(), side.games(),
                     100.0 * side.wins() / Math.max(side.games(), 1));
@@ -224,4 +227,6 @@ public class CardResourceAudit {
         return Math.round(value * 100.0) / 100.0;
     }
 }
+
+
 

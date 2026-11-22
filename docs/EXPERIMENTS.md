@@ -1929,3 +1929,74 @@ iteration.
 
 The comparison rule that follows: a model is compared with NETWORK only at a comparable number of iterations, and the
 iteration count is part of every report line.
+
+## 2026-11-22 - the owner's own NETWORK log, parsed (his baseline for every comparison)
+
+The owner recovered the metrics of his earlier NETWORK work (39 unique game tests, 52 000 games, one duplicated test
+excluded). It is the reference our NETWORK_V2 line has to be measured against, and it changes two readings we had.
+
+**Balance and pace of his games:** 25 625 first-seat wins, 25 534 second-seat wins, 841 draws (1.62%) - no first-move
+advantage. **Average 25.0 rounds**, winner's average score **76.5**.
+
+**Phase mix over 2.63 M picks (all architectures of that log):** 1 = **21.79%**, 2 = **33.66%**, 3 = **11.28%**,
+4 = 10.13%, 5 = 23.13%. Second seat takes phase 5 more (+1.46 points); first seat takes 3 and 4 more.
+
+So **11.3% phase 3 was normal in his lineage**, and the 2% we measured on the shipped NETWORK is a LATER stage: the drift
+grows with iterations, exactly as he described ("it got stronger and drifted further into phases 1-2"). Our NETWORK_V2
+iteration 3 (30.8 / 29.8 / 13.4 / 3.1 / 22.9) is close to his earlier profile - the divergence is **tempo (30.3 rounds
+against his 25.0)** and phase 2 (29.8% against 33.7%).
+
+**His architecture findings, for the record:**
+* iter8_v3 beat iter7_1_18_dropout79 by 8.5 points and iter8_v2 by 18 wins; it was level with epoch2_60_350k and
+  epoch3_140_350k - more training did not guarantee more strength.
+* 1_100 and 1_130 epochs were WORSE (444:537, 448:536): over-training is real, which is what our early stopping does.
+* self-play 9 000 games: 50.3 / 48.4 / 1.3 - symmetric, and no proof of strength by itself.
+* training metrics: accuracy 0.79 -> 0.82, AUC 0.875 -> 0.905, logloss 0.443 -> 0.402; **iter3 epoch4 improved logloss but
+  not accuracy/F1 and not the game results** - "classification quality and game strength are different things".
+
+**His tournament protocol, adopted from today:** one fixed control, at least 2 000 games per model, seats alternated,
+win share counting draws, and the **phase distribution recorded per model** - not aggregated across generations.
+Our `ml/measure_bundle.ps1` already alternates seats; every future report adds the `--mode phasedist` mix for the model.
+
+### The owner's second baseline: CONFIG_VALUE_NARROW on 200 000 games
+
+Recovered from his own notes (22/11):
+
+* architecture **436 -> 512 -> 512 -> 256 -> 128 -> 1**, LeakyReLU, Adam(3e-4), L2(1e-5), sigmoid + binary cross entropy,
+  seed 12345, **batch 25**;
+* training data: **200 000 games** (202 files of 1 000);
+* on the first 10 files (10 000 games): **AUC 0.8749, LogLoss 0.4429, accuracy 0.790, F1 0.782**;
+* batch 25 against batch 8: AUC 0.87485 vs 0.87445, LogLoss 0.44292 vs 0.44798, GPU 79 s vs 253 s - no advantage for 8.
+
+Comparison with our NETWORK_V2 at 20 000 games (8.28 M states, lr 1e-4, batch 64, dropout 0.1):
+**AUC 0.8761, val BCE 0.4397** against his **0.8749 / 0.4429**. The classifier is already at his level. What differs is the
+amount of GAMES (his 200k against our 40k random + 10k per self-play loop) and the number of loops - which is exactly the
+profile of our 11.9% against his 37.75%.
+
+His batch result also agrees with ours: the small batch was not the lever (ours: batch 10 worse, 64 and 256 equal).
+
+The 436-input architecture is a SINGLE tower and cannot be loaded by `PureJavaValueNetwork` as it stands (the loader reads the
+two-tower 417 + 481 layout). Adopting it means changing his Java loader, so it stays as a separate track; the data-volume
+track is the one with a measured mechanism behind it.
+
+### The owner's third baseline: CONFIG_A, 436 -> 256 -> 128 -> 64 -> 1, on 25 M records
+
+Recovered from his notes (22/11):
+
+* **436 inputs** (no hand block), ReLU in the dense layers, no BatchNormalization, Xavier, **Adam(1e-5)**, L2(5e-5),
+  sigmoid + cross entropy; **batch 200**;
+* **25 M records, ~100 000 games** (~230 records per game), evaluation set 1.2 M;
+* epoch 1: **AUC 0.8565, loss 0.4822**; epoch 2 is WORSE (0.8549 / 0.4896) - the first pass is the best one;
+* the old BN configuration reached 0.8495 / 0.5228 on the same data.
+
+Two things follow, and they are not about the architecture:
+
+1. **Updates per pass are the same as ours.** 25 M / 200 = 125 000 steps per pass; ours 8.28 M / 64 = 129 000. The
+   classifier is already at his level (ours 0.897 against 0.857), so the deep two-tower against his shallow stack is not
+   the gap.
+2. **The gap is the number of GAMES and the number of loops**: his 100 000 games and 37.75% against NETWORK, ours 40 000
+   random + 10 000 per self-play loop, 11.9%.
+
+The three recovered baselines (iter8_v3: 52k games, 25.0 rounds, winner 76.5; CONFIG_VALUE_NARROW: 200k games, AUC 0.875
+at 10k; CONFIG_A: 100k games, AUC 0.857) all point the same way: our data volume is the factor, and the self-play ladder is
+how it converts into strength.

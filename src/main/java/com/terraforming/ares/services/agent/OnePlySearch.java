@@ -1483,6 +1483,18 @@ public class OnePlySearch {
             if (!applyOn(copy, me, cardId, type, seed)) {
                 return null;
             }
+            if (copy.gameEndCondition()) {
+                // The action ends the game, so its value is the FINAL score difference, not V(a hypothetical continuation):
+                // a margin critic cannot know the next state is terminal, and it was measured preferring NOT to end
+                // (V(before) 0.9229 against V(after the last ocean) 0.9208: the ocean costs 3 MC and pays one point).
+                // The critics are trained on margin/20, the same scale logit() reads. Checked before the projection branch:
+                // ending the game is terminal, so there is nothing to project forward.
+                int minePoints = winPointsService.countWinPoints(me, copy);
+                int theirPoints = copy.getPlayerUuidToPlayer().values().stream()
+                        .filter(p -> !p.getUuid().equals(me.getUuid()))
+                        .mapToInt(p -> winPointsService.countWinPoints(p, copy)).max().orElse(0);
+                return Math.round((minePoints - theirPoints) / 20f * 1000f);
+            }
             if (projectBuilds && (type == DecisionType.BUILD_CARD || type == DecisionType.STANDARD_ACTION)) {
                 // Read the value at the player's next decision instead of at the mid-turn afterstate.
                 float projected = projectToNextDecision(copy, me, seed);

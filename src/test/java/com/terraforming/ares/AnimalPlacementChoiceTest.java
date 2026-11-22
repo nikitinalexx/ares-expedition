@@ -53,7 +53,7 @@ class AnimalPlacementChoiceTest extends EngineTestBase {
         // OnePlySearch reads these through System.getProperty in its constructor, which runs when the context creates the
         // bean - a static initialiser is the only place that is early enough.
         System.setProperty("ares.agent.search", "oneply");
-        System.setProperty("ares.agent.search.types", "BLUE_INPUT");
+        System.setProperty("ares.agent.search.types", "BLUE_INPUT,STANDARD_ACTION");
         System.setProperty("ares.agent.valueModel",
                 "D:/ares/runs/value/v_1118-2332_17_s1,D:/ares/runs/value/v_1118-2332_17_s2,"
                         + "D:/ares/runs/value/v_1118-2332_17_s3");
@@ -69,6 +69,14 @@ class AnimalPlacementChoiceTest extends EngineTestBase {
     BlueInputDecisions blueInputDecisions;
     @Autowired
     OnePlySearch search;
+    @Autowired
+    com.terraforming.ares.services.TerraformingService terraformingService;
+    @Autowired
+    com.terraforming.ares.services.agent.StandardActionDecisions standardActionDecisions;
+    @Autowired
+    com.terraforming.ares.services.ai.turnProcessors.AiTurnService aiTurnService;
+    @Autowired
+    com.terraforming.ares.services.agent.ObservationBuilder observationBuilder;
 
     private Card byClass(Class<? extends Card> type) {
         for (int id = 0; id < 2000; id++) {
@@ -120,6 +128,81 @@ class AnimalPlacementChoiceTest extends EngineTestBase {
     }
 
     @Test
+    void one_ocean_from_the_end_and_ahead_it_finishes_the_game() throws Exception {
+        // The owner's scenario (22/11): the parameters are one ocean from the maximum and the player is ahead, so buying
+        // that ocean ends the game NOW and wins it. Playing on for a bigger margin risks the opponent's last round. The
+        // search must pick the ocean, not stop and not a cheaper action.
+        MarsGame game = gameService.createNewSimulation(GameParameters.builder()
+                .playerNames(new ArrayList<>(List.of("A", "B")))
+                .computers(List.of(PlayerDifficulty.AGENT, PlayerDifficulty.AGENT))
+                .mulligan(true)
+                .expansion(Expansion.BASE).expansion(Expansion.DISCOVERY).expansion(Expansion.BUFFED_CORPORATION)
+                .dummyHand(true).build());
+        Player me = game.getPlayerUuidToPlayer().values().stream()
+                .filter(p -> p.getName().equals("A")).findFirst().orElseThrow();
+        Player other = game.getPlayerUuidToPlayer().values().stream()
+                .filter(p -> p.getName().equals("B")).findFirst().orElseThrow();
+        me.setMc(300);
+        other.setMc(0);
+        me.setTerraformingRating(40);
+        other.setTerraformingRating(0);
+        game.setStateType(StateType.BUILD_GREEN_PROJECTS, marsContextProvider.provide(game));
+
+        var context = marsContextProvider.provide(game, me);
+        while (game.getPlanet().temperatureLeft() > 0) {
+            terraformingService.increaseTemperature(context);
+        }
+        while (game.getPlanet().oxygenLeft() > 0) {
+            terraformingService.raiseOxygen(context);
+        }
+        while (game.getPlanet().oceansLeft() > 1) {
+            terraformingService.revealOcean(context);
+        }
+        // keep the phase snapshot in sync with the constructed planet, or the engine's own canX checks read the old one
+        java.lang.reflect.Field snapshot = MarsGame.class.getDeclaredField("planetAtTheStartOfThePhase");
+        snapshot.setAccessible(true);
+        snapshot.set(game, new com.terraforming.ares.model.Planet(game.getPlanet()));
+        System.out.println("[SANITY] oceansLeft " + game.getPlanet().oceansLeft()
+                + ", temperatureLeft " + game.getPlanet().temperatureLeft()
+                + ", oxygenLeft " + game.getPlanet().oxygenLeft());
+
+        var choices = standardActionDecisions.options(game, me,
+                List.of(com.terraforming.ares.model.turn.TurnType.STANDARD_PROJECT));
+        List<Integer> kinds = choices.stream().map(com.terraforming.ares.services.agent.StandardActionChoice::kind).toList();
+        System.out.println("[SANITY] standard actions offered: " + kinds);
+        // why the search may skip every candidate: apply the ending action to a copy and print what the engine says
+        try {
+            var copy = new MarsGame(game);
+            var meCopy = copy.getPlayerByUuid(me.getUuid());
+            aiTurnService.standardProjectTurn(copy, meCopy, com.terraforming.ares.model.StandardProjectType.OCEAN);
+            System.out.println("[SANITY] SP_OCEAN applied on a copy: ended=" + copy.gameEndCondition());
+            try {
+                observationBuilder.build(copy, meCopy);
+                System.out.println("[SANITY] observation on the ended game: ok");
+            } catch (RuntimeException e) {
+                System.out.println("[SANITY] observation on the ended game FAILED: " + e);
+            }
+        } catch (RuntimeException e) {
+            System.out.println("[SANITY] SP_OCEAN failed on a copy: " + e);
+        }
+        var decision = standardActionDecisions.decision(game, me, choices);
+        int index = search.choose(decision, game, me);
+        try {
+            java.lang.reflect.Field models = OnePlySearch.class.getDeclaredField("models");
+            models.setAccessible(true);
+            java.lang.reflect.Field types = OnePlySearch.class.getDeclaredField("types");
+            types.setAccessible(true);
+            System.out.println("[SANITY] enabled=" + search.enabled() + " models=" + ((List<?>) models.get(search)).size() + " types=" + types.get(search) + " index=" + index);
+        } catch (ReflectiveOperationException e) { throw new IllegalStateException(e); }
+        org.junit.jupiter.api.Assumptions.assumeTrue(index >= 0,
+                "the deployed value models are not available here; see the class javadoc for the argLine");
+        int chosen = choices.get(index).kind();
+        System.out.println("[SANITY] took kind " + chosen + " (SP_OCEAN=" + com.terraforming.ares.services.agent.StandardActionDecisions.SP_OCEAN + ")");
+        assertEquals(com.terraforming.ares.services.agent.StandardActionDecisions.SP_OCEAN, chosen,
+                "one ocean ends the game and the player is ahead: offered " + kinds);
+    }
+
+    @Test
     void without_fish_the_animal_completes_an_odd_counter() {
         // Herbivores at 1 animal pays its next one; SmallAnimals at 0 pays nothing for the first. A player that counts
         // marginal points takes Herbivores; one that takes the "first" or the "biggest" card does not.
@@ -157,3 +240,10 @@ class AnimalPlacementChoiceTest extends EngineTestBase {
                 "Herbivores' next animal pays a point, SmallAnimals' first pays nothing: offered " + offered);
     }
 }
+
+
+
+
+
+
+
