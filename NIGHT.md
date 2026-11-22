@@ -43,7 +43,7 @@ only redoes the training, this time warm-started from `MODEL`.
 | `WORK` | ./night | output directory |
 | `EVAL_GAMES` | 1000 | games per benchmark at the end |
 | `MODEL` | models/net_s3_e1.zip | the value the games are generated with **and that training continues from** |
-| `MIN_FREE_GB` | 60 | refuse to start below this free space |
+| `MIN_FREE_GB` | 100 | refuse to start below this free space |
 
 Examples:
 
@@ -71,6 +71,6 @@ so the real ETA is visible from `night/logs` and the console.
 
 * JDK 21+ and Maven (the script builds `target/classes` and the classpath itself);
 * Python 3 with `numpy` and `torch` (`pip install numpy torch`; a GPU is used automatically when present);
-* ~60 GB free for 50 000 games (each 5 000-game chunk is ~6-7 GB of binary corpus; the merge copies them once more).
+* ~100 GB free for 50 000 games (each 5 000-game chunk is ~6-7 GB of binary corpus and the merge writes one more copy; the script refuses to start below `MIN_FREE_GB=100`).
 
 If something fails the script stops with `ERROR: ...` and the line number; every external command logs into `night/logs/`.
