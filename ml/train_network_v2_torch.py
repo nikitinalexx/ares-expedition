@@ -23,7 +23,7 @@ from train_network_v2 import HAND, H1, H2, H3, MAGIC, TABLE, read_dataset  # noq
 
 
 class Towers(nn.Module):
-    def __init__(self, dropout=0.0):
+    def __init__(self, dropout_first=0.0, dropout_second=0.0):
         super().__init__()
         self.table = nn.Linear(TABLE, H1)
         self.hand = nn.Linear(HAND, H2)
@@ -32,12 +32,14 @@ class Towers(nn.Module):
         # Train-time only: dropout has no parameters, so the exported coefficients are identical with or without it. It
         # exists because a dense corpus has ~415 states per game with ONE label, so the effective sample is the number of
         # games (10 000) while the rows are millions - the model can memorise games and the val loss explodes.
-        self.dropout = nn.Dropout(dropout) if dropout else nn.Identity()
+        # The owner's NETWORK used 0.5 on the first layer and 0.2 on the second (23/11); the two rates are separate here.
+        self.drop_first = nn.Dropout(dropout_first) if dropout_first else nn.Identity()
+        self.drop_second = nn.Dropout(dropout_second) if dropout_second else nn.Identity()
 
     def forward(self, table, hand):
-        a = self.dropout(F.leaky_relu(self.table(table), 0.01))
-        b = self.dropout(F.leaky_relu(self.hand(hand), 0.01))
-        c = self.dropout(F.leaky_relu(self.merge(torch.cat([a, b], dim=1)), 0.01))
+        a = self.drop_first(F.leaky_relu(self.table(table), 0.01))
+        b = self.drop_first(F.leaky_relu(self.hand(hand), 0.01))
+        c = self.drop_second(F.leaky_relu(self.merge(torch.cat([a, b], dim=1)), 0.01))
         return self.out(c).squeeze(1)
 
 
@@ -160,6 +162,11 @@ def main():
                              "steps ends; without this the best checkpoint is never seen")
     parser.add_argument("--dropout", type=float, default=0.0,
                         help="dropout on the hidden activations, train-time only (no parameters, the export is unchanged)")
+    parser.add_argument("--dropout-first", type=float, default=-1.0,
+                        help="dropout on the two first-layer activations; -1 = the --dropout rate (the owner's NETWORK "
+                             "used 0.5 on a same-width first layer)")
+    parser.add_argument("--dropout-second", type=float, default=-1.0,
+                        help="dropout on the merged activation; -1 = the --dropout rate (the owner's NETWORK used 0.2)")
     parser.add_argument("--val-rows", type=int, default=50000,
                         help="cap the validation set for checkpoint selection (0 = all): a dense corpus has ~415k validation "
                              "rows and every mid-epoch check would cost a minute; 50k ranks checkpoints the same way")
@@ -260,7 +267,10 @@ def main():
         generator = torch.Generator().manual_seed(args.seed + 7)
         va = va[torch.randperm(len(va), generator=generator)[:args.val_rows]]
 
-    model = Towers(args.dropout).to(device)
+    dropout_first = args.dropout if args.dropout_first < 0 else args.dropout_first
+    dropout_second = args.dropout if args.dropout_second < 0 else args.dropout_second
+    print(f"dropout first {dropout_first}, second {dropout_second}", flush=True)
+    model = Towers(dropout_first, dropout_second).to(device)
     if args.warm_start:
         state = load_exported(args.warm_start)
         missing = model.load_state_dict(state, strict=True)
