@@ -171,6 +171,14 @@ def main():
     parser.add_argument("--rows-per-game", type=int, default=0,
                         help="cap rows per GAME before the split (0 = all). The corpus has hundreds of correlated rows per "
                              "game and ONE outcome, so all rows memorise the games; the agent critic's cap 16 measured +5 play")
+    parser.add_argument("--weight-decay", type=float, default=0.0,
+                        help="Adam/SGD L2 weight decay (the NETWORK_V2 trainer had none; the owner's CONFIG_A used 5e-5)")
+    parser.add_argument("--save-checkpoints", type=int, default=0,
+                        help="save this many evenly spaced checkpoint zips, plus the last state, for the external play eval")
+    parser.add_argument("--red-rise", type=float, default=0.03,
+                        help="RED FLAG when val >= best + this AND there are --red-rises consecutive rises (a plain wobble is ignored)")
+    parser.add_argument("--red-rises", type=int, default=2,
+                        help="consecutive val rises required for the RED FLAG")
     parser.add_argument("--in-ram", action="store_true",
                         help="read the binary corpus into RAM in one sequential pass instead of mapping it (a 20k-game "
                              "corpus is 14 GB; every batch is then memory-speed)")
@@ -252,9 +260,9 @@ def main():
         missing = model.load_state_dict(state, strict=True)
         print(f"warm start from {args.warm_start}", flush=True)
     if args.optimizer == "sgd":
-        opt = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
+        opt = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
     else:
-        opt = torch.optim.Adam(model.parameters(), lr=args.lr)
+        opt = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     loss_fn = nn.BCEWithLogitsLoss()
     best_val = float("inf")
     best_state = None
@@ -281,6 +289,32 @@ def main():
     step = 0
     since_best = 0
     stopped = False
+    last_val = None
+    rises = 0
+    red = False
+    steps_per_epoch = (len(tr) + args.batch - 1) // args.batch
+    save_every = 0
+    if args.save_checkpoints > 0:
+        save_every = max(1, (args.epochs * steps_per_epoch) // args.save_checkpoints)
+    ckpt_base = os.path.join(os.path.dirname(args.out), os.path.basename(args.out).replace(".zip", ""))
+
+    def register_val(value, where):
+        nonlocal best_val, best_state, since_best, last_val, rises, red
+        if value < best_val:
+            best_val = value
+            best_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
+            print(f"  best so far (val {value:.4f} at {where})", flush=True)
+            since_best = 0
+            rises = 0
+        else:
+            since_best += 1
+            rises = rises + 1 if (last_val is not None and value > last_val) else 0
+        last_val = value
+        if value >= best_val + args.red_rise and rises >= args.red_rises:
+            print(f"RED FLAG: overfitting (val {value:.4f} vs best {best_val:.4f}, +{value - best_val:.4f}, "
+                  f"{rises} consecutive rises)", flush=True)
+            red = True
+
     for epoch in range(1, args.epochs + 1):
         model.train()
         order = tr[torch.randperm(len(tr))]
@@ -300,6 +334,10 @@ def main():
             since += float(loss.item()) * len(take)
             since_n += len(take)
             step += 1
+            if save_every and step % save_every == 0:
+                ckpt = f"{ckpt_base}_ckpt_{step}.zip"
+                export(model, ckpt)
+                print(f"  checkpoint {ckpt}", flush=True)
             if args.val_steps and step % args.val_steps == 0:
                 # A dense corpus has ~415 rows per game with ONE label: the effective sample is the number of games, so
                 # the model starts memorising them long before an epoch ends (measured: 65 000 steps at batch 64, train
@@ -307,15 +345,12 @@ def main():
                 # possible at that granularity.
                 value, area = evaluate()
                 print(f"step {step}: train {since / max(since_n, 1):.4f}  val {value:.4f}  auc {area:.4f}", flush=True)
-                if value < best_val:
-                    best_val = value
-                    best_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
-                    print(f"  best so far (val {value:.4f} at step {step})", flush=True)
-                    since_best = 0
-                else:
-                    since_best += 1
+                register_val(value, f"step {step}")
                 model.train()
                 since, since_n = 0.0, 0
+                if red:
+                    stopped = True
+                    break
                 if args.patience and since_best >= args.patience:
                     print(f"early stop: {since_best} validations without improvement at step {step}", flush=True)
                     stopped = True
@@ -324,16 +359,21 @@ def main():
             break
         value, area = evaluate()
         print(f"epoch {epoch}: train {total / len(tr):.4f}  val {value:.4f}  auc {area:.4f}", flush=True)
-        if value < best_val:
-            best_val = value
-            best_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
-            print(f"  best so far (val {value:.4f})", flush=True)
+        register_val(value, f"epoch {epoch}")
+        if red:
+            break
 
-    # Early stopping: the corpus has ~66 rows per game, so after one epoch the model starts memorising games and the validation loss rises.
+    # The last state is saved BEFORE the best-val state is loaded, so the external play eval can compare "last" with "best-val".
+    if args.save_checkpoints > 0:
+        export(model, f"{ckpt_base}_ckpt_last.zip")
+        print(f"  checkpoint {ckpt_base}_ckpt_last.zip (last)", flush=True)
     if best_state is not None:
         model.load_state_dict(best_state)
         print(f"using the best epoch (val {best_val:.4f})", flush=True)
     export(model, args.out)
+    if red:
+        print("RED FLAG: training stopped as overfitting; the best checkpoint is saved but the run is red", flush=True)
+        sys.exit(42)
 
 
 if __name__ == "__main__":
