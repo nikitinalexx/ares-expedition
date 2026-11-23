@@ -168,6 +168,9 @@ def main():
                              "memorising after a few thousand steps, so the rest of an epoch is wasted compute")
     parser.add_argument("--games-limit", type=int, default=0,
                         help="keep only the first N game ids (ascending), a NESTED subset for volume comparisons")
+    parser.add_argument("--rows-per-game", type=int, default=0,
+                        help="cap rows per GAME before the split (0 = all). The corpus has hundreds of correlated rows per "
+                             "game and ONE outcome, so all rows memorise the games; the agent critic's cap 16 measured +5 play")
     parser.add_argument("--in-ram", action="store_true",
                         help="read the binary corpus into RAM in one sequential pass instead of mapping it (a 20k-game "
                              "corpus is 14 GB; every batch is then memory-speed)")
@@ -201,6 +204,25 @@ def main():
         keep = np.isin(ids, wanted)
         label, x, ids = label[keep], x[keep], ids[keep]
         print(f"games-limit {args.games_limit}: {len(label)} rows kept", flush=True)
+    if args.rows_per_game and (ids >= 0).all():
+        # ONE outcome labels every row of a game, so hundreds of rows per game are copies for the loss: the model memorises
+        # the games and the held-out games stop improving (the 50k run's val rose from 0.33 at step 6k to 0.78 at the end).
+        # The agent critic's --rows-per-game 16 measured 40.51% vs 35.30% for all rows; the NETWORK_V2 corpus has ~375/game.
+        order = np.argsort(ids, kind="mergesort")
+        sorted_ids = ids[order]
+        starts = np.r_[0, np.flatnonzero(np.diff(sorted_ids)) + 1]
+        ends = np.r_[starts[1:], len(ids)]
+        keep = np.zeros(len(ids), dtype=bool)
+        cap_rng = np.random.default_rng(args.seed + 13)
+        for start, end in zip(starts, ends):
+            span = int(end - start)
+            if span <= args.rows_per_game:
+                keep[order[start:end]] = True
+            else:
+                pick = cap_rng.choice(span, args.rows_per_game, replace=False)
+                keep[order[start:end][pick]] = True
+        label, x, ids = label[keep], x[keep], ids[keep]
+        print(f"rows per game cap {args.rows_per_game}: {len(label)} rows kept", flush=True)
     print(f"rows {len(label)}, games {len(np.unique(ids)) if (ids >= 0).all() else 'n/a'}, label mean {label.mean():.4f}", flush=True)
     if (ids >= 0).all():
         games = np.unique(ids)
