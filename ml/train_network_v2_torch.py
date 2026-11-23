@@ -179,9 +179,12 @@ def main():
                         help="RED FLAG when val >= best + this AND there are --red-rises consecutive rises (a plain wobble is ignored)")
     parser.add_argument("--red-rises", type=int, default=2,
                         help="consecutive val rises required for the RED FLAG")
+    parser.add_argument("--train-eval-games", type=int, default=200,
+                        help="a RANDOM sample of this many TRAIN games evaluated as 'seen' at every validation (the owner's "
+                             "challenge 23/11: a corpus tail is ~11 games and one self-play batch, not a sample); 0 = off")
     parser.add_argument("--train-eval-rows", type=int, default=0,
-                        help="also evaluate this many LAST train rows (the corpus end) at every validation: seen vs unseen, "
-                             "the direct memorisation check; 0 = off")
+                        help="also evaluate this many LAST train rows (the corpus end) at every validation, for comparison "
+                             "with the random sample; 0 = off")
     parser.add_argument("--in-ram", action="store_true",
                         help="read the binary corpus into RAM in one sequential pass instead of mapping it (a 20k-game "
                              "corpus is 14 GB; every batch is then memory-speed)")
@@ -293,13 +296,26 @@ def main():
         return evaluate_on(va)
 
     seen_idx = tr[-args.train_eval_rows:] if args.train_eval_rows > 0 else None
+    seen_games = None
+    if args.train_eval_games > 0 and (ids >= 0).all():
+        # The sample must be RANDOM, not the corpus end: rows are written game by game, so the last 4096 rows are ~11
+        # games of the last self-play batch and their AUC has an effective sample of 11 outcomes (0.99 there is noise).
+        train_games = np.unique(ids[train_mask])
+        pick = np.random.default_rng(args.seed + 29).choice(
+            train_games, size=min(args.train_eval_games, len(train_games)), replace=False)
+        seen_games = torch.from_numpy(np.flatnonzero(np.isin(ids, pick) & train_mask))
+        print(f"seen: {args.train_eval_games} random train games, {len(seen_games)} rows", flush=True)
 
     def seen_text():
-        if seen_idx is None:
-            return ""
-        value, area = evaluate_on(seen_idx)
+        parts = []
+        if seen_games is not None:
+            value, area = evaluate_on(seen_games)
+            parts.append(f"seen {value:.4f} auc {area:.4f}")
+        if seen_idx is not None:
+            value, area = evaluate_on(seen_idx)
+            parts.append(f"seen_tail {value:.4f} auc {area:.4f}")
         model.train()
-        return f"  seen {value:.4f} auc {area:.4f}"
+        return ("  " + "  ".join(parts)) if parts else ""
 
     step = 0
     since_best = 0

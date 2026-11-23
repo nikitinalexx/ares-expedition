@@ -181,7 +181,7 @@ def fit_value(obs, outcome, hidden=(256, 128), epochs=6, lr=1e-3, weight_decay=1
               seed=1, device="cpu", val_fraction=0.1, steps=0, label_mean=None, verbose=True,
               train_idx=None, val_idx=None, target=None, target_kind="outcome", stats_idx=None,
               clip=40.0, scale="mean", optimizer="adam", momentum=0.9, game=None, batch_probe=0,
-              shuffle=True):
+              shuffle=True, train_eval_rows=0, train_eval_games=200):
     """Trains V on (obs f16/f32 [n, obsSize], outcome f32 [n]). Returns the best epoch as numpy parameters.
 
     The split is by game (`train_idx` / `val_idx` from the caller, or a hash of the row's game id), so the same game
@@ -213,6 +213,15 @@ def fit_value(obs, outcome, hidden=(256, 128), epochs=6, lr=1e-3, weight_decay=1
         train_idx, val_idx = np.flatnonzero(~split), np.flatnonzero(split)
     if len(val_idx) < 10:
         train_idx, val_idx = np.arange(len(obs)), np.arange(min(len(obs), 1000))
+    seen_idx = None
+    if train_eval_games > 0 and game is not None:
+        # A RANDOM game-level sample of train games (not the corpus tail: rows are game-major, so the last 4096 rows are
+        # ~11 games and their AUC has an effective sample of 11 outcomes - the owner's challenge, 23/11).
+        train_games = np.unique(game[train_idx])
+        pick = rng.choice(train_games, size=min(train_eval_games, len(train_games)), replace=False)
+        seen_idx = train_idx[np.isin(game[train_idx], pick)]
+    elif train_eval_rows > 0:
+        seen_idx = train_idx[-train_eval_rows:]
     model = ValueNet(obs.shape[1], list(hidden), mean, std, clip=clip).to(device)
     optimizer = (torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
                  if optimizer == "sgd"
@@ -228,12 +237,12 @@ def fit_value(obs, outcome, hidden=(256, 128), epochs=6, lr=1e-3, weight_decay=1
     def tensor(array, idx):
         return torch.from_numpy(array[idx].astype(np.float32)).to(device)
 
-    def evaluate():
+    def evaluate(idx):
         model.eval()
         logits = []
         with torch.no_grad():
-            for s in range(0, len(val_idx), BLOCK_ROWS):
-                logits.append(model(tensor(obs, val_idx[s:s + BLOCK_ROWS])).float().cpu().numpy())
+            for s in range(0, len(idx), BLOCK_ROWS):
+                logits.append(model(tensor(obs, idx[s:s + BLOCK_ROWS])).float().cpu().numpy())
         model.train()
         return np.concatenate(logits)
 
@@ -270,7 +279,7 @@ def fit_value(obs, outcome, hidden=(256, 128), epochs=6, lr=1e-3, weight_decay=1
             optimizer.step()
             running += float(loss) * len(slice_)
             seen += len(slice_)
-        val_logits = evaluate()
+        val_logits = evaluate(val_idx)
         if regression:
             val_loss = float(nn.functional.mse_loss(
                 torch.from_numpy(val_logits), torch.from_numpy(target[val_idx].astype(np.float32))))
@@ -281,6 +290,16 @@ def fit_value(obs, outcome, hidden=(256, 128), epochs=6, lr=1e-3, weight_decay=1
                "constant_val_loss": constant, "auc": auc(val_logits, outcome[val_idx]),
                "brier": float(np.mean((1 / (1 + np.exp(-val_logits)) - outcome[val_idx]) ** 2)),
                "batches": batches}
+        if seen_idx is not None:
+            seen_logits = evaluate(seen_idx)
+            if regression:
+                seen_loss = float(nn.functional.mse_loss(torch.from_numpy(seen_logits),
+                                                         torch.from_numpy(target[seen_idx].astype(np.float32))))
+            else:
+                seen_loss = float(nn.functional.binary_cross_entropy_with_logits(
+                    torch.from_numpy(seen_logits), torch.from_numpy(outcome[seen_idx].astype(np.float32))))
+            row["seen_loss"] = seen_loss
+            row["seen_auc"] = auc(seen_logits, outcome[seen_idx])
         history.append(row)
         if verbose:
             print(json.dumps({k: (round(v, 4) if isinstance(v, float) else v) for k, v in row.items()}), flush=True)
@@ -301,7 +320,7 @@ def fit_value(obs, outcome, hidden=(256, 128), epochs=6, lr=1e-3, weight_decay=1
 
 def fit_stream(data_dirs, rows_per_game, hidden, epochs, lr, weight_decay, batch, seed, device,
                target_kind="outcome", margin_scale=20.0, val_every=10, stats_per_type=2, verbose=True,
-               optimizer="adam", momentum=0.9):
+               optimizer="adam", momentum=0.9, train_eval_chunks=1):
     """Trains V by streaming the chunk files: read one file, take its rows, update, throw it away.
 
     The dataset of a serious night does not fit in RAM (30 000 games with every decision is ~58 GB). Nothing about the
@@ -362,11 +381,13 @@ def fit_stream(data_dirs, rows_per_game, hidden, epochs, lr, weight_decay, batch
             return torch.from_numpy(np.clip(rows["margin"] / margin_scale, -3.0, 3.0).astype(np.float32)).to(device)
         return torch.from_numpy(rows["outcome"].astype(np.float32)).to(device)
 
-    def validate():
+    seen_files = train_files[-train_eval_chunks:] if train_eval_chunks > 0 else []
+
+    def validate(files):
         model.eval()
         losses, logits, labels, margins = [], [], [], []
         with torch.no_grad():
-            for _, path in val_files:
+            for _, path in files:
                 rows = read_rows(path)
                 if rows is None:
                     continue
@@ -422,10 +443,14 @@ def fit_stream(data_dirs, rows_per_game, hidden, epochs, lr, weight_decay, batch
                 running += float(loss) * len(x)
                 seen += len(x)
                 batches += 1
-        val_loss, val_auc, observed_mean, val_brier, _, _ = validate()
+        val_loss, val_auc, observed_mean, val_brier, _, _ = validate(val_files)
         label_mean = observed_mean
         row = {"epoch": epoch, "train_loss": running / max(seen, 1), "val_loss": val_loss, "auc": val_auc,
                "rows_seen": seen, "batches": batches}
+        if seen_files:
+            seen_loss, seen_auc, _, _, _, _ = validate(seen_files)
+            row["seen_loss"] = seen_loss
+            row["seen_auc"] = seen_auc
         history.append(row)
         if verbose:
             print(json.dumps({k: (round(v, 4) if isinstance(v, float) else v) for k, v in row.items()}), flush=True)
@@ -752,11 +777,17 @@ def main():
     parser.add_argument("--batch-probe", type=int, default=0,
                         help="record the loss, label mean, distinct games and AUC of the first K batches of epoch 1: the "
                              "batch-to-batch swing is how a broken shuffle shows itself")
+    parser.add_argument("--train-eval-games", type=int, default=200,
+                        help="a RANDOM sample of this many TRAIN games evaluated as 'seen' at every epoch (the owner's "
+                             "challenge 23/11: the corpus tail is ~11 games, not a sample); 0 = off")
+    parser.add_argument("--train-eval-rows", type=int, default=0,
+                        help="also evaluate the last N TRAIN rows (the corpus end) for comparison with the random sample")
     parser.add_argument("--no-shuffle", action="store_true",
                         help="iterate the rows in order instead of permuting them (a diagnostic: rows of one game then sit "
                              "together in every batch, which is what the probe is meant to catch)")
-    parser.add_argument("--rows-per-game", type=int, default=16,
-                        help="at most this many states of one game (0 = all); the label is the same for all of them")
+    parser.add_argument("--rows-per-game", type=int, default=0,
+                        help="at most this many states of one game (0 = all). The owner's rule (23/11): no per-game cuts, "
+                             "even for the critics")
     parser.add_argument("--games-limit", type=int, default=0,
                         help="keep only the first N game ids (ascending), a NESTED subset: the 1 000-game run is a strict "
                              "subset of the 5 000-game run, so the only variable between two volumes is the volume")
@@ -979,6 +1010,7 @@ def main():
                        train_idx=train_idx, val_idx=np.flatnonzero(split),
                        label_mean=None if args.target != "outcome" else float(pool["outcome"][~split].mean()),
                        target=target, target_kind=args.target, stats_idx=stats_idx, clip=args.clip,
+                       train_eval_rows=args.train_eval_rows, train_eval_games=args.train_eval_games,
                        scale=args.scale, optimizer=args.optimizer, momentum=args.momentum,
                        game=pool["game"], batch_probe=args.batch_probe, shuffle=not args.no_shuffle)
     params, history = fitted["params"], fitted["history"]
