@@ -15,7 +15,7 @@ git checkout night-sim
 
 That is the only command. Defaults: **50 000 games** (all self-play), chunks of 5 000, threads = every core, then **two
 training passes** that continue from the same model (`MODEL`, not from scratch) with **no early stop** and the best
-validation checkpoint kept; then the profile gate on 300 new games, the value check on 300 fresh games, and two
+validation checkpoint kept; then the phase mix on 300 new games (phasedist), the value check on 300 fresh games, and two
 measurements (NETWORK and RANDOM, 1 000 games each). Everything goes under `./night/`:
 
 ```
@@ -51,7 +51,7 @@ two epochs; the same `night/data` is reused.
 | `EPOCHS` | 2 | training passes; no early stop, the best validation checkpoint is kept |
 | `VAL_STEPS` | 2000 | validate every N steps; the best checkpoint is chosen from these |
 | `BATCH` | 64 | 64 and 256 measured equal for this value, 10 worse (the agent critic's 4096 is another model) |
-| `PROFILE_GAMES` | 300 | new games for `check_player.py` (cards, phases, standard projects) |
+| `PROFILE_GAMES` | 300 | new games for the phase-mix audit (`--mode phasedist`); `check_player.py` is the AGENT's gate, not this value's |
 | `FRESH_GAMES` | 300 | new games for `value_eval_bin.py` (loss/AUC out of sample) |
 | `MODEL` | models/net_s3_e1.zip | the value the games are generated with **and that training continues from** |
 | `MIN_FREE_GB` | 100 | refuse to start below this free space |

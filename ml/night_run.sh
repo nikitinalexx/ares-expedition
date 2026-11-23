@@ -134,10 +134,14 @@ log "=== train ($EPOCHS epochs, batch $BATCH, NO early stop, best validation kep
 tail -3 "$WORK/logs/train.log"
 grep -E "^(step|epoch|using the best|wrote)" "$WORK/logs/train.log" | tail -8 | sed 's/^/  /'
 
-log "=== profile on NEW games ($PROFILE_GAMES): what the model does, not the training rows"
-"${PY_CMD[@]}" ml/check_player.py --model "$WORK/models/trained.zip" --games "$PROFILE_GAMES" \
-    >"$WORK/logs/profile.log" 2>&1 || log "  profile check exited with $? (a degenerate profile is a rejection; see the log)"
-grep -Ei "verdict|cards|phase|share|standard" "$WORK/logs/profile.log" | tail -10 | sed 's/^/  /' || true
+log "=== phase mix on NEW games ($PROFILE_GAMES vs SMART): the NETWORK_V2 profile (check_player is the AGENT's gate, not this value)"
+"$JAVA" -Xmx10g "-Dares.nn.model=$WORK/models/trained.zip" -cp "target/classes${SEP}${CP}" \
+    com.terraforming.ares.selfplay.SelfPlayMain --mode phasedist --a NETWORK_V2 --b SMART \
+    --games "$PROFILE_GAMES" --concurrency "$THREADS" --out "$WORK/logs/phases.txt" \
+    >"$WORK/logs/phasedist.log" 2>&1 || log "  phase audit failed; see the log"
+if [ -f "$WORK/logs/phases.txt" ]; then
+    sed 's/^/  /' "$WORK/logs/phases.txt"
+fi
 
 log "=== value on FRESH games ($FRESH_GAMES new games of the base, out of sample)"
 if [ ! -s "$WORK/data/fresh/netdata.bin" ]; then
