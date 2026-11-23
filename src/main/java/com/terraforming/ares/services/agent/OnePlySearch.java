@@ -1112,10 +1112,15 @@ public class OnePlySearch {
     }
 
     private int search(Decision decision, MarsGame game, Player player) {
-        if (treeTypes.contains(decision.type()) && treeTurn) {
-            int fromTurn = treeTurnChoice(decision, game, player);
-            if (fromTurn >= 0) {
-                return fromTurn;
+        if (treeTypes.contains(decision.type())) {
+            // `tree.turn=true` is the LINE tree over several of our decisions; without it the FLAT PUCT (`treeChoice`) is the
+            // tree. Before 23/11 the whole block required `tree.turn`, so `-Dares.agent.search.tree=TYPE` alone was a no-op and
+            // the 71.65% "tree" run could not have used the flat tree it claimed to test (ledger row 96).
+            if (treeTurn) {
+                int fromTurn = treeTurnChoice(decision, game, player);
+                if (fromTurn >= 0) {
+                    return fromTurn;
+                }
             }
             int chosen = treeChoice(decision, game, player, treeBudget);
             if (chosen >= 0) {
