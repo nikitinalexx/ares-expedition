@@ -37,10 +37,15 @@ VAL_STEPS=${VAL_STEPS:-2000}         # validate often enough to pick the best st
 PROFILE_GAMES=${PROFILE_GAMES:-300}  # phase-mix audit on NEW games (phasedist), not the agent's check_player
 FRESH_GAMES=${FRESH_GAMES:-300}      # new games for the out-of-sample value check
 BATCH=${BATCH:-64}                   # NETWORK_V2 value: 64 and 256 measured equal, 10 worse; the agent critic's 4096 is another model
-ROWS_PER_GAME=${ROWS_PER_GAME:-0}    # cap rows per game (0 = all); the 50k corpus has 375/game and ONE outcome, so all rows memorise
-VAL_ROWS=${VAL_ROWS:-50000}          # rows in the validation slice (50k at 375/game is only ~133 games; 200k is ~533)
+ROWS_PER_GAME=${ROWS_PER_GAME:-0}    # 0 = all rows (the default; NOT used for NETWORK_V2; kept as an optional A/B only)
+VAL_ROWS=${VAL_ROWS:-50000}          # validation rows; 50k is enough (it covers every held-out game; a bad curve shows even on 5k)
 LR=${LR:-0.00005}                    # the best step moved 1500 -> 5500 when lr went 1e-3 -> 1e-4; a main suspect for the early val best
 DROPOUT=${DROPOUT:-0.1}
+WEIGHT_DECAY=${WEIGHT_DECAY:-0.0001} # the trainer had none; the owner's CONFIG_A used 5e-5
+SAVE_CHECKPOINTS=${SAVE_CHECKPOINTS:-10} # N checkpoints + the last, picked by PLAY
+CKPT_GAMES=${CKPT_GAMES:-1000}       # games per checkpoint in the play eval
+RED_RISE=${RED_RISE:-0.03}           # RED FLAG: val >= best + rise
+RED_RISES=${RED_RISES:-2}            # ... and this many consecutive rises
 PROGRESS_MIN=${PROGRESS_MIN:-0}      # print the latest training line every N minutes to the console (0 = off)
 PROGRESS_SEC=${PROGRESS_SEC:-$((PROGRESS_MIN * 60))}
 
@@ -139,6 +144,7 @@ if [ "$PROGRESS_SEC" -gt 0 ]; then
     "${PY_CMD[@]}" ml/train_network_v2_torch.py --csv "$WORK/data/all.bin" --out "$WORK/models/trained.zip" \
         --warm-start "$MODEL" \
         --epochs "$EPOCHS" --batch "$BATCH" --lr "$LR" --seed 1 --val-steps "$VAL_STEPS" --val-rows "$VAL_ROWS" --patience 0 --dropout "$DROPOUT" --rows-per-game "$ROWS_PER_GAME" \
+        --weight-decay "$WEIGHT_DECAY" --save-checkpoints "$SAVE_CHECKPOINTS" --red-rise "$RED_RISE" --red-rises "$RED_RISES" \
         >"$WORK/logs/train.log" 2>&1 &
     TRAIN_PID=$!
     while kill -0 "$TRAIN_PID" 2>/dev/null; do
@@ -159,14 +165,44 @@ else
     "${PY_CMD[@]}" ml/train_network_v2_torch.py --csv "$WORK/data/all.bin" --out "$WORK/models/trained.zip" \
         --warm-start "$MODEL" \
         --epochs "$EPOCHS" --batch "$BATCH" --lr "$LR" --seed 1 --val-steps "$VAL_STEPS" --val-rows "$VAL_ROWS" --patience 0 --dropout "$DROPOUT" --rows-per-game "$ROWS_PER_GAME" \
+        --weight-decay "$WEIGHT_DECAY" --save-checkpoints "$SAVE_CHECKPOINTS" --red-rise "$RED_RISE" --red-rises "$RED_RISES" \
         >"$WORK/logs/train.log" 2>&1 || STATUS=$?
+fi
+if [ "$STATUS" -eq 42 ]; then
+    log "RED FLAG: the training overfit; not measuring (see logs/train.log)"
+    printf 'RED: overfitting, not measured\n' >"$WORK/summary.txt"
+    exit 0
 fi
 [ "$STATUS" -eq 0 ] || fail "training failed; see $WORK/logs/train.log"
 tail -3 "$WORK/logs/train.log"
 grep -E "^(step|epoch|using the best|wrote)" "$WORK/logs/train.log" | tail -8 | sed 's/^/  /'
 
+FINAL_MODEL="$WORK/models/trained.zip"
+if [ "$SAVE_CHECKPOINTS" -gt 0 ]; then
+    log "=== choose the checkpoint by PLAY ($CKPT_GAMES games vs NETWORK each)"
+    BEST_PLAY="$WORK/models/trained.zip"
+    BEST_SCORE=""
+    for ckpt in "$WORK"/models/trained_ckpt_*.zip "$WORK/models/trained.zip"; do
+        [ -f "$ckpt" ] || continue
+        name=$(basename "$ckpt" .zip)
+        "$JAVA" -Xmx10g "-Dares.nn.model=$ckpt" -cp "target/classes${SEP}${CP}" \
+            com.terraforming.ares.selfplay.SelfPlayMain --mode compare --a NETWORK_V2 --b NETWORK \
+            --games "$CKPT_GAMES" --concurrency "$THREADS" --out "$WORK/logs/${name}_vs_network.json" \
+            >"$WORK/logs/${name}_vs_network.log" 2>&1 || { log "  $name: failed"; continue; }
+        line=$(grep "CompareResult\[" "$WORK/logs/${name}_vs_network.log" | tail -1)
+        score=$(printf '%s' "$line" | sed -n 's/.*aScore=\([0-9.]*\).*/\1/p')
+        log "  $name: $score"
+        if [ -n "$score" ] && { [ -z "$BEST_SCORE" ] || awk "BEGIN{exit !($score > $BEST_SCORE)}"; }; then
+            BEST_SCORE="$score"
+            BEST_PLAY="$ckpt"
+        fi
+    done
+    FINAL_MODEL="$BEST_PLAY"
+    log "best play: $FINAL_MODEL ($BEST_SCORE)"
+fi
+
 log "=== phase mix on NEW games ($PROFILE_GAMES vs SMART): the NETWORK_V2 profile (check_player is the AGENT's gate, not this value)"
-"$JAVA" -Xmx10g "-Dares.nn.model=$WORK/models/trained.zip" -cp "target/classes${SEP}${CP}" \
+"$JAVA" -Xmx10g "-Dares.nn.model=$FINAL_MODEL" -cp "target/classes${SEP}${CP}" \
     com.terraforming.ares.selfplay.SelfPlayMain --mode phasedist --a NETWORK_V2 --b SMART \
     --games "$PROFILE_GAMES" --concurrency "$THREADS" --out "$WORK/logs/phases.txt" \
     >"$WORK/logs/phasedist.log" 2>&1 || log "  phase audit failed; see the log"
@@ -183,23 +219,24 @@ if [ ! -s "$WORK/data/fresh/netdata.bin" ]; then
         --max-rows-per-game-type 1 --games "$FRESH_GAMES" >"$WORK/logs/fresh_gen.log" 2>&1 \
         || log "  fresh generation failed; see $WORK/logs/fresh_gen.log"
 fi
-"${PY_CMD[@]}" ml/value_eval_bin.py --csv "$WORK/data/fresh/netdata.bin" --model "$WORK/models/trained.zip" \
+"${PY_CMD[@]}" ml/value_eval_bin.py --csv "$WORK/data/fresh/netdata.bin" --model "$FINAL_MODEL" \
     >"$WORK/logs/value_fresh.log" 2>&1 || log "  fresh value check failed; see $WORK/logs/value_fresh.log"
 tail -2 "$WORK/logs/value_fresh.log" | sed 's/^/  /' || true
 
 measure() {   # bench
     local bench="$1"
     log "=== measure vs $bench ($EVAL_GAMES games)"
-    "$JAVA" -Xmx10g "-Dares.nn.model=$WORK/models/trained.zip" -cp "target/classes${SEP}${CP}" \
+    "$JAVA" -Xmx10g "-Dares.nn.model=$FINAL_MODEL" -cp "target/classes${SEP}${CP}" \
         com.terraforming.ares.selfplay.SelfPlayMain --mode compare --a NETWORK_V2 --b "$bench" \
         --games "$EVAL_GAMES" --concurrency "$THREADS" --out "$WORK/models/vs_$bench.json" \
         >"$WORK/logs/eval_$bench.log" 2>&1 || fail "measurement vs $bench failed"
     grep "CompareResult\[" "$WORK/logs/eval_$bench.log" | tail -1 | tee -a "$WORK/summary.txt"
 }
 : >"$WORK/summary.txt"
+printf 'best play: %s\n' "$FINAL_MODEL" >>"$WORK/summary.txt"
 measure NETWORK
 measure RANDOM
 
 log "=== done; summary"
 cat "$WORK/summary.txt"
-log "the trained model is $WORK/models/trained.zip (use -Dares.nn.model=<path>)"
+log "the final model is $FINAL_MODEL (the val-best is models/trained.zip; the checkpoints are models/trained_ckpt_*.zip)"
