@@ -179,6 +179,9 @@ def main():
                         help="RED FLAG when val >= best + this AND there are --red-rises consecutive rises (a plain wobble is ignored)")
     parser.add_argument("--red-rises", type=int, default=2,
                         help="consecutive val rises required for the RED FLAG")
+    parser.add_argument("--train-eval-rows", type=int, default=0,
+                        help="also evaluate this many LAST train rows (the corpus end) at every validation: seen vs unseen, "
+                             "the direct memorisation check; 0 = off")
     parser.add_argument("--in-ram", action="store_true",
                         help="read the binary corpus into RAM in one sequential pass instead of mapping it (a 20k-game "
                              "corpus is 14 GB; every batch is then memory-speed)")
@@ -267,17 +270,17 @@ def main():
     best_val = float("inf")
     best_state = None
 
-    def evaluate():
+    def evaluate_on(idx):
         model.eval()
         with torch.no_grad():
             parts = []
-            for start in range(0, len(va), args.batch):
-                take = va[start:start + args.batch]
+            for start in range(0, len(idx), args.batch):
+                take = idx[start:start + args.batch]
                 batch = (features[take].to(device).float() if isinstance(features, torch.Tensor)
                      else torch.from_numpy(np.ascontiguousarray(features[take.numpy()])).to(device).float())
                 parts.append(model(batch[:, :TABLE], batch[:, TABLE:]))
             logit = torch.cat(parts)
-            vy = y[va].to(device)
+            vy = y[idx].to(device)
             value = float(loss_fn(logit, vy))
             order_ = torch.argsort(logit)
             ranks = torch.empty_like(order_)
@@ -285,6 +288,18 @@ def main():
             pos = vy > 0.5
             area = float((ranks[pos].float().mean() - (pos.sum() - 1) / 2) / max(int((~pos).sum()), 1))
         return value, area
+
+    def evaluate():
+        return evaluate_on(va)
+
+    seen_idx = tr[-args.train_eval_rows:] if args.train_eval_rows > 0 else None
+
+    def seen_text():
+        if seen_idx is None:
+            return ""
+        value, area = evaluate_on(seen_idx)
+        model.train()
+        return f"  seen {value:.4f} auc {area:.4f}"
 
     step = 0
     since_best = 0
@@ -344,7 +359,7 @@ def main():
                 # 0.075 against val 2.07 and AUC 0.80). Validating every `--val-steps` steps is what makes early stopping
                 # possible at that granularity.
                 value, area = evaluate()
-                print(f"step {step}: train {since / max(since_n, 1):.4f}  val {value:.4f}  auc {area:.4f}", flush=True)
+                print(f"step {step}: train {since / max(since_n, 1):.4f}  val {value:.4f}  auc {area:.4f}" + seen_text(), flush=True)
                 register_val(value, f"step {step}")
                 model.train()
                 since, since_n = 0.0, 0
@@ -358,7 +373,7 @@ def main():
         if stopped:
             break
         value, area = evaluate()
-        print(f"epoch {epoch}: train {total / len(tr):.4f}  val {value:.4f}  auc {area:.4f}", flush=True)
+        print(f"epoch {epoch}: train {total / len(tr):.4f}  val {value:.4f}  auc {area:.4f}" + seen_text(), flush=True)
         register_val(value, f"epoch {epoch}")
         if red:
             break
