@@ -56,7 +56,8 @@ two epochs; the same `night/data` is reused.
 | `SAVE_CHECKPOINTS` | 10 | checkpoints plus the last state, each measured by PLAY |
 | `CKPT_GAMES` | 1000 | games per checkpoint in the play eval |
 | `RED_RISE` | 0.03 | RED FLAG when val >= best + rise ... |
-| `RED_RISES` | 2 | ... and this many consecutive rises |`n| `PROGRESS_MIN` | 0 | print the latest training line (step/val/AUC + best) to the console every N minutes; 0 = off |`n| `PROFILE_GAMES` | 300 | new games for the phase-mix audit (`--mode phasedist`); `check_player.py` is the AGENT's gate, not this value's |
+| `RED_RISES` | 2 | ... and this many consecutive rises |
+| `TRAIN_EVAL_ROWS` | 4096 | the last N train rows evaluated as "seen" at every validation (the direct memorisation check; 0 = off) |`n| `PROGRESS_MIN` | 0 | print the latest training line (step/val/AUC + best) to the console every N minutes; 0 = off |`n| `PROFILE_GAMES` | 300 | new games for the phase-mix audit (`--mode phasedist`); `check_player.py` is the AGENT's gate, not this value's |
 | `FRESH_GAMES` | 300 | new games for `value_eval_bin.py` (loss/AUC out of sample) |
 | `MODEL` | models/net_s3_e1.zip | the value the games are generated with **and that training continues from** |
 | `MIN_FREE_GB` | 100 | refuse to start below this free space |
@@ -80,11 +81,20 @@ gave 12.5-16.8%. In those games our player wins ~7%, so the states are labelled 
 own positions low. `NET_SHARE` defaults to 0 for that reason; the owner's "half self-play, half NETWORK" idea is right in
 principle but needs the player to win a real share of those games first.
 
+## Duplicates
+
+The recorder drops identical rows **within one game per player** by default (`-Dares.netdata.dedup=true`, a `LinkedHashSet` of
+the observation vectors); the night script now passes that flag explicitly. The 375 rows/game of the 50k corpus are already
+after this dedup (the raw post-states were ~1123 per game, ~427 distinct).
+
 ## The red flag and the checkpoint play eval
 
 A small wobble in val is ignored. When the val is clearly running away, the trainer stops with `RED FLAG: overfitting` and exit
 code 42 as soon as `val >= best + RED_RISE` and there are `RED_RISES` consecutive rises (default 0.03 and 2). The night script
 then writes `RED: overfitting, not measured` into `night/summary.txt` and does not measure the run.
+
+At every validation the trainer also prints `seen`: the loss/AUC on the last `TRAIN_EVAL_ROWS` **train** rows. If the model only
+memorised the games, `seen` is near 0 while `val` is not; if `seen` is close to the train loss, the val rise is not memorisation.
 
 When the curve is healthy, the training writes `SAVE_CHECKPOINTS` evenly spaced checkpoints plus the last state
 (`night/models/trained_ckpt_*.zip`). The script measures each of them **and** the val-best `trained.zip` on `CKPT_GAMES` games

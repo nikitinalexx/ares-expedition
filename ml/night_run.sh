@@ -46,6 +46,7 @@ SAVE_CHECKPOINTS=${SAVE_CHECKPOINTS:-10} # N checkpoints + the last, picked by P
 CKPT_GAMES=${CKPT_GAMES:-1000}       # games per checkpoint in the play eval
 RED_RISE=${RED_RISE:-0.03}           # RED FLAG: val >= best + rise
 RED_RISES=${RED_RISES:-2}            # ... and this many consecutive rises
+TRAIN_EVAL_ROWS=${TRAIN_EVAL_ROWS:-4096} # the last N train rows evaluated as "seen" at every validation (0 = off)
 PROGRESS_MIN=${PROGRESS_MIN:-0}      # print the latest training line every N minutes to the console (0 = off)
 PROGRESS_SEC=${PROGRESS_SEC:-$((PROGRESS_MIN * 60))}
 
@@ -87,7 +88,7 @@ generate() {   # dir, matchups, games, label
     fi
     mkdir -p "$dir" "$WORK/logs/decisions_$label"
     log "  $label: $games games ($match)"
-    "$JAVA" -Xmx8g "-Dares.nn.model=$MODEL" "-Dares.netdata.dir=$dir" -cp "target/classes${SEP}${CP}" \
+    "$JAVA" -Xmx8g "-Dares.nn.model=$MODEL" "-Dares.netdata.dir=$dir" "-Dares.netdata.dedup=true" -cp "target/classes${SEP}${CP}" \
         com.terraforming.ares.selfplay.SelfPlayMain --mode play --out "$WORK/logs/decisions_$label" \
         --threads "$THREADS" --games-per-chunk 500 --matchups "$match" --max-rows-per-game-type 1 \
         --games "$games" >"$WORK/logs/gen_$label.log" 2>&1 \
@@ -145,6 +146,7 @@ if [ "$PROGRESS_SEC" -gt 0 ]; then
         --warm-start "$MODEL" \
         --epochs "$EPOCHS" --batch "$BATCH" --lr "$LR" --seed 1 --val-steps "$VAL_STEPS" --val-rows "$VAL_ROWS" --patience 0 --dropout "$DROPOUT" --rows-per-game "$ROWS_PER_GAME" \
         --weight-decay "$WEIGHT_DECAY" --save-checkpoints "$SAVE_CHECKPOINTS" --red-rise "$RED_RISE" --red-rises "$RED_RISES" \
+        --train-eval-rows "$TRAIN_EVAL_ROWS" \
         >"$WORK/logs/train.log" 2>&1 &
     TRAIN_PID=$!
     while kill -0 "$TRAIN_PID" 2>/dev/null; do
@@ -166,6 +168,7 @@ else
         --warm-start "$MODEL" \
         --epochs "$EPOCHS" --batch "$BATCH" --lr "$LR" --seed 1 --val-steps "$VAL_STEPS" --val-rows "$VAL_ROWS" --patience 0 --dropout "$DROPOUT" --rows-per-game "$ROWS_PER_GAME" \
         --weight-decay "$WEIGHT_DECAY" --save-checkpoints "$SAVE_CHECKPOINTS" --red-rise "$RED_RISE" --red-rises "$RED_RISES" \
+        --train-eval-rows "$TRAIN_EVAL_ROWS" \
         >"$WORK/logs/train.log" 2>&1 || STATUS=$?
 fi
 if [ "$STATUS" -eq 42 ]; then
