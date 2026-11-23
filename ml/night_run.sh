@@ -41,6 +41,8 @@ ROWS_PER_GAME=${ROWS_PER_GAME:-0}    # 0 = all rows (the default; NOT used for N
 VAL_ROWS=${VAL_ROWS:-50000}          # validation rows; 50k is enough (it covers every held-out game; a bad curve shows even on 5k)
 LR=${LR:-0.00005}                    # the best step moved 1500 -> 5500 when lr went 1e-3 -> 1e-4; a main suspect for the early val best
 DROPOUT=${DROPOUT:-0.1}
+DROPOUT_FIRST=${DROPOUT_FIRST:--1}    # own rate on the two first-layer activations; -1 = DROPOUT (the owner's NETWORK used 0.5)
+DROPOUT_SECOND=${DROPOUT_SECOND:--1}  # own rate on the merged activation; -1 = DROPOUT (the owner's NETWORK used 0.2)
 WEIGHT_DECAY=${WEIGHT_DECAY:-0.0001} # the trainer had none; the owner's CONFIG_A used 5e-5
 SAVE_CHECKPOINTS=${SAVE_CHECKPOINTS:-10} # N checkpoints + the last, picked by PLAY
 CKPT_GAMES=${CKPT_GAMES:-1000}       # games per checkpoint in the play eval
@@ -145,7 +147,7 @@ if [ "$PROGRESS_SEC" -gt 0 ]; then
     START=$(date +%s)
     "${PY_CMD[@]}" ml/train_network_v2_torch.py --csv "$WORK/data/all.bin" --out "$WORK/models/trained.zip" \
         --warm-start "$MODEL" \
-        --epochs "$EPOCHS" --batch "$BATCH" --lr "$LR" --seed 1 --val-steps "$VAL_STEPS" --val-rows "$VAL_ROWS" --patience 0 --dropout "$DROPOUT" --rows-per-game "$ROWS_PER_GAME" \
+        --epochs "$EPOCHS" --batch "$BATCH" --lr "$LR" --seed 1 --val-steps "$VAL_STEPS" --val-rows "$VAL_ROWS" --patience 0 --dropout "$DROPOUT" --dropout-first "$DROPOUT_FIRST" --dropout-second "$DROPOUT_SECOND" --rows-per-game "$ROWS_PER_GAME" \
         --weight-decay "$WEIGHT_DECAY" --save-checkpoints "$SAVE_CHECKPOINTS" --red-rise "$RED_RISE" --red-rises "$RED_RISES" \
         --train-eval-games "$TRAIN_EVAL_GAMES" --train-eval-rows "$TRAIN_EVAL_ROWS" \
         >"$WORK/logs/train.log" 2>&1 &
@@ -167,7 +169,7 @@ if [ "$PROGRESS_SEC" -gt 0 ]; then
 else
     "${PY_CMD[@]}" ml/train_network_v2_torch.py --csv "$WORK/data/all.bin" --out "$WORK/models/trained.zip" \
         --warm-start "$MODEL" \
-        --epochs "$EPOCHS" --batch "$BATCH" --lr "$LR" --seed 1 --val-steps "$VAL_STEPS" --val-rows "$VAL_ROWS" --patience 0 --dropout "$DROPOUT" --rows-per-game "$ROWS_PER_GAME" \
+        --epochs "$EPOCHS" --batch "$BATCH" --lr "$LR" --seed 1 --val-steps "$VAL_STEPS" --val-rows "$VAL_ROWS" --patience 0 --dropout "$DROPOUT" --dropout-first "$DROPOUT_FIRST" --dropout-second "$DROPOUT_SECOND" --rows-per-game "$ROWS_PER_GAME" \
         --weight-decay "$WEIGHT_DECAY" --save-checkpoints "$SAVE_CHECKPOINTS" --red-rise "$RED_RISE" --red-rises "$RED_RISES" \
         --train-eval-games "$TRAIN_EVAL_GAMES" --train-eval-rows "$TRAIN_EVAL_ROWS" \
         >"$WORK/logs/train.log" 2>&1 || STATUS=$?

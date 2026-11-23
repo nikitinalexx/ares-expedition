@@ -82,6 +82,12 @@ gave 12.5-16.8%. In those games our player wins ~7%, so the states are labelled 
 own positions low. `NET_SHARE` defaults to 0 for that reason; the owner's "half self-play, half NETWORK" idea is right in
 principle but needs the player to win a real share of those games first.
 
+## Per-layer dropout (the owner's schedule)
+
+`DROPOUT_FIRST` / `DROPOUT_SECOND` set the first-layer and merged-layer rates separately; -1 falls back to
+`DROPOUT`. The owner's NETWORK used 0.5 and 0.2 - the measured A/B (ledger 101/103) shows this halves the
+late-epoch collapse, while an extra wide input layer does not raise the best point.
+
 ## Duplicates
 
 The recorder drops identical rows **within one game per player** by default (`-Dares.netdata.dedup=true`, a `LinkedHashSet` of
