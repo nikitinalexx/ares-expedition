@@ -37,6 +37,10 @@ VAL_STEPS=${VAL_STEPS:-2000}         # validate often enough to pick the best st
 PROFILE_GAMES=${PROFILE_GAMES:-300}  # phase-mix audit on NEW games (phasedist), not the agent's check_player
 FRESH_GAMES=${FRESH_GAMES:-300}      # new games for the out-of-sample value check
 BATCH=${BATCH:-64}                   # NETWORK_V2 value: 64 and 256 measured equal, 10 worse; the agent critic's 4096 is another model
+ROWS_PER_GAME=${ROWS_PER_GAME:-0}    # cap rows per game (0 = all); the 50k corpus has 375/game and ONE outcome, so all rows memorise
+VAL_ROWS=${VAL_ROWS:-50000}          # rows in the validation slice (50k at 375/game is only ~133 games; 200k is ~533)
+LR=${LR:-0.00005}                    # the best step moved 1500 -> 5500 when lr went 1e-3 -> 1e-4; a main suspect for the early val best
+DROPOUT=${DROPOUT:-0.1}
 PROGRESS_MIN=${PROGRESS_MIN:-0}      # print the latest training line every N minutes to the console (0 = off)
 PROGRESS_SEC=${PROGRESS_SEC:-$((PROGRESS_MIN * 60))}
 
@@ -134,7 +138,7 @@ if [ "$PROGRESS_SEC" -gt 0 ]; then
     START=$(date +%s)
     "${PY_CMD[@]}" ml/train_network_v2_torch.py --csv "$WORK/data/all.bin" --out "$WORK/models/trained.zip" \
         --warm-start "$MODEL" \
-        --epochs "$EPOCHS" --batch "$BATCH" --lr 0.00005 --seed 1 --val-steps "$VAL_STEPS" --val-rows 50000 --patience 0 --dropout 0.1 \
+        --epochs "$EPOCHS" --batch "$BATCH" --lr "$LR" --seed 1 --val-steps "$VAL_STEPS" --val-rows "$VAL_ROWS" --patience 0 --dropout "$DROPOUT" --rows-per-game "$ROWS_PER_GAME" \
         >"$WORK/logs/train.log" 2>&1 &
     TRAIN_PID=$!
     while kill -0 "$TRAIN_PID" 2>/dev/null; do
@@ -154,7 +158,7 @@ if [ "$PROGRESS_SEC" -gt 0 ]; then
 else
     "${PY_CMD[@]}" ml/train_network_v2_torch.py --csv "$WORK/data/all.bin" --out "$WORK/models/trained.zip" \
         --warm-start "$MODEL" \
-        --epochs "$EPOCHS" --batch "$BATCH" --lr 0.00005 --seed 1 --val-steps "$VAL_STEPS" --val-rows 50000 --patience 0 --dropout 0.1 \
+        --epochs "$EPOCHS" --batch "$BATCH" --lr "$LR" --seed 1 --val-steps "$VAL_STEPS" --val-rows "$VAL_ROWS" --patience 0 --dropout "$DROPOUT" --rows-per-game "$ROWS_PER_GAME" \
         >"$WORK/logs/train.log" 2>&1 || STATUS=$?
 fi
 [ "$STATUS" -eq 0 ] || fail "training failed; see $WORK/logs/train.log"

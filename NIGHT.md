@@ -51,7 +51,7 @@ two epochs; the same `night/data` is reused.
 | `EPOCHS` | 2 | training passes; no early stop, the best validation checkpoint is kept |
 | `VAL_STEPS` | 2000 | validate every N steps; the best checkpoint is chosen from these |
 | `BATCH` | 64 | 64 and 256 measured equal for this value, 10 worse (the agent critic's 4096 is another model) |
-| `PROGRESS_MIN` | 0 | print the latest training line (step/val/AUC + best) to the console every N minutes; 0 = off |`n| `PROFILE_GAMES` | 300 | new games for the phase-mix audit (`--mode phasedist`); `check_player.py` is the AGENT's gate, not this value's |
+| `ROWS_PER_GAME` | 0 | cap rows per game before the split (0 = all); the 50k corpus has ~375 rows/game and ONE outcome, so all rows memorise the games |`n| `VAL_ROWS` | 50000 | rows in the validation slice; 50k at 375/game is ~133 games, 200k is ~533 |`n| `LR` | 0.00005 | learning rate; the best step moved 1500 -> 5500 when 1e-3 -> 1e-4 |`n| `DROPOUT` | 0.1 | dropout |`n| `PROGRESS_MIN` | 0 | print the latest training line (step/val/AUC + best) to the console every N minutes; 0 = off |`n| `PROFILE_GAMES` | 300 | new games for the phase-mix audit (`--mode phasedist`); `check_player.py` is the AGENT's gate, not this value's |
 | `FRESH_GAMES` | 300 | new games for `value_eval_bin.py` (loss/AUC out of sample) |
 | `MODEL` | models/net_s3_e1.zip | the value the games are generated with **and that training continues from** |
 | `MIN_FREE_GB` | 100 | refuse to start below this free space |
@@ -63,6 +63,8 @@ GAMES=80000 ./ml/night_run.sh              # a longer night
 GAMES=20000 ./ml/night_run.sh              # a short one (a test on real volume)
 NET_SHARE=20 GAMES=50000 ./ml/night_run.sh # a fifth against NETWORK (see the warning)
 PROGRESS_MIN=10 ./ml/night_run.sh         # watch the training stats every 10 minutes
+ROWS_PER_GAME=16 VAL_ROWS=200000 ./ml/night_run.sh  # cap rows/game and use a larger validation (the 50k diagnosis)
+LR=0.00002 ./ml/night_run.sh              # a slower schedule (the best step should move later)
 ```
 
 ## The warning that comes from measurement (22/11)
