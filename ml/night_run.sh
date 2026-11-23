@@ -34,9 +34,11 @@ MIN_FREE_GB=${MIN_FREE_GB:-100}
 EVAL_GAMES=${EVAL_GAMES:-1000}
 EPOCHS=${EPOCHS:-2}                  # at least two passes: a dip at one step does not mean the later step is worse
 VAL_STEPS=${VAL_STEPS:-2000}         # validate often enough to pick the best step, cheaply
-PROFILE_GAMES=${PROFILE_GAMES:-300}  # check_player: NEW games, the owner's profile gate
+PROFILE_GAMES=${PROFILE_GAMES:-300}  # phase-mix audit on NEW games (phasedist), not the agent's check_player
 FRESH_GAMES=${FRESH_GAMES:-300}      # new games for the out-of-sample value check
 BATCH=${BATCH:-64}                   # NETWORK_V2 value: 64 and 256 measured equal, 10 worse; the agent critic's 4096 is another model
+PROGRESS_MIN=${PROGRESS_MIN:-0}      # print the latest training line every N minutes to the console (0 = off)
+PROGRESS_SEC=${PROGRESS_SEC:-$((PROGRESS_MIN * 60))}
 
 log() { printf '%s %s\n' "$(date '+%H:%M:%S')" "$*"; }
 fail() { log "ERROR: $*"; exit 1; }
@@ -127,10 +129,35 @@ if [ -f "$WORK/summary.txt" ]; then
 fi
 
 log "=== train ($EPOCHS epochs, batch $BATCH, NO early stop, best validation kept, warm start from $MODEL)"
-"${PY_CMD[@]}" ml/train_network_v2_torch.py --csv "$WORK/data/all.bin" --out "$WORK/models/trained.zip" \
-    --warm-start "$MODEL" \
-    --epochs "$EPOCHS" --batch "$BATCH" --lr 0.00005 --seed 1 --val-steps "$VAL_STEPS" --val-rows 50000 --patience 0 --dropout 0.1 \
-    >"$WORK/logs/train.log" 2>&1 || fail "training failed; see $WORK/logs/train.log"
+STATUS=0
+if [ "$PROGRESS_SEC" -gt 0 ]; then
+    START=$(date +%s)
+    "${PY_CMD[@]}" ml/train_network_v2_torch.py --csv "$WORK/data/all.bin" --out "$WORK/models/trained.zip" \
+        --warm-start "$MODEL" \
+        --epochs "$EPOCHS" --batch "$BATCH" --lr 0.00005 --seed 1 --val-steps "$VAL_STEPS" --val-rows 50000 --patience 0 --dropout 0.1 \
+        >"$WORK/logs/train.log" 2>&1 &
+    TRAIN_PID=$!
+    while kill -0 "$TRAIN_PID" 2>/dev/null; do
+        sleep "$PROGRESS_SEC" || true
+        if kill -0 "$TRAIN_PID" 2>/dev/null; then
+            ELAPSED=$(( ( $(date +%s) - START ) / 60 ))
+            LAST=$(grep -E "^(step|epoch)" "$WORK/logs/train.log" 2>/dev/null | tail -1 || true)
+            BEST=$(grep -E "best so far" "$WORK/logs/train.log" 2>/dev/null | tail -1 || true)
+            if [ -z "$LAST" ]; then
+                LAST=$(tail -1 "$WORK/logs/train.log" 2>/dev/null | cut -c1-180 || true)
+            fi
+            if [ -z "$LAST" ]; then LAST="starting the trainer (loading the corpus)..."; fi
+            printf '  [%s min] %s%s\n' "$ELAPSED" "$LAST" "${BEST:+ | $BEST}"
+        fi
+    done
+    wait "$TRAIN_PID" || STATUS=$?
+else
+    "${PY_CMD[@]}" ml/train_network_v2_torch.py --csv "$WORK/data/all.bin" --out "$WORK/models/trained.zip" \
+        --warm-start "$MODEL" \
+        --epochs "$EPOCHS" --batch "$BATCH" --lr 0.00005 --seed 1 --val-steps "$VAL_STEPS" --val-rows 50000 --patience 0 --dropout 0.1 \
+        >"$WORK/logs/train.log" 2>&1 || STATUS=$?
+fi
+[ "$STATUS" -eq 0 ] || fail "training failed; see $WORK/logs/train.log"
 tail -3 "$WORK/logs/train.log"
 grep -E "^(step|epoch|using the best|wrote)" "$WORK/logs/train.log" | tail -8 | sed 's/^/  /'
 
