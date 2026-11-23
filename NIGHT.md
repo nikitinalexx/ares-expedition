@@ -13,24 +13,30 @@ git checkout night-sim
 ./ml/night_run.sh
 ```
 
-That is the only command. Defaults: **50 000 games** (all self-play), chunks of 5 000, threads = every core, then one training
-pass **that continues from the same model** (`MODEL`, not from scratch), then two measurements (NETWORK and RANDOM, 1 000
-games each). Everything goes under `./night/`:
+That is the only command. Defaults: **50 000 games** (all self-play), chunks of 5 000, threads = every core, then **two
+training passes** that continue from the same model (`MODEL`, not from scratch) with **no early stop** and the best
+validation checkpoint kept; then the profile gate on 300 new games, the value check on 300 fresh games, and two
+measurements (NETWORK and RANDOM, 1 000 games each). Everything goes under `./night/`:
 
 ```
-night/data/chunk_*/netdata.bin   the raw corpora (one per chunk)
-night/data/all.bin               merged, game ids offset per chunk
-night/models/trained.zip         the trained value
-night/logs/                      per-chunk generation, training, evaluation logs
-night/summary.txt                the two CompareResult lines
+night/data/chunk_*/netdata.bin    the raw corpora (one per chunk)
+night/data/all.bin                merged, game ids offset per chunk
+night/data/fresh/netdata.bin      300 NEW games of the base, for the out-of-sample value check
+night/models/trained.zip          the trained value (best validation)
+night/models/trained_before_*.zip the previous model, kept before the retrain
+night/logs/                       per-chunk generation, training, profile, value and eval logs
+night/summary.txt                 the two CompareResult lines
 ```
 
-**Re-running resumes**: a chunk whose `netdata.bin` already exists is skipped, so a crash or a reboot costs only the chunk
-in flight. To start over, delete `./night` (or set `WORK`).
+**Re-running resumes**: a chunk whose `netdata.bin` already exists is skipped, and if `night/data/merged.ok` exists the
+whole generation and merge are skipped - the existing corpus is reused as-is and only the training (plus the checks and the
+measurements) runs again. The previous `trained.zip` is copied to `trained_before_<stamp>.zip` before it is overwritten.
+The 300 fresh games live in `night/data/fresh` and never touch the main corpus.
 
 **If you started a run before 22/11 20:00 UTC:** that script trained from scratch, which is not the self-play ladder. The
 games it generated are still valid - update the branch, re-run the same command, and it skips generation and the merge and
-only redoes the training, this time warm-started from `MODEL`.
+only redoes the training, this time warm-started from `MODEL`. The 23/11 update additionally removes the early stop and runs
+two epochs; the same `night/data` is reused.
 
 ## Knobs (environment variables)
 
@@ -42,6 +48,11 @@ only redoes the training, this time warm-started from `MODEL`.
 | `THREADS` | **all cores** | generation/eval threads |
 | `WORK` | ./night | output directory |
 | `EVAL_GAMES` | 1000 | games per benchmark at the end |
+| `EPOCHS` | 2 | training passes; no early stop, the best validation checkpoint is kept |
+| `VAL_STEPS` | 2000 | validate every N steps; the best checkpoint is chosen from these |
+| `BATCH` | 64 | 64 and 256 measured equal for this value, 10 worse (the agent critic's 4096 is another model) |
+| `PROFILE_GAMES` | 300 | new games for `check_player.py` (cards, phases, standard projects) |
+| `FRESH_GAMES` | 300 | new games for `value_eval_bin.py` (loss/AUC out of sample) |
 | `MODEL` | models/net_s3_e1.zip | the value the games are generated with **and that training continues from** |
 | `MIN_FREE_GB` | 100 | refuse to start below this free space |
 
@@ -63,9 +74,11 @@ principle but needs the player to win a real share of those games first.
 
 ## Time budget
 
-At the measured 1.4-2.0 games/s (12 threads) 50 000 games are 7-10 hours; the training pass is 1-2 hours on a 3.9M-row
-corpus (the trainer early-stops when the validation slice stops improving). The script prints the rate after every chunk,
-so the real ETA is visible from `night/logs` and the console.
+At the measured 1.4-2.0 games/s (all cores) 50 000 games are 7-10 hours; **two full passes** over an 18M-row corpus are
+~1.5-2 hours on the same machine (the first 50k run did 0.7M rows plus validation in ~4 minutes), and the
+profile/fresh/measure block is ~30 minutes. There is no early stop: a dip at one validation does not end the run, and the
+best checkpoint over both epochs is what gets saved. The script prints the rate after every chunk, so the real ETA is visible
+from `night/logs` and the console.
 
 ## Requirements
 

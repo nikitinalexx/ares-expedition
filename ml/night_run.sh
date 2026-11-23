@@ -32,6 +32,11 @@ CONCURRENCY=${CONCURRENCY:-$( (nproc 2>/dev/null || echo 8) )}
 THREADS=${THREADS:-$CONCURRENCY}   # all cores by default (the owner's ask: take every core the CPU has)
 MIN_FREE_GB=${MIN_FREE_GB:-100}
 EVAL_GAMES=${EVAL_GAMES:-1000}
+EPOCHS=${EPOCHS:-2}                  # at least two passes: a dip at one step does not mean the later step is worse
+VAL_STEPS=${VAL_STEPS:-2000}         # validate often enough to pick the best step, cheaply
+PROFILE_GAMES=${PROFILE_GAMES:-300}  # check_player: NEW games, the owner's profile gate
+FRESH_GAMES=${FRESH_GAMES:-300}      # new games for the out-of-sample value check
+BATCH=${BATCH:-64}                   # NETWORK_V2 value: 64 and 256 measured equal, 10 worse; the agent critic's 4096 is another model
 
 log() { printf '%s %s\n' "$(date '+%H:%M:%S')" "$*"; }
 fail() { log "ERROR: $*"; exit 1; }
@@ -111,13 +116,41 @@ if [ "$SKIP_GEN" = 0 ]; then
 fi
 du -h "$WORK/data/all.bin"
 
-log "=== train (one pass, warm start from $MODEL, early stop on a 50k validation slice)"
+STAMP=$(date '+%Y%m%d_%H%M')
+if [ -f "$WORK/models/trained.zip" ]; then
+    cp "$WORK/models/trained.zip" "$WORK/models/trained_before_$STAMP.zip"
+    log "kept the previous model as models/trained_before_$STAMP.zip"
+fi
+if [ -f "$WORK/summary.txt" ]; then
+    cp "$WORK/summary.txt" "$WORK/summary_before_$STAMP.txt"
+    log "kept the previous summary as summary_before_$STAMP.txt"
+fi
+
+log "=== train ($EPOCHS epochs, batch $BATCH, NO early stop, best validation kept, warm start from $MODEL)"
 "${PY_CMD[@]}" ml/train_network_v2_torch.py --csv "$WORK/data/all.bin" --out "$WORK/models/trained.zip" \
     --warm-start "$MODEL" \
-    --epochs 1 --batch 64 --lr 0.00005 --seed 1 --val-steps 500 --val-rows 50000 --patience 8 --dropout 0.1 \
+    --epochs "$EPOCHS" --batch "$BATCH" --lr 0.00005 --seed 1 --val-steps "$VAL_STEPS" --val-rows 50000 --patience 0 --dropout 0.1 \
     >"$WORK/logs/train.log" 2>&1 || fail "training failed; see $WORK/logs/train.log"
 tail -3 "$WORK/logs/train.log"
-grep -E "^(step|epoch|using the best|wrote)" "$WORK/logs/train.log" | tail -5 | sed 's/^/  /'
+grep -E "^(step|epoch|using the best|wrote)" "$WORK/logs/train.log" | tail -8 | sed 's/^/  /'
+
+log "=== profile on NEW games ($PROFILE_GAMES): what the model does, not the training rows"
+"${PY_CMD[@]}" ml/check_player.py --model "$WORK/models/trained.zip" --games "$PROFILE_GAMES" \
+    >"$WORK/logs/profile.log" 2>&1 || log "  profile check exited with $? (a degenerate profile is a rejection; see the log)"
+grep -Ei "verdict|cards|phase|share|standard" "$WORK/logs/profile.log" | tail -10 | sed 's/^/  /' || true
+
+log "=== value on FRESH games ($FRESH_GAMES new games of the base, out of sample)"
+if [ ! -s "$WORK/data/fresh/netdata.bin" ]; then
+    mkdir -p "$WORK/data/fresh" "$WORK/logs/dec_fresh"
+    "$JAVA" -Xmx8g "-Dares.nn.model=$MODEL" "-Dares.netdata.dir=$WORK/data/fresh" -cp "target/classes${SEP}${CP}" \
+        com.terraforming.ares.selfplay.SelfPlayMain --mode play --out "$WORK/logs/dec_fresh" \
+        --threads "$THREADS" --games-per-chunk 100 --matchups "NETWORK_V2:NETWORK_V2:1.0" \
+        --max-rows-per-game-type 1 --games "$FRESH_GAMES" >"$WORK/logs/fresh_gen.log" 2>&1 \
+        || log "  fresh generation failed; see $WORK/logs/fresh_gen.log"
+fi
+"${PY_CMD[@]}" ml/value_eval_bin.py --csv "$WORK/data/fresh/netdata.bin" --model "$WORK/models/trained.zip" \
+    >"$WORK/logs/value_fresh.log" 2>&1 || log "  fresh value check failed; see $WORK/logs/value_fresh.log"
+tail -2 "$WORK/logs/value_fresh.log" | sed 's/^/  /' || true
 
 measure() {   # bench
     local bench="$1"
